@@ -1,0 +1,89 @@
+; Copyright (C) 2020 Greenbone Networks GmbH
+;
+; SPDX-License-Identifier: AGPL-3.0-or-later
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU Affero General Public License as
+; published by the Free Software Foundation, either version 3 of the
+; License, or (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU Affero General Public License for more details.
+;
+; You should have received a copy of the GNU Affero General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;
+; NSIS script for installing a user for GVM scans
+;
+; The gvm-lsc-exe-creator script will replace the following placeholders:
+; - ${__OUTPUT_PATH__} : The output path of the EXE file
+; - ${__USERNAME__} : The name of the user to create
+; - ${__PASSWORD__} : The password of the user to create
+;
+
+OutFile "${__OUTPUT_PATH__}"
+InstallDir $DESKTOP
+
+; Main installer section
+Section
+
+  ; Create Uninstaller
+  SetOutPath $INSTDIR
+  WriteUninstaller "$INSTDIR\gvm_lsc_remove_${__USERNAME__}.exe"
+
+  ; Declare admin group handling variables
+  Var /GLOBAL TEMPVBSFILE
+  Var /GLOBAL TEMPADMINGROUPFILE
+  Var /GLOBAL FH
+  Var /GLOBAL ADMINGROUPNAME
+
+  ; Generate temporary files for getting localized Administrators group name
+  GetTempFileName $TEMPVBSFILE
+  GetTempFileName $TEMPADMINGROUPFILE
+
+  ; Create Thomas Rotter's GetAdminGroupName VB script
+  DetailPrint `Creating GetAdminGroupName script $TEMPVBSFILE`
+  FileOpen $FH $TEMPVBSFILE w
+  FileWrite $FH `Set objWMIService = GetObject("winmgmts:\\.\root\cimv2")$\n`
+  FileWrite $FH `Set colAccounts = objWMIService.ExecQuery ("Select * From Win32_Group Where SID = 'S-1-5-32-544'")$\n`
+  FileWrite $FH `For Each objAccount in colAccounts$\n`
+  FileWrite $FH ` Wscript.Echo objAccount.Name$\n`
+  FileWrite $FH `Next$\n`
+  FileClose $FH
+
+  ; Run script to find localized Administrators group
+  ExecWait `cmd /C cscript /e:vbscript /nologo $TEMPVBSFILE > $TEMPADMINGROUPFILE`
+  FileOpen $FH $TEMPADMINGROUPFILE r
+  FileRead $FH $ADMINGROUPNAME
+  FileClose $FH
+  ; Remove line break from output
+  StrCpy $ADMINGROUPNAME `$ADMINGROUPNAME` -2
+
+  ; Create user and add it to the Administrators group
+  DetailPrint `Creating user ${__USERNAME__}`
+  SetDetailsPrint none
+  ExecWait `cmd /C net user ${__USERNAME__} "${__PASSWORD__}" /add /active:yes`
+  SetDetailsPrint both
+  ExecWait `cmd /C net localgroup $ADMINGROUPNAME %COMPUTERNAME%\${__USERNAME__} /add`
+
+  ; Remove temporary files for localized admin group names
+  Delete $TEMPVBSFILE
+  Delete $TEMPADMINGROUPFILE
+
+  ; Display message that everything seems to be fine
+  MessageBox MB_OK "A user has been added. An uninstaller is placed on your Desktop."
+
+SectionEnd
+
+; Uninstaller section
+Section Uninstall
+
+  ExecWait "net user ${__USERNAME__} /delete"
+
+  ; Display message that everything seems to be fine
+  MessageBox MB_OK "A user has been removed. You can now safely remove the uninstaller from your Desktop."
+
+SectionEnd

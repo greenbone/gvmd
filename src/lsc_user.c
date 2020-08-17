@@ -553,149 +553,78 @@ lsc_user_deb_recreate (const gchar *name, const char *public_key,
 /* Exe generation. */
 
 /**
- * @brief Write an NSIS installer script to file.
+ * @brief Create a Windows EXE installer for adding a user.
  *
- * @param[in]  script_name   Name of script.
- * @param[in]  package_name  Name of package.
- * @param[in]  user_name     User name.
- * @param[in]  password      User password.
- *
- * @return 0 success, -1 error.
- */
-static int
-create_nsis_script (const gchar *script_name, const gchar *package_name,
-                    const gchar *user_name, const gchar *password)
-{
-  FILE* fd;
-
-  fd = fopen (script_name, "w");
-  if (fd == NULL)
-    return -1;
-
-  // Write part about default section
-  fprintf (fd, "#Installer filename\n");
-  fprintf (fd, "outfile ");
-  fprintf (fd, "%s", package_name);
-  fprintf (fd, "\n\n");
-
-  fprintf (fd, "# Set desktop as install directory\n");
-  fprintf (fd, "installDir $DESKTOP\n\n");
-
-  fprintf (fd, "# Put some text\n");
-  fprintf (fd, "BrandingText \"GVM Local Security Checks User\"\n\n");
-
-  // For ms vista installers we need the UAC plugin and use the following lines:
-  // This requires the user to have the UAC plugin installed and to provide the
-  // the path to it.
-  //fprintf (fd, "# Request application privileges for Windows Vista\n");
-  //fprintf (fd, "RequestExecutionLevel admin\n\n");
-
-  fprintf (fd, "#\n# Default (installer) section.\n#\n");
-  fprintf (fd, "section\n\n");
-
-  fprintf (fd, "# Define output path\n");
-  fprintf (fd, "setOutPath $INSTDIR\n\n");
-
-  fprintf (fd, "# Uninstaller name\n");
-  fprintf (fd, "writeUninstaller $INSTDIR\\openvas_lsc_remove_%s.exe\n\n",
-           user_name);
-
-  // Need to find localized Administrators group name, create a
-  // GetAdminGroupName - vb script (Thanks to Thomas Rotter)
-  fprintf (fd, "# Create Thomas Rotters GetAdminGroupName.vb script\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set objWMIService = GetObject($\\\"winmgmts:\\\\.\\root\\cimv2$\\\") > $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" \"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set colAccounts = objWMIService.ExecQuery ($\\\"Select * From Win32_Group Where SID = 'S-1-5-32-544'$\\\")  >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo For Each objAccount in colAccounts >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Wscript.Echo objAccount.Name >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Next >> $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n");
-  fprintf (fd, "ExecWait \"cmd /C cscript //nologo $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\" > $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n\n");
-
-  /** @todo provide /comment:"GVM User" /fullname:"GVM Testuser" */
-  fprintf (fd, "# Create batch script that installs the user\n");
-  fprintf (fd, "ExecWait \"cmd /C Echo Set /P AdminGroupName= ^<$\\\"%%temp%%\\AdminGroupName.txt$\\\" > $\\\"%%temp%%\\AddUser.bat$\\\"\" \n");
-  fprintf (fd, "ExecWait \"cmd /C Echo net user %s %s /add /active:yes >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n",
-           user_name,
-           password);
-  fprintf (fd, "ExecWait \"cmd /C Echo net localgroup %%AdminGroupName%% %%COMPUTERNAME%%\\%s /add >> $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n",
-           user_name);
-
-  fprintf (fd, "# Execute AddUser script\n");
-  fprintf (fd, "ExecWait \"cmd /C $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
-
-  // Remove up temporary files for localized Administrators group names
-  fprintf (fd, "# Remove temporary files for localized admin group names\n");
-  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AdminGroupName.txt$\\\"\"\n");
-  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\GetAdminGroupName.vbs$\\\"\"\n\n");
-  fprintf (fd, "ExecWait \"del $\\\"%%temp%%\\AddUser.bat$\\\"\"\n\n");
-
-  /** @todo Display note about NTLM and SMB signing and encryption, 'Easy Filesharing' in WIN XP */
-  fprintf (fd, "# Display message that everything seems to be fine\n");
-  fprintf (fd, "messageBox MB_OK \"A user has been added. An uninstaller is placed on your Desktop.\"\n\n");
-
-  fprintf (fd, "# Default (install) section end\n");
-  fprintf (fd, "sectionEnd\n\n");
-
-  // Write part about uninstall section
-  fprintf (fd, "#\n# Uninstaller section.\n#\n");
-  fprintf (fd, "section \"Uninstall\"\n\n");
-
-  fprintf (fd, "# Run cmd to remove user\n");
-  fprintf (fd, "ExecWait \"net user %s /delete\"\n\n",
-           user_name);
-
-  /** @todo Uninstaller should remove itself */
-  fprintf (fd, "# Unistaller should remove itself (from desktop/installdir)\n\n");
-
-  fprintf (fd, "# Display message that everything seems to be fine\n");
-  fprintf (fd, "messageBox MB_OK \"A user has been removed. You can now safely remove the uninstaller from your Desktop.\"\n\n");
-
-  fprintf (fd, "# Uninstaller section end\n");
-  fprintf (fd, "sectionEnd\n\n");
-
-  if (fclose (fd))
-    return -1;
-
-  return 0;
-}
-
-/**
- * @brief Execute makensis to create a package from an NSIS script.
- *
- * Run makensis in the directory that nsis_script is in.
- *
- * @param[in]  nsis_script  Name of resulting package.
+ * @param[in]  username     Name of user.
+ * @param[in]  password     Password of user.
+ * @param[in]  to_filename  Destination filename for package.
  *
  * @return 0 success, -1 error.
  */
-static int
-execute_makensis (const gchar *nsis_script)
+static gboolean
+lsc_user_exe_create (const gchar *username,
+                     const gchar *password,
+                     const gchar *to_filename)
 {
-  gchar *dirname = g_path_get_dirname (nsis_script);
-  gchar **cmd;
   gint exit_status;
-  int ret = 0;
+  gchar **cmd;
+  char tmpdir[] = "/tmp/lsc_user_exe_create_XXXXXX";
+  gchar *password_file_path, *template_file_path;
+  gboolean ret = 0;
   gchar *standard_out = NULL;
   gchar *standard_err = NULL;
+  GError *error = NULL;
 
-  cmd = (gchar **) g_malloc (3 * sizeof (gchar *));
+  /* Create a temporary directory. */
 
-  cmd[0] = g_strdup ("makensis");
-  cmd[1] = g_strdup (nsis_script);
-  cmd[2] = NULL;
-  g_debug ("--- executing makensis");
-  g_debug ("%s: Spawning in %s: %s %s",
-           __func__,
-           dirname, cmd[0], cmd[1]);
-  if ((g_spawn_sync (dirname,
+  g_debug ("%s: create temporary directory", __func__);
+  if (mkdtemp (tmpdir) == NULL)
+    return FALSE;
+  g_debug ("%s: temporary directory: %s", __func__, tmpdir);
+
+  /* Create password file. */
+
+  g_debug ("%s: create password file", __func__);
+  password_file_path = g_build_filename (tmpdir, "pw.txt", NULL);
+  if (g_file_set_contents (password_file_path, password, -1, &error) == FALSE)
+    {
+      g_warning ("%s: failed to create password file %s: %s",
+                 __func__, password_file_path, error->message);
+      g_free (password_file_path);
+      return -1;
+    }
+
+  /* Build template file path */
+  template_file_path = g_build_filename (GVMD_DATA_DIR, "template.nsis", NULL);
+
+  /* Execute create-deb script with the temporary directory as the
+   * target and the public key in the temporary directory as the key. */
+
+  g_debug ("%s: Attempting EXE build", __func__);
+  cmd = (gchar **) g_malloc (7 * sizeof (gchar *));
+  cmd[0] = g_build_filename (GVM_DATA_DIR,
+                             "gvm-lsc-exe-creator",
+                             NULL);
+  cmd[1] = g_strdup (username);
+  cmd[2] = g_strdup (password_file_path);
+  cmd[3] = g_strdup (tmpdir);
+  cmd[4] = g_strdup (to_filename);
+  cmd[5] = g_strdup (template_file_path);
+  cmd[6] = NULL;
+  g_debug ("%s: Spawning in %s: %s %s %s %s %s %s",
+           __func__, tmpdir,
+           cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5]);
+  if ((g_spawn_sync (tmpdir,
                      cmd,
                      NULL,                 /* Environment. */
                      G_SPAWN_SEARCH_PATH,
-                     NULL,                 /* Setup func. */
+                     NULL,                 /* Setup function. */
                      NULL,
                      &standard_out,
                      &standard_err,
                      &exit_status,
-                     NULL) == FALSE)
+                     NULL)
+       == FALSE)
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
@@ -704,55 +633,33 @@ execute_makensis (const gchar *nsis_script)
                  exit_status,
                  WIFEXITED (exit_status),
                  WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s", __func__, standard_out);
-      g_debug ("%s: stderr: %s", __func__, standard_err);
+      g_message ("%s: stdout: %s", __func__, standard_out);
+      g_message ("%s: stderr: %s", __func__, standard_err);
       ret = -1;
     }
 
   g_free (cmd[0]);
   g_free (cmd[1]);
+  g_free (cmd[2]);
+  g_free (cmd[3]);
+  g_free (cmd[4]);
+  g_free (cmd[5]);
   g_free (cmd);
-  g_free (dirname);
+  g_free (password_file_path);
+  g_free (template_file_path);
   g_free (standard_out);
   g_free (standard_err);
 
+  /* Remove the copy of the public key and the temporary directory. */
+
+  if (gvm_file_remove_recurse (tmpdir) != 0 && ret == 0)
+    {
+      g_warning ("%s: failed to remove temporary directory %s",
+                 __func__, tmpdir);
+      ret = -1;
+    }
+
   return ret;
-}
-
-/**
- * @brief Create an NSIS package.
- *
- * @param[in]  user_name    Name of user.
- * @param[in]  password     Password of user.
- * @param[in]  to_filename  Destination filename for package.
- *
- * @return 0 success, -1 error.
- */
-static int
-lsc_user_exe_create (const gchar *user_name, const gchar *password,
-                     const gchar *to_filename)
-{
-  gchar *dirname = g_path_get_dirname (to_filename);
-  gchar *nsis_script = g_build_filename (dirname, "p.nsis", NULL);
-
-  g_free (dirname);
-
-  if (create_nsis_script (nsis_script, to_filename, user_name, password))
-    {
-      g_warning ("%s: Failed to create NSIS script", __func__);
-      g_free (nsis_script);
-      return -1;
-    }
-
-  if (execute_makensis (nsis_script))
-    {
-      g_warning ("%s: Failed to execute makensis", __func__);
-      g_free (nsis_script);
-      return -1;
-    }
-
-  g_free (nsis_script);
-  return 0;
 }
 
 /**
