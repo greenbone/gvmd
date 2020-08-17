@@ -21,6 +21,7 @@ Prerequisites:
 * pkg-config
 * libical >= 1.0.0
 * xml_split (recommended, lowers sync RAM usage, Debian package: xml-twig-tools)
+* xsltproc (Debian package: xsltproc)
 
 Prerequisites for certificate generation:
 * GnuTLS certtool
