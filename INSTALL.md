@@ -16,10 +16,11 @@ Prerequisites:
 * PostgreSQL database >= 9.6 (Debian packages: libpq-dev postgresql-server-dev-11)
 * pkg-config (Debian package: pkg-config)
 * libical >= 1.0.0 (Debian package: libical-dev)
+* xsltproc (Debian package: xsltproc)
 
 Install these prerequisites on Debian GNU/Linux 'Buster' 10:
 
-    apt-get install gcc cmake libglib2.0-dev libgnutls28-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev
+    apt-get install gcc cmake libglib2.0-dev libgnutls28-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev xsltproc
 
 Prerequisites for building documentation:
 * Doxygen
@@ -641,7 +642,7 @@ Prerequisites for Tipping Point alert:
 Prerequisites for key generation on systems with low entropy:
 * haveged (or a similar tool)
 
-Prerequisites for S/MIME suport (e.g. email encryption):
+Prerequisites for S/MIME support (e.g. email encryption):
 * GNU privacy guard - S/MIME version (Debian package: gpgsm)
 
 Prerequisites for certificate generation:
