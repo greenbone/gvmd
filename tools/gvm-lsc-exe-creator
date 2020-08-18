@@ -26,41 +26,45 @@ import subprocess
 import sys
 import tempfile
 
-# Parse command line arguments
-description = "Generate a Windows EXE credential installer"
-argparser = argparse.ArgumentParser(description=description)
-argparser.add_argument("username",
-                       help="Name of the user to create")
-argparser.add_argument("password_file_path",
-                       help="Path to a file containing the user's password")
-argparser.add_argument("temp_dir",
-                       help="Directory to create temporary files in")
-argparser.add_argument("output_path",
-                       help="Path for finished installer")
-argparser.add_argument("template_path",
-                       help="Path of the NSIS script template file")
-args = argparser.parse_args()
+def main():
+    # Parse command line arguments
+    description = "Generate a Windows EXE credential installer"
+    argparser = argparse.ArgumentParser(description=description)
+    argparser.add_argument("username",
+                          help="Name of the user to create")
+    argparser.add_argument("password_file_path",
+                          help="Path to a file containing the user's password")
+    argparser.add_argument("temp_dir",
+                          help="Directory to create temporary files in")
+    argparser.add_argument("output_path",
+                          help="Path for finished installer")
+    argparser.add_argument("template_path",
+                          help="Path of the NSIS script template file")
+    args = argparser.parse_args()
 
-# Read password
-with open(args.password_file_path, "r") as password_file:
-    password = password_file.read().rstrip("\n")
+    # Read password
+    with open(args.password_file_path, "r") as password_file:
+        password = password_file.read().rstrip("\n")
 
-# Read NSIS script template
-with open(args.template_path, "r") as template_file:
-    template_string = template_file.read()
+    # Read NSIS script template
+    with open(args.template_path, "r") as template_file:
+        template_string = template_file.read()
 
-template = string.Template(template_string)
+    template = string.Template(template_string)
 
-# Create NSIS script by replacing placeholders in the given template
-substitutions = {
-                  "__USERNAME__" : args.username,
-                  "__PASSWORD__" : password,
-                  "__OUTPUT_PATH__" : args.output_path,
-                }
-nsis_script = template.safe_substitute(substitutions)
-nsis_script_path = os.path.join(args.temp_dir, "script.nsis")
-with open(nsis_script_path, "w") as nsis_script_file:
-    nsis_script_file.write(nsis_script)
+    # Create NSIS script by replacing placeholders in the given template
+    substitutions = {
+                      "__USERNAME__" : args.username,
+                      "__PASSWORD__" : password,
+                      "__OUTPUT_PATH__" : args.output_path,
+                    }
+    nsis_script = template.safe_substitute(substitutions)
+    nsis_script_path = os.path.join(args.temp_dir, "script.nsis")
+    with open(nsis_script_path, "w") as nsis_script_file:
+        nsis_script_file.write(nsis_script)
 
-run = subprocess.run(["makensis", nsis_script_path])
-sys,exit(run.returncode)
+    run = subprocess.run(["makensis", nsis_script_path])
+    sys.exit(run.returncode)
+
+if __name__ == "__main__":
+    main()
