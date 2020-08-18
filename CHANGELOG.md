@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add filter columns for special NVT tags [#1200](https://github.com/greenbone/gvmd/pull/1200)
 
+### Changed
+- The xsltproc binary is now marked as mandatory [#1261](https://github.com/greenbone/gvmd/pull/1261)
+
 ### Fixed
 - Fix NVTs list in CVE details [#1098](https://github.com/greenbone/gvmd/pull/1098)
 - Fix handling of duplicate settings [#1105](https://github.com/greenbone/gvmd/pull/1105)
