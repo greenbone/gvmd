@@ -1816,8 +1816,8 @@ delete_port_range (const char *port_range_id, int dummy)
 /**
  * @brief Filter columns for Port List iterator.
  */
-#define PORT_LIST_ITERATOR_FILTER_COLUMNS                           \
- { GET_ITERATOR_FILTER_COLUMNS,  "total", "tcp", "udp", NULL }
+#define PORT_LIST_ITERATOR_FILTER_COLUMNS                                    \
+ { GET_ITERATOR_FILTER_COLUMNS,  "total", "tcp", "udp", "predefined", NULL }
 
 /**
  * @brief Port List iterator columns.

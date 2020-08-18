@@ -7296,6 +7296,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </type>
             <summary>Usage type</summary>
           </column>
+          <column>
+            <name>predefined</name>
+            <type>boolean</type>
+            <summary>Whether the config was created from the feed</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -14278,6 +14283,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>integer</type>
             <summary>Number of UDP ports in the Port List</summary>
           </column>
+          <column>
+            <name>predefined</name>
+            <type>boolean</type>
+            <summary>Whether the Port List was created from the feed</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -15751,6 +15761,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>active</name>
             <type>boolean</type>
             <summary>Whether the report format is active</summary>
+          </column>
+          <column>
+            <name>predefined</name>
+            <type>boolean</type>
+            <summary>Whether the report format was created from the feed</summary>
           </column>
         </filter_keywords>
       </attrib>
