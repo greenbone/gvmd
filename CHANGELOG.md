@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.4] (unreleased)
 
 ### Changed
-- Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260)
+- Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 
