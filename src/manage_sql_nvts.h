@@ -119,6 +119,9 @@ int
 update_or_rebuild_nvts (int);
 
 int
+nvts_feed_version_status ();
+
+int
 manage_update_nvt_cache_osp (const gchar *);
 
 char *

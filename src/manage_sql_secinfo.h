@@ -208,6 +208,9 @@
  */
 #define SECINFO_COMMIT_SIZE_DEFAULT 0
 
+int
+secinfo_feed_version_status ();
+
 void
 manage_sync_scap (sigset_t *);
 

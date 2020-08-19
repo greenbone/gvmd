@@ -7278,6 +7278,53 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
 }
 
 /**
+ * @brief Check if a feed sync is needed without acquiring the feed lock.
+ *
+ * @return TRUE if a feed sync is needed, FALSE otherwise.
+ */
+gboolean
+feed_sync_required ()
+{
+  int feed_status_ret;
+
+  feed_status_ret = secinfo_feed_version_status ("cert");
+  switch (feed_status_ret)
+    {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        g_debug ("%s: CERT database needs to be updated (status %d)",
+                 __func__, feed_status_ret);
+        return TRUE;
+      default:
+        break;
+    }
+
+  feed_status_ret = secinfo_feed_version_status ("scap");
+  switch (feed_status_ret)
+    {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        g_debug ("%s: SCAP database needs to be updated (status %d)",
+                 __func__, feed_status_ret);
+        return TRUE;
+      default:
+        break;
+    }
+
+  if (nvts_feed_version_status () == 1)
+    {
+      g_debug ("%s: NVTs need to be updated", __func__);
+      return TRUE;
+    }
+
+  return FALSE;
+}
+
+/**
  * @brief Perform any syncing that is due.
  *
  * In gvmd, periodically called from the main daemon loop.
@@ -7292,13 +7339,16 @@ manage_sync (sigset_t *sigmask_current,
 {
   lockfile_t lockfile;
 
-  if (feed_lockfile_lock (&lockfile) == 0)
+  if (feed_sync_required ())
     {
-      manage_sync_nvts (fork_update_nvt_cache);
-      manage_sync_scap (sigmask_current);
-      manage_sync_cert (sigmask_current);
+      if (feed_lockfile_lock (&lockfile) == 0)
+        {
+          manage_sync_nvts (fork_update_nvt_cache);
+          manage_sync_scap (sigmask_current);
+          manage_sync_cert (sigmask_current);
 
-      lockfile_unlock (&lockfile);
+          lockfile_unlock (&lockfile);
+        }
     }
 
   manage_sync_configs ();
