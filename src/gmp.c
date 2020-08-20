@@ -12360,6 +12360,7 @@ feed_type_name (int feed_type)
 static int
 get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
 {
+  mode_t old_umask;
   int lockfile;
   int ret;
 
@@ -12367,15 +12368,20 @@ get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
     *timestamp = NULL;
   ret = 0;
 
+  old_umask = umask(0);
   lockfile = open (lockfile_name,
                    O_RDWR | O_CREAT,
                    /* "-rw-rw-r--" */
                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
   if (lockfile == -1)
-    g_warning ("%s: failed to open lock file '%s': %s", __func__,
-               lockfile_name, strerror (errno));
+    {
+      g_warning ("%s: failed to open lock file '%s': %s", __func__,
+                 lockfile_name, strerror (errno));
+      umask (old_umask);
+    }
   else
     {
+      umask (old_umask);
       if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
         {
           if (errno == EWOULDBLOCK)
