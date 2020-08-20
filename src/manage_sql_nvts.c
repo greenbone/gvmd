@@ -1790,6 +1790,44 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 }
 
 /**
+ * @brief Get the VTs feed version from an OSP scanner.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ *
+ * @return The feed version or NULL on error.
+ */
+static char *
+osp_scanner_feed_version (const gchar *update_socket)
+{
+  osp_connection_t *connection;
+  gchar *error;
+  gchar *scanner_feed_version;
+
+  scanner_feed_version = NULL;
+
+  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
+  if (!connection)
+    {
+      g_debug ("%s: failed to connect to %s", __func__, update_socket);
+      return NULL;
+    }
+
+  error = NULL;
+  if (osp_get_vts_version (connection, &scanner_feed_version, &error))
+    {
+      g_debug ("%s: failed to get scanner_feed_version. %s",
+               __func__, error ? : "");
+      g_free (error);
+      osp_connection_close (connection);
+      return NULL;
+    }
+
+  osp_connection_close (connection);
+
+  return scanner_feed_version;
+}
+
+/**
  * @brief Check VTs feed version status via OSP, optionally get versions.
  *
  * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
@@ -1804,8 +1842,6 @@ nvts_feed_version_status_internal (const gchar *update_socket,
                                    gchar **scanner_feed_version_out)
 {
   gchar *db_feed_version, *scanner_feed_version;
-  osp_connection_t *connection;
-  gchar *error;
 
   if (db_feed_version_out)
     *db_feed_version_out = NULL;
@@ -1817,28 +1853,12 @@ nvts_feed_version_status_internal (const gchar *update_socket,
   if (db_feed_version_out && db_feed_version)
     *db_feed_version_out = g_strdup (db_feed_version);
 
-  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
-  if (!connection)
-    {
-      g_debug ("%s: failed to connect to %s", __func__, update_socket);
-      g_free (db_feed_version);
-      return -1;
-    }
-
-  error = NULL;
-  if (osp_get_vts_version (connection, &scanner_feed_version, &error))
-    {
-      g_debug ("%s: failed to get scanner_feed_version. %s",
-               __func__, error ? : "");
-      g_free (error);
-      g_free (db_feed_version);
-      return -1;
-    }
+  scanner_feed_version = osp_scanner_feed_version (update_socket);
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
+  if (scanner_feed_version == NULL)
+    return -1;
   if (scanner_feed_version_out && scanner_feed_version)
     *scanner_feed_version_out = g_strdup (scanner_feed_version);
-
-  osp_connection_close (connection);
 
   if ((db_feed_version == NULL)
       || strcmp (scanner_feed_version, db_feed_version))
