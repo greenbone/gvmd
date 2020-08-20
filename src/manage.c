@@ -7339,6 +7339,9 @@ manage_sync (sigset_t *sigmask_current,
 {
   lockfile_t lockfile;
 
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+
   if (feed_sync_required ())
     {
       if (feed_lockfile_lock (&lockfile) == 0)
