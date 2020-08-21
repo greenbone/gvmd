@@ -4240,6 +4240,8 @@ manage_feed_timestamp (const gchar *name)
 /**
  * @brief Gets the SCAP or CERT database version status.
  *
+ * @param[in]  feed_type  The feed type to check. Must be "cert" or "scap".
+ *
  * @return 0 feed current, 1 update needed, 2 database missing,
  *         3 missing "last_update", 4 inconsistent data, -1 error.
  */
@@ -4248,12 +4250,25 @@ secinfo_feed_version_status (const char *feed_type)
 {
   int last_feed_update, last_db_update;
 
+  if (strcmp (feed_type, "cert") == 0)
+    {
+      if (manage_cert_loaded () == 0)
+        return 2;
+    }
+  else if (strcmp (feed_type, "scap") == 0)
+    {
+      if (manage_scap_loaded () == 0)
+        return 2;
+    }
+  else
+    {
+      g_warning ("%s: Unexpected feed type: %s", __func__, feed_type);
+      return -1;
+    }
+
   last_feed_update = manage_feed_timestamp (feed_type);
   if (last_feed_update == -1)
     return -1;
-
-  if (manage_cert_loaded () == 0)
-    return 2;
 
   last_db_update = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
                             "                  WHERE name = 'last_update'),"
