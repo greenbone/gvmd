@@ -40679,9 +40679,6 @@ manage_get_scanners (GSList *log_config, const gchar *database)
           case SCANNER_TYPE_CVE:
             scanner_type_str = "CVE";
             break;
-          case SCANNER_TYPE_GMP:
-            scanner_type_str = "GMP";
-            break;
           case SCANNER_TYPE_OSP_SENSOR:
             scanner_type_str = "OSP-Sensor";
             break;
