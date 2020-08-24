@@ -3398,9 +3398,7 @@ relay_supports_scanner_type (const char *original_host, int original_port,
   const char *protocol;
   gboolean ret = FALSE;
 
-  if (type == SCANNER_TYPE_GMP)
-    protocol = "GMP";
-  else if (type == SCANNER_TYPE_OSP_SENSOR)
+  if (type == SCANNER_TYPE_OSP_SENSOR)
     protocol = "OSP";
   else
     return FALSE;
