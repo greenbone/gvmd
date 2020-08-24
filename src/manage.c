@@ -1733,39 +1733,6 @@ connection_authenticate (gvm_connection_t *connection)
 }
 
 /**
- * @brief Authenticate with a slave.
- *
- * @param[in]  session  GNUTLS session.
- * @param[in]  slave    Slave.
- *
- * @return 0 success, -1 error.
- */
-static int
-slave_authenticate (gnutls_session_t *session, scanner_t slave)
-{
-  int ret;
-  gchar *login, *password;
-
-  login = scanner_login (slave);
-  if (login == NULL)
-    return -1;
-
-  password = scanner_password (slave);
-  if (password == NULL)
-    {
-      g_free (login);
-      return -1;
-    }
-
-  ret = gmp_authenticate (session, login, password);
-  g_free (login);
-  g_free (password);
-  if (ret)
-    return -1;
-  return 0;
-}
-
-/**
  * @brief Connect to a slave.
  *
  * @param[in]  connection  Connection.
@@ -6329,140 +6296,6 @@ report_type_iterator_title (report_type_iterator_t* iterator)
 }
 
 /**
- * @brief Get a system report from a GMP slave.
- *
- * @param[in]  name       Name of report.
- * @param[in]  duration   Time range of report, in seconds.
- * @param[in]  start_time Time of first data point in report.
- * @param[in]  end_time   Time of last data point in report.
- * @param[in]  slave      GMP scanner slave to get report from.
- * @param[out] report     On success, report in base64 if such a report exists
- *                        else NULL.  Arbitrary on error.
- *
- * @return 0 if successful, 4 could not connect to slave, 5 authentication
- * failed, 6 failed to get system report, -1 otherwise.
- */
-static int
-gmp_slave_system_report (const char *name, const char *duration,
-                         const char *start_time, const char *end_time,
-                         scanner_t slave, char **report)
-{
-  char *original_host, *original_ca_cert;
-  int original_port, new_port, socket;
-  gnutls_session_t session;
-  entity_t get, entity;
-  entities_t reports;
-  gmp_get_system_reports_opts_t opts;
-  gchar *new_host, *new_ca_cert;
-  int ret;
-
-  if (slave == 0)
-    return -1;
-
-  original_host = scanner_host (slave);
-  if (original_host == NULL)
-    return -1;
-
-  g_debug ("   %s: host: %s", __func__, original_host);
-
-  original_port = scanner_port (slave);
-  if (original_port == -1)
-    {
-      free (original_host);
-      return -1;
-    }
-
-  original_ca_cert = scanner_ca_pub (slave);
-
-  ret = slave_get_relay (original_host,
-                         original_port,
-                         original_ca_cert,
-                         "GMP",
-                         &new_host,
-                         &new_port,
-                         &new_ca_cert);
-
-  if (ret == 1)
-    {
-      g_message ("%s: no relay found for %s:%d",
-                 __func__, original_host, original_port);
-      free (original_host);
-      free (original_ca_cert);
-      return 4;
-    }
-  else if (ret)
-    {
-      free (original_host);
-      free (original_ca_cert);
-      return -1;
-    }
-
-  free (original_host);
-  free (original_ca_cert);
-
-  socket = gvm_server_open_verify (&session,
-                                   new_host,
-                                   new_port,
-                                   new_ca_cert,
-                                   NULL,
-                                   NULL,
-                                   1);
-
-  g_free (new_host);
-  g_free (new_ca_cert);
-
-  if (socket == -1)
-    return 4;
-
-  g_debug ("   %s: connected", __func__);
-
-  /* Authenticate using the slave login. */
-
-  if (slave_authenticate (&session, slave))
-    {
-      ret = 5;
-      goto fail;
-    }
-
-  g_debug ("   %s: authenticated", __func__);
-
-  opts = gmp_get_system_reports_opts_defaults;
-  opts.name = name;
-  opts.duration = duration;
-  opts.start_time = start_time;
-  opts.end_time = end_time;
-  opts.brief = 0;
-
-  if (gmp_get_system_reports_ext (&session, opts, &get))
-    {
-      ret = 6;
-      goto fail;
-    }
-
-  gvm_server_close (socket, session);
-
-  reports = get->entities;
-  if ((entity = first_entity (reports))
-      && (strcmp (entity_name (entity), "system_report") == 0))
-    {
-      entity = entity_child (entity, "report");
-      if (entity)
-        {
-          *report = g_strdup (entity_text (entity));
-          return 0;
-        }
-    }
-
-  free_entity (get);
-  g_warning ("   %s: error getting entity", __func__);
-  return 6;
-
- fail:
-  gvm_server_close (socket, session);
-  return ret;
-}
-
-/**
  * @brief Header for fallback system report.
  */
 #define FALLBACK_SYSTEM_REPORT_HEADER \
@@ -6612,7 +6445,6 @@ manage_system_report (const char *name, const char *duration,
   if (slave_id && strcmp (slave_id, "0"))
     {
       scanner_t slave;
-      scanner_type_t slave_type;
 
       slave = 0;
 
@@ -6621,32 +6453,25 @@ manage_system_report (const char *name, const char *duration,
       if (slave == 0)
         return 2;
 
-      slave_type = scanner_type (slave);
-      if (slave_type == SCANNER_TYPE_GMP)
-        return gmp_slave_system_report (name, duration, start_time, end_time,
-                                        slave, report);
+      if (params_count == 1)
+        {
+          // only duration
+          time_t now;
+          now = time (NULL);
+          return get_osp_performance_string (slave,
+                                             now - cmd_param_1,
+                                             now,
+                                             name,
+                                             report);
+        }
       else
         {
-          if (params_count == 1)
-            {
-              // only duration
-              time_t now;
-              now = time (NULL);
-              return get_osp_performance_string (slave,
-                                                 now - cmd_param_1,
-                                                 now,
-                                                 name,
-                                                 report);
-            }
-          else
-            {
-              // start and end time
-              return get_osp_performance_string (slave,
-                                                 cmd_param_1,
-                                                 cmd_param_2,
-                                                 name,
-                                                 report);
-            }
+          // start and end time
+          return get_osp_performance_string (slave,
+                                             cmd_param_1,
+                                             cmd_param_2,
+                                             name,
+                                             report);
         }
     }
 
