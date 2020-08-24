@@ -1,0 +1,19 @@
+[Unit]
+Description=Greenbone Vulnerability Manager daemon (gvmd)
+After=network.target networking.service postgresql.service ospd-openvas.service
+Wants=postgresql.service ospd-openvas.service
+Documentation=man:gvmd(8)
+ConditionKernelCommandLine=!recovery
+
+[Service]
+Type=forking
+User=$GVMD_USER
+Group=$GVMD_GROUP
+PIDFile=${GVM_RUN_DIR}/gvmd.pid
+EnvironmentFile=${DEFAULT_CONFIG_DIR}/gvmd
+ExecStart=${SBINDIR}/gvmd --osp-vt-update=$OSP_VT_UPDATE $OPTIONS
+Restart=always
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

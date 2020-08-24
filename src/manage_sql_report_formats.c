@@ -2599,7 +2599,8 @@ report_format_trust (report_format_t report_format)
  */
 #define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
-   "summary", "description", "trust", "trust_time", "active", NULL }
+   "summary", "description", "trust", "trust_time", "active", "predefined",   \
+   NULL }
 
 /**
  * @brief Report Format iterator columns.
@@ -2628,6 +2629,7 @@ report_format_trust (report_format_t report_format)
    { "trust", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "trust_time", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
@@ -2659,6 +2661,7 @@ report_format_trust (report_format_t report_format)
    { "trust", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "trust_time", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
+   { "predefined", NULL, KEYWORD_TYPE_INTEGER },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 

@@ -168,9 +168,9 @@ set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
 set (GVM_CA_DIR       "${GVMD_STATE_DIR}/trusted_certs")
 
 if (NOT GVM_LIB_INSTALL_DIR)
-	set (GVM_LIB_INSTALL_DIR     "${LIBDIR}")
+  set (GVM_LIB_INSTALL_DIR     "${LIBDIR}")
 else (NOT GVM_LIB_INSTALL_DIR)
-	set (GVM_LIB_INSTALL_DIR "${GVM_LIB_INSTALL_DIR}")
+  set (GVM_LIB_INSTALL_DIR "${GVM_LIB_INSTALL_DIR}")
 endif (NOT GVM_LIB_INSTALL_DIR)
 
 set (GVM_SCANNER_CERTIFICATE "${GVM_STATE_DIR}/CA/servercert.pem")
@@ -188,11 +188,16 @@ if (NOT GVM_FEED_LOCK_PATH)
 endif (NOT GVM_FEED_LOCK_PATH)
 add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
 
+if (NOT OPENVAS_DEFAULT_SOCKET)
+  set (OPENVAS_DEFAULT_SOCKET "/var/run/ospd/ospd.sock")
+endif (NOT OPENVAS_DEFAULT_SOCKET)
+add_definitions (-DOPENVAS_DEFAULT_SOCKET="${OPENVAS_DEFAULT_SOCKET}")
+
 # TODO: Once we separate the RFP signatures out of "plugins" and
 # into var/lib/gvm/rfpsigs/ (via a sync script) then we do not need
 # to know about the NVT_DIR anymore.
 if (NOT GVM_NVT_DIR)
-	set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
+  set (GVM_NVT_DIR "${LOCALSTATEDIR}/lib/openvas/plugins/")
 endif (NOT GVM_NVT_DIR)
 
 if (NOT DATA_OBJECTS_FEED_DIR)
@@ -271,6 +276,10 @@ set (C_FLAGS_DEBUG_GVMD         "-Wredundant-decls")
 if (NOT SKIP_SRC)
   add_subdirectory (src)
 endif (NOT SKIP_SRC)
+
+## Configs (e.g. systemd service file)
+
+add_subdirectory (config)
 
 ## Documentation
 

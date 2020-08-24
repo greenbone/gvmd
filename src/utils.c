@@ -541,6 +541,7 @@ static int
 lock_internal (lockfile_t *lockfile, const gchar *lockfile_name,
                int operation, gboolean name_is_full_path)
 {
+  mode_t old_umask;
   int fd;
   gchar *full_name;
 
@@ -551,6 +552,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_name,
   else
     full_name = g_build_filename (GVM_RUN_DIR, lockfile_name, NULL);
 
+  old_umask = umask (0);
   fd = open (full_name, O_RDWR | O_CREAT,
              /* "-rw-rw-r--" */
              S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
@@ -558,10 +560,12 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_name,
     {
       g_warning ("Failed to open lock file '%s': %s", full_name,
                  strerror (errno));
+      umask (old_umask);
       lockfile->name = NULL;
       g_free (full_name);
       return -1;
     }
+  umask (old_umask);
 
   /* Lock the lockfile. */
 
