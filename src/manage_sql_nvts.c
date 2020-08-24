@@ -1790,6 +1790,101 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 }
 
 /**
+ * @brief Get the VTs feed version from an OSP scanner.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ *
+ * @return The feed version or NULL on error.
+ */
+static char *
+osp_scanner_feed_version (const gchar *update_socket)
+{
+  osp_connection_t *connection;
+  gchar *error;
+  gchar *scanner_feed_version;
+
+  scanner_feed_version = NULL;
+
+  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
+  if (!connection)
+    {
+      g_debug ("%s: failed to connect to %s", __func__, update_socket);
+      return NULL;
+    }
+
+  error = NULL;
+  if (osp_get_vts_version (connection, &scanner_feed_version, &error))
+    {
+      g_debug ("%s: failed to get scanner_feed_version. %s",
+               __func__, error ? : "");
+      g_free (error);
+      osp_connection_close (connection);
+      return NULL;
+    }
+
+  osp_connection_close (connection);
+
+  return scanner_feed_version;
+}
+
+/**
+ * @brief Check VTs feed version status via OSP, optionally get versions.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ * @param[out] db_feed_version_out       Output of database feed version.
+ * @param[out] scanner_feed_version_out  Output of scanner feed version.
+ *
+ * @return 0 VTs feed current, -1 error, 1 VT update needed.
+ */
+static int
+nvts_feed_version_status_internal (const gchar *update_socket,
+                                   gchar **db_feed_version_out,
+                                   gchar **scanner_feed_version_out)
+{
+  gchar *db_feed_version, *scanner_feed_version;
+
+  if (db_feed_version_out)
+    *db_feed_version_out = NULL;
+  if (scanner_feed_version_out)
+    *scanner_feed_version_out = NULL;
+
+  db_feed_version = nvts_feed_version ();
+  g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
+  if (db_feed_version_out && db_feed_version)
+    *db_feed_version_out = g_strdup (db_feed_version);
+
+  scanner_feed_version = osp_scanner_feed_version (update_socket);
+  g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
+  if (scanner_feed_version == NULL)
+    return -1;
+  if (scanner_feed_version_out && scanner_feed_version)
+    *scanner_feed_version_out = g_strdup (scanner_feed_version);
+
+  if ((db_feed_version == NULL)
+      || strcmp (scanner_feed_version, db_feed_version))
+    {
+      g_free (db_feed_version);
+      g_free (scanner_feed_version);
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Check VTs feed version status
+ *
+ * @return 0 VTs feed current, 1 VT update needed, -1 error.
+ */
+int
+nvts_feed_version_status ()
+{
+  return nvts_feed_version_status_internal (get_osp_vt_update_socket (),
+                                            NULL,
+                                            NULL);
+}
+
+/**
  * @brief Update VTs via OSP.
  *
  * Expect to be called in the child after a fork.
@@ -1801,9 +1896,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 int
 manage_update_nvt_cache_osp (const gchar *update_socket)
 {
-  osp_connection_t *connection;
   gchar *db_feed_version, *scanner_feed_version;
-  gchar *error;
+  int ret;
 
   /* Re-open DB after fork. */
 
@@ -1812,43 +1906,25 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
   /* Try update VTs. */
 
-  db_feed_version = nvts_feed_version ();
-  g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
-
-  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
-  if (!connection)
+  ret = nvts_feed_version_status_internal (update_socket,
+                                           &db_feed_version,
+                                           &scanner_feed_version);
+  if (ret == 1)
     {
-      g_debug ("%s: failed to connect to %s", __func__, update_socket);
-      return -1;
-    }
-
-  error = NULL;
-  if (osp_get_vts_version (connection, &scanner_feed_version, &error))
-    {
-      g_debug ("%s: failed to get scanner_feed_version. %s",
-               __func__, error ? : "");
-      g_free (error);
-      return -1;
-    }
-  g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
-
-  osp_connection_close (connection);
-
-  if ((db_feed_version == NULL)
-      || strcmp (scanner_feed_version, db_feed_version))
-    {
-      int ret;
-
-      g_info ("OSP service has different VT status (version %s) from database (version %s, %i VTs). Starting update ...",
-              scanner_feed_version, db_feed_version, sql_int ("SELECT count (*) FROM nvts;"));
+      g_info ("OSP service has different VT status (version %s)"
+              " from database (version %s, %i VTs). Starting update ...",
+              scanner_feed_version, db_feed_version,
+              sql_int ("SELECT count (*) FROM nvts;"));
 
       ret = update_nvt_cache_osp (update_socket, db_feed_version,
                                   scanner_feed_version);
 
+      g_free (db_feed_version);
+      g_free (scanner_feed_version);
       return ret;
     }
 
-  return 0;
+  return ret;
 }
 
 /**
