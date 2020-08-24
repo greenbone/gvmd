@@ -154,9 +154,6 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (const gchar *, int, const gchar *, const gchar *,
-                       const char *);
-
 int
 stop_task_internal (task_t);
 
@@ -20811,20 +20808,6 @@ report_slave_port (report_t report)
 }
 
 /**
- * @brief Return the port of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave port.
- */
-static int
-report_slave_port_int (report_t report)
-{
-  return sql_int ("SELECT slave_port FROM reports WHERE id = %llu;",
-                  report);
-}
-
-/**
  * @brief Return the source interface of a report.
  *
  * @param[in]  report  Report.
@@ -24429,7 +24412,6 @@ int
 delete_report_internal (report_t report)
 {
   task_t task;
-  char *slave_task_uuid;
 
   if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
@@ -24452,45 +24434,6 @@ delete_report_internal (report_t report)
 
   if (report_task (report, &task))
     return -1;
-
-  /* Remove any associated slave task. */
-
-  slave_task_uuid = report_slave_task_uuid (report);
-  g_debug ("%s: slave_task_uuid: %s", __func__, slave_task_uuid);
-  if (slave_task_uuid)
-    {
-      scanner_t slave;
-
-      /* A stopped report leaves the task on the slave.  Try delete the task. */
-
-      slave = task_scanner (task);
-      if (slave)
-        {
-          char *username, *password;
-
-          username = scanner_login (slave);
-          password = scanner_password (slave);
-          if (username && password)
-            {
-              char *host;
-              int port;
-
-              /* Try with values stored on report. */
-              host = report_slave_host (report);
-              port = report_slave_port_int (report);
-              if (host)
-                delete_slave_task (host, port, username, password,
-                                   slave_task_uuid);
-              g_free (host);
-
-              /* TODO If that fails, try with the current values from the
-               *      slave/scanner stored on the report.  And if that fails,
-               *      try with the values from the current slave of the task. */
-            }
-          free (username);
-          free (password);
-        }
-    }
 
   /* Remove the report data. */
 
