@@ -1628,12 +1628,6 @@ run_status_name_internal (task_status_t status)
     }
 }
 
-
-/* Slave tasks. */
-
-/* Defined in gmp.c. */
-void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
-
 /**
  * @brief Set a task to interrupted.
  *
@@ -5164,6 +5158,9 @@ set_schedule_timeout (int new_timeout)
 
 
 /* Slaves. */
+
+/* Defined in gmp.c. */
+void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 /**
  * @brief Delete a task on a slave.
