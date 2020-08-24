@@ -6116,147 +6116,6 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 }
 
 /**
- * @brief Get system report types from a GMP slave.
- *
- * @param[in]   required_type  Single type to limit types to.
- * @param[out]  types          Types on success.
- * @param[out]  start          Actual start of types, which caller must free.
- * @param[out]  slave          GMP slave.
- *
- * @return 0 if successful, 4 could not connect to slave, 5 authentication
- * failed, 6 failed to get system report, -1 otherwise.
- */
-static int
-get_slave_system_report_types (const char *required_type, gchar ***start,
-                               gchar ***types, scanner_t slave)
-{
-  char *original_host, *original_ca_cert, **end;
-  int original_port, new_port, socket;
-  gnutls_session_t session;
-  entity_t get, report;
-  entities_t reports;
-  gchar *new_host, *new_ca_cert;
-  int ret;
-
-  if (slave == 0)
-    return -1;
-
-  original_host = scanner_host (slave);
-  if (original_host == NULL)
-    return -1;
-
-  g_debug ("   %s: host: %s", __func__, original_host);
-
-  original_port = scanner_port (slave);
-  if (original_port == -1)
-    {
-      free (original_host);
-      return -1;
-    }
-
-  original_ca_cert = scanner_ca_pub (slave);
-
-  ret = slave_get_relay (original_host,
-                         original_port,
-                         original_ca_cert,
-                         "GMP",
-                         &new_host,
-                         &new_port,
-                         &new_ca_cert);
-
-  if (ret == 1)
-    {
-      g_message ("%s: no relay found for %s:%d",
-                 __func__, original_host, original_port);
-      free (original_host);
-      free (original_ca_cert);
-      return 4;
-    }
-  else if (ret)
-    {
-      free (original_host);
-      free (original_ca_cert);
-      return -1;
-    }
-
-  free (original_host);
-  free (original_ca_cert);
-
-  socket = gvm_server_open_verify (&session,
-                                   new_host,
-                                   new_port,
-                                   new_ca_cert,
-                                   NULL,
-                                   NULL,
-                                   1);
-
-  g_free (new_host);
-  g_free (new_ca_cert);
-
-  if (socket == -1)
-    return 4;
-
-  g_debug ("   %s: connected", __func__);
-
-  /* Authenticate using the slave login. */
-
-  if (slave_authenticate (&session, slave))
-    {
-      ret = 5;
-      goto fail;
-    }
-
-  g_debug ("   %s: authenticated", __func__);
-
-  if (gmp_get_system_reports (&session, required_type, 1, &get))
-    {
-      ret = 6;
-      goto fail;
-    }
-
-  gvm_server_close (socket, session);
-
-  reports = get->entities;
-  end = *types = *start = g_malloc ((xml_count_entities (reports) + 1)
-                                    * sizeof (gchar*));
-  while ((report = first_entity (reports)))
-    {
-      if (strcmp (entity_name (report), "system_report") == 0)
-        {
-          entity_t name, title;
-          gchar *pair;
-          char *name_text, *title_text;
-          name = entity_child (report, "name");
-          title = entity_child (report, "title");
-          if (name == NULL || title == NULL)
-            {
-              *end = NULL;
-              g_strfreev (*start);
-              free_entity (get);
-              return -1;
-            }
-          name_text = entity_text (name);
-          title_text = entity_text (title);
-          *end = pair = g_malloc (strlen (name_text) + strlen (title_text) + 2);
-          strcpy (pair, name_text);
-          pair += strlen (name_text) + 1;
-          strcpy (pair, title_text);
-          end++;
-        }
-      reports = next_entities (reports);
-    }
-  *end = NULL;
-
-  free_entity (get);
-
-  return 0;
-
- fail:
-  gvm_server_close (socket, session);
-  return ret;
-}
-
-/**
  * @brief Command called by get_system_report_types.
  *        gvmcg stands for gvm-create-graphs.
  */
@@ -6286,8 +6145,8 @@ get_system_report_types (const char *required_type, gchar ***start,
 
   if (slave_id && strcmp (slave_id, "0"))
     {
+      int ret;
       scanner_t slave;
-      scanner_type_t slave_type;
 
       slave = 0;
 
@@ -6296,20 +6155,11 @@ get_system_report_types (const char *required_type, gchar ***start,
       if (slave == 0)
         return 2;
 
-      slave_type = scanner_type (slave);
-      if (slave_type == SCANNER_TYPE_GMP)
-        return get_slave_system_report_types (required_type, start, types,
-                                              slave);
-      else
-        {
-          int ret;
+      // Assume OSP scanner
+      ret = get_osp_performance_string (slave, 0, 0, "titles", &astdout);
 
-          // Assume OSP scanner
-          ret = get_osp_performance_string (slave, 0, 0, "titles", &astdout);
-
-          if (ret)
-            return ret;
-        }
+      if (ret)
+        return ret;
     }
   else
     {
