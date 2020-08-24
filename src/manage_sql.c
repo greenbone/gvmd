@@ -16044,18 +16044,15 @@ manage_migrate_relay_sensors ()
 
   init_iterator (&scanners,
                  "SELECT id, uuid, type, host, port FROM scanners"
-                 " WHERE type in (%d, %d)",
-                 SCANNER_TYPE_GMP,
+                 " WHERE type = %d",
                  SCANNER_TYPE_OSP_SENSOR);
 
   while (next (&scanners))
     {
-      scanner_t scanner;
       scanner_type_t type;
       const char *scanner_id, *host;
       int port;
 
-      scanner = iterator_int64 (&scanners, 0);
       scanner_id = iterator_string (&scanners, 1);
       type = iterator_int (&scanners, 2);
       host = iterator_string (&scanners, 3);
@@ -16063,31 +16060,7 @@ manage_migrate_relay_sensors ()
 
       if (relay_supports_scanner_type (host, port, type) == FALSE)
         {
-          if (type == SCANNER_TYPE_GMP)
-            {
-              if (relay_supports_scanner_type (host, port,
-                                               SCANNER_TYPE_OSP_SENSOR))
-                {
-                  g_message ("%s: No GMP relay found for scanner %s (%s:%d)."
-                             " Changing into OSP Sensor",
-                             __func__, scanner_id, host, port);
-
-                  sql ("UPDATE scanners"
-                       " SET credential = NULL, type = %d"
-                       " WHERE id = %llu",
-                       SCANNER_TYPE_OSP_SENSOR,
-                       scanner);
-
-                  gmp_successes++;
-                }
-              else
-                {
-                  g_message ("%s: No relay found for GMP scanner %s (%s:%d).",
-                            __func__, scanner_id, host, port);
-                  gmp_failures++;
-                }
-            }
-          else if (type == SCANNER_TYPE_OSP_SENSOR)
+          if (type == SCANNER_TYPE_OSP_SENSOR)
             {
               g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
                          __func__, scanner_id, host, port);
