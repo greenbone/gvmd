@@ -39243,26 +39243,12 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
 
   if (credential)
     {
-      if (itype == SCANNER_TYPE_GMP)
-        {
-          if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
-                       credential))
-            {
-              sql_rollback ();
-              return 7;
-            }
-        }
-      else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
+      if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
                    credential))
         {
           sql_rollback ();
           return 6;
         }
-    }
-  else if (itype == SCANNER_TYPE_GMP)
-    {
-      sql_rollback ();
-      return 8;
     }
 
   /* Check whether a scanner with the same name exists already. */
