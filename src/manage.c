@@ -5134,7 +5134,7 @@ set_schedule_timeout (int new_timeout)
 }
 
 
-/* Slaves. */
+/* SecInfo. */
 
 /* Defined in gmp.c. */
 void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
