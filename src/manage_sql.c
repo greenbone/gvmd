@@ -24678,22 +24678,6 @@ report_slave_task_uuid (report_t report)
 }
 
 /**
- * @brief Set the UUID of the slave task, on the local task.
- *
- * @param[in]  report    The report.
- * @param[in]  uuid  UUID.
- */
-void
-set_report_slave_task_uuid (report_t report, const char *uuid)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  sql ("UPDATE reports SET slave_task_uuid = '%s' WHERE id = %llu;",
-       quoted_uuid,
-       report);
-  g_free (quoted_uuid);
-}
-
-/**
  * @brief Prepare a partial report for restarting the scan from the beginning.
  *
  * @param[in]  report  The report.
