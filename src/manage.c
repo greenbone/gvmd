@@ -3801,8 +3801,7 @@ move_task (const char *task_id, const char *slave_id)
     return 3;
 
   slave_scanner_type = scanner_type (slave);
-  if (slave_scanner_type != SCANNER_TYPE_OPENVAS
-      && slave_scanner_type != SCANNER_TYPE_GMP)
+  if (slave_scanner_type != SCANNER_TYPE_OPENVAS)
     return 7;
 
   /* Make sure current scanner supports slavery. */
@@ -3812,8 +3811,7 @@ move_task (const char *task_id, const char *slave_id)
     return -1;
 
   task_scanner_type = scanner_type (scanner);
-  if (task_scanner_type != SCANNER_TYPE_OPENVAS
-      && task_scanner_type != SCANNER_TYPE_GMP)
+  if (task_scanner_type != SCANNER_TYPE_OPENVAS)
     return 4;
 
   /* Stop task if required. */
