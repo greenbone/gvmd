@@ -39055,16 +39055,7 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (!unix_socket
-      && itype == SCANNER_TYPE_GMP
-      && (credential_id == NULL
-          || strcmp (credential_id, "") == 0
-          || strcmp (credential_id, "0") == 0))
-    {
-      sql_rollback ();
-      return 6;
-    }
-  else if (unix_socket)
+  if (unix_socket)
     insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
   else
     {
@@ -39084,19 +39075,9 @@ create_scanner (const char* name, const char *comment, const char *host,
               sql_rollback ();
               return 3;
             }
-          if (itype == SCANNER_TYPE_GMP)
-            {
-              if (sql_int ("SELECT type != 'up' FROM credentials"
-                          " WHERE id = %llu;",
-                          credential))
-                {
-                  sql_rollback ();
-                  return 4;
-                }
-            }
-          else if (sql_int ("SELECT type != 'cc' FROM credentials"
-                            " WHERE id = %llu;",
-                            credential))
+          if (sql_int ("SELECT type != 'cc' FROM credentials"
+                       " WHERE id = %llu;",
+                       credential))
             {
               sql_rollback ();
               return 5;
