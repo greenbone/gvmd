@@ -3520,47 +3520,6 @@ slave_get_relay (const char *original_host,
 }
 
 /**
- * @brief Sets up modified connection data to connect to a sensors list host.
- *
- * @param[in]     old_conn  Connection data for the original host.
- * @param[in,out] new_conn  Struct to write local connection data to.
- *
- * @return 0 success, 1 relay not found, -1 error.
- */
-int
-slave_relay_connection (gvm_connection_t *old_conn,
-                        gvm_connection_t *new_conn)
-{
-  int ret;
-
-  assert (old_conn);
-  assert (new_conn);
-  assert (old_conn->host_string);
-
-  memset (new_conn, 0, sizeof (*new_conn));
-
-  ret = slave_get_relay (old_conn->host_string,
-                         old_conn->port,
-                         old_conn->ca_cert,
-                         "GMP",
-                         &new_conn->host_string,
-                         &new_conn->port,
-                         &new_conn->ca_cert);
-
-  if (ret)
-    return ret;
-
-  new_conn->tls = old_conn->tls;
-  new_conn->session = old_conn->session;
-  new_conn->username
-    = old_conn->username ? g_strdup (old_conn->username) : NULL;
-  new_conn->password
-    = old_conn->password ? g_strdup (old_conn->password) : NULL;
-
-  return 0;
-}
-
-/**
  * @brief Start or resume a task.
  *
  * A process will be forked to handle the task, but the forked process will
