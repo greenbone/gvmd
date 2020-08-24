@@ -24601,26 +24601,6 @@ set_report_slave_progress (report_t report, int progress)
 }
 
 /**
- * @brief Return the UUID of the task on the slave.
- *
- * @param[in]  report    The report.
- *
- * @return UUID of the slave task if any, else NULL.
- */
-char*
-report_slave_task_uuid (report_t report)
-{
-  char *uuid;
-
-  uuid = sql_string ("SELECT slave_task_uuid FROM reports WHERE id = %llu;",
-                     report);
-  if (uuid && strlen (uuid))
-    return uuid;
-  free (uuid);
-  return NULL;
-}
-
-/**
  * @brief Prepare a partial report for restarting the scan from the beginning.
  *
  * @param[in]  report  The report.

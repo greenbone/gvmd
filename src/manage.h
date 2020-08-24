@@ -1259,9 +1259,6 @@ report_task (report_t, task_t*);
 void
 report_compliance_by_uuid (const char *, int *, int *, int *);
 
-char *
-report_slave_task_uuid (report_t);
-
 int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
