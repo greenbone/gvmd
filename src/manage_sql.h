@@ -118,11 +118,6 @@
 #define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
 
 /**
- * @brief UUID of 'GMP Slave Check Period' setting.
- */
-#define SETTING_UUID_SLAVE_CHECK_PERIOD "63adb79a-62ae-11e9-91ba-28d24461215b"
-
-/**
  * @brief UUID of 'Debian LSC Package Maintainer' setting.
  */
 #define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"

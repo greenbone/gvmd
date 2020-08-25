@@ -15459,17 +15459,6 @@ check_db_settings ()
          "  '1');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '" SETTING_UUID_SLAVE_CHECK_PERIOD "'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('" SETTING_UUID_SLAVE_CHECK_PERIOD "', NULL,"
-         "  'GMP Slave Check Period',"
-         "  'Period in seconds when polling a GMP slave',"
-         "  25);");
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -50007,8 +49996,6 @@ setting_name (const gchar *uuid)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
-  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
-    return "GMP Slave Check Period";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Debian LSC Package Maintainer";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
@@ -50045,8 +50032,6 @@ setting_description (const gchar *uuid)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "The default maximum number of rows displayed in any listing.";
-  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
-    return "Period in seconds when polling a GMP slave";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Maintainer email address used in generated Debian LSC packages.";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
@@ -50084,14 +50069,6 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
             return 1;
         }
       else if (max_rows < 0)
-        return 1;
-    }
-
-  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
-    {
-      int period;
-      period = atoi (value);
-      if (period <= 0)
         return 1;
     }
 
@@ -50229,7 +50206,6 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
-      && strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES))
@@ -50258,8 +50234,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
-          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0))
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
