@@ -15067,7 +15067,6 @@ task_in_use (task_t task)
          || status == TASK_STATUS_REQUESTED
          || status == TASK_STATUS_RUNNING
          || status == TASK_STATUS_QUEUED
-         || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
          || status == TASK_STATUS_STOP_REQUESTED
          || status == TASK_STATUS_STOP_WAITING;
 }
@@ -16149,7 +16148,6 @@ stop_active_tasks ()
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_QUEUED:
-          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
           case TASK_STATUS_STOP_REQUESTED:
           case TASK_STATUS_STOP_WAITING:
             {
@@ -16184,7 +16182,6 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
@@ -16195,7 +16192,6 @@ stop_active_tasks ()
        TASK_STATUS_RUNNING,
        TASK_STATUS_QUEUED,
        TASK_STATUS_STOP_REQUESTED,
-       TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_WAITING);
 }
 
@@ -17665,14 +17661,12 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_DELETE_REQUESTED
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
-      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOPPED
       || run_status == TASK_STATUS_INTERRUPTED)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
-                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -17687,7 +17681,6 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_DELETE_REQUESTED,
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
-                                     TASK_STATUS_STOP_REQUESTED_GIVEUP,
                                      TASK_STATUS_STOPPED,
                                      TASK_STATUS_INTERRUPTED);
     }
@@ -24188,7 +24181,7 @@ delete_report_internal (report_t report)
   if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u);",
+               " OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
                TASK_STATUS_QUEUED,
@@ -24196,7 +24189,6 @@ delete_report_internal (report_t report)
                TASK_STATUS_DELETE_REQUESTED,
                TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                TASK_STATUS_STOP_REQUESTED,
-               TASK_STATUS_STOP_REQUESTED_GIVEUP,
                TASK_STATUS_STOP_WAITING))
     return 2;
 
@@ -51037,7 +51029,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         case TASK_STATUS_REQUESTED:
         case TASK_STATUS_RUNNING:
         case TASK_STATUS_QUEUED:
-        case TASK_STATUS_STOP_REQUESTED_GIVEUP:
         case TASK_STATUS_STOP_REQUESTED:
         case TASK_STATUS_STOP_WAITING:
           {

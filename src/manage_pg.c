@@ -992,7 +992,7 @@ manage_create_sql_functions ()
            "  SELECT CASE"
            "         WHEN (SELECT scan_run_status FROM reports"
            "               WHERE reports.id = $1)"
-           "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i, %i,"
+           "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i,"
            "                                         %i, %i, %i]))"
            "         THEN true"
            "         ELSE false"
@@ -1003,7 +1003,6 @@ manage_create_sql_functions ()
            TASK_STATUS_DELETE_REQUESTED,
            TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
            TASK_STATUS_STOP_REQUESTED,
-           TASK_STATUS_STOP_REQUESTED_GIVEUP,
            TASK_STATUS_STOPPED,
            TASK_STATUS_INTERRUPTED,
            TASK_STATUS_QUEUED);
@@ -1371,7 +1370,7 @@ manage_create_sql_functions ()
        "         THEN 'Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Running'"
-       "         WHEN $1 = %i OR $1 = %i OR $1 = %i"
+       "         WHEN $1 = %i OR $1 = %i"
        "         THEN 'Stop Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Stopped'"
@@ -1389,7 +1388,6 @@ manage_create_sql_functions ()
        TASK_STATUS_NEW,
        TASK_STATUS_REQUESTED,
        TASK_STATUS_RUNNING,
-       TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_REQUESTED,
        TASK_STATUS_STOP_WAITING,
        TASK_STATUS_STOPPED,

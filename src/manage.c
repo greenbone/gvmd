@@ -1579,7 +1579,6 @@ run_status_name (task_status_t status)
 
       case TASK_STATUS_QUEUED:           return "Queued";
 
-      case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
       case TASK_STATUS_STOP_WAITING:
         return "Stop Requested";
@@ -1616,7 +1615,6 @@ run_status_name_internal (task_status_t status)
 
       case TASK_STATUS_QUEUED:           return "Queued";
 
-      case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_REQUESTED:
         return "Stop Requested";
 
@@ -3842,7 +3840,6 @@ move_task (const char *task_id, const char *slave_id)
 
             status = task_run_status (task);
             while (status == TASK_STATUS_STOP_REQUESTED
-                   || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
                    || status == TASK_STATUS_STOP_WAITING)
               {
                 sleep (5);
@@ -3853,11 +3850,9 @@ move_task (const char *task_id, const char *slave_id)
           return 98;
         break;
       case TASK_STATUS_STOP_REQUESTED:
-      case TASK_STATUS_STOP_REQUESTED_GIVEUP:
       case TASK_STATUS_STOP_WAITING:
         while (status == TASK_STATUS_STOP_REQUESTED
-                || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-                || status == TASK_STATUS_STOP_WAITING)
+               || status == TASK_STATUS_STOP_WAITING)
           {
             sleep (5);
             status = task_run_status (task);
