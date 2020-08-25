@@ -1223,27 +1223,6 @@ report_add_result (report_t, result_t);
 char*
 report_uuid (report_t);
 
-void
-report_set_slave_uuid (report_t, const gchar *);
-
-void
-report_set_slave_name (report_t, const gchar *);
-
-void
-report_set_slave_host (report_t, const gchar *);
-
-void
-report_set_slave_port (report_t, int);
-
-void
-report_set_slave_username (report_t, const gchar *);
-
-void
-report_set_slave_password (report_t, const gchar *);
-
-void
-report_set_source_iface (report_t, const gchar *);
-
 int
 task_last_resumable_report (task_t, report_t *);
 
