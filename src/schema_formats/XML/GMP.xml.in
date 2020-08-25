@@ -2568,35 +2568,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>task</name>
           <pattern>
-            <e>slave</e>
             <e>preferences</e>
           </pattern>
-          <ele>
-            <name>slave</name>
-            <summary>The task slave</summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>host</e>
-              <e>port</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>host</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>port</name>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
           <ele>
             <name>preferences</name>
             <summary>Currently only "source_iface"</summary>
