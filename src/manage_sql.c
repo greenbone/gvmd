@@ -20661,63 +20661,6 @@ report_compliance_by_uuid (const char *report_id,
   g_free (quoted_uuid);
 }
 
-
-/**
- * @brief Return the UUID of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave UUID.
- */
-static char*
-report_slave_uuid (report_t report)
-{
-  return sql_string ("SELECT slave_uuid FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the name of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave name.
- */
-static char*
-report_slave_name (report_t report)
-{
-  return sql_string ("SELECT slave_name FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the host of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave UUID.
- */
-static char*
-report_slave_host (report_t report)
-{
-  return sql_string ("SELECT slave_host FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the port of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave port.
- */
-static char*
-report_slave_port (report_t report)
-{
-  return sql_string ("SELECT slave_port FROM reports WHERE id = %llu;",
-                     report);
-}
-
 /**
  * @brief Return the source interface of a report.
  *
@@ -27705,36 +27648,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</task>");
 
       {
-        char *slave_uuid, *slave_name, *slave_host, *slave_port, *source_iface;
+        char *source_iface;
 
         /* Info about the situation at the time of scan. */
 
         PRINT (out,
                "<scan>"
                "<task>");
-
-        slave_uuid = report_slave_uuid (report);
-        slave_name = report_slave_name (report);
-        slave_host = report_slave_host (report);
-        slave_port = report_slave_port (report);
-
-        if (slave_uuid)
-          /* @id "" means no slave.  Missing SLAVE means we don't know. */
-          PRINT (out,
-                 "<slave id=\"%s\">"
-                 "<name>%s</name>"
-                 "<host>%s</host>"
-                 "<port>%s</port>"
-                 "</slave>",
-                 slave_uuid,
-                 slave_name ? slave_name : "",
-                 slave_host ? slave_host : "",
-                 slave_port ? slave_port : "");
-
-        free (slave_uuid);
-        free (slave_name);
-        free (slave_host);
-        free (slave_port);
 
         source_iface = report_source_iface (report);
 
