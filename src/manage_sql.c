@@ -53192,18 +53192,6 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
   sql_commit ();
 }
 
-/**
- * @brief Get the slave check period.
- *
- * @return Number of seconds.
- */
-int
-manage_slave_check_period ()
-{
-  return sql_int ("SELECT value FROM settings"
-                  " WHERE uuid = '" SETTING_UUID_SLAVE_CHECK_PERIOD "';");
-}
-
 
 /* Tags */
 
