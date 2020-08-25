@@ -2412,11 +2412,6 @@ manage_system_report (const char *, const char *, const char *, const char *,
 
 /* Scanners. */
 
-/**
- * @brief Default for slave update commit size.
- */
-#define SLAVE_COMMIT_SIZE_DEFAULT 0
-
 int
 manage_create_scanner (GSList *, const char *, const char *, const char *,
                        const char *, const char *, const char *, const char *,
@@ -2586,9 +2581,6 @@ osp_scanner_connect (scanner_t);
 
 int
 verify_scanner (const char *, char **);
-
-void
-set_slave_commit_size (int);
 
 const char *
 get_relay_mapper_path ();

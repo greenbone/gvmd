@@ -366,11 +366,6 @@ static manage_connection_forker_t manage_fork_connection;
 static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
- * @brief Maximum number of SQL queries per transaction in slave updates.
- */
-static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
-
-/**
  * @brief Default max number of bytes of reports included in email alerts.
  */
 #define MAX_CONTENT_LENGTH 20000
@@ -41371,23 +41366,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   sql_commit ();
 
   return 0;
-}
-
-
-/* GMP slave scanners. */
-
-/**
- * @brief Set the slave update commit size.
- *
- * @param new_commit_size The new slave update commit size.
- */
-void
-set_slave_commit_size (int new_commit_size)
-{
-  if (new_commit_size < 0)
-    slave_commit_size = 0;
-  else
-    slave_commit_size = new_commit_size;
 }
 
 

@@ -1703,7 +1703,6 @@ gvmd (int argc, char** argv)
   static gchar *scanner_key_priv = NULL;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
-  static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1969,11 +1968,6 @@ gvmd (int argc, char** argv)
           "During CERT and SCAP sync, commit updates to the database every"
           " <number> items, 0 for unlimited, default: "
           G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
-        { "slave-commit-size", '\0', 0, G_OPTION_ARG_INT,
-          &slave_commit_size,
-          "During slave updates, commit after every <number> updated results"
-          " and hosts, 0 for unlimited",
-          "<number>"},
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING,
           &manager_address_string_unix,
           "Listen on UNIX socket at <filename>.",
@@ -2046,9 +2040,6 @@ gvmd (int argc, char** argv)
   /* Set schedule_timeout */
 
   set_schedule_timeout (schedule_timeout);
-
-  /* Set slave commit size */
-  set_slave_commit_size (slave_commit_size);
 
   /* Set SecInfo update commit size */
 
