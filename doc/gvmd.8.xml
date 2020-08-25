@@ -379,13 +379,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
-      <p><opt>--slave-commit-size=<arg>NUMBER</arg></opt></p>
-      <optdesc>
-        <p>During slave updates, commit after every NUMBER updated results and
-           hosts, 0 for unlimited.</p>
-      </optdesc>
-    </option>
-    <option>
       <p><opt>-c, --unix-socket=<arg>FILENAME</arg></opt></p>
       <optdesc>
         <p>Listen on UNIX socket at FILENAME.</p>
