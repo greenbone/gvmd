@@ -11,7 +11,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 
-## [20.08] (unreleased)
+## [20.8.1] (unreleased)
+
+### Added
+- Added ability to enter Subject Alternative Names (SAN) when generating a CSR [#1246](https://github.com/greenbone/gvmd/pull/1246)
+- Add filter term 'predefined' [#1263](https://github.com/greenbone/gvmd/pull/1263)
+
+### Changed
+- Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
+- The xsltproc binary is now marked as mandatory [#1259](https://github.com/greenbone/gvmd/pull/1259)
+- Check feed status without acquiring lock [#1266](https://github.com/greenbone/gvmd/pull/1266)
+
+### Fixed
+- Add dummy functions to allow restoring old dumps [#1251](https://github.com/greenbone/gvmd/pull/1251)
+- Fix delta sorting for unusual filter sort terms [#1249](https://github.com/greenbone/gvmd/pull/1249)
+- Fix SCP alert authentication and logging [#1264](https://github.com/greenbone/gvmd/pull/1264)
+- Set file mode creation mask for feed lock handling [#1265](https://github.com/greenbone/gvmd/pull/1265)
+
+### Removed
+
+[20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
+
+## [20.8.0] (2020-08-11)
 
 ### Added
 - Add setting "BPM Dashboard Configuration" [#764](https://github.com/greenbone/gvmd/pull/764)
@@ -45,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add filter columns for special NVT tags [#1199](https://github.com/greenbone/gvmd/pull/1199)
 - Add currently_syncing for NVTs in GMP get_feeds [#1210](https://github.com/greenbone/gvmd/pull/1210)
 - Add logging for ANALYZE at end of migration [#1211](https://github.com/greenbone/gvmd/pull/1211)
+- Basic systemd, logrotate and config files have been added [#1240](https://github.com/greenbone/gvmd/pull/1240)
 
 ### Changed
 - Update SCAP and CERT feed info in sync scripts [#810](https://github.com/greenbone/gvmd/pull/810)
@@ -72,6 +94,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sync SCAP using a second schema [#1111](https://github.com/greenbone/gvmd/pull/1111)
 - Use error variable in osp_get_vts_version(). [#1159](https://github.com/greenbone/gvmd/pull/1159)
 - Include unknown preferences when uploading or syncing configs [#1005](https://github.com/greenbone/gvmd/pull/1005)
+- Set the default OSPD unix socket path to /var/run/ospd/ospd.sock [#1238](https://github.com/greenbone/gvmd/pull/1238)
+- The default OSPD unix path is now configurable [#1244](https://github.com/greenbone/gvmd/pull/1244)
 
 ### Fixed
 - Add NULL check in nvts_feed_version_epoch [#768](https://github.com/greenbone/gvmd/pull/768)
@@ -149,6 +173,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow group access to lockfile and fix growing or empty timestamp [#1213](https://github.com/greenbone/gvmd/pull/1213)
 - Ignore whitespace when checking for changed delta results [#1219](https://github.com/greenbone/gvmd/pull/1219)
 - Check permissions when applying tag in filter [#1222](https://github.com/greenbone/gvmd/pull/1222)
+- Add missing min_qod to FILTERS in GET_VULNS response [#1224](https://github.com/greenbone/gvmd/pull/1224)
+- Improve EXE installer NSIS script generation [#1226](https://github.com/greenbone/gvmd/pull/1226)
+- Add qod as name in results columns, for sorting [#1243](https://github.com/greenbone/gvmd/pull/1243)
 
 ### Removed
 - Remove support for "All SecInfo": removal of "allinfo" for type in get_info [#790](https://github.com/greenbone/gvmd/pull/790)
@@ -164,7 +191,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove parallel from target options. [#1119](https://github.com/greenbone/gvmd/pull/1119)
 - Remove default port list from CREATE_TARGET [#1151](https://github.com/greenbone/gvmd/pull/1151)
 
-[20.08]: https://github.com/greenbone/gvmd/compare/v9.0.0...gvmd-20.08
+[20.8.0]: https://github.com/greenbone/gvmd/compare/v9.0.0...v20.8.0
 
 ## [9.0.0] (2019-10-11)
 

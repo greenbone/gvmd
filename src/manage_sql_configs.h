@@ -27,7 +27,7 @@
 #define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "families_total",             \
    "nvts_total", "families_trend", "nvts_trend", "type", "usage_type",        \
-   NULL }
+   "predefined", NULL }
 
 /**
  * @brief Scan config iterator columns.

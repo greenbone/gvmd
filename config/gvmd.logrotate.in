@@ -1,0 +1,8 @@
+${GVM_LOG_DIR}/gvmd.log {
+	compress
+	missingok
+	notifempty
+	sharedscripts
+	copytruncate
+}
+

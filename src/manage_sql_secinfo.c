@@ -4208,8 +4208,9 @@ manage_feed_timestamp (const gchar *name)
         stamp = 0;
       else
         {
-          g_warning ("%s: Failed to get timestamp: %s",
+          g_warning ("%s: Failed to get %s feed timestamp: %s",
                      __func__,
+                     name,
                      error->message);
           return -1;
         }
@@ -4218,8 +4219,9 @@ manage_feed_timestamp (const gchar *name)
     {
       if (strlen (timestamp) < 8)
         {
-          g_warning ("%s: Feed timestamp too short: %s",
+          g_warning ("%s: %s feed timestamp too short: %s",
                      __func__,
+                     name,
                      timestamp);
           g_free (timestamp);
           return -1;
@@ -4233,6 +4235,64 @@ manage_feed_timestamp (const gchar *name)
     }
 
  return stamp;
+}
+
+/**
+ * @brief Gets the SCAP or CERT database version status.
+ *
+ * @param[in]  feed_type  The feed type to check. Must be "cert" or "scap".
+ *
+ * @return 0 feed current, 1 update needed, 2 database missing,
+ *         3 missing "last_update", 4 inconsistent data, -1 error.
+ */
+int
+secinfo_feed_version_status (const char *feed_type)
+{
+  int last_feed_update, last_db_update;
+
+  if (strcmp (feed_type, "cert") == 0)
+    {
+      if (manage_cert_loaded () == 0)
+        return 2;
+    }
+  else if (strcmp (feed_type, "scap") == 0)
+    {
+      if (manage_scap_loaded () == 0)
+        return 2;
+    }
+  else
+    {
+      g_warning ("%s: Unexpected feed type: %s", __func__, feed_type);
+      return -1;
+    }
+
+  last_feed_update = manage_feed_timestamp (feed_type);
+  if (last_feed_update == -1)
+    return -1;
+
+  last_db_update = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
+                            "                  WHERE name = 'last_update'),"
+                            "                 '-3');",
+                            feed_type);
+  if (last_db_update == -3)
+    return 3;
+  else if (last_db_update < 0)
+    return 4;
+  else
+    {
+      if (last_db_update == last_feed_update)
+        {
+          return 0;
+        }
+
+      if (last_db_update > last_feed_update)
+        {
+          g_warning ("%s: last %s database update later than last feed update",
+                     __func__, feed_type);
+          return -1;
+        }
+    }
+  return 1;
 }
 
 

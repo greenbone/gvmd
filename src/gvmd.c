@@ -276,6 +276,11 @@ static gchar *dh_params_option = NULL;
 static int update_in_progress = 0;
 
 /**
+ * @brief Whether a feed version check is in progress.
+ */
+static int feed_version_check_in_progress = 0;
+
+/**
  * @brief Logging parameters, as passed to setup_log_handlers.
  */
 GSList *log_config = NULL;
@@ -1014,9 +1019,15 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
 {
   int status, pid;
   while ((pid = waitpid (-1, &status, WNOHANG)) > 0)
-    if (update_in_progress == pid)
-      /* This was the NVT update child, so allow updates again. */
-      update_in_progress = 0;
+    {
+      if (update_in_progress == pid)
+        /* This was the NVT update child, so allow updates again. */
+        update_in_progress = 0;
+
+      if (feed_version_check_in_progress == pid)
+        /* This was a version check child, so allow version checks again */
+        feed_version_check_in_progress = 0;
+    }
 }
 
 
@@ -1191,6 +1202,88 @@ fork_update_nvt_cache ()
 }
 
 /**
+ * @brief Forks a process to sync the feed.
+ *
+ * @return 0 success, 1 check in progress, -1 error.  Always exits with
+ *         EXIT_SUCCESS in child.
+ */
+static int
+fork_feed_sync ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (feed_version_check_in_progress)
+    {
+      g_debug ("%s: Feed version check skipped because one"
+               " is already in progress",
+              __func__);
+      return 1;
+    }
+
+  feed_version_check_in_progress = 1;
+
+  /* Block SIGCHLD until parent records the value of the child PID. */
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.   */
+
+        proctitle_set ("gvmd: Synchronizing feed data");
+
+        /* Clean up the process. */
+
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+        /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
+        cleanup_manage_process (FALSE);
+        if (manager_socket > -1) close (manager_socket);
+        if (manager_socket_2 > -1) close (manager_socket_2);
+
+        /* Check the feed version. */
+
+        manage_sync (sigmask_normal, fork_update_nvt_cache);
+
+        /* Exit. */
+
+        cleanup_manage_process (FALSE);
+        exit (EXIT_SUCCESS);
+
+        break;
+
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
+        feed_version_check_in_progress = 0;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return -1;
+
+      default:
+        /* Parent.  Unblock signals and continue. */
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        feed_version_check_in_progress = pid;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return 0;
+    }
+}
+
+/**
  * @brief Serve incoming connections, scheduling periodically.
  *
  * Enter an infinite loop, waiting for connections and passing the work to
@@ -1267,7 +1360,7 @@ serve_and_schedule ()
 
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
-          manage_sync (sigmask_normal, fork_update_nvt_cache);
+          fork_feed_sync ();
           last_sync_time = time (NULL);
         }
 
@@ -1323,7 +1416,7 @@ serve_and_schedule ()
 
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
-          manage_sync (sigmask_normal, fork_update_nvt_cache);
+          fork_feed_sync ();
           last_sync_time = time (NULL);
         }
 
