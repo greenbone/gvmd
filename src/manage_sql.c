@@ -22453,7 +22453,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             0,
                             extra_tables,
                             extra_where,
-                            extra_where,
+                            NULL,                   /* extra_where_single */
                             TRUE,
                             report ? TRUE : FALSE,
                             extra_order);
