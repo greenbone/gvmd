@@ -1954,7 +1954,7 @@ gvmd (int argc, char** argv)
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
-          " Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor'"
+          " Either 'OpenVAS', 'OSP', 'OSP-Sensor'"
           " or a number as used in GMP.",
           "<scanner-type>" },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT,
