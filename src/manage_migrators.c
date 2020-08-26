@@ -2328,16 +2328,23 @@ migrate_233_to_234 ()
 
   /* Update the database. */
 
-  /* Setting "GMP Slave Check Period" and various slave columns were removed. */
+  /* Support for GMP Scanners was removed, including setting "GMP Slave
+   * Check Period" and various report slave columns. */
 
+  /* Delete setting. */
   sql ("DELETE FROM settings WHERE uuid = '63adb79a-62ae-11e9-91ba-28d24461215b';");
 
+  /* Drop columns. */
   sql ("ALTER TABLE reports"
        " DROP column slave_task_uuid,"
        " DROP column slave_uuid,"
        " DROP column slave_name,"
        " DROP column slave_host,"
        " DROP column slave_port;");
+
+  /* Convert existing GMP Scanners to OSP Scanners. */
+  sql ("UPDATE scanners SET type = 2 WHERE type = 4;");
+  sql ("UPDATE scanners_trash SET type = 2 WHERE type = 4;");
 
   /* Set the database version to 233. */
 
