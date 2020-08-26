@@ -2368,11 +2368,6 @@ create_tables ()
        "  comment text,"
        "  scan_run_status integer,"
        "  slave_progress integer,"
-       "  slave_task_uuid text,"
-       "  slave_uuid text,"
-       "  slave_name text,"
-       "  slave_host text,"
-       "  slave_port integer,"
        "  source_iface text,"
        "  flags integer);");
 
