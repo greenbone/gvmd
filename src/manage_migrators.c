@@ -2328,9 +2328,16 @@ migrate_233_to_234 ()
 
   /* Update the database. */
 
-  /* Setting "GMP Slave Check Period" was removed. */
+  /* Setting "GMP Slave Check Period" and various slave columns were removed. */
 
   sql ("DELETE FROM settings WHERE uuid = '63adb79a-62ae-11e9-91ba-28d24461215b';");
+
+  sql ("ALTER TABLE reports"
+       " DROP column slave_task_uuid,"
+       " DROP column slave_uuid,"
+       " DROP column slave_name,"
+       " DROP column slave_host,"
+       " DROP column slave_port;");
 
   /* Set the database version to 233. */
 
