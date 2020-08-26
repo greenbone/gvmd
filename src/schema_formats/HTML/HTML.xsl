@@ -717,11 +717,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:template>
 
   <xsl:template name="deprecations">
-    <h2 id="deprecations">
-      9 Deprecation Warnings for Version
-      <xsl:value-of select="/protocol/version"/>
-    </h2>
-    <xsl:apply-templates select="deprecation[version=/protocol/version]"/>
+    <xsl:if test="deprecation[version=/protocol/version]">
+      <h2 id="deprecations">
+        9 Deprecation Warnings for Version
+        <xsl:value-of select="/protocol/version"/>
+      </h2>
+      <xsl:apply-templates select="deprecation[version=/protocol/version]"/>
+    </xsl:if>
   </xsl:template>
 
   <!-- Root. -->
@@ -778,12 +780,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                       <xsl:value-of select="/protocol/version"/>
                     </a>
                   </li>
-                  <li>
-                    <a href="#deprecations">
-                      Deprecation Warnings for Version
-                      <xsl:value-of select="/protocol/version"/>
-                    </a>
-                  </li>
+                  <xsl:if test="deprecation[version=/protocol/version]">
+                    <li>
+                      <a href="#deprecations">
+                        Deprecation Warnings for Version
+                        <xsl:value-of select="/protocol/version"/>
+                      </a>
+                    </li>
+                  </xsl:if>
                 </ol>
 
                 <xsl:call-template name="type-summary"/>
