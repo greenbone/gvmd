@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix delta sorting for unusual filter sort terms [#1249](https://github.com/greenbone/gvmd/pull/1249)
 - Fix SCP alert authentication and logging [#1264](https://github.com/greenbone/gvmd/pull/1264)
 - Set file mode creation mask for feed lock handling [#1265](https://github.com/greenbone/gvmd/pull/1265)
+- Send NULL as extra_where_single in init_result_get_iterator [#1275](https://github.com/greenbone/gvmd/pull/1265)
 
 ### Removed
 
