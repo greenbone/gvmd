@@ -292,12 +292,11 @@ typedef enum
 typedef enum scanner_type
 {
   SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_OSP,
-  SCANNER_TYPE_OPENVAS,
-  SCANNER_TYPE_CVE,
-  SCANNER_TYPE_GMP_REMOVED,
-  SCANNER_TYPE_OSP_SENSOR,
-  SCANNER_TYPE_MAX,
+  SCANNER_TYPE_OSP = 1,
+  SCANNER_TYPE_OPENVAS = 2,
+  SCANNER_TYPE_CVE = 3,
+  SCANNER_TYPE_OSP_SENSOR = 5,
+  SCANNER_TYPE_MAX = 6,
 } scanner_type_t;
 
 typedef resource_t credential_t;
