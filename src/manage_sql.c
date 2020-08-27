@@ -22166,8 +22166,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int autofp, apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *owned_clause, *with_clause;
-  gchar *with_clauses;
+  gchar *extra_tables, *extra_where, *extra_where_single;
+  gchar *owned_clause, *with_clause, *with_clauses;
   char *user_id;
 
   assert (report);
@@ -22316,6 +22316,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                      autofp, apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
+  extra_where_single = results_extra_where (get->trash, report, host,
+                                            autofp, apply_overrides,
+                                            dynamic_severity,
+                                            "min_qod=0");
+
   free (filter);
 
   user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
@@ -22369,7 +22374,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  0,
                                  extra_tables,
                                  extra_where,
-                                 NULL,
+                                 extra_where_single,
                                  TRUE,
                                  report ? TRUE : FALSE,
                                  extra_order,
@@ -22380,6 +22385,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   g_free (with_clauses);
   g_free (extra_tables);
   g_free (extra_where);
+  g_free (extra_where_single);
   return ret;
 }
 
@@ -22404,7 +22410,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables;
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
   int autofp, apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22438,6 +22444,11 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                                      autofp, apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
+  extra_where_single = results_extra_where (get->trash, report, host,
+                                            autofp, apply_overrides,
+                                            dynamic_severity,
+                                            "min_qod=0");
+
   free (filter);
 
   ret = init_get_iterator2 (iterator,
@@ -22453,12 +22464,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             0,
                             extra_tables,
                             extra_where,
-                            extra_where,
+                            extra_where_single,
                             TRUE,
                             report ? TRUE : FALSE,
                             extra_order);
   g_free (extra_tables);
   g_free (extra_where);
+  g_free (extra_where_single);
   return ret;
 }
 
