@@ -8674,13 +8674,6 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       char *pos = strchr (value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<value>%s</value>", value);
-      while (pos)
-        {
-          char *pos2 = strchr (++pos, ';');
-          if (pos2) *pos2 = '\0';
-          buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
-          pos = pos2;
-        }
     }
   else if (value
            && type
@@ -8698,6 +8691,13 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       char *pos = strchr (default_value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<default>%s</default>", default_value);
+      while (pos)
+        {
+          char *pos2 = strchr (++pos, ';');
+          if (pos2) *pos2 = '\0';
+          buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
+          pos = pos2;
+        }
     }
   else if (default_value
            && type

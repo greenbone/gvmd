@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SCP alert authentication and logging [#1264](https://github.com/greenbone/gvmd/pull/1264)
 - Set file mode creation mask for feed lock handling [#1265](https://github.com/greenbone/gvmd/pull/1265)
 - Ignore min_qod when getting single results by UUID [#1276](http://github.com/greenbone/gvmd/pull/1276)
+- Fix alternative options for radio type preferences when exporting a scan_config [#1278](http://github.com/greenbone/gvmd/pull/1278)
 
 ### Removed
 
