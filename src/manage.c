@@ -863,7 +863,7 @@ severity_in_level (double severity, const char *level)
     }
   else
     {
-      /* NIST/BSI. */
+      /* NIST */
       if (strcmp (level, "high") == 0)
         return severity >= 7 && severity <= 10;
       else if (strcmp (level, "medium") == 0)

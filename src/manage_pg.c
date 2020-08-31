@@ -237,7 +237,7 @@ manage_create_sql_functions ()
        "        ELSE"
        "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
        "        END CASE;"
-       "    ELSE" // NIST/BSI.
+       "    ELSE" // NIST.
        "      CASE"
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 10.0;"
@@ -278,7 +278,7 @@ manage_create_sql_functions ()
        "        ELSE"
        "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
        "        END CASE;"
-       "    ELSE" // NIST/BSI.
+       "    ELSE" // NIST.
        "      CASE"
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 7.0;"
@@ -1473,7 +1473,7 @@ manage_create_sql_functions ()
            "               THEN $1 >= 0.0 AND $1 < 4.0"
            "               ELSE 0::boolean"
            "               END)"
-           "         ELSE " /* NIST/BSI */
+           "         ELSE " /* NIST */
            "              (CASE lower ($2)"
            "               WHEN 'high'"
            "               THEN $1 >= 7"
