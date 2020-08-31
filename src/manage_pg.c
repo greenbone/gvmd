@@ -2862,7 +2862,6 @@ create_tables ()
        "  JOIN tls_certificate_origins AS origins"
        "    ON sources.origin = origins.id;");
 
-  sql ("DROP VIEW IF EXISTS vulns;");
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'scap'"
