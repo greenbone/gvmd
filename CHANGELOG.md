@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix alternative options for radio type preferences when exporting a scan_config [#1278](http://github.com/greenbone/gvmd/pull/1278)
 
 ### Removed
+- Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
 
 [20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
 
