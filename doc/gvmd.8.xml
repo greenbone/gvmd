@@ -327,7 +327,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--scanner-host=<arg>SCANNER-HOST</arg></opt></p>
       <optdesc>
-        <p>Scanner host for --create-scanner and --modify-scanner.</p>
+        <p>Scanner host or socket for --create-scanner and --modify-scanner.</p>
       </optdesc>
     </option>
     <option>
