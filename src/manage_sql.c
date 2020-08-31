@@ -26458,12 +26458,11 @@ severity_class_xml (const gchar *severity)
 {
   if (severity)
     {
-      if ((strcmp (severity, "nist") == 0)
-          || (strcmp (severity, "bsi") == 0))
+      if (strcmp (severity, "nist") == 0)
         return g_strdup_printf ("<severity_class"
                                 " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
                                 "<name>nist</name>"
-                                "<full_name>%s</full_name>"
+                                "<full_name>NVD Vulnerability Severity Ratings</full_name>"
                                 "<severity_range>"
                                 "<name>None</name>"
                                 "<min>0.0</min>"
@@ -26484,10 +26483,7 @@ severity_class_xml (const gchar *severity)
                                 "<min>7.0</min>"
                                 "<max>10.0</max>"
                                 "</severity_range>"
-                                "</severity_class>",
-                                strcmp (severity, "nist") == 0
-                                 ? "NVD Vulnerability Severity Ratings"
-                                 : "BSI Schwachstellenampel (Germany)");
+                                "</severity_class>");
       else if (strcmp (severity, "pci-dss") == 0)
         return g_strdup_printf ("<severity_class"
                                 " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
