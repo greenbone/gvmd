@@ -1288,6 +1288,9 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 {
   gchar *copy_dir;
 
+  g_debug ("%s: copy %s to %s/%s", __func__, source_dir, copy_parent,
+           copy_uuid);
+
   /* Check that the source directory exists. */
 
   if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
@@ -1299,11 +1302,7 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 
   /* Prepare directory to copy into. */
 
-  copy_dir = g_build_filename (GVMD_STATE_DIR,
-                               "report_formats",
-                               current_credentials.uuid,
-                               copy_uuid,
-                               NULL);
+  copy_dir = g_build_filename (copy_parent, copy_uuid, NULL);
 
   if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
       && gvm_file_remove_recurse (copy_dir))
