@@ -1334,7 +1334,7 @@ serve_and_schedule ()
       if (termination_signal)
         {
           g_debug ("Received %s signal",
-                   sys_siglist[termination_signal]);
+                   strsignal (termination_signal));
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -1423,7 +1423,7 @@ serve_and_schedule ()
       if (termination_signal)
         {
           g_debug ("Received %s signal",
-                   sys_siglist[termination_signal]);
+                   strsignal (termination_signal));
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);

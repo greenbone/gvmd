@@ -16570,7 +16570,7 @@ cleanup_manage_process (gboolean cleanup)
 void
 manage_cleanup_process_error (int signal)
 {
-  g_debug ("Received %s signal", sys_siglist[signal]);
+  g_debug ("Received %s signal", strsignal (signal));
   if (sql_is_open ())
     {
       if (current_scanner_task)
