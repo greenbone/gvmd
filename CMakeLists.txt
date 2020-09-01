@@ -265,7 +265,7 @@ set (HARDENING_FLAGS            "-Wformat -Wformat-security -D_FORTIFY_SOURCE=2 
 set (LINKER_HARDENING_FLAGS     "-Wl,-z,relro -Wl,-z,now")
 
 # To find unused functions, add: -flto -fwhole-program -ffunction-sections -Wl,--gc-sections -Wl,--print-gc-sections
-set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64")
+set (CMAKE_C_FLAGS              "${CMAKE_C_FLAGS} -Wall -D_POSIX_C_SOURCE=199309L -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64")
 
 set (CMAKE_C_FLAGS_DEBUG        "${CMAKE_C_FLAGS_DEBUG} -Werror -Wshadow ${COVERAGE_FLAGS} ${DEBUG_FUNCTION_NAMES_FLAGS}")
 set (CMAKE_C_FLAGS_RELEASE      "${CMAKE_C_FLAGS_RELEASE} ${HARDENING_FLAGS} ${COVERAGE_FLAGS}")
