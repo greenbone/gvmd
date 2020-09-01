@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix delta sorting for unusual filter sort terms [#1249](https://github.com/greenbone/gvmd/pull/1249)
 - Fix SCP alert authentication and logging [#1264](https://github.com/greenbone/gvmd/pull/1264)
 - Set file mode creation mask for feed lock handling [#1265](https://github.com/greenbone/gvmd/pull/1265)
+- Fix build for older glibc used on CentOS based systems.[#1283](https://github.com/greenbone/gvmd/pull/1283)
 
 ### Removed
 
