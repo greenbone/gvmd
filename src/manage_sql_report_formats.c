@@ -4286,10 +4286,9 @@ migrate_predefined_report_formats ()
       new = g_build_filename (GVMD_STATE_DIR,
                               "report_formats",
                               owner_uuid,
-                              iterator_string (&rows, 0),
                               NULL);
 
-      if (move_report_format_dir (old, new))
+      if (copy_report_format_dir (old, new, iterator_string (&rows, 0)))
         {
           g_warning ("%s: failed at report format %s", __func__,
                      iterator_string (&rows, 0));
