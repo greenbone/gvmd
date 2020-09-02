@@ -1440,26 +1440,6 @@ manage_create_sql_functions ()
                sql_database ()))
     {
       sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
-           "                                              text,"
-           "                                              text)"
-           " RETURNS boolean AS $$"
-           "              (SELECT CASE lower ($2)"
-           "               WHEN 'high'"
-           "               THEN $1 >= 7"
-           "                    AND $1 <= 10"
-           "                    AND $1 < 7"
-           "               WHEN 'low'"
-           "               THEN $1 > 0"
-           "                    AND $1 < 4"
-           "               WHEN 'none'"
-           "               THEN $1 = 0"
-           "               WHEN 'log'"
-           "               THEN $1 = 0"
-           "               ELSE 0::boolean"
-           "               END);"
-           "$$ LANGUAGE SQL;");
-
-      sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
            "                                              text)"
            " RETURNS boolean AS $$"
            "              (SELECT CASE lower ($2)"
