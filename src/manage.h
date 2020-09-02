@@ -299,6 +299,9 @@ typedef enum scanner_type
   SCANNER_TYPE_MAX = 6,
 } scanner_type_t;
 
+int
+scanner_type_valid (scanner_type_t);
+
 typedef resource_t credential_t;
 typedef resource_t alert_t;
 typedef resource_t filter_t;

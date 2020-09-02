@@ -2406,8 +2406,7 @@ gvmd (int argc, char** argv)
       else
         {
           type = atoi (scanner_type);
-          if (type <= SCANNER_TYPE_NONE
-              || type >= SCANNER_TYPE_MAX
+          if (scanner_type_valid (type) == 0
               || type == SCANNER_TYPE_CVE)
             {
               fprintf (stderr, "Invalid scanner type value.\n");
@@ -2451,8 +2450,7 @@ gvmd (int argc, char** argv)
           else
             {
               type = atoi (scanner_type);
-              if (type <= SCANNER_TYPE_NONE
-                  || type >= SCANNER_TYPE_MAX
+              if (scanner_type_valid (type) == 0
                   || type == SCANNER_TYPE_CVE)
                 {
                   fprintf (stderr, "Invalid scanner type value.\n");

@@ -766,6 +766,23 @@ check_available (const gchar *type, resource_t resource,
   return -1;
 }
 
+/**
+ * @brief Check if a scanner type is valid.
+ *
+ * @param[in]  scanner_type  Scanner type.
+ *
+ * @return 1 if valid, else 0.
+ */
+int
+scanner_type_valid (scanner_type_t scanner_type)
+{
+  if (scanner_type > SCANNER_TYPE_NONE
+      && scanner_type < SCANNER_TYPE_MAX
+      && scanner_type != 4)
+    return 1;
+  return 0;
+}
+
 
 /* Severity related functions. */
 

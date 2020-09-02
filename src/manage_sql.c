@@ -38634,7 +38634,7 @@ create_scanner (const char* name, const char *comment, const char *host,
   itype = atoi (type);
   if (iport <= 0 || iport > 65535)
     return 2;
-  if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+  if (scanner_type_valid (itype) == 0)
     return 2;
   /* XXX: Workaround for unix socket case. */
   if (gvm_get_host_type (host) == -1 && !unix_socket)
@@ -38758,7 +38758,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   if (type)
     {
       itype = atoi (type);
-      if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+      if (scanner_type_valid (itype) == 0)
         return 4;
     }
   else
