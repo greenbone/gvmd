@@ -207,7 +207,7 @@ level_min_severity (const char *level, const char *class)
     }
   else
     {
-      /* NIST/BSI. */
+      /* NIST */
       if (strcasecmp (level, "high") == 0)
         return 7.0;
       else if (strcasecmp (level, "medium") == 0)
@@ -250,7 +250,7 @@ level_max_severity (const char *level, const char *class)
     }
   else
     {
-      /* NIST/BSI. */
+      /* NIST */
       if (strcasecmp (level, "high") == 0)
         return 10.0;
       else if (strcasecmp (level, "medium") == 0)
