@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
 - Clarify documentation for --scan-host parameter [#1277](https://github.com/greenbone/gvmd/pull/1277)
 
+### Fixed
+- Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
+
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 
 ## [20.8.1] (unreleased)
