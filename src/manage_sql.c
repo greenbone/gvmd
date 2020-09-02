@@ -23955,7 +23955,7 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
                         || filtered_logs || filtered_false_positives
                         || filtered_severity);
-  severity_class = setting_severity ();
+  severity_class = "nist";
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
@@ -48826,19 +48826,6 @@ setting_filter (const char *resource)
                      " ORDER BY coalesce (owner, 0) DESC;",
                      resource,
                      current_credentials.uuid);
-}
-
-/**
- * @brief Return the Severity Class user setting.
- *
- * @return User Severity Class in settings if it exists, "" otherwise.
- */
-const char *
-setting_severity ()
-{
-  if (current_credentials.severity_class)
-    return current_credentials.severity_class;
-  return "nist";
 }
 
 /**

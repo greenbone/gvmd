@@ -3259,9 +3259,6 @@ setting_is_default_ca_cert (const gchar *);
 char *
 setting_filter (const char *);
 
-const char *
-setting_severity ();
-
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
                        const char *);

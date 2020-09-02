@@ -18583,7 +18583,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                 manage_session_set_timezone (zone);
 
-                severity = setting_severity ();
+                severity = "nist";
                 pw_warning = gvm_validate_password
                               (current_credentials.password,
                                current_credentials.username);
