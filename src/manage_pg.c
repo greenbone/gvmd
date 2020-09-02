@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2019 Greenbone Networks GmbH
+/* Copyright (C) 2014-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -230,14 +230,7 @@ manage_create_sql_functions ()
        "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
        "    WHEN lower (lvl) = 'error' THEN"
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
-       "    WHEN cls = 'pci-dss' THEN"
-       "      CASE"
-       "        WHEN  lower (lvl) = 'high' THEN"
-       "          v := 10.0;"
-       "        ELSE"
-       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
-       "        END CASE;"
-       "    ELSE" // NIST.
+       "    ELSE"
        "      CASE"
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 10.0;"
@@ -271,14 +264,7 @@ manage_create_sql_functions ()
        "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
        "    WHEN lower (lvl) = 'error' THEN"
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
-       "    WHEN cls = 'pci-dss' THEN"
-       "      CASE"
-       "        WHEN  lower (lvl) = 'high' THEN"
-       "          v := 4.0;"
-       "        ELSE"
-       "          v := " G_STRINGIFY (SEVERITY_UNDEFINED) ";"
-       "        END CASE;"
-       "    ELSE" // NIST.
+       "    ELSE"
        "      CASE"
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 7.0;"
@@ -1457,18 +1443,6 @@ manage_create_sql_functions ()
            "                                              text,"
            "                                              text)"
            " RETURNS boolean AS $$"
-           "  SELECT CASE $3"
-           "         WHEN 'pci-dss'"
-           "         THEN (CASE lower ($2)"
-           "               WHEN 'high'"
-           "               THEN $1 >= 4.0"
-           "               WHEN 'none'"
-           "               THEN $1 >= 0.0 AND $1 < 4.0"
-           "               WHEN 'log'"
-           "               THEN $1 >= 0.0 AND $1 < 4.0"
-           "               ELSE 0::boolean"
-           "               END)"
-           "         ELSE " /* NIST */
            "              (CASE lower ($2)"
            "               WHEN 'high'"
            "               THEN $1 >= 7"
@@ -1484,8 +1458,7 @@ manage_create_sql_functions ()
            "               WHEN 'log'"
            "               THEN $1 = 0"
            "               ELSE 0::boolean"
-           "               END)"
-           "         END;"
+           "               END);"
            "$$ LANGUAGE SQL;");
 
       sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
