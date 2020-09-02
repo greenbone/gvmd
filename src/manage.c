@@ -853,32 +853,16 @@ message_type_threat (const char *type)
 int
 severity_in_level (double severity, const char *level)
 {
-  const char *class;
+  if (strcmp (level, "high") == 0)
+    return severity >= 7 && severity <= 10;
+  else if (strcmp (level, "medium") == 0)
+    return severity >= 4 && severity < 7;
+  else if (strcmp (level, "low") == 0)
+    return severity > 0 && severity < 4;
+  else if (strcmp (level, "none") == 0  || strcmp (level, "log") == 0)
+    return severity == 0;
 
-  class = setting_severity ();
-  if (strcmp (class, "pci-dss") == 0)
-    {
-      if (strcmp (level, "high") == 0)
-        return severity >= 4.0;
-      else if (strcmp (level, "none") == 0 || strcmp (level, "log") == 0)
-        return severity >= 0.0 && severity < 4.0;
-      else
-        return 0;
-    }
-  else
-    {
-      /* NIST */
-      if (strcmp (level, "high") == 0)
-        return severity >= 7 && severity <= 10;
-      else if (strcmp (level, "medium") == 0)
-        return severity >= 4 && severity < 7;
-      else if (strcmp (level, "low") == 0)
-        return severity > 0 && severity < 4;
-      else if (strcmp (level, "none") == 0  || strcmp (level, "log") == 0)
-        return severity == 0;
-      else
-        return 0;
-    }
+  return 0;
 }
 
 /**
