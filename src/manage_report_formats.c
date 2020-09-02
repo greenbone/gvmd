@@ -370,7 +370,7 @@ feed_dir_report_formats ()
   static gchar *path = NULL;
   if (path == NULL)
     path = g_build_filename (GVMD_FEED_DIR,
-                             GMP_VERSION,
+                             GMP_VERSION_FEED,
                              "report_formats",
                              NULL);
   return path;
