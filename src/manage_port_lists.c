@@ -51,7 +51,7 @@ feed_dir_port_lists ()
   static gchar *path = NULL;
   if (path == NULL)
     path = g_build_filename (GVMD_FEED_DIR,
-                             GMP_VERSION,
+                             GMP_VERSION_FEED,
                              "port_lists",
                              NULL);
   return path;

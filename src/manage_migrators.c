@@ -2206,7 +2206,7 @@ migrate_232_to_233_set_predefined (const gchar *type, const gchar *table)
   gchar *dir_path;
 
   dir_path = g_build_filename (GVMD_FEED_DIR,
-                               GMP_VERSION,
+                               GMP_VERSION_FEED,
                                type,
                                NULL);
 

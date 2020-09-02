@@ -77,7 +77,7 @@ feed_dir_configs ()
   static gchar *path = NULL;
   if (path == NULL)
     path = g_build_filename (GVMD_FEED_DIR,
-                             GMP_VERSION,
+                             GMP_VERSION_FEED,
                              "configs",
                              NULL);
   return path;
