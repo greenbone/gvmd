@@ -26046,56 +26046,52 @@ report_progress (report_t report)
 static gchar *
 severity_class_xml (const gchar *severity)
 {
-  if (severity)
-    {
-      if ((strcmp (severity, "nist") == 0)
-          || (strcmp (severity, "bsi") == 0))
-        return g_strdup_printf ("<severity_class"
-                                " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
-                                "<name>nist</name>"
-                                "<full_name>%s</full_name>"
-                                "<severity_range>"
-                                "<name>None</name>"
-                                "<min>0.0</min>"
-                                "<max>0.0</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>Low</name>"
-                                "<min>0.1</min>"
-                                "<max>3.9</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>Medium</name>"
-                                "<min>4.0</min>"
-                                "<max>6.9</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>High</name>"
-                                "<min>7.0</min>"
-                                "<max>10.0</max>"
-                                "</severity_range>"
-                                "</severity_class>",
-                                strcmp (severity, "nist") == 0
-                                 ? "NVD Vulnerability Severity Ratings"
-                                 : "BSI Schwachstellenampel (Germany)");
-      else if (strcmp (severity, "pci-dss") == 0)
-        return g_strdup_printf ("<severity_class"
-                                " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
-                                "<name>pci-dss</name>"
-                                "<full_name>PCI-DSS</full_name>"
-                                "<severity_range>"
-                                "<name>None</name>"
-                                "<min>0.0</min>"
-                                "<max>3.9</max>"
-                                "</severity_range>"
-                                "<severity_range>"
-                                "<name>High</name>"
-                                "<min>4.0</min>"
-                                "<max>10.0</max>"
-                                "</severity_range>"
-                                "</severity_class>");
-    }
-  return NULL;
+  if (!severity)
+    return NULL;
+
+  if (strcmp (severity, "pci-dss") == 0)
+    return g_strdup_printf ("<severity_class"
+                            " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
+                            "<name>pci-dss</name>"
+                            "<full_name>PCI-DSS</full_name>"
+                            "<severity_range>"
+                            "<name>None</name>"
+                            "<min>0.0</min>"
+                            "<max>3.9</max>"
+                            "</severity_range>"
+                            "<severity_range>"
+                            "<name>High</name>"
+                            "<min>4.0</min>"
+                            "<max>10.0</max>"
+                            "</severity_range>"
+                            "</severity_class>");
+
+  /* "nist", any other class defaults to "nist" */
+  return g_strdup_printf ("<severity_class"
+                          " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
+                          "<name>nist</name>"
+                          "<full_name>NVD Vulnerability Severity Ratings</full_name>"
+                          "<severity_range>"
+                          "<name>None</name>"
+                          "<min>0.0</min>"
+                          "<max>0.0</max>"
+                          "</severity_range>"
+                          "<severity_range>"
+                          "<name>Low</name>"
+                          "<min>0.1</min>"
+                          "<max>3.9</max>"
+                          "</severity_range>"
+                          "<severity_range>"
+                          "<name>Medium</name>"
+                          "<min>4.0</min>"
+                          "<max>6.9</max>"
+                          "</severity_range>"
+                          "<severity_range>"
+                          "<name>High</name>"
+                          "<min>7.0</min>"
+                          "<max>10.0</max>"
+                          "</severity_range>"
+                          "</severity_class>");
 }
 
 /**

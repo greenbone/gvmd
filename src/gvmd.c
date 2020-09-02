@@ -1930,7 +1930,7 @@ gvmd (int argc, char** argv)
           "<scanner-credential>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_host,
-          "Scanner host for --create-scanner and --modify-scanner.",
+          "Scanner host or socket for --create-scanner and --modify-scanner.",
           "<scanner-host>" },
         { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_priv,
