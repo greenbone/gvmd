@@ -198,25 +198,15 @@ level_min_severity (const char *level, const char *class)
     return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcasecmp (class, "pci-dss") == 0)
-    {
-      if (strcasecmp (level, "high") == 0)
-        return 4.0;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+
+  if (strcasecmp (level, "high") == 0)
+    return 7.0;
+  else if (strcasecmp (level, "medium") == 0)
+    return 4.0;
+  else if (strcasecmp (level, "low") == 0)
+    return 0.1;
   else
-    {
-      /* NIST */
-      if (strcasecmp (level, "high") == 0)
-        return 7.0;
-      else if (strcasecmp (level, "medium") == 0)
-        return 4.0;
-      else if (strcasecmp (level, "low") == 0)
-        return 0.1;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+    return SEVERITY_UNDEFINED;
 }
 
 /**
@@ -241,25 +231,15 @@ level_max_severity (const char *level, const char *class)
     return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcasecmp (class, "pci-dss") == 0)
-    {
-      if (strcasecmp (level, "high") == 0)
-        return 10.0;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+
+  if (strcasecmp (level, "high") == 0)
+    return 10.0;
+  else if (strcasecmp (level, "medium") == 0)
+    return 6.9;
+  else if (strcasecmp (level, "low") == 0)
+    return 3.9;
   else
-    {
-      /* NIST */
-      if (strcasecmp (level, "high") == 0)
-        return 10.0;
-      else if (strcasecmp (level, "medium") == 0)
-        return 6.9;
-      else if (strcasecmp (level, "low") == 0)
-        return 3.9;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+    return SEVERITY_UNDEFINED;
 }
 
 /**
