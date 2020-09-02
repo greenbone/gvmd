@@ -26039,34 +26039,11 @@ report_progress (report_t report)
 /**
  * @brief Buffer XML for a severity class.
  *
- * @param[in]  severity  Severity name.
- *
  * @return Freshly allocated XML on success, else NULL.
  */
 static gchar *
-severity_class_xml (const gchar *severity)
+severity_class_xml (void)
 {
-  if (!severity)
-    return NULL;
-
-  if (strcmp (severity, "pci-dss") == 0)
-    return g_strdup_printf ("<severity_class"
-                            " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
-                            "<name>pci-dss</name>"
-                            "<full_name>PCI-DSS</full_name>"
-                            "<severity_range>"
-                            "<name>None</name>"
-                            "<min>0.0</min>"
-                            "<max>3.9</max>"
-                            "</severity_range>"
-                            "<severity_range>"
-                            "<name>High</name>"
-                            "<min>4.0</min>"
-                            "<max>10.0</max>"
-                            "</severity_range>"
-                            "</severity_class>");
-
-  /* "nist", any other class defaults to "nist" */
   return g_strdup_printf ("<severity_class"
                           " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
                           "<name>nist</name>"
@@ -27455,11 +27432,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_string_free (filters_buffer, TRUE);
 
   {
-    const char *severity_setting;
     gchar *class_xml;
 
-    severity_setting = setting_severity ();
-    class_xml = severity_class_xml (severity_setting);
+    class_xml = severity_class_xml ();
     if (class_xml)
       {
         PRINT_XML (out, class_xml);
