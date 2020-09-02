@@ -1465,14 +1465,7 @@ manage_create_sql_functions ()
            " SELECT severity_in_level"
            "         ($1,"
            "          $2,"
-           "          (SELECT value FROM settings"
-           "           WHERE name = 'Severity Class'"
-           "           AND ((owner IS NULL)"
-           "                OR (owner = (SELECT id FROM users"
-           "                             WHERE users.uuid"
-           "                                   = (SELECT current_setting"
-           "                                              ('gvmd.user.uuid')))))"
-           "           ORDER BY coalesce (owner, 0) DESC LIMIT 1))"
+           "          'dummy')"
            "$$ LANGUAGE SQL"
            " STABLE;");
 
