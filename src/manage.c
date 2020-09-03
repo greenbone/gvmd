@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1178,58 +1178,44 @@ severity_data_level_counts (const severity_data_t *severity_data,
   if (errors)
     *errors
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("Error",
-                                                       severity_class),
-                                   level_max_severity ("Error",
-                                                       severity_class));
+                                   level_min_severity ("Error"),
+                                   level_max_severity ("Error"));
 
   if (debugs)
     *debugs
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("Debug",
-                                                       severity_class),
-                                   level_max_severity ("Debug",
-                                                       severity_class));
+                                   level_min_severity ("Debug"),
+                                   level_max_severity ("Debug"));
 
   if (false_positives)
     *false_positives
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("False Positive",
-                                                       severity_class),
-                                   level_max_severity ("False Positive",
-                                                       severity_class));
+                                   level_min_severity ("False Positive"),
+                                   level_max_severity ("False Positive"));
 
   if (logs)
     *logs
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("Log",
-                                                       severity_class),
-                                   level_max_severity ("Log",
-                                                       severity_class));
+                                   level_min_severity ("Log"),
+                                   level_max_severity ("Log"));
 
   if (lows)
     *lows
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("low",
-                                                       severity_class),
-                                   level_max_severity ("low",
-                                                       severity_class));
+                                   level_min_severity ("low"),
+                                   level_max_severity ("low"));
 
   if (mediums)
     *mediums
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("medium",
-                                                       severity_class),
-                                   level_max_severity ("medium",
-                                                       severity_class));
+                                   level_min_severity ("medium"),
+                                   level_max_severity ("medium"));
 
   if (highs)
     *highs
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("high",
-                                                       severity_class),
-                                   level_max_severity ("high",
-                                                       severity_class));
+                                   level_min_severity ("high"),
+                                   level_max_severity ("high"));
 }
 
 

@@ -177,18 +177,17 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 }
 
 /**
- * @brief Get the minimum severity for a severity level and class.
+ * @brief Get the minimum severity for a severity level.
  *
  * This function has a database equivalent in manage_pg_server.c.
  * These two functions must stay in sync.
  *
  * @param[in] level  The name of the severity level.
- * @param[in] class  The severity class, NULL to get from current user setting.
  *
  * @return The minimum severity.
  */
 double
-level_min_severity (const char *level, const char *class)
+level_min_severity (const char *level)
 {
   if (strcasecmp (level, "Log") == 0)
     return SEVERITY_LOG;
@@ -210,18 +209,17 @@ level_min_severity (const char *level, const char *class)
 }
 
 /**
- * @brief Get the minimum severity for a severity level and class.
+ * @brief Get the maximum severity for a severity level.
  *
  * This function has a database equivalent in manage_pg_server.c.
  * These two functions must stay in sync.
  *
  * @param[in] level  The name of the severity level.
- * @param[in] class  The severity class.
  *
- * @return The minimum severity.
+ * @return The maximunm severity.
  */
 double
-level_max_severity (const char *level, const char *class)
+level_max_severity (const char *level)
 {
   if (strcasecmp (level, "Log") == 0)
     return SEVERITY_LOG;
