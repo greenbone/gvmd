@@ -23936,7 +23936,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   keyword_t **point;
   array_t *split;
   int filter_cacheable, unfiltered_requested, filtered_requested, cache_exists;
-  const char *severity_class;
   int override, min_qod_int;
   severity_data_t severity_data, filtered_severity_data;
 
@@ -23945,7 +23944,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
                         || filtered_logs || filtered_false_positives
                         || filtered_severity);
-  severity_class = "nist";
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
@@ -24054,10 +24052,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
                               ? &filtered_severity_data : NULL);
     }
 
-  severity_data_level_counts (&severity_data, severity_class,
+  severity_data_level_counts (&severity_data, "nist",
                               NULL, NULL, false_positives,
                               logs, infos, warnings, holes);
-  severity_data_level_counts (&filtered_severity_data, severity_class,
+  severity_data_level_counts (&filtered_severity_data, "nist",
                               NULL, NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
                               filtered_warnings, filtered_holes);
