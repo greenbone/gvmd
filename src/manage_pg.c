@@ -992,7 +992,7 @@ manage_create_sql_functions ()
            "  SELECT CASE"
            "         WHEN (SELECT scan_run_status FROM reports"
            "               WHERE reports.id = $1)"
-           "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i, %i,"
+           "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i,"
            "                                         %i, %i, %i]))"
            "         THEN true"
            "         ELSE false"
@@ -1003,7 +1003,6 @@ manage_create_sql_functions ()
            TASK_STATUS_DELETE_REQUESTED,
            TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
            TASK_STATUS_STOP_REQUESTED,
-           TASK_STATUS_STOP_REQUESTED_GIVEUP,
            TASK_STATUS_STOPPED,
            TASK_STATUS_INTERRUPTED,
            TASK_STATUS_QUEUED);
@@ -1014,9 +1013,6 @@ manage_create_sql_functions ()
            "  SELECT CASE"
            "         WHEN $1 = 0"
            "         THEN -1"
-           "         WHEN (SELECT slave_task_uuid FROM reports WHERE id = $1)"
-           "              != ''"
-           "         THEN (SELECT slave_progress FROM reports WHERE id = $1)"
            "         WHEN report_active ($1)"
            "         THEN (SELECT slave_progress FROM reports WHERE id = $1)"
            "         ELSE -1"
@@ -1374,7 +1370,7 @@ manage_create_sql_functions ()
        "         THEN 'Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Running'"
-       "         WHEN $1 = %i OR $1 = %i OR $1 = %i"
+       "         WHEN $1 = %i OR $1 = %i"
        "         THEN 'Stop Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Stopped'"
@@ -1392,7 +1388,6 @@ manage_create_sql_functions ()
        TASK_STATUS_NEW,
        TASK_STATUS_REQUESTED,
        TASK_STATUS_RUNNING,
-       TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_REQUESTED,
        TASK_STATUS_STOP_WAITING,
        TASK_STATUS_STOPPED,
@@ -2373,11 +2368,6 @@ create_tables ()
        "  comment text,"
        "  scan_run_status integer,"
        "  slave_progress integer,"
-       "  slave_task_uuid text,"
-       "  slave_uuid text,"
-       "  slave_name text,"
-       "  slave_host text,"
-       "  slave_port integer,"
        "  source_iface text,"
        "  flags integer);");
 

@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Reduce Severity Classes [#1285](https://github.com/greenbone/gvmd/pull/1285)
 
+### Removed
+- Drop GMP scanners [#1269](https://github.com/greenbone/gvmd/pull/1269)
+
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 
 ## [20.8.1] (unreleased)

@@ -154,9 +154,6 @@ const char *message_type_threat (const char *);
 
 int delete_reports (task_t);
 
-int delete_slave_task (const gchar *, int, const gchar *, const gchar *,
-                       const char *);
-
 int
 stop_task_internal (task_t);
 
@@ -367,11 +364,6 @@ static manage_connection_forker_t manage_fork_connection;
  * @brief Max number of hosts per target.
  */
 static int max_hosts = MANAGE_MAX_HOSTS;
-
-/**
- * @brief Maximum number of SQL queries per transaction in slave updates.
- */
-static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
 
 /**
  * @brief Default max number of bytes of reports included in email alerts.
@@ -15075,7 +15067,6 @@ task_in_use (task_t task)
          || status == TASK_STATUS_REQUESTED
          || status == TASK_STATUS_RUNNING
          || status == TASK_STATUS_QUEUED
-         || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
          || status == TASK_STATUS_STOP_REQUESTED
          || status == TASK_STATUS_STOP_WAITING;
 }
@@ -15460,17 +15451,6 @@ check_db_settings ()
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
-
-  if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '" SETTING_UUID_SLAVE_CHECK_PERIOD "'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('" SETTING_UUID_SLAVE_CHECK_PERIOD "', NULL,"
-         "  'GMP Slave Check Period',"
-         "  'Period in seconds when polling a GMP slave',"
-         "  25);");
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
@@ -16044,18 +16024,15 @@ manage_migrate_relay_sensors ()
 
   init_iterator (&scanners,
                  "SELECT id, uuid, type, host, port FROM scanners"
-                 " WHERE type in (%d, %d)",
-                 SCANNER_TYPE_GMP,
+                 " WHERE type = %d",
                  SCANNER_TYPE_OSP_SENSOR);
 
   while (next (&scanners))
     {
-      scanner_t scanner;
       scanner_type_t type;
       const char *scanner_id, *host;
       int port;
 
-      scanner = iterator_int64 (&scanners, 0);
       scanner_id = iterator_string (&scanners, 1);
       type = iterator_int (&scanners, 2);
       host = iterator_string (&scanners, 3);
@@ -16063,31 +16040,7 @@ manage_migrate_relay_sensors ()
 
       if (relay_supports_scanner_type (host, port, type) == FALSE)
         {
-          if (type == SCANNER_TYPE_GMP)
-            {
-              if (relay_supports_scanner_type (host, port,
-                                               SCANNER_TYPE_OSP_SENSOR))
-                {
-                  g_message ("%s: No GMP relay found for scanner %s (%s:%d)."
-                             " Changing into OSP Sensor",
-                             __func__, scanner_id, host, port);
-
-                  sql ("UPDATE scanners"
-                       " SET credential = NULL, type = %d"
-                       " WHERE id = %llu",
-                       SCANNER_TYPE_OSP_SENSOR,
-                       scanner);
-
-                  gmp_successes++;
-                }
-              else
-                {
-                  g_message ("%s: No relay found for GMP scanner %s (%s:%d).",
-                            __func__, scanner_id, host, port);
-                  gmp_failures++;
-                }
-            }
-          else if (type == SCANNER_TYPE_OSP_SENSOR)
+          if (type == SCANNER_TYPE_OSP_SENSOR)
             {
               g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
                          __func__, scanner_id, host, port);
@@ -16195,7 +16148,6 @@ stop_active_tasks ()
           case TASK_STATUS_REQUESTED:
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_QUEUED:
-          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
           case TASK_STATUS_STOP_REQUESTED:
           case TASK_STATUS_STOP_WAITING:
             {
@@ -16230,7 +16182,6 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
@@ -16241,7 +16192,6 @@ stop_active_tasks ()
        TASK_STATUS_RUNNING,
        TASK_STATUS_QUEUED,
        TASK_STATUS_STOP_REQUESTED,
-       TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_WAITING);
 }
 
@@ -17649,79 +17599,6 @@ set_task_run_status (task_t task, task_status_t status)
 }
 
 /**
- * @brief Atomically set the run state of a task to requested.
- *
- * Only used by run_gmp_slave_task.
- *
- * @param[in]  task    Task.
- * @param[out] status  Old run status of task.
- *
- * @return 0 success, 1 task is active already.
- */
-int
-set_task_requested (task_t task, task_status_t *status)
-{
-  task_status_t run_status;
-  char *uuid, *name;
-
-  assert ((task != current_scanner_task) && (global_current_report == 0));
-
-  /* Locking here prevents another process from starting the task
-   * concurrently. */
-  sql_begin_immediate ();
-  if (sql_error ("LOCK table tasks IN ACCESS EXCLUSIVE MODE;"))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING
-      || run_status == TASK_STATUS_QUEUED
-      || run_status == TASK_STATUS_STOP_REQUESTED
-      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOP_WAITING
-      || run_status == TASK_STATUS_DELETE_REQUESTED
-      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
-      || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
-      || run_status == TASK_STATUS_DELETE_WAITING)
-    {
-      sql_commit ();
-      *status = run_status;
-      return 1;
-    }
-
-  /* This does the work of set_task_run_status, but spread across the COMMIT. */
-
-  sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
-       TASK_STATUS_REQUESTED,
-       task);
-
-  task_uuid (task, &uuid);
-  name = task_name (task);
-  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-         "Status of task %s (%s) has changed to %s",
-         name, uuid, run_status_name (TASK_STATUS_REQUESTED));
-  free (uuid);
-  free (name);
-
-  sql_commit ();
-
-  /* Do this outside the transaction, in case one of the event handlers modify
-   * reports, to reduce the danger of deadlock between the LOCKs on tasks and
-   * reports. */
-
-  event (EVENT_TASK_RUN_STATUS_CHANGED,
-         (void*) TASK_STATUS_REQUESTED,
-         task,
-         (task == current_scanner_task) ? global_current_report : 0);
-
-  *status = run_status;
-  return 0;
-}
-
-/**
  * @brief Return number of results in a task.
  *
  * @param[in]  task     Task.
@@ -17784,14 +17661,12 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_DELETE_REQUESTED
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
-      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOPPED
       || run_status == TASK_STATUS_INTERRUPTED)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
-                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -17806,7 +17681,6 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_DELETE_REQUESTED,
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
-                                     TASK_STATUS_STOP_REQUESTED_GIVEUP,
                                      TASK_STATUS_STOPPED,
                                      TASK_STATUS_INTERRUPTED);
     }
@@ -17842,22 +17716,6 @@ task_upload_progress (task_t task)
                       task);
     }
   return -1;
-}
-
-/**
- * @brief Set the start time of a task.
- *
- * @param[in]  task  Task.
- * @param[in]  time  New time.  ISO format.  Freed before return.
- */
-static void
-set_task_start_time (task_t task, char* time)
-{
-  sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
-       " WHERE id = %llu;",
-       parse_iso_time (time),
-       task);
-  free (time);
 }
 
 /**
@@ -20146,10 +20004,10 @@ report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
   sql ("INSERT into reports (uuid, owner, task, date, comment,"
-       " scan_run_status, slave_progress, slave_task_uuid)"
+       " scan_run_status, slave_progress)"
        " VALUES ('%s',"
        " (SELECT owner FROM tasks WHERE tasks.id = %llu),"
-       " %llu, %i, '', %u, 0, '');",
+       " %llu, %i, '', %u, 0);",
        uuid, task, task, time (NULL), status);
   return sql_last_insert_id ();
 }
@@ -20796,77 +20654,6 @@ report_compliance_by_uuid (const char *report_id,
   g_free (quoted_uuid);
 }
 
-
-/**
- * @brief Return the UUID of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave UUID.
- */
-static char*
-report_slave_uuid (report_t report)
-{
-  return sql_string ("SELECT slave_uuid FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the name of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave name.
- */
-static char*
-report_slave_name (report_t report)
-{
-  return sql_string ("SELECT slave_name FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the host of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave UUID.
- */
-static char*
-report_slave_host (report_t report)
-{
-  return sql_string ("SELECT slave_host FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the port of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave port.
- */
-static char*
-report_slave_port (report_t report)
-{
-  return sql_string ("SELECT slave_port FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
- * @brief Return the port of a report's slave.
- *
- * @param[in]  report  Report.
- *
- * @return Slave port.
- */
-static int
-report_slave_port_int (report_t report)
-{
-  return sql_int ("SELECT slave_port FROM reports WHERE id = %llu;",
-                  report);
-}
-
 /**
  * @brief Return the source interface of a report.
  *
@@ -20879,88 +20666,6 @@ report_source_iface (report_t report)
 {
   return sql_string ("SELECT source_iface FROM reports WHERE id = %llu;",
                      report);
-}
-
-/**
- * @brief Set the UUID of the slave on a report.
- *
- * @param[in]  report  Report.
- * @param[in]  uuid    UUID.
- */
-void
-report_set_slave_uuid (report_t report, const gchar *uuid)
-{
-  gchar *quoted_uuid;
-  quoted_uuid = sql_quote (uuid);
-  sql ("UPDATE reports SET slave_uuid = '%s' WHERE id = %llu;",
-       quoted_uuid,
-       report);
-  g_free (quoted_uuid);
-}
-
-/**
- * @brief Set the name of the slave on a report.
- *
- * @param[in]  report  Report.
- * @param[in]  name    Name.
- */
-void
-report_set_slave_name (report_t report, const gchar *name)
-{
-  gchar *quoted_name;
-  quoted_name = sql_quote (name);
-  sql ("UPDATE reports SET slave_name = '%s' WHERE id = %llu;",
-       quoted_name,
-       report);
-  g_free (quoted_name);
-}
-
-/**
- * @brief Set the host of the slave of a report.
- *
- * @param[in]  report  Report.
- * @param[in]  host    Host.
- */
-void
-report_set_slave_host (report_t report, const gchar *host)
-{
-  gchar *quoted_host;
-  quoted_host = sql_quote (host);
-  sql ("UPDATE reports SET slave_host = '%s' WHERE id = %llu;",
-       quoted_host,
-       report);
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the port of the slave of a report.
- *
- * @param[in]  report  Report.
- * @param[in]  port    Port.
- */
-void
-report_set_slave_port (report_t report, int port)
-{
-  sql ("UPDATE reports SET slave_port = %i WHERE id = %llu;",
-       port,
-       report);
-}
-
-/**
- * @brief Set the source interface of a report.
- *
- * @param[in]  report  Report.
- * @param[in]  iface   Source interface.
- */
-void
-report_set_source_iface (report_t report, const gchar *iface)
-{
-  gchar *quoted_iface;
-  quoted_iface = sql_quote (iface);
-  sql ("UPDATE reports SET source_iface = '%s' WHERE id = %llu;",
-       quoted_iface,
-       report);
-  g_free (quoted_iface);
 }
 
 /**
@@ -23642,20 +23347,6 @@ scan_start_time_uuid (const char *uuid)
  * @brief Set the start time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
- * @param[in]  timestamp  Start time.  In ISO format.
- */
-static void
-set_scan_start_time (report_t report, const char* timestamp)
-{
-  sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
-       parse_iso_time (timestamp),
-       report);
-}
-
-/**
- * @brief Set the start time of a scan.
- *
- * @param[in]  report     The report associated with the scan.
  * @param[in]  timestamp  Start time. Epoch format.
  */
 void
@@ -23829,30 +23520,6 @@ set_scan_host_end_time_ctime (report_t report, const char* host,
          parse_utc_ctime (timestamp), report, quoted_host);
   else
     manage_report_host_add (report, host, 0, parse_utc_ctime (timestamp));
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the start time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  Start time.  ISO format.
- */
-static void
-set_scan_host_start_time (report_t report, const char* host,
-                          const char* timestamp)
-{
-  gchar *quoted_host;
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET start_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, quoted_host);
-  else
-    manage_report_host_add (report, host, parse_iso_time (timestamp), 0);
   g_free (quoted_host);
 }
 
@@ -24510,12 +24177,11 @@ int
 delete_report_internal (report_t report)
 {
   task_t task;
-  char *slave_task_uuid;
 
   if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u);",
+               " OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
                TASK_STATUS_QUEUED,
@@ -24523,7 +24189,6 @@ delete_report_internal (report_t report)
                TASK_STATUS_DELETE_REQUESTED,
                TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                TASK_STATUS_STOP_REQUESTED,
-               TASK_STATUS_STOP_REQUESTED_GIVEUP,
                TASK_STATUS_STOP_WAITING))
     return 2;
 
@@ -24533,45 +24198,6 @@ delete_report_internal (report_t report)
 
   if (report_task (report, &task))
     return -1;
-
-  /* Remove any associated slave task. */
-
-  slave_task_uuid = report_slave_task_uuid (report);
-  g_debug ("%s: slave_task_uuid: %s", __func__, slave_task_uuid);
-  if (slave_task_uuid)
-    {
-      scanner_t slave;
-
-      /* A stopped report leaves the task on the slave.  Try delete the task. */
-
-      slave = task_scanner (task);
-      if (slave)
-        {
-          char *username, *password;
-
-          username = scanner_login (slave);
-          password = scanner_password (slave);
-          if (username && password)
-            {
-              char *host;
-              int port;
-
-              /* Try with values stored on report. */
-              host = report_slave_host (report);
-              port = report_slave_port_int (report);
-              if (host)
-                delete_slave_task (host, port, username, password,
-                                   slave_task_uuid);
-              g_free (host);
-
-              /* TODO If that fails, try with the current values from the
-               *      slave/scanner stored on the report.  And if that fails,
-               *      try with the values from the current slave of the task. */
-            }
-          free (username);
-          free (password);
-        }
-    }
 
   /* Remove the report data. */
 
@@ -24736,42 +24362,6 @@ set_report_slave_progress (report_t report, int progress)
        progress,
        report);
   return 0;
-}
-
-/**
- * @brief Return the UUID of the task on the slave.
- *
- * @param[in]  report    The report.
- *
- * @return UUID of the slave task if any, else NULL.
- */
-char*
-report_slave_task_uuid (report_t report)
-{
-  char *uuid;
-
-  uuid = sql_string ("SELECT slave_task_uuid FROM reports WHERE id = %llu;",
-                     report);
-  if (uuid && strlen (uuid))
-    return uuid;
-  free (uuid);
-  return NULL;
-}
-
-/**
- * @brief Set the UUID of the slave task, on the local task.
- *
- * @param[in]  report    The report.
- * @param[in]  uuid  UUID.
- */
-void
-set_report_slave_task_uuid (report_t report, const char *uuid)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  sql ("UPDATE reports SET slave_task_uuid = '%s' WHERE id = %llu;",
-       quoted_uuid,
-       report);
-  g_free (quoted_uuid);
 }
 
 /**
@@ -28046,36 +27636,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</task>");
 
       {
-        char *slave_uuid, *slave_name, *slave_host, *slave_port, *source_iface;
+        char *source_iface;
 
         /* Info about the situation at the time of scan. */
 
         PRINT (out,
                "<scan>"
                "<task>");
-
-        slave_uuid = report_slave_uuid (report);
-        slave_name = report_slave_name (report);
-        slave_host = report_slave_host (report);
-        slave_port = report_slave_port (report);
-
-        if (slave_uuid)
-          /* @id "" means no slave.  Missing SLAVE means we don't know. */
-          PRINT (out,
-                 "<slave id=\"%s\">"
-                 "<name>%s</name>"
-                 "<host>%s</host>"
-                 "<port>%s</port>"
-                 "</slave>",
-                 slave_uuid,
-                 slave_name ? slave_name : "",
-                 slave_host ? slave_host : "",
-                 slave_port ? slave_port : "");
-
-        free (slave_uuid);
-        free (slave_name);
-        free (slave_host);
-        free (slave_port);
 
         source_iface = report_source_iface (report);
 
@@ -39067,7 +38634,7 @@ create_scanner (const char* name, const char *comment, const char *host,
   itype = atoi (type);
   if (iport <= 0 || iport > 65535)
     return 2;
-  if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+  if (scanner_type_valid (itype) == 0)
     return 2;
   /* XXX: Workaround for unix socket case. */
   if (gvm_get_host_type (host) == -1 && !unix_socket)
@@ -39078,16 +38645,7 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 1;
     }
 
-  if (!unix_socket
-      && itype == SCANNER_TYPE_GMP
-      && (credential_id == NULL
-          || strcmp (credential_id, "") == 0
-          || strcmp (credential_id, "0") == 0))
-    {
-      sql_rollback ();
-      return 6;
-    }
-  else if (unix_socket)
+  if (unix_socket)
     insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
   else
     {
@@ -39107,19 +38665,9 @@ create_scanner (const char* name, const char *comment, const char *host,
               sql_rollback ();
               return 3;
             }
-          if (itype == SCANNER_TYPE_GMP)
-            {
-              if (sql_int ("SELECT type != 'up' FROM credentials"
-                          " WHERE id = %llu;",
-                          credential))
-                {
-                  sql_rollback ();
-                  return 4;
-                }
-            }
-          else if (sql_int ("SELECT type != 'cc' FROM credentials"
-                            " WHERE id = %llu;",
-                            credential))
+          if (sql_int ("SELECT type != 'cc' FROM credentials"
+                       " WHERE id = %llu;",
+                       credential))
             {
               sql_rollback ();
               return 5;
@@ -39210,7 +38758,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   if (type)
     {
       itype = atoi (type);
-      if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+      if (scanner_type_valid (itype) == 0)
         return 4;
     }
   else
@@ -39285,26 +38833,12 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
 
   if (credential)
     {
-      if (itype == SCANNER_TYPE_GMP)
-        {
-          if (sql_int ("SELECT type != 'up' FROM credentials WHERE id = %llu;",
-                       credential))
-            {
-              sql_rollback ();
-              return 7;
-            }
-        }
-      else if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
+      if (sql_int ("SELECT type != 'cc' FROM credentials WHERE id = %llu;",
                    credential))
         {
           sql_rollback ();
           return 6;
         }
-    }
-  else if (itype == SCANNER_TYPE_GMP)
-    {
-      sql_rollback ();
-      return 8;
     }
 
   /* Check whether a scanner with the same name exists already. */
@@ -40451,99 +39985,6 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
 }
 
 /**
- * @brief Connect a UNIX socket.
- *
- * @param[in]  path  Path.
- *
- * @return Socket, or -1 on error.
- */
-static int
-connect_unix (const gchar *path)
-{
-  struct sockaddr_un address;
-  int sock;
-
-  /* Make socket. */
-
-  sock = socket (AF_UNIX, SOCK_STREAM, 0);
-  if (sock == -1)
-    return -1;
-
-  /* Connect to server. */
-
-  address.sun_family = AF_UNIX;
-  strncpy (address.sun_path, path, sizeof (address.sun_path) - 1);
-  if (connect (sock, (struct sockaddr *) &address, sizeof (address)) == -1)
-    {
-      close (sock);
-      return -1;
-    }
-
-  return sock;
-}
-
-/**
- * @brief Connect to an address.
- *
- * @param[out]  connection  Connection.
- * @param[out]  address     Address.
- * @param[out]  port        Port.
- *
- * @return 0 success, -1 failed to connect.
- */
-static int
-connection_open (gvm_connection_t *connection,
-                 const gchar *address,
-                 int port)
-{
-  if (address == NULL)
-    return -1;
-
-  connection->socket = -1;
-  connection->tls = *address != '/';
-
-  if (connection->tls)
-    {
-      gchar *new_host, *new_ca_cert;
-      int new_port, ret;
-
-      new_host = NULL;
-      new_port = 0;
-      new_ca_cert = NULL;
-
-      ret = slave_get_relay (address,
-                             port,
-                             NULL, /* original_ca_cert */
-                             "GMP",
-                             &new_host,
-                             &new_port,
-                             &new_ca_cert);
-
-      if (ret == 0)
-        {
-          connection->socket
-            = gvm_server_open_verify (&connection->session,
-                                      new_host,
-                                      new_port,
-                                      new_ca_cert,
-                                      NULL,
-                                      NULL,
-                                      1);
-        }
-      connection->credentials = NULL;
-      g_free (new_host);
-      g_free (new_ca_cert);
-    }
-  else
-    connection->socket = connect_unix (address);
-
-  if (connection->socket == -1)
-    return -1;
-
-  return 0;
-}
-
-/**
  * @brief Verify a scanner.
  *
  * @param[in]   scanner_id  Scanner UUID.
@@ -40568,75 +40009,9 @@ verify_scanner (const char *scanner_id, char **version)
       return 1;
     }
   g_free (get.id);
-  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_GMP)
-    {
-      gvm_connection_t connection;
-      const char *host;
-      int port;
-      credential_t credential;
-      char *gmp_user, *gmp_password;
-      int auth_ret;
-
-      host = scanner_iterator_host (&scanner);
-      port = scanner_iterator_port (&scanner);
-      if (host == NULL)
-        {
-          cleanup_iterator (&scanner);
-          return -1;
-        }
-
-      if (connection_open (&connection, host, port))
-        {
-          cleanup_iterator (&scanner);
-          return 2;
-        }
-
-      if (gmp_ping_c (&connection, 0, version))
-        {
-          gvm_connection_close (&connection);
-          cleanup_iterator (&scanner);
-          return 2;
-        }
-      g_debug ("%s: *version: %s", __func__, *version);
-
-      credential = scanner_iterator_credential (&scanner);
-      if (credential == 0)
-        {
-          g_warning ("%s: Missing credential for GMP scanner %s",
-                     __func__, get_iterator_uuid (&scanner));
-          gvm_connection_close (&connection);
-          cleanup_iterator (&scanner);
-          return 3;
-        }
-
-      gmp_user = scanner_login (get_iterator_resource (&scanner));
-      gmp_password = scanner_password (get_iterator_resource (&scanner));
-
-      auth_ret = gmp_authenticate (&connection.session,
-                                   gmp_user, gmp_password);
-
-      if (auth_ret)
-        {
-          if (auth_ret == 1)
-            g_warning ("%s: GMP scanner %s closed connection"
-                       " during authentication.",
-                       __func__, get_iterator_uuid (&scanner));
-          else if (auth_ret != 2)
-            g_warning ("%s: Internal error during authentication"
-                       " with GMP scanner %s.",
-                       __func__, get_iterator_uuid (&scanner));
-          gvm_connection_close (&connection);
-          cleanup_iterator (&scanner);
-          return 3;
-        }
-
-      gvm_connection_close (&connection);
-      cleanup_iterator (&scanner);
-      return 0;
-    }
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
-           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_SENSOR)
+  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
+      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
+      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_SENSOR)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
                                                NULL, NULL, NULL);
@@ -40701,9 +40076,6 @@ manage_get_scanners (GSList *log_config, const gchar *database)
             break;
           case SCANNER_TYPE_CVE:
             scanner_type_str = "CVE";
-            break;
-          case SCANNER_TYPE_GMP:
-            scanner_type_str = "GMP";
             break;
           case SCANNER_TYPE_OSP_SENSOR:
             scanner_type_str = "OSP-Sensor";
@@ -41820,391 +41192,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   sql_commit ();
 
   return 0;
-}
-
-
-/* GMP slave scanners. */
-
-/**
- * @brief Set the slave update commit size.
- *
- * @param new_commit_size The new slave update commit size.
- */
-void
-set_slave_commit_size (int new_commit_size)
-{
-  if (new_commit_size < 0)
-    slave_commit_size = 0;
-  else
-    slave_commit_size = new_commit_size;
-}
-
-/**
- * @brief Buffer a result to be inserted.
- *
- * @param[in]  results_buffer     Buffer to store results SQL.
- * @param[in]  result_nvts_buffer Buffer to store result_nvts SQL.
- * @param[in]  task         The task associated with the result.
- * @param[in]  host         Host IP address.
- * @param[in]  hostname     Hostname.
- * @param[in]  port         The port the result refers to.
- * @param[in]  nvt          The OID of the NVT that produced the result.
- * @param[in]  type         Type of result.  "Security Hole", etc.
- * @param[in]  description  Description of the result.
- * @param[in]  report       Report that result belongs to.
- * @param[in]  owner        Owner of report.
- *
- * @return 0 success, -1 error.
- */
-static int
-buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
-               task_t task, const char* host,
-               const char *hostname, const char* port, const char* nvt,
-               const char* type, const char* description,
-               report_t report, user_t owner)
-{
-  gchar *nvt_revision, *severity, *qod, *qod_type;
-  gchar *quoted_hostname, *quoted_descr;
-  int first;
-  nvt_t nvt_id = 0;
-
-  assert (report);
-
-  if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
-    {
-      g_warning ("NVT '%s' not found. Result not created", nvt);
-      return -1;
-    }
-
-  if (nvt_id)
-    {
-      qod = g_strdup_printf ("(SELECT qod FROM nvts WHERE id = %llu)",
-                             nvt_id);
-      qod_type = g_strdup_printf ("(SELECT qod_type FROM nvts WHERE id = %llu)",
-                                  nvt_id);
-
-      nvt_revision = sql_string ("SELECT iso_time (modification_time)"
-                                 " FROM nvts"
-                                 " WHERE uuid = '%s';",
-                                 nvt);
-    }
-  else
-    {
-      qod = G_STRINGIFY (QOD_DEFAULT);
-      qod_type = g_strdup ("''");
-      nvt_revision = g_strdup ("");
-    }
-  severity = nvt_severity (nvt, type);
-  if (!severity)
-    {
-      g_warning ("NVT '%s' has no severity.  Result not created.", nvt);
-      return -1;
-    }
-
-  if (!strcmp (severity, ""))
-    {
-      g_free (severity);
-      severity = g_strdup ("0.0");
-    }
-  quoted_hostname = sql_quote (hostname ? hostname : "");
-  quoted_descr = sql_quote (description ?: "");
-  result_nvt_notice (nvt);
-  first = (strlen (results_buffer->str) == 0);
-
-  if (first)
-    {
-      g_string_append (results_buffer,
-                       "INSERT into results"
-                       " (owner, date, task, host, hostname, port,"
-                       "  nvt, nvt_version, severity, type,"
-                       "  description, uuid, qod, qod_type, result_nvt,"
-                       "  report)"
-                       " VALUES");
-      g_string_append (result_nvts_buffer,
-                       "INSERT INTO result_nvts (nvt) VALUES ");
-    }
-
-  g_string_append_printf
-      (result_nvts_buffer,
-       "%s ('%s')",
-       first ? "" : ",",
-       nvt);
-
-  g_string_append_printf (results_buffer,
-                          "%s"
-                          " (%llu, m_now (), %llu, '%s', '%s', '%s',"
-                          "  '%s', '%s', '%s', '%s',"
-                          "  '%s', make_uuid (), %s, %s,"
-                          "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
-                          "  %llu)",
-                          first ? "" : ",",
-                          owner,
-                          task, host ?: "", quoted_hostname, port ?: "",
-                          nvt ?: "", nvt_revision, severity, type,
-                          quoted_descr, qod, qod_type, nvt ? nvt : "",
-                          report);
-
-  g_free (quoted_hostname);
-  g_free (quoted_descr);
-  g_free (qod);
-  g_free (qod_type);
-  g_free (nvt_revision);
-  g_free (severity);
-  return 0;
-}
-
-/**
- * @brief Run INSERT for update_from_slave.
- *
- * @param[in]  results_buffer     Buffer of results SQL.
- * @param[in]  result_nvts_buffer Buffer of result_nvts SQL.
- * @param[in]  report             Report.
- */
-static void
-update_from_slave_insert (GString *results_buffer, GString *result_nvts_buffer,
-                          report_t report)
-{
-  if (result_nvts_buffer && strlen (result_nvts_buffer->str))
-    {
-      g_string_append (result_nvts_buffer,
-                       " ON CONFLICT (nvt) DO NOTHING;");
-
-      sql ("%s", result_nvts_buffer->str);
-      g_string_truncate (result_nvts_buffer, 0);
-    }
-
-  if (results_buffer && strlen (results_buffer->str))
-    {
-      if (report)
-        {
-          iterator_t ids;
-
-          g_string_append (results_buffer, " RETURNING id;");
-
-          init_iterator (&ids, "%s", results_buffer->str);
-          while (next (&ids))
-            report_add_result_for_buffer (report, iterator_int64 (&ids, 0));
-          cleanup_iterator (&ids);
-
-          sql ("UPDATE report_counts"
-               " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
-               "                 FROM overrides, results"
-               "                 WHERE overrides.nvt = results.nvt"
-               "                 AND results.report = %llu"
-               "                 AND overrides.end_time >= m_now ())"
-               " WHERE report = %llu AND override = 1;",
-               report, report);
-        }
-      else
-        sql ("%s", results_buffer->str);
-
-      g_string_truncate (results_buffer, 0);
-    }
-}
-
-/**
- * @brief Update the local task from the slave task.
- *
- * @param[in]   task         The local task.
- * @param[in]   get_report   Slave GET_REPORT response.
- * @param[out]  report       Report from get_report.
- * @param[out]  next_result  Next result counter.
- *
- * @return 0 success, -1 error.
- */
-int
-update_from_slave (task_t task, entity_t get_report, entity_t *report,
-                   int *next_result)
-{
-  entity_t entity, host, start;
-  entities_t results, hosts, entities;
-  int current_commit_size;
-  GString *results_buffer, *result_nvts_buffer;
-  user_t owner;
-
-  entity = entity_child (get_report, "report");
-  if (entity == NULL)
-    return -1;
-
-  *report = entity_child (entity, "report");
-  if (*report == NULL)
-    return -1;
-
-  /* Set the scan start time. */
-
-  entities = (*report)->entities;
-  while ((start = first_entity (entities)))
-    {
-      if (strcmp (entity_name (start), "scan_start") == 0)
-        {
-          set_task_start_time (current_scanner_task,
-                               g_strdup (entity_text (start)));
-          set_scan_start_time (global_current_report, entity_text (start));
-          break;
-        }
-      entities = next_entities (entities);
-    }
-
-  /* Get any new results and hosts from the slave. */
-
-  sql_begin_immediate ();
-  hosts = (*report)->entities;
-  current_commit_size = 0;
-  while ((host = first_entity (hosts)))
-    {
-      if (strcmp (entity_name (host), "host") == 0)
-        {
-          entity_t ip;
-
-          ip = entity_child (host, "ip");
-          if (ip == NULL)
-            goto rollback_fail;
-
-          start = entity_child (host, "start");
-          if (start == NULL)
-            goto rollback_fail;
-
-          set_scan_host_start_time (global_current_report,
-                                    entity_text (ip),
-                                    entity_text (start));
-        }
-      hosts = next_entities (hosts);
-
-      current_commit_size++;
-      if (slave_commit_size && current_commit_size >= slave_commit_size)
-        {
-          sql_commit ();
-          sql_begin_immediate ();
-          current_commit_size = 0;
-        }
-    }
-  sql_commit ();
-
-  entity = entity_child (*report, "results");
-  if (entity == NULL)
-    return -1;
-
-  assert (global_current_report);
-
-  owner = sql_int64_0 ("SELECT reports.owner FROM reports WHERE id = %llu;",
-                       global_current_report);
-
-  sql_begin_immediate ();
-  results = entity->entities;
-  current_commit_size = 0;
-  results_buffer = g_string_new ("");
-  result_nvts_buffer = g_string_new ("");
-  while ((entity = first_entity (results)))
-    {
-      if (strcmp (entity_name (entity), "result") == 0)
-        {
-          entity_t result_host, hostname, port, nvt, threat, description;
-          const char *oid;
-
-          result_host = entity_child (entity, "host");
-          if (result_host == NULL)
-            goto rollback_fail;
-
-          hostname = entity_child (result_host, "hostname");
-
-          port = entity_child (entity, "port");
-          if (port == NULL)
-            goto rollback_fail;
-
-          nvt = entity_child (entity, "nvt");
-          if (nvt == NULL)
-            goto rollback_fail;
-          oid = entity_attribute (nvt, "oid");
-          if ((oid == NULL) || (strlen (oid) == 0))
-            goto rollback_fail;
-
-          threat = entity_child (entity, "threat");
-          if (threat == NULL)
-            goto rollback_fail;
-
-          description = entity_child (entity, "description");
-          if (description == NULL)
-            goto rollback_fail;
-
-          buffer_insert (results_buffer,
-                         result_nvts_buffer,
-                         task,
-                         entity_text (result_host),
-                         hostname ? entity_text (hostname) : "",
-                         entity_text (port),
-                         oid,
-                         threat_message_type (entity_text (threat)),
-                         entity_text (description),
-                         global_current_report,
-                         owner);
-
-          current_commit_size++;
-          if (slave_commit_size && current_commit_size >= slave_commit_size)
-            {
-              update_from_slave_insert (results_buffer,
-                                        result_nvts_buffer,
-                                        global_current_report);
-              sql_commit ();
-              sql_begin_immediate ();
-              current_commit_size = 0;
-            }
-
-          (*next_result)++;
-        }
-      results = next_entities (results);
-    }
-  update_from_slave_insert (results_buffer,
-                            result_nvts_buffer,
-                            global_current_report);
-  g_string_free (results_buffer, TRUE);
-  g_string_free (result_nvts_buffer, TRUE);
-  sql_commit ();
-
-  sql_begin_immediate ();
-  current_commit_size = 0;
-  hosts = (*report)->entities;
-  while ((host = first_entity (hosts)))
-    {
-      if (strcmp (entity_name (host), "host") == 0)
-        {
-          entity_t ip, end;
-          char *uuid;
-
-          ip = entity_child (host, "ip");
-          if (ip == NULL)
-            goto rollback_fail;
-
-          end = entity_child (host, "end");
-          if (end
-              && entity_text (end)
-              && strcmp (entity_text (end), "")
-              && report_host_noticeable (global_current_report,
-                                         entity_text (ip)))
-            {
-              uuid = report_uuid (global_current_report);
-              host_notice (entity_text (ip), "ip", entity_text (ip),
-                           "Report Host", uuid, 1, 1);
-              free (uuid);
-
-              current_commit_size++;
-              if (slave_commit_size
-                  && current_commit_size >= slave_commit_size)
-                {
-                  sql_commit ();
-                  sql_begin_immediate ();
-                  current_commit_size = 0;
-                }
-            }
-        }
-
-      hosts = next_entities (hosts);
-    }
-  sql_commit ();
-  return 0;
-
- rollback_fail:
-  sql_rollback ();
-  return -1;
 }
 
 
@@ -50813,8 +49800,6 @@ setting_name (const gchar *uuid)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "Max Rows Per Page";
-  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
-    return "GMP Slave Check Period";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Debian LSC Package Maintainer";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
@@ -50851,8 +49836,6 @@ setting_description (const gchar *uuid)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
     return "The default maximum number of rows displayed in any listing.";
-  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
-    return "Period in seconds when polling a GMP slave";
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     return "Maintainer email address used in generated Debian LSC packages.";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
@@ -50890,14 +49873,6 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
             return 1;
         }
       else if (max_rows < 0)
-        return 1;
-    }
-
-  if (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0)
-    {
-      int period;
-      period = atoi (value);
-      if (period <= 0)
         return 1;
     }
 
@@ -51035,7 +50010,6 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
-      && strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES))
@@ -51064,8 +50038,7 @@ manage_modify_setting (GSList *log_config, const gchar *database,
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
-          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_SLAVE_CHECK_PERIOD) == 0))
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
@@ -52052,7 +51025,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         case TASK_STATUS_REQUESTED:
         case TASK_STATUS_RUNNING:
         case TASK_STATUS_QUEUED:
-        case TASK_STATUS_STOP_REQUESTED_GIVEUP:
         case TASK_STATUS_STOP_REQUESTED:
         case TASK_STATUS_STOP_WAITING:
           {
@@ -53996,18 +52968,6 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
     }
 
   sql_commit ();
-}
-
-/**
- * @brief Get the slave check period.
- *
- * @return Number of seconds.
- */
-int
-manage_slave_check_period ()
-{
-  return sql_int ("SELECT value FROM settings"
-                  " WHERE uuid = '" SETTING_UUID_SLAVE_CHECK_PERIOD "';");
 }
 
 

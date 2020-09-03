@@ -252,7 +252,7 @@ typedef enum
   TASK_STATUS_STOPPED = 12,
   TASK_STATUS_INTERRUPTED = 13,
   TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14,
-  TASK_STATUS_STOP_REQUESTED_GIVEUP = 15,
+  /* 15 was removed (TASK_STATUS_STOP_REQUESTED_GIVEUP). */
   TASK_STATUS_DELETE_WAITING = 16,
   TASK_STATUS_DELETE_ULTIMATE_WAITING = 17,
   TASK_STATUS_QUEUED = 18
@@ -293,13 +293,16 @@ typedef enum
 typedef enum scanner_type
 {
   SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_OSP,
-  SCANNER_TYPE_OPENVAS,
-  SCANNER_TYPE_CVE,
-  SCANNER_TYPE_GMP,
-  SCANNER_TYPE_OSP_SENSOR,
-  SCANNER_TYPE_MAX,
+  SCANNER_TYPE_OSP = 1,
+  SCANNER_TYPE_OPENVAS = 2,
+  SCANNER_TYPE_CVE = 3,
+  /* 4 was removed (SCANNER_TYPE_GMP). */
+  SCANNER_TYPE_OSP_SENSOR = 5,
+  SCANNER_TYPE_MAX = 6,
 } scanner_type_t;
+
+int
+scanner_type_valid (scanner_type_t);
 
 typedef resource_t credential_t;
 typedef resource_t alert_t;
@@ -1223,27 +1226,6 @@ report_add_result (report_t, result_t);
 char*
 report_uuid (report_t);
 
-void
-report_set_slave_uuid (report_t, const gchar *);
-
-void
-report_set_slave_name (report_t, const gchar *);
-
-void
-report_set_slave_host (report_t, const gchar *);
-
-void
-report_set_slave_port (report_t, int);
-
-void
-report_set_slave_username (report_t, const gchar *);
-
-void
-report_set_slave_password (report_t, const gchar *);
-
-void
-report_set_source_iface (report_t, const gchar *);
-
 int
 task_last_resumable_report (task_t, report_t *);
 
@@ -1258,9 +1240,6 @@ report_task (report_t, task_t*);
 
 void
 report_compliance_by_uuid (const char *, int *, int *, int *);
-
-char *
-report_slave_task_uuid (report_t);
 
 int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
@@ -2415,11 +2394,6 @@ manage_system_report (const char *, const char *, const char *, const char *,
 
 /* Scanners. */
 
-/**
- * @brief Default for slave update commit size.
- */
-#define SLAVE_COMMIT_SIZE_DEFAULT 0
-
 int
 manage_create_scanner (GSList *, const char *, const char *, const char *,
                        const char *, const char *, const char *, const char *,
@@ -2589,9 +2563,6 @@ osp_scanner_connect (scanner_t);
 
 int
 verify_scanner (const char *, char **);
-
-void
-set_slave_commit_size (int);
 
 const char *
 get_relay_mapper_path ();
@@ -3315,9 +3286,6 @@ manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *, co
 
 char *
 manage_default_ca_cert ();
-
-int
-manage_slave_check_period ();
 
 
 /* Users. */

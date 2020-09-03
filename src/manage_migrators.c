@@ -2308,6 +2308,53 @@ migrate_232_to_233 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 233 to version 234.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_233_to_234 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 233. */
+
+  if (manage_db_version () != 233)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Support for GMP Scanners was removed, including setting "GMP Slave
+   * Check Period" and various report slave columns. */
+
+  /* Delete setting. */
+  sql ("DELETE FROM settings WHERE uuid = '63adb79a-62ae-11e9-91ba-28d24461215b';");
+
+  /* Drop columns. */
+  sql ("ALTER TABLE reports"
+       " DROP column slave_task_uuid,"
+       " DROP column slave_uuid,"
+       " DROP column slave_name,"
+       " DROP column slave_host,"
+       " DROP column slave_port;");
+
+  /* Convert existing GMP Scanners to OSP Scanners. */
+  sql ("UPDATE scanners SET type = 2 WHERE type = 4;");
+  sql ("UPDATE scanners_trash SET type = 2 WHERE type = 4;");
+
+  /* Set the database version to 233. */
+
+  set_db_version (234);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2347,6 +2394,7 @@ static migrator_t database_migrators[] = {
   {231, migrate_230_to_231},
   {232, migrate_231_to_232},
   {233, migrate_232_to_233},
+  {234, migrate_233_to_234},
   /* End marker. */
   {-1, NULL}};
 

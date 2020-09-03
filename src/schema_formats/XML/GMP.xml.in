@@ -2568,35 +2568,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>task</name>
           <pattern>
-            <e>slave</e>
             <e>preferences</e>
           </pattern>
-          <ele>
-            <name>slave</name>
-            <summary>The task slave</summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>host</e>
-              <e>port</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>host</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>port</name>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
           <ele>
             <name>preferences</name>
             <summary>Currently only "source_iface"</summary>
@@ -18353,7 +18326,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </attrib>
       <attrib>
         <name>slave_id</name>
-        <summary>GMP scanner from which to get report</summary>
+        <summary>Scanner from which to get report</summary>
         <type>uuid</type>
       </attrib>
     </pattern>
@@ -25507,12 +25480,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <command>
     <name>move_task</name>
     <summary>
-      Moves an existing task to another GMP slave scanner or the master
+      Moves an existing task to another slave scanner or the master
     </summary>
     <description>
       <p>
         If a scan is running, this command will stop the task and resume it
-        after reassigning to the new GMP scanner or master.
+        after reassigning to the new scanner or master.
         Note that in this case, the command will wait until the task has been
         requested to resume.
       </p>
@@ -26014,6 +25987,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_SCANNER, MODIFY_SCANNER, GET_REPORTS</command>
+    <summary>GMP scanners have been removed</summary>
+    <description>
+      <p>
+        The scanner type "GMP" has been removed.  This is the original "slave"
+        feature, where a gvmd (the master) controls another gvmd (the slave)
+        via GMP.
+      </p>
+      <p>
+        Existing GMP scanners are automatically migrated to type "OpenVAS".
+        The "OpenVAS" scanner type uses the OSP protocol, and is better suited
+        to the master-slave scenario.
+      </p>
+      <p>
+        CREATE_SCANNER and MODIFY_SCANNER no longer accept type "4".
+      </p>
+      <p>
+        In the report XML, as returned by GET_REPORTS, SLAVE has been removed
+        from REPORT/TASK.
+      </p>
+      <p>
+        All other scanner related commands work as before, but there are no
+        GMP scanners for them to work with.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
   <change>
     <command>CREATE_TARGET, RUN_WIZARD</command>
     <summary>Default port list removed from CREATE_TARGET</summary>
