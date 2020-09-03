@@ -18561,7 +18561,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           {
             case 0:   /* Authentication succeeded. */
               {
-                const char *zone, *severity;
+                const char *zone;
                 char *pw_warning;
 
                 zone = (current_credentials.timezone
@@ -18583,7 +18583,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                 manage_session_set_timezone (zone);
 
-                severity = "nist";
                 pw_warning = gvm_validate_password
                               (current_credentials.password,
                                current_credentials.username);
@@ -18595,14 +18594,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
-                    "<severity>%s</severity>"
+                    "<severity>nist</severity>"
                     "<password_warning>%s</password_warning>"
                     "</authenticate_response>",
                     current_credentials.role
                       ? current_credentials.role
                       : "",
                     zone,
-                    severity,
                     pw_warning ? pw_warning : "");
                 else
                   SENDF_TO_CLIENT_OR_FAIL
@@ -18611,13 +18609,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
-                    "<severity>%s</severity>"
+                    "<severity>nist</severity>"
                     "</authenticate_response>",
                     current_credentials.role
                       ? current_credentials.role
                       : "",
-                    zone,
-                    severity);
+                    zone);
 
                 free (pw_warning);
                 set_client_state (CLIENT_AUTHENTIC);
