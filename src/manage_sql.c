@@ -15368,16 +15368,6 @@ check_db_settings ()
          "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('f16bb236-a32d-4cd5-a880-e0fcf2599f59', NULL, 'Severity Class',"
-         "  'Severity class used for severity bars.',"
-         "  'nist');");
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
