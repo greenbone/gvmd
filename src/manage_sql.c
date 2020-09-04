@@ -26025,41 +26025,6 @@ report_progress (report_t report)
 }
 
 /**
- * @brief Buffer XML for a severity class.
- *
- * @return Freshly allocated XML on success, else NULL.
- */
-static gchar *
-severity_class_xml (void)
-{
-  return g_strdup_printf ("<severity_class"
-                          " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
-                          "<name>nist</name>"
-                          "<full_name>NVD Vulnerability Severity Ratings</full_name>"
-                          "<severity_range>"
-                          "<name>None</name>"
-                          "<min>0.0</min>"
-                          "<max>0.0</max>"
-                          "</severity_range>"
-                          "<severity_range>"
-                          "<name>Low</name>"
-                          "<min>0.1</min>"
-                          "<max>3.9</max>"
-                          "</severity_range>"
-                          "<severity_range>"
-                          "<name>Medium</name>"
-                          "<min>4.0</min>"
-                          "<max>6.9</max>"
-                          "</severity_range>"
-                          "<severity_range>"
-                          "<name>High</name>"
-                          "<min>7.0</min>"
-                          "<max>10.0</max>"
-                          "</severity_range>"
-                          "</severity_class>");
-}
-
-/**
  * @brief Restore original TZ.
  *
  * @param[in]  zone             Only revert if this is at least one character.
@@ -27418,17 +27383,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   PRINT_XML (out, filters_buffer->str);
   g_string_free (filters_buffer, TRUE);
-
-  {
-    gchar *class_xml;
-
-    class_xml = severity_class_xml ();
-    if (class_xml)
-      {
-        PRINT_XML (out, class_xml);
-        g_free (class_xml);
-      }
-  }
 
   if (report)
     {
