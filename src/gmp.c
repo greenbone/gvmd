@@ -18594,7 +18594,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
-                    "<severity>nist</severity>"
                     "<password_warning>%s</password_warning>"
                     "</authenticate_response>",
                     current_credentials.role
@@ -18609,7 +18608,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
-                    "<severity>nist</severity>"
                     "</authenticate_response>",
                     current_credentials.role
                       ? current_credentials.role
