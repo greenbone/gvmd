@@ -45921,6 +45921,31 @@ filter_in_use_for_result_event (filter_t filter)
 }
 
 /**
+ * @brief Check whether a filter is in use by any secinfo alert conditions.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+filter_in_use_for_secinfo_event (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE (event = %llu OR event = %llu)"
+                    " AND (EXISTS (SELECT * FROM alert_condition_data"
+                    "              WHERE name = 'filter_id'"
+                    "              AND data = (SELECT uuid FROM filters"
+                    "                          WHERE id = %llu)"
+                    "              AND alert = alerts.id)"
+                    " AND (condition = %i OR condition = %i))",
+                    EVENT_NEW_SECINFO,
+                    EVENT_UPDATED_SECINFO,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
+}
+
+/**
  * @brief Check whether a trashcan filter is in use.
  *
  * @param[in]  filter  Filter.
@@ -46206,10 +46231,19 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     }
 
   /* If the filter is linked to an alert, check that the type is valid. */
+
   if ((filter_in_use_for_output (filter)
        || filter_in_use_for_result_event (filter))
       && type
       && strcasecmp (type, "result"))
+    {
+      sql_rollback ();
+      return 5;
+    }
+
+  if (filter_in_use_for_secinfo_event (filter)
+      && type
+      && strcasecmp (type, "info"))
     {
       sql_rollback ();
       return 5;
