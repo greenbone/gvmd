@@ -23536,6 +23536,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("filter", "Filter",
                                 modify_filter_data->filter_id, "modified");
                 break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "Filter is used by an alert so type must be"
+                                    " 'info' if specified"));
+                log_event_fail ("filter", "Filter",
+                                modify_filter_data->filter_id, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_filter",

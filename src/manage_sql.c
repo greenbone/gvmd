@@ -46190,8 +46190,8 @@ filter_alert_iterator_readable (iterator_t* iterator)
  *
  * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
  *         3 error in type name, 4 filter_id required, 5 filter is in use so
- *         type must be "result" if specified, 99 permission denied,
- *         -1 internal error.
+ *         type must be "result", 6 filter is in use so type must be "info",
+ *         99 permission denied, -1 internal error.
  */
 int
 modify_filter (const char *filter_id, const char *name, const char *comment,
@@ -46246,7 +46246,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
       && strcasecmp (type, "info"))
     {
       sql_rollback ();
-      return 5;
+      return 6;
     }
 
   /* Check whether a filter with the same name exists already. */
