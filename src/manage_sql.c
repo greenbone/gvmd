@@ -45866,7 +45866,9 @@ int
 filter_in_use (filter_t filter)
 {
   return !!sql_int ("SELECT count (*) FROM alerts"
+                    /* Filter applied to results passed to alert's "generate". */
                     " WHERE filter = %llu"
+                    /* Filter applied to check alert condition. */
                     "   OR (EXISTS (SELECT * FROM alert_condition_data"
                     "             WHERE name = 'filter_id'"
                     "             AND data = (SELECT uuid FROM filters"
@@ -45874,6 +45876,45 @@ filter_in_use (filter_t filter)
                     "             AND alert = alerts.id)"
                     "       AND (condition = %i OR condition = %i))",
                     filter,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
+}
+
+/**
+ * @brief Check whether a filter is in use for the output of any alert.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+filter_in_use_for_output (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE filter = %llu;",
+                    filter);
+}
+
+/**
+ * @brief Check whether a filter is in use by any result alert conditions.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+filter_in_use_for_result_event (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE event = %llu"
+                    " AND (EXISTS (SELECT * FROM alert_condition_data"
+                    "              WHERE name = 'filter_id'"
+                    "              AND data = (SELECT uuid FROM filters"
+                    "                          WHERE id = %llu)"
+                    "              AND alert = alerts.id)"
+                    " AND (condition = %i OR condition = %i))",
+                    EVENT_TASK_RUN_STATUS_CHANGED,
                     filter,
                     ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
                     ALERT_CONDITION_FILTER_COUNT_CHANGED);
@@ -46165,7 +46206,8 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     }
 
   /* If the filter is linked to an alert, check that the type is valid. */
-  if (filter_in_use (filter)
+  if ((filter_in_use_for_output (filter)
+       || filter_in_use_for_result_event (filter))
       && type
       && strcasecmp (type, "result"))
     {
