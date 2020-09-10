@@ -15275,7 +15275,6 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
-                                      NULL, /* autofp */
                                       &notes,
                                       &overrides,
                                       NULL, /* apply_overrides */

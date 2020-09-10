@@ -2010,7 +2010,6 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  search_phrase      Phrase that results must include.  All results
  *                                 if NULL or "".
  * @param[out]  search_phrase_exact  Whether search phrase is exact.
- * @param[out]  autofp             Whether to apply auto FP filter.
  * @param[out]  notes              Whether to include notes.
  * @param[out]  overrides          Whether to include overrides.
  * @param[out]  apply_overrides    Whether to apply overrides.
@@ -2022,7 +2021,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                int *result_hosts_only, gchar **min_qod,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
-                               int *autofp, int *notes, int *overrides,
+                               int *notes, int *overrides,
                                int *apply_overrides, gchar **zone)
 {
   keyword_t **point;
@@ -2145,16 +2144,6 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *result_hosts_only = 1;
       else
         *result_hosts_only = val;
-    }
-
-  if (autofp)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "autofp",
-                              &val))
-        *autofp = 0;
-      else
-        *autofp = val;
     }
 
   if (notes)
@@ -26968,7 +26957,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int result_hosts_only;
   int notes, overrides;
 
-  int first_result, max_results, sort_order, autofp;
+  int first_result, max_results, sort_order;
 
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
@@ -27058,7 +27047,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
-                                     &autofp, &notes, &overrides,
+                                     &notes, &overrides,
                                      &apply_overrides, &zone);
     }
   else
@@ -27070,7 +27059,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
-                                     &autofp, &notes, &overrides,
+                                     &notes, &overrides,
                                      &apply_overrides, &zone);
     }
 
