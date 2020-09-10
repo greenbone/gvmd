@@ -21741,7 +21741,6 @@ result_iterator_opts_table (int override, int dynamic)
  * @param[in]  trash            Whether to get results from trashcan.
  * @param[in]  report           Report to restrict returned results to.
  * @param[in]  host             Host to restrict returned results to.
- * @param[in]  autofp           Whether to apply auto FP filter.
  * @param[in]  apply_overrides  Whether to apply overrides.
  * @param[in]  dynamic_severity Whether to use dynamic severity.
  * @param[in]  filter           Filter string.
@@ -21750,7 +21749,7 @@ result_iterator_opts_table (int override, int dynamic)
  */
 static gchar*
 results_extra_where (int trash, report_t report, const gchar* host,
-                     int autofp, int apply_overrides, int dynamic_severity,
+                     int apply_overrides, int dynamic_severity,
                      const gchar *filter)
 {
   gchar *extra_where;
@@ -21768,25 +21767,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  switch (autofp)
-    {
-      case 1:
-        auto_type_sql = g_strdup_printf
-          ("(SELECT autofp FROM results_autofp"
-            " WHERE result = results.id"
-            " AND autofp_selection = 1)");
-        break;
-      case 2:
-        auto_type_sql = g_strdup_printf
-          ("(SELECT autofp FROM results_autofp"
-            " WHERE result = results.id"
-            " AND autofp_selection = 2)");
-          break;
-
-      default:
-        auto_type_sql = g_strdup ("NULL");
-        break;
-    }
+  auto_type_sql = g_strdup ("NULL");
 
   new_severity_sql
     = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
@@ -22010,7 +21991,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                              dynamic_severity);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
+                                     apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
   free (filter);
@@ -22102,7 +22083,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
-  int autofp, apply_overrides, dynamic_severity;
+  int apply_overrides, dynamic_severity;
 
   if (report == -1)
     {
@@ -22121,7 +22102,6 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
@@ -22131,7 +22111,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
+                                     apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
   free (filter);
@@ -22175,7 +22155,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
-  int apply_overrides, autofp, dynamic_severity;
+  int apply_overrides, dynamic_severity;
 
   if (report == -1)
     return 0;
@@ -22191,7 +22171,6 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
@@ -22201,7 +22180,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
+                                     apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
   ret = count ("result", get,
@@ -54546,7 +54525,7 @@ type_extra_where (const char *type, int trash, const char *filter,
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
-      int autofp, apply_overrides;
+      int apply_overrides;
       gchar *report_id;
       report_t report;
 
@@ -54573,11 +54552,10 @@ type_extra_where (const char *type, int trash, const char *filter,
         }
       g_free (report_id);
 
-      autofp = filter_term_autofp (filter);
       apply_overrides = filter_term_apply_overrides (filter);
 
       extra_where = results_extra_where (trash, report, NULL,
-                                         autofp, apply_overrides,
+                                         apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter);
     }
