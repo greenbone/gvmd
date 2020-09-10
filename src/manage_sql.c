@@ -21682,14 +21682,13 @@ where_qod (int min_qod)
 /**
  * @brief Generate the extra_tables string for a result iterator.
  *
- * @param[in]  autofp    Whether to apply auto FP filter.
  * @param[in]  override  Whether to apply overrides.
  * @param[in]  dynamic   Whether to use dynamic severity scores.
  *
  * @return Newly allocated string with the extra_tables clause.
  */
 static gchar*
-result_iterator_opts_table (int autofp, int override, int dynamic)
+result_iterator_opts_table (int override, int dynamic)
 {
   user_t user_id;
   gchar *user_zone, *quoted_user_zone, *ret;
@@ -21724,12 +21723,10 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
          (", (SELECT"
           "   '%s'::text AS user_zone,"
           "   %llu AS user_id,"
-          "   %d AS autofp,"
           "   %d AS override,"
           "   %d AS dynamic) AS opts",
           quoted_user_zone,
           user_id,
-          autofp,
           override,
           dynamic);
 
@@ -22009,7 +22006,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   if (autofp == 0)
     columns[0].select = "0";
 
-  extra_tables = result_iterator_opts_table (autofp, apply_overrides,
+  extra_tables = result_iterator_opts_table (apply_overrides,
                                              dynamic_severity);
 
   extra_where = results_extra_where (get->trash, report, host,
@@ -22127,8 +22124,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  opts_tables
-    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
                                   opts_tables);
@@ -22198,8 +22194,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  opts_tables
-    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
                                   opts_tables);
@@ -54453,8 +54448,7 @@ type_opts_table (const char *type, const char *filter)
     return report_iterator_opts_table (filter_term_apply_overrides (filter),
                                        filter_term_min_qod (filter));
   if (strcasecmp (type, "RESULT") == 0)
-    return result_iterator_opts_table (filter_term_autofp (filter),
-                                       filter_term_apply_overrides (filter),
+    return result_iterator_opts_table (filter_term_apply_overrides (filter),
                                        setting_dynamic_severity_int ());
   if (strcasecmp (type, "VULN") == 0)
     {
