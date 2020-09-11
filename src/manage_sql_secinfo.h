@@ -29,7 +29,7 @@
  * @brief SQL to check if a result has CERT Bunds.
  */
 #define SECINFO_SQL_RESULT_HAS_CERT_BUNDS                          \
- "(SELECT EXISTS (SELECT * FROM cert_bund_cves"                    \
+ "(SELECT EXISTS (SELECT * FROM cert.cert_bund_cves"                    \
  "                WHERE cve_name IN (SELECT ref_id"                \
  "                                   FROM vt_refs"                 \
  "                                   WHERE vt_oid = results.nvt"   \
@@ -40,8 +40,8 @@
  */
 #define SECINFO_SQL_RESULT_CERT_BUNDS                                    \
  "(ARRAY (SELECT name::text"                                             \
- "        FROM cert_bund_advs"                                           \
- "        WHERE id IN (SELECT adv_id FROM cert_bund_cves"                \
+ "        FROM cert.cert_bund_advs"                                           \
+ "        WHERE id IN (SELECT adv_id FROM cert.cert_bund_cves"                \
  "                     WHERE cve_name IN (SELECT ref_id"                 \
  "                                        FROM vt_refs"                  \
  "                                        WHERE vt_oid = results.nvt"    \

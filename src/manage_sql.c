@@ -32440,7 +32440,7 @@ check_for_new_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32811,11 +32811,11 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
   count = 0;
   if (example)
     init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
+                   "SELECT uuid, name, title FROM cert.cert_bund_advs"
                    " LIMIT 4;");
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
+                   "SELECT uuid, name, title FROM cert.cert_bund_advs"
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -32825,7 +32825,7 @@ new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
                    " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
+                   "SELECT uuid, name, title FROM cert.cert_bund_advs"
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -33218,7 +33218,7 @@ check_for_updated_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"

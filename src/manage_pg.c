@@ -3133,7 +3133,7 @@ manage_db_init (const gchar *name)
       sql ("CREATE OR REPLACE FUNCTION cert.cert_delete_bund_adv ()"
            " RETURNS TRIGGER AS $$"
            " BEGIN"
-           "   DELETE FROM cert_bund_cves where adv_id = old.id;"
+           "   DELETE FROM cert.cert_bund_cves where adv_id = old.id;"
            "   RETURN old;"
            " END;"
            "$$ LANGUAGE plpgsql;");

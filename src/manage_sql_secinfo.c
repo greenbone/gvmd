@@ -1292,8 +1292,8 @@ init_cve_cert_bund_adv_iterator (iterator_t *iterator, const char *cve,
   columns = columns_build_select (select_columns);
   init_iterator (iterator,
                  "SELECT %s"
-                 " FROM cert_bund_advs"
-                 " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
+                 " FROM cert.cert_bund_advs"
+                 " WHERE id IN (SELECT adv_id FROM cert.cert_bund_cves"
                  "              WHERE cve_name = '%s')"
                  " ORDER BY %s %s;",
                  columns,
@@ -1316,8 +1316,8 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid)
 
   init_iterator (iterator,
                  "SELECT name"
-                 " FROM cert_bund_advs"
-                 " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
+                 " FROM cert.cert_bund_advs"
+                 " WHERE id IN (SELECT adv_id FROM cert.cert_bund_cves"
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
@@ -2112,7 +2112,7 @@ update_bund_xml (const gchar *xml_path, int last_cert_update,
                               sql ("INSERT INTO cert_bund_cves"
                                    " (adv_id, cve_name)"
                                    " VALUES"
-                                   " ((SELECT id FROM cert_bund_advs"
+                                   " ((SELECT id FROM cert.cert_bund_advs"
                                    "   WHERE name = '%s'),"
                                    "  '%s')",
                                    quoted_refnum,
