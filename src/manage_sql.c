@@ -23583,7 +23583,7 @@ report_severity_data (report_t report, const char *host,
   iterator_t results;
 
   gchar *filter;
-  int apply_overrides, autofp;
+  int apply_overrides ;
 
   if (report == 0)
     return;
@@ -23597,13 +23597,12 @@ report_severity_data (report_t report, const char *host,
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
 
   if (severity_data)
     {
       get_data_t *get_all;
 
-      get_all = report_results_get_data (1, -1, apply_overrides, autofp, 0);
+      get_all = report_results_get_data (1, -1, apply_overrides, 0, 0);
       ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, get_all, report, host, NULL);
       ignore_max_rows_per_page = 0;
