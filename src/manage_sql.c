@@ -21791,7 +21791,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[3];
+  column_t columns[2];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -21800,18 +21800,12 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t *filterable_columns;
   int ret;
   gchar *filter;
-  int autofp, apply_overrides, dynamic_severity;
+  int apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *owned_clause, *with_clause;
   gchar *with_clauses;
   char *user_id;
 
   assert (report);
-
-  columns[0].select
-    = "(SELECT autofp FROM results_autofp"
-      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))";
-  columns[0].filter = "auto_type";
-  columns[0].type = KEYWORD_TYPE_INTEGER;
 
   dynamic_severity = setting_dynamic_severity_int ();
 
@@ -21847,7 +21841,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   if (dynamic_severity)
     {
       if (apply_overrides)
-        columns[1].select
+        columns[0].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
@@ -21892,7 +21886,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                             END),"
             "                            results.severity)))";
       else
-        columns[1].select
+        columns[0].select
           = "(SELECT coalesce ((CASE WHEN results.severity"
             "                             > " G_STRINGIFY (SEVERITY_LOG)
             "                        THEN (SELECT CAST (cvss_base"
@@ -21906,7 +21900,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   else
     {
       if (apply_overrides)
-        columns[1].select
+        columns[0].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
@@ -21928,21 +21922,16 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   LIMIT 1),"
             "                  results.severity))";
       else
-        columns[1].select
+        columns[0].select
           = "(SELECT results.severity)";
     }
 
-  columns[1].filter = "severity";
-  columns[1].type = KEYWORD_TYPE_DOUBLE;
+  columns[0].filter = "severity";
+  columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[2].select = NULL;
-  columns[2].filter = NULL;
-  columns[2].type = KEYWORD_TYPE_UNKNOWN;
-
-  autofp = 0;
-
-  if (autofp == 0)
-    columns[0].select = "0";
+  columns[1].select = NULL;
+  columns[1].filter = NULL;
+  columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
   extra_tables = result_iterator_opts_table (apply_overrides,
                                              dynamic_severity);
