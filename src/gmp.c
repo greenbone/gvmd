@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -8273,7 +8273,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
               get_data_t *result_get;
               result_get = report_results_get_data (1, 1,
                                                     1, /* apply_overrides */
-                                                    0, /* autofp*/
                                                     0  /* min_qod */);
               result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
@@ -8556,7 +8555,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
               get_data_t *result_get;
               result_get = report_results_get_data (1, 1,
                                                     1, /* apply_overrides */
-                                                    0, /* autofp */
                                                     0  /* min_qod */);
               result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,

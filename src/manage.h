@@ -1258,7 +1258,7 @@ report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,
                           double*, const get_data_t*, const char*);
 
 get_data_t*
-report_results_get_data (int, int, int, int, int);
+report_results_get_data (int, int, int, int);
 
 int
 scan_start_time_epoch (report_t);

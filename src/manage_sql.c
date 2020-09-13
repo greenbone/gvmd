@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -19894,7 +19894,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                       user);
       manage_session_init (current_credentials.uuid);
 
-      get = report_results_get_data (1, -1, override, 0, min_qod);
+      get = report_results_get_data (1, -1, override, min_qod);
 
       if ((clear_original && override == 0) || (clear_overridden && override))
         {
@@ -23559,7 +23559,7 @@ report_severity_data (report_t report, const char *host,
     {
       get_data_t *get_all;
 
-      get_all = report_results_get_data (1, -1, apply_overrides, 0, 0);
+      get_all = report_results_get_data (1, -1, apply_overrides, 0);
       ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, get_all, report, host, NULL);
       ignore_max_rows_per_page = 0;
@@ -23645,7 +23645,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
     return -1;
   // TODO Check if report was found.
 
-  get = report_results_get_data (1, -1, override, 0, min_qod);
+  get = report_results_get_data (1, -1, override, min_qod);
   ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
@@ -24056,7 +24056,7 @@ report_severity (report_t report, int overrides, int min_qod)
   else
     {
       g_debug ("%s: could not get max from cache", __func__);
-      get_data_t *get = report_results_get_data (1, -1, overrides, 0, min_qod);
+      get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
       report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
                         NULL, &severity, get, NULL);
       get_data_reset (get);
@@ -27130,7 +27130,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           int total_warnings, total_false_positives;
           get_data_t *all_results_get;
 
-          all_results_get = report_results_get_data (1, -1, 0, 0, 0);
+          all_results_get = report_results_get_data (1, -1, 0, 0);
           report_counts_id (report, &total_debugs, &total_holes, &total_infos,
                             &total_logs, &total_warnings,
                             &total_false_positives, NULL, all_results_get,

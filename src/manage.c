@@ -998,20 +998,19 @@ report_results_filter_term (int first, int rows,
  * @param[in]  first            First row.
  * @param[in]  rows             Number of rows.
  * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  autofp           Auto-FP value.
  * @param[in]  min_qod          Minimum QOD.
  *
  * @return GET data struct.
  */
 get_data_t*
 report_results_get_data (int first, int rows,
-                         int apply_overrides, int autofp, int min_qod)
+                         int apply_overrides, int min_qod)
 {
   get_data_t* get = g_malloc (sizeof (get_data_t));
   memset (get, 0, sizeof (get_data_t));
   get->type = g_strdup ("result");
   get->filter = report_results_filter_term (first, rows,
-                                            apply_overrides, autofp, min_qod);
+                                            apply_overrides, 0, min_qod);
 
   return get;
 }
