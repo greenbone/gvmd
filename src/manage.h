@@ -2967,9 +2967,6 @@ int
 filter_term_apply_overrides (const char *);
 
 int
-filter_term_autofp (const char *);
-
-int
 filter_term_min_qod (const char *);
 
 int
