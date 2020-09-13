@@ -21492,10 +21492,6 @@ where_qod (int min_qod)
       "                  LIMIT 1))",                                          \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT autofp FROM results_autofp"                                    \
-      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
-      "auto_type",                                                            \
-      KEYWORD_TYPE_INTEGER },                                                 \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
@@ -22378,7 +22374,7 @@ result_iterator_type (iterator_t *iterator)
  * @return The descr of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_descr, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (result_iterator_descr, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the task from a result iterator.
@@ -22391,7 +22387,7 @@ task_t
 result_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -22405,7 +22401,7 @@ report_t
 result_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -22425,14 +22421,14 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
     return NULL;
 
   /* nvt_version */
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
   return ret ? ret : "";
 }
 
 /**
  * @brief Get the original severity from a result iterator.
  *
- * This is the original severity without overrides and autofp.
+ * This is the original severity without overrides.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22448,14 +22444,14 @@ result_iterator_original_severity (iterator_t *iterator)
     return NULL;
 
   /* severity */
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   return ret ? ret : "";
 }
 
 /**
  * @brief Get the severity from a result iterator.
  *
- * This is the the autofp adjusted overridden severity.
+ * This is the the overridden severity.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22470,19 +22466,15 @@ result_iterator_severity (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return G_STRINGIFY (SEVERITY_FP);
-
   /* new_severity */
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
   return ret ? ret : "";
 }
 
 /**
  * @brief Get the severity from a result iterator as double.
  *
- * This is the the autofp adjusted overridden severity.
+ * This is the the overridden severity.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22495,17 +22487,13 @@ result_iterator_severity_double (iterator_t *iterator)
   if (iterator->done)
     return 0.0;
 
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return SEVERITY_FP;
-
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
 }
 
 /**
  * @brief Get the original severity/threat level from a result iterator.
  *
- * This is the original level without overrides and autofp.
+ * This is the original level without overrides.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22521,11 +22509,11 @@ result_iterator_original_level (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 11))
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 10))
     return NULL;
 
   /* severity */
-  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -22534,7 +22522,7 @@ result_iterator_original_level (iterator_t *iterator)
 /**
  * @brief Get the severity/threat level from a result iterator.
  *
- * This is the the autofp adjusted overridden level.
+ * This is the the overridden level.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22550,15 +22538,11 @@ result_iterator_level (iterator_t *iterator)
   if (iterator->done)
     return "";
 
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return "False Positive";
-
   /* new_severity */
-  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 12))
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 11))
     return "";
 
-  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -22572,7 +22556,7 @@ result_iterator_level (iterator_t *iterator)
  * @return The solution type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
+DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 15);
 
 /**
  * @brief Get the qod from a result iterator.
@@ -22582,7 +22566,7 @@ DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
  * @return The qod of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
+DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 16);
 
 /**
  * @brief Get the qod_type from a result iterator.
@@ -22592,7 +22576,7 @@ DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
  * @return The qod type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
+DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 17);
 
 /**
  * @brief Get the host from a result iterator.
@@ -22602,7 +22586,7 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
  * @return The host of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
+DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
  * @brief Get the path from a result iterator.
@@ -22612,7 +22596,7 @@ DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
  * @return The path of the result.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 22);
+DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 21);
 
 /**
  * @brief Get the asset host ID from a result iterator.
@@ -22622,7 +22606,7 @@ DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 22);
  * @return The ID of the asset host.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 23);
+DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Get whether notes may exist from a result iterator.
@@ -22635,7 +22619,7 @@ int
 result_iterator_may_have_notes (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 23);
 }
 
 /**
@@ -22649,7 +22633,7 @@ int
 result_iterator_may_have_overrides (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
 }
 
 /**
@@ -22663,7 +22647,7 @@ int
 result_iterator_may_have_tickets (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 26);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
 }
 
 /**
@@ -22677,7 +22661,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 34);
 }
 
 /**
@@ -22691,7 +22675,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
 }
 
 /**
