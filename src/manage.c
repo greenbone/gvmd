@@ -983,12 +983,11 @@ delete_reports (task_t task)
  */
 static gchar *
 report_results_filter_term (int first, int rows,
-                            int apply_overrides, int autofp, int min_qod)
+                            int apply_overrides, int min_qod)
 {
   return g_strdup_printf ("first=%d rows=%d"
-                          " apply_overrides=%d autofp=%d min_qod=%d",
-                          first, rows,
-                          apply_overrides, autofp, min_qod);
+                          " apply_overrides=%d min_qod=%d",
+                          first, rows, apply_overrides, min_qod);
 }
 
 
@@ -1010,7 +1009,7 @@ report_results_get_data (int first, int rows,
   memset (get, 0, sizeof (get_data_t));
   get->type = g_strdup ("result");
   get->filter = report_results_filter_term (first, rows,
-                                            apply_overrides, 0, min_qod);
+                                            apply_overrides, min_qod);
 
   return get;
 }
