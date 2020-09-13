@@ -976,7 +976,6 @@ delete_reports (task_t task)
  * @param[in]  first            First row.
  * @param[in]  rows             Number of rows.
  * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  autofp           Auto-FP value.
  * @param[in]  min_qod          Minimum QOD.
  *
  * @return Filter term.

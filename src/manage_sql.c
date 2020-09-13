@@ -22355,7 +22355,7 @@ DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
 /**
  * @brief Get the type from a result iterator.
  *
- * This is the the autofp adjusted overridden type.
+ * This is the overridden type.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22366,9 +22366,6 @@ static const char*
 result_iterator_type (iterator_t *iterator)
 {
   if (iterator->done) return NULL;
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return "False Positive";
   /* new_type */
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
