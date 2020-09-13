@@ -1315,23 +1315,6 @@ cleanup_keyword (keyword_t *keyword)
         }
       keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
     }
-  else if (strcasecmp (keyword->column, "autofp") == 0)
-    {
-      /* autofp must be either 0, 1 or 2) */
-      if (keyword->integer_value < 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 0;
-          keyword->string = g_strdup ("0");
-        }
-      else if (keyword->integer_value > 2)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 0;
-          keyword->string = g_strdup ("0");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
   else if (strcasecmp (keyword->column, "apply_overrides") == 0
            || strcasecmp (keyword->column, "overrides") == 0
            || strcasecmp (keyword->column, "notes") == 0
@@ -1430,21 +1413,6 @@ keyword_applies (array_t *array, const keyword_t *keyword)
           keyword_t *item;
           item = (keyword_t*) g_ptr_array_index (array, index);
           if (item->column && (strcmp (item->column, "apply_overrides") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "autofp") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "autofp") == 0))
             return 0;
         }
     }
@@ -23968,15 +23936,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
           if (keyword->string == NULL
               || sscanf (keyword->string, "%d", &min_qod_int) != 1)
             min_qod_int = MIN_QOD_DEFAULT;
-        }
-      else if (strcasecmp (keyword->column, "autofp") == 0)
-        {
-          if (keyword->string
-              && strcmp (keyword->string, "")
-              && strcmp (keyword->string, "0"))
-            {
-              filter_cacheable = FALSE;
-            }
         }
       else
         {
