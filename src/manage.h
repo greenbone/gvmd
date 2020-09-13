@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1247,7 +1247,7 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
 
 int
 report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
-               int, int, int);
+               int, int);
 
 int
 report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,

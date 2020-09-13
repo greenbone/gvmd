@@ -23671,7 +23671,6 @@ report_severity_data (report_t report, const char *host,
  * @param[out]  false_positives  Number of false positives.
  * @param[out]  severity     Maximum severity score.
  * @param[in]   override     Whether to override the threat.
- * @param[in]   autofp       Whether to apply the auto FP filter.
  * @param[in]   min_qod      Min QOD.
  *
  * @return 0 on success, -1 on error.
@@ -23679,7 +23678,7 @@ report_severity_data (report_t report, const char *host,
 int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, double* severity,
-               int override, int autofp, int min_qod)
+               int override, int min_qod)
 {
   report_t report;
   int ret;
@@ -23689,7 +23688,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
     return -1;
   // TODO Check if report was found.
 
-  get = report_results_get_data (1, -1, override, autofp, min_qod);
+  get = report_results_get_data (1, -1, override, 0, min_qod);
   ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
