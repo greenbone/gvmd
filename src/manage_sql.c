@@ -21971,7 +21971,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[2].filter = NULL;
   columns[2].type = KEYWORD_TYPE_UNKNOWN;
 
-  autofp = filter_term_autofp (filter ? filter : get->filter);
+  autofp = 0;
 
   if (autofp == 0)
     columns[0].select = "0";
@@ -44380,31 +44380,6 @@ filter_term_apply_overrides (const char *term)
     }
   else
     return APPLY_OVERRIDES_DEFAULT;
-}
-
-/**
- * @brief Return the value of the autofp keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of autofp if it exists, else 0.
- */
-int
-filter_term_autofp (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *autofp_str;
-
-      autofp_str = filter_term_value (term, "autofp");
-      ret = autofp_str ? atoi (autofp_str) : 0;
-
-      g_free (autofp_str);
-      return ret;
-    }
-  else
-    return 0;
 }
 
 /**
