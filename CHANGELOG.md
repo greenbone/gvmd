@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix alternative options for radio type preferences when exporting a scan_config [#1278](http://github.com/greenbone/gvmd/pull/1278)
 - Replace deprecated sys_siglist with strsignal [#1280](https://github.com/greenbone/gvmd/pull/1280)
 - Copy instead of moving when migrating predefined report formats [#1286](https://github.com/greenbone/gvmd/pull/1286)
+- For radio prefs in GMP exclude value and include default [#1296](https://github.com/greenbone/gvmd/pull/1296)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
