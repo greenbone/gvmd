@@ -9753,19 +9753,27 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       && (strcmp (type, "radio") == 0))
     {
       char *pos;
+      gchar *alts;
 
       /* Handle the other possible values. */
+
+      alts = g_strdup (default_value);
 
       pos = strchr (default_value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<default>%s</default>", default_value);
-      while (pos)
+
+      pos = alts;
+      while (1)
         {
-          char *pos2 = strchr (++pos, ';');
+          char *pos2 = strchr (pos, ';');
           if (pos2) *pos2 = '\0';
           buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
-          pos = pos2;
+          if (pos2 == NULL)
+            break;
+          pos = pos2 + 1;
         }
+      g_free (alts);
     }
   else if (default_value
            && type
