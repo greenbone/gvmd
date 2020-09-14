@@ -9768,7 +9768,8 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
         {
           char *pos2 = strchr (pos, ';');
           if (pos2) *pos2 = '\0';
-          buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
+          if (value == NULL || strcmp (pos, value))
+            buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
           if (pos2 == NULL)
             break;
           pos = pos2 + 1;
