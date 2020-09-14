@@ -21129,13 +21129,11 @@ next_report (iterator_t* iterator, report_t* report)
  *                     High, Medium, Low, loG and Debug).  All levels if
  *                     NULL.
  * @param[in]  new_severity_sql  SQL for new severity.
- * @param[in]  auto_type_sql     SQL for auto type.
  *
  * @return WHERE clause for levels if one is required, else NULL.
  */
 static GString *
-where_levels_auto (const char *levels, const char *new_severity_sql,
-                   const char *auto_type_sql)
+where_levels_auto (const char *levels, const char *new_severity_sql)
 {
   int count;
   GString *levels_sql;
@@ -21227,11 +21225,10 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL)"
-                                  "       AND ((%s"
-                                  "             = " G_STRINGIFY
-                                                     (SEVERITY_DEBUG) ")",
-                                  auto_type_sql,
+                                  " AND (("
+                                  "       ((%s"
+                                  "         = " G_STRINGIFY
+                                                 (SEVERITY_DEBUG) ")",
                                   new_severity_sql);
         }
       else
@@ -21250,23 +21247,20 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL)"
-                                  "       AND %s"
-                                  "           = " G_STRINGIFY
-                                                   (SEVERITY_FP) ")"
-                                  "      OR %s = 1)",
-                                  auto_type_sql,
-                                  new_severity_sql,
-                                  auto_type_sql);
+                                  " AND (("
+                                  "       %s"
+                                  "       = " G_STRINGIFY
+                                               (SEVERITY_FP) ")"
+                                  " )",
+                                  new_severity_sql);
         }
       else
         g_string_append_printf (levels_sql,
                                 " OR %s"
                                 "    = " G_STRINGIFY
                                           (SEVERITY_FP) "))"
-                                " OR %s = 1)",
-                                new_severity_sql,
-                                auto_type_sql);
+                                " )",
+                                new_severity_sql);
       count++;
     }
   else if (count)
@@ -21710,7 +21704,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   gchar *levels;
   gchar *report_clause, *host_clause, *min_qod_clause;
   GString *levels_clause;
-  gchar *new_severity_sql, *auto_type_sql;
+  gchar *new_severity_sql;
 
   // Get filter values
   min_qod = filter_term_min_qod (filter);
@@ -21719,8 +21713,6 @@ results_extra_where (int trash, report_t report, const gchar* host,
     levels = g_strdup ("hmlgdf");
 
   // Build clause fragments
-
-  auto_type_sql = g_strdup ("NULL");
 
   new_severity_sql
     = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
@@ -21751,7 +21743,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod_clause = where_qod (min_qod);
 
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
-                                     new_severity_sql, auto_type_sql);
+                                     new_severity_sql);
   g_free (levels);
   g_free (new_severity_sql);
 
@@ -21761,7 +21753,6 @@ results_extra_where (int trash, report_t report, const gchar* host,
                                 levels_clause->str,
                                 min_qod_clause ? min_qod_clause : "");
 
-  g_free (auto_type_sql);
   g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);
   g_free (report_clause);
