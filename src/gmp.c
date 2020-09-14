@@ -8687,8 +8687,11 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       && type
       && (strcmp (type, "radio") == 0))
     {
+      char *pos;
+
       /* Handle the other possible values. */
-      char *pos = strchr (default_value, ';');
+
+      pos = strchr (default_value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<default>%s</default>", default_value);
       while (pos)
