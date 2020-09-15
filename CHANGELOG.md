@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Set ignore_pagination in stop_active_tasks [#1208](https://github.com/greenbone/gvmd/pull/1208)
 - Improve EXE installer NSIS script generation [#1253](https://github.com/greenbone/gvmd/pull/1253)
 - Fix alt options for radio preferences when exporting configs [#1298](https://github.com/greenbone/gvmd/pull/1298)
+- For radio prefs in GMP exclude value and include default [#1299](https://github.com/greenbone/gvmd/pull/1299)
 
 [9.0.2]: https://github.com/greenbone/gvmd/compare/v9.0.1...gvmd-9.0
 
