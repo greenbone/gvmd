@@ -7288,7 +7288,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </attrib>
       <attrib>
         <name>details</name>
-        <summary>Whether to get config families, preferences, nvt selectors and tasks</summary>
+        <summary>Whether to get config families, preferences and nvt selectors</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
