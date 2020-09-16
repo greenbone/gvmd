@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
+- Correct FROM of some queries to the right schema [#1295](https://github.com/greenbone/gvmd/pull/1295)
 
 ### Removed
 - Reduce Severity Classes [#1285](https://github.com/greenbone/gvmd/pull/1285)
