@@ -48845,7 +48845,16 @@ asset_host_count (const get_data_t *get)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
-     "(SELECT count(*) FROM best_os_hosts WHERE cpe = oss.name)",             \
+     "(SELECT count(*)"                                                       \
+     " FROM (SELECT inner_cpes[1] AS cpe, host"                               \
+     "       FROM (SELECT array_agg (value ORDER BY id DESC) AS inner_cpes,"  \
+     "                    host"                                               \
+     "             FROM host_details"                                         \
+     "             WHERE name = 'best_os_cpe'"                                \
+     "             GROUP BY host)"                                            \
+     "            AS host_details_subselect)"                                 \
+     "      AS array_removal_subselect"                                       \
+     " WHERE cpe = oss.name)",                                                \
      "hosts",                                                                 \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -48916,33 +48925,6 @@ asset_host_count (const get_data_t *get)
  }
 
 /**
- * @brief OS asset WITH clause for PostgreSQL
- *
- * This depends on non-standard (PostgreSQL 9.0+) "ORDER BY" clauses
- * in aggregate functions to select latest detail id.
- */
-#define ASSET_OS_WITH_POSTGRESQL                                              \
-  " best_os_hosts AS ("                                                       \
-  "  SELECT inner_cpes[1] AS cpe, host"                                       \
-  "    FROM (SELECT array_agg(value ORDER BY id DESC) AS inner_cpes, host"    \
-  "            FROM host_details WHERE name='best_os_cpe' GROUP BY host)"     \
-  "    AS inner_host_os_cpes"                                                 \
-  " )"
-
-/**
- * @brief Get the extra WITH clause for OS assets.
- *
- * @return The extra WITH clause.
- */
-const char *
-asset_os_extra_with ()
-{
-  static const char *with = ASSET_OS_WITH_POSTGRESQL;
-
-  return with;
-}
-
-/**
  * @brief Initialise an OS iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -48958,9 +48940,6 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
   static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  const char *extra_with;
-
-  extra_with = asset_os_extra_with ();
 
   ret = init_get_iterator2_with (iterator,
                                  "os",
@@ -48981,7 +48960,7 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  TRUE,
                                  FALSE,
                                  NULL,
-                                 extra_with,
+                                 NULL,
                                  0);
 
   return ret;
@@ -49054,13 +49033,10 @@ asset_os_count (const get_data_t *get)
   static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  const char *extra_with;
   int ret;
 
-  extra_with = asset_os_extra_with ();
-
   ret = count2 ("os", get, columns, NULL, where_columns, NULL,
-                extra_columns, 0, 0, 0, extra_with, TRUE);
+                extra_columns, 0, 0, 0, NULL, TRUE);
 
   return ret;
 }
@@ -55773,8 +55749,6 @@ type_extra_where (const char *type, int trash, const char *filter,
 static const char *
 type_extra_with (const char *type)
 {
-  if (strcmp (type, "os") == 0)
-    return asset_os_extra_with ();
   return NULL;
 }
 
