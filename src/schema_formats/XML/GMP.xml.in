@@ -2060,7 +2060,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>apply_overrides</e>
           <e>result_hosts_only</e>
           <e>min_qod</e>
-          <e>autofp</e>
           <any><e>filter</e></any>
           <o><e>delta</e></o>
         </pattern>
@@ -2114,13 +2113,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             text
           </pattern>
-        </ele>
-        <ele>
-          <name>autofp</name>
-          <summary>
-            Whether to trust vendor security updates.  1 full match, 2 partial
-          </summary>
-          <pattern>xsd:token { pattern = "0|1|2" }</pattern>
         </ele>
         <ele>
           <name>filter</name>
@@ -14862,18 +14854,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Whether to apply Overrides</summary>
           </option>
           <option>
-            <name>autofp</name>
-            <type>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-                <alt>2</alt>
-              </alts>
-            </type>
-            <summary>Whether to trust vendor security updates.
-            1 full match, 2 partial</summary>
-          </option>
-          <option>
             <name>levels</name>
             <type>levels</type>
             <summary>Severity levels to select</summary>
@@ -14946,17 +14926,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>type</name>
             <type>threat</type>
-            <summary>Severity type of the result with overrides and autofp</summary>
+            <summary>Severity type of the result with overrides</summary>
           </column>
           <column>
             <name>original_type</name>
             <type>threat</type>
             <summary>Original severity type of the result</summary>
-          </column>
-          <column>
-            <name>auto_type</name>
-            <type>boolean</type>
-            <summary>Whether autofp applies to the result</summary>
           </column>
           <column>
             <name>description</name>
@@ -14986,7 +14961,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the result with overrides and autofp</summary>
+            <summary>Severity of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -16263,18 +16238,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Whether to apply Overrides</summary>
           </option>
           <option>
-            <name>autofp</name>
-            <type>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-                <alt>2</alt>
-              </alts>
-            </type>
-            <summary>Whether to trust vendor security updates.
-            1 full match, 2 partial</summary>
-          </option>
-          <option>
             <name>levels</name>
             <type>levels</type>
             <summary>Severity levels to select</summary>
@@ -16347,17 +16310,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>type</name>
             <type>threat</type>
-            <summary>Severity type of the result with overrides and autofp</summary>
+            <summary>Severity type of the result with overrides</summary>
           </column>
           <column>
             <name>original_type</name>
             <type>threat</type>
             <summary>Original severity type of the result</summary>
-          </column>
-          <column>
-            <name>auto_type</name>
-            <type>boolean</type>
-            <summary>Whether autofp applies to the result</summary>
           </column>
           <column>
             <name>description</name>
@@ -16387,7 +16345,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the result with overrides and autofp</summary>
+            <summary>Severity of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -25940,6 +25898,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p>
         The element SEVERITY_CLASS contained the range specification for the applied classification scheme.
         There is only fixed scheme left, so the specificion is not needed anymore.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>GET_REPORTS, GET_RESULTS</command>
+    <summary>Remove elements AUTOFP and AUTO_TYPE from element FILTERS</summary>
+    <description>
+      <p>
+        The element to specify the autofp value and the related auto_type for a filter is removed.
       </p>
     </description>
     <version>21.4</version>
