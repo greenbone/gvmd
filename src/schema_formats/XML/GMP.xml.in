@@ -1905,7 +1905,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>report_format</e>
         <e>sort</e>
         <e>filters</e>
-        <e>severity_class</e>
         <o><e>delta</e></o>
         <o>
           <g>
@@ -2398,59 +2397,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filtered</name>
           <pattern><t>severity</t></pattern>
           <summary>Maximum severity of the report after filtering</summary>
-        </ele>
-      </ele>
-      <ele>
-        <name>severity_class</name>
-        <pattern>
-          <e>name</e>
-          <e>full_name</e>
-          <any><e>severity_range</e></any>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <pattern>
-            <alts>
-              <alt>nist</alt>
-              <alt>pci-dss</alt>
-            </alts>
-          </pattern>
-          <summary>Short severity class name</summary>
-        </ele>
-        <ele>
-          <name>full_name</name>
-          <pattern>text</pattern>
-          <summary>Full severity class name</summary>
-        </ele>
-        <ele>
-          <name>severity_range</name>
-          <summary>Severity range</summary>
-          <pattern>
-            <e>name</e>
-            <e>min</e>
-            <e>max</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>Name of severity range</summary>
-            <pattern>
-              <t>name</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>min</name>
-            <summary>Minimum CVSS value</summary>
-            <pattern>
-              <t>integer</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>max</name>
-            <summary>Maximum CVSS value</summary>
-            <pattern>
-              <t>integer</t>
-            </pattern>
-          </ele>
         </ele>
       </ele>
       <ele>
@@ -25987,6 +25933,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Removed element SEVERITY_CLASS from element REPORT</summary>
+    <description>
+      <p>
+        The element SEVERITY_CLASS contained the range specification for the applied classification scheme.
+        There is only fixed scheme left, so the specificion is not needed anymore.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
   <change>
     <command>CREATE_SCANNER, MODIFY_SCANNER, GET_REPORTS</command>
     <summary>GMP scanners have been removed</summary>
