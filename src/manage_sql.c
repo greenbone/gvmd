@@ -48847,10 +48847,14 @@ asset_host_count (const get_data_t *get)
    {                                                                          \
      "(SELECT count(*)"                                                       \
      " FROM (SELECT inner_cpes[1] AS cpe, host"                               \
-     "       FROM (SELECT array_agg (value ORDER BY id DESC) AS inner_cpes,"  \
+     "       FROM (SELECT array_agg (host_details.value"                      \
+     "                               ORDER BY host_details.id DESC)"          \
+     "                    AS inner_cpes,"                                     \
      "                    host"                                               \
-     "             FROM host_details"                                         \
-     "             WHERE name = 'best_os_cpe'"                                \
+     "             FROM host_details, hosts"                                  \
+     "             WHERE host_details.name = 'best_os_cpe'"                   \
+     "             AND hosts.id = host_details.host"                          \
+     "             AND (" ACL_USER_MAY_OPTS ("hosts") ")"                     \
      "             GROUP BY host)"                                            \
      "            AS host_details_subselect)"                                 \
      "      AS array_removal_subselect"                                       \
@@ -48940,6 +48944,17 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
   static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  gchar *extra_tables;
+
+  assert (current_credentials.uuid);
+
+  extra_tables = g_strdup_printf (", (SELECT"
+                                  "   (SELECT id FROM users"
+                                  "    WHERE users.uuid = '%s')"
+                                  "   AS user_id,"
+                                  "   'host' AS type)"
+                                  "  AS opts",
+                                  current_credentials.uuid);
 
   ret = init_get_iterator2_with (iterator,
                                  "os",
@@ -48954,7 +48969,7 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  filter_columns,
                                  0,
-                                 NULL,
+                                 extra_tables,
                                  NULL,
                                  NULL,
                                  TRUE,
@@ -48962,6 +48977,8 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  NULL,
                                  0);
+
+  g_free (extra_tables);
 
   return ret;
 }
