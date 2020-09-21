@@ -1713,6 +1713,45 @@ manage_create_result_indexes ()
   "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
 
 /**
+ * @brief Create or replace the vulns view.
+ */
+void
+create_view_vulns ()
+{
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'scap'"
+               "               AND table_name = 'ovaldefs')"
+               " ::integer;",
+               sql_database ()))
+    sql ("CREATE OR REPLACE VIEW vulns AS"
+         " SELECT id, uuid, name, creation_time, modification_time,"
+         "        cast (cvss_base AS double precision) AS severity, qod,"
+         "        'nvt' AS type"
+         " FROM nvts"
+         VULNS_RESULTS_WHERE
+         " UNION SELECT id, uuid, name, creation_time, modification_time,"
+         "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       'cve' AS type"
+         " FROM cves"
+         VULNS_RESULTS_WHERE
+         " UNION SELECT id, uuid, name, creation_time, modification_time,"
+         "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       'ovaldef' AS type"
+         " FROM ovaldefs"
+         VULNS_RESULTS_WHERE);
+  else
+    sql ("CREATE OR REPLACE VIEW vulns AS"
+         " SELECT id, uuid, name, creation_time, modification_time,"
+         "        cast (cvss_base AS double precision) AS severity, qod,"
+         "        'nvt' AS type"
+         " FROM nvts"
+         VULNS_RESULTS_WHERE);
+}
+
+#undef VULNS_RESULTS_WHERE
+
+/**
  * @brief Create all tables.
  */
 void
@@ -2862,37 +2901,7 @@ create_tables ()
        "  JOIN tls_certificate_origins AS origins"
        "    ON sources.origin = origins.id;");
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = '%s'"
-               "               AND table_schema = 'scap'"
-               "               AND table_name = 'ovaldefs')"
-               " ::integer;",
-               sql_database ()))
-    sql ("CREATE OR REPLACE VIEW vulns AS"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cast (cvss_base AS double precision) AS severity, qod,"
-         "        'nvt' AS type"
-         " FROM nvts"
-         VULNS_RESULTS_WHERE
-         " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'cve' AS type"
-         " FROM cves"
-         VULNS_RESULTS_WHERE
-         " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'ovaldef' AS type"
-         " FROM ovaldefs"
-         VULNS_RESULTS_WHERE);
-  else
-    sql ("CREATE OR REPLACE VIEW vulns AS"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cast (cvss_base AS double precision) AS severity, qod,"
-         "        'nvt' AS type"
-         " FROM nvts"
-         VULNS_RESULTS_WHERE);
-
-#undef VULNS_RESULTS_WHERE
+  create_view_vulns ();
 
   /* Create indexes. */
 
