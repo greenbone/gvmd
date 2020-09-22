@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Skip DB check in helpers when main process is running [#1291](https://github.com/greenbone/gvmd/pull/1291)
 - Recreate vulns after sync [#1292](https://github.com/greenbone/gvmd/pull/1292)
 - For radio prefs in GMP exclude value and include default [#1296](https://github.com/greenbone/gvmd/pull/1296)
+- Auto delete at the start of scheduling so it always runs [#1302](https://github.com/greenbone/gvmd/pull/1302)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
