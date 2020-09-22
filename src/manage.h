@@ -1019,7 +1019,7 @@ void
 severity_data_add_count (severity_data_t*, double, int);
 
 void
-severity_data_level_counts (const severity_data_t*, const gchar*,
+severity_data_level_counts (const severity_data_t*,
                             int*, int*, int*, int*, int*, int*, int*);
 
 
@@ -3258,9 +3258,6 @@ setting_is_default_ca_cert (const gchar *);
 
 char *
 setting_filter (const char *);
-
-const char *
-setting_severity ();
 
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,

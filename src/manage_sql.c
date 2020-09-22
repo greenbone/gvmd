@@ -15368,16 +15368,6 @@ check_db_settings ()
          "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('f16bb236-a32d-4cd5-a880-e0fcf2599f59', NULL, 'Severity Class',"
-         "  'Severity class used for severity bars.',"
-         "  'nist');");
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -23946,7 +23936,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   keyword_t **point;
   array_t *split;
   int filter_cacheable, unfiltered_requested, filtered_requested, cache_exists;
-  const char *severity_class;
   int override, min_qod_int;
   severity_data_t severity_data, filtered_severity_data;
 
@@ -23955,7 +23944,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
                         || filtered_logs || filtered_false_positives
                         || filtered_severity);
-  severity_class = setting_severity ();
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
@@ -24064,10 +24052,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
                               ? &filtered_severity_data : NULL);
     }
 
-  severity_data_level_counts (&severity_data, severity_class,
+  severity_data_level_counts (&severity_data,
                               NULL, NULL, false_positives,
                               logs, infos, warnings, holes);
-  severity_data_level_counts (&filtered_severity_data, severity_class,
+  severity_data_level_counts (&filtered_severity_data,
                               NULL, NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
                               filtered_warnings, filtered_holes);
@@ -26037,64 +26025,6 @@ report_progress (report_t report)
 }
 
 /**
- * @brief Buffer XML for a severity class.
- *
- * @param[in]  severity  Severity name.
- *
- * @return Freshly allocated XML on success, else NULL.
- */
-static gchar *
-severity_class_xml (const gchar *severity)
-{
-  if (!severity)
-    return NULL;
-
-  if (strcmp (severity, "pci-dss") == 0)
-    return g_strdup_printf ("<severity_class"
-                            " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
-                            "<name>pci-dss</name>"
-                            "<full_name>PCI-DSS</full_name>"
-                            "<severity_range>"
-                            "<name>None</name>"
-                            "<min>0.0</min>"
-                            "<max>3.9</max>"
-                            "</severity_range>"
-                            "<severity_range>"
-                            "<name>High</name>"
-                            "<min>4.0</min>"
-                            "<max>10.0</max>"
-                            "</severity_range>"
-                            "</severity_class>");
-
-  /* "nist", any other class defaults to "nist" */
-  return g_strdup_printf ("<severity_class"
-                          " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
-                          "<name>nist</name>"
-                          "<full_name>NVD Vulnerability Severity Ratings</full_name>"
-                          "<severity_range>"
-                          "<name>None</name>"
-                          "<min>0.0</min>"
-                          "<max>0.0</max>"
-                          "</severity_range>"
-                          "<severity_range>"
-                          "<name>Low</name>"
-                          "<min>0.1</min>"
-                          "<max>3.9</max>"
-                          "</severity_range>"
-                          "<severity_range>"
-                          "<name>Medium</name>"
-                          "<min>4.0</min>"
-                          "<max>6.9</max>"
-                          "</severity_range>"
-                          "<severity_range>"
-                          "<name>High</name>"
-                          "<min>7.0</min>"
-                          "<max>10.0</max>"
-                          "</severity_range>"
-                          "</severity_class>");
-}
-
-/**
  * @brief Restore original TZ.
  *
  * @param[in]  zone             Only revert if this is at least one character.
@@ -27453,19 +27383,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   PRINT_XML (out, filters_buffer->str);
   g_string_free (filters_buffer, TRUE);
-
-  {
-    const char *severity_setting;
-    gchar *class_xml;
-
-    severity_setting = setting_severity ();
-    class_xml = severity_class_xml (severity_setting);
-    if (class_xml)
-      {
-        PRINT_XML (out, class_xml);
-        g_free (class_xml);
-      }
-  }
 
   if (report)
     {
@@ -48854,19 +48771,6 @@ setting_filter (const char *resource)
 }
 
 /**
- * @brief Return the Severity Class user setting.
- *
- * @return User Severity Class in settings if it exists, "" otherwise.
- */
-const char *
-setting_severity ()
-{
-  if (current_credentials.severity_class)
-    return current_credentials.severity_class;
-  return "nist";
-}
-
-/**
  * @brief Return the Default Severity user setting as a double.
  *
  * @return The user's Default Severity.
@@ -49219,7 +49123,6 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
-               || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
@@ -49323,13 +49226,6 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (value);
               return 2;
             }
-        }
-
-      if (strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0)
-        {
-          /* Severity Class */
-          g_free (current_credentials.severity_class);
-          current_credentials.severity_class = g_strdup (value);
         }
 
       if (strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0)
