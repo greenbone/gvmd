@@ -15148,19 +15148,17 @@ task_average_scan_duration (task_t task)
 }
 
 /**
- * @brief Initialize the manage library for a process.
- *
- * Open the SQL database, attach secondary databases, and define functions.
+ * @brief Initialize the manage library: open db.
  *
  * @param[in]  database          Location of manage database.
+ *
+ * @return 1 if open already, else 0.
  */
-void
-init_manage_process (const gchar *database)
+static int
+init_manage_open_db (const gchar *database)
 {
-  lockfile_t lockfile;
-
   if (sql_is_open ())
-    return;
+    return 1;
 
   /* Open the database. */
   if (sql_open (database))
@@ -15176,7 +15174,16 @@ init_manage_process (const gchar *database)
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
 
-  /* Define functions for SQL. */
+  return 0;
+}
+
+/**
+ * @brief Initialize the manage library: define SQL functions.
+ */
+static void
+init_manage_create_functions ()
+{
+  lockfile_t lockfile;
 
   /* Lock to avoid an error return from Postgres when multiple processes
    * create a function at the same time. */
@@ -15189,6 +15196,21 @@ init_manage_process (const gchar *database)
       abort ();
     }
   lockfile_unlock (&lockfile);
+}
+
+/**
+ * @brief Initialize the manage library for a process.
+ *
+ * Open the SQL database, attach secondary databases, and define functions.
+ *
+ * @param[in]  database          Location of manage database.
+ */
+void
+init_manage_process (const gchar *database)
+{
+  if (init_manage_open_db (database))
+    return;
+  init_manage_create_functions ();
 }
 
 /**
@@ -16347,13 +16369,15 @@ init_manage_internal (GSList *log_config,
 
   memset (&current_credentials, '\0', sizeof (current_credentials));
 
-  init_manage_process (database);
+  init_manage_open_db (database);
 
   /* Check that the versions of the databases are correct. */
 
   ret = check_db_versions ();
   if (ret)
     return ret;
+
+  init_manage_create_functions (database);
 
   /* Ensure the database is complete, removing superfluous rows.
    *
