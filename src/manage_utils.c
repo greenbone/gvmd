@@ -177,18 +177,17 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 }
 
 /**
- * @brief Get the minimum severity for a severity level and class.
+ * @brief Get the minimum severity for a severity level.
  *
  * This function has a database equivalent in manage_pg_server.c.
  * These two functions must stay in sync.
  *
  * @param[in] level  The name of the severity level.
- * @param[in] class  The severity class, NULL to get from current user setting.
  *
  * @return The minimum severity.
  */
 double
-level_min_severity (const char *level, const char *class)
+level_min_severity (const char *level)
 {
   if (strcasecmp (level, "Log") == 0)
     return SEVERITY_LOG;
@@ -198,40 +197,29 @@ level_min_severity (const char *level, const char *class)
     return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcasecmp (class, "pci-dss") == 0)
-    {
-      if (strcasecmp (level, "high") == 0)
-        return 4.0;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+
+  if (strcasecmp (level, "high") == 0)
+    return 7.0;
+  else if (strcasecmp (level, "medium") == 0)
+    return 4.0;
+  else if (strcasecmp (level, "low") == 0)
+    return 0.1;
   else
-    {
-      /* NIST */
-      if (strcasecmp (level, "high") == 0)
-        return 7.0;
-      else if (strcasecmp (level, "medium") == 0)
-        return 4.0;
-      else if (strcasecmp (level, "low") == 0)
-        return 0.1;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+    return SEVERITY_UNDEFINED;
 }
 
 /**
- * @brief Get the minimum severity for a severity level and class.
+ * @brief Get the maximum severity for a severity level.
  *
  * This function has a database equivalent in manage_pg_server.c.
  * These two functions must stay in sync.
  *
  * @param[in] level  The name of the severity level.
- * @param[in] class  The severity class.
  *
- * @return The minimum severity.
+ * @return The maximunm severity.
  */
 double
-level_max_severity (const char *level, const char *class)
+level_max_severity (const char *level)
 {
   if (strcasecmp (level, "Log") == 0)
     return SEVERITY_LOG;
@@ -241,25 +229,15 @@ level_max_severity (const char *level, const char *class)
     return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-  else if (strcasecmp (class, "pci-dss") == 0)
-    {
-      if (strcasecmp (level, "high") == 0)
-        return 10.0;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+
+  if (strcasecmp (level, "high") == 0)
+    return 10.0;
+  else if (strcasecmp (level, "medium") == 0)
+    return 6.9;
+  else if (strcasecmp (level, "low") == 0)
+    return 3.9;
   else
-    {
-      /* NIST */
-      if (strcasecmp (level, "high") == 0)
-        return 10.0;
-      else if (strcasecmp (level, "medium") == 0)
-        return 6.9;
-      else if (strcasecmp (level, "low") == 0)
-        return 3.9;
-      else
-        return SEVERITY_UNDEFINED;
-    }
+    return SEVERITY_UNDEFINED;
 }
 
 /**

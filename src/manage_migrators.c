@@ -2346,9 +2346,45 @@ migrate_233_to_234 ()
   sql ("UPDATE scanners SET type = 2 WHERE type = 4;");
   sql ("UPDATE scanners_trash SET type = 2 WHERE type = 4;");
 
-  /* Set the database version to 233. */
+  /* Set the database version to 234. */
 
   set_db_version (234);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 234 to version 235.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_234_to_235 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 234. */
+
+  if (manage_db_version () != 234)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Support of multiple individual selectable severity classification ranges
+   * was removed. Therefore any entry in settings table where "Severity Class"
+   * is configured, can be removed. This setting has a specific uuid. */
+
+  /* Delete any setting for "Severity Class" . */
+  sql ("DELETE FROM settings WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59';");
+
+  /* Set the database version to 235. */
+
+  set_db_version (235);
 
   sql_commit ();
 
@@ -2395,6 +2431,7 @@ static migrator_t database_migrators[] = {
   {232, migrate_231_to_232},
   {233, migrate_232_to_233},
   {234, migrate_233_to_234},
+  {235, migrate_234_to_235},
   /* End marker. */
   {-1, NULL}};
 

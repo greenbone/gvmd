@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -61,10 +61,10 @@ int
 manage_count_hosts_max (const char *, const char *, int);
 
 double
-level_min_severity (const char *, const char *);
+level_min_severity (const char *);
 
 double
-level_max_severity (const char *, const char *);
+level_max_severity (const char *);
 
 int
 valid_db_resource_type (const char *);
