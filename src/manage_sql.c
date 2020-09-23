@@ -16377,7 +16377,7 @@ init_manage_internal (GSList *log_config,
   if (ret)
     return ret;
 
-  init_manage_create_functions (database);
+  init_manage_create_functions ();
 
   /* Ensure the database is complete, removing superfluous rows.
    *
