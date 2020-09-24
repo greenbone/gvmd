@@ -16414,8 +16414,13 @@ init_manage_internal (GSList *log_config,
 
   if (skip_db_check == 0)
     {
-      /* This only happens for init_manage callers with skip_db_check set, so
-       * there is ultimately only one caller case, the main process. */
+      /* This only happens for init_manage callers with skip_db_check set to 0
+       * and init_manage_helper callers.  So there are only 2 callers:
+       *
+       *   1 the main process
+       *   2 a helper processes (--create-user, --get-users, etc) when the
+       *     main process is not running. */
+
       ret = check_db (check_encryption_key);
       if (ret)
         return ret;
@@ -16517,7 +16522,13 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                0,   /* Default max_email_message_size */
                                0,   /* Stop active tasks. */
                                NULL,
-                               0,   /* Skip DB check. */
+                               /* Skip DB check if main process is running, to
+                                * avoid locking issues when creating tables.
+                                *
+                                * Safe because main process did the check. */
+                               lockfile_locked ("gvm-serving")
+                                ? 1    /* Skip DB check. */
+                                : 0,   /* Do DB check. */
                                0);  /* Dummy. */
 }
 
