@@ -4711,6 +4711,9 @@ update_scap_end ()
       sql ("ALTER SCHEMA scap RENAME TO scap3;");
       sql ("ALTER SCHEMA scap2 RENAME TO scap;");
       sql ("DROP SCHEMA scap3 CASCADE;");
+      /* View 'vulns' contains references into the SCAP schema, so it is
+       * removed by the CASCADE. */
+      create_view_vulns ();
     }
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
