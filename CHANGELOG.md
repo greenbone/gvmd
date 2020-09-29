@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reduce Severity Classes [#1285](https://github.com/greenbone/gvmd/pull/1285)
 - Removed Severity Classes [#1288](https://github.com/greenbone/gvmd/pull/1288)
 - Remove remaining use of "Severity Class" in where_levels_auto [#1311](https://github.com/greenbone/gvmd/pull/1311)
+- Remove the functionality "autofp" (Auto False Positives) [#1300](https://github.com/greenbone/gvmd/pull/1300)
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 
