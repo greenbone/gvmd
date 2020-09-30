@@ -33948,6 +33948,7 @@ create_credential (const char* name, const char* comment, const char* login,
   gchar *generated_private_key;
   credential_t new_credential;
   int auto_generate, allow_insecure_int;
+  int using_snmp_v3;
   int ret;
 
   assert (name && strlen (name) > 0);
@@ -34021,6 +34022,8 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "snmp") == 0))
     ret = 10; // Type does not support autogenerate
 
+  using_snmp_v3 = 0;
+
   if (login == NULL
       && strcmp (quoted_type, "cc")
       && strcmp (quoted_type, "pgp")
@@ -34046,7 +34049,6 @@ create_credential (const char* name, const char* comment, const char* login,
     ret = 9;
   else if (strcmp (quoted_type, "snmp") == 0)
     {
-      int using_snmp_v3 = 0;
       if (login || given_password || auth_algorithm
           || privacy_password || privacy_algorithm)
         using_snmp_v3 = 1;
@@ -34209,7 +34211,7 @@ create_credential (const char* name, const char* comment, const char* login,
     }
 
   /* SNMP passwords */
-  if (community)
+  if (community || using_snmp_v3)
     {
       lsc_crypt_ctx_t crypt_ctx;
 
