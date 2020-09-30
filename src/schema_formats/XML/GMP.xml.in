@@ -13235,6 +13235,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <e>nvt</e>
               <e>name</e>
               <e>hr_name</e>
+              <e>id</e>
               <e>type</e>
               <e>value</e>
               <any><e>alt</e></any>
@@ -13265,6 +13266,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <ele>
               <name>hr_name</name>
               <summary>The full, more "human readable" name of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>id</name>
+              <summary>The ID of the preference</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
