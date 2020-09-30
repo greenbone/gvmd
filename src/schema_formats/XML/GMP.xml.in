@@ -14787,6 +14787,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>preference</name>
         <pattern>
           <e>nvt</e>
+          <e>hr_name</e>
           <e>name</e>
           <e>id</e>
           <e>type</e>
@@ -14810,6 +14811,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>The name of the NVT</summary>
             <pattern><t>name</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>hr_name</name>
+          <summary>The full, more "human readable" name of the preference</summary>
+          <pattern><t>name</t></pattern>
         </ele>
         <ele>
           <name>name</name>
