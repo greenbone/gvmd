@@ -41,12 +41,13 @@
 #include <gvm/util/authutils.h>
 #include <gvm/osp/osp.h>
 
-/* Connection data */
-
+/**
+ * @brief Data structure for info used to connect to the database
+ */
 typedef struct {
-  gchar *name;
-  gchar *host;
-  gchar *port;
+  gchar *name; ///< The database name
+  gchar *host; ///< The database host or socket directory
+  gchar *port; ///< The database port or socket file extension
 } db_conn_info_t;
 
 /**
