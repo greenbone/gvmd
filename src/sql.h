@@ -24,6 +24,7 @@
 #ifndef _GVMD_SQL_H
 #define _GVMD_SQL_H
 
+#include "manage.h"
 #include "iterator.h"
 
 #include <glib.h>
@@ -58,7 +59,7 @@ int
 sql_is_open ();
 
 int
-sql_open (const char *);
+sql_open (const db_conn_info_t *);
 
 void
 sql_close ();

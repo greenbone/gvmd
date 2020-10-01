@@ -417,7 +417,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-gchar* gvmd_db_name = NULL;
+db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL };
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -911,9 +911,8 @@ cert_check_time ()
  *         -3 database needs to be initialised from server.
  */
 int
-manage_option_setup (GSList *log_config, const gchar *database)
+manage_option_setup (GSList *log_config, const db_conn_info_t *database)
 {
-  const gchar *db;
   int ret;
 
   if (gvm_auth_init ())
@@ -922,9 +921,8 @@ manage_option_setup (GSList *log_config, const gchar *database)
       return -1;
     }
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
+  ret = init_manage_helper (log_config, database,
+                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
   assert (ret != -4);
   switch (ret)
     {
@@ -941,7 +939,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
         return ret;
     }
 
-  init_manage_process (db);
+  init_manage_process (database);
 
   return 0;
 }
@@ -6101,7 +6099,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
  *         from server.
  */
 int
-manage_encrypt_all_credentials (GSList *log_config, const gchar *database)
+manage_encrypt_all_credentials (GSList *log_config,
+                                const db_conn_info_t *database)
 {
   int ret;
 
@@ -6133,7 +6132,8 @@ manage_encrypt_all_credentials (GSList *log_config, const gchar *database)
  *         from server.
  */
 int
-manage_decrypt_all_credentials (GSList *log_config, const gchar *database)
+manage_decrypt_all_credentials (GSList *log_config,
+                                const db_conn_info_t *database)
 {
   int ret;
 
@@ -6407,7 +6407,7 @@ check_alerts ()
  *         from server.
  */
 int
-manage_check_alerts (GSList *log_config, const gchar *database)
+manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
 {
   int ret;
 
@@ -15164,7 +15164,7 @@ task_average_scan_duration (task_t task)
  * @param[in]  database          Location of manage database.
  */
 void
-init_manage_process (const gchar *database)
+init_manage_process (const db_conn_info_t *database)
 {
   lockfile_t lockfile;
 
@@ -15210,7 +15210,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (gvmd_db_name);
+  init_manage_process (&gvmd_db_conn_info);
 }
 
 /**
@@ -16329,7 +16329,7 @@ cleanup_tables ()
  */
 static int
 init_manage_internal (GSList *log_config,
-                      const gchar *database,
+                      const db_conn_info_t *database,
                       int max_ips_per_target,
                       int max_email_attachment_size,
                       int max_email_include_size,
@@ -16447,7 +16447,10 @@ init_manage_internal (GSList *log_config,
     check_db_configs ();
 
   sql_close ();
-  gvmd_db_name = database ? g_strdup (database) : NULL;
+  gvmd_db_conn_info.name = database->name ? g_strdup (database->name) : NULL;
+  gvmd_db_conn_info.host = database->host ? g_strdup (database->host) : NULL;
+  gvmd_db_conn_info.port = database->port ? g_strdup (database->port) : NULL;
+
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;
@@ -16478,7 +16481,7 @@ init_manage_internal (GSList *log_config,
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
-init_manage (GSList *log_config, const gchar *database,
+init_manage (GSList *log_config, const db_conn_info_t *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
              manage_connection_forker_t fork_connection,
@@ -16511,7 +16514,7 @@ init_manage (GSList *log_config, const gchar *database,
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
-init_manage_helper (GSList *log_config, const gchar *database,
+init_manage_helper (GSList *log_config, const db_conn_info_t *database,
                     int max_ips_per_target)
 {
   return init_manage_internal (log_config,
@@ -38467,7 +38470,7 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
  *         to be initialised from server.
  */
 int
-manage_create_scanner (GSList *log_config, const gchar *database,
+manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *name, const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
                        const char *credential_id,
@@ -38649,7 +38652,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
  *         initialised from server.
  */
 int
-manage_delete_scanner (GSList *log_config, const gchar *database,
+manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
@@ -38721,7 +38724,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
  *         to be initialised from server.
  */
 int
-manage_modify_scanner (GSList *log_config, const gchar *database,
+manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *scanner_id, const char *name,
                        const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
@@ -38945,7 +38948,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
  *         initialised from server.
  */
 int
-manage_verify_scanner (GSList *log_config, const gchar *database,
+manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
@@ -40694,7 +40697,7 @@ verify_scanner (const char *scanner_id, char **version)
  * @return 0 success, -1 error.
  */
 int
-manage_get_scanners (GSList *log_config, const gchar *database)
+manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 {
   iterator_t scanners;
   int ret;
@@ -44704,7 +44707,8 @@ modify_permission (const char *permission_id, const char *name_arg,
  * @return 0 success, -1 error.
  */
 int
-manage_get_roles (GSList *log_config, const gchar *database, int verbose)
+manage_get_roles (GSList *log_config, const db_conn_info_t *database,
+                  int verbose)
 {
   iterator_t roles;
   int ret;
@@ -51130,7 +51134,7 @@ setting_normalise (const gchar *uuid, const gchar *value)
  *         5 syntax error in setting value, -1 error.
  */
 int
-manage_modify_setting (GSList *log_config, const gchar *database,
+manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
                        const gchar *name, const gchar *uuid, const char *value)
 {
   int ret;
@@ -51292,7 +51296,7 @@ manage_default_ca_cert ()
  *         from server.
  */
 int
-manage_create_user (GSList *log_config, const gchar *database,
+manage_create_user (GSList *log_config, const db_conn_info_t *database,
                     const gchar *name, const gchar *password,
                     const gchar *role_name)
 {
@@ -51386,7 +51390,7 @@ manage_create_user (GSList *log_config, const gchar *database,
  *         from server.
  */
 int
-manage_delete_user (GSList *log_config, const gchar *database,
+manage_delete_user (GSList *log_config, const db_conn_info_t *database,
                     const gchar *name, const gchar *inheritor_name)
 {
   int ret;
@@ -51450,7 +51454,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
  * @return 0 success, -1 error.
  */
 int
-manage_get_users (GSList *log_config, const gchar *database,
+manage_get_users (GSList *log_config, const db_conn_info_t *database,
                   const gchar* role_name, int verbose)
 {
   iterator_t users;
@@ -51546,7 +51550,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
  * @return 0 success, -1 error.
  */
 int
-manage_set_password (GSList *log_config, const gchar *database,
+manage_set_password (GSList *log_config, const db_conn_info_t *database,
                      const gchar *name, const gchar *password)
 {
   user_t user;
@@ -56300,7 +56304,8 @@ delete_permissions_cache_for_user (user_t user)
  *         from server.
  */
 int
-manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
+manage_optimize (GSList *log_config, const db_conn_info_t *database,
+                 const gchar *name)
 {
   gchar *success_text;
   int ret;
@@ -56320,14 +56325,12 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   ret = 0;
   if (strcasecmp (name, "vacuum") == 0)
     {
-      const gchar *db;
       struct stat state;
       long long int old_size, new_size;
 
-      db = database ? database : sql_default_database ();
       old_size = 0LL;
       new_size = 0LL;
-      ret = stat (db, &state);
+      ret = stat (database->name, &state);
       if (ret)
         switch (errno)
           {
@@ -56343,7 +56346,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql ("VACUUM;");
 
-      ret = stat (db, &state);
+      ret = stat (database->name, &state);
       if (ret)
         switch (errno)
           {

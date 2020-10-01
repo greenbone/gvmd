@@ -41,6 +41,14 @@
 #include <gvm/util/authutils.h>
 #include <gvm/osp/osp.h>
 
+/* Connection data */
+
+typedef struct {
+  gchar *name;
+  gchar *host;
+  gchar *port;
+} db_conn_info_t;
+
 /**
  * @brief OID of ping_host.nasl
  */
@@ -113,14 +121,14 @@ typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
                                            const gchar* uuid);
 
 int
-init_manage (GSList*, const gchar *, int, int, int, int,
+init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const gchar *, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int);
 
 void
-init_manage_process (const gchar*);
+init_manage_process (const db_conn_info_t*);
 
 void
 cleanup_manage_process (gboolean);
@@ -214,13 +222,13 @@ void
 set_db_version (int version);
 
 int
-manage_migrate (GSList*, const gchar*);
+manage_migrate (GSList*, const db_conn_info_t*);
 
 int
-manage_encrypt_all_credentials (GSList *, const gchar *);
+manage_encrypt_all_credentials (GSList *, const db_conn_info_t *);
 
 int
-manage_decrypt_all_credentials (GSList *, const gchar *);
+manage_decrypt_all_credentials (GSList *, const db_conn_info_t *);
 
 void
 manage_session_set_timezone (const char *);
@@ -541,7 +549,7 @@ typedef enum
 } alert_condition_t;
 
 int
-manage_check_alerts (GSList *, const gchar *);
+manage_check_alerts (GSList *, const db_conn_info_t *);
 
 int
 create_alert (const char*, const char*, const char*, const char*, event_t,
@@ -2421,23 +2429,23 @@ manage_system_report (const char *, const char *, const char *, const char *,
 #define SLAVE_COMMIT_SIZE_DEFAULT 0
 
 int
-manage_create_scanner (GSList *, const char *, const char *, const char *,
-                       const char *, const char *, const char *, const char *,
-                       const char *, const char *);
-
-int
-manage_modify_scanner (GSList *, const gchar *, const char *, const char *,
+manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
                        const char *, const char *, const char *);
 
 int
-manage_delete_scanner (GSList *, const gchar *, const gchar *);
+manage_modify_scanner (GSList *, const db_conn_info_t *, const char *,
+                       const char *, const char *, const char *, const char *,
+                       const char *, const char *, const char *, const char *);
 
 int
-manage_verify_scanner (GSList *, const gchar *, const gchar *);
+manage_delete_scanner (GSList *, const db_conn_info_t *, const gchar *);
 
 int
-manage_get_scanners (GSList *, const gchar *);
+manage_verify_scanner (GSList *, const db_conn_info_t *, const gchar *);
+
+int
+manage_get_scanners (GSList *, const db_conn_info_t *);
 
 int
 create_scanner (const char*, const char *, const char *, const char *,
@@ -2863,7 +2871,7 @@ delete_permissions_cache_for_user (user_t);
 /* Roles. */
 
 int
-manage_get_roles (GSList *, const gchar *, int);
+manage_get_roles (GSList *, const db_conn_info_t *, int);
 
 int
 init_role_iterator (iterator_t *, const get_data_t *);
@@ -3311,7 +3319,8 @@ int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 int
-manage_modify_setting (GSList *, const gchar *, const gchar *, const gchar *, const char *);
+manage_modify_setting (GSList *, const db_conn_info_t *, const gchar *,
+                       const gchar *, const char *);
 
 char *
 manage_default_ca_cert ();
@@ -3326,14 +3335,15 @@ gboolean
 find_user_by_name_with_permission (const char *, user_t *, const char *);
 
 int
-manage_create_user (GSList *, const gchar *, const gchar *, const gchar *,
+manage_create_user (GSList *, const db_conn_info_t *, const gchar *,
+                    const gchar *, const gchar *);
+
+int
+manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
                     const gchar *);
 
 int
-manage_delete_user (GSList *, const gchar *, const gchar *, const gchar *);
-
-int
-manage_get_users (GSList *, const gchar *, const gchar *, int);
+manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
 
 report_host_t
 manage_report_host_add (report_t, const char *, time_t, time_t);
@@ -3348,7 +3358,8 @@ gchar*
 host_routes_xml (host_t);
 
 int
-manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);
+manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
+                     const gchar *);
 
 gchar *
 manage_user_hash (const gchar *);
@@ -3676,7 +3687,7 @@ int
 manage_update_nvts_osp (const gchar *);
 
 int
-manage_rebuild (GSList *, const gchar *);
+manage_rebuild (GSList *, const db_conn_info_t *);
 
 
 /* Wizards. */
@@ -3702,13 +3713,13 @@ char*
 type_trash_columns (const char *);
 
 gboolean
-manage_migrate_needs_timezone (GSList *, const gchar *);
+manage_migrate_needs_timezone (GSList *, const db_conn_info_t *);
 
 
 /* Optimize. */
 
 int
-manage_optimize (GSList *, const gchar *, const gchar *);
+manage_optimize (GSList *, const db_conn_info_t *, const gchar *);
 
 
 /* Signal management */
