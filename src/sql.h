@@ -24,8 +24,8 @@
 #ifndef _GVMD_SQL_H
 #define _GVMD_SQL_H
 
-#include "manage.h"
 #include "iterator.h"
+#include "manage.h"
 
 #include <glib.h>
 
