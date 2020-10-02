@@ -235,7 +235,7 @@ parse_report_format_entity (entity_t report_format,
           type = entity_child (param_entity, "type");
           if (type)
             {
-              param->type = g_strdup (entity_text (type));
+              param->type = g_strstrip (g_strdup (entity_text (type)));
               if (entity_child (type, "max"))
                 param->type_max = g_strdup (entity_text (entity_child (type,
                                                                        "max")));
