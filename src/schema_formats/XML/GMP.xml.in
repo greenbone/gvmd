@@ -25112,12 +25112,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>comment</e>
         <!-- Actually at least one, else command is empty. -->
         <any><e>alert</e></any>
+        <e>config</e>
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>
         <e>schedule</e>
         <e>schedule_periods</e>
         <e>scanner</e>
+        <e>target</e>
         <e>file</e>
       </or>
     </pattern>
@@ -25131,6 +25133,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>alert</name>
       <summary>Task alert</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>config</name>
+      <summary>The scan configuration used by the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -25194,6 +25207,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>scanner</name>
       <summary>Task scanner</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>target</name>
+      <summary>The hosts scanned by the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
