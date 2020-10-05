@@ -1446,7 +1446,6 @@ manage_create_sql_functions ()
            "         WHEN 'high'"
            "         THEN $1 >= 7"
            "              AND $1 <= 10"
-           "              AND $1 < 7"
            "         WHEN 'medium'"
            "         THEN $1 >= 4"
            "              AND $1 < 7"
