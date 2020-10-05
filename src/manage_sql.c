@@ -21182,7 +21182,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
 {
   int count;
   GString *levels_sql;
-  char *class;
 
   /* Generate SQL for constraints on message type, according to levels. */
 
@@ -21198,15 +21197,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
   levels_sql = NULL;
   count = 0;
 
-  class = sql_string ("SELECT value FROM settings"
-                      " WHERE name = 'Severity Class'"
-                      " AND ((owner IS NULL)"
-                      "      OR (owner"
-                      "          = (SELECT id FROM users"
-                      "             WHERE users.uuid = '%s')))"
-                      " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
-                      current_credentials.uuid ? current_credentials.uuid : "");
-
   /* High. */
   if (strchr (levels, 'h'))
     {
@@ -21214,10 +21204,9 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       // FIX handles dynamic "severity" in caller?
       levels_sql = g_string_new ("");
       g_string_append_printf (levels_sql,
-                              " AND (((%s IS NULL) AND (severity_in_level (%s, 'high', '%s')",
+                              " AND (((%s IS NULL) AND (severity_in_level (%s, 'high')",
                               auto_type_sql,
-                              new_severity_sql,
-                              class);
+                              new_severity_sql);
     }
 
   /* Medium. */
@@ -21227,16 +21216,14 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'medium', '%s')",
+                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'medium')",
                                   auto_type_sql,
-                                  new_severity_sql,
-                                  class);
+                                  new_severity_sql);
         }
       else
         g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'medium', '%s')",
-                                new_severity_sql,
-                                class);
+                                " OR severity_in_level (%s, 'medium')",
+                                new_severity_sql);
       count++;
     }
 
@@ -21247,16 +21234,14 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'low', '%s')",
+                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'low')",
                                   auto_type_sql,
-                                  new_severity_sql,
-                                  class);
+                                  new_severity_sql);
         }
       else
         g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'low', '%s')",
-                                new_severity_sql,
-                                class);
+                                " OR severity_in_level (%s, 'low')",
+                                new_severity_sql);
       count++;
     }
 
@@ -21267,16 +21252,14 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'log', '%s')",
+                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'log')",
                                   auto_type_sql,
-                                  new_severity_sql,
-                                  class);
+                                  new_severity_sql);
         }
       else
         g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'log', '%s')",
-                                new_severity_sql,
-                                class);
+                                " OR severity_in_level (%s, 'log')",
+                                new_severity_sql);
       count++;
     }
 
@@ -21344,8 +21327,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       g_string_append_printf (levels_sql,
                               " AND severity != " G_STRINGIFY (SEVERITY_ERROR));
     }
-
-  free (class);
 
   return levels_sql;
 }
