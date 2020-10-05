@@ -23535,10 +23535,8 @@ report_severity_data (report_t report, const char *host,
 
           if (results.done)
             severity = 0.0;
-          else if (iterator_int (&results, 0))
-            severity = SEVERITY_FP;
           else
-            severity = iterator_double (&results, 1);
+            severity = iterator_double (&results, 0);
 
           severity_data_add (severity_data, severity);
         }
@@ -23567,10 +23565,8 @@ report_severity_data (report_t report, const char *host,
 
           if (results.done)
             severity = 0.0;
-          else if (iterator_int (&results, 0))
-            severity = SEVERITY_FP;
           else
-            severity = iterator_double (&results, 1);
+            severity = iterator_double (&results, 0);
 
           severity_data_add (filtered_severity_data, severity);
         }
