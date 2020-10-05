@@ -49005,6 +49005,25 @@ asset_host_count (const get_data_t *get)
  }
 
 /**
+ * @brief Generate the extra_tables string for an OS iterator.
+ *
+ * @return Newly allocated string.
+ */
+static gchar *
+asset_os_iterator_opts_table ()
+{
+  assert (current_credentials.uuid);
+
+  return g_strdup_printf (", (SELECT"
+                          "   (SELECT id FROM users"
+                          "    WHERE users.uuid = '%s')"
+                          "   AS user_id,"
+                          "   'host' AS type)"
+                          "  AS opts",
+                          current_credentials.uuid);
+}
+
+/**
  * @brief Initialise an OS iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -49022,15 +49041,7 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
   gchar *extra_tables;
 
-  assert (current_credentials.uuid);
-
-  extra_tables = g_strdup_printf (", (SELECT"
-                                  "   (SELECT id FROM users"
-                                  "    WHERE users.uuid = '%s')"
-                                  "   AS user_id,"
-                                  "   'host' AS type)"
-                                  "  AS opts",
-                                  current_credentials.uuid);
+  extra_tables = asset_os_iterator_opts_table ();
 
   ret = init_get_iterator2_with (iterator,
                                  "os",
