@@ -5033,7 +5033,7 @@ rebuild_scap ()
  * @return 0 success, -1 error.
  */
 int
-manage_rebuild_scap (GSList *log_config, const gchar *database)
+manage_rebuild_scap (GSList *log_config, const db_conn_info_t *database)
 {
   int ret;
 

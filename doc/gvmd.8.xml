@@ -84,6 +84,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--db-host=<arg>HOST</arg></opt></p>
+      <optdesc>
+        <p>Use HOST as database host or socket directory for PostgreSQL.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--db-port=<arg>PORT</arg></opt></p>
+      <optdesc>
+        <p>Use PORT as database port or socket extension for PostgreSQL.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--delete-scanner=<arg>SCANNER-UUID</arg></opt></p>
       <optdesc>
         <p>Delete scanner SCANNER-UUID and exit.</p>

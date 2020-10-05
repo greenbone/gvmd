@@ -26985,7 +26985,7 @@ extern buffer_size_t from_client_end;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmp (GSList *log_config, const gchar *database,
+init_gmp (GSList *log_config, const db_conn_info_t *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, int max_email_message_size,
           manage_connection_forker_t fork_connection, int skip_db_check)
@@ -27013,7 +27013,7 @@ init_gmp (GSList *log_config, const gchar *database,
  * process_gmp_client_input.
  */
 void
-init_gmp_process (const gchar *database,
+init_gmp_process (const db_conn_info_t *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {

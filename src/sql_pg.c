@@ -271,16 +271,21 @@ sql_default_database ()
  * @return 0 success, -1 error.
  */
 int
-sql_open (const char *database)
+sql_open (const db_conn_info_t *database)
 {
   gchar *conn_info;
   PostgresPollingStatusType poll_status;
   int socket;
 
-  conn_info = g_strdup_printf ("dbname='%s' application_name='%s'",
-                               database
-                                ? database
+  conn_info = g_strdup_printf ("dbname='%s'"
+                               " host='%s'"
+                               " port='%s'"
+                               " application_name='%s'",
+                               database->name
+                                ? database->name
                                 : sql_default_database (),
+                               database->host ? database->host : "",
+                               database->port ? database->port : "",
                                "gvmd");
   conn = PQconnectStart (conn_info);
   g_free (conn_info);
@@ -294,7 +299,7 @@ sql_open (const char *database)
     {
       g_warning ("%s: PQconnectStart to '%s' failed: %s",
                  __func__,
-                 database ? database : sql_default_database (),
+                 database->name ? database->name : sql_default_database (),
                  PQerrorMessage (conn));
       goto fail;
     }
