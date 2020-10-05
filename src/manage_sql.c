@@ -21243,10 +21243,9 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (("
-                                  "       %s"
-                                  "       = " G_STRINGIFY
-                                               (SEVERITY_FP) "))",
+                                  " AND (%s"
+                                  "      = " G_STRINGIFY
+                                              (SEVERITY_FP) ")",
                                   new_severity_sql);
         }
       else
