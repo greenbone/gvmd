@@ -21159,8 +21159,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
       // FIX handles dynamic "severity" in caller?
       levels_sql = g_string_new ("");
       g_string_append_printf (levels_sql,
-                              " AND (((%s IS NULL) AND (severity_in_level (%s, 'high')",
-                              auto_type_sql,
+                              " AND (((severity_in_level (%s, 'high')",
                               new_severity_sql);
     }
 
@@ -21171,8 +21170,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'medium')",
-                                  auto_type_sql,
+                                  " AND (((severity_in_level (%s, 'medium')",
                                   new_severity_sql);
         }
       else
@@ -21189,8 +21187,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'low')",
-                                  auto_type_sql,
+                                  " AND (((severity_in_level (%s, 'low')",
                                   new_severity_sql);
         }
       else
@@ -21207,8 +21204,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'log')",
-                                  auto_type_sql,
+                                  " AND (((severity_in_level (%s, 'log')",
                                   new_severity_sql);
         }
       else
