@@ -21246,8 +21246,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
                                   " AND (("
                                   "       %s"
                                   "       = " G_STRINGIFY
-                                               (SEVERITY_FP) ")"
-                                  " )",
+                                               (SEVERITY_FP) "))",
                                   new_severity_sql);
         }
       else
