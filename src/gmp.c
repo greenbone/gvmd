@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -8273,7 +8273,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
               get_data_t *result_get;
               result_get = report_results_get_data (1, 1,
                                                     1, /* apply_overrides */
-                                                    0, /* autofp*/
                                                     0  /* min_qod */);
               result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
@@ -8556,7 +8555,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
               get_data_t *result_get;
               result_get = report_results_get_data (1, 1,
                                                     1, /* apply_overrides */
-                                                    0, /* autofp */
                                                     0  /* min_qod */);
               result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
@@ -15275,7 +15273,6 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
-                                      NULL, /* autofp */
                                       &notes,
                                       &overrides,
                                       NULL, /* apply_overrides */
@@ -17141,8 +17138,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (report_counts (first_report_id,
                                  &debugs, &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
-                                 &severity_2, apply_overrides,
-                                 0, min_qod))
+                                 &severity_2, apply_overrides, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " first report, aborting",
                          __func__);
@@ -17159,8 +17155,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                     &debugs, &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
-                                    apply_overrides,
-                                    0, min_qod))
+                                    apply_overrides, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
                          __func__);
@@ -17213,8 +17208,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                       (last_report_id,
                         &debugs, &holes, &infos, &logs,
                         &warnings, &false_positives, &severity,
-                        apply_overrides,
-                        0, min_qod))
+                        apply_overrides, min_qod))
                     g_error ("%s: GET_TASKS: error getting counts for"
                              " last report, aborting",
                              __func__);

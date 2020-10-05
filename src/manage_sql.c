@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1315,23 +1315,6 @@ cleanup_keyword (keyword_t *keyword)
         }
       keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
     }
-  else if (strcasecmp (keyword->column, "autofp") == 0)
-    {
-      /* autofp must be either 0, 1 or 2) */
-      if (keyword->integer_value < 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 0;
-          keyword->string = g_strdup ("0");
-        }
-      else if (keyword->integer_value > 2)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 0;
-          keyword->string = g_strdup ("0");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
   else if (strcasecmp (keyword->column, "apply_overrides") == 0
            || strcasecmp (keyword->column, "overrides") == 0
            || strcasecmp (keyword->column, "notes") == 0
@@ -1430,21 +1413,6 @@ keyword_applies (array_t *array, const keyword_t *keyword)
           keyword_t *item;
           item = (keyword_t*) g_ptr_array_index (array, index);
           if (item->column && (strcmp (item->column, "apply_overrides") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "autofp") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "autofp") == 0))
             return 0;
         }
     }
@@ -2010,7 +1978,6 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  search_phrase      Phrase that results must include.  All results
  *                                 if NULL or "".
  * @param[out]  search_phrase_exact  Whether search phrase is exact.
- * @param[out]  autofp             Whether to apply auto FP filter.
  * @param[out]  notes              Whether to include notes.
  * @param[out]  overrides          Whether to include overrides.
  * @param[out]  apply_overrides    Whether to apply overrides.
@@ -2022,7 +1989,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                int *result_hosts_only, gchar **min_qod,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
-                               int *autofp, int *notes, int *overrides,
+                               int *notes, int *overrides,
                                int *apply_overrides, gchar **zone)
 {
   keyword_t **point;
@@ -2145,16 +2112,6 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *result_hosts_only = 1;
       else
         *result_hosts_only = val;
-    }
-
-  if (autofp)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "autofp",
-                              &val))
-        *autofp = 0;
-      else
-        *autofp = val;
     }
 
   if (notes)
@@ -19937,7 +19894,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                       user);
       manage_session_init (current_credentials.uuid);
 
-      get = report_results_get_data (1, -1, override, 0, min_qod);
+      get = report_results_get_data (1, -1, override, min_qod);
 
       if ((clear_original && override == 0) || (clear_overridden && override))
         {
@@ -21172,13 +21129,11 @@ next_report (iterator_t* iterator, report_t* report)
  *                     High, Medium, Low, loG and Debug).  All levels if
  *                     NULL.
  * @param[in]  new_severity_sql  SQL for new severity.
- * @param[in]  auto_type_sql     SQL for auto type.
  *
  * @return WHERE clause for levels if one is required, else NULL.
  */
 static GString *
-where_levels_auto (const char *levels, const char *new_severity_sql,
-                   const char *auto_type_sql)
+where_levels_auto (const char *levels, const char *new_severity_sql)
 {
   int count;
   GString *levels_sql;
@@ -21204,8 +21159,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
       // FIX handles dynamic "severity" in caller?
       levels_sql = g_string_new ("");
       g_string_append_printf (levels_sql,
-                              " AND (((%s IS NULL) AND (severity_in_level (%s, 'high')",
-                              auto_type_sql,
+                              " AND (((severity_in_level (%s, 'high')",
                               new_severity_sql);
     }
 
@@ -21216,8 +21170,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'medium')",
-                                  auto_type_sql,
+                                  " AND (((severity_in_level (%s, 'medium')",
                                   new_severity_sql);
         }
       else
@@ -21234,8 +21187,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'low')",
-                                  auto_type_sql,
+                                  " AND (((severity_in_level (%s, 'low')",
                                   new_severity_sql);
         }
       else
@@ -21252,8 +21204,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'log')",
-                                  auto_type_sql,
+                                  " AND (((severity_in_level (%s, 'log')",
                                   new_severity_sql);
         }
       else
@@ -21270,11 +21221,10 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL)"
-                                  "       AND ((%s"
-                                  "             = " G_STRINGIFY
-                                                     (SEVERITY_DEBUG) ")",
-                                  auto_type_sql,
+                                  " AND (("
+                                  "       ((%s"
+                                  "         = " G_STRINGIFY
+                                                 (SEVERITY_DEBUG) ")",
                                   new_severity_sql);
         }
       else
@@ -21293,23 +21243,18 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
         {
           levels_sql = g_string_new ("");
           g_string_append_printf (levels_sql,
-                                  " AND (((%s IS NULL)"
-                                  "       AND %s"
-                                  "           = " G_STRINGIFY
-                                                   (SEVERITY_FP) ")"
-                                  "      OR %s = 1)",
-                                  auto_type_sql,
-                                  new_severity_sql,
-                                  auto_type_sql);
+                                  " AND (%s"
+                                  "      = " G_STRINGIFY
+                                              (SEVERITY_FP) ")",
+                                  new_severity_sql);
         }
       else
         g_string_append_printf (levels_sql,
                                 " OR %s"
                                 "    = " G_STRINGIFY
                                           (SEVERITY_FP) "))"
-                                " OR %s = 1)",
-                                new_severity_sql,
-                                auto_type_sql);
+                                " )",
+                                new_severity_sql);
       count++;
     }
   else if (count)
@@ -21363,7 +21308,7 @@ where_qod (int min_qod)
  */
 #define RESULT_ITERATOR_FILTER_COLUMNS                                        \
   { GET_ITERATOR_FILTER_COLUMNS, "host", "location", "nvt",                   \
-    "type", "original_type", "auto_type",                                     \
+    "type", "original_type",                                                  \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
@@ -21535,10 +21480,6 @@ where_qod (int min_qod)
       "                  LIMIT 1))",                                          \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT autofp FROM results_autofp"                                    \
-      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))",   \
-      "auto_type",                                                            \
-      KEYWORD_TYPE_INTEGER },                                                 \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
@@ -21682,14 +21623,13 @@ where_qod (int min_qod)
 /**
  * @brief Generate the extra_tables string for a result iterator.
  *
- * @param[in]  autofp    Whether to apply auto FP filter.
  * @param[in]  override  Whether to apply overrides.
  * @param[in]  dynamic   Whether to use dynamic severity scores.
  *
  * @return Newly allocated string with the extra_tables clause.
  */
 static gchar*
-result_iterator_opts_table (int autofp, int override, int dynamic)
+result_iterator_opts_table (int override, int dynamic)
 {
   user_t user_id;
   gchar *user_zone, *quoted_user_zone, *ret;
@@ -21724,12 +21664,10 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
          (", (SELECT"
           "   '%s'::text AS user_zone,"
           "   %llu AS user_id,"
-          "   %d AS autofp,"
           "   %d AS override,"
           "   %d AS dynamic) AS opts",
           quoted_user_zone,
           user_id,
-          autofp,
           override,
           dynamic);
 
@@ -21744,7 +21682,6 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
  * @param[in]  trash            Whether to get results from trashcan.
  * @param[in]  report           Report to restrict returned results to.
  * @param[in]  host             Host to restrict returned results to.
- * @param[in]  autofp           Whether to apply auto FP filter.
  * @param[in]  apply_overrides  Whether to apply overrides.
  * @param[in]  dynamic_severity Whether to use dynamic severity.
  * @param[in]  filter           Filter string.
@@ -21753,7 +21690,7 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
  */
 static gchar*
 results_extra_where (int trash, report_t report, const gchar* host,
-                     int autofp, int apply_overrides, int dynamic_severity,
+                     int apply_overrides, int dynamic_severity,
                      const gchar *filter)
 {
   gchar *extra_where;
@@ -21761,7 +21698,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   gchar *levels;
   gchar *report_clause, *host_clause, *min_qod_clause;
   GString *levels_clause;
-  gchar *new_severity_sql, *auto_type_sql;
+  gchar *new_severity_sql;
 
   // Get filter values
   min_qod = filter_term_min_qod (filter);
@@ -21770,26 +21707,6 @@ results_extra_where (int trash, report_t report, const gchar* host,
     levels = g_strdup ("hmlgdf");
 
   // Build clause fragments
-
-  switch (autofp)
-    {
-      case 1:
-        auto_type_sql = g_strdup_printf
-          ("(SELECT autofp FROM results_autofp"
-            " WHERE result = results.id"
-            " AND autofp_selection = 1)");
-        break;
-      case 2:
-        auto_type_sql = g_strdup_printf
-          ("(SELECT autofp FROM results_autofp"
-            " WHERE result = results.id"
-            " AND autofp_selection = 2)");
-          break;
-
-      default:
-        auto_type_sql = g_strdup ("NULL");
-        break;
-    }
 
   new_severity_sql
     = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
@@ -21820,7 +21737,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod_clause = where_qod (min_qod);
 
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
-                                     new_severity_sql, auto_type_sql);
+                                     new_severity_sql);
   g_free (levels);
   g_free (new_severity_sql);
 
@@ -21830,7 +21747,6 @@ results_extra_where (int trash, report_t report, const gchar* host,
                                 levels_clause->str,
                                 min_qod_clause ? min_qod_clause : "");
 
-  g_free (auto_type_sql);
   g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);
   g_free (report_clause);
@@ -21856,7 +21772,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[3];
+  column_t columns[2];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -21865,18 +21781,12 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t *filterable_columns;
   int ret;
   gchar *filter;
-  int autofp, apply_overrides, dynamic_severity;
+  int apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *owned_clause, *with_clause;
   gchar *with_clauses;
   char *user_id;
 
   assert (report);
-
-  columns[0].select
-    = "(SELECT autofp FROM results_autofp"
-      " WHERE (result = results.id) AND (autofp_selection = opts.autofp))";
-  columns[0].filter = "auto_type";
-  columns[0].type = KEYWORD_TYPE_INTEGER;
 
   dynamic_severity = setting_dynamic_severity_int ();
 
@@ -21912,7 +21822,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   if (dynamic_severity)
     {
       if (apply_overrides)
-        columns[1].select
+        columns[0].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
@@ -21957,7 +21867,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                             END),"
             "                            results.severity)))";
       else
-        columns[1].select
+        columns[0].select
           = "(SELECT coalesce ((CASE WHEN results.severity"
             "                             > " G_STRINGIFY (SEVERITY_LOG)
             "                        THEN (SELECT CAST (cvss_base"
@@ -21971,7 +21881,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   else
     {
       if (apply_overrides)
-        columns[1].select
+        columns[0].select
           = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
@@ -21993,27 +21903,22 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   LIMIT 1),"
             "                  results.severity))";
       else
-        columns[1].select
+        columns[0].select
           = "(SELECT results.severity)";
     }
 
-  columns[1].filter = "severity";
-  columns[1].type = KEYWORD_TYPE_DOUBLE;
+  columns[0].filter = "severity";
+  columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[2].select = NULL;
-  columns[2].filter = NULL;
-  columns[2].type = KEYWORD_TYPE_UNKNOWN;
+  columns[1].select = NULL;
+  columns[1].filter = NULL;
+  columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
-  autofp = filter_term_autofp (filter ? filter : get->filter);
-
-  if (autofp == 0)
-    columns[0].select = "0";
-
-  extra_tables = result_iterator_opts_table (autofp, apply_overrides,
+  extra_tables = result_iterator_opts_table (apply_overrides,
                                              dynamic_severity);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
+                                     apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
   free (filter);
@@ -22105,7 +22010,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
-  int autofp, apply_overrides, dynamic_severity;
+  int apply_overrides, dynamic_severity;
 
   if (report == -1)
     {
@@ -22124,18 +22029,16 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  opts_tables
-    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
                                   opts_tables);
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
+                                     apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
   free (filter);
@@ -22179,7 +22082,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
-  int apply_overrides, autofp, dynamic_severity;
+  int apply_overrides, dynamic_severity;
 
   if (report == -1)
     return 0;
@@ -22195,18 +22098,16 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  opts_tables
-    = result_iterator_opts_table (autofp, apply_overrides, dynamic_severity);
+  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
                                   opts_tables);
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     autofp, apply_overrides, dynamic_severity,
+                                     apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter);
 
   ret = count ("result", get,
@@ -22435,7 +22336,7 @@ DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
 /**
  * @brief Get the type from a result iterator.
  *
- * This is the the autofp adjusted overridden type.
+ * This is the overridden type.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22446,9 +22347,6 @@ static const char*
 result_iterator_type (iterator_t *iterator)
 {
   if (iterator->done) return NULL;
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return "False Positive";
   /* new_type */
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
@@ -22461,7 +22359,7 @@ result_iterator_type (iterator_t *iterator)
  * @return The descr of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_descr, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (result_iterator_descr, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the task from a result iterator.
@@ -22474,7 +22372,7 @@ task_t
 result_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -22488,7 +22386,7 @@ report_t
 result_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -22508,14 +22406,14 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
     return NULL;
 
   /* nvt_version */
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
   return ret ? ret : "";
 }
 
 /**
  * @brief Get the original severity from a result iterator.
  *
- * This is the original severity without overrides and autofp.
+ * This is the original severity without overrides.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22531,14 +22429,14 @@ result_iterator_original_severity (iterator_t *iterator)
     return NULL;
 
   /* severity */
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   return ret ? ret : "";
 }
 
 /**
  * @brief Get the severity from a result iterator.
  *
- * This is the the autofp adjusted overridden severity.
+ * This is the the overridden severity.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22553,19 +22451,15 @@ result_iterator_severity (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return G_STRINGIFY (SEVERITY_FP);
-
   /* new_severity */
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
   return ret ? ret : "";
 }
 
 /**
  * @brief Get the severity from a result iterator as double.
  *
- * This is the the autofp adjusted overridden severity.
+ * This is the the overridden severity.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22578,17 +22472,13 @@ result_iterator_severity_double (iterator_t *iterator)
   if (iterator->done)
     return 0.0;
 
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return SEVERITY_FP;
-
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
 }
 
 /**
  * @brief Get the original severity/threat level from a result iterator.
  *
- * This is the original level without overrides and autofp.
+ * This is the original level without overrides.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22604,11 +22494,11 @@ result_iterator_original_level (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 11))
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 10))
     return NULL;
 
   /* severity */
-  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -22617,7 +22507,7 @@ result_iterator_original_level (iterator_t *iterator)
 /**
  * @brief Get the severity/threat level from a result iterator.
  *
- * This is the the autofp adjusted overridden level.
+ * This is the the overridden level.
  *
  * @param[in]  iterator  Iterator.
  *
@@ -22633,15 +22523,11 @@ result_iterator_level (iterator_t *iterator)
   if (iterator->done)
     return "";
 
-  /* auto_type */
-  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
-    return "False Positive";
-
   /* new_severity */
-  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 12))
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 11))
     return "";
 
-  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -22655,7 +22541,7 @@ result_iterator_level (iterator_t *iterator)
  * @return The solution type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
+DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 15);
 
 /**
  * @brief Get the qod from a result iterator.
@@ -22665,7 +22551,7 @@ DEF_ACCESS (result_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
  * @return The qod of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
+DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 16);
 
 /**
  * @brief Get the qod_type from a result iterator.
@@ -22675,7 +22561,7 @@ DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
  * @return The qod type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
+DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 17);
 
 /**
  * @brief Get the host from a result iterator.
@@ -22685,7 +22571,7 @@ DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
  * @return The host of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
+DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
  * @brief Get the path from a result iterator.
@@ -22695,7 +22581,7 @@ DEF_ACCESS (result_iterator_hostname, GET_ITERATOR_COLUMN_COUNT + 19);
  * @return The path of the result.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 22);
+DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 21);
 
 /**
  * @brief Get the asset host ID from a result iterator.
@@ -22705,7 +22591,7 @@ DEF_ACCESS (result_iterator_path, GET_ITERATOR_COLUMN_COUNT + 22);
  * @return The ID of the asset host.  Caller must only use before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 23);
+DEF_ACCESS (result_iterator_asset_host_id, GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Get whether notes may exist from a result iterator.
@@ -22718,7 +22604,7 @@ int
 result_iterator_may_have_notes (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 23);
 }
 
 /**
@@ -22732,7 +22618,7 @@ int
 result_iterator_may_have_overrides (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
 }
 
 /**
@@ -22746,7 +22632,7 @@ int
 result_iterator_may_have_tickets (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 26);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
 }
 
 /**
@@ -22760,7 +22646,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 34);
 }
 
 /**
@@ -22774,7 +22660,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
 }
 
 /**
@@ -23620,7 +23506,7 @@ report_severity_data (report_t report, const char *host,
   iterator_t results;
 
   gchar *filter;
-  int apply_overrides, autofp;
+  int apply_overrides;
 
   if (report == 0)
     return;
@@ -23634,13 +23520,12 @@ report_severity_data (report_t report, const char *host,
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  autofp = filter_term_autofp (filter ? filter : get->filter);
 
   if (severity_data)
     {
       get_data_t *get_all;
 
-      get_all = report_results_get_data (1, -1, apply_overrides, autofp, 0);
+      get_all = report_results_get_data (1, -1, apply_overrides, 0);
       ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, get_all, report, host, NULL);
       ignore_max_rows_per_page = 0;
@@ -23650,10 +23535,8 @@ report_severity_data (report_t report, const char *host,
 
           if (results.done)
             severity = 0.0;
-          else if (iterator_int (&results, 0))
-            severity = SEVERITY_FP;
           else
-            severity = iterator_double (&results, 1);
+            severity = iterator_double (&results, 0);
 
           severity_data_add (severity_data, severity);
         }
@@ -23682,10 +23565,8 @@ report_severity_data (report_t report, const char *host,
 
           if (results.done)
             severity = 0.0;
-          else if (iterator_int (&results, 0))
-            severity = SEVERITY_FP;
           else
-            severity = iterator_double (&results, 1);
+            severity = iterator_double (&results, 0);
 
           severity_data_add (filtered_severity_data, severity);
         }
@@ -23709,7 +23590,6 @@ report_severity_data (report_t report, const char *host,
  * @param[out]  false_positives  Number of false positives.
  * @param[out]  severity     Maximum severity score.
  * @param[in]   override     Whether to override the threat.
- * @param[in]   autofp       Whether to apply the auto FP filter.
  * @param[in]   min_qod      Min QOD.
  *
  * @return 0 on success, -1 on error.
@@ -23717,7 +23597,7 @@ report_severity_data (report_t report, const char *host,
 int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, double* severity,
-               int override, int autofp, int min_qod)
+               int override, int min_qod)
 {
   report_t report;
   int ret;
@@ -23727,7 +23607,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
     return -1;
   // TODO Check if report was found.
 
-  get = report_results_get_data (1, -1, override, autofp, min_qod);
+  get = report_results_get_data (1, -1, override, min_qod);
   ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
@@ -24008,15 +23888,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
               || sscanf (keyword->string, "%d", &min_qod_int) != 1)
             min_qod_int = MIN_QOD_DEFAULT;
         }
-      else if (strcasecmp (keyword->column, "autofp") == 0)
-        {
-          if (keyword->string
-              && strcmp (keyword->string, "")
-              && strcmp (keyword->string, "0"))
-            {
-              filter_cacheable = FALSE;
-            }
-        }
       else
         {
           filter_cacheable = FALSE;
@@ -24147,7 +24018,7 @@ report_severity (report_t report, int overrides, int min_qod)
   else
     {
       g_debug ("%s: could not get max from cache", __func__);
-      get_data_t *get = report_results_get_data (1, -1, overrides, 0, min_qod);
+      get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
       report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
                         NULL, &severity, get, NULL);
       get_data_reset (get);
@@ -26994,7 +26865,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int result_hosts_only;
   int notes, overrides;
 
-  int first_result, max_results, sort_order, autofp;
+  int first_result, max_results, sort_order;
 
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
@@ -27084,7 +26955,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
-                                     &autofp, &notes, &overrides,
+                                     &notes, &overrides,
                                      &apply_overrides, &zone);
     }
   else
@@ -27096,7 +26967,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
-                                     &autofp, &notes, &overrides,
+                                     &notes, &overrides,
                                      &apply_overrides, &zone);
     }
 
@@ -27221,7 +27092,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           int total_warnings, total_false_positives;
           get_data_t *all_results_get;
 
-          all_results_get = report_results_get_data (1, -1, 0, 0, 0);
+          all_results_get = report_results_get_data (1, -1, 0, 0);
           report_counts_id (report, &total_debugs, &total_holes, &total_infos,
                             &total_logs, &total_warnings,
                             &total_false_positives, NULL, all_results_get,
@@ -27319,7 +27190,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
            * which may be used as a sort field.  These could be added to
            * result_cmp.  For now sort by vulnerability. */
 #if 0
-          "uuid", "comment", "created", "modified", "_owner", "auto_type",
+          "uuid", "comment", "created", "modified", "_owner",
           "cvss_base", "nvt_version", "original_severity", "date",
           "solution_type", "qod", "qod_type", "cve", "hostname", "path"
 #endif
@@ -44422,31 +44293,6 @@ filter_term_apply_overrides (const char *term)
 }
 
 /**
- * @brief Return the value of the autofp keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of autofp if it exists, else 0.
- */
-int
-filter_term_autofp (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *autofp_str;
-
-      autofp_str = filter_term_value (term, "autofp");
-      ret = autofp_str ? atoi (autofp_str) : 0;
-
-      g_free (autofp_str);
-      return ret;
-    }
-  else
-    return 0;
-}
-
-/**
  * @brief Return the value of the min_qod keyword of a filter term.
  *
  * @param[in]  term    Filter term.
@@ -54453,8 +54299,7 @@ type_opts_table (const char *type, const char *filter)
     return report_iterator_opts_table (filter_term_apply_overrides (filter),
                                        filter_term_min_qod (filter));
   if (strcasecmp (type, "RESULT") == 0)
-    return result_iterator_opts_table (filter_term_autofp (filter),
-                                       filter_term_apply_overrides (filter),
+    return result_iterator_opts_table (filter_term_apply_overrides (filter),
                                        setting_dynamic_severity_int ());
   if (strcasecmp (type, "VULN") == 0)
     {
@@ -54552,7 +54397,7 @@ type_extra_where (const char *type, int trash, const char *filter,
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
-      int autofp, apply_overrides;
+      int apply_overrides;
       gchar *report_id;
       report_t report;
 
@@ -54579,11 +54424,10 @@ type_extra_where (const char *type, int trash, const char *filter,
         }
       g_free (report_id);
 
-      autofp = filter_term_autofp (filter);
       apply_overrides = filter_term_apply_overrides (filter);
 
       extra_where = results_extra_where (trash, report, NULL,
-                                         autofp, apply_overrides,
+                                         apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter);
     }

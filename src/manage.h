@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1247,7 +1247,7 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
 
 int
 report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
-               int, int, int);
+               int, int);
 
 int
 report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
@@ -1258,7 +1258,7 @@ report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,
                           double*, const get_data_t*, const char*);
 
 get_data_t*
-report_results_get_data (int, int, int, int, int);
+report_results_get_data (int, int, int, int);
 
 int
 scan_start_time_epoch (report_t);
@@ -1536,7 +1536,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *, int *, gchar **);
+                               int *, int *, int *, int *, gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);
@@ -2965,9 +2965,6 @@ filter_term_value (const char *, const char *);
 
 int
 filter_term_apply_overrides (const char *);
-
-int
-filter_term_autofp (const char *);
 
 int
 filter_term_min_qod (const char *);
