@@ -23508,7 +23508,7 @@ report_severity_data (report_t report, const char *host,
   iterator_t results;
 
   gchar *filter;
-  int apply_overrides ;
+  int apply_overrides;
 
   if (report == 0)
     return;
