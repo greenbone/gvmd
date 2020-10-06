@@ -48927,7 +48927,20 @@ asset_host_count (const get_data_t *get)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
-     "(SELECT count(*) FROM best_os_hosts WHERE cpe = oss.name)",             \
+     "(SELECT count(*)"                                                       \
+     " FROM (SELECT inner_cpes[1] AS cpe, host"                               \
+     "       FROM (SELECT array_agg (host_details.value"                      \
+     "                               ORDER BY host_details.id DESC)"          \
+     "                    AS inner_cpes,"                                     \
+     "                    host"                                               \
+     "             FROM host_details, hosts"                                  \
+     "             WHERE host_details.name = 'best_os_cpe'"                   \
+     "             AND hosts.id = host_details.host"                          \
+     "             AND (" ACL_USER_MAY_OPTS ("hosts") ")"                     \
+     "             GROUP BY host)"                                            \
+     "            AS host_details_subselect)"                                 \
+     "      AS array_removal_subselect"                                       \
+     " WHERE cpe = oss.name)",                                                \
      "hosts",                                                                 \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -48998,30 +49011,22 @@ asset_host_count (const get_data_t *get)
  }
 
 /**
- * @brief OS asset WITH clause for PostgreSQL
+ * @brief Generate the extra_tables string for an OS iterator.
  *
- * This depends on non-standard (PostgreSQL 9.0+) "ORDER BY" clauses
- * in aggregate functions to select latest detail id.
+ * @return Newly allocated string.
  */
-#define ASSET_OS_WITH_POSTGRESQL                                              \
-  " best_os_hosts AS ("                                                       \
-  "  SELECT inner_cpes[1] AS cpe, host"                                       \
-  "    FROM (SELECT array_agg(value ORDER BY id DESC) AS inner_cpes, host"    \
-  "            FROM host_details WHERE name='best_os_cpe' GROUP BY host)"     \
-  "    AS inner_host_os_cpes"                                                 \
-  " )"
-
-/**
- * @brief Get the extra WITH clause for OS assets.
- *
- * @return The extra WITH clause.
- */
-const char *
-asset_os_extra_with ()
+static gchar *
+asset_os_iterator_opts_table ()
 {
-  static const char *with = ASSET_OS_WITH_POSTGRESQL;
+  assert (current_credentials.uuid);
 
-  return with;
+  return g_strdup_printf (", (SELECT"
+                          "   (SELECT id FROM users"
+                          "    WHERE users.uuid = '%s')"
+                          "   AS user_id,"
+                          "   'host' AS type)"
+                          "  AS opts",
+                          current_credentials.uuid);
 }
 
 /**
@@ -49040,9 +49045,9 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
   static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  const char *extra_with;
+  gchar *extra_tables;
 
-  extra_with = asset_os_extra_with ();
+  extra_tables = asset_os_iterator_opts_table ();
 
   ret = init_get_iterator2_with (iterator,
                                  "os",
@@ -49057,14 +49062,16 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  filter_columns,
                                  0,
-                                 NULL,
+                                 extra_tables,
                                  NULL,
                                  NULL,
                                  TRUE,
                                  FALSE,
                                  NULL,
-                                 extra_with,
+                                 NULL,
                                  0);
+
+  g_free (extra_tables);
 
   return ret;
 }
@@ -49136,13 +49143,10 @@ asset_os_count (const get_data_t *get)
   static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  const char *extra_with;
   int ret;
 
-  extra_with = asset_os_extra_with ();
-
   ret = count2 ("os", get, columns, NULL, where_columns, NULL,
-                extra_columns, 0, 0, 0, extra_with, TRUE);
+                extra_columns, 0, 0, 0, NULL, TRUE);
 
   return ret;
 }
@@ -55697,6 +55701,8 @@ type_opts_table (const char *type, const char *filter)
   if (strcasecmp (type, "TASK") == 0)
     return task_iterator_opts_table (filter_term_apply_overrides (filter),
                                      filter_term_min_qod (filter), 0);
+  if (strcasecmp (type, "OS") == 0)
+    return asset_os_iterator_opts_table ();
   if (strcasecmp (type, "REPORT") == 0)
     return report_iterator_opts_table (filter_term_apply_overrides (filter),
                                        filter_term_min_qod (filter));
@@ -55855,8 +55861,6 @@ type_extra_where (const char *type, int trash, const char *filter,
 static const char *
 type_extra_with (const char *type)
 {
-  if (strcmp (type, "os") == 0)
-    return asset_os_extra_with ();
   return NULL;
 }
 
