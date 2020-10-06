@@ -481,28 +481,6 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
-  sql ("CREATE OR REPLACE FUNCTION order_message_type (text)"
-       " RETURNS integer AS $$"
-       " BEGIN"
-       "   IF $1 = 'Security Hole' THEN"
-       "     RETURN 1;"
-       "   ELSIF $1 = 'Security Warning' THEN"
-       "     RETURN 2;"
-       "   ELSIF $1 = 'Security Note' THEN"
-       "     RETURN 3;"
-       "   ELSIF $1 = 'Log Message' THEN"
-       "     RETURN 4;"
-       "   ELSIF $1 = 'Debug Message' THEN"
-       "     RETURN 5;"
-       "   ELSIF $1 = 'Error Message' THEN"
-       "     RETURN 6;"
-       "   ELSE"
-       "     RETURN 7;"
-       "   END IF;"
-       " END;"
-       "$$ LANGUAGE plpgsql"
-       " IMMUTABLE;");
-
   sql ("CREATE OR REPLACE FUNCTION order_port (text)"
        " RETURNS integer AS $$"
        " BEGIN"
