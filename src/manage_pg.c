@@ -226,8 +226,6 @@ manage_create_sql_functions ()
        "      v := " G_STRINGIFY (SEVERITY_LOG) ";"
        "    WHEN lower (lvl) = 'false positive' THEN"
        "      v := " G_STRINGIFY (SEVERITY_FP) ";"
-       "    WHEN lower (lvl) = 'debug' THEN"
-       "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
        "    WHEN lower (lvl) = 'error' THEN"
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    ELSE"
@@ -260,8 +258,6 @@ manage_create_sql_functions ()
        "      v := " G_STRINGIFY (SEVERITY_LOG) ";"
        "    WHEN lower (lvl) = 'false positive' THEN"
        "      v := " G_STRINGIFY (SEVERITY_FP) ";"
-       "    WHEN lower (lvl) = 'debug' THEN"
-       "      v := " G_STRINGIFY (SEVERITY_DEBUG) ";"
        "    WHEN lower (lvl) = 'error' THEN"
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    ELSE"
@@ -566,8 +562,6 @@ manage_create_sql_functions ()
        "     RETURN 'Log Message';"
        "   ELSIF $1 = " G_STRINGIFY (SEVERITY_FP) " THEN"
        "     RETURN 'False Positive';"
-       "   ELSIF $1 = " G_STRINGIFY (SEVERITY_DEBUG) " THEN"
-       "     RETURN 'Debug Message';"
        "   ELSIF $1 = " G_STRINGIFY (SEVERITY_ERROR) " THEN"
        "     RETURN 'Error Message';"
        "   ELSIF $1 > 0.0 AND $1 <= 10.0 THEN"
@@ -1468,8 +1462,6 @@ manage_create_sql_functions ()
            "         THEN 'Log'"
            "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_FP)
            "         THEN 'False Positive'"
-           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_DEBUG)
-           "         THEN 'Debug'"
            "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_ERROR)
            "         THEN 'Error'"
            "         WHEN $1::double precision > 0.0"
@@ -1501,8 +1493,6 @@ manage_create_sql_functions ()
            "         THEN 'Log'"
            "         WHEN $1 = " G_STRINGIFY (SEVERITY_FP)
            "         THEN 'False Positive'"
-           "         WHEN $1 = " G_STRINGIFY (SEVERITY_DEBUG)
-           "         THEN 'Debug'"
            "         WHEN $1 = " G_STRINGIFY (SEVERITY_ERROR)
            "         THEN 'Error'"
            "         WHEN $1 > 0.0 AND $1 <= 10.0"
