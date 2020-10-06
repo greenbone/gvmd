@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix create_credential for snmpv3. [#1305](https://github.com/greenbone/gvmd/pull/1305)
 - Remove extra spaces when parsing report format param type [#1309](https://github.com/greenbone/gvmd/pull/1309)
 - Correct arg to alert_uuid [#1313](https://github.com/greenbone/gvmd/pull/1313)
+- Switch result filter column 'task' from task ID to name task name [#1317](https://github.com/greenbone/gvmd/pull/1317)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)

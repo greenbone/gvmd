@@ -21789,7 +21789,10 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
+      "task",                                                                 \
+      KEYWORD_TYPE_STRING },
 
 /**
  * @brief Result iterator columns.
@@ -21938,6 +21941,9 @@ where_qod (int min_qod)
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
+      "task",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
     { "nvts.summary",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
@@ -22611,7 +22617,7 @@ result_iterator_nvt_name (iterator_t *iterator)
  *
  * @return The summary of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
+DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 28);
 
 /**
  * @brief Get the NVT insight from a result iterator.
@@ -22620,7 +22626,7 @@ DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
  *
  * @return The insight of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
+DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 29);
 
 /**
  * @brief Get the NVT affected from a result iterator.
@@ -22629,7 +22635,7 @@ DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
  *
  * @return The affected of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
+DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 30);
 
 /**
  * @brief Get the NVT impact from a result iterator.
@@ -22638,7 +22644,7 @@ DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
  *
  * @return Impact text of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
+DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 31);
 
 /**
  * @brief Get the NVT solution from a result iterator.
@@ -22647,7 +22653,7 @@ DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
  *
  * @return The solution of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 31);
+DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 32);
 
 /**
  * @brief Get the NVT solution_type from a result iterator.
@@ -22685,7 +22691,7 @@ result_iterator_nvt_solution_method (iterator_t *iterator)
  *
  * @return The detection of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
+DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 33);
 
 /**
  * @brief Get the NVT family from a result iterator.
@@ -22694,7 +22700,7 @@ DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
  *
  * @return The family of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
+DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
  * @brief Get the NVT CVSS base value from a result iterator.
@@ -22743,7 +22749,7 @@ xml_append_nvt_refs (GString *xml, const char *oid, int *first)
  *
  * @return The tags of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
+DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 35);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -23086,7 +23092,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -23100,7 +23106,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
