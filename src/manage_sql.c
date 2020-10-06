@@ -21801,6 +21801,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t *filterable_columns;
   int ret;
   gchar *filter;
+  int apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *extra_where_single;
   gchar *owned_clause, *with_clause, *with_clauses;
   char *user_id;
