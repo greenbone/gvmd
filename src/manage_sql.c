@@ -14012,7 +14012,7 @@ condition_met (task_t task, report_t report, alert_t alert,
         {
           char *filter_id, *count_string;
           report_t last_report;
-          int debugs, holes, infos, logs, warnings, false_positives;
+          int holes, infos, logs, warnings, false_positives;
           int count;
           double severity;
 
@@ -14059,11 +14059,11 @@ condition_met (task_t task, report_t report, alert_t alert,
               memset (&get, 0, sizeof (get_data_t));
               get.type = "result";
               get.filt_id = filter_id;
-              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
+              report_counts_id (last_report, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
 
-              db_count = debugs + holes + infos + logs + warnings
+              db_count = holes + infos + logs + warnings
                          + false_positives;
 
               g_debug ("%s: count: %i vs %i", __func__, db_count, count);
@@ -14080,7 +14080,7 @@ condition_met (task_t task, report_t report, alert_t alert,
         {
           char *direction, *filter_id, *count_string;
           report_t last_report;
-          int debugs, holes, infos, logs, warnings, false_positives;
+          int holes, infos, logs, warnings, false_positives;
           int count;
           double severity;
 
@@ -14116,10 +14116,10 @@ condition_met (task_t task, report_t report, alert_t alert,
               get.type = "result";
               get.filt_id = filter_id;
 
-              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
+              report_counts_id (last_report, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
-              last_count = debugs + holes + infos + logs + warnings
+              last_count = holes + infos + logs + warnings
                             + false_positives;
 
               second_last_report = 0;
@@ -14130,10 +14130,10 @@ condition_met (task_t task, report_t report, alert_t alert,
                 {
                   int cmp, second_last_count;
 
-                  report_counts_id (second_last_report, &debugs, &holes, &infos,
+                  report_counts_id (second_last_report, &holes, &infos,
                                     &logs, &warnings, &false_positives,
                                     &severity, &get, NULL);
-                  second_last_count = debugs + holes + infos + logs + warnings
+                  second_last_count = holes + infos + logs + warnings
                                       + false_positives;
 
                   cmp = last_count - second_last_count;
@@ -19864,7 +19864,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                      const char* users_where)
 {
   iterator_t cache_iterator;
-  int debugs, holes, infos, logs, warnings, false_positives;
+  int holes, infos, logs, warnings, false_positives;
   double severity;
   get_data_t *get = NULL;
   gchar *old_user_id;
@@ -19896,7 +19896,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                report, user, override, min_qod);
         }
 
-      report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+      report_counts_id (report, &holes, &infos, &logs, &warnings,
                         &false_positives, &severity, get, NULL);
 
       get_data_reset (get);
@@ -23575,7 +23575,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
   // TODO Check if report was found.
 
   get = report_results_get_data (1, -1, override, min_qod);
-  ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
+  ret = report_counts_id (report, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
   free (get);
@@ -23918,7 +23918,6 @@ report_counts_id_full (report_t report, int* holes, int* infos,
  * @brief Get only the filtered message counts for a report.
  *
  * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -23931,7 +23930,7 @@ report_counts_id_full (report_t report, int* holes, int* infos,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts_id (report_t report, int* debugs, int* holes, int* infos,
+report_counts_id (report_t report, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives,
                   double* severity, const get_data_t *get, const char *host)
 {
@@ -23977,7 +23976,7 @@ report_severity (report_t report, int overrides, int min_qod)
     {
       g_debug ("%s: could not get max from cache", __func__);
       get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
-      report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
+      report_counts_id (report, NULL, NULL, NULL, NULL,
                         NULL, &severity, get, NULL);
       get_data_reset (get);
       free (get);
@@ -26835,7 +26834,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int debugs, holes, infos, logs, warnings, false_positives;
+  int holes, infos, logs, warnings, false_positives;
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
@@ -27046,16 +27045,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       if (delta == 0)
         {
-          int total_debugs, total_holes, total_infos, total_logs;
+          int total_holes, total_infos, total_logs;
           int total_warnings, total_false_positives;
           get_data_t *all_results_get;
 
           all_results_get = report_results_get_data (1, -1, 0, 0);
-          report_counts_id (report, &total_debugs, &total_holes, &total_infos,
+          report_counts_id (report, &total_holes, &total_infos,
                             &total_logs, &total_warnings,
                             &total_false_positives, NULL, all_results_get,
                             NULL);
-          total_result_count = total_debugs + total_holes + total_infos
+          total_result_count = total_holes + total_infos
                                + total_logs + total_warnings
                                + total_false_positives;
           get_data_reset (all_results_get);
@@ -27075,10 +27074,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           /* Beware, we're using the full variables temporarily here, but
            * report_counts_id counts the filtered results. */
-          report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+          report_counts_id (report, &holes, &infos, &logs, &warnings,
                             &false_positives, NULL, get, NULL);
 
-          filtered_result_count = debugs + holes + infos + logs + warnings
+          filtered_result_count = holes + infos + logs + warnings
                                   + false_positives;
         }
 

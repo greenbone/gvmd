@@ -1250,7 +1250,7 @@ report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
                int, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
+report_counts_id (report_t, int*, int*, int*, int*, int*, double*,
                   const get_data_t*, const char*);
 
 int
