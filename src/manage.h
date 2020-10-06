@@ -1020,7 +1020,7 @@ severity_data_add_count (severity_data_t*, double, int);
 
 void
 severity_data_level_counts (const severity_data_t*,
-                            int*, int*, int*, int*, int*, int*, int*);
+                            int*, int*, int*, int*, int*, int*);
 
 
 /* General task facilities. */

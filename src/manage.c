@@ -1149,7 +1149,6 @@ severity_data_range_count (const severity_data_t* severity_data,
  *
  * @param[in] severity_data    The severity counts data to evaluate.
  * @param[out] errors          The number of error messages.
- * @param[out] debugs          The number of debug messages.
  * @param[out] false_positives The number of False Positives.
  * @param[out] logs            The number of Log messages.
  * @param[out] lows            The number of Low severity results.
@@ -1158,7 +1157,7 @@ severity_data_range_count (const severity_data_t* severity_data,
  */
 void
 severity_data_level_counts (const severity_data_t *severity_data,
-                            int *errors, int *debugs, int *false_positives,
+                            int *errors, int *false_positives,
                             int *logs, int *lows, int *mediums, int *highs)
 {
   if (errors)
@@ -1166,12 +1165,6 @@ severity_data_level_counts (const severity_data_t *severity_data,
       = severity_data_range_count (severity_data,
                                    level_min_severity ("Error"),
                                    level_max_severity ("Error"));
-
-  if (debugs)
-    *debugs
-      = severity_data_range_count (severity_data,
-                                   level_min_severity ("Debug"),
-                                   level_max_severity ("Debug"));
 
   if (false_positives)
     *false_positives

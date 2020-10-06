@@ -23896,10 +23896,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
     }
 
   severity_data_level_counts (&severity_data,
-                              NULL, NULL, false_positives,
+                              NULL, false_positives,
                               logs, infos, warnings, holes);
   severity_data_level_counts (&filtered_severity_data,
-                              NULL, NULL, filtered_false_positives,
+                              NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
                               filtered_warnings, filtered_holes);
 
