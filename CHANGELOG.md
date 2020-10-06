@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Auto delete at the start of scheduling so it always runs [#1302](https://github.com/greenbone/gvmd/pull/1302)
 - Fix create_credential for snmpv3. [#1305](https://github.com/greenbone/gvmd/pull/1305)
 - Remove extra spaces when parsing report format param type [#1309](https://github.com/greenbone/gvmd/pull/1309)
+- Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
