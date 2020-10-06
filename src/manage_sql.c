@@ -2794,6 +2794,7 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
  * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
  * @param[out] trash           Whether the trash table is being queried.
  * @param[out] order_return  If given then order clause.
+ * @param[out] order_asc     Whether order is ASCending.
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
  * @param[out] permissions   When given then permissions string vector.
@@ -2805,8 +2806,8 @@ static gchar *
 filter_clause_order (const char* type, const char* filter,
                      const char **filter_columns, column_t *select_columns,
                      column_t *where_columns, int trash, gchar **order_return,
-                     int *first_return, int *max_return, array_t **permissions,
-                     gchar **owner_filter)
+                     int *order_asc, int *first_return, int *max_return,
+                     array_t **permissions, gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -2907,6 +2908,9 @@ filter_clause_order (const char* type, const char* filter,
 
           if (first_order)
             {
+              if (order_asc)
+                *order_asc = 1;
+
               if ((strcmp (type, "report") == 0)
                   && (strcmp (keyword->string, "status") == 0))
                 g_string_append_printf
@@ -2920,8 +2924,7 @@ filter_clause_order (const char* type, const char* filter,
                   "                    || CAST (temp %% 10 as text)"
                   "             FROM (SELECT report_progress (id) AS temp)"
                   "                  AS temp_sub)"
-                  "    END)"
-                  " ASC");
+                  "    END)");
               else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "status") == 0))
                 g_string_append_printf
@@ -2937,8 +2940,7 @@ filter_clause_order (const char* type, const char* filter,
                   "                   WHERE task = tasks.id"
                   "                   ORDER BY date DESC LIMIT 1)"
                   "                  AS temp_sub)"
-                  "    END)"
-                  " ASC");
+                  "    END)");
               else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "threat") == 0))
                 {
@@ -2948,7 +2950,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " order_threat (%s) ASC",
+                                          " order_threat (%s)",
                                           column);
                 }
               else if (strcmp (keyword->string, "severity") == 0
@@ -2969,7 +2971,7 @@ filter_clause_order (const char* type, const char* filter,
                   g_string_append_printf (order,
                                           " CASE CAST (%s AS text)"
                                           " WHEN '' THEN NULL"
-                                          " ELSE CAST (%s AS REAL) END ASC",
+                                          " ELSE CAST (%s AS REAL) END",
                                           column,
                                           column);
                 }
@@ -2983,7 +2985,7 @@ filter_clause_order (const char* type, const char* filter,
                   g_string_append_printf (order,
                                           " CASE WHEN %s %s 'Admin.*'"
                                           " THEN '0' || %s"
-                                          " ELSE '1' || %s END ASC",
+                                          " ELSE '1' || %s END",
                                           column,
                                           sql_regexp_op (),
                                           column,
@@ -3012,7 +3014,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " %s ASC",
+                                          " %s",
                                           column);
                 }
               else if ((strcmp (keyword->string, "ips") == 0)
@@ -3026,7 +3028,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " CAST (%s AS INTEGER) ASC",
+                                          " CAST (%s AS INTEGER)",
                                           column);
                 }
               else if (strcmp (keyword->string, "ip") == 0)
@@ -3037,7 +3039,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " order_inet (%s) ASC",
+                                          " order_inet (%s)",
                                           column);
                 }
               else if ((strcmp (type, "note")
@@ -3054,21 +3056,22 @@ filter_clause_order (const char* type, const char* filter,
                   assert (column);
                   if (column_type == KEYWORD_TYPE_INTEGER)
                     g_string_append_printf (order,
-                                            " cast (%s AS bigint) ASC",
+                                            " cast (%s AS bigint)",
                                             column);
                   else if (column_type == KEYWORD_TYPE_DOUBLE)
                     g_string_append_printf (order,
-                                            " cast (%s AS real) ASC",
+                                            " cast (%s AS real)",
                                             column);
                   else
-                    g_string_append_printf (order, "  lower (%s) ASC",
+                    g_string_append_printf (order, "  lower (%s)",
                                             column);
                 }
               else
                 /* Special case for notes text sorting. */
+                // FIX this one won't work
                 g_string_append_printf (order,
-                                        " nvt ASC,"
-                                        " lower (%ss%s.text) ASC",
+                                        " nvt,"
+                                        " lower (%ss%s.text)",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -3076,7 +3079,7 @@ filter_clause_order (const char* type, const char* filter,
           else
             /* To help the client split_filter restricts the filter to one
              * sorting term, preventing this from happening. */
-            g_string_append_printf (order, ", %s ASC",
+            g_string_append_printf (order, ", %s",
                                     keyword->string);
           point++;
           continue;
@@ -3092,6 +3095,9 @@ filter_clause_order (const char* type, const char* filter,
 
           if (first_order)
             {
+              if (order_asc)
+                *order_asc = 0;
+
               if ((strcmp (type, "report") == 0)
                   && (strcmp (keyword->string, "status") == 0))
                 g_string_append_printf
@@ -3105,8 +3111,7 @@ filter_clause_order (const char* type, const char* filter,
                   "                    || CAST (temp %% 10 as text)"
                   "             FROM (SELECT report_progress (id) AS temp)"
                   "                  AS temp_sub)"
-                  "    END)"
-                  " DESC");
+                  "    END)");
               else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "status") == 0))
                 g_string_append_printf
@@ -3122,8 +3127,7 @@ filter_clause_order (const char* type, const char* filter,
                   "                   WHERE task = tasks.id"
                   "                   ORDER BY date DESC LIMIT 1)"
                   "                  AS temp_sub)"
-                  "    END)"
-                  " DESC");
+                  "    END)");
               else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "threat") == 0))
                 {
@@ -3133,7 +3137,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " order_threat (%s) DESC",
+                                          " order_threat (%s)",
                                           column);
                 }
               else if (strcmp (keyword->string, "severity") == 0
@@ -3154,7 +3158,7 @@ filter_clause_order (const char* type, const char* filter,
                   g_string_append_printf (order,
                                           " CASE CAST (%s AS text)"
                                           " WHEN '' THEN NULL"
-                                          " ELSE CAST (%s AS REAL) END DESC",
+                                          " ELSE CAST (%s AS REAL) END",
                                           column,
                                           column);
                 }
@@ -3168,7 +3172,7 @@ filter_clause_order (const char* type, const char* filter,
                   g_string_append_printf (order,
                                           " CASE WHEN %s %s 'Admin.*'"
                                           " THEN '0' || %s"
-                                          " ELSE '1' || %s END DESC",
+                                          " ELSE '1' || %s END",
                                           column,
                                           sql_regexp_op (),
                                           column,
@@ -3197,7 +3201,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " %s DESC",
+                                          " %s",
                                           column);
                 }
               else if ((strcmp (keyword->string, "ips") == 0)
@@ -3211,7 +3215,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " CAST (%s AS INTEGER) DESC",
+                                          " CAST (%s AS INTEGER)",
                                           column);
                 }
               else if (strcmp (keyword->string, "ip") == 0)
@@ -3222,7 +3226,7 @@ filter_clause_order (const char* type, const char* filter,
                                                   keyword->string);
                   assert (column);
                   g_string_append_printf (order,
-                                          " order_inet (%s) DESC",
+                                          " order_inet (%s)",
                                           column);
                 }
               else if ((strcmp (type, "note")
@@ -3239,21 +3243,22 @@ filter_clause_order (const char* type, const char* filter,
                   assert (column);
                   if (column_type == KEYWORD_TYPE_INTEGER)
                     g_string_append_printf (order,
-                                            " cast (%s AS bigint) DESC",
+                                            " cast (%s AS bigint)",
                                             column);
                   else if (column_type == KEYWORD_TYPE_DOUBLE)
                     g_string_append_printf (order,
-                                            " cast (%s AS real) DESC",
+                                            " cast (%s AS real)",
                                             column);
                   else
-                    g_string_append_printf (order, " lower (%s) DESC",
+                    g_string_append_printf (order, " lower (%s)",
                                             column);
                 }
               else
+                // FIX won't work
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " nvt DESC,"
-                                        " lower (%ss%s.text) DESC",
+                                        " nvt,"
+                                        " lower (%ss%s.text)",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -3261,7 +3266,7 @@ filter_clause_order (const char* type, const char* filter,
           else
             /* To help the client split_filter restricts the filter to one
              * sorting term, preventing this from happening. */
-            g_string_append_printf (order, ", %s DESC",
+            g_string_append_printf (order, ", %s",
                                     keyword->string);
           point++;
           continue;
@@ -3846,15 +3851,20 @@ filter_clause_full (const char* type, const char* filter,
                     gchar **owner_filter)
 {
   gchar *clause;
+  int order_asc;
 
+  order_asc = 1;
   clause = filter_clause_order (type, filter, filter_columns, select_columns,
-                                where_columns, trash, order_return, first_return,
-                                max_return, permissions, owner_filter);
+                                where_columns, trash, order_return, &order_asc,
+                                first_return, max_return, permissions,
+                                owner_filter);
   if (order_return && *order_return)
     {
       gchar *new_order;
 
-      new_order = g_strdup_printf (" ORDER BY %s", *order_return);
+      new_order = g_strdup_printf (" ORDER BY %s %s",
+                                   *order_return,
+                                   order_asc ? "ASC" : "DESC");
       g_free (*order_return);
       *order_return = new_order;
     }
