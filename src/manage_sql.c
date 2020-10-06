@@ -4781,8 +4781,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                          const char *extra_with,
                          int assume_permitted)
 {
-  int first, max;
-  gchar *clause, *order, *filter, *owned_clause, *with_clause;
+  int first, max, order_asc;
+  gchar *clause, *order, *order_from, *filter, *owned_clause, *with_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -4856,16 +4856,17 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
-  clause = filter_clause_full (type, filter ? filter : get->filter,
-                               filter_columns,
-                               (get->trash && trash_select_columns)
-                                ? trash_select_columns
-                                : select_columns,
-                               (get->trash && trash_where_columns)
-                                ? trash_where_columns
-                                : where_columns,
-                               get->trash, &order, &first, &max, &permissions,
-                               &owner_filter);
+  order_asc = 1;
+  clause = filter_clause_order (type, filter ? filter : get->filter,
+                                filter_columns,
+                                (get->trash && trash_select_columns)
+                                 ? trash_select_columns
+                                 : select_columns,
+                                (get->trash && trash_where_columns)
+                                 ? trash_where_columns
+                                 : where_columns,
+                                get->trash, &order, &order_asc, &first,
+                                &max, &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -4917,12 +4918,20 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     {
       g_free (order);
       order = NULL;
+      order_from = NULL;
+    }
+  else
+    {
+      order_from = g_strdup_printf (", LATERAL (SELECT %s AS order_col) AS order_from", order);
+      g_free (order);
+      order = g_strdup_printf (" ORDER BY order_col %s",
+                               order_asc ? "ASC" : "DESC");
     }
 
   if (resource && get->trash)
     init_iterator (iterator,
                    "%sSELECT %s"
-                   " FROM %ss%s %s"
+                   " FROM %ss%s %s%s"
                    " WHERE %ss.id = %llu"
                    " AND %s%s"
                    "%s%s;",
@@ -4931,6 +4940,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
+                   order_from ? order_from : "",
                    type,
                    resource,
                    owned_clause,
@@ -4940,7 +4950,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
   else if (get->trash)
     init_iterator (iterator,
                    "%sSELECT %s"
-                   " FROM %ss%s %s"
+                   " FROM %ss%s %s%s"
                    " WHERE"
                    "%s"
                    "%s"
@@ -4950,6 +4960,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
+                   order_from ? order_from : "",
                    owned_clause,
                    extra_where ? extra_where : "",
                    order ? order : "",
@@ -4957,7 +4968,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
   else if (resource)
     init_iterator (iterator,
                    "%sSELECT %s"
-                   " FROM %ss %s"
+                   " FROM %ss %s%s"
                    " WHERE %ss.id = %llu"
                    " AND %s%s"
                    "%s%s;",
@@ -4965,6 +4976,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
+                   order_from ? order_from : "",
                    type,
                    resource,
                    owned_clause,
@@ -4974,7 +4986,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
   else
     init_iterator (iterator,
                    "%s%sSELECT %s"
-                   " FROM %ss %s"
+                   " FROM %ss %s%s"
                    " WHERE"
                    " %s%s%s%s%s%s%s"
                    " LIMIT %s OFFSET %i%s;",
@@ -4983,6 +4995,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
+                   order_from ? order_from : "",
                    owned_clause,
                    clause ? " AND (" : "",
                    clause ? clause : "",
