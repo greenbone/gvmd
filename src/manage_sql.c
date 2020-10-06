@@ -26090,8 +26090,6 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
  * @param[in]  result_hosts_only  Whether to only include hosts with results.
  * @param[in]  orig_filtered_result_count  Result count.
  * @param[in]  filtered_result_count       Result count.
- * @param[in]  orig_f_debugs  Result count.
- * @param[in]  f_debugs       Result count.
  * @param[in]  orig_f_holes   Result count.
  * @param[in]  f_holes        Result count.
  * @param[in]  orig_f_infos   Result count.
@@ -26115,7 +26113,6 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         const char *sort_field, int result_hosts_only,
                         int *orig_filtered_result_count,
                         int *filtered_result_count,
-                        int *orig_f_debugs, int *f_debugs,
                         int *orig_f_holes, int *f_holes,
                         int *orig_f_infos, int *f_infos,
                         int *orig_f_logs, int *f_logs,
@@ -26130,7 +26127,6 @@ print_report_delta_xml (FILE *out, iterator_t *results,
   GTree *ports;
   gchar *msg;
 
-  *orig_f_debugs = *f_debugs;
   *orig_f_holes = *f_holes;
   *orig_f_infos = *f_infos;
   *orig_f_logs = *f_logs;
@@ -27570,7 +27566,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   sort_order, sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
                                   &filtered_result_count,
-                                  &orig_f_debugs, &f_debugs,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
                                   &orig_f_logs, &f_logs,
