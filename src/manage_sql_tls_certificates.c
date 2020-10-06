@@ -734,13 +734,13 @@ make_tls_certificate_from_base64 (const char *name,
                               &serial,
                               &certificate_format);
 
-  if (ret && (allow_failed_info == 0 || fallback_fpr == NULL))
+  if (ret)
     {
-      g_free (certificate_decoded);
-      return 1;
-    }
-  else
-    {
+      if (allow_failed_info == 0 || fallback_fpr == NULL)
+        {
+          g_free (certificate_decoded);
+          return 1;
+        }
       sha256_fingerprint = g_strdup (fallback_fpr);
     }
 
