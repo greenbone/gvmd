@@ -1246,7 +1246,7 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
+report_counts (const char*, int*, int*, int*, int*, int*, double*,
                int, int);
 
 int

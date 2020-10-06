@@ -23549,7 +23549,6 @@ report_severity_data (report_t report, const char *host,
  *       use report_counts_id instead.
  *
  * @param[in]   report_id    ID of report.
- * @param[out]  debugs       Number of debug messages.
  * @param[out]  holes        Number of hole messages.
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
@@ -23562,7 +23561,7 @@ report_severity_data (report_t report, const char *host,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts (const char* report_id, int* debugs, int* holes, int* infos,
+report_counts (const char* report_id, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, double* severity,
                int override, int min_qod)
 {
