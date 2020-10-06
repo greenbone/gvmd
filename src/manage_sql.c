@@ -26830,8 +26830,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int reuse_result_iterator;
   iterator_t results, delta_results;
   int holes, infos, logs, warnings, false_positives;
-  int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
-  int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
+  int f_holes, f_infos, f_logs, f_warnings, f_false_positives;
+  int orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
   int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
@@ -26848,7 +26848,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
-  orig_f_holes = orig_f_debugs = 0;
+  orig_f_holes = 0;
   f_host_ports = NULL;
   f_host_holes = NULL;
   f_host_warnings = NULL;
@@ -27486,7 +27486,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                              &warnings, &false_positives, &severity,
                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-      f_debugs = f_holes = f_infos = f_logs = f_warnings = 0;
+      f_holes = f_infos = f_logs = f_warnings = 0;
       f_false_positives = f_severity = 0;
     }
   else
@@ -27707,7 +27707,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     {
       if (count_filtered)
-        filtered_result_count = f_debugs + f_holes + f_infos + f_logs
+        filtered_result_count = f_holes + f_infos + f_logs
                                 + f_warnings + false_positives;
 
       PRINT (out,
