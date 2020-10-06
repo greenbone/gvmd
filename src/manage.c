@@ -804,8 +804,6 @@ threat_message_type (const char *threat)
     return "Alarm";
   if (strcasecmp (threat, "Log") == 0)
     return "Log Message";
-  if (strcasecmp (threat, "Debug") == 0)
-    return "Debug Message";
   if (strcasecmp (threat, "Error") == 0)
     return "Error Message";
   if (strcasecmp (threat, "False Positive") == 0)
@@ -833,8 +831,6 @@ message_type_threat (const char *type)
     return "Low";
   if (strcasecmp (type, "Log Message") == 0)
     return "Log";
-  if (strcasecmp (type, "Debug Message") == 0)
-    return "Debug";
   if (strcasecmp (type, "Error Message") == 0)
     return "Error";
   if (strcasecmp (type, "False Positive") == 0)
@@ -880,8 +876,6 @@ severity_to_level (double severity, int mode)
     return "Log";
   else if (severity == SEVERITY_FP)
     return "False Positive";
-  else if (severity == SEVERITY_DEBUG)
-    return "Debug";
   else if (severity == SEVERITY_ERROR)
     return "Error";
   else if (severity > 0.0 && severity <= 10.0)
@@ -919,8 +913,6 @@ severity_to_type (double severity)
     return "Log Message";
   else if (severity == SEVERITY_FP)
     return "False Positive";
-  else if (severity == SEVERITY_DEBUG)
-    return "Debug Message";
   else if (severity == SEVERITY_ERROR)
     return "Error Message";
   else if (severity > 0.0 && severity <= 10.0)
@@ -1031,8 +1023,7 @@ severity_data_index (double severity)
   int ret;
   if (severity >= 0.0)
     ret = (int)(round (severity * SEVERITY_SUBDIVISIONS)) + ZERO_SEVERITY_INDEX;
-  else if (severity == SEVERITY_FP || severity == SEVERITY_DEBUG
-           || severity == SEVERITY_ERROR)
+  else if (severity == SEVERITY_FP || severity == SEVERITY_ERROR)
     ret = (int)(round (severity)) + ZERO_SEVERITY_INDEX;
   else
     ret = 0;
