@@ -21942,7 +21942,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                      filter ? filter : get->filter);
 
   extra_where_single = results_extra_where (get->trash, report, host,
-                                            autofp, apply_overrides,
+                                            apply_overrides,
                                             dynamic_severity,
                                             "min_qod=0");
 
@@ -22068,7 +22068,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                                      filter ? filter : get->filter);
 
   extra_where_single = results_extra_where (get->trash, report, host,
-                                            autofp, apply_overrides,
+                                            apply_overrides,
                                             dynamic_severity,
                                             "min_qod=0");
 
