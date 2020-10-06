@@ -1137,12 +1137,6 @@ parse_keyword (keyword_t* keyword)
           keyword->type = KEYWORD_TYPE_DOUBLE;
           return;
         }
-      else if (strcasecmp (keyword->string, "Debug") == 0)
-        {
-          keyword->double_value = SEVERITY_DEBUG;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
       else if (strcasecmp (keyword->string, "Error") == 0)
         {
           keyword->double_value = SEVERITY_ERROR;
@@ -1969,9 +1963,8 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  min_qod        Minimum QoD base of included results.  All
  *                              results if NULL.
  * @param[out]  levels         String describing threat levels (message types)
- *                             to include in count (for example, "hmlgd" for
- *                             High, Medium, Low, loG and Debug).  All levels if
- *                             NULL.
+ *                             to include in count (for example, "hmlg" for
+ *                             High, Medium, Low and loG).  All levels if NULL.
  * @param[out]  delta_states   String describing delta states to include in count
  *                             (for example, "sngc" Same, New, Gone and Changed).
  *                             All levels if NULL.
@@ -2521,7 +2514,6 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
   if ((strcmp (column, "threat") == 0)
       && (strstr ("None", keyword->string) == NULL)
       && (strstr ("False Positive", keyword->string) == NULL)
-      && (strstr ("Debug", keyword->string) == NULL)
       && (strstr ("Error", keyword->string) == NULL)
       && (strstr ("Alarm", keyword->string) == NULL)
       && (strstr ("High", keyword->string) == NULL)
@@ -19137,8 +19129,6 @@ nvt_severity (const char *nvt_id, const char *type)
     g_warning ("%s result type requires an NVT", type);
   else if (strcasecmp (type, "Log Message") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
-  else if (strcasecmp (type, "Debug Message") == 0)
-    severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
   else if (strcasecmp (type, "Error Message") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
   else
@@ -21125,9 +21115,8 @@ next_report (iterator_t* iterator, report_t* report)
  * @brief Return SQL WHERE for restricting a SELECT to levels.
  *
  * @param[in]  levels  String describing threat levels (message types)
- *                     to include in report (for example, "hmlgd" for
- *                     High, Medium, Low, loG and Debug).  All levels if
- *                     NULL.
+ *                     to include in report (for example, "hmlg" for
+ *                     High, Medium, Low and loG).  All levels if NULL.
  * @param[in]  new_severity_sql  SQL for new severity.
  *
  * @return WHERE clause for levels if one is required, else NULL.
@@ -21210,28 +21199,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
       else
         g_string_append_printf (levels_sql,
                                 " OR severity_in_level (%s, 'log')",
-                                new_severity_sql);
-      count++;
-    }
-
-  /* Debug. */
-  if (strchr (levels, 'd'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (("
-                                  "       ((%s"
-                                  "         = " G_STRINGIFY
-                                                 (SEVERITY_DEBUG) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR (%s"
-                                "     = " G_STRINGIFY
-                                           (SEVERITY_DEBUG) ")",
                                 new_severity_sql);
       count++;
     }
@@ -27228,8 +27195,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     g_string_append (filters_extra_buffer, "<filter>Low</filter>");
   if (strchr (levels, 'g'))
     g_string_append (filters_extra_buffer, "<filter>Log</filter>");
-  if (strchr (levels, 'd'))
-    g_string_append (filters_extra_buffer, "<filter>Debug</filter>");
   if (strchr (levels, 'f'))
     g_string_append (filters_extra_buffer, "<filter>False Positive</filter>");
 
@@ -35523,7 +35488,7 @@ create_note (const char* active, const char* nvt, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, ""))
+      && strcmp (threat, ""))
     return -1;
 
   quoted_text = sql_insert (text);
@@ -35535,8 +35500,7 @@ create_note (const char* active, const char* nvt, const char* text,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -35552,8 +35516,6 @@ create_note (const char* active, const char* nvt, const char* text,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -35782,8 +35744,7 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
-      && strcmp (threat, ""))
+      && strcmp (threat, "Alarm") && strcmp (threat, ""))
     return -1;
 
   if (port && validate_results_port (port))
@@ -35799,8 +35760,7 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -35816,8 +35776,6 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -36526,13 +36484,12 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
-      && strcmp (threat, ""))
+      && strcmp (threat, "Alarm") && strcmp (threat, ""))
     return -1;
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
+      && strcmp (new_threat, "False Positive")
       && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
@@ -36541,8 +36498,7 @@ create_override (const char* active, const char* nvt, const char* text,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -36558,8 +36514,6 @@ create_override (const char* active, const char* nvt, const char* text,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -36574,8 +36528,7 @@ create_override (const char* active, const char* nvt, const char* text,
       if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
               && new_severity_dbl != SEVERITY_LOG
-              && new_severity_dbl != SEVERITY_FP
-              && new_severity_dbl != SEVERITY_DEBUG))
+              && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
           return 2;
@@ -36593,8 +36546,6 @@ create_override (const char* active, const char* nvt, const char* text,
         new_severity_dbl = 2.0;
       else if (strcmp (new_threat, "Log") == 0)
         new_severity_dbl = SEVERITY_LOG;
-      else if (strcmp (new_threat, "Debug") == 0)
-        new_severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
     }
@@ -36892,13 +36843,12 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
-      && strcmp (threat, ""))
+      && strcmp (threat, "Alarm") && strcmp (threat, ""))
     return -1;
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
+      && strcmp (new_threat, "False Positive")
       && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
@@ -36907,8 +36857,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -36924,8 +36873,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -36940,8 +36887,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
               && new_severity_dbl != SEVERITY_LOG
-              && new_severity_dbl != SEVERITY_FP
-              && new_severity_dbl != SEVERITY_DEBUG))
+              && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
           return 3;
@@ -36959,8 +36905,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
         new_severity_dbl = 2.0;
       else if (strcmp (new_threat, "Log") == 0)
         new_severity_dbl = SEVERITY_LOG;
-      else if (strcmp (new_threat, "Debug") == 0)
-        new_severity_dbl = SEVERITY_DEBUG;
       else
         {
           g_free (quoted_severity);
