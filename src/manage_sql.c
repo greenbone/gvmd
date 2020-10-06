@@ -11138,7 +11138,7 @@ alert_subject_print (const gchar *subject, event_t event,
             case 'U':
               {
                 /* Alert UUID */
-                char *uuid = alert_uuid (task);
+                char *uuid = alert_uuid (alert);
                 g_string_append (new_subject, uuid);
                 free (uuid);
                 break;
@@ -11378,7 +11378,7 @@ alert_message_print (const gchar *message, event_t event,
             case 'U':
               {
                 /* Alert UUID */
-                char *uuid = alert_uuid (task);
+                char *uuid = alert_uuid (alert);
                 g_string_append (new_message, uuid);
                 free (uuid);
                 break;
