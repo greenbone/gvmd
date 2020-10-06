@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2010-2019 Greenbone Networks GmbH
+Copyright (C) 2010-2020 Greenbone Networks GmbH
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -175,7 +175,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       The use of these elements is deprecated as they are otherwise replaced by
       severity elements, which should be used instead.
     </description>
-    <pattern>xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }</pattern>
+    <pattern>xsd:token { pattern = "High|Medium|Low|Alarm|Log" }</pattern>
   </type>
   <type>
     <name>time_unit</name>
@@ -2124,7 +2124,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <alt>Medium</alt>
                 <alt>Low</alt>
                 <alt>Log</alt>
-                <alt>Debug</alt>
               </alts>
             </t>
           </pattern>
@@ -2257,7 +2256,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           text
           <e>full</e>
           <e>filtered</e>
-          <e>debug</e>
           <e>hole</e>
           <e>info</e>
           <e>log</e>
@@ -2272,26 +2270,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filtered</name>
           <summary>Number of results after filtering</summary>
           <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>debug</name>
-          <summary>
-            Number of "debug" results (threat level Debug)
-          </summary>
-          <pattern>
-            <e>full</e>
-            <e>filtered</e>
-          </pattern>
-          <ele>
-            <name>full</name>
-            <summary>Total number of results</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>filtered</name>
-            <summary>Number of results after filtering</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
         </ele>
         <ele>
           <name>hole</name>
@@ -15268,7 +15246,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <alt>Medium</alt>
                 <alt>Low</alt>
                 <alt>Log</alt>
-                <alt>Debug</alt>
               </alts>
             </t>
           </pattern>
@@ -15458,7 +15435,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <filter>Medium</filter>
                 <filter>Low</filter>
                 <filter>Log</filter>
-                <filter>Debug</filter>
                 <keywords>
                   <keyword>
                     <column>first</column>
@@ -15499,10 +15475,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <result_count>
                 <full>10</full>
                 <filtered>10</filtered>
-                <debug>
-                  <full>0</full>
-                  <filtered>0</filtered>
-                </debug>
                 <hole>
                   <full>0</full>
                   <filtered>0</filtered>
@@ -20145,17 +20117,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <name>result_count</name>
               <summary>Result counts for this report</summary>
               <pattern>
-                <e>debug</e>
                 <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
                 <e>warning</e>
                 <e>hole</e>
               </pattern>
-              <ele>
-                <name>debug</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
               <ele>
                 <name>false_positive</name>
                 <pattern><t>integer</t></pattern>
@@ -20384,7 +20351,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20460,7 +20426,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20477,7 +20442,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <timestamp>Mon Feb  1 18:51:38 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20488,7 +20452,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20583,7 +20546,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				<scan_start>2019-04-24T14:26:01+02:00</scan_start>
 				<scan_end>2019-04-24T14:50:59+02:00</scan_end>
 				<result_count>
-				  <debug>0</debug>
 				  <hole>1</hole>
 				  <info>0</info>
 				  <log>77</log>
@@ -25936,6 +25898,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p>
         All other scanner related commands work as before, but there are no
         GMP scanners for them to work with.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Removed element RESULT_COUNT/DEBUG from element REPORT</summary>
+    <description>
+      <p>
+        The element DEBUG inside RESULT_COUNT is removed. Vulnerability tests do
+        not produce debug messages since 2012.
       </p>
     </description>
     <version>21.4</version>
