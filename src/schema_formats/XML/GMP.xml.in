@@ -12949,6 +12949,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <o><e>preference_count</e></o>
               <o><e>timeout</e></o>
               <o><e>default_timeout</e></o>
+              <e>solution</e>
               <o><e>preferences</e></o>
             </g>
           </o>
@@ -13104,6 +13105,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>text</pattern>
         </ele>
         <ele>
+          <name>solution</name>
+          <summary>Solution for the vulnerability</summary>
+          <pattern>
+            <attrib>
+              <name>type</name>
+              <summary>The solution type, for example "VendorFix"</summary>
+              <type>text</type>
+            </attrib>
+            <attrib>
+              <name>method</name>
+              <summary>The solution method, for example "DebianAPTUpgrade"</summary>
+              <type>text</type>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
           <name>preferences</name>
           <summary>List of preferences of the NVT</summary>
           <pattern>
@@ -13127,6 +13145,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern>
               <e>nvt</e>
               <e>name</e>
+              <e>hr_name</e>
+              <e>id</e>
               <e>type</e>
               <e>value</e>
               <any><e>alt</e></any>
@@ -13152,6 +13172,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <ele>
               <name>name</name>
               <summary>The name of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>hr_name</name>
+              <summary>The full, more "human readable" name of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>id</name>
+              <summary>The ID of the preference</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
@@ -14674,6 +14704,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>preference</name>
         <pattern>
           <e>nvt</e>
+          <e>hr_name</e>
           <e>name</e>
           <e>id</e>
           <e>type</e>
@@ -14697,6 +14728,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>The name of the NVT</summary>
             <pattern><t>name</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>hr_name</name>
+          <summary>The full, more "human readable" name of the preference</summary>
+          <pattern><t>name</t></pattern>
         </ele>
         <ele>
           <name>name</name>

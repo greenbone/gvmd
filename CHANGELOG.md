@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Added ability to enter Subject Alternative Names (SAN) when generating a CSR [#1246](https://github.com/greenbone/gvmd/pull/1246)
 - Add filter term 'predefined' [#1263](https://github.com/greenbone/gvmd/pull/1263)
+- Add missing elements in get_nvts and get_preferences GMP doc [#1307](https://github.com/greenbone/gvmd/pull/1307)
+- Add command line options db-host and db-port [#1308](https://github.com/greenbone/gvmd/pull/1308)
 
 ### Changed
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
@@ -40,8 +42,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix delta sorting for unusual filter sort terms [#1249](https://github.com/greenbone/gvmd/pull/1249)
 - Fix SCP alert authentication and logging [#1264](https://github.com/greenbone/gvmd/pull/1264)
 - Set file mode creation mask for feed lock handling [#1265](https://github.com/greenbone/gvmd/pull/1265)
+- Ignore min_qod when getting single results by UUID [#1276](http://github.com/greenbone/gvmd/pull/1276)
+- Fix alternative options for radio type preferences when exporting a scan_config [#1278](http://github.com/greenbone/gvmd/pull/1278)
+- Replace deprecated sys_siglist with strsignal [#1280](https://github.com/greenbone/gvmd/pull/1280)
+- Copy instead of moving when migrating predefined report formats [#1286](https://github.com/greenbone/gvmd/pull/1286)
+- Skip DB check in helpers when main process is running [#1291](https://github.com/greenbone/gvmd/pull/1291)
+- Recreate vulns after sync [#1292](https://github.com/greenbone/gvmd/pull/1292)
+- Add SecInfo case to alert check in MODIFY_FILTER [#1293](https://github.com/greenbone/gvmd/pull/1293)
+- For radio prefs in GMP exclude value and include default [#1296](https://github.com/greenbone/gvmd/pull/1296)
+- Add permission check on host in OS host count [#1301](https://github.com/greenbone/gvmd/pull/1301)
+- Auto delete at the start of scheduling so it always runs [#1302](https://github.com/greenbone/gvmd/pull/1302)
+- Fix create_credential for snmpv3. [#1305](https://github.com/greenbone/gvmd/pull/1305)
+- Remove extra spaces when parsing report format param type [#1309](https://github.com/greenbone/gvmd/pull/1309)
+- Correct arg to alert_uuid [#1313](https://github.com/greenbone/gvmd/pull/1313)
+- Switch result filter column 'task' from task ID to name task name [#1317](https://github.com/greenbone/gvmd/pull/1317)
+- Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 
 ### Removed
+- Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
 
 [20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
 
