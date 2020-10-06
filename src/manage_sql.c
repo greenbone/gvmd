@@ -27703,11 +27703,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   /* Print result counts and severity. */
 
   if (delta)
-    /** @todo The f_debugs, etc. vars are setup to give the page count. */
+    /** @todo The f_holes, etc. vars are setup to give the page count. */
     PRINT (out,
            "<result_count>"
            "<filtered>%i</filtered>"
-           "<debug><filtered>%i</filtered></debug>"
            "<hole><filtered>%i</filtered></hole>"
            "<info><filtered>%i</filtered></info>"
            "<log><filtered>%i</filtered></log>"
@@ -27717,7 +27716,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
            "</false_positive>"
            "</result_count>",
            orig_filtered_result_count,
-           (strchr (levels, 'd') ? orig_f_debugs : 0),
            (strchr (levels, 'h') ? orig_f_holes : 0),
            (strchr (levels, 'l') ? orig_f_infos : 0),
            (strchr (levels, 'g') ? orig_f_logs : 0),
@@ -27734,7 +27732,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "%i"
              "<full>%i</full>"
              "<filtered>%i</filtered>"
-             "<debug><full>%i</full><filtered>%i</filtered></debug>"
              "<hole><full>%i</full><filtered>%i</filtered></hole>"
              "<info><full>%i</full><filtered>%i</filtered></info>"
              "<log><full>%i</full><filtered>%i</filtered></log>"
@@ -27747,8 +27744,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              total_result_count,
              total_result_count,
              filtered_result_count,
-             debugs,
-             (strchr (levels, 'd') ? f_debugs : 0),
              holes,
              (strchr (levels, 'h') ? f_holes : 0),
              infos,
