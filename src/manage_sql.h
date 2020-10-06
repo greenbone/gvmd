@@ -403,10 +403,6 @@ init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
 gchar *
 columns_build_select (column_t *);
 
-gchar *
-filter_clause (const char*, const char*, const char **, column_t *,
-               column_t *, int, gchar **, int *, int *, array_t **, gchar **);
-
 void
 check_alerts ();
 

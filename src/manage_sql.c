@@ -2801,12 +2801,12 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
-gchar *
-filter_clause (const char* type, const char* filter,
-               const char **filter_columns, column_t *select_columns,
-               column_t *where_columns, int trash, gchar **order_return,
-               int *first_return, int *max_return, array_t **permissions,
-               gchar **owner_filter)
+static gchar *
+filter_clause_full (const char* type, const char* filter,
+                    const char **filter_columns, column_t *select_columns,
+                    column_t *where_columns, int trash, gchar **order_return,
+                    int *first_return, int *max_return, array_t **permissions,
+                    gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -3831,6 +3831,31 @@ filter_clause (const char* type, const char* filter,
   return NULL;
 }
 
+/**
+ * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
+ *
+ * @param[in]  type     Resource type.
+ * @param[in]  filter   Filter term.
+ * @param[in]  filter_columns  Filter columns.
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
+ * @param[out] trash           Whether the trash table is being queried.
+ * @param[out] order_return  If given then order clause.
+ * @param[out] first_return  If given then first row.
+ * @param[out] max_return    If given then max rows.
+ * @param[out] permissions   When given then permissions string vector.
+ * @param[out] owner_filter  When given then value of owner keyword.
+ *
+ * @return WHERE clause for filter if one is required, else NULL.
+ */
+static gchar *
+filter_clause (const char *type, const char *filter,
+               const char **filter_columns, column_t *select_columns)
+{
+  return filter_clause_full (type, filter, filter_columns, select_columns,
+                             NULL, 0, NULL, NULL, NULL, NULL, NULL);
+}
+
 
 /* Resources. */
 
@@ -4791,15 +4816,16 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
-  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          (get->trash && trash_select_columns)
-                           ? trash_select_columns
-                           : select_columns,
-                          (get->trash && trash_where_columns)
-                           ? trash_where_columns
-                           : where_columns,
-                          get->trash, &order, &first, &max, &permissions,
-                          &owner_filter);
+  clause = filter_clause_full (type, filter ? filter : get->filter,
+                               filter_columns,
+                               (get->trash && trash_select_columns)
+                                ? trash_select_columns
+                                : select_columns,
+                               (get->trash && trash_where_columns)
+                                ? trash_where_columns
+                                : where_columns,
+                               get->trash, &order, &first, &max, &permissions,
+                               &owner_filter);
 
   g_free (filter);
 
@@ -5654,15 +5680,16 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   else
     filter = NULL;
 
-  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash && trash_select_columns
-                           ? trash_select_columns
-                           : select_columns,
-                          get->trash && trash_where_columns
-                           ? trash_where_columns
-                           : where_columns,
-                          get->trash, NULL, NULL, NULL, &permissions,
-                          &owner_filter);
+  clause = filter_clause_full (type, filter ? filter : get->filter,
+                               filter_columns,
+                               get->trash && trash_select_columns
+                                ? trash_select_columns
+                                : select_columns,
+                               get->trash && trash_where_columns
+                                ? trash_where_columns
+                                : where_columns,
+                               get->trash, NULL, NULL, NULL, &permissions,
+                               &owner_filter);
 
   g_free (filter);
 
@@ -48696,8 +48723,7 @@ setting_count (const char *filter)
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+  clause = filter_clause ("setting", filter, filter_columns, select_columns);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -48815,8 +48841,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
   if (max < 1)
     max = -1;
 
-  clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+  clause = filter_clause ("setting", filter, filter_columns, select_columns);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
@@ -54649,10 +54674,10 @@ type_build_select (const char *type, const char *columns_str,
   if (filter_columns == NULL)
     return -1;
 
-  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          select_columns, where_columns, get->trash,
-                          &filter_order, &first, &max, &permissions,
-                          &owner_filter);
+  clause = filter_clause_full (type, filter ? filter : get->filter,
+                               filter_columns, select_columns, where_columns,
+                               get->trash, &filter_order, &first, &max,
+                               &permissions, &owner_filter);
 
   owned_clause = acl_where_owned (type, get, type_owned (type),
                                   owner_filter, 0, permissions,
