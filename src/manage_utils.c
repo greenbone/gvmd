@@ -193,8 +193,6 @@ level_min_severity (const char *level)
     return SEVERITY_LOG;
   else if (strcasecmp (level, "False Positive") == 0)
     return SEVERITY_FP;
-  else if (strcasecmp (level, "Debug") == 0)
-    return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
 
@@ -225,8 +223,6 @@ level_max_severity (const char *level)
     return SEVERITY_LOG;
   else if (strcasecmp (level, "False Positive") == 0)
     return SEVERITY_FP;
-  else if (strcasecmp (level, "Debug") == 0)
-    return SEVERITY_DEBUG;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
 
