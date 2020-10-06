@@ -27839,7 +27839,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   term);
       g_free (term);
       term = new_term;
-      /* Similary, the order will now be ascending. */
+      /* Similarly, the order will now be ascending. */
       sort_order = 1;
     }
 
