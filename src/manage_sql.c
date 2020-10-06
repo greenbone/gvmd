@@ -232,9 +232,9 @@ static void
 check_for_updated_cert ();
 
 static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
+report_counts_id_full (report_t, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, int *, double *);
+                       int *, int *, int *, int *, int *, double *);
 
 static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
@@ -23754,7 +23754,6 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -23763,7 +23762,6 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @param[out]  severity  Maximum severity of the report.
  * @param[in]   get       Get data.
  * @param[in]   host      Host to which to limit the count.
- * @param[out]  filtered_debugs    Number of debug messages after filtering.
  * @param[out]  filtered_holes     Number of hole messages after filtering.
  * @param[out]  filtered_infos     Number of info messages after filtering.
  * @param[out]  filtered_logs      Number of log messages after filtering.
@@ -23775,11 +23773,11 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @return 0 on success, -1 on error.
  */
 static int
-report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
+report_counts_id_full (report_t report, int* holes, int* infos,
                        int* logs, int* warnings, int* false_positives,
                        double* severity,
                        const get_data_t* get, const char* host,
-                       int* filtered_debugs, int* filtered_holes,
+                       int* filtered_holes,
                        int* filtered_infos, int* filtered_logs,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
@@ -23868,13 +23866,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   init_severity_data (&severity_data);
   init_severity_data (&filtered_severity_data);
 
-  /* This adds time and is out of scope of GMP threat levels, so skip it */
-  if (debugs)
-    *debugs = 0;
-
-  if (filtered_debugs)
-    *filtered_debugs = 0;
-
   if (cache_exists && filter_cacheable)
     {
       /* Get unfiltered counts from cache. */
@@ -23945,8 +23936,8 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   double* severity, const get_data_t *get, const char *host)
 {
   int ret;
-  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                               get, host, debugs, holes, infos, logs, warnings,
+  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL,
+                               get, host, holes, infos, logs, warnings,
                                false_positives, severity);
   return ret;
 }
@@ -27497,19 +27488,18 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       /* We're getting all the filtered results, so we can count them as we
        * print them, to save time. */
 
-      report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+      report_counts_id_full (report, &holes, &infos, &logs,
                              &warnings, &false_positives, &severity,
-                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                             NULL);
+                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
       f_debugs = f_holes = f_infos = f_logs = f_warnings = 0;
       f_false_positives = f_severity = 0;
     }
   else
-    report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+    report_counts_id_full (report, &holes, &infos, &logs,
                            &warnings, &false_positives, &severity,
                            get, NULL,
-                           &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
+                           &f_holes, &f_infos, &f_logs, &f_warnings,
                            &f_false_positives, &f_severity);
 
   /* Results. */
