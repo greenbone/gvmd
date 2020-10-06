@@ -2802,11 +2802,11 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
-filter_clause_full (const char* type, const char* filter,
-                    const char **filter_columns, column_t *select_columns,
-                    column_t *where_columns, int trash, gchar **order_return,
-                    int *first_return, int *max_return, array_t **permissions,
-                    gchar **owner_filter)
+filter_clause_order (const char* type, const char* filter,
+                     const char **filter_columns, column_t *select_columns,
+                     column_t *where_columns, int trash, gchar **order_return,
+                     int *first_return, int *max_return, array_t **permissions,
+                     gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -3829,6 +3829,35 @@ filter_clause_full (const char* type, const char* filter,
 
   g_string_free (clause, TRUE);
   return NULL;
+}
+
+/**
+ * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
+ *
+ * @param[in]  type     Resource type.
+ * @param[in]  filter   Filter term.
+ * @param[in]  filter_columns  Filter columns.
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
+ * @param[out] trash           Whether the trash table is being queried.
+ * @param[out] order_return  If given then order clause.
+ * @param[out] first_return  If given then first row.
+ * @param[out] max_return    If given then max rows.
+ * @param[out] permissions   When given then permissions string vector.
+ * @param[out] owner_filter  When given then value of owner keyword.
+ *
+ * @return WHERE clause for filter if one is required, else NULL.
+ */
+static gchar *
+filter_clause_full (const char* type, const char* filter,
+                    const char **filter_columns, column_t *select_columns,
+                    column_t *where_columns, int trash, gchar **order_return,
+                    int *first_return, int *max_return, array_t **permissions,
+                    gchar **owner_filter)
+{
+  return filter_clause_order (type, filter, filter_columns, select_columns,
+                              where_columns, trash, order_return, first_return,
+                              max_return, permissions, owner_filter);
 }
 
 /**
