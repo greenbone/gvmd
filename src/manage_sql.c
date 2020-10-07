@@ -21746,17 +21746,20 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  new_severity_sql
-    = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                       " WHERE result_new_severities.result = results.id"
-                       " AND result_new_severities.user"
-                       "     = (SELECT id FROM users WHERE uuid = '%s')"
-                       " AND override = %d"
-                       " AND dynamic = %d"
-                       " LIMIT 1)",
-                       current_credentials.uuid,
-                       apply_overrides,
-                       dynamic_severity);
+  if (apply_overrides == 0 && dynamic_severity == 0)
+    new_severity_sql = g_strdup ("results.severity");
+  else
+    new_severity_sql
+      = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                         " WHERE result_new_severities.result = results.id"
+                         " AND result_new_severities.user"
+                         "     = (SELECT id FROM users WHERE uuid = '%s')"
+                         " AND override = %d"
+                         " AND dynamic = %d"
+                         " LIMIT 1)",
+                         current_credentials.uuid,
+                         apply_overrides,
+                         dynamic_severity);
 
   // Build filter clauses
 
