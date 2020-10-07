@@ -21594,7 +21594,6 @@ where_qod (int min_qod)
       " FROM result_new_severities"                                           \
       " WHERE result_new_severities.result = results.id"                      \
       " AND result_new_severities.user = opts.user_id"                        \
-      " AND result_new_severities.override = opts.override"                   \
       " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)")
 
@@ -21754,11 +21753,9 @@ results_extra_where (int trash, report_t report, const gchar* host,
                          " WHERE result_new_severities.result = results.id"
                          " AND result_new_severities.user"
                          "     = (SELECT id FROM users WHERE uuid = '%s')"
-                         " AND override = %d"
                          " AND dynamic = %d"
                          " LIMIT 1)",
                          current_credentials.uuid,
-                         apply_overrides,
                          dynamic_severity);
 
   // Build filter clauses
@@ -21856,10 +21853,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                         " ((SELECT new_severity FROM result_new_severities"
                         "   WHERE result_new_severities.result = results.id"
                         "   AND result_new_severities.user = opts.user_id"
-                        "   AND result_new_severities.override = %i"
                         "   AND result_new_severities.dynamic = %i"
                         "   LIMIT 1))",
-                        apply_overrides,
                         dynamic_severity));
 
   if (dynamic_severity)
@@ -46892,11 +46887,9 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
                          " WHERE result_new_severities.result = results.id"
                          " AND result_new_severities.user"
                          "     = (SELECT id FROM users WHERE uuid = '%s')"
-                         " AND override = %d"
                          " AND dynamic = %d"
                          " LIMIT 1)",
                          current_credentials.uuid,
-                         overrides,
                          dynamic_severity);
 
   sql ("INSERT INTO host_max_severities"
