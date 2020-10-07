@@ -21850,15 +21850,17 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_array_set
    (filterable_columns,
     "type",
-    g_strdup_printf ("severity_to_type"
-                     " ((SELECT new_severity FROM result_new_severities"
-                     "   WHERE result_new_severities.result = results.id"
-                     "   AND result_new_severities.user = opts.user_id"
-                     "   AND result_new_severities.override = %i"
-                     "   AND result_new_severities.dynamic = %i"
-                     "   LIMIT 1))",
-                     apply_overrides,
-                     dynamic_severity));
+    apply_overrides == 0 && dynamic_severity == 0
+     ? g_strdup ("results.severity")
+     : g_strdup_printf ("severity_to_type"
+                        " ((SELECT new_severity FROM result_new_severities"
+                        "   WHERE result_new_severities.result = results.id"
+                        "   AND result_new_severities.user = opts.user_id"
+                        "   AND result_new_severities.override = %i"
+                        "   AND result_new_severities.dynamic = %i"
+                        "   LIMIT 1))",
+                        apply_overrides,
+                        dynamic_severity));
 
   if (dynamic_severity)
     {
@@ -46843,7 +46845,7 @@ void
 hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
 {
   gchar *new_severity_sql;
-  int overrides, min_qod;
+  int dynamic_severity, overrides, min_qod;
 
   if (overrides_arg)
     overrides = *overrides_arg;
@@ -46881,17 +46883,21 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
         }
     }
 
-  new_severity_sql
-    = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                       " WHERE result_new_severities.result = results.id"
-                       " AND result_new_severities.user"
-                       "     = (SELECT id FROM users WHERE uuid = '%s')"
-                       " AND override = %d"
-                       " AND dynamic = %d"
-                       " LIMIT 1)",
-                       current_credentials.uuid,
-                       overrides,
-                       setting_dynamic_severity_int ());
+  dynamic_severity = setting_dynamic_severity_int ();
+  if (overrides == 0 && dynamic_severity == 0)
+    new_severity_sql = g_strdup ("results.severity");
+  else
+    new_severity_sql
+      = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                         " WHERE result_new_severities.result = results.id"
+                         " AND result_new_severities.user"
+                         "     = (SELECT id FROM users WHERE uuid = '%s')"
+                         " AND override = %d"
+                         " AND dynamic = %d"
+                         " LIMIT 1)",
+                         current_credentials.uuid,
+                         overrides,
+                         dynamic_severity);
 
   sql ("INSERT INTO host_max_severities"
        " (host, severity, source_type, source_id, creation_time)"
