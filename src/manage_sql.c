@@ -21449,7 +21449,7 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator columns.
  */
-#define BASE_RESULT_ITERATOR_COLUMNS                                          \
+#define PRE_BASE_RESULT_ITERATOR_COLUMNS(new_severity_sql)                    \
     { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
     { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
     { "nvts.name",                                                            \
@@ -21472,12 +21472,7 @@ where_qod (int min_qod)
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
     { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
-    { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
-      "                  WHERE result_new_severities.result = results.id"     \
-      "                  AND result_new_severities.user = opts.user_id"       \
-      "                  AND result_new_severities.override = opts.override"  \
-      "                  AND result_new_severities.dynamic = opts.dynamic"    \
-      "                  LIMIT 1))",                                          \
+    { "severity_to_type (" new_severity_sql ")",                              \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
@@ -21488,12 +21483,7 @@ where_qod (int min_qod)
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
-    { "(SELECT new_severity FROM result_new_severities"                       \
-      " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user = opts.user_id"                        \
-      " AND result_new_severities.override = opts.override"                   \
-      " AND result_new_severities.dynamic = opts.dynamic"                     \
-      " LIMIT 1)",                                                            \
+    { new_severity_sql,                                                       \
       "severity",                                                             \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvts.name",                                                            \
@@ -21593,9 +21583,42 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator columns.
  */
+#define BASE_RESULT_ITERATOR_COLUMNS                                          \
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("results.severity")
+
+/**
+ * @brief Result iterator columns.
+ */
+#define BASE_RESULT_ITERATOR_COLUMNS_OD                                       \
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("(SELECT new_severity"                     \
+      " FROM result_new_severities"                                           \
+      " WHERE result_new_severities.result = results.id"                      \
+      " AND result_new_severities.user = opts.user_id"                        \
+      " AND result_new_severities.override = opts.override"                   \
+      " AND result_new_severities.dynamic = opts.dynamic"                     \
+      " LIMIT 1)")
+
+/**
+ * @brief Result iterator columns.
+ */
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS_OD                                            \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21611,6 +21634,21 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_OD_NO_CERT                                    \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -22007,10 +22045,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_overrides_dynamic[] = RESULT_ITERATOR_COLUMNS_OD;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int apply_overrides, dynamic_severity;
+  column_t *actual_columns;
 
   if (report == -1)
     {
@@ -22031,6 +22072,21 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     = filter_term_apply_overrides (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
+  if (manage_cert_loaded ())
+    {
+      if (apply_overrides == 0 && dynamic_severity == 0)
+        actual_columns = columns;
+      else
+        actual_columns = columns_overrides_dynamic;
+    }
+  else
+    {
+      if (apply_overrides == 0 && dynamic_severity == 0)
+        actual_columns = columns_no_cert;
+      else
+        actual_columns = columns_overrides_dynamic_no_cert;
+    }
+
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
@@ -22047,7 +22103,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             "result",
                             get,
                             /* SELECT columns. */
-                            manage_cert_loaded () ? columns : columns_no_cert,
+                            actual_columns,
                             NULL,
                             /* Filterable columns not in SELECT columns. */
                             NULL,
