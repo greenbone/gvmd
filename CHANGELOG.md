@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
 - Clarify documentation for --scan-host parameter [#1277](https://github.com/greenbone/gvmd/pull/1277)
+- In result iterator access severity directly if possible [#1321](https://github.com/greenbone/gvmd/pull/1321)
 
 ### Fixed
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
