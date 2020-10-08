@@ -19158,7 +19158,8 @@ nvt_severity (const char *nvt_id, const char *type)
  * @param[in]  hostname     Hostname.
  * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
- * @param[in]  type         Type of result.  "Security Hole", etc.
+ * @param[in]  type         Type of result: "Alarm", "Error Message" or
+ *                          "Log Message".
  * @param[in]  description  Description of the result.
  * @param[in]  path         Result path, e.g. file location of a product.
  *
