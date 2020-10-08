@@ -1,4 +1,4 @@
-/* Copyright (C) 2013-2019 Greenbone Networks GmbH
+/* Copyright (C) 2013-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -2391,6 +2391,40 @@ migrate_234_to_235 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 235 to version 236.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_235_to_236 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 235. */
+
+  if (manage_db_version () != 235)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Replace any result type "Debug Message" by "Error Message". */
+
+  sql ("UPDATE results SET type = 'Error Message' WHERE type = 'Debug Message';");
+  sql ("UPDATE results_trash SET type = 'Error Message' WHERE type = 'Debug Message';");
+
+  /* Set the database version to 236. */
+
+  set_db_version (236);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2432,6 +2466,7 @@ static migrator_t database_migrators[] = {
   {233, migrate_232_to_233},
   {234, migrate_233_to_234},
   {235, migrate_234_to_235},
+  {236, migrate_235_to_236},
   /* End marker. */
   {-1, NULL}};
 
