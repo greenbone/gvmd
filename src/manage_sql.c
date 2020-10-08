@@ -150,8 +150,6 @@ extern int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
-const char *message_type_threat (const char *);
-
 int delete_reports (task_t);
 
 int
