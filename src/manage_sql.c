@@ -35903,9 +35903,6 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
    { "notes.text", "text", KEYWORD_TYPE_STRING },                          \
    { "notes.hosts", "hosts", KEYWORD_TYPE_STRING },                        \
    { "notes.port", "port", KEYWORD_TYPE_STRING },                          \
-   { "severity_to_level (notes.severity, 1)",                              \
-     "threat",                                                             \
-     KEYWORD_TYPE_STRING },                                                \
    { "notes.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes.result", "result", KEYWORD_TYPE_INTEGER },                     \
    { "notes.end_time", "end_time", KEYWORD_TYPE_INTEGER },                 \
@@ -36309,7 +36306,7 @@ task_t
 note_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -36323,7 +36320,7 @@ result_t
 note_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return (result_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -36339,7 +36336,7 @@ note_iterator_end_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }
 
@@ -36355,7 +36352,7 @@ note_iterator_active (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   return ret;
 }
 
@@ -36367,7 +36364,7 @@ note_iterator_active (iterator_t* iterator)
  * @return NVT name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 9);
+DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Get the NVT type from a note iterator.
@@ -36402,7 +36399,7 @@ note_iterator_nvt_type (iterator_t *iterator)
  * @return The severity to apply the note to, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 13);
+DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 12);
 
 
 /* Overrides. */
