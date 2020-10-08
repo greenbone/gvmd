@@ -36301,23 +36301,6 @@ DEF_ACCESS (note_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 2);
 DEF_ACCESS (note_iterator_port, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
- * @brief Get the threat from a note iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Threat.
- */
-const char *
-note_iterator_threat (iterator_t *iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-  if (ret == NULL) return NULL;
-  return message_type_threat (ret);
-}
-
-/**
  * @brief Get the task from a note iterator.
  *
  * @param[in]  iterator  Iterator.
