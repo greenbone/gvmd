@@ -32,6 +32,34 @@
  *
  * @param[in]  resource  Resource.
  */
+#define ACL_USER_MAY_OPTS(resource)                                          \
+  /* This part is 'Any resource type' case from acl_where_owned_user. */     \
+  /* */                                                                      \
+  /* Either the user is the owner. */                                        \
+  " ((" resource ".owner = opts.user_id)"                                    \
+  /* Or the user has super permission on all. */                             \
+  "  OR EXISTS (SELECT * FROM permissions_subject"                           \
+  "             WHERE name = 'Super'"                                        \
+  "             AND (resource = 0))"                                         \
+  /* Or the user has super permission on the owner, */                       \
+  /* (directly, via the role, or via the group).    */                       \
+  "  OR " resource ".owner IN (SELECT *"                                     \
+  "                            FROM super_on_users)"                         \
+  /* Or there's a resource-level permission. */                              \
+  /* */                                                                      \
+  /* This part is permission_clause in acl_where_owned_user. */              \
+  "  OR EXISTS (SELECT id FROM permissions_subject"                          \
+  "             WHERE resource = " resource ".id"                            \
+  "             AND resource_type = opts.type"                               \
+  "             AND resource_location = " G_STRINGIFY (LOCATION_TABLE)       \
+  /*            Any permission. */                                           \
+  "             AND (t ())))"
+
+/**
+ * @brief Generate SQL for user permission check.
+ *
+ * @param[in]  resource  Resource.
+ */
 #define ACL_USER_MAY(resource)                                        \
   "SELECT count(*) > 0 FROM permissions"                              \
   " WHERE resource = " resource                                       \

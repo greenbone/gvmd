@@ -2444,7 +2444,8 @@ static migrator_t database_migrators[] = {
  * @return TRUE if yes, else FALSE.
  */
 gboolean
-manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
+manage_migrate_needs_timezone (GSList *log_config,
+                               const db_conn_info_t *database)
 {
   int db_version;
   g_log_set_handler (
@@ -2496,7 +2497,7 @@ migrate_is_available (int old_version, int new_version)
  * -1 error, -11 error running SCAP migration, -12 error running CERT migration.
  */
 int
-manage_migrate (GSList *log_config, const gchar *database)
+manage_migrate (GSList *log_config, const db_conn_info_t *database)
 {
   migrator_t *migrators;
   /* The version on the disk. */
