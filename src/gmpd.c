@@ -94,7 +94,7 @@ buffer_size_t from_client_end = 0;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmpd (GSList *log_config, const gchar *database,
+init_gmpd (GSList *log_config, const db_conn_info_t *database,
            int max_ips_per_target, int max_email_attachment_size,
            int max_email_include_size, int max_email_message_size,
            manage_connection_forker_t fork_connection, int skip_db_check)
@@ -112,7 +112,7 @@ init_gmpd (GSList *log_config, const gchar *database,
  * @param[in]  disable   Commands to disable.
  */
 void
-init_gmpd_process (const gchar *database, gchar **disable)
+init_gmpd_process (const db_conn_info_t *database, gchar **disable)
 {
   from_client_start = 0;
   from_client_end = 0;
@@ -452,7 +452,7 @@ get_nfds (int socket)
  * @return 0 success, -1 error.
  */
 int
-serve_gmp (gvm_connection_t *client_connection, const gchar *database,
+serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
            gchar **disable)
 {
   int nfds, rc = 0;

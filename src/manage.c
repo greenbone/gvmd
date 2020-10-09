@@ -4897,6 +4897,8 @@ manage_schedule (manage_connection_forker_t fork_connection,
   previous_start_task = 0;
   previous_stop_task = 0;
 
+  auto_delete_reports ();
+
   ret = manage_update_nvti_cache ();
   if (ret)
     {
@@ -5050,8 +5052,6 @@ manage_schedule (manage_connection_forker_t fork_connection,
 
   clear_duration_schedules (0);
   update_duration_schedule_periods (0);
-
-  auto_delete_reports ();
 
   return 0;
 }
