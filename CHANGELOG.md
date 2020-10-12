@@ -17,12 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix severity_in_level SQL function [#1312](https://github.com/greenbone/gvmd/pull/1312)
 
 ### Removed
+- Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)
 - Drop GMP scanners [#1269](https://github.com/greenbone/gvmd/pull/1269)
 - Reduce Severity Classes [#1285](https://github.com/greenbone/gvmd/pull/1285)
 - Removed Severity Classes [#1288](https://github.com/greenbone/gvmd/pull/1288)
 - Remove remaining use of "Severity Class" in where_levels_auto [#1311](https://github.com/greenbone/gvmd/pull/1311)
 - Remove the functionality "autofp" (Auto False Positives) [#1300](https://github.com/greenbone/gvmd/pull/1300)
 - Remove severity type "debug" [#1316](https://github.com/greenbone/gvmd/pull/1316)
+- Remove element "threat" of element "notes" [#1324](https://github.com/greenbone/gvmd/pull/1324)
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 

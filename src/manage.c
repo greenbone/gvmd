@@ -812,33 +812,6 @@ threat_message_type (const char *threat)
 }
 
 /**
- * @brief Get the threat of a message type.
- *
- * @param  type  Message type.
- *
- * @return Static threat name if type names a message type, else NULL.
- */
-const char *
-message_type_threat (const char *type)
-{
-  if (strcasecmp (type, "Alarm") == 0)
-    return "Alarm";
-  if (strcasecmp (type, "Security Hole") == 0)
-    return "High";
-  if (strcasecmp (type, "Security Warning") == 0)
-    return "Medium";
-  if (strcasecmp (type, "Security Note") == 0)
-    return "Low";
-  if (strcasecmp (type, "Log Message") == 0)
-    return "Log";
-  if (strcasecmp (type, "Error Message") == 0)
-    return "Error";
-  if (strcasecmp (type, "False Positive") == 0)
-    return "False Positive";
-  return NULL;
-}
-
-/**
  * @brief Check whether a severity falls within a threat level.
  *
  * @param[in]  severity  Severity.
@@ -5372,25 +5345,6 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
           else
             xml_string_append (nvt_tags, "impact=%s",
                                nvt_iterator_impact (nvts));
-        }
-      if (nvt_iterator_solution (nvts) && nvt_iterator_solution (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|solution=%s",
-                                nvt_iterator_solution (nvts));
-          else
-            xml_string_append (nvt_tags, "solution=%s",
-                               nvt_iterator_solution (nvts));
-        }
-      if (nvt_iterator_solution_type (nvts)
-          && nvt_iterator_solution_type (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|solution_type=%s",
-                               nvt_iterator_solution_type (nvts));
-          else
-            xml_string_append (nvt_tags, "solution_type=%s",
-                               nvt_iterator_solution_type (nvts));
         }
       if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
         {
