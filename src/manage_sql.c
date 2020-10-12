@@ -150,8 +150,6 @@ extern int authenticate_allow_all;
 
 const char *threat_message_type (const char *);
 
-const char *message_type_threat (const char *);
-
 int delete_reports (task_t);
 
 int
@@ -19158,7 +19156,8 @@ nvt_severity (const char *nvt_id, const char *type)
  * @param[in]  hostname     Hostname.
  * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
- * @param[in]  type         Type of result.  "Security Hole", etc.
+ * @param[in]  type         Type of result: "Alarm", "Error Message" or
+ *                          "Log Message".
  * @param[in]  description  Description of the result.
  * @param[in]  path         Result path, e.g. file location of a product.
  *
@@ -35904,9 +35903,6 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
    { "notes.text", "text", KEYWORD_TYPE_STRING },                          \
    { "notes.hosts", "hosts", KEYWORD_TYPE_STRING },                        \
    { "notes.port", "port", KEYWORD_TYPE_STRING },                          \
-   { "severity_to_level (notes.severity, 1)",                              \
-     "threat",                                                             \
-     KEYWORD_TYPE_STRING },                                                \
    { "notes.task", NULL, KEYWORD_TYPE_INTEGER },                           \
    { "notes.result", "result", KEYWORD_TYPE_INTEGER },                     \
    { "notes.end_time", "end_time", KEYWORD_TYPE_INTEGER },                 \
@@ -36300,23 +36296,6 @@ DEF_ACCESS (note_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 2);
 DEF_ACCESS (note_iterator_port, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
- * @brief Get the threat from a note iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Threat.
- */
-const char *
-note_iterator_threat (iterator_t *iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-  if (ret == NULL) return NULL;
-  return message_type_threat (ret);
-}
-
-/**
  * @brief Get the task from a note iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -36327,7 +36306,7 @@ task_t
 note_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -36341,7 +36320,7 @@ result_t
 note_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return (result_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -36357,7 +36336,7 @@ note_iterator_end_time (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  ret = (time_t) iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
   return ret;
 }
 
@@ -36373,7 +36352,7 @@ note_iterator_active (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   return ret;
 }
 
@@ -36385,7 +36364,7 @@ note_iterator_active (iterator_t* iterator)
  * @return NVT name, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 9);
+DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Get the NVT type from a note iterator.
@@ -36420,7 +36399,7 @@ note_iterator_nvt_type (iterator_t *iterator)
  * @return The severity to apply the note to, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 13);
+DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 12);
 
 
 /* Overrides. */

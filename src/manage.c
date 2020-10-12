@@ -812,33 +812,6 @@ threat_message_type (const char *threat)
 }
 
 /**
- * @brief Get the threat of a message type.
- *
- * @param  type  Message type.
- *
- * @return Static threat name if type names a message type, else NULL.
- */
-const char *
-message_type_threat (const char *type)
-{
-  if (strcasecmp (type, "Alarm") == 0)
-    return "Alarm";
-  if (strcasecmp (type, "Security Hole") == 0)
-    return "High";
-  if (strcasecmp (type, "Security Warning") == 0)
-    return "Medium";
-  if (strcasecmp (type, "Security Note") == 0)
-    return "Low";
-  if (strcasecmp (type, "Log Message") == 0)
-    return "Log";
-  if (strcasecmp (type, "Error Message") == 0)
-    return "Error";
-  if (strcasecmp (type, "False Positive") == 0)
-    return "False Positive";
-  return NULL;
-}
-
-/**
  * @brief Check whether a severity falls within a threat level.
  *
  * @param[in]  severity  Severity.

@@ -8237,7 +8237,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<severity>%s</severity>"
-            "<threat>%s</threat>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_owner_name (notes)
@@ -8257,8 +8256,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              ? note_iterator_port (notes) : "",
             note_iterator_severity (notes)
              ? note_iterator_severity (notes) : "",
-            note_iterator_threat (notes)
-             ? note_iterator_threat (notes) : "",
             uuid_task ? uuid_task : "",
             name_task ? name_task : "",
             trash_task,

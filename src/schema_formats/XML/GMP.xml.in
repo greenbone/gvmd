@@ -678,7 +678,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>hosts</e>
           <e>port</e>
           <e>severity</e>
-          <e>threat</e>
           <e>task</e>
           <o><e>end_time</e></o>
           <o><e>result</e></o>
@@ -842,13 +841,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>Severity to which note applies</summary>
       <pattern>
         <t>severity</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>threat</name>
-      <summary>Threat level to which note applies</summary>
-      <pattern>
-        <t>threat</t>
       </pattern>
     </ele>
     <ele>
@@ -12776,7 +12768,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <text>note fixed to result</text>
             <hosts>127.0.0.1</hosts>
             <port>general/tcp</port>
-            <threat>Medium</threat>
             <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
               <name>test</name>
             </task>
@@ -23845,7 +23836,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>severity</e></o>
       <o><e>task</e></o>
       <e>text</e>
-      <o><e>threat</e></o>
     </pattern>
     <ele>
       <name>active</name>
@@ -23889,13 +23879,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>The text of the note</summary>
       <pattern>
         text
-      </pattern>
-    </ele>
-    <ele>
-      <name>threat</name>
-      <summary>Threat level to which note applies</summary>
-      <pattern>
-        <t>threat</t>
       </pattern>
     </ele>
     <ele>
@@ -25949,6 +25932,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </description>
     <version>21.4</version>
   </change>
+  <change>
+    <command>GET_NOTES</command>
+    <summary>Element THREAT has been removed</summary>
+    <description>
+      <p>
+        The element "THREAT" of element "NOTE" is removed.
+      </p>
+      <p>
+        This information is redundant with the element "SEVERITY".
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+
   <change>
     <command>CREATE_TARGET, RUN_WIZARD</command>
     <summary>Default port list removed from CREATE_TARGET</summary>
