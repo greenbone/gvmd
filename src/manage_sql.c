@@ -21802,9 +21802,8 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  if (apply_overrides == 0 && dynamic_severity == 0)
-    new_severity_sql = g_strdup ("results.severity");
-  else
+  if (apply_overrides)
+    /* Overrides, maybe dynamic. */
     new_severity_sql
       = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
                          " WHERE result_new_severities.result = results.id"
@@ -21814,6 +21813,17 @@ results_extra_where (int trash, report_t report, const gchar* host,
                          " LIMIT 1)",
                          current_credentials.uuid,
                          dynamic_severity);
+  else
+    {
+      if (dynamic_severity)
+        /* Dynamic, no overrides. */
+        new_severity_sql = g_strdup ("current_severity (results.severity,"
+                                     "                  results.nvt)");
+      else
+        /* No dynamic, no overrides. */
+        new_severity_sql = g_strdup ("results.severity");
+
+    }
 
   // Build filter clauses
 
@@ -21904,15 +21914,21 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_array_set
    (filterable_columns,
     "type",
-    apply_overrides == 0 && dynamic_severity == 0
-     ? g_strdup ("results.severity")
-     : g_strdup_printf ("severity_to_type"
+    apply_overrides
+     /* Overrides, maybe dynamic. */
+     ? g_strdup_printf ("severity_to_type"
                         " ((SELECT new_severity FROM result_new_severities"
                         "   WHERE result_new_severities.result = results.id"
                         "   AND result_new_severities.user = opts.user_id"
                         "   AND result_new_severities.dynamic = %i"
                         "   LIMIT 1))",
-                        dynamic_severity));
+                        dynamic_severity)
+     : (dynamic_severity
+         /* Dynamic, no overrides. */
+         ? g_strdup ("current_severity (results.severity,"
+                     "                  results.nvt)")
+         /* No dynamic, no overrides. */
+         : g_strdup ("results.severity")));
 
   if (dynamic_severity)
     {
@@ -47045,9 +47061,8 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
     }
 
   dynamic_severity = setting_dynamic_severity_int ();
-  if (overrides == 0 && dynamic_severity == 0)
-    new_severity_sql = g_strdup ("results.severity");
-  else
+  if (overrides)
+    /* Overrides, maybe dynamic. */
     new_severity_sql
       = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
                          " WHERE result_new_severities.result = results.id"
@@ -47057,6 +47072,16 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
                          " LIMIT 1)",
                          current_credentials.uuid,
                          dynamic_severity);
+  else
+    {
+      if (dynamic_severity)
+        /* Dynamic, no overrides. */
+        new_severity_sql = g_strdup ("current_severity (results.severity,"
+                                     "                  results.nvt)");
+      else
+        /* No dynamic, no overrides. */
+        new_severity_sql = g_strdup ("results.severity");
+    }
 
   sql ("INSERT INTO host_max_severities"
        " (host, severity, source_type, source_id, creation_time)"
