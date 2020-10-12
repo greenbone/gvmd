@@ -21589,6 +21589,13 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator columns.
  */
+#define BASE_RESULT_ITERATOR_COLUMNS_O                                        \
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("current_severity (results.severity,"      \
+                                   "                  results.nvt)")
+
+/**
+ * @brief Result iterator columns.
+ */
 #define BASE_RESULT_ITERATOR_COLUMNS_OD                                       \
   PRE_BASE_RESULT_ITERATOR_COLUMNS("(SELECT new_severity"                     \
       " FROM result_new_severities"                                           \
@@ -21603,6 +21610,21 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS_O                                             \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_O                                            \
     { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21633,6 +21655,21 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_O_NO_CERT                                     \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_O                                            \
     { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -22045,8 +22082,10 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_dynamic[] = RESULT_ITERATOR_COLUMNS_O;
   static column_t columns_overrides_dynamic[] = RESULT_ITERATOR_COLUMNS_OD;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t columns_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_O_NO_CERT;
   static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
@@ -22074,17 +22113,33 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   if (manage_cert_loaded ())
     {
-      if (apply_overrides == 0 && dynamic_severity == 0)
-        actual_columns = columns;
-      else
+      if (apply_overrides)
+        /* Overrides, maybe dynamic. */
         actual_columns = columns_overrides_dynamic;
+      else
+        {
+          if (dynamic_severity)
+            /* Dynamic, no overrides. */
+            actual_columns = columns_dynamic;
+          else
+            /* No dynamic, no overrides. */
+            actual_columns = columns;
+        }
     }
   else
     {
-      if (apply_overrides == 0 && dynamic_severity == 0)
-        actual_columns = columns_no_cert;
-      else
+      if (apply_overrides)
+        /* Overrides, maybe dynamic. */
         actual_columns = columns_overrides_dynamic_no_cert;
+      else
+        {
+          if (dynamic_severity)
+            /* Dynamic, no overrides. */
+            actual_columns = columns_dynamic_no_cert;
+          else
+            /* No dynamic, no overrides. */
+            actual_columns = columns_no_cert;
+        }
     }
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
