@@ -1274,6 +1274,123 @@ create_report_format_no_acl (const char *uuid, const char *name,
 }
 
 /**
+ * @brief Create a report format dir.
+ *
+ * @param[in]  source_dir        Full path of source directory, including UUID.
+ * @param[in]  copy_parent       Path of destination directory, excluding UUID.
+ * @param[in]  copy_uuid         UUID (dirname) of destination directory.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
+                        const gchar *copy_uuid)
+{
+  gchar *copy_dir;
+
+  g_debug ("%s: copy %s to %s/%s", __func__, source_dir, copy_parent,
+           copy_uuid);
+
+  /* Check that the source directory exists. */
+
+  if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
+    {
+      g_warning ("%s: report format directory %s not found",
+                 __func__, source_dir);
+      return -1;
+    }
+
+  /* Prepare directory to copy into. */
+
+  copy_dir = g_build_filename (copy_parent, copy_uuid, NULL);
+
+  if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
+      && gvm_file_remove_recurse (copy_dir))
+    {
+      g_warning ("%s: failed to remove dir %s", __func__, copy_dir);
+      g_free (copy_dir);
+      return -1;
+    }
+
+  if (g_mkdir_with_parents (copy_dir, 0755 /* "rwxr-xr-x" */))
+    {
+      g_warning ("%s: failed to create dir %s", __func__, copy_dir);
+      g_free (copy_dir);
+      return -1;
+    }
+
+  /* Correct permissions as glib doesn't seem to do so. */
+
+  if (chmod (copy_parent, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod %s failed: %s",
+                 __func__,
+                 copy_parent,
+                 strerror (errno));
+      g_free (copy_dir);
+      return -1;
+    }
+
+  if (chmod (copy_dir, 0755 /* rwxr-xr-x */))
+    {
+      g_warning ("%s: chmod %s failed: %s",
+                 __func__,
+                 copy_dir,
+                 strerror (errno));
+      g_free (copy_dir);
+      return -1;
+    }
+
+  /* Copy files into new directory. */
+  {
+    GDir *directory;
+    GError *error;
+
+    error = NULL;
+    directory = g_dir_open (source_dir, 0, &error);
+    if (directory == NULL)
+      {
+        if (error)
+          {
+            g_warning ("g_dir_open(%s) failed - %s",
+                       source_dir, error->message);
+            g_error_free (error);
+          }
+        g_free (copy_dir);
+        return -1;
+      }
+    else
+      {
+        gchar *source_file, *copy_file;
+        const gchar *filename;
+
+        filename = g_dir_read_name (directory);
+        while (filename)
+          {
+            source_file = g_build_filename (source_dir, filename, NULL);
+            copy_file = g_build_filename (copy_dir, filename, NULL);
+
+            if (gvm_file_copy (source_file, copy_file) == FALSE)
+              {
+                g_warning ("%s: copy of %s to %s failed",
+                           __func__, source_file, copy_file);
+                g_free (source_file);
+                g_free (copy_file);
+                g_free (copy_dir);
+                return -1;
+              }
+            g_free (source_file);
+            g_free (copy_file);
+            filename = g_dir_read_name (directory);
+          }
+      }
+  }
+
+  g_free (copy_dir);
+  return 0;
+}
+
+/**
  * @brief Create Report Format from an existing Report Format.
  *
  * @param[in]  name                 Name of new Report Format. NULL to copy
@@ -1290,7 +1407,6 @@ copy_report_format (const char* name, const char* source_uuid,
 {
   report_format_t new, old;
   gchar *copy_uuid, *source_dir, *copy_dir, *owner_uuid;
-  gchar *tmp_dir;
   int ret;
 
   assert (current_credentials.uuid);
@@ -1338,17 +1454,6 @@ copy_report_format (const char* name, const char* source_uuid,
                                  NULL);
   g_free (owner_uuid);
 
-  /* Check that the source directory exists. */
-
-  if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
-    {
-      g_warning ("%s: report format directory %s not found",
-                 __func__, source_dir);
-      g_free (source_dir);
-      sql_rollback ();
-      return -1;
-    }
-
   copy_uuid = report_format_uuid (new);
   if (copy_uuid == NULL)
     {
@@ -1356,127 +1461,18 @@ copy_report_format (const char* name, const char* source_uuid,
       return -1;
     }
 
-  /* Prepare directory to copy into. */
-
   copy_dir = g_build_filename (GVMD_STATE_DIR,
                                "report_formats",
                                current_credentials.uuid,
-                               copy_uuid,
                                NULL);
 
-  if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
-      && gvm_file_remove_recurse (copy_dir))
+  if (copy_report_format_dir (source_dir, copy_dir, copy_uuid))
     {
-      g_warning ("%s: failed to remove dir %s", __func__, copy_dir);
+      sql_rollback ();
       g_free (source_dir);
       g_free (copy_dir);
-      g_free (copy_uuid);
-      sql_rollback ();
       return -1;
     }
-
-  if (g_mkdir_with_parents (copy_dir, 0755 /* "rwxr-xr-x" */))
-    {
-      g_warning ("%s: failed to create dir %s", __func__, copy_dir);
-      g_free (source_dir);
-      g_free (copy_dir);
-      g_free (copy_uuid);
-      sql_rollback ();
-      return -1;
-    }
-
-  /* Correct permissions as glib doesn't seem to do so. */
-
-  tmp_dir = g_build_filename (GVMD_STATE_DIR,
-                              "report_formats",
-                              current_credentials.uuid,
-                              NULL);
-
-  if (chmod (tmp_dir, 0755 /* rwxr-xr-x */))
-    {
-      g_warning ("%s: chmod %s failed: %s",
-                 __func__,
-                 tmp_dir,
-                 strerror (errno));
-      g_free (source_dir);
-      g_free (copy_dir);
-      g_free (copy_uuid);
-      g_free (tmp_dir);
-      sql_rollback ();
-      return -1;
-    }
-  g_free (tmp_dir);
-
-  tmp_dir = g_build_filename (GVMD_STATE_DIR,
-                              "report_formats",
-                              current_credentials.uuid,
-                              copy_uuid,
-                              NULL);
-
-  if (chmod (tmp_dir, 0755 /* rwxr-xr-x */))
-    {
-      g_warning ("%s: chmod %s failed: %s",
-                 __func__,
-                 tmp_dir,
-                 strerror (errno));
-      g_free (source_dir);
-      g_free (copy_dir);
-      g_free (copy_uuid);
-      g_free (tmp_dir);
-      sql_rollback ();
-      return -1;
-    }
-  g_free (tmp_dir);
-  g_free (copy_uuid);
-
-  /* Copy files into new directory. */
-  {
-    GDir *directory;
-    GError *error;
-
-    error = NULL;
-    directory = g_dir_open (source_dir, 0, &error);
-    if (directory == NULL)
-      {
-        if (error)
-          {
-            g_warning ("g_dir_open(%s) failed - %s",
-                       source_dir, error->message);
-            g_error_free (error);
-          }
-        g_free (source_dir);
-        g_free (copy_dir);
-        sql_rollback ();
-        return -1;
-      }
-    else
-      {
-        gchar *source_file, *copy_file;
-        const gchar *filename;
-
-        filename = g_dir_read_name (directory);
-        while (filename)
-          {
-            source_file = g_build_filename (source_dir, filename, NULL);
-            copy_file = g_build_filename (copy_dir, filename, NULL);
-
-            if (gvm_file_copy (source_file, copy_file) == FALSE)
-              {
-                g_warning ("%s: copy of %s to %s failed",
-                           __func__, source_file, copy_file);
-                g_free (source_file);
-                g_free (copy_file);
-                g_free (source_dir);
-                g_free (copy_dir);
-                sql_rollback ();
-                return -1;
-              }
-            g_free (source_file);
-            g_free (copy_file);
-            filename = g_dir_read_name (directory);
-          }
-      }
-  }
 
   sql_commit ();
   g_free (source_dir);
@@ -4289,10 +4285,9 @@ migrate_predefined_report_formats ()
       new = g_build_filename (GVMD_STATE_DIR,
                               "report_formats",
                               owner_uuid,
-                              iterator_string (&rows, 0),
                               NULL);
 
-      if (move_report_format_dir (old, new))
+      if (copy_report_format_dir (old, new, iterator_string (&rows, 0)))
         {
           g_warning ("%s: failed at report format %s", __func__,
                      iterator_string (&rows, 0));

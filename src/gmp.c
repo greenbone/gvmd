@@ -8672,13 +8672,6 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       char *pos = strchr (value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<value>%s</value>", value);
-      while (pos)
-        {
-          char *pos2 = strchr (++pos, ';');
-          if (pos2) *pos2 = '\0';
-          buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
-          pos = pos2;
-        }
     }
   else if (value
            && type
@@ -8692,10 +8685,29 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
       && type
       && (strcmp (type, "radio") == 0))
     {
+      char *pos;
+      gchar *alts;
+
       /* Handle the other possible values. */
-      char *pos = strchr (default_value, ';');
+
+      alts = g_strdup (default_value);
+
+      pos = strchr (default_value, ';');
       if (pos) *pos = '\0';
       buffer_xml_append_printf (buffer, "<default>%s</default>", default_value);
+
+      pos = alts;
+      while (1)
+        {
+          char *pos2 = strchr (pos, ';');
+          if (pos2) *pos2 = '\0';
+          if (value == NULL || strcmp (pos, value))
+            buffer_xml_append_printf (buffer, "<alt>%s</alt>", pos);
+          if (pos2 == NULL)
+            break;
+          pos = pos2 + 1;
+        }
+      g_free (alts);
     }
   else if (default_value
            && type
@@ -23525,6 +23537,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("filter", "Filter",
                                 modify_filter_data->filter_id, "modified");
                 break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_filter",
+                                    "Filter is used by an alert so type must be"
+                                    " 'info' if specified"));
+                log_event_fail ("filter", "Filter",
+                                modify_filter_data->filter_id, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_filter",
@@ -26954,7 +26974,7 @@ extern buffer_size_t from_client_end;
  *         -4 max_ips_per_target out of range.
  */
 int
-init_gmp (GSList *log_config, const gchar *database,
+init_gmp (GSList *log_config, const db_conn_info_t *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, int max_email_message_size,
           manage_connection_forker_t fork_connection, int skip_db_check)
@@ -26982,7 +27002,7 @@ init_gmp (GSList *log_config, const gchar *database,
  * process_gmp_client_input.
  */
 void
-init_gmp_process (const gchar *database,
+init_gmp_process (const db_conn_info_t *database,
                   int (*write_to_client) (const char*, void*),
                   void* write_to_client_data, gchar **disable)
 {

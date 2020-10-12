@@ -2019,7 +2019,7 @@ update_or_rebuild_nvts (int update)
  *         -3 database needs to be initialised from server, -5 sync active.
  */
 int
-manage_rebuild (GSList *log_config, const gchar *database)
+manage_rebuild (GSList *log_config, const db_conn_info_t *database)
 {
   int ret;
   static lockfile_t lockfile;
