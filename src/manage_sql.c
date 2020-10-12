@@ -232,9 +232,9 @@ static void
 check_for_updated_cert ();
 
 static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
+report_counts_id_full (report_t, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, int *, double *);
+                       int *, int *, int *, int *, int *, double *);
 
 static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
@@ -1135,12 +1135,6 @@ parse_keyword (keyword_t* keyword)
           keyword->type = KEYWORD_TYPE_DOUBLE;
           return;
         }
-      else if (strcasecmp (keyword->string, "Debug") == 0)
-        {
-          keyword->double_value = SEVERITY_DEBUG;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
       else if (strcasecmp (keyword->string, "Error") == 0)
         {
           keyword->double_value = SEVERITY_ERROR;
@@ -1967,9 +1961,8 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  min_qod        Minimum QoD base of included results.  All
  *                              results if NULL.
  * @param[out]  levels         String describing threat levels (message types)
- *                             to include in count (for example, "hmlgd" for
- *                             High, Medium, Low, loG and Debug).  All levels if
- *                             NULL.
+ *                             to include in count (for example, "hmlg" for
+ *                             High, Medium, Low and loG).  All levels if NULL.
  * @param[out]  delta_states   String describing delta states to include in count
  *                             (for example, "sngc" Same, New, Gone and Changed).
  *                             All levels if NULL.
@@ -2519,7 +2512,6 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
   if ((strcmp (column, "threat") == 0)
       && (strstr ("None", keyword->string) == NULL)
       && (strstr ("False Positive", keyword->string) == NULL)
-      && (strstr ("Debug", keyword->string) == NULL)
       && (strstr ("Error", keyword->string) == NULL)
       && (strstr ("Alarm", keyword->string) == NULL)
       && (strstr ("High", keyword->string) == NULL)
@@ -14020,7 +14012,7 @@ condition_met (task_t task, report_t report, alert_t alert,
         {
           char *filter_id, *count_string;
           report_t last_report;
-          int debugs, holes, infos, logs, warnings, false_positives;
+          int holes, infos, logs, warnings, false_positives;
           int count;
           double severity;
 
@@ -14067,11 +14059,11 @@ condition_met (task_t task, report_t report, alert_t alert,
               memset (&get, 0, sizeof (get_data_t));
               get.type = "result";
               get.filt_id = filter_id;
-              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
+              report_counts_id (last_report, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
 
-              db_count = debugs + holes + infos + logs + warnings
+              db_count = holes + infos + logs + warnings
                          + false_positives;
 
               g_debug ("%s: count: %i vs %i", __func__, db_count, count);
@@ -14088,7 +14080,7 @@ condition_met (task_t task, report_t report, alert_t alert,
         {
           char *direction, *filter_id, *count_string;
           report_t last_report;
-          int debugs, holes, infos, logs, warnings, false_positives;
+          int holes, infos, logs, warnings, false_positives;
           int count;
           double severity;
 
@@ -14124,10 +14116,10 @@ condition_met (task_t task, report_t report, alert_t alert,
               get.type = "result";
               get.filt_id = filter_id;
 
-              report_counts_id (last_report, &debugs, &holes, &infos, &logs,
+              report_counts_id (last_report, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
-              last_count = debugs + holes + infos + logs + warnings
+              last_count = holes + infos + logs + warnings
                             + false_positives;
 
               second_last_report = 0;
@@ -14138,10 +14130,10 @@ condition_met (task_t task, report_t report, alert_t alert,
                 {
                   int cmp, second_last_count;
 
-                  report_counts_id (second_last_report, &debugs, &holes, &infos,
+                  report_counts_id (second_last_report, &holes, &infos,
                                     &logs, &warnings, &false_positives,
                                     &severity, &get, NULL);
-                  second_last_count = debugs + holes + infos + logs + warnings
+                  second_last_count = holes + infos + logs + warnings
                                       + false_positives;
 
                   cmp = last_count - second_last_count;
@@ -19151,8 +19143,6 @@ nvt_severity (const char *nvt_id, const char *type)
     g_warning ("%s result type requires an NVT", type);
   else if (strcasecmp (type, "Log Message") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
-  else if (strcasecmp (type, "Debug Message") == 0)
-    severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
   else if (strcasecmp (type, "Error Message") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
   else
@@ -19888,7 +19878,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                      const char* users_where)
 {
   iterator_t cache_iterator;
-  int debugs, holes, infos, logs, warnings, false_positives;
+  int holes, infos, logs, warnings, false_positives;
   double severity;
   get_data_t *get = NULL;
   gchar *old_user_id;
@@ -19920,7 +19910,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                report, user, override, min_qod);
         }
 
-      report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+      report_counts_id (report, &holes, &infos, &logs, &warnings,
                         &false_positives, &severity, get, NULL);
 
       get_data_reset (get);
@@ -21139,9 +21129,8 @@ next_report (iterator_t* iterator, report_t* report)
  * @brief Return SQL WHERE for restricting a SELECT to levels.
  *
  * @param[in]  levels  String describing threat levels (message types)
- *                     to include in report (for example, "hmlgd" for
- *                     High, Medium, Low, loG and Debug).  All levels if
- *                     NULL.
+ *                     to include in report (for example, "hmlg" for
+ *                     High, Medium, Low and loG).  All levels if NULL.
  * @param[in]  new_severity_sql  SQL for new severity.
  *
  * @return WHERE clause for levels if one is required, else NULL.
@@ -21224,28 +21213,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
       else
         g_string_append_printf (levels_sql,
                                 " OR severity_in_level (%s, 'log')",
-                                new_severity_sql);
-      count++;
-    }
-
-  /* Debug. */
-  if (strchr (levels, 'd'))
-    {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (("
-                                  "       ((%s"
-                                  "         = " G_STRINGIFY
-                                                 (SEVERITY_DEBUG) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR (%s"
-                                "     = " G_STRINGIFY
-                                           (SEVERITY_DEBUG) ")",
                                 new_severity_sql);
       count++;
     }
@@ -23741,7 +23708,6 @@ report_severity_data (report_t report, const char *host,
  *       use report_counts_id instead.
  *
  * @param[in]   report_id    ID of report.
- * @param[out]  debugs       Number of debug messages.
  * @param[out]  holes        Number of hole messages.
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
@@ -23754,7 +23720,7 @@ report_severity_data (report_t report, const char *host,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts (const char* report_id, int* debugs, int* holes, int* infos,
+report_counts (const char* report_id, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, double* severity,
                int override, int min_qod)
 {
@@ -23767,7 +23733,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
   // TODO Check if report was found.
 
   get = report_results_get_data (1, -1, override, min_qod);
-  ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
+  ret = report_counts_id (report, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
   free (get);
@@ -23946,7 +23912,6 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -23955,7 +23920,6 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @param[out]  severity  Maximum severity of the report.
  * @param[in]   get       Get data.
  * @param[in]   host      Host to which to limit the count.
- * @param[out]  filtered_debugs    Number of debug messages after filtering.
  * @param[out]  filtered_holes     Number of hole messages after filtering.
  * @param[out]  filtered_infos     Number of info messages after filtering.
  * @param[out]  filtered_logs      Number of log messages after filtering.
@@ -23967,11 +23931,11 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @return 0 on success, -1 on error.
  */
 static int
-report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
+report_counts_id_full (report_t report, int* holes, int* infos,
                        int* logs, int* warnings, int* false_positives,
                        double* severity,
                        const get_data_t* get, const char* host,
-                       int* filtered_debugs, int* filtered_holes,
+                       int* filtered_holes,
                        int* filtered_infos, int* filtered_logs,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
@@ -24060,13 +24024,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
   init_severity_data (&severity_data);
   init_severity_data (&filtered_severity_data);
 
-  /* This adds time and is out of scope of GMP threat levels, so skip it */
-  if (debugs)
-    *debugs = 0;
-
-  if (filtered_debugs)
-    *filtered_debugs = 0;
-
   if (cache_exists && filter_cacheable)
     {
       /* Get unfiltered counts from cache. */
@@ -24088,10 +24045,10 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
     }
 
   severity_data_level_counts (&severity_data,
-                              NULL, NULL, false_positives,
+                              NULL, false_positives,
                               logs, infos, warnings, holes);
   severity_data_level_counts (&filtered_severity_data,
-                              NULL, NULL, filtered_false_positives,
+                              NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
                               filtered_warnings, filtered_holes);
 
@@ -24119,7 +24076,6 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
  * @brief Get only the filtered message counts for a report.
  *
  * @param[in]   report    Report.
- * @param[out]  debugs    Number of debug messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -24132,13 +24088,13 @@ report_counts_id_full (report_t report, int* debugs, int* holes, int* infos,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts_id (report_t report, int* debugs, int* holes, int* infos,
+report_counts_id (report_t report, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives,
                   double* severity, const get_data_t *get, const char *host)
 {
   int ret;
-  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                               get, host, debugs, holes, infos, logs, warnings,
+  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL,
+                               get, host, holes, infos, logs, warnings,
                                false_positives, severity);
   return ret;
 }
@@ -24178,7 +24134,7 @@ report_severity (report_t report, int overrides, int min_qod)
     {
       g_debug ("%s: could not get max from cache", __func__);
       get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
-      report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
+      report_counts_id (report, NULL, NULL, NULL, NULL,
                         NULL, &severity, get, NULL);
       get_data_reset (get);
       free (get);
@@ -26293,8 +26249,6 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
  * @param[in]  result_hosts_only  Whether to only include hosts with results.
  * @param[in]  orig_filtered_result_count  Result count.
  * @param[in]  filtered_result_count       Result count.
- * @param[in]  orig_f_debugs  Result count.
- * @param[in]  f_debugs       Result count.
  * @param[in]  orig_f_holes   Result count.
  * @param[in]  f_holes        Result count.
  * @param[in]  orig_f_infos   Result count.
@@ -26318,7 +26272,6 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         const char *sort_field, int result_hosts_only,
                         int *orig_filtered_result_count,
                         int *filtered_result_count,
-                        int *orig_f_debugs, int *f_debugs,
                         int *orig_f_holes, int *f_holes,
                         int *orig_f_infos, int *f_infos,
                         int *orig_f_logs, int *f_logs,
@@ -26333,7 +26286,6 @@ print_report_delta_xml (FILE *out, iterator_t *results,
   GTree *ports;
   gchar *msg;
 
-  *orig_f_debugs = *f_debugs;
   *orig_f_holes = *f_holes;
   *orig_f_infos = *f_infos;
   *orig_f_logs = *f_logs;
@@ -27036,9 +26988,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int debugs, holes, infos, logs, warnings, false_positives;
-  int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
-  int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
+  int holes, infos, logs, warnings, false_positives;
+  int f_holes, f_infos, f_logs, f_warnings, f_false_positives;
+  int orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
   int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
@@ -27055,7 +27007,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
-  orig_f_holes = orig_f_debugs = 0;
+  orig_f_holes = 0;
   f_host_ports = NULL;
   f_host_holes = NULL;
   f_host_warnings = NULL;
@@ -27247,16 +27199,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       if (delta == 0)
         {
-          int total_debugs, total_holes, total_infos, total_logs;
+          int total_holes, total_infos, total_logs;
           int total_warnings, total_false_positives;
           get_data_t *all_results_get;
 
           all_results_get = report_results_get_data (1, -1, 0, 0);
-          report_counts_id (report, &total_debugs, &total_holes, &total_infos,
+          report_counts_id (report, &total_holes, &total_infos,
                             &total_logs, &total_warnings,
                             &total_false_positives, NULL, all_results_get,
                             NULL);
-          total_result_count = total_debugs + total_holes + total_infos
+          total_result_count = total_holes + total_infos
                                + total_logs + total_warnings
                                + total_false_positives;
           get_data_reset (all_results_get);
@@ -27276,10 +27228,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           /* Beware, we're using the full variables temporarily here, but
            * report_counts_id counts the filtered results. */
-          report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
+          report_counts_id (report, &holes, &infos, &logs, &warnings,
                             &false_positives, NULL, get, NULL);
 
-          filtered_result_count = debugs + holes + infos + logs + warnings
+          filtered_result_count = holes + infos + logs + warnings
                                   + false_positives;
         }
 
@@ -27387,8 +27339,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     g_string_append (filters_extra_buffer, "<filter>Low</filter>");
   if (strchr (levels, 'g'))
     g_string_append (filters_extra_buffer, "<filter>Log</filter>");
-  if (strchr (levels, 'd'))
-    g_string_append (filters_extra_buffer, "<filter>Debug</filter>");
   if (strchr (levels, 'f'))
     g_string_append (filters_extra_buffer, "<filter>False Positive</filter>");
 
@@ -27691,19 +27641,18 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       /* We're getting all the filtered results, so we can count them as we
        * print them, to save time. */
 
-      report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+      report_counts_id_full (report, &holes, &infos, &logs,
                              &warnings, &false_positives, &severity,
-                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                             NULL);
+                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-      f_debugs = f_holes = f_infos = f_logs = f_warnings = 0;
+      f_holes = f_infos = f_logs = f_warnings = 0;
       f_false_positives = f_severity = 0;
     }
   else
-    report_counts_id_full (report, &debugs, &holes, &infos, &logs,
+    report_counts_id_full (report, &holes, &infos, &logs,
                            &warnings, &false_positives, &severity,
                            get, NULL,
-                           &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
+                           &f_holes, &f_infos, &f_logs, &f_warnings,
                            &f_false_positives, &f_severity);
 
   /* Results. */
@@ -27776,7 +27725,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   sort_order, sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
                                   &filtered_result_count,
-                                  &orig_f_debugs, &f_debugs,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
                                   &orig_f_logs, &f_logs,
@@ -27897,11 +27845,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   /* Print result counts and severity. */
 
   if (delta)
-    /** @todo The f_debugs, etc. vars are setup to give the page count. */
+    /** @todo The f_holes, etc. vars are setup to give the page count. */
     PRINT (out,
            "<result_count>"
            "<filtered>%i</filtered>"
-           "<debug><filtered>%i</filtered></debug>"
            "<hole><filtered>%i</filtered></hole>"
            "<info><filtered>%i</filtered></info>"
            "<log><filtered>%i</filtered></log>"
@@ -27911,7 +27858,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
            "</false_positive>"
            "</result_count>",
            orig_filtered_result_count,
-           (strchr (levels, 'd') ? orig_f_debugs : 0),
            (strchr (levels, 'h') ? orig_f_holes : 0),
            (strchr (levels, 'l') ? orig_f_infos : 0),
            (strchr (levels, 'g') ? orig_f_logs : 0),
@@ -27920,7 +27866,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     {
       if (count_filtered)
-        filtered_result_count = f_debugs + f_holes + f_infos + f_logs
+        filtered_result_count = f_holes + f_infos + f_logs
                                 + f_warnings + false_positives;
 
       PRINT (out,
@@ -27928,7 +27874,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "%i"
              "<full>%i</full>"
              "<filtered>%i</filtered>"
-             "<debug><full>%i</full><filtered>%i</filtered></debug>"
              "<hole><full>%i</full><filtered>%i</filtered></hole>"
              "<info><full>%i</full><filtered>%i</filtered></info>"
              "<log><full>%i</full><filtered>%i</filtered></log>"
@@ -27941,8 +27886,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              total_result_count,
              total_result_count,
              filtered_result_count,
-             debugs,
-             (strchr (levels, 'd') ? f_debugs : 0),
              holes,
              (strchr (levels, 'h') ? f_holes : 0),
              infos,
@@ -35684,7 +35627,7 @@ create_note (const char* active, const char* nvt, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, ""))
+      && strcmp (threat, ""))
     return -1;
 
   quoted_text = sql_insert (text);
@@ -35696,8 +35639,7 @@ create_note (const char* active, const char* nvt, const char* text,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -35713,8 +35655,6 @@ create_note (const char* active, const char* nvt, const char* text,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -35943,8 +35883,7 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
-      && strcmp (threat, ""))
+      && strcmp (threat, "Alarm") && strcmp (threat, ""))
     return -1;
 
   if (port && validate_results_port (port))
@@ -35960,8 +35899,7 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -35977,8 +35915,6 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -36687,13 +36623,12 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
-      && strcmp (threat, ""))
+      && strcmp (threat, "Alarm") && strcmp (threat, ""))
     return -1;
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
+      && strcmp (new_threat, "False Positive")
       && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
@@ -36702,8 +36637,7 @@ create_override (const char* active, const char* nvt, const char* text,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -36719,8 +36653,6 @@ create_override (const char* active, const char* nvt, const char* text,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -36735,8 +36667,7 @@ create_override (const char* active, const char* nvt, const char* text,
       if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
               && new_severity_dbl != SEVERITY_LOG
-              && new_severity_dbl != SEVERITY_FP
-              && new_severity_dbl != SEVERITY_DEBUG))
+              && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
           return 2;
@@ -36754,8 +36685,6 @@ create_override (const char* active, const char* nvt, const char* text,
         new_severity_dbl = 2.0;
       else if (strcmp (new_threat, "Log") == 0)
         new_severity_dbl = SEVERITY_LOG;
-      else if (strcmp (new_threat, "Debug") == 0)
-        new_severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
     }
@@ -37053,13 +36982,12 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
-      && strcmp (threat, ""))
+      && strcmp (threat, "Alarm") && strcmp (threat, ""))
     return -1;
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
+      && strcmp (new_threat, "False Positive")
       && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
@@ -37068,8 +36996,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
-              && severity_dbl != SEVERITY_LOG
-              && severity_dbl != SEVERITY_DEBUG))
+              && severity_dbl != SEVERITY_LOG))
         return 3;
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -37085,8 +37012,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
         severity_dbl = 0.1;
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
-      else if (strcmp (threat, "Debug") == 0)
-        severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
 
@@ -37101,8 +37026,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
               && new_severity_dbl != SEVERITY_LOG
-              && new_severity_dbl != SEVERITY_FP
-              && new_severity_dbl != SEVERITY_DEBUG))
+              && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
           return 3;
@@ -37120,8 +37044,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
         new_severity_dbl = 2.0;
       else if (strcmp (new_threat, "Log") == 0)
         new_severity_dbl = SEVERITY_LOG;
-      else if (strcmp (new_threat, "Debug") == 0)
-        new_severity_dbl = SEVERITY_DEBUG;
       else
         {
           g_free (quoted_severity);
