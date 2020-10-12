@@ -45,13 +45,13 @@
 #define FROM_BUFFER_SIZE 1048576
 
 int
-init_gmpd (GSList *, const gchar *, int, int, int, int,
+init_gmpd (GSList *, const db_conn_info_t *, int, int, int, int,
            manage_connection_forker_t, int);
 
 void
-init_gmpd_process (const gchar *, gchar **);
+init_gmpd_process (const db_conn_info_t *, gchar **);
 
 int
-serve_gmp (gvm_connection_t *, const gchar *, gchar **);
+serve_gmp (gvm_connection_t *, const db_conn_info_t *, gchar **);
 
 #endif /* not _GVMD_GMPD_H */

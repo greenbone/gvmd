@@ -217,9 +217,9 @@ static gnutls_session_t client_session;
 static gnutls_certificate_credentials_t client_credentials;
 
 /**
- * @brief Location of the manage database.
+ * @brief Database connection info.
  */
-static gchar *database = NULL;
+static db_conn_info_t database = { NULL, NULL, NULL };
 
 /**
  * @brief Is this process parent or child?
@@ -487,7 +487,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
   /* Serve GMP. */
 
   /* It's up to serve_gmp to gvm_server_free client_*. */
-  if (serve_gmp (client_connection, database, disabled_commands))
+  if (serve_gmp (client_connection, &database, disabled_commands))
     goto server_fail;
 
   if (watcher_data)
@@ -744,7 +744,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
          * the process initialisation. */
         auth_uuid = g_strdup (uuid);
 
-        init_gmpd_process (database, disabled_commands);
+        init_gmpd_process (&database, disabled_commands);
 
         /* Make any further authentications to this process succeed.  This
          * enables the scheduler to login as the owner of the scheduled
@@ -1334,7 +1334,7 @@ serve_and_schedule ()
       if (termination_signal)
         {
           g_debug ("Received %s signal",
-                   sys_siglist[termination_signal]);
+                   strsignal (termination_signal));
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -1423,7 +1423,7 @@ serve_and_schedule ()
       if (termination_signal)
         {
           g_debug ("Received %s signal",
-                   sys_siglist[termination_signal]);
+                   strsignal (termination_signal));
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -1753,9 +1753,17 @@ gvmd (int argc, char** argv)
           "Create admin user <username> and exit.",
           "<username>" },
         { "database", 'd', 0, G_OPTION_ARG_STRING,
-          &database,
+          &(database.name),
           "Use <name> as database for PostgreSQL.",
           "<name>" },
+        { "db-host", '\0', 0, G_OPTION_ARG_STRING,
+          &(database.host),
+          "Use <host> as database host or socket directory for PostgreSQL.",
+          "<host>" },
+        { "db-port", '\0', 0, G_OPTION_ARG_STRING,
+          &(database.port),
+          "Use <port> as database port or socket extension for PostgreSQL.",
+          "<port>" },
         { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
           G_OPTION_ARG_NONE,
           &decrypt_all_credentials,
@@ -2090,7 +2098,7 @@ gvmd (int argc, char** argv)
   /* Switch to UTC for scheduling. */
 
   if (migrate_database
-      && manage_migrate_needs_timezone (log_config, database))
+      && manage_migrate_needs_timezone (log_config, &database))
     g_info ("%s: leaving TZ as is, for migrator", __func__);
   else if (setenv ("TZ", "utc 0", 1) == -1)
     {
@@ -2243,7 +2251,7 @@ gvmd (int argc, char** argv)
 
       g_info ("   Migrating database.");
 
-      switch (manage_migrate (log_config, database))
+      switch (manage_migrate (log_config, &database))
         {
           case 0:
             g_info ("   Migration succeeded.");
@@ -2325,7 +2333,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_optimize (log_config, database, optimize);
+      ret = manage_optimize (log_config, &database, optimize);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2341,7 +2349,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_rebuild (log_config, database);
+      ret = manage_rebuild (log_config, &database);
       log_config_free ();
       if (ret)
         {
@@ -2360,7 +2368,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_rebuild_scap (log_config, database);
+      ret = manage_rebuild_scap (log_config, &database);
       log_config_free ();
       if (ret)
         {
@@ -2414,7 +2422,7 @@ gvmd (int argc, char** argv)
             }
         }
       stype = g_strdup_printf ("%u", type);
-      ret = manage_create_scanner (log_config, database, create_scanner,
+      ret = manage_create_scanner (log_config, &database, create_scanner,
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_credential,
                                    scanner_key_pub, scanner_key_priv);
@@ -2463,7 +2471,7 @@ gvmd (int argc, char** argv)
       else
         stype = NULL;
 
-      ret = manage_modify_scanner (log_config, database, modify_scanner,
+      ret = manage_modify_scanner (log_config, &database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
                                    stype, scanner_ca_pub, scanner_credential,
                                    scanner_key_pub, scanner_key_priv);
@@ -2483,7 +2491,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_check_alerts (log_config, database);
+      ret = manage_check_alerts (log_config, &database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2499,7 +2507,8 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_create_user (log_config, database, create_user, password, role);
+      ret = manage_create_user (log_config, &database, create_user, password,
+                                role);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2515,7 +2524,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_delete_user (log_config, database, delete_user, inheritor);
+      ret = manage_delete_user (log_config, &database, delete_user, inheritor);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2531,7 +2540,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_get_roles (log_config, database, verbose);
+      ret = manage_get_roles (log_config, &database, verbose);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2547,7 +2556,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_get_users (log_config, database, role, verbose);
+      ret = manage_get_users (log_config, &database, role, verbose);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2563,7 +2572,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_get_scanners (log_config, database);
+      ret = manage_get_scanners (log_config, &database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2579,7 +2588,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_delete_scanner (log_config, database, delete_scanner);
+      ret = manage_delete_scanner (log_config, &database, delete_scanner);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2595,7 +2604,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_verify_scanner (log_config, database, verify_scanner);
+      ret = manage_verify_scanner (log_config, &database, verify_scanner);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2611,7 +2620,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_set_password (log_config, database, user, new_password);
+      ret = manage_set_password (log_config, &database, user, new_password);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2627,7 +2636,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_modify_setting (log_config, database, user,
+      ret = manage_modify_setting (log_config, &database, user,
                                    modify_setting, value);
       log_config_free ();
       if (ret)
@@ -2644,7 +2653,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_encrypt_all_credentials (log_config, database);
+      ret = manage_encrypt_all_credentials (log_config, &database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2660,7 +2669,7 @@ gvmd (int argc, char** argv)
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
-      ret = manage_decrypt_all_credentials (log_config, database);
+      ret = manage_decrypt_all_credentials (log_config, &database);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -2715,7 +2724,7 @@ gvmd (int argc, char** argv)
 
   /* Initialise GMP daemon. */
 
-  switch (init_gmpd (log_config, database, max_ips_per_target,
+  switch (init_gmpd (log_config, &database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size,
                      max_email_message_size,
                      fork_connection_for_event, 0))
@@ -2857,7 +2866,7 @@ gvmd (int argc, char** argv)
 
   /* Initialise the process for manage_schedule. */
 
-  init_manage_process (database);
+  init_manage_process (&database);
 
   /* Initialize the authentication system. */
 

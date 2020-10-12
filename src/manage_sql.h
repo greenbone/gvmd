@@ -275,7 +275,7 @@ typedef struct
 
 /* Variables */
 
-extern gchar *gvmd_db_name;
+extern db_conn_info_t gvmd_db_conn_info;
 
 
 /* Function prototypes */
@@ -411,7 +411,7 @@ void
 check_alerts ();
 
 int
-manage_option_setup (GSList *, const gchar *);
+manage_option_setup (GSList *, const db_conn_info_t *);
 
 void
 manage_option_cleanup ();
@@ -469,5 +469,8 @@ valid_type (const char *);
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,
                               const gchar *);
+
+void
+create_view_vulns ();
 
 #endif /* not _GVMD_MANAGE_SQL_H */

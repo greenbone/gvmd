@@ -223,10 +223,16 @@ SELECT nspname || '.' || relname AS "relation",
 These queries were taken from https://wiki.postgresql.org/wiki/Disk_Usage
 
 
-## Migrating the Database
+## Migrating the Database (e.g. during an upgrade of GVM)
 
-If you have used Manager before, you might need to migrate the database to the
-current data model. Use this command to run the migration:
+If you have used Manager before (e.g. an older version which got upgraded to
+a newer major release), you might get the following error in your `gvmd.log`
+during startup:
+
+    gvmd: database is wrong version
+
+If this is happening you need to migrate the database to the current data model.
+Use this command to run the migration:
 
     gvmd --migrate
 
