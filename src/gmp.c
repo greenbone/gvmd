@@ -17039,7 +17039,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
-      int debugs, holes = 0, infos = 0, logs, warnings = 0;
+      int holes = 0, infos = 0, logs, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int false_positives, task_scanner_type;
       int target_available, config_available;
@@ -17148,7 +17148,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               // TODO Could skip this count for tasks page.
               if (report_counts (first_report_id,
-                                 &debugs, &holes_2, &infos_2, &logs,
+                                 &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
                                  &severity_2, apply_overrides, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
@@ -17164,7 +17164,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (((first_report_id == NULL)
                   || (strcmp (second_last_report_id, first_report_id)))
                   && report_counts (second_last_report_id,
-                                    &debugs, &holes_2, &infos_2,
+                                    &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
                                     apply_overrides, min_qod))
@@ -17218,7 +17218,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 {
                   if (report_counts
                       (last_report_id,
-                        &debugs, &holes, &infos, &logs,
+                        &holes, &infos, &logs,
                         &warnings, &false_positives, &severity,
                         apply_overrides, min_qod))
                     g_error ("%s: GET_TASKS: error getting counts for"
@@ -17279,7 +17279,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        "<scan_start>%s</scan_start>"
                                        "<scan_end>%s</scan_end>"
                                        "<result_count>"
-                                       "<debug>%i</debug>"
                                        "<hole>%i</hole>"
                                        "<info>%i</info>"
                                        "<log>%i</log>"
@@ -17297,7 +17296,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        timestamp,
                                        scan_start,
                                        scan_end,
-                                       debugs,
                                        holes,
                                        infos,
                                        logs,
