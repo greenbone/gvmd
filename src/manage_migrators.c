@@ -2425,6 +2425,40 @@ migrate_235_to_236 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 236 to version 237.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_236_to_237 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 236. */
+
+  if (manage_db_version () != 236)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* NVT scores were introduced, for handling extended severities. */
+
+  sql ("ALTER TABLE nvts ADD column score integer;");
+  sql ("UPDATE nvts SET score = (cvss_base::float * 10)::integer;");
+
+  /* Set the database version to 237. */
+
+  set_db_version (237);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2467,6 +2501,7 @@ static migrator_t database_migrators[] = {
   {234, migrate_233_to_234},
   {235, migrate_234_to_235},
   {236, migrate_235_to_236},
+  {237, migrate_236_to_237},
   /* End marker. */
   {-1, NULL}};
 

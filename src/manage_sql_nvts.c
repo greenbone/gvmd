@@ -995,6 +995,22 @@ DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
 DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
 
 /**
+ * @brief Get the score from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Score, or -1 if iteration is complete.
+ */
+int
+nvt_iterator_score (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
