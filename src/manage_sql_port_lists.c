@@ -2607,4 +2607,13 @@ check_db_port_lists ()
    * This should be a migrator, but this way is easier to backport.  */
   sql ("UPDATE port_ranges SET \"end\" = 65535 WHERE \"end\" = 65536;");
   sql ("UPDATE port_ranges SET start = 65535 WHERE start = 65536;");
+
+  /* Warn about feed resources in the trash. */
+  if (sql_int ("SELECT EXISTS (SELECT * FROM port_lists_trash"
+               "               WHERE predefined = 1);"))
+    {
+      g_warning ("%s: There are feed port lists in the trash."
+                 " These will be excluded from the sync.",
+                 __func__);
+    }
 }
