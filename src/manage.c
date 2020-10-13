@@ -5346,25 +5346,6 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
             xml_string_append (nvt_tags, "impact=%s",
                                nvt_iterator_impact (nvts));
         }
-      if (nvt_iterator_solution (nvts) && nvt_iterator_solution (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|solution=%s",
-                                nvt_iterator_solution (nvts));
-          else
-            xml_string_append (nvt_tags, "solution=%s",
-                               nvt_iterator_solution (nvts));
-        }
-      if (nvt_iterator_solution_type (nvts)
-          && nvt_iterator_solution_type (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|solution_type=%s",
-                               nvt_iterator_solution_type (nvts));
-          else
-            xml_string_append (nvt_tags, "solution_type=%s",
-                               nvt_iterator_solution_type (nvts));
-        }
       if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
         {
           if (nvt_tags->str)
