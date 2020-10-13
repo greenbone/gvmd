@@ -355,7 +355,7 @@ insert_nvt (const nvti_t *nvti)
                                  vtseverity_value (severity) : "");
 
       sql ("INSERT into vt_severities (vt_oid, type, origin, date, score, value)"
-           " VALUES ('%s', '%s', '%s', '%i', '%i', '%s');",
+           " VALUES ('%s', '%s', '%s', %i, %i, '%s');",
            nvti_oid (nvti), vtseverity_type (severity),
            quoted_origin, vtseverity_date (severity),
            vtseverity_score (severity), quoted_value);
