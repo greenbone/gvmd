@@ -4818,4 +4818,13 @@ check_db_configs ()
 
   if (sync_configs_with_feed ())
     g_warning ("%s: Failed to sync configs with feed", __func__);
+
+  /* Warn about feed resources in the trash. */
+  if (sql_int ("SELECT EXISTS (SELECT * FROM configs_trash"
+               "               WHERE predefined = 1);"))
+    {
+      g_warning ("%s: There are feed configs/policies in the trash."
+                 " These will be excluded from the sync.",
+                 __func__);
+    }
 }
