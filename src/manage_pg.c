@@ -2828,6 +2828,8 @@ create_tables ()
   sql ("SELECT create_index ('vt_refs_by_vt_oid',"
        "                     'vt_refs', 'vt_oid');");
 
+  sql ("SELECT create_index ('vt_severities_by_vt_oid',"
+       "                     'vt_severities', 'vt_oid');");
 
 #if 0
   /* TODO The value column can be bigger than 8191, the maximum size that
