@@ -95,6 +95,7 @@
    { "impact", NULL, KEYWORD_TYPE_STRING },                                 \
    { "detection", NULL, KEYWORD_TYPE_STRING },                              \
    { "solution_method", NULL, KEYWORD_TYPE_STRING },                        \
+   { "score", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 

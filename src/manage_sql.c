@@ -21577,7 +21577,11 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.tag",                                                             \
       NULL,                                                                   \
-      KEYWORD_TYPE_STRING },
+      KEYWORD_TYPE_STRING },                                                  \
+    { "nvts.score",                                                           \
+      "score",                                                                \
+      KEYWORD_TYPE_INTEGER },
+    /* ^ 45 = 35 */
 
 /**
  * @brief Result iterator columns.
@@ -22320,6 +22324,20 @@ xml_append_nvt_refs (GString *xml, const char *oid, int *first)
  * @return The tags of the NVT that produced the result, or NULL on error.
  */
 DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
+
+/**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+result_iterator_nvt_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+}
 
 /**
  * @brief Get the original type from a result iterator.

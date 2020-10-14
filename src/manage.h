@@ -1384,6 +1384,9 @@ result_iterator_nvt_cvss_base (iterator_t *);
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
+int
+result_iterator_nvt_score (iterator_t *);
+
 const char*
 result_iterator_descr (iterator_t*);
 
