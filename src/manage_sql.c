@@ -22309,174 +22309,6 @@ DEF_ACCESS (result_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (result_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
- * @brief Get the NVT name from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the NVT that produced the result, or NULL on error.
- */
-const char*
-result_iterator_nvt_name (iterator_t *iterator)
-{
-  return get_iterator_name (iterator);
-}
-
-/**
- * @brief Get the NVT summary from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The summary of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
-
-/**
- * @brief Get the NVT insight from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The insight of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
-
-/**
- * @brief Get the NVT affected from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The affected of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
-
-/**
- * @brief Get the NVT impact from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Impact text of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
-
-/**
- * @brief Get the NVT solution from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The solution of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 31);
-
-/**
- * @brief Get the NVT solution_type from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The solution_type of the NVT that produced the result,
- *         or NULL on error.
- */
-const char*
-result_iterator_nvt_solution_type (iterator_t *iterator)
-{
-  return result_iterator_solution_type (iterator);
-}
-
-/**
- * @brief Get the NVT solution_method from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The solution_method of the NVT that produced the result,
- *         or NULL on error.
- */
-const char*
-result_iterator_nvt_solution_method (iterator_t *iterator)
-{
-  /* When we used a cache this was never added to the cache. */
-  return NULL;
-}
-
-/**
- * @brief Get the NVT detection from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The detection of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
-
-/**
- * @brief Get the NVT family from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The family of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
-
-/**
- * @brief Get the NVT CVSS base value from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVSS base of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_cvss_base, GET_ITERATOR_COLUMN_COUNT + 8);
-
-/**
- * @brief Append an NVT's references to an XML string buffer.
- *
- * @param[in]  xml       The buffer where to append to.
- * @param[in]  oid       The oid of the nvti object from where to collect the refs.
- * @param[in]  first     Marker for first element.
- */
-void
-xml_append_nvt_refs (GString *xml, const char *oid, int *first)
-{
-  nvti_t *nvti = lookup_nvti (oid);
-  int i;
-
-  if (!nvti)
-    return;
-
-  for (i = 0; i < nvti_vtref_len (nvti); i++)
-    {
-      vtref_t *ref;
-
-      if (first && *first)
-        {
-          xml_string_append (xml, "<refs>");
-          *first = 0;
-        }
-
-      ref = nvti_vtref (nvti, i);
-      xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
-    }
-}
-
-/**
- * @brief Get the NVT tags from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The tags of the NVT that produced the result, or NULL on error.
- */
-DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
-
-/**
- * @brief Get an iterator column value.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or -1 if iteration is complete.
- */
-int
-result_iterator_nvt_score (iterator_t *iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
-}
-
-/**
  * @brief Get the original type from a result iterator.
  *
  * This is the column 'type'.
@@ -22546,6 +22378,15 @@ result_iterator_report (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the NVT CVSS base value from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The CVSS base of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_cvss_base, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
  * @brief Get the NVT version used during the scan from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -22590,6 +22431,35 @@ result_iterator_original_severity (iterator_t *iterator)
 }
 
 /**
+ * @brief Get the original severity/threat level from a result iterator.
+ *
+ * This is the original level without overrides.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The original threat level of the result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_original_level (iterator_t *iterator)
+{
+  double severity;
+  const char* ret;
+
+  if (iterator->done)
+    return NULL;
+
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 10))
+    return NULL;
+
+  /* severity */
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+
+  ret = severity_to_level (severity, 0);
+  return ret ? ret : "";
+}
+
+/**
  * @brief Get the severity from a result iterator.
  *
  * This is the the overridden severity.
@@ -22629,35 +22499,6 @@ result_iterator_severity_double (iterator_t *iterator)
     return 0.0;
 
   return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
-}
-
-/**
- * @brief Get the original severity/threat level from a result iterator.
- *
- * This is the original level without overrides.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The original threat level of the result.  Caller must only use before
- *         calling cleanup_iterator.
- */
-const char*
-result_iterator_original_level (iterator_t *iterator)
-{
-  double severity;
-  const char* ret;
-
-  if (iterator->done)
-    return NULL;
-
-  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 10))
-    return NULL;
-
-  /* severity */
-  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
-
-  ret = severity_to_level (severity, 0);
-  return ret ? ret : "";
 }
 
 /**
@@ -22792,6 +22633,92 @@ result_iterator_may_have_tickets (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the NVT summary from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The summary of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
+
+/**
+ * @brief Get the NVT insight from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The insight of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
+
+/**
+ * @brief Get the NVT affected from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The affected of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
+
+/**
+ * @brief Get the NVT impact from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Impact text of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
+
+/**
+ * @brief Get the NVT solution from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 31);
+
+/**
+ * @brief Get the NVT detection from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The detection of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
+
+/**
+ * @brief Get the NVT family from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The family of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
+
+/**
+ * @brief Get the NVT tags from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The tags of the NVT that produced the result, or NULL on error.
+ */
+DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
+
+/**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+result_iterator_nvt_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+}
+
+/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -22817,6 +22744,79 @@ result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+}
+
+/**
+ * @brief Get the NVT name from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the NVT that produced the result, or NULL on error.
+ */
+const char*
+result_iterator_nvt_name (iterator_t *iterator)
+{
+  return get_iterator_name (iterator);
+}
+
+/**
+ * @brief Get the NVT solution_type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution_type of the NVT that produced the result,
+ *         or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution_type (iterator_t *iterator)
+{
+  return result_iterator_solution_type (iterator);
+}
+
+/**
+ * @brief Get the NVT solution_method from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution_method of the NVT that produced the result,
+ *         or NULL on error.
+ */
+const char*
+result_iterator_nvt_solution_method (iterator_t *iterator)
+{
+  /* When we used a cache this was never added to the cache. */
+  return NULL;
+}
+
+/**
+ * @brief Append an NVT's references to an XML string buffer.
+ *
+ * @param[in]  xml       The buffer where to append to.
+ * @param[in]  oid       The oid of the nvti object from where to collect the refs.
+ * @param[in]  first     Marker for first element.
+ */
+void
+xml_append_nvt_refs (GString *xml, const char *oid, int *first)
+{
+  nvti_t *nvti = lookup_nvti (oid);
+  int i;
+
+  if (!nvti)
+    return;
+
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
+    {
+      vtref_t *ref;
+
+      if (first && *first)
+        {
+          xml_string_append (xml, "<refs>");
+          *first = 0;
+        }
+
+      ref = nvti_vtref (nvti, i);
+      xml_string_append (xml, "<ref type=\"%s\" id=\"%s\"/>", vtref_type (ref), vtref_id (ref));
+    }
 }
 
 /**
