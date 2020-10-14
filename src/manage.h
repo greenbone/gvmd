@@ -3134,6 +3134,9 @@ cve_info_count (const get_data_t *get);
 gchar *
 cve_cvss_base (const gchar *);
 
+int
+cve_score (const gchar *);
+
 /* OVAL definitions */
 int
 init_ovaldef_info_iterator (iterator_t*, get_data_t*, const char*);
@@ -3167,6 +3170,9 @@ ovaldef_info_iterator_max_cvss (iterator_t*);
 
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
+
+int
+ovaldef_info_iterator_score (iterator_t *);
 
 char *
 ovaldef_severity (const char *);

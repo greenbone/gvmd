@@ -667,6 +667,26 @@ cve_cvss_base (const gchar *cve)
 }
 
 /**
+ * @brief Get the score from a CVE.
+ *
+ * @param[in]  cve  CVE.
+ *
+ * @return Severity score of CVE.
+ */
+int
+cve_score (const gchar *cve)
+{
+  gchar *quoted_cve;
+  int ret;
+
+  quoted_cve = sql_quote (cve);
+  ret = sql_int ("SELECT (cvss * 10)::integer FROM cves WHERE name = '%s'",
+                 quoted_cve);
+  g_free (quoted_cve);
+  return ret;
+}
+
+/**
  * @brief Count number of cve.
  *
  * @param[in]  get  GET params.
@@ -1012,6 +1032,20 @@ DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (ovaldef_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
+ * @brief Get column value from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Column value, or -1 if iteration is complete.
+ */
+int
+ovaldef_info_iterator_score (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+}
 
 /**
  * @brief Get the short file name for an OVALDEF.

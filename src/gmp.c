@@ -9076,19 +9076,25 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
     {
       if (g_str_has_prefix (oid, "CVE-"))
         {
+          int score;
           gchar *cvss_base;
+
           cvss_base = cve_cvss_base (oid);
+          score = cve_score (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>cve</type>"
                                     "<name>%s</name>"
                                     "<cvss_base>%s</cvss_base>"
+                                    "<severities score=\"%i\">"
+                                    "</severities>"
                                     "<cpe id='%s'/>"
                                     "<cve>%s</cve>"
                                     "</nvt>",
                                     oid,
                                     oid,
                                     cvss_base,
+                                    score,
                                     result_iterator_port (results),
                                     oid);
           g_free (cvss_base);
@@ -9116,10 +9122,13 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family/>"
                                     "<cvss_base>%s</cvss_base>"
+                                    "<severities score=\"%i\">"
+                                    "</severities>"
                                     "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
                                     ovaldef_info_iterator_max_cvss (&iterator),
+                                    ovaldef_info_iterator_score (&iterator),
                                     ovaldef_info_iterator_description (&iterator));
           g_free (get.id);
           cleanup_iterator (&iterator);
