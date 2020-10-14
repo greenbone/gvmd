@@ -21427,7 +21427,7 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator columns.
  */
-#define BASE_RESULT_ITERATOR_COLUMNS                                          \
+#define PRE_BASE_RESULT_ITERATOR_COLUMNS(new_severity_sql)                    \
     { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
     /* ^ 0 */                                                                 \
     { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
@@ -21454,12 +21454,7 @@ where_qod (int min_qod)
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
     { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
-    { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
-      "                  WHERE result_new_severities.result = results.id"     \
-      "                  AND result_new_severities.user = opts.user_id"       \
-      "                  AND result_new_severities.override = opts.override"  \
-      "                  AND result_new_severities.dynamic = opts.dynamic"    \
-      "                  LIMIT 1))",                                          \
+    { "severity_to_type (" new_severity_sql ")",                              \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
@@ -21471,12 +21466,7 @@ where_qod (int min_qod)
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
     /* ^ 20 = 10 */                                                           \
-    { "(SELECT new_severity FROM result_new_severities"                       \
-      " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user = opts.user_id"                        \
-      " AND result_new_severities.override = opts.override"                   \
-      " AND result_new_severities.dynamic = opts.dynamic"                     \
-      " LIMIT 1)",                                                            \
+    { new_severity_sql,                                                       \
       "severity",                                                             \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvts.name",                                                            \
@@ -21586,9 +21576,63 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator columns.
  */
+#define BASE_RESULT_ITERATOR_COLUMNS                                          \
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("results.severity")
+
+/**
+ * @brief Result iterator columns.
+ */
+#define BASE_RESULT_ITERATOR_COLUMNS_D                                        \
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("current_severity (results.severity,"      \
+                                   "                  results.nvt)")
+
+/**
+ * @brief Result iterator columns.
+ */
+#define BASE_RESULT_ITERATOR_COLUMNS_OD                                       \
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("(SELECT new_severity"                     \
+      " FROM result_new_severities"                                           \
+      " WHERE result_new_severities.result = results.id"                      \
+      " AND result_new_severities.user = opts.user_id"                        \
+      " AND result_new_severities.dynamic = opts.dynamic"                     \
+      " LIMIT 1)")
+
+/**
+ * @brief Result iterator columns.
+ */
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS_D                                             \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_D                                            \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS_OD                                            \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21604,6 +21648,36 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_D_NO_CERT                                     \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_D                                            \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define RESULT_ITERATOR_COLUMNS_OD_NO_CERT                                    \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21670,6 +21744,37 @@ result_iterator_opts_table (int override, int dynamic)
 }
 
 /**
+ * @brief Get new severity clause.
+ *
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  dynamic_severity Whether to use dynamic severity.
+ *
+ * @return Newly allocated clause.
+ */
+static gchar*
+new_severity_clause (int apply_overrides, int dynamic_severity)
+{
+  if (apply_overrides)
+    /* Overrides, maybe dynamic. */
+    return g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
+                            " WHERE result_new_severities.result = results.id"
+                            " AND result_new_severities.user"
+                            "     = (SELECT id FROM users WHERE uuid = '%s')"
+                            " AND dynamic = %d"
+                            " LIMIT 1)",
+                            current_credentials.uuid,
+                            dynamic_severity);
+
+  if (dynamic_severity)
+    /* Dynamic, no overrides. */
+    return g_strdup ("current_severity (results.severity,"
+                     "                  results.nvt)");
+
+  /* No dynamic, no overrides. */
+  return g_strdup ("results.severity");
+}
+
+/**
  * @brief Get extra_where string for a result iterator or count.
  *
  * @param[in]  trash            Whether to get results from trashcan.
@@ -21701,17 +21806,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  new_severity_sql
-    = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                       " WHERE result_new_severities.result = results.id"
-                       " AND result_new_severities.user"
-                       "     = (SELECT id FROM users WHERE uuid = '%s')"
-                       " AND override = %d"
-                       " AND dynamic = %d"
-                       " LIMIT 1)",
-                       current_credentials.uuid,
-                       apply_overrides,
-                       dynamic_severity);
+  new_severity_sql = new_severity_clause (apply_overrides, dynamic_severity);
 
   // Build filter clauses
 
@@ -21802,15 +21897,21 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_array_set
    (filterable_columns,
     "type",
-    g_strdup_printf ("severity_to_type"
-                     " ((SELECT new_severity FROM result_new_severities"
-                     "   WHERE result_new_severities.result = results.id"
-                     "   AND result_new_severities.user = opts.user_id"
-                     "   AND result_new_severities.override = %i"
-                     "   AND result_new_severities.dynamic = %i"
-                     "   LIMIT 1))",
-                     apply_overrides,
-                     dynamic_severity));
+    apply_overrides
+     /* Overrides, maybe dynamic. */
+     ? g_strdup_printf ("severity_to_type"
+                        " ((SELECT new_severity FROM result_new_severities"
+                        "   WHERE result_new_severities.result = results.id"
+                        "   AND result_new_severities.user = opts.user_id"
+                        "   AND result_new_severities.dynamic = %i"
+                        "   LIMIT 1))",
+                        dynamic_severity)
+     : (dynamic_severity
+         /* Dynamic, no overrides. */
+         ? g_strdup ("current_severity (results.severity,"
+                     "                  results.nvt)")
+         /* No dynamic, no overrides. */
+         : g_strdup ("results.severity")));
 
   if (dynamic_severity)
     {
@@ -22006,10 +22107,15 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns_dynamic[] = RESULT_ITERATOR_COLUMNS_D;
+  static column_t columns_overrides_dynamic[] = RESULT_ITERATOR_COLUMNS_OD;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t columns_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_D_NO_CERT;
+  static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
   int apply_overrides, dynamic_severity;
+  column_t *actual_columns;
 
   if (report == -1)
     {
@@ -22029,6 +22135,37 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
+
+  if (manage_cert_loaded ())
+    {
+      if (apply_overrides)
+        /* Overrides, maybe dynamic. */
+        actual_columns = columns_overrides_dynamic;
+      else
+        {
+          if (dynamic_severity)
+            /* Dynamic, no overrides. */
+            actual_columns = columns_dynamic;
+          else
+            /* No dynamic, no overrides. */
+            actual_columns = columns;
+        }
+    }
+  else
+    {
+      if (apply_overrides)
+        /* Overrides, maybe dynamic. */
+        actual_columns = columns_overrides_dynamic_no_cert;
+      else
+        {
+          if (dynamic_severity)
+            /* Dynamic, no overrides. */
+            actual_columns = columns_dynamic_no_cert;
+          else
+            /* No dynamic, no overrides. */
+            actual_columns = columns_no_cert;
+        }
+    }
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
@@ -22051,7 +22188,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             "result",
                             get,
                             /* SELECT columns. */
-                            manage_cert_loaded () ? columns : columns_no_cert,
+                            actual_columns,
                             NULL,
                             /* Filterable columns not in SELECT columns. */
                             NULL,
@@ -46817,7 +46954,7 @@ void
 hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
 {
   gchar *new_severity_sql;
-  int overrides, min_qod;
+  int dynamic_severity, overrides, min_qod;
 
   if (overrides_arg)
     overrides = *overrides_arg;
@@ -46855,17 +46992,8 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
         }
     }
 
-  new_severity_sql
-    = g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                       " WHERE result_new_severities.result = results.id"
-                       " AND result_new_severities.user"
-                       "     = (SELECT id FROM users WHERE uuid = '%s')"
-                       " AND override = %d"
-                       " AND dynamic = %d"
-                       " LIMIT 1)",
-                       current_credentials.uuid,
-                       overrides,
-                       setting_dynamic_severity_int ());
+  dynamic_severity = setting_dynamic_severity_int ();
+  new_severity_sql = new_severity_clause (overrides, dynamic_severity);
 
   sql ("INSERT INTO host_max_severities"
        " (host, severity, source_type, source_id, creation_time)"
