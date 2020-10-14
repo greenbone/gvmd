@@ -2499,6 +2499,15 @@ create_tables ()
        "  ref_id text NOT NULL,"
        "  ref_text text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS vt_severities"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text NOT NULL,"
+       "  type text NOT NULL,"
+       "  origin text,"
+       "  date integer,"
+       "  score integer,"
+       "  value text);");
+
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
@@ -2810,6 +2819,8 @@ create_tables ()
   sql ("SELECT create_index ('vt_refs_by_vt_oid',"
        "                     'vt_refs', 'vt_oid');");
 
+  sql ("SELECT create_index ('vt_severities_by_vt_oid',"
+       "                     'vt_severities', 'vt_oid');");
 
 #if 0
   /* TODO The value column can be bigger than 8191, the maximum size that

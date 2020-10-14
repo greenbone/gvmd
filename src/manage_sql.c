@@ -21278,12 +21278,6 @@ where_qod (int min_qod)
 }
 
 /**
- * @brief SQL for retrieving CVSS base.
- */
-#define CVSS_BASE_SQL                                            \
-  "(SELECT cvss_base FROM nvts WHERE nvts.oid = results.nvt)"
-
-/**
  * @brief Filter columns for result iterator.
  */
 #define RESULT_ITERATOR_FILTER_COLUMNS                                        \
