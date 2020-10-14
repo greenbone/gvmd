@@ -21311,6 +21311,7 @@ where_qod (int min_qod)
       "_owner",                                                               \
       KEYWORD_TYPE_STRING },                                                  \
     { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
+    /* Result specific columns. */                                            \
     { "host", NULL, KEYWORD_TYPE_STRING },                                    \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
@@ -21428,6 +21429,7 @@ where_qod (int min_qod)
  */
 #define BASE_RESULT_ITERATOR_COLUMNS                                          \
     { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    /* ^ 0 */                                                                 \
     { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
     { "nvts.name",                                                            \
       "name",                                                                 \
@@ -21445,7 +21447,10 @@ where_qod (int min_qod)
       "_owner",                                                               \
       KEYWORD_TYPE_STRING },                                                  \
     { "results.owner", NULL, KEYWORD_TYPE_INTEGER },                          \
+    /* ^ 9 */                                                                 \
+    /* Result specific columns. */                                            \
     { "host", NULL, KEYWORD_TYPE_STRING },                                    \
+    /* ^ 10 = 0 */                                                            \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
     { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
@@ -21465,6 +21470,7 @@ where_qod (int min_qod)
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
+    /* ^ 20 = 10 */                                                           \
     { "(SELECT new_severity FROM result_new_severities"                       \
       " WHERE result_new_severities.result = results.id"                      \
       " AND result_new_severities.user = opts.user_id"                        \
@@ -21501,6 +21507,7 @@ where_qod (int min_qod)
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
+    /* ^ 30 = 20 */                                                           \
     { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
@@ -21542,6 +21549,7 @@ where_qod (int min_qod)
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    /* ^ 35 = 25 */                                                           \
     { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
       "task",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -21557,6 +21565,7 @@ where_qod (int min_qod)
     { "nvts.impact",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
+    /* ^ 40 = 30 */                                                           \
     { "nvts.solution",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
