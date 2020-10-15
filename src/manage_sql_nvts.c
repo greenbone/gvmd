@@ -1729,6 +1729,76 @@ check_preference_names (int trash, time_t modification_time)
 }
 
 /**
+ * @brief Initialise an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  oid       OID of NVT.
+ */
+void
+init_nvt_severity_iterator (iterator_t* iterator, const char *oid)
+{
+  gchar *quoted_oid;
+  quoted_oid = sql_quote (oid ? oid : "");
+
+  init_iterator (iterator,
+                 "SELECT type, origin, iso_time(date), score, value"
+                 " FROM vt_severities"
+                 " WHERE vt_oid = '%s'",
+                 quoted_oid);
+
+  g_free (quoted_oid);
+}
+
+/**
+ * @brief Gets the type from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The type of the severity.
+ */
+DEF_ACCESS (nvt_severity_iterator_type, 0)
+
+/**
+ * @brief Gets the origin from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The origin of the severity.
+ */
+DEF_ACCESS (nvt_severity_iterator_origin, 1)
+
+/**
+ * @brief Gets the date from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The date of the severity in ISO time format.
+ */
+DEF_ACCESS (nvt_severity_iterator_date, 2)
+
+/**
+ * @brief Gets the score from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The score of the severity.
+ */
+int
+nvt_severity_iterator_score (iterator_t *iterator)
+{
+  return iterator_int (iterator, 3);
+}
+
+/**
+ * @brief Gets the value from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The value of the severity in ISO time format.
+ */
+DEF_ACCESS (nvt_severity_iterator_value, 4)
+
+/**
  * @brief Update VTs via OSP.
  *
  * @param[in]  update_socket         Socket to use to contact scanner.

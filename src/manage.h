@@ -1945,6 +1945,25 @@ task_role_iterator_name (iterator_t*);
 const char*
 task_role_iterator_uuid (iterator_t*);
 
+/* NVT severities */
+void
+init_nvt_severity_iterator (iterator_t *, const char *);
+
+const char *
+nvt_severity_iterator_type (iterator_t *);
+
+const char *
+nvt_severity_iterator_origin (iterator_t *);
+
+const char *
+nvt_severity_iterator_date (iterator_t *);
+
+int
+nvt_severity_iterator_score (iterator_t *);
+
+const char *
+nvt_severity_iterator_value (iterator_t *);
+
 
 /* Credentials. */
 
