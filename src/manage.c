@@ -5294,7 +5294,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
     {
       int tag_count;
       GString *refs_str, *tags_str, *buffer, *nvt_tags;
-      iterator_t cert_refs_iterator, tags;
+      iterator_t cert_refs_iterator, tags, severities;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
       char *default_timeout = nvt_default_timeout (oid);
 
@@ -5444,17 +5444,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               "<category>%d</category>"
                               "<family>%s</family>"
                               "<cvss_base>%s</cvss_base>"
-                              "<severities score=\"%i\">"
-                              "</severities>"
-                              "<qod>"
-                              "<value>%s</value>"
-                              "<type>%s</type>"
-                              "</qod>"
-                              "<refs>%s</refs>"
-                              "<tags>%s</tags>"
-                              "<preference_count>%i</preference_count>"
-                              "<timeout>%s</timeout>"
-                              "<default_timeout>%s</default_timeout>",
+                              "<severities score=\"%i\">",
                               oid,
                               name_text,
                               get_iterator_creation_time (nvts)
@@ -5469,7 +5459,38 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_cvss_base (nvts)
                                ? nvt_iterator_cvss_base (nvts)
                                : "",
-                              nvt_iterator_score (nvts),
+                              nvt_iterator_score (nvts));
+
+      init_nvt_severity_iterator (&severities, oid);
+      while (next (&severities))
+        {
+          buffer_xml_append_printf
+              (buffer,
+               "<severity type=\"%s\">"
+               "<origin>%s</origin>"
+               "<date>%s</date>"
+               "<score>%i</score>"
+               "<value>%s</value>"
+               "</severity>",
+               nvt_severity_iterator_type (&severities),
+               nvt_severity_iterator_origin (&severities),
+               nvt_severity_iterator_date (&severities),
+               nvt_severity_iterator_score (&severities),
+               nvt_severity_iterator_value (&severities));
+        }
+      cleanup_iterator (&severities);
+
+      g_string_append_printf (buffer,
+                              "</severities>"
+                              "<qod>"
+                              "<value>%s</value>"
+                              "<type>%s</type>"
+                              "</qod>"
+                              "<refs>%s</refs>"
+                              "<tags>%s</tags>"
+                              "<preference_count>%i</preference_count>"
+                              "<timeout>%s</timeout>"
+                              "<default_timeout>%s</default_timeout>",
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
                               refs_str->str,
