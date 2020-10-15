@@ -1765,7 +1765,7 @@ DEF_ACCESS (nvt_severity_iterator_type, 0)
  * 
  * @return The origin of the severity.
  */
-DEF_ACCESS (nvt_severity_iterator_origin, 1)
+DEF_ACCESS (nvt_severity_iterator_origin, 1);
 
 /**
  * @brief Gets the date from an NVT severity iterator.
@@ -1774,7 +1774,7 @@ DEF_ACCESS (nvt_severity_iterator_origin, 1)
  * 
  * @return The date of the severity in ISO time format.
  */
-DEF_ACCESS (nvt_severity_iterator_date, 2)
+DEF_ACCESS (nvt_severity_iterator_date, 2);
 
 /**
  * @brief Gets the score from an NVT severity iterator.
@@ -1796,7 +1796,7 @@ nvt_severity_iterator_score (iterator_t *iterator)
  * 
  * @return The value of the severity in ISO time format.
  */
-DEF_ACCESS (nvt_severity_iterator_value, 4)
+DEF_ACCESS (nvt_severity_iterator_value, 4);
 
 /**
  * @brief Update VTs via OSP.
