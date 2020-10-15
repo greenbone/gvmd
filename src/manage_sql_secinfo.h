@@ -154,6 +154,12 @@
    { "max_cvss", NULL, KEYWORD_TYPE_DOUBLE },                    \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
    { "max_cvss", "severity", KEYWORD_TYPE_DOUBLE },              \
+   { "CASE WHEN max_cvss IS NULL"                                \
+     "     THEN -1"                                              \
+     "     ELSE (max_cvss * 10)::integer"                        \
+     "     END",                                                 \
+     "score",                                                    \
+     KEYWORD_TYPE_INTEGER },                                     \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 

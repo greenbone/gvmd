@@ -5444,6 +5444,8 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               "<category>%d</category>"
                               "<family>%s</family>"
                               "<cvss_base>%s</cvss_base>"
+                              "<severities score=\"%i\">"
+                              "</severities>"
                               "<qod>"
                               "<value>%s</value>"
                               "<type>%s</type>"
@@ -5467,6 +5469,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_cvss_base (nvts)
                                ? nvt_iterator_cvss_base (nvts)
                                : "",
+                              nvt_iterator_score (nvts),
                               nvt_iterator_qod (nvts),
                               nvt_iterator_qod_type (nvts),
                               refs_str->str,

@@ -268,7 +268,7 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
-  int qod, i;
+  int qod, i, highest;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -343,6 +343,8 @@ insert_nvt (const nvti_t *nvti)
 
   sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
 
+  highest = 0;
+
   for (i = 0; i < nvti_vtseverities_len (nvti); i++)
     {
       vtseverity_t *severity;
@@ -359,10 +361,16 @@ insert_nvt (const nvti_t *nvti)
            nvti_oid (nvti), vtseverity_type (severity),
            quoted_origin, vtseverity_date (severity),
            vtseverity_score (severity), quoted_value);
+      if (vtseverity_score (severity) > highest)
+        highest = vtseverity_score (severity);
 
       g_free (quoted_origin);
       g_free (quoted_value);
     }
+
+  sql ("UPDATE nvts SET score = %i WHERE oid = '%s';",
+       highest,
+       nvti_oid (nvti));
 
   g_free (quoted_name);
   g_free (quoted_summary);
@@ -993,6 +1001,22 @@ DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
  *         cleanup_iterator.
  */
 DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
+
+/**
+ * @brief Get the score from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Score, or -1 if iteration is complete.
+ */
+int
+nvt_iterator_score (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
 
 /**
  * @brief Get the default timeout of an NVT.
