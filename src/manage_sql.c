@@ -16361,6 +16361,7 @@ init_manage_internal (GSList *log_config,
   gvmd_db_conn_info.name = database->name ? g_strdup (database->name) : NULL;
   gvmd_db_conn_info.host = database->host ? g_strdup (database->host) : NULL;
   gvmd_db_conn_info.port = database->port ? g_strdup (database->port) : NULL;
+  gvmd_db_conn_info.user = database->user ? g_strdup (database->user) : NULL;
 
   if (fork_connection)
     manage_fork_connection = fork_connection;

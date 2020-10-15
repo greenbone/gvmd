@@ -219,7 +219,7 @@ static gnutls_certificate_credentials_t client_credentials;
 /**
  * @brief Database connection info.
  */
-static db_conn_info_t database = { NULL, NULL, NULL };
+static db_conn_info_t database = { NULL, NULL, NULL, NULL };
 
 /**
  * @brief Is this process parent or child?
@@ -1764,6 +1764,10 @@ gvmd (int argc, char** argv)
           &(database.port),
           "Use <port> as database port or socket extension for PostgreSQL.",
           "<port>" },
+        { "db-user", '\0', 0, G_OPTION_ARG_STRING,
+          &(database.user),
+          "Use <user> as database user.",
+          "<user>" },
         { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
           G_OPTION_ARG_NONE,
           &decrypt_all_credentials,
