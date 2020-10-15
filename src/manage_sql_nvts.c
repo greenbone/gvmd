@@ -30,6 +30,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -1373,13 +1374,17 @@ nvti_from_vt (entity_t vt)
             }
           else
             {
+              double cvss_base_dbl;
               gchar * cvss_base;
+
+              cvss_base_dbl
+                = get_cvss_score_from_base_metrics (entity_text (value));
 
               nvti_add_vtseverity (nvti,
                 vtseverity_new (severity_type,
                                 NULL /* origin */,
                                 nvti_modification_time (nvti),
-                                get_cvss_score_from_base_metrics (entity_text (value)) * 10,
+                                round (cvss_base_dbl * 10.0),
                                 entity_text (value)));
 
               nvti_add_tag (nvti, "cvss_base_vector", entity_text (value));
