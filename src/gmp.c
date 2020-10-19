@@ -9172,6 +9172,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
           GString *tags = g_string_new (result_iterator_nvt_tag (results));
           int first;
+          iterator_t severities;
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
@@ -9250,14 +9251,35 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<severities score=\"%i\">"
-                                    "</severities>"
-                                    "<tags>%s</tags>",
+                                    "<severities score=\"%i\">",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_score (results),
+                                    result_iterator_nvt_score (results));
+
+          init_nvt_severity_iterator (&severities, oid);
+          while (next (&severities))
+            {
+              buffer_xml_append_printf
+                  (buffer,
+                   "<severity type=\"%s\">"
+                   "<origin>%s</origin>"
+                   "<date>%s</date>"
+                   "<score>%i</score>"
+                   "<value>%s</value>"
+                   "</severity>",
+                   nvt_severity_iterator_type (&severities),
+                   nvt_severity_iterator_origin (&severities),
+                   nvt_severity_iterator_date (&severities),
+                   nvt_severity_iterator_score (&severities),
+                   nvt_severity_iterator_value (&severities));
+            }
+          cleanup_iterator (&severities);
+
+          buffer_xml_append_printf (buffer,
+                                    "</severities>"
+                                    "<tags>%s</tags>",
                                     tags->str ?: "");
 
           if (result_iterator_nvt_solution (results)

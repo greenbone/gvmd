@@ -547,6 +547,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>category</e>
       <e>family</e>
       <e>cvss_base</e>
+      <e>severities</e>
       <e>qod</e>
       <e>refs</e>
       <e>tags</e>
@@ -585,6 +586,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>cvss_base</name>
       <summary>CVSS base score of the vulnerability test</summary>
       <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>severities</name>
+      <summary>Severity information of the NVT</summary>
+      <pattern>
+        <attrib>
+          <name>score</name>
+          <type>integer</type>
+          <required>1</required>
+          <summary>Maximum severity score</summary>
+        </attrib>
+        <any><e>severity</e></any>
+      </pattern>
+      <ele>
+        <name>severity</name>
+        <summary>A single severity rating</summary>
+        <pattern>
+          <attrib>
+            <name>type</name>
+            <type>text</type>
+            <required>1</required>
+            <summary>Type of severity rating, e.g. cvss_base_v2</summary>
+          </attrib>
+          <e>origin</e>
+          <e>date</e>
+          <e>score</e>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>origin</name>
+          <summary>Origin of severity rating</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>date</name>
+          <summary>Date the severity was defined</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>score</name>
+          <summary>Numeric score ranging from 0 to 100</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Detailed rating value, e.g. a CVSS vector</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>qod</name>
@@ -12912,6 +12962,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <e>summary</e>
               <e>family</e>
               <e>cvss_base</e>
+              <e>severities</e>
               <e>qod</e>
               <e>refs</e>
               <e>tags</e>
@@ -13003,6 +13054,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cvss_base</name>
           <summary>CVSS base score of the NVT</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severities</name>
+          <summary>Severity information of the NVT</summary>
+          <pattern>
+            <attrib>
+              <name>score</name>
+              <type>integer</type>
+              <required>1</required>
+              <summary>Maximum severity score</summary>
+            </attrib>
+            <any><e>severity</e></any>
+          </pattern>
+          <ele>
+            <name>severity</name>
+            <summary>A single severity rating</summary>
+            <pattern>
+              <attrib>
+                <name>type</name>
+                <type>text</type>
+                <required>1</required>
+                <summary>Type of severity rating, e.g. cvss_base_v2</summary>
+              </attrib>
+              <e>origin</e>
+              <e>date</e>
+              <e>score</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>origin</name>
+              <summary>Origin of severity rating</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>date</name>
+              <summary>Date the severity was defined</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>score</name>
+              <summary>Numeric score ranging from 0 to 100</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Detailed rating value, e.g. a CVSS vector</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>qod</name>
