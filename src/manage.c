@@ -6199,7 +6199,7 @@ gvm_migrate_secinfo (int feed_type)
   lockfile_t lockfile;
   int ret;
 
-  if (feed_type != SCAP_FEED || feed_type != CERT_FEED)
+  if (feed_type != SCAP_FEED && feed_type != CERT_FEED)
     {
       g_warning ("%s: unsupported feed_type", __func__);
       return -1;
