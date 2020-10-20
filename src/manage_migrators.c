@@ -2459,6 +2459,40 @@ migrate_236_to_237 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 237 to version 238.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_237_to_238 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 237. */
+
+  if (manage_db_version () != 237)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table results also got a score column, for extended severities. */
+
+  sql ("ALTER TABLE results ADD column score integer;");
+  sql ("UPDATE results SET score = (severity::float * 10)::integer;");
+
+  /* Set the database version to 238. */
+
+  set_db_version (238);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2502,6 +2536,7 @@ static migrator_t database_migrators[] = {
   {235, migrate_234_to_235},
   {236, migrate_235_to_236},
   {237, migrate_236_to_237},
+  {238, migrate_237_to_238},
   /* End marker. */
   {-1, NULL}};
 
