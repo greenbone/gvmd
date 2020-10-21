@@ -39,6 +39,7 @@
 #include <fnmatch.h>
 #include <ftw.h>
 #include <glib/gstdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
@@ -2765,15 +2766,11 @@ static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
                        GHashTable *hashed_cpes, int *transaction_size)
 {
-  element_t published, summary, cvss, score, base_metrics;
-  element_t access_vector, access_complexity, authentication;
-  element_t confidentiality_impact, integrity_impact;
-  element_t availability_impact, list;
-  gchar *quoted_id, *quoted_summary;
-  gchar *quoted_access_vector, *quoted_access_complexity;
-  gchar *quoted_authentication, *quoted_confidentiality_impact;
-  gchar *quoted_integrity_impact, *quoted_availability_impact;
-  gchar *quoted_software, *id, *score_text;
+  gboolean cvss_is_v3;
+  element_t published, summary, cvss, score, base_metrics, cvss_vector, list;
+  int score_int;
+  gchar *quoted_id, *quoted_summary, *quoted_cvss_vector;
+  gchar *quoted_software, *id;
   GString *software;
   gchar *software_unescaped, *software_tilde;
   int time_modified, time_published;
@@ -2796,24 +2793,31 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
       return -1;
     }
 
-  cvss = element_child (entry, "vuln:cvss");
+  cvss = element_child (entry, "vuln:cvss3");
+  if (cvss == NULL)
+    {
+      cvss = element_child (entry, "vuln:cvss");
+      cvss_is_v3 = FALSE;
+    }
+  else
+     cvss_is_v3 = TRUE;
+  
   if (cvss == NULL)
     base_metrics = NULL;
   else
-    base_metrics = element_child (cvss, "cvss:base_metrics");
+    base_metrics = element_child (cvss,
+                                  cvss_is_v3 ? "cvss3:base_metrics"
+                                             : "cvss:base_metrics");
+
   if (base_metrics == NULL)
     {
       score = NULL;
-      access_vector = NULL;
-      access_complexity = NULL;
-      authentication = NULL;
-      confidentiality_impact = NULL;
-      integrity_impact = NULL;
-      availability_impact = NULL;
+      cvss_vector = NULL;
     }
   else
     {
-      score = element_child (base_metrics, "cvss:score");
+      score = element_child (base_metrics,
+                             cvss_is_v3 ? "cvss3:base-score" : "cvss:score");
       if (score == NULL)
         {
           g_warning ("%s: cvss:score missing", __func__);
@@ -2821,67 +2825,21 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           return -1;
         }
 
-      access_vector = element_child (base_metrics, "cvss:access-vector");
-      if (access_vector == NULL)
+      cvss_vector = element_child (base_metrics,
+                                   cvss_is_v3 ? "cvss3:vector-string"
+                                              : "cvss:vector-string");
+      if (cvss_vector == NULL)
         {
           g_warning ("%s: cvss:access-vector missing", __func__);
           g_free (id);
           return -1;
         }
-
-      access_complexity = element_child (base_metrics,
-                                        "cvss:access-complexity");
-      if (access_complexity == NULL)
-        {
-          g_warning ("%s: cvss:access-complexity missing",
-                     __func__);
-          g_free (id);
-          return -1;
-        }
-
-      authentication = element_child (base_metrics,
-                                     "cvss:authentication");
-      if (authentication == NULL)
-        {
-          g_warning ("%s: cvss:authentication missing",
-                     __func__);
-          g_free (id);
-          return -1;
-        }
-
-      confidentiality_impact = element_child
-                                (base_metrics,
-                                 "cvss:confidentiality-impact");
-      if (confidentiality_impact == NULL)
-        {
-          g_warning ("%s: cvss:confidentiality-impact missing",
-                     __func__);
-          g_free (id);
-          return -1;
-        }
-
-      integrity_impact = element_child
-                          (base_metrics,
-                           "cvss:integrity-impact");
-      if (integrity_impact == NULL)
-        {
-          g_warning ("%s: cvss:integrity-impact missing",
-                     __func__);
-          g_free (id);
-          return -1;
-        }
-
-      availability_impact = element_child
-                             (base_metrics,
-                              "cvss:availability-impact");
-      if (availability_impact == NULL)
-        {
-          g_warning ("%s: cvss:availability-impact missing",
-                     __func__);
-          g_free (id);
-          return -1;
-        }
     }
+
+  if (score == NULL)
+    score_int = 0;
+  else
+    score_int = round (atof (element_text (score)) * 10);
 
   summary = element_child (entry, "vuln:summary");
   if (summary == NULL)
@@ -2914,15 +2872,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   quoted_id = sql_quote (id);
   g_free (id);
   quoted_summary = sql_quote_element_text (summary);
-  quoted_access_vector = sql_quote_element_text (access_vector);
-  quoted_access_complexity = sql_quote_element_text
-                              (access_complexity);
-  quoted_authentication = sql_quote_element_text (authentication);
-  quoted_confidentiality_impact = sql_quote_element_text
-                                   (confidentiality_impact);
-  quoted_integrity_impact = sql_quote_element_text (integrity_impact);
-  quoted_availability_impact = sql_quote_element_text
-                                (availability_impact);
+  quoted_cvss_vector = sql_quote_element_text (cvss_vector);
   software_unescaped = g_uri_unescape_string (software->str, NULL);
   g_string_free (software, TRUE);
   software_tilde = string_replace (software_unescaped,
@@ -2932,53 +2882,33 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   g_free (software_tilde);
   time_modified = parse_iso_time_element_text (last_modified);
   time_published = parse_iso_time_element_text (published);
-  score_text = score ? element_text (score) : g_strdup ("NULL");
   cve = sql_int64_0
          ("INSERT INTO scap2.cves"
           " (uuid, name, creation_time, modification_time,"
-          "  cvss, description, vector, complexity,"
-          "  authentication, confidentiality_impact,"
-          "  integrity_impact, availability_impact, products)"
+          "  score, description, cvss_vector, products)"
           " VALUES"
-          " ('%s', '%s', %i, %i, %s, '%s', '%s', '%s', '%s',"
-          "  '%s', '%s', '%s', '%s')"
+          " ('%s', '%s', %i, %i,"
+          "  %i, '%s', '%s', '%s')"
           " ON CONFLICT (uuid) DO UPDATE"
           " SET name = EXCLUDED.name,"
           "     creation_time = EXCLUDED.creation_time,"
           "     modification_time = EXCLUDED.modification_time,"
-          "     cvss = EXCLUDED.cvss,"
+          "     score = EXCLUDED.score,"
           "     description = EXCLUDED.description,"
-          "     vector = EXCLUDED.vector,"
-          "     complexity = EXCLUDED.complexity,"
-          "     authentication = EXCLUDED.authentication,"
-          "     confidentiality_impact"
-          "     = EXCLUDED.confidentiality_impact,"
-          "     integrity_impact = EXCLUDED.integrity_impact,"
-          "     availability_impact = EXCLUDED.availability_impact,"
+          "     cvss_vector = EXCLUDED.cvss_vector,"
           "     products = EXCLUDED.products"
           " RETURNING scap2.cves.id;",
           quoted_id,
           quoted_id,
           time_published,
           time_modified,
-          score_text,
+          score_int,
           quoted_summary,
-          quoted_access_vector,
-          quoted_access_complexity,
-          quoted_authentication,
-          quoted_confidentiality_impact,
-          quoted_integrity_impact,
-          quoted_availability_impact,
+          quoted_cvss_vector,
           quoted_software);
   increment_transaction_size (transaction_size);
   g_free (quoted_summary);
-  g_free (quoted_access_vector);
-  g_free (quoted_access_complexity);
-  g_free (quoted_authentication);
-  g_free (quoted_confidentiality_impact);
-  g_free (quoted_integrity_impact);
-  g_free (quoted_availability_impact);
-  g_free (score_text);
+  g_free (quoted_cvss_vector);
 
   insert_cve_products (list, cve, time_published, time_modified,
                        hashed_cpes, transaction_size);
@@ -3600,9 +3530,9 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                    " (uuid, name, comment, creation_time,"
                    "  modification_time, version, deprecated, def_class,"
                    "  title, description, xml_file, status,"
-                   "  max_cvss, cve_refs)"
+                   "  max_score, cve_refs)"
                    " VALUES ('%s', '%s', '', %i, %i, %s, %i, '%s', '%s',"
-                   "         '%s', '%s', '%s', 0.0, %i)"
+                   "         '%s', '%s', '%s', 0, %i)"
                    " ON CONFLICT (uuid) DO UPDATE"
                    " SET name = EXCLUDED.name,"
                    "     comment = EXCLUDED.comment,"
@@ -3615,7 +3545,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                    "     description = EXCLUDED.description,"
                    "     xml_file = EXCLUDED.xml_file,"
                    "     status = EXCLUDED.status,"
-                   "     max_cvss = 0.0,"
+                   "     max_score = 0,"
                    "     cve_refs = EXCLUDED.cve_refs;",
                    quoted_id,
                    quoted_oval_id,
@@ -4439,13 +4369,13 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
     {
       g_info ("Updating Max CVSS for DFN-CERT");
       sql ("UPDATE cert.dfn_cert_advs"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
-           "                 WHERE name"
-           "                 IN (SELECT cve_name"
-           "                     FROM cert.dfn_cert_cves"
-           "                     WHERE adv_id = dfn_cert_advs.id)"
-           "                 AND cvss != 0.0);");
+           " SET max_score = (SELECT max (score)"
+           "                  FROM scap.cves"
+           "                  WHERE name"
+           "                  IN (SELECT cve_name"
+           "                      FROM cert.dfn_cert_cves"
+           "                      WHERE adv_id = dfn_cert_advs.id)"
+           "                  AND score != 0);");
 
       g_info ("Updating DFN-CERT CVSS max succeeded.");
     }
@@ -4470,13 +4400,13 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
     {
       g_info ("Updating Max CVSS for CERT-Bund");
       sql ("UPDATE cert.cert_bund_advs"
-           " SET max_cvss = (SELECT max (cvss)"
-           "                 FROM scap.cves"
-           "                 WHERE name"
-           "                       IN (SELECT cve_name"
-           "                           FROM cert.cert_bund_cves"
-           "                           WHERE adv_id = cert_bund_advs.id)"
-           "                 AND cvss != 0.0);");
+           " SET max_score = (SELECT max (score)"
+           "                  FROM scap.cves"
+           "                  WHERE name"
+           "                        IN (SELECT cve_name"
+           "                            FROM cert.cert_bund_cves"
+           "                            WHERE adv_id = cert_bund_advs.id)"
+           "                  AND score != 0);");
 
       g_info ("Updating CERT-Bund CVSS max succeeded.");
     }
@@ -4681,22 +4611,22 @@ update_scap_cvss ()
 
   g_info ("Updating CVSS scores and CVE counts for CPEs");
   sql ("UPDATE scap2.cpes"
-       " SET (max_cvss, cve_refs)"
+       " SET (max_score, cve_refs)"
        "     = (WITH affected_cves"
        "        AS (SELECT cve FROM scap2.affected_products"
        "            WHERE cpe=cpes.id)"
-       "        SELECT (SELECT max (cvss) FROM scap2.cves"
+       "        SELECT (SELECT max (score) FROM scap2.cves"
        "                WHERE id IN (SELECT cve FROM affected_cves)),"
        "               (SELECT count (*) FROM affected_cves));");
 
   g_info ("Updating CVSS scores for OVAL definitions");
   sql ("UPDATE scap2.ovaldefs"
-       " SET max_cvss = (SELECT max (cvss)"
-       "                 FROM scap2.cves"
-       "                 WHERE id IN (SELECT cve"
-       "                              FROM scap2.affected_ovaldefs"
-       "                              WHERE ovaldef=ovaldefs.id)"
-       "                 AND cvss != 0.0);");
+       " SET max_score = (SELECT max (score)"
+       "                  FROM scap2.cves"
+       "                  WHERE id IN (SELECT cve"
+       "                               FROM scap2.affected_ovaldefs"
+       "                               WHERE ovaldef=ovaldefs.id)"
+       "                  AND score != 0);");
 }
 
 /**
