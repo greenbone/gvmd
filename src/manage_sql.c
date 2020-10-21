@@ -21290,7 +21290,7 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", NULL }
+    "path", "score", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -21573,6 +21573,9 @@ where_qod (int min_qod)
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.score",                                                           \
+      "score",                                                                \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT (" new_severity_sql "::float * 10)::integer)",                 \
       "score",                                                                \
       KEYWORD_TYPE_INTEGER },
     /* ^ 45 = 35 */
@@ -22723,6 +22726,20 @@ result_iterator_nvt_score (iterator_t *iterator)
 }
 
 /**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+result_iterator_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+}
+
+/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -22733,7 +22750,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
@@ -22747,7 +22764,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
 }
 
 /**
