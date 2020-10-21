@@ -20816,7 +20816,7 @@ report_add_result (report_t report, result_t result)
    "task", "severity", "false_positive", "log", "low", "medium", "high",       \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
    "medium_per_host", "high_per_host", "duration", "duration_per_host",        \
-   NULL }
+   "score", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -20950,6 +20950,12 @@ report_add_result (report_t report, result_t result)
      " ELSE (end_time - start_time)"                                         \
      "        / report_result_host_count (id, opts.min_qod) END)",           \
      "duration_per_host",                                                    \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(report_severity (id, opts.override, opts.min_qod)::float * 10)"       \
+     "::integer",                                                            \
+     "score",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -21867,7 +21873,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[2];
+  column_t columns[3];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -22011,9 +22017,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[1].select = NULL;
-  columns[1].filter = NULL;
-  columns[1].type = KEYWORD_TYPE_UNKNOWN;
+  columns[1].select = g_strdup_printf ("(%s::float * 10)::integer",
+                                       columns[0].select);
+  columns[1].filter = "score";
+  columns[1].type = KEYWORD_TYPE_INTEGER;
+
+  columns[2].select = NULL;
+  columns[2].filter = NULL;
+  columns[2].type = KEYWORD_TYPE_UNKNOWN;
 
   extra_tables = result_iterator_opts_table (apply_overrides,
                                              dynamic_severity);
@@ -22086,6 +22097,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  extra_order,
                                  with_clauses,
                                  1);
+  g_free (columns[1].select);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
