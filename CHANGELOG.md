@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
 - Check db version before creating SQL functions [#1304](https://github.com/greenbone/gvmd/pull/1304)
 - Fix severity_in_level SQL function [#1312](https://github.com/greenbone/gvmd/pull/1312)
+- Fix and simplify SecInfo migration [#1331](https://github.com/greenbone/gvmd/pull/1331)
 
 ### Removed
 - Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)
