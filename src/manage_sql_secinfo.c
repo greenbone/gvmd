@@ -83,6 +83,12 @@ manage_db_init_indexes (const gchar *);
 int
 manage_db_add_constraints (const gchar *);
 
+static int
+sync_cert ();
+
+static int
+update_scap (gboolean);
+
 
 /* Helpers. */
 
@@ -4340,17 +4346,24 @@ secinfo_feed_version_status (const char *feed_type)
 int
 check_cert_db_version ()
 {
-  switch (manage_cert_db_version ())
+  int db_version = manage_cert_db_version ();
+
+  if (db_version < GVMD_CERT_DATABASE_VERSION)
     {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-       g_info ("Reinitialization of the database necessary");
-       return manage_db_reinit ("cert");
-       break;
+      int ret;
+      g_info ("Reinitialization of the CERT database necessary");
+
+      ret = manage_db_reinit ("cert");
+      if (ret)
+        return ret;
+
+      return sync_cert ();
+    }
+  else if (db_version > GVMD_CERT_DATABASE_VERSION)
+    {
+      g_warning ("%s: CERT database version %d is newer than"
+                 " supported version %d",
+                 __func__, db_version, GVMD_CERT_DATABASE_VERSION);
     }
   return 0;
 }
@@ -4587,33 +4600,19 @@ manage_sync_cert (sigset_t *sigmask_current)
 int
 check_scap_db_version ()
 {
-  switch (manage_scap_db_version ())
+  int db_version = manage_scap_db_version ();
+
+  if (db_version < GVMD_SCAP_DATABASE_VERSION)
     {
-      /* TODO The sync script had a whole lot of migrators in here. */
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-      case 11:
-      case 12:
-      case 13:
-      case 14:
-       g_info ("Reinitialization of the database necessary");
-       return manage_db_reinit ("scap");
-       break;
-      case 15:
-       sql ("ALTER TABLE scap2.affected_products ADD UNIQUE (cve, cpe);");
-       sql ("UPDATE scap2.meta"
-            " SET value = '16'"
-            " WHERE name = 'database_version';");
-       break;
+      g_info ("Reinitialization of the SCAP database necessary");
+      manage_db_remove ("scap");
+      return update_scap (TRUE);
+    }
+  else if (db_version > GVMD_SCAP_DATABASE_VERSION)
+    {
+      g_warning ("%s: SCAP database version %d is newer than"
+                 " supported version %d",
+                 __func__, db_version, GVMD_SCAP_DATABASE_VERSION);
     }
   return 0;
 }
