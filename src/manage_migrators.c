@@ -2484,6 +2484,9 @@ migrate_237_to_238 ()
   sql ("ALTER TABLE results ADD column score integer;");
   sql ("UPDATE results SET score = (severity::float * 10)::integer;");
 
+  sql ("ALTER TABLE results_trash ADD column score integer;");
+  sql ("UPDATE results_trash SET score = (severity::float * 10)::integer;");
+
   /* Set the database version to 238. */
 
   set_db_version (238);

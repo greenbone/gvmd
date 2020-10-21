@@ -29454,7 +29454,7 @@ delete_task (task_t task, int ultimate)
            "  report, nvt_version, severity, score, qod, qod_type, owner, date,"
            "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
-           "        description, report, nvt_version, severity, qod,"
+           "        description, report, nvt_version, severity, score, qod,"
            "         qod_type, owner, date, hostname, path"
            " FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
@@ -46302,7 +46302,7 @@ manage_restore (const char *id)
            "  report, nvt_version, severity, score, qod, qod_type, owner, date,"
            "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
-           "        description, report, nvt_version, severity, qod,"
+           "        description, report, nvt_version, severity, score, qod,"
            "         qod_type, owner, date, hostname, path"
            " FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",

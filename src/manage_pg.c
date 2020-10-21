@@ -2376,6 +2376,7 @@ create_tables ()
        "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
        "  nvt_version text,"
        "  severity real,"
+       "  score integer,"
        "  qod integer,"
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
