@@ -665,19 +665,18 @@ cve_iterator_score (iterator_t* iterator)
 }
 
 /**
- * @brief Get the short file name for an OVALDEF.
+ * @brief Get the CVSS score for a CVE.
  *
- * @param[in]  cve  Full OVAL identifier with file suffix.
+ * @param[in]  cve  CVE-ID of the CVE to get the score of.
  *
- * @return The file name of the OVAL definition relative to the SCAP directory,
- *         Freed by g_free.
+ * @return The CVSS score of the CVE.
  */
 gchar *
 cve_cvss_base (const gchar *cve)
 {
   gchar *quoted_cve, *ret;
   quoted_cve = sql_quote (cve);
-  ret = sql_string ("SELECT cvss FROM cves WHERE name = '%s'",
+  ret = sql_string ("SELECT score / 10.0 FROM cves WHERE name = '%s'",
                     quoted_cve);
   g_free (quoted_cve);
   return ret;
@@ -686,7 +685,7 @@ cve_cvss_base (const gchar *cve)
 /**
  * @brief Get the score from a CVE.
  *
- * @param[in]  cve  CVE.
+ * @param[in]  cve  CVE-ID of the CVE to get the score of.
  *
  * @return Severity score of CVE.
  */
@@ -697,7 +696,7 @@ cve_score (const gchar *cve)
   int ret;
 
   quoted_cve = sql_quote (cve);
-  ret = sql_int ("SELECT (cvss * 10)::integer FROM cves WHERE name = '%s'",
+  ret = sql_int ("SELECT score FROM cves WHERE name = '%s'",
                  quoted_cve);
   g_free (quoted_cve);
   return ret;
