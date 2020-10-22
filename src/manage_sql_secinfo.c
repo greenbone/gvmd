@@ -558,7 +558,12 @@ DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
  * @return The Highest CVSS of the CPE, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
+int
+cpe_info_iterator_max_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
 
 /**
  * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
@@ -652,7 +657,12 @@ DEF_ACCESS (cve_iterator_name, 1);
  * @return The CVSS of the CVE, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (cve_iterator_cvss, 2);
+int
+cve_iterator_score (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, 2);
+}
 
 /**
  * @brief Get the short file name for an OVALDEF.
@@ -779,46 +789,6 @@ DEF_ACCESS (cve_info_iterator_vector, GET_ITERATOR_COLUMN_COUNT);
 DEF_ACCESS (cve_info_iterator_complexity, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
- * @brief Get the CVSS attack authentication for this CVE.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVSS attack authentication of this CVE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cve_info_iterator_authentication, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the CVSS confidentiality impact for this CVE.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVSS confidentiality impact of this CVE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cve_info_iterator_confidentiality_impact, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the CVSS integrity impact for this CVE.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVSS integrity impact of this CVE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cve_info_iterator_integrity_impact, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
- * @brief Get the CVSS availability impact for this CVE.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The CVSS availability impact of this CVE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cve_info_iterator_availability_impact, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
  * @brief Get a space separated list of CPEs affected by this CVE.
  *
  * @param[in]  iterator  Iterator.
@@ -826,7 +796,7 @@ DEF_ACCESS (cve_info_iterator_availability_impact, GET_ITERATOR_COLUMN_COUNT + 5
  * @return A space separated list of CPEs or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the CVSS base score for this CVE.
@@ -836,7 +806,12 @@ DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 6);
  * @return The CVSS base score of this CVE, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cve_info_iterator_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
+int
+cve_info_iterator_score (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 2);
+}
 
 /**
  * @brief Get the Summary for this CVE.
@@ -846,7 +821,7 @@ DEF_ACCESS (cve_info_iterator_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return The Summary of this CVE, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 3);
 
 
 /* OVAL data. */
@@ -1027,7 +1002,12 @@ DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
  *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
+int
+ovaldef_info_iterator_max_score (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 7);
+}
 
 /**
  * @brief Get number of referenced CVEs from an OVALDEF iterator.
@@ -1040,19 +1020,6 @@ DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
  */
 DEF_ACCESS (ovaldef_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 8);
 
-/**
- * @brief Get column value from an iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Column value, or -1 if iteration is complete.
- */
-int
-ovaldef_info_iterator_score (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-}
 
 /**
  * @brief Get the short file name for an OVALDEF.
@@ -1108,7 +1075,7 @@ ovaldef_severity (const char *id)
 
   assert (id);
   quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT max_cvss FROM ovaldefs WHERE uuid = '%s';",
+  ret = sql_string ("SELECT max_score / 10.0 FROM ovaldefs WHERE uuid = '%s';",
                     quoted_id);
   g_free (quoted_id);
   return ret;
@@ -1310,8 +1277,12 @@ DEF_ACCESS (cert_bund_adv_info_iterator_cve_refs,
  *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (cert_bund_adv_info_iterator_max_cvss,
-            GET_ITERATOR_COLUMN_COUNT + 3);
+int
+cert_bund_adv_info_iterator_max_score (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 3);
+}
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a CERT-Bund advisory.
@@ -1515,7 +1486,12 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
  *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (dfn_cert_adv_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
+int
+dfn_cert_adv_info_iterator_max_score (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 3);
+}
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a DFN-CERT advisory.

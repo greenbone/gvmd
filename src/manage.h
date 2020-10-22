@@ -3101,8 +3101,8 @@ cpe_info_iterator_title (iterator_t*);
 const char*
 cpe_info_iterator_status (iterator_t*);
 
-const char*
-cpe_info_iterator_max_cvss (iterator_t*);
+int
+cpe_info_iterator_max_score (iterator_t*);
 
 const char*
 cpe_info_iterator_deprecated_by_id (iterator_t*);
@@ -3118,29 +3118,14 @@ cpe_info_iterator_nvd_id (iterator_t*);
 const char*
 cve_iterator_name (iterator_t*);
 
-const char*
-cve_iterator_cvss (iterator_t*);
+int
+cve_iterator_score (iterator_t*);
 
-const char*
-cve_info_iterator_cvss (iterator_t*);
+int
+cve_info_iterator_score (iterator_t*);
 
 const char*
 cve_info_iterator_vector (iterator_t*);
-
-const char*
-cve_info_iterator_complexity (iterator_t*);
-
-const char*
-cve_info_iterator_authentication (iterator_t*);
-
-const char*
-cve_info_iterator_confidentiality_impact (iterator_t*);
-
-const char*
-cve_info_iterator_integrity_impact (iterator_t*);
-
-const char*
-cve_info_iterator_availability_impact (iterator_t*);
 
 const char*
 cve_info_iterator_description (iterator_t*);
@@ -3188,14 +3173,11 @@ ovaldef_info_iterator_file (iterator_t*);
 const char*
 ovaldef_info_iterator_status (iterator_t*);
 
-const char*
-ovaldef_info_iterator_max_cvss (iterator_t*);
+int
+ovaldef_info_iterator_max_score (iterator_t*);
 
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
-
-int
-ovaldef_info_iterator_score (iterator_t *);
 
 char *
 ovaldef_severity (const char *);
@@ -3230,8 +3212,8 @@ cert_bund_adv_info_iterator_summary (iterator_t*);
 const char*
 cert_bund_adv_info_iterator_cve_refs (iterator_t*);
 
-const char*
-cert_bund_adv_info_iterator_max_cvss (iterator_t*);
+int
+cert_bund_adv_info_iterator_max_score (iterator_t*);
 
 void
 init_cve_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
@@ -3259,8 +3241,8 @@ dfn_cert_adv_info_iterator_summary (iterator_t*);
 const char*
 dfn_cert_adv_info_iterator_cve_refs (iterator_t*);
 
-const char*
-dfn_cert_adv_info_iterator_max_cvss (iterator_t*);
+int
+dfn_cert_adv_info_iterator_max_score (iterator_t*);
 
 void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
