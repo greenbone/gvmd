@@ -551,12 +551,12 @@ DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
 DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
- * @brief Get the Highest CVSS Score of all CVE's referencing this cpe.
+ * @brief Get the highest severity Score of all CVE's referencing this cpe.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The Highest CVSS of the CPE, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
+ * @return The highest severity score (10 * CVSS score) of the CPE,
+ *         or -1 if iteration is complete. Freed by cleanup_iterator.
  */
 int
 cpe_info_iterator_score (iterator_t *iterator)
@@ -650,12 +650,12 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
 DEF_ACCESS (cve_iterator_name, 1);
 
 /**
- * @brief Get the CVSS from a CVE iterator.
+ * @brief Get the severity score from a CVE iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The CVSS of the CVE, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
+ * @return The severity score (10 * CVSS score) of the CVE,
+ *         or -1 if iteration is complete.  Freed by cleanup_iterator.
  */
 int
 cve_iterator_score (iterator_t* iterator)
@@ -683,11 +683,11 @@ cve_cvss_base (const gchar *cve)
 }
 
 /**
- * @brief Get the score from a CVE.
+ * @brief Get the severity score from a CVE.
  *
  * @param[in]  cve  CVE-ID of the CVE to get the score of.
  *
- * @return Severity score of CVE.
+ * @return Severity score (10 * CVSS score) of CVE.
  */
 int
 cve_score (const gchar *cve)
@@ -798,12 +798,12 @@ DEF_ACCESS (cve_info_iterator_complexity, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
- * @brief Get the CVSS base score for this CVE.
+ * @brief Get the severity score for this CVE.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The CVSS base score of this CVE, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
+ * @return The severity score  (10 * CVSS score) of this CVE,
+ *         or -1 if iteration is complete. Freed by cleanup_iterator.
  */
 int
 cve_info_iterator_score (iterator_t* iterator)
@@ -993,12 +993,12 @@ DEF_ACCESS (ovaldef_info_iterator_file, GET_ITERATOR_COLUMN_COUNT + 5);
 DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
- * @brief Get maximum CVSS score from an OVALDEF iterator.
+ * @brief Get maximum severity score from an OVALDEF iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum CVSS score of the OVAL definition,
- *         or NULL if iteration is complete.
+ * @return The maximum severity score  (10 * CVSS score) of the OVAL
+ *         definition, or -1 if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 int
@@ -1268,12 +1268,12 @@ DEF_ACCESS (cert_bund_adv_info_iterator_cve_refs,
             GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
- * @brief Get the maximum CVSS from an CERT_BUND_ADV iterator.
+ * @brief Get the maximum severity score from an CERT_BUND_ADV iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum CVSS of the CVEs referenced in the CERT-Bund advisory,
- *         or NULL if iteration is complete.
+ * @return The maximum severity score (10 * CVSS score) of the CVEs referenced
+ *         in the CERT-Bund advisory, or -1 if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 int
@@ -1477,12 +1477,12 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
- * @brief Get the maximum CVSS from an DFN_CERT_ADV iterator.
+ * @brief Get the maximum severity score from an DFN_CERT_ADV iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum CVSS of the CVEs referenced in the DFN-CERT advisory,
- *         or NULL if iteration is complete.
+ * @return The maximum score (10 * CVSS score) of the CVEs referenced
+ *         in the DFN-CERT advisory, or -1 if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 int
