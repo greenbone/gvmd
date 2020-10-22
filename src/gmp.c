@@ -9558,8 +9558,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf
    (buffer,
     "<severity>%.1f</severity>"
+    "<score>%i</score>"
     "<qod><value>%s</value>",
     result_iterator_severity_double (results),
+    result_iterator_score (results),
     qod ? qod : "");
 
   if (qod_type && strlen (qod_type))
