@@ -559,7 +559,7 @@ DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
  *         Freed by cleanup_iterator.
  */
 int
-cpe_info_iterator_max_score (iterator_t *iterator)
+cpe_info_iterator_score (iterator_t *iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
@@ -1003,7 +1003,7 @@ DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
  *         Freed by cleanup_iterator.
  */
 int
-ovaldef_info_iterator_max_score (iterator_t* iterator)
+ovaldef_info_iterator_score (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 7);
@@ -1075,7 +1075,7 @@ ovaldef_severity (const char *id)
 
   assert (id);
   quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT max_score / 10.0 FROM ovaldefs WHERE uuid = '%s';",
+  ret = sql_string ("SELECT score / 10.0 FROM ovaldefs WHERE uuid = '%s';",
                     quoted_id);
   g_free (quoted_id);
   return ret;
@@ -1278,7 +1278,7 @@ DEF_ACCESS (cert_bund_adv_info_iterator_cve_refs,
  *         Freed by cleanup_iterator.
  */
 int
-cert_bund_adv_info_iterator_max_score (iterator_t* iterator)
+cert_bund_adv_info_iterator_score (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 3);
@@ -1487,7 +1487,7 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
  *         Freed by cleanup_iterator.
  */
 int
-dfn_cert_adv_info_iterator_max_score (iterator_t* iterator)
+dfn_cert_adv_info_iterator_score (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 3);
@@ -3506,7 +3506,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                    " (uuid, name, comment, creation_time,"
                    "  modification_time, version, deprecated, def_class,"
                    "  title, description, xml_file, status,"
-                   "  max_score, cve_refs)"
+                   "  score, cve_refs)"
                    " VALUES ('%s', '%s', '', %i, %i, %s, %i, '%s', '%s',"
                    "         '%s', '%s', '%s', 0, %i)"
                    " ON CONFLICT (uuid) DO UPDATE"
@@ -3521,7 +3521,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                    "     description = EXCLUDED.description,"
                    "     xml_file = EXCLUDED.xml_file,"
                    "     status = EXCLUDED.status,"
-                   "     max_score = 0,"
+                   "     score = 0,"
                    "     cve_refs = EXCLUDED.cve_refs;",
                    quoted_id,
                    quoted_oval_id,
@@ -4345,7 +4345,7 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
     {
       g_info ("Updating Max CVSS for DFN-CERT");
       sql ("UPDATE cert.dfn_cert_advs"
-           " SET max_score = (SELECT max (score)"
+           " SET score = (SELECT max (score)"
            "                  FROM scap.cves"
            "                  WHERE name"
            "                  IN (SELECT cve_name"
@@ -4376,13 +4376,13 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
     {
       g_info ("Updating Max CVSS for CERT-Bund");
       sql ("UPDATE cert.cert_bund_advs"
-           " SET max_score = (SELECT max (score)"
-           "                  FROM scap.cves"
-           "                  WHERE name"
-           "                        IN (SELECT cve_name"
-           "                            FROM cert.cert_bund_cves"
-           "                            WHERE adv_id = cert_bund_advs.id)"
-           "                  AND score != 0);");
+           " SET score = (SELECT max (score)"
+           "               FROM scap.cves"
+           "               WHERE name"
+           "                     IN (SELECT cve_name"
+           "                         FROM cert.cert_bund_cves"
+           "                         WHERE adv_id = cert_bund_advs.id)"
+           "               AND score != 0);");
 
       g_info ("Updating CERT-Bund CVSS max succeeded.");
     }
@@ -4587,7 +4587,7 @@ update_scap_cvss ()
 
   g_info ("Updating CVSS scores and CVE counts for CPEs");
   sql ("UPDATE scap2.cpes"
-       " SET (max_score, cve_refs)"
+       " SET (score, cve_refs)"
        "     = (WITH affected_cves"
        "        AS (SELECT cve FROM scap2.affected_products"
        "            WHERE cpe=cpes.id)"
@@ -4597,12 +4597,12 @@ update_scap_cvss ()
 
   g_info ("Updating CVSS scores for OVAL definitions");
   sql ("UPDATE scap2.ovaldefs"
-       " SET max_score = (SELECT max (score)"
-       "                  FROM scap2.cves"
-       "                  WHERE id IN (SELECT cve"
-       "                               FROM scap2.affected_ovaldefs"
-       "                               WHERE ovaldef=ovaldefs.id)"
-       "                  AND score != 0);");
+       " SET score = (SELECT max (score)"
+       "               FROM scap2.cves"
+       "               WHERE id IN (SELECT cve"
+       "                            FROM scap2.affected_ovaldefs"
+       "                            WHERE ovaldef=ovaldefs.id)"
+       "               AND score != 0);");
 }
 
 /**

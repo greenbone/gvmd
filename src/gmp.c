@@ -9126,7 +9126,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
-                                    ovaldef_info_iterator_max_score (&iterator),
+                                    ovaldef_info_iterator_score (&iterator),
                                     ovaldef_info_iterator_description (&iterator));
           g_free (get.id);
           cleanup_iterator (&iterator);
@@ -13244,11 +13244,11 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
                              "<nvd_id>%s</nvd_id>"
-                             "<max_score>%d</max_score>"
+                             "<score>%d</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<status>%s</status>",
                              cpe_info_iterator_nvd_id (&info),
-                             cpe_info_iterator_max_score (&info),
+                             cpe_info_iterator_score (&info),
                              cpe_info_iterator_cve_refs (&info),
                              cpe_info_iterator_status (&info) ?
                              cpe_info_iterator_status (&info) : "");
@@ -13366,7 +13366,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              "<status>%s</status>"
                              "<class>%s</class>"
                              "<title>%s</title>"
-                             "<max_score>%d</max_score>"
+                             "<score>%d</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<file>%s</file>",
                              ovaldef_info_iterator_version (&info),
@@ -13374,7 +13374,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              ovaldef_info_iterator_status (&info),
                              ovaldef_info_iterator_class (&info),
                              ovaldef_info_iterator_title (&info),
-                             ovaldef_info_iterator_max_score (&info),
+                             ovaldef_info_iterator_score (&info),
                              ovaldef_info_iterator_cve_refs (&info),
                              ovaldef_info_iterator_file (&info));
           description = ovaldef_info_iterator_description (&info);
@@ -13388,22 +13388,22 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            "<cert_bund_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<max_score>%d</max_score>"
+                           "<score>%d</score>"
                            "<cve_refs>%s</cve_refs>",
                            cert_bund_adv_info_iterator_title (&info),
                            cert_bund_adv_info_iterator_summary (&info),
-                           cert_bund_adv_info_iterator_max_score(&info),
+                           cert_bund_adv_info_iterator_score(&info),
                            cert_bund_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
         xml_string_append (result,
                            "<dfn_cert_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<max_score>%d</max_score>"
+                           "<score>%d</score>"
                            "<cve_refs>%s</cve_refs>",
                            dfn_cert_adv_info_iterator_title (&info),
                            dfn_cert_adv_info_iterator_summary (&info),
-                           dfn_cert_adv_info_iterator_max_score(&info),
+                           dfn_cert_adv_info_iterator_score(&info),
                            dfn_cert_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {

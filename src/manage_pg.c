@@ -1654,7 +1654,7 @@ create_view_vulns ()
          " FROM cves"
          VULNS_RESULTS_WHERE
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       max_score / 10.0 AS severity, "
+         "       score / 10.0 AS severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
          " FROM ovaldefs"
@@ -2962,7 +2962,7 @@ manage_db_init (const gchar *name)
            "  title TEXT,"
            "  summary TEXT,"
            "  cve_refs INTEGER,"
-           "  max_score INTEGER);");
+           "  score INTEGER);");
       sql ("CREATE UNIQUE INDEX cert_bund_advs_idx"
            " ON cert.cert_bund_advs (name);");
       sql ("CREATE INDEX cert_bund_advs_by_creation_time"
@@ -2986,7 +2986,7 @@ manage_db_init (const gchar *name)
            "  title TEXT,"
            "  summary TEXT,"
            "  cve_refs INTEGER,"
-           "  max_score INTEGER);");
+           "  score INTEGER);");
       sql ("CREATE UNIQUE INDEX dfn_cert_advs_idx"
            " ON cert.dfn_cert_advs (name);");
       sql ("CREATE INDEX dfn_cert_advs_by_creation_time"
@@ -3083,7 +3083,7 @@ manage_db_init (const gchar *name)
            "  title text,"
            "  status text,"
            "  deprecated_by_id INTEGER,"
-           "  max_score integer DEFAULT 0,"
+           "  score integer DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
 
@@ -3105,7 +3105,7 @@ manage_db_init (const gchar *name)
            "  description TEXT,"
            "  xml_file TEXT,"
            "  status TEXT,"
-           "  max_score integer DEFAULT 0,"
+           "  score integer DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0);");
 
       sql ("CREATE TABLE scap2.ovalfiles"
@@ -3206,7 +3206,7 @@ manage_db_init_indexes (const gchar *name)
       sql ("CREATE INDEX cpes_by_modification_time_idx"
            " ON scap2.cpes (modification_time);");
       sql ("CREATE INDEX cpes_by_score"
-           " ON scap2.cpes (max_score);");
+           " ON scap2.cpes (score);");
       sql ("CREATE INDEX cpes_by_uuid"
            " ON scap2.cpes (uuid);");
 

@@ -100,7 +100,7 @@
  */
 #define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
-   "deprecated_by_id", "max_score", "cves", "nvd_id",       \
+   "deprecated_by_id", "score", "cves", "nvd_id",           \
    "severity", "score", NULL }
 
 /**
@@ -114,11 +114,10 @@
    { "title", NULL, KEYWORD_TYPE_STRING },                      \
    { "status", NULL, KEYWORD_TYPE_STRING },                     \
    { "deprecated_by_id", NULL, KEYWORD_TYPE_INTEGER },          \
-   { "max_score", NULL, KEYWORD_TYPE_INTEGER },                 \
+   { "score", NULL, KEYWORD_TYPE_INTEGER },                     \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                \
    { "nvd_id", NULL, KEYWORD_TYPE_INTEGER },                    \
-   { "max_score", "score", KEYWORD_TYPE_INTEGER },              \
-   { "max_score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },     \
+   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                         \
  }
 
@@ -128,7 +127,7 @@
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
    "class", "title", "description", "file",                 \
-   "status", "max_score", "cves", "score", "severity",      \
+   "status", "cves", "score", "severity",                   \
    NULL }
 
 /**
@@ -146,10 +145,9 @@
    { "description", NULL, KEYWORD_TYPE_STRING },                 \
    { "xml_file", "file", KEYWORD_TYPE_STRING },                  \
    { "status", NULL, KEYWORD_TYPE_STRING },                      \
-   { "max_score", NULL, KEYWORD_TYPE_INTEGER },                  \
+   { "score", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
-   { "max_score", "score", KEYWORD_TYPE_INTEGER },               \
-   { "max_score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },      \
+   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },          \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
@@ -157,8 +155,8 @@
  * @brief Filter columns for CERT_BUND_ADV iterator.
  */
 #define CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
- { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "cves", "max_score", "score", "severity", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",          \
+   "cves", "score", "severity", NULL }
 
 /**
  * @brief CERT_BUND_ADV iterator columns.
@@ -171,9 +169,8 @@
    { "title", NULL, KEYWORD_TYPE_STRING },                       \
    { "summary", NULL, KEYWORD_TYPE_STRING },                     \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
-   { "max_score", NULL, KEYWORD_TYPE_INTEGER },                  \
-   { "max_score", "score", KEYWORD_TYPE_INTEGER },               \
-   { "max_score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },      \
+   { "score", NULL, KEYWORD_TYPE_INTEGER },                      \
+   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },          \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
@@ -182,7 +179,7 @@
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "cves", "max_score", "score", "severity", NULL }
+   "cves", "score", "severity", NULL }
 
 /**
  * @brief DFN_CERT_ADV iterator columns.
@@ -195,9 +192,8 @@
    { "title", NULL, KEYWORD_TYPE_STRING },                       \
    { "summary", NULL, KEYWORD_TYPE_STRING },                     \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
-   { "max_score", NULL, KEYWORD_TYPE_INTEGER },                  \
-   { "max_score", "score", KEYWORD_TYPE_INTEGER },               \
-   { "max_score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },      \
+   { "score", NULL, KEYWORD_TYPE_INTEGER },                      \
+   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },          \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 

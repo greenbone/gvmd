@@ -3102,7 +3102,7 @@ const char*
 cpe_info_iterator_status (iterator_t*);
 
 int
-cpe_info_iterator_max_score (iterator_t*);
+cpe_info_iterator_score (iterator_t*);
 
 const char*
 cpe_info_iterator_deprecated_by_id (iterator_t*);
@@ -3174,7 +3174,7 @@ const char*
 ovaldef_info_iterator_status (iterator_t*);
 
 int
-ovaldef_info_iterator_max_score (iterator_t*);
+ovaldef_info_iterator_score (iterator_t*);
 
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
@@ -3213,7 +3213,7 @@ const char*
 cert_bund_adv_info_iterator_cve_refs (iterator_t*);
 
 int
-cert_bund_adv_info_iterator_max_score (iterator_t*);
+cert_bund_adv_info_iterator_score (iterator_t*);
 
 void
 init_cve_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
@@ -3242,7 +3242,7 @@ const char*
 dfn_cert_adv_info_iterator_cve_refs (iterator_t*);
 
 int
-dfn_cert_adv_info_iterator_max_score (iterator_t*);
+dfn_cert_adv_info_iterator_score (iterator_t*);
 
 void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
