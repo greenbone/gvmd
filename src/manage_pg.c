@@ -1648,12 +1648,14 @@ create_view_vulns ()
          " FROM nvts"
          VULNS_RESULTS_WHERE
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       score / 10.0 AS severity, "
+         G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
          " FROM cves"
          VULNS_RESULTS_WHERE
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       max_cvss AS severity, " G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       score / 10.0 AS severity, "
+         G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
          " FROM ovaldefs"
          VULNS_RESULTS_WHERE);
@@ -2963,7 +2965,7 @@ manage_db_init (const gchar *name)
            "  title TEXT,"
            "  summary TEXT,"
            "  cve_refs INTEGER,"
-           "  max_cvss FLOAT);");
+           "  score INTEGER);");
       sql ("CREATE UNIQUE INDEX cert_bund_advs_idx"
            " ON cert.cert_bund_advs (name);");
       sql ("CREATE INDEX cert_bund_advs_by_creation_time"
@@ -2987,7 +2989,7 @@ manage_db_init (const gchar *name)
            "  title TEXT,"
            "  summary TEXT,"
            "  cve_refs INTEGER,"
-           "  max_cvss FLOAT);");
+           "  score INTEGER);");
       sql ("CREATE UNIQUE INDEX dfn_cert_advs_idx"
            " ON cert.dfn_cert_advs (name);");
       sql ("CREATE INDEX dfn_cert_advs_by_creation_time"
@@ -3030,7 +3032,7 @@ manage_db_init (const gchar *name)
       /* Init tables. */
 
       sql ("INSERT INTO cert.meta (name, value)"
-           " VALUES ('database_version', '6');");
+           " VALUES ('database_version', '7');");
       sql ("INSERT INTO cert.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
@@ -3070,14 +3072,9 @@ manage_db_init (const gchar *name)
            "  description text,"
            "  creation_time integer,"
            "  modification_time integer,"
-           "  vector text,"
-           "  complexity text,"
-           "  authentication text,"
-           "  confidentiality_impact text,"
-           "  integrity_impact text,"
-           "  availability_impact text,"
+           "  cvss_vector text,"
            "  products text,"
-           "  cvss FLOAT DEFAULT 0);");
+           "  score integer DEFAULT 0);");
 
       sql ("CREATE TABLE scap2.cpes"
            " (id SERIAL PRIMARY KEY,"
@@ -3089,7 +3086,7 @@ manage_db_init (const gchar *name)
            "  title text,"
            "  status text,"
            "  deprecated_by_id INTEGER,"
-           "  max_cvss FLOAT DEFAULT 0,"
+           "  score integer DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
 
@@ -3111,7 +3108,7 @@ manage_db_init (const gchar *name)
            "  description TEXT,"
            "  xml_file TEXT,"
            "  status TEXT,"
-           "  max_cvss FLOAT DEFAULT 0,"
+           "  score integer DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0);");
 
       sql ("CREATE TABLE scap2.ovalfiles"
@@ -3125,7 +3122,7 @@ manage_db_init (const gchar *name)
       /* Init tables. */
 
       sql ("INSERT INTO scap2.meta (name, value)"
-           " VALUES ('database_version', '16');");
+           " VALUES ('database_version', '17');");
       sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
@@ -3202,8 +3199,8 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.cves (creation_time);");
       sql ("CREATE INDEX cves_by_modification_time_idx"
            " ON scap2.cves (modification_time);");
-      sql ("CREATE INDEX cves_by_cvss"
-           " ON scap2.cves (cvss);");
+      sql ("CREATE INDEX cves_by_score"
+           " ON scap2.cves (score);");
 
       sql ("CREATE UNIQUE INDEX cpe_idx"
            " ON scap2.cpes (name);");
@@ -3211,8 +3208,8 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.cpes (creation_time);");
       sql ("CREATE INDEX cpes_by_modification_time_idx"
            " ON scap2.cpes (modification_time);");
-      sql ("CREATE INDEX cpes_by_cvss"
-           " ON scap2.cpes (max_cvss);");
+      sql ("CREATE INDEX cpes_by_score"
+           " ON scap2.cpes (score);");
       sql ("CREATE INDEX cpes_by_uuid"
            " ON scap2.cpes (uuid);");
 
