@@ -18883,14 +18883,15 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port, nvt,"
-       "  nvt_version, severity, type, qod, qod_type, description,"
+       "  nvt_version, severity, score, type, qod, qod_type, description,"
        "  path, uuid, result_nvt)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
-       "         '%s', '%s', '%s', %d, '', '%s', '%s', make_uuid (),"
+       "         '%s', '%s', (%s::float * 10)::integer, '%s', %d, '', '%s',"
+       "         '%s', make_uuid (),"
        "         (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
-       nvt_revision ?: "", result_severity ?: "0", type, qod, quoted_desc,
-       quoted_path, quoted_nvt);
+       nvt_revision ?: "", result_severity ?: "0", result_severity ?: "0",
+       type, qod, quoted_desc, quoted_path, quoted_nvt);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
@@ -19218,15 +19219,15 @@ make_result (task_t task, const char* host, const char *hostname,
   result_nvt_notice (nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port,"
-       "  nvt, nvt_version, severity, type,"
+       "  nvt, nvt_version, severity, score, type,"
        "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s',"
-       "  '%s', '%s', '%s', '%s',"
+       "  '%s', '%s', '%s', (%s::float * 10)::integer, '%s',"
        "  '%s', make_uuid (), %s, %s, '%s',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, port ?: "",
-       nvt ?: "", nvt_revision, severity, type,
+       nvt ?: "", nvt_revision, severity, severity, type,
        quoted_descr, qod, qod_type, quoted_path, nvt ? nvt : "");
 
   g_free (quoted_hostname);
@@ -19262,10 +19263,11 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
-       " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f', '%s',"
+       " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f',"
+       " (%1.1f::float * 10)::integer, '%s',"
        "  '%s', make_uuid (), %i, '', '',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-       task, host ?: "", nvt, cvss, severity_to_type (cvss),
+       task, host ?: "", nvt, cvss, cvss, severity_to_type (cvss),
        quoted_descr, QOD_DEFAULT, nvt);
 
   g_free (quoted_descr);
@@ -20327,8 +20329,8 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                          "INSERT INTO results"
                          " (uuid, owner, date, task, host, hostname, port,"
                          "  nvt, type, description,"
-                         "  nvt_version, severity, qod, qod_type, result_nvt,"
-                         "  report)"
+                         "  nvt_version, severity, score, qod, qod_type,"
+                         "  result_nvt, report)"
                          " VALUES");
       else
         g_string_append (insert, ", ");
@@ -20336,7 +20338,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_string_append_printf (insert,
                               " (make_uuid (), %llu, m_now (), %llu, '%s',"
                               "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-                              "  '%s', '%s',"
+                              "  %s::float * 10)::integer, '%s', '%s',"
                               "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
                               "  %llu)",
                               owner,
@@ -20350,6 +20352,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                                : "Log Message",
                               quoted_description,
                               quoted_scan_nvt_version,
+                              quoted_severity,
                               quoted_severity,
                               quoted_qod,
                               quoted_qod_type,
@@ -20813,7 +20816,7 @@ report_add_result (report_t report, result_t result)
    "task", "severity", "false_positive", "log", "low", "medium", "high",       \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
    "medium_per_host", "high_per_host", "duration", "duration_per_host",        \
-   NULL }
+   "score", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -20947,6 +20950,12 @@ report_add_result (report_t report, result_t result)
      " ELSE (end_time - start_time)"                                         \
      "        / report_result_host_count (id, opts.min_qod) END)",           \
      "duration_per_host",                                                    \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(report_severity (id, opts.override, opts.min_qod)::float * 10)"       \
+     "::integer",                                                            \
+     "score",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -21287,7 +21296,7 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", NULL }
+    "path", "score", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -21570,6 +21579,9 @@ where_qod (int min_qod)
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.score",                                                           \
+      "score",                                                                \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT (" new_severity_sql "::float * 10)::integer)",                 \
       "score",                                                                \
       KEYWORD_TYPE_INTEGER },
     /* ^ 45 = 35 */
@@ -21861,7 +21873,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[2];
+  column_t columns[3];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -22005,9 +22017,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[1].select = NULL;
-  columns[1].filter = NULL;
-  columns[1].type = KEYWORD_TYPE_UNKNOWN;
+  columns[1].select = g_strdup_printf ("(%s::float * 10)::integer",
+                                       columns[0].select);
+  columns[1].filter = "score";
+  columns[1].type = KEYWORD_TYPE_INTEGER;
+
+  columns[2].select = NULL;
+  columns[2].filter = NULL;
+  columns[2].type = KEYWORD_TYPE_UNKNOWN;
 
   extra_tables = result_iterator_opts_table (apply_overrides,
                                              dynamic_severity);
@@ -22080,6 +22097,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  extra_order,
                                  with_clauses,
                                  1);
+  g_free (columns[1].select);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
@@ -22720,6 +22738,20 @@ result_iterator_nvt_score (iterator_t *iterator)
 }
 
 /**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+result_iterator_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+}
+
+/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -22730,7 +22762,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
@@ -22744,7 +22776,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
 }
 
 /**
@@ -29419,10 +29451,10 @@ delete_task (task_t task, int ultimate)
 
       sql ("INSERT INTO results_trash"
            " (uuid, task, host, port, nvt, result_nvt, type, description,"
-           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  report, nvt_version, severity, score, qod, qod_type, owner, date,"
            "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
-           "        description, report, nvt_version, severity, qod,"
+           "        description, report, nvt_version, severity, score, qod,"
            "         qod_type, owner, date, hostname, path"
            " FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
@@ -46267,10 +46299,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO results"
            " (uuid, task, host, port, nvt, result_nvt, type, description,"
-           "  report, nvt_version, severity, qod, qod_type, owner, date,"
+           "  report, nvt_version, severity, score, qod, qod_type, owner, date,"
            "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
-           "        description, report, nvt_version, severity, qod,"
+           "        description, report, nvt_version, severity, score, qod,"
            "         qod_type, owner, date, hostname, path"
            " FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
