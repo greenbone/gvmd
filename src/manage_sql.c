@@ -21909,10 +21909,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                         dynamic_severity)
      : (dynamic_severity
          /* Dynamic, no overrides. */
-         ? g_strdup ("current_severity (results.severity,"
-                     "                  results.nvt)")
+         ? g_strdup ("severity_to_type (current_severity (results.severity,"
+                     "                                    results.nvt))")
          /* No dynamic, no overrides. */
-         : g_strdup ("results.severity")));
+         : g_strdup ("severity_to_type (results.severity)")));
 
   if (dynamic_severity)
     {
