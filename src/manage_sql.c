@@ -310,9 +310,6 @@ setting_auto_cache_rebuild_int ();
 static double
 setting_default_severity_dbl ();
 
-static int
-setting_dynamic_severity_int ();
-
 static char *
 setting_timezone ();
 
@@ -15337,16 +15334,6 @@ check_db_settings ()
          "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
-         "  'Whether to use dynamic severity scores by default.',"
-         "  '0');");
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '578a1c14-e2dc-45ef-a591-89d31391d007'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -16754,13 +16741,6 @@ credentials_setup (credentials_t *credentials)
                   " AND " ACL_GLOBAL_OR_USER_OWNS ()
                   " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                   credentials->uuid);
-
-  credentials->dynamic_severity
-    = sql_int ("SELECT value FROM settings"
-                " WHERE name = 'Dynamic Severity'"
-                " AND " ACL_GLOBAL_OR_USER_OWNS ()
-                " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
-                credentials->uuid);
 
   credentials->default_severity
     = sql_double ("SELECT value FROM settings"
@@ -21607,7 +21587,6 @@ where_qod (int min_qod)
       " FROM result_new_severities"                                           \
       " WHERE result_new_severities.result = results.id"                      \
       " AND result_new_severities.user = opts.user_id"                        \
-      " AND result_new_severities.dynamic = opts.dynamic"                     \
       " LIMIT 1)")
 
 /**
@@ -21704,12 +21683,11 @@ where_qod (int min_qod)
  * @brief Generate the extra_tables string for a result iterator.
  *
  * @param[in]  override  Whether to apply overrides.
- * @param[in]  dynamic   Whether to use dynamic severity scores.
  *
  * @return Newly allocated string with the extra_tables clause.
  */
 static gchar*
-result_iterator_opts_table (int override, int dynamic)
+result_iterator_opts_table (int override)
 {
   user_t user_id;
   gchar *user_zone, *quoted_user_zone, *ret;
@@ -21744,12 +21722,10 @@ result_iterator_opts_table (int override, int dynamic)
          (", (SELECT"
           "   '%s'::text AS user_zone,"
           "   %llu AS user_id,"
-          "   %d AS override,"
-          "   %d AS dynamic) AS opts",
+          "   %d AS override) AS opts",
           quoted_user_zone,
           user_id,
-          override,
-          dynamic);
+          override);
 
   g_free (quoted_user_zone);
 
@@ -21760,31 +21736,24 @@ result_iterator_opts_table (int override, int dynamic)
  * @brief Get new severity clause.
  *
  * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  dynamic_severity Whether to use dynamic severity.
  *
  * @return Newly allocated clause.
  */
 static gchar*
-new_severity_clause (int apply_overrides, int dynamic_severity)
+new_severity_clause (int apply_overrides)
 {
   if (apply_overrides)
-    /* Overrides, maybe dynamic. */
+    /* Overrides. */
     return g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
                             " WHERE result_new_severities.result = results.id"
                             " AND result_new_severities.user"
                             "     = (SELECT id FROM users WHERE uuid = '%s')"
-                            " AND dynamic = %d"
                             " LIMIT 1)",
-                            current_credentials.uuid,
-                            dynamic_severity);
+                            current_credentials.uuid);
 
-  if (dynamic_severity)
-    /* Dynamic, no overrides. */
-    return g_strdup ("current_severity (results.severity,"
-                     "                  results.nvt)");
-
-  /* No dynamic, no overrides. */
-  return g_strdup ("results.severity");
+  /* No overrides. */
+  return g_strdup ("current_severity (results.severity,"
+                   "                  results.nvt)");
 }
 
 /**
@@ -21794,15 +21763,13 @@ new_severity_clause (int apply_overrides, int dynamic_severity)
  * @param[in]  report           Report to restrict returned results to.
  * @param[in]  host             Host to restrict returned results to.
  * @param[in]  apply_overrides  Whether to apply overrides.
- * @param[in]  dynamic_severity Whether to use dynamic severity.
  * @param[in]  filter           Filter string.
  *
  * @return     Newly allocated extra_where string.
  */
 static gchar*
 results_extra_where (int trash, report_t report, const gchar* host,
-                     int apply_overrides, int dynamic_severity,
-                     const gchar *filter)
+                     int apply_overrides, const gchar *filter)
 {
   gchar *extra_where;
   int min_qod;
@@ -21819,7 +21786,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  new_severity_sql = new_severity_clause (apply_overrides, dynamic_severity);
+  new_severity_sql = new_severity_clause (apply_overrides);
 
   // Build filter clauses
 
@@ -21880,16 +21847,13 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE_NO_CERT;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   column_t *filterable_columns;
-  int ret;
+  int ret, apply_overrides;
   gchar *filter;
-  int apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *extra_where_single;
   gchar *owned_clause, *with_clause, *with_clauses;
   char *user_id;
 
   assert (report);
-
-  dynamic_severity = setting_dynamic_severity_int ();
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
     {
@@ -21911,108 +21875,72 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
    (filterable_columns,
     "type",
     apply_overrides
-     /* Overrides, maybe dynamic. */
-     ? g_strdup_printf ("severity_to_type"
-                        " ((SELECT new_severity FROM result_new_severities"
-                        "   WHERE result_new_severities.result = results.id"
-                        "   AND result_new_severities.user = opts.user_id"
-                        "   AND result_new_severities.dynamic = %i"
-                        "   LIMIT 1))",
-                        dynamic_severity)
-     : (dynamic_severity
-         /* Dynamic, no overrides. */
-         ? g_strdup ("current_severity (results.severity,"
-                     "                  results.nvt)")
-         /* No dynamic, no overrides. */
-         : g_strdup ("results.severity")));
+     /* Overrides. */
+     ? g_strdup ("severity_to_type"
+                 " ((SELECT new_severity FROM result_new_severities"
+                 "   WHERE result_new_severities.result = results.id"
+                 "   AND result_new_severities.user = opts.user_id"
+                 "   LIMIT 1))")
+     /* No overrides. */
+     : g_strdup ("current_severity (results.severity,"
+                 "                  results.nvt)"));
 
-  if (dynamic_severity)
-    {
-      if (apply_overrides)
-        columns[0].select
-          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                   WHERE valid_overrides.result_nvt"
-            "                         = results.result_nvt"
-            "                   AND (valid_overrides.result = 0"
-            "                        OR valid_overrides.result"
-            "                           = results.id)"
-            "                   AND (valid_overrides.hosts is NULL"
-            "                        OR valid_overrides.hosts = ''"
-            "                        OR hosts_contains"
-            "                            (valid_overrides.hosts,"
-            "                             results.host))"
-            "                   AND (valid_overrides.port is NULL"
-            "                        OR valid_overrides.port = ''"
-            "                        OR valid_overrides.port"
-            "                           = results.port)"
-            "                   AND severity_matches_ov"
-            "                        (coalesce"
-            "                          ((CASE WHEN results.severity"
-            "                                      > " G_STRINGIFY
-                                                             (SEVERITY_LOG)
-            "                            THEN (SELECT"
-            "                                   CAST (cvss_base"
-            "                                         AS double precision)"
-            "                                  FROM nvts"
-            "                                  WHERE nvts.oid"
-            "                                        = results.nvt)"
-            "                            ELSE results.severity"
-            "                            END),"
-            "                           results.severity),"
-            "                         valid_overrides.severity)"
-            "                   LIMIT 1),"
-            "                  coalesce ((CASE WHEN results.severity"
-            "                                       > " G_STRINGIFY
-                                                              (SEVERITY_LOG)
-            "                             THEN (SELECT"
-            "                                   CAST (cvss_base"
-            "                                         AS double precision)"
-            "                                   FROM nvts"
-            "                                   WHERE nvts.oid"
-            "                                         = results.nvt)"
-            "                             ELSE results.severity"
-            "                             END),"
-            "                            results.severity)))";
-      else
-        columns[0].select
-          = "(SELECT coalesce ((CASE WHEN results.severity"
-            "                             > " G_STRINGIFY (SEVERITY_LOG)
-            "                        THEN (SELECT CAST (cvss_base"
-            "                                           AS double precision)"
-            "                              FROM nvts"
-            "                              WHERE nvts.oid = results.nvt)"
-            "                        ELSE results.severity"
-            "                        END),"
-            "                  results.severity))";
-    }
+  if (apply_overrides)
+    columns[0].select
+      = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
+        "                   WHERE valid_overrides.result_nvt"
+        "                         = results.result_nvt"
+        "                   AND (valid_overrides.result = 0"
+        "                        OR valid_overrides.result"
+        "                           = results.id)"
+        "                   AND (valid_overrides.hosts is NULL"
+        "                        OR valid_overrides.hosts = ''"
+        "                        OR hosts_contains"
+        "                            (valid_overrides.hosts,"
+        "                             results.host))"
+        "                   AND (valid_overrides.port is NULL"
+        "                        OR valid_overrides.port = ''"
+        "                        OR valid_overrides.port"
+        "                           = results.port)"
+        "                   AND severity_matches_ov"
+        "                        (coalesce"
+        "                          ((CASE WHEN results.severity"
+        "                                      > " G_STRINGIFY
+                                                         (SEVERITY_LOG)
+        "                            THEN (SELECT"
+        "                                   CAST (cvss_base"
+        "                                         AS double precision)"
+        "                                  FROM nvts"
+        "                                  WHERE nvts.oid"
+        "                                        = results.nvt)"
+        "                            ELSE results.severity"
+        "                            END),"
+        "                           results.severity),"
+        "                         valid_overrides.severity)"
+        "                   LIMIT 1),"
+        "                  coalesce ((CASE WHEN results.severity"
+        "                                       > " G_STRINGIFY
+                                                          (SEVERITY_LOG)
+        "                             THEN (SELECT"
+        "                                   CAST (cvss_base"
+        "                                         AS double precision)"
+        "                                   FROM nvts"
+        "                                   WHERE nvts.oid"
+        "                                         = results.nvt)"
+        "                             ELSE results.severity"
+        "                             END),"
+        "                            results.severity)))";
   else
-    {
-      if (apply_overrides)
-        columns[0].select
-          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                   WHERE valid_overrides.result_nvt"
-            "                         = results.result_nvt"
-            "                   AND (valid_overrides.result = 0"
-            "                        OR valid_overrides.result"
-            "                           = results.id)"
-            "                   AND (valid_overrides.hosts is NULL"
-            "                        OR valid_overrides.hosts = ''"
-            "                        OR hosts_contains"
-            "                            (valid_overrides.hosts,"
-            "                             results.host))"
-            "                   AND (valid_overrides.port is NULL"
-            "                        OR valid_overrides.port = ''"
-            "                        OR valid_overrides.port"
-            "                           = results.port)"
-            "                   AND severity_matches_ov"
-            "                        (results.severity,"
-            "                         valid_overrides.severity)"
-            "                   LIMIT 1),"
-            "                  results.severity))";
-      else
-        columns[0].select
-          = "(SELECT results.severity)";
-    }
+    columns[0].select
+      = "(SELECT coalesce ((CASE WHEN results.severity"
+        "                             > " G_STRINGIFY (SEVERITY_LOG)
+        "                        THEN (SELECT CAST (cvss_base"
+        "                                           AS double precision)"
+        "                              FROM nvts"
+        "                              WHERE nvts.oid = results.nvt)"
+        "                        ELSE results.severity"
+        "                        END),"
+        "                  results.severity))";
 
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
@@ -22026,16 +21954,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[2].filter = NULL;
   columns[2].type = KEYWORD_TYPE_UNKNOWN;
 
-  extra_tables = result_iterator_opts_table (apply_overrides,
-                                             dynamic_severity);
+  extra_tables = result_iterator_opts_table (apply_overrides);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     apply_overrides, dynamic_severity,
+                                     apply_overrides,
                                      filter ? filter : get->filter);
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
-                                            dynamic_severity,
                                             "min_qod=0");
 
   free (filter);
@@ -22125,15 +22051,12 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                           const gchar *extra_order)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_dynamic[] = RESULT_ITERATOR_COLUMNS_D;
   static column_t columns_overrides_dynamic[] = RESULT_ITERATOR_COLUMNS_OD;
-  static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   static column_t columns_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_D_NO_CERT;
   static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
-  int ret;
+  int ret, apply_overrides;
   gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
-  int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
   if (report == -1)
@@ -22153,52 +22076,38 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  dynamic_severity = setting_dynamic_severity_int ();
 
   if (manage_cert_loaded ())
     {
       if (apply_overrides)
-        /* Overrides, maybe dynamic. */
+        /* Overrides. */
         actual_columns = columns_overrides_dynamic;
       else
-        {
-          if (dynamic_severity)
-            /* Dynamic, no overrides. */
-            actual_columns = columns_dynamic;
-          else
-            /* No dynamic, no overrides. */
-            actual_columns = columns;
-        }
+        /* No overrides. */
+        actual_columns = columns_dynamic;
     }
   else
     {
       if (apply_overrides)
-        /* Overrides, maybe dynamic. */
+        /* Overrides. */
         actual_columns = columns_overrides_dynamic_no_cert;
       else
-        {
-          if (dynamic_severity)
-            /* Dynamic, no overrides. */
-            actual_columns = columns_dynamic_no_cert;
-          else
-            /* No dynamic, no overrides. */
-            actual_columns = columns_no_cert;
-        }
+        /* No overrides. */
+        actual_columns = columns_dynamic_no_cert;
     }
 
-  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+  opts_tables = result_iterator_opts_table (apply_overrides);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
                                   opts_tables);
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     apply_overrides, dynamic_severity,
+                                     apply_overrides,
                                      filter ? filter : get->filter);
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
-                                            dynamic_severity,
                                             "min_qod=0");
 
   free (filter);
@@ -22241,9 +22150,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
-  int ret;
+  int ret, apply_overrides;
   gchar *filter, *extra_tables, *extra_where, *opts_tables;
-  int apply_overrides, dynamic_severity;
 
   if (report == -1)
     return 0;
@@ -22259,16 +22167,15 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   apply_overrides
     = filter_term_apply_overrides (filter ? filter : get->filter);
-  dynamic_severity = setting_dynamic_severity_int ();
 
-  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+  opts_tables = result_iterator_opts_table (apply_overrides);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s",
                                   opts_tables);
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
-                                     apply_overrides, dynamic_severity,
+                                     apply_overrides,
                                      filter ? filter : get->filter);
 
   ret = count ("result", get,
@@ -23814,17 +23721,8 @@ report_counts (const char* report_id, int* holes, int* infos,
 static int
 report_counts_cache_exists (report_t report, int override, int min_qod)
 {
-  if (setting_dynamic_severity_int ())
-    return 0;
-  else
-    return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
-                    " WHERE report = %llu"
-                    "   AND override = %d"
-                    "   AND \"user\" = (SELECT id FROM users"
-                    "                   WHERE users.uuid = '%s')"
-                    "   AND min_qod = %d"
-                    "   AND (end_time = 0 OR end_time >= m_now ()));",
-                    report, override, current_credentials.uuid, min_qod);
+  // FIX huge
+  return 0;
 }
 
 /**
@@ -23872,102 +23770,7 @@ static int
 cache_report_counts (report_t report, int override, int min_qod,
                      severity_data_t* data)
 {
-  int i, ret;
-  double severity;
-  int end_time;
-
-  /* Do not cache results when using dynamic severity. */
-
-  if (setting_dynamic_severity_int ())
-    return 0;
-
-  /* Try cache results. */
-
-  ret = sql_giveup ("DELETE FROM report_counts"
-                    " WHERE report = %llu"
-                    "   AND override = %i"
-                    "   AND min_qod = %i"
-                    "   AND \"user\" = (SELECT id FROM users"
-                    "                   WHERE users.uuid = '%s');",
-                    report, override, min_qod, current_credentials.uuid);
-  if (ret)
-    {
-      return ret;
-    }
-
-  if (data->total == 0)
-    {
-      /* Create dummy entry for empty reports */
-      ret = sql_giveup ("INSERT INTO report_counts"
-                        " (report, \"user\", override, min_qod, severity,"
-                        "  count, end_time)"
-                        " VALUES (%llu,"
-                        "         (SELECT id FROM users"
-                        "          WHERE users.uuid = '%s'),"
-                        "         %d, %d, " G_STRINGIFY (SEVERITY_MISSING) ","
-                        "         0, 0);",
-                        report, current_credentials.uuid, override, min_qod);
-      if (ret)
-        {
-          return ret;
-        }
-    }
-  else
-    {
-      GString *insert;
-      int first;
-
-      i = 0;
-      if (override)
-        end_time = sql_int ("SELECT coalesce(min(end_time), 0)"
-                            " FROM overrides, results"
-                            " WHERE overrides.nvt = results.nvt"
-                            " AND results.report = %llu"
-                            " AND overrides.end_time >= m_now ();",
-                            report);
-      else
-        end_time = 0;
-
-      severity = severity_data_value (i);
-      insert = g_string_new ("INSERT INTO report_counts"
-                             " (report, \"user\", override, min_qod,"
-                             "  severity, count, end_time)"
-                             " VALUES");
-      first = 1;
-      while (severity <= (data->max + (1.0
-                                       / SEVERITY_SUBDIVISIONS
-                                       / SEVERITY_SUBDIVISIONS))
-             && severity != SEVERITY_MISSING)
-        {
-          if (data->counts[i] > 0)
-            {
-              g_string_append_printf (insert,
-                                      "%s (%llu,"
-                                      "    (SELECT id FROM users"
-                                      "     WHERE users.uuid = '%s'),"
-                                      "    %d, %d, %1.1f, %d, %d)",
-                                      first == 1 ? "" : ",",
-                                      report, current_credentials.uuid,
-                                      override, min_qod, severity,
-                                      data->counts[i], end_time);
-              first = 0;
-            }
-          i++;
-          severity = severity_data_value (i);
-        }
-
-      if (i)
-        {
-          g_string_append_printf (insert, ";");
-          ret = sql_giveup (insert->str);
-          if (ret)
-            {
-              g_string_free (insert, TRUE);
-              return ret;
-            }
-        }
-      g_string_free (insert, TRUE);
-    }
+  // FIX huge
   return 0;
 }
 
@@ -36225,21 +36028,15 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     {
       gchar *severity_sql;
 
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT CASE"
-                                        " WHEN results.severity"
-                                        "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN CAST (nvts.cvss_base AS real)"
-                                        " ELSE results.severity END"
-                                        " FROM results, nvts"
-                                        " WHERE (nvts.oid = results.nvt)"
-                                        "   AND (results.id = %llu))",
-                                        result);
-      else
-        severity_sql = g_strdup_printf ("(SELECT results.severity"
-                                        " FROM results"
-                                        " WHERE results.id = %llu)",
-                                        result);
+      severity_sql = g_strdup_printf ("(SELECT CASE"
+                                      " WHEN results.severity"
+                                      "      > " G_STRINGIFY (SEVERITY_LOG)
+                                      " THEN CAST (nvts.cvss_base AS real)"
+                                      " ELSE results.severity END"
+                                      " FROM results, nvts"
+                                      " WHERE (nvts.oid = results.nvt)"
+                                      "   AND (results.id = %llu))",
+                                      result);
 
       result_clause = g_strdup_printf (" AND"
                                        " (result = %llu"
@@ -36363,21 +36160,15 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     {
       gchar *severity_sql;
 
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT CASE"
-                                        " WHEN results.severity"
-                                        "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN CAST (nvts.cvss_base AS real)"
-                                        " ELSE results.severity END"
-                                        " FROM results, nvts"
-                                        " WHERE (nvts.oid = results.nvt)"
-                                        "   AND (results.id = %llu))",
-                                        result);
-      else
-        severity_sql = g_strdup_printf ("(SELECT results.severity"
-                                        " FROM results"
-                                        " WHERE results.id = %llu)",
-                                        result);
+      severity_sql = g_strdup_printf ("(SELECT CASE"
+                                      " WHEN results.severity"
+                                      "      > " G_STRINGIFY (SEVERITY_LOG)
+                                      " THEN CAST (nvts.cvss_base AS real)"
+                                      " ELSE results.severity END"
+                                      " FROM results, nvts"
+                                      " WHERE (nvts.oid = results.nvt)"
+                                      "   AND (results.id = %llu))",
+                                      result);
 
       result_clause = g_strdup_printf (" AND"
                                        " (result = %llu"
@@ -37492,21 +37283,15 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     {
       gchar *severity_sql;
 
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT CASE"
-                                        " WHEN results.severity"
-                                        "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN CAST (nvts.cvss_base AS real)"
-                                        " ELSE results.severity END"
-                                        " FROM results, nvts"
-                                        " WHERE (nvts.oid = results.nvt)"
-                                        "   AND (results.id = %llu))",
-                                        result);
-      else
-        severity_sql = g_strdup_printf ("(SELECT results.severity"
-                                        " FROM results"
-                                        " WHERE results.id = %llu)",
-                                        result);
+      severity_sql = g_strdup_printf ("(SELECT CASE"
+                                      " WHEN results.severity"
+                                      "      > " G_STRINGIFY (SEVERITY_LOG)
+                                      " THEN CAST (nvts.cvss_base AS real)"
+                                      " ELSE results.severity END"
+                                      " FROM results, nvts"
+                                      " WHERE (nvts.oid = results.nvt)"
+                                      "   AND (results.id = %llu))",
+                                      result);
 
       result_clause = g_strdup_printf (" AND"
                                        " (result = %llu"
@@ -37631,21 +37416,15 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     {
       gchar *severity_sql;
 
-      if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT CASE"
-                                        " WHEN results.severity"
-                                        "      > " G_STRINGIFY (SEVERITY_LOG)
-                                        " THEN CAST (nvts.cvss_base AS real)"
-                                        " ELSE results.severity END"
-                                        " FROM results, nvts"
-                                        " WHERE (nvts.oid = results.nvt)"
-                                        "   AND (results.id = %llu))",
-                                        result);
-      else
-        severity_sql = g_strdup_printf ("(SELECT results.severity"
-                                        " FROM results"
-                                        " WHERE results.id = %llu)",
-                                        result);
+      severity_sql = g_strdup_printf ("(SELECT CASE"
+                                      " WHEN results.severity"
+                                      "      > " G_STRINGIFY (SEVERITY_LOG)
+                                      " THEN CAST (nvts.cvss_base AS real)"
+                                      " ELSE results.severity END"
+                                      " FROM results, nvts"
+                                      " WHERE (nvts.oid = results.nvt)"
+                                      "   AND (results.id = %llu))",
+                                      result);
 
       result_clause = g_strdup_printf (" AND"
                                        " (result = %llu"
@@ -46987,7 +46766,7 @@ void
 hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
 {
   gchar *new_severity_sql;
-  int dynamic_severity, overrides, min_qod;
+  int overrides, min_qod;
 
   if (overrides_arg)
     overrides = *overrides_arg;
@@ -47025,8 +46804,7 @@ hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
         }
     }
 
-  dynamic_severity = setting_dynamic_severity_int ();
-  new_severity_sql = new_severity_clause (overrides, dynamic_severity);
+  new_severity_sql = new_severity_clause (overrides);
 
   sql ("INSERT INTO host_max_severities"
        " (host, severity, source_type, source_id, creation_time)"
@@ -48831,18 +48609,6 @@ setting_default_severity_dbl ()
 }
 
 /**
- * @brief Return the Dynamic Severity user setting as an int.
- *
- * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
- *         or does not exist.
- */
-static int
-setting_dynamic_severity_int ()
-{
-  return current_credentials.dynamic_severity;
-}
-
-/**
  * @brief Return the user's timezone.
  *
  * @return User Severity Class in settings if it exists, else NULL.
@@ -49275,12 +49041,6 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (value);
               return 2;
             }
-        }
-
-      if (strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0)
-        {
-          /* Dynamic Severity */
-          current_credentials.dynamic_severity = atoi (value);
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
@@ -54499,8 +54259,7 @@ type_opts_table (const char *type, const char *filter)
     return report_iterator_opts_table (filter_term_apply_overrides (filter),
                                        filter_term_min_qod (filter));
   if (strcasecmp (type, "RESULT") == 0)
-    return result_iterator_opts_table (filter_term_apply_overrides (filter),
-                                       setting_dynamic_severity_int ());
+    return result_iterator_opts_table (filter_term_apply_overrides (filter));
   if (strcasecmp (type, "VULN") == 0)
     {
       gchar *task_id, *report_id, *host;
@@ -54628,7 +54387,6 @@ type_extra_where (const char *type, int trash, const char *filter,
 
       extra_where = results_extra_where (trash, report, NULL,
                                          apply_overrides,
-                                         setting_dynamic_severity_int (),
                                          filter);
     }
   else if (strcasecmp (type, "VULN") == 0)

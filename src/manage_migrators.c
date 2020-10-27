@@ -2496,6 +2496,39 @@ migrate_237_to_238 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 238 to version 239.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_238_to_239 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 238. */
+
+  if (manage_db_version () != 238)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* View result_new_severities changed. */
+
+  sql ("DROP VIEW result_new_severities;");
+
+  /* Set the database version to 239. */
+
+  set_db_version (239);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2540,6 +2573,7 @@ static migrator_t database_migrators[] = {
   {236, migrate_235_to_236},
   {237, migrate_236_to_237},
   {238, migrate_237_to_238},
+  {239, migrate_238_to_239},
   /* End marker. */
   {-1, NULL}};
 
