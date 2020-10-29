@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <gvm/base/cvss.h>
 #include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
 
@@ -2742,8 +2743,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
                        GHashTable *hashed_cpes, int *transaction_size)
 {
   gboolean cvss_is_v3;
-  element_t published, summary, cvss, score, base_metrics, cvss_vector, list;
-  int score_int;
+  element_t published, summary, cvss, base_metrics, cvss_vector, list;
+  int score;
   gchar *quoted_id, *quoted_summary, *quoted_cvss_vector;
   gchar *quoted_software, *id;
   GString *software;
@@ -2786,19 +2787,12 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
 
   if (base_metrics == NULL)
     {
-      score = NULL;
+      score = 0;
       cvss_vector = NULL;
     }
   else
     {
-      score = element_child (base_metrics,
-                             cvss_is_v3 ? "cvss3:base-score" : "cvss:score");
-      if (score == NULL)
-        {
-          g_warning ("%s: cvss:score missing", __func__);
-          g_free (id);
-          return -1;
-        }
+      double base;
 
       cvss_vector = element_child (base_metrics,
                                    cvss_is_v3 ? "cvss3:vector-string"
@@ -2809,12 +2803,16 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           g_free (id);
           return -1;
         }
-    }
 
-  if (score == NULL)
-    score_int = 0;
-  else
-    score_int = round (atof (element_text (score)) * 10);
+      base = get_cvss_score_from_base_metrics (element_text (cvss_vector));
+      if (base == -1.0)
+        {
+          g_warning ("%s: failed to get score from base (id %s)", __func__, id);
+          g_free (id);
+          return -1;
+        }
+      score = base * 10;
+    }
 
   summary = element_child (entry, "vuln:summary");
   if (summary == NULL)
@@ -2877,7 +2875,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           quoted_id,
           time_published,
           time_modified,
-          score_int,
+          score,
           quoted_summary,
           quoted_cvss_vector,
           quoted_software);
