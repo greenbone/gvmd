@@ -2802,7 +2802,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
         cvss_vector = element_child (base_metrics, "cvss3:vectorString");
       if (cvss_vector == NULL)
         {
-          g_warning ("%s: cvss:access-vector missing", __func__);
+          g_warning ("%s: cvss:vector-string missing (id %s)", __func__, id);
           g_free (id);
           return -1;
         }
