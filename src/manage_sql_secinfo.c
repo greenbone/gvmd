@@ -2797,6 +2797,9 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
       cvss_vector = element_child (base_metrics,
                                    cvss_is_v3 ? "cvss3:vector-string"
                                               : "cvss:vector-string");
+      if (cvss_is_v3 && (cvss_vector == NULL))
+        /* At least nvdcve-2.0-2004.xml uses this format. */
+        cvss_vector = element_child (base_metrics, "cvss3:vectorString");
       if (cvss_vector == NULL)
         {
           g_warning ("%s: cvss:access-vector missing", __func__);
