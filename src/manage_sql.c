@@ -20338,7 +20338,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_string_append_printf (insert,
                               " (make_uuid (), %llu, m_now (), %llu, '%s',"
                               "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-                              "  %s::float * 10)::integer, '%s', '%s',"
+                              "  (%s::float * 10)::integer, '%s', '%s',"
                               "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
                               "  %llu)",
                               owner,
