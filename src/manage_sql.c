@@ -47513,10 +47513,11 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM nvt_selectors WHERE name IN"
-       " (SELECT nvt_selector FROM configs_trash"
-       "  WHERE owner = (SELECT id FROM users"
-       "                 WHERE uuid = '%s'));",
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " AND name IN (SELECT nvt_selector FROM configs_trash"
+       "              WHERE owner = (SELECT id FROM users"
+       "                             WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM config_preferences_trash"
        " WHERE config IN (SELECT id FROM configs_trash"
