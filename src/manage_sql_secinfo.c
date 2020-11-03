@@ -4508,13 +4508,20 @@ sync_cert ()
 
   last_scap_update = 0;
   if (manage_scap_loaded ())
-    last_scap_update = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
-                                "                  WHERE name = 'last_update'),"
-                                "                 '0');");
-  g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
+    {
+      last_scap_update
+        = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
+                   "                  WHERE name = 'last_update'),"
+                   "                 '0');");
+      g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
 
-  update_cvss_dfn_cert (updated_dfn_cert, last_cert_update, last_scap_update);
-  update_cvss_cert_bund (updated_cert_bund, last_cert_update, last_scap_update);
+      update_cvss_dfn_cert (updated_dfn_cert,
+                            last_cert_update,
+                            last_scap_update);
+      update_cvss_cert_bund (updated_cert_bund,
+                             last_cert_update,
+                             last_scap_update);
+    }
 
   g_debug ("%s: update timestamp", __func__);
 
