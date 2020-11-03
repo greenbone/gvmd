@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add filter term 'predefined' [#1263](https://github.com/greenbone/gvmd/pull/1263)
 - Add missing elements in get_nvts and get_preferences GMP doc [#1307](https://github.com/greenbone/gvmd/pull/1307)
 - Add command line options db-host and db-port [#1308](https://github.com/greenbone/gvmd/pull/1308)
+- Add missing config and target to modify_task GMP doc [#1310](https://github.com/greenbone/gvmd/pull/1310)
 - Add version for NVTs and CVEs in make_osp_result [#1335](https://github.com/greenbone/gvmd/pull/1335)
 
 ### Changed
