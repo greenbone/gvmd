@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 - Fix GMP doc text of `active` elem for notes and overrides [#1323](https://github.com/greenbone/gvmd/pull/1323)
 - Move feed object in trash checks to startup [#1325](https://github.com/greenbone/gvmd/pull/1325)
+- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
 - Do not inherit settings from deleted users [#1328](https://github.com/greenbone/gvmd/pull/1328)
 - Delete TLS certificate sources when deleting users [#1334](https://github.com/greenbone/gvmd/pull/1334)
 
