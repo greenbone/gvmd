@@ -4120,7 +4120,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>active</name>
-      <summary>Seconds note will be active.  -1 on always, 0 off</summary>
+      <summary>Days note will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -4249,7 +4249,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>active</name>
-      <summary>Seconds override will be active.  -1 on always, 0 off</summary>
+      <summary>Days override will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -24010,7 +24010,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </pattern>
     <ele>
       <name>active</name>
-      <summary>Seconds note will be active.  -1 on always, 0 off</summary>
+      <summary>Days note will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -24143,7 +24143,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </pattern>
     <ele>
       <name>active</name>
-      <summary>Seconds override will be active.  -1 on always, 0 off</summary>
+      <summary>Days override will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>

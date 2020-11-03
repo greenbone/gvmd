@@ -417,7 +417,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-gchar* gvmd_db_name = NULL;
+db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL };
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -911,9 +911,8 @@ cert_check_time ()
  *         -3 database needs to be initialised from server.
  */
 int
-manage_option_setup (GSList *log_config, const gchar *database)
+manage_option_setup (GSList *log_config, const db_conn_info_t *database)
 {
-  const gchar *db;
   int ret;
 
   if (gvm_auth_init ())
@@ -922,9 +921,8 @@ manage_option_setup (GSList *log_config, const gchar *database)
       return -1;
     }
 
-  db = database ? database : sql_default_database ();
-
-  ret = init_manage_helper (log_config, db, MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
+  ret = init_manage_helper (log_config, database,
+                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
   assert (ret != -4);
   switch (ret)
     {
@@ -941,7 +939,7 @@ manage_option_setup (GSList *log_config, const gchar *database)
         return ret;
     }
 
-  init_manage_process (db);
+  init_manage_process (database);
 
   return 0;
 }
@@ -6101,7 +6099,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
  *         from server.
  */
 int
-manage_encrypt_all_credentials (GSList *log_config, const gchar *database)
+manage_encrypt_all_credentials (GSList *log_config,
+                                const db_conn_info_t *database)
 {
   int ret;
 
@@ -6133,7 +6132,8 @@ manage_encrypt_all_credentials (GSList *log_config, const gchar *database)
  *         from server.
  */
 int
-manage_decrypt_all_credentials (GSList *log_config, const gchar *database)
+manage_decrypt_all_credentials (GSList *log_config,
+                                const db_conn_info_t *database)
 {
   int ret;
 
@@ -6407,7 +6407,7 @@ check_alerts ()
  *         from server.
  */
 int
-manage_check_alerts (GSList *log_config, const gchar *database)
+manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
 {
   int ret;
 
@@ -11138,7 +11138,7 @@ alert_subject_print (const gchar *subject, event_t event,
             case 'U':
               {
                 /* Alert UUID */
-                char *uuid = alert_uuid (task);
+                char *uuid = alert_uuid (alert);
                 g_string_append (new_subject, uuid);
                 free (uuid);
                 break;
@@ -11378,7 +11378,7 @@ alert_message_print (const gchar *message, event_t event,
             case 'U':
               {
                 /* Alert UUID */
-                char *uuid = alert_uuid (task);
+                char *uuid = alert_uuid (alert);
                 g_string_append (new_message, uuid);
                 free (uuid);
                 break;
@@ -15164,7 +15164,7 @@ task_average_scan_duration (task_t task)
  * @param[in]  database          Location of manage database.
  */
 void
-init_manage_process (const gchar *database)
+init_manage_process (const db_conn_info_t *database)
 {
   lockfile_t lockfile;
 
@@ -15210,7 +15210,7 @@ void
 reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
-  init_manage_process (gvmd_db_name);
+  init_manage_process (&gvmd_db_conn_info);
 }
 
 /**
@@ -16329,7 +16329,7 @@ cleanup_tables ()
  */
 static int
 init_manage_internal (GSList *log_config,
-                      const gchar *database,
+                      const db_conn_info_t *database,
                       int max_ips_per_target,
                       int max_email_attachment_size,
                       int max_email_include_size,
@@ -16447,7 +16447,10 @@ init_manage_internal (GSList *log_config,
     check_db_configs ();
 
   sql_close ();
-  gvmd_db_name = database ? g_strdup (database) : NULL;
+  gvmd_db_conn_info.name = database->name ? g_strdup (database->name) : NULL;
+  gvmd_db_conn_info.host = database->host ? g_strdup (database->host) : NULL;
+  gvmd_db_conn_info.port = database->port ? g_strdup (database->port) : NULL;
+
   if (fork_connection)
     manage_fork_connection = fork_connection;
   return 0;
@@ -16478,7 +16481,7 @@ init_manage_internal (GSList *log_config,
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
-init_manage (GSList *log_config, const gchar *database,
+init_manage (GSList *log_config, const db_conn_info_t *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
              manage_connection_forker_t fork_connection,
@@ -16511,7 +16514,7 @@ init_manage (GSList *log_config, const gchar *database,
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
-init_manage_helper (GSList *log_config, const gchar *database,
+init_manage_helper (GSList *log_config, const db_conn_info_t *database,
                     int max_ips_per_target)
 {
   return init_manage_internal (log_config,
@@ -19016,13 +19019,26 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   assert (task);
   assert (type);
 
-  if (nvt && g_str_has_prefix (nvt, "oval:"))
-    nvt_revision = ovaldef_version (nvt);
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_path = sql_quote (path ? path : "");
+
+  if (nvt)
+    {
+      if (g_str_has_prefix (nvt, "1.3.6.1.4.1.25623."))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM nvts WHERE oid='%s'",
+                                   quoted_nvt);
+      else if (g_str_has_prefix (nvt, "oval:"))
+        nvt_revision = ovaldef_version (nvt);
+      else if (g_str_has_prefix (nvt, "CVE-"))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM scap.cves WHERE uuid='%s'",
+                                   quoted_nvt);
+    }
+  
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -21786,7 +21802,10 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
+      "task",                                                                 \
+      KEYWORD_TYPE_STRING },
 
 /**
  * @brief Result iterator columns.
@@ -21935,6 +21954,9 @@ where_qod (int min_qod)
     { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
+      "task",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
     { "nvts.summary",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
@@ -22608,7 +22630,7 @@ result_iterator_nvt_name (iterator_t *iterator)
  *
  * @return The summary of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
+DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 28);
 
 /**
  * @brief Get the NVT insight from a result iterator.
@@ -22617,7 +22639,7 @@ DEF_ACCESS (result_iterator_nvt_summary, GET_ITERATOR_COLUMN_COUNT + 27);
  *
  * @return The insight of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
+DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 29);
 
 /**
  * @brief Get the NVT affected from a result iterator.
@@ -22626,7 +22648,7 @@ DEF_ACCESS (result_iterator_nvt_insight, GET_ITERATOR_COLUMN_COUNT + 28);
  *
  * @return The affected of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
+DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 30);
 
 /**
  * @brief Get the NVT impact from a result iterator.
@@ -22635,7 +22657,7 @@ DEF_ACCESS (result_iterator_nvt_affected, GET_ITERATOR_COLUMN_COUNT + 29);
  *
  * @return Impact text of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
+DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 31);
 
 /**
  * @brief Get the NVT solution from a result iterator.
@@ -22644,7 +22666,7 @@ DEF_ACCESS (result_iterator_nvt_impact, GET_ITERATOR_COLUMN_COUNT + 30);
  *
  * @return The solution of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 31);
+DEF_ACCESS (result_iterator_nvt_solution, GET_ITERATOR_COLUMN_COUNT + 32);
 
 /**
  * @brief Get the NVT solution_type from a result iterator.
@@ -22682,7 +22704,7 @@ result_iterator_nvt_solution_method (iterator_t *iterator)
  *
  * @return The detection of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
+DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 33);
 
 /**
  * @brief Get the NVT family from a result iterator.
@@ -22691,7 +22713,7 @@ DEF_ACCESS (result_iterator_nvt_detection, GET_ITERATOR_COLUMN_COUNT + 32);
  *
  * @return The family of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
+DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
  * @brief Get the NVT CVSS base value from a result iterator.
@@ -22740,7 +22762,7 @@ xml_append_nvt_refs (GString *xml, const char *oid, int *first)
  *
  * @return The tags of the NVT that produced the result, or NULL on error.
  */
-DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
+DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 35);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -23083,7 +23105,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -23097,7 +23119,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
@@ -27836,7 +27858,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   term);
       g_free (term);
       term = new_term;
-      /* Similary, the order will now be ascending. */
+      /* Similarly, the order will now be ascending. */
       sort_order = 1;
     }
 
@@ -38467,7 +38489,7 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
  *         to be initialised from server.
  */
 int
-manage_create_scanner (GSList *log_config, const gchar *database,
+manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *name, const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
                        const char *credential_id,
@@ -38649,7 +38671,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
  *         initialised from server.
  */
 int
-manage_delete_scanner (GSList *log_config, const gchar *database,
+manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
@@ -38721,7 +38743,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
  *         to be initialised from server.
  */
 int
-manage_modify_scanner (GSList *log_config, const gchar *database,
+manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *scanner_id, const char *name,
                        const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
@@ -38945,7 +38967,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
  *         initialised from server.
  */
 int
-manage_verify_scanner (GSList *log_config, const gchar *database,
+manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
@@ -40694,7 +40716,7 @@ verify_scanner (const char *scanner_id, char **version)
  * @return 0 success, -1 error.
  */
 int
-manage_get_scanners (GSList *log_config, const gchar *database)
+manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 {
   iterator_t scanners;
   int ret;
@@ -44704,7 +44726,8 @@ modify_permission (const char *permission_id, const char *name_arg,
  * @return 0 success, -1 error.
  */
 int
-manage_get_roles (GSList *log_config, const gchar *database, int verbose)
+manage_get_roles (GSList *log_config, const db_conn_info_t *database,
+                  int verbose)
 {
   iterator_t roles;
   int ret;
@@ -47503,10 +47526,11 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM nvt_selectors WHERE name IN"
-       " (SELECT nvt_selector FROM configs_trash"
-       "  WHERE owner = (SELECT id FROM users"
-       "                 WHERE uuid = '%s'));",
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " AND name IN (SELECT nvt_selector FROM configs_trash"
+       "              WHERE owner = (SELECT id FROM users"
+       "                             WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM config_preferences_trash"
        " WHERE config IN (SELECT id FROM configs_trash"
@@ -48923,7 +48947,20 @@ asset_host_count (const get_data_t *get)
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
-     "(SELECT count(*) FROM best_os_hosts WHERE cpe = oss.name)",             \
+     "(SELECT count(*)"                                                       \
+     " FROM (SELECT inner_cpes[1] AS cpe, host"                               \
+     "       FROM (SELECT array_agg (host_details.value"                      \
+     "                               ORDER BY host_details.id DESC)"          \
+     "                    AS inner_cpes,"                                     \
+     "                    host"                                               \
+     "             FROM host_details, hosts"                                  \
+     "             WHERE host_details.name = 'best_os_cpe'"                   \
+     "             AND hosts.id = host_details.host"                          \
+     "             AND (" ACL_USER_MAY_OPTS ("hosts") ")"                     \
+     "             GROUP BY host)"                                            \
+     "            AS host_details_subselect)"                                 \
+     "      AS array_removal_subselect"                                       \
+     " WHERE cpe = oss.name)",                                                \
      "hosts",                                                                 \
      KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
@@ -48994,30 +49031,22 @@ asset_host_count (const get_data_t *get)
  }
 
 /**
- * @brief OS asset WITH clause for PostgreSQL
+ * @brief Generate the extra_tables string for an OS iterator.
  *
- * This depends on non-standard (PostgreSQL 9.0+) "ORDER BY" clauses
- * in aggregate functions to select latest detail id.
+ * @return Newly allocated string.
  */
-#define ASSET_OS_WITH_POSTGRESQL                                              \
-  " best_os_hosts AS ("                                                       \
-  "  SELECT inner_cpes[1] AS cpe, host"                                       \
-  "    FROM (SELECT array_agg(value ORDER BY id DESC) AS inner_cpes, host"    \
-  "            FROM host_details WHERE name='best_os_cpe' GROUP BY host)"     \
-  "    AS inner_host_os_cpes"                                                 \
-  " )"
-
-/**
- * @brief Get the extra WITH clause for OS assets.
- *
- * @return The extra WITH clause.
- */
-const char *
-asset_os_extra_with ()
+static gchar *
+asset_os_iterator_opts_table ()
 {
-  static const char *with = ASSET_OS_WITH_POSTGRESQL;
+  assert (current_credentials.uuid);
 
-  return with;
+  return g_strdup_printf (", (SELECT"
+                          "   (SELECT id FROM users"
+                          "    WHERE users.uuid = '%s')"
+                          "   AS user_id,"
+                          "   'host' AS type)"
+                          "  AS opts",
+                          current_credentials.uuid);
 }
 
 /**
@@ -49036,9 +49065,9 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
   static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  const char *extra_with;
+  gchar *extra_tables;
 
-  extra_with = asset_os_extra_with ();
+  extra_tables = asset_os_iterator_opts_table ();
 
   ret = init_get_iterator2_with (iterator,
                                  "os",
@@ -49053,14 +49082,16 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  filter_columns,
                                  0,
-                                 NULL,
+                                 extra_tables,
                                  NULL,
                                  NULL,
                                  TRUE,
                                  FALSE,
                                  NULL,
-                                 extra_with,
+                                 NULL,
                                  0);
+
+  g_free (extra_tables);
 
   return ret;
 }
@@ -49132,13 +49163,10 @@ asset_os_count (const get_data_t *get)
   static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = OS_ITERATOR_COLUMNS;
   static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  const char *extra_with;
   int ret;
 
-  extra_with = asset_os_extra_with ();
-
   ret = count2 ("os", get, columns, NULL, where_columns, NULL,
-                extra_columns, 0, 0, 0, extra_with, TRUE);
+                extra_columns, 0, 0, 0, NULL, TRUE);
 
   return ret;
 }
@@ -51130,7 +51158,7 @@ setting_normalise (const gchar *uuid, const gchar *value)
  *         5 syntax error in setting value, -1 error.
  */
 int
-manage_modify_setting (GSList *log_config, const gchar *database,
+manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
                        const gchar *name, const gchar *uuid, const char *value)
 {
   int ret;
@@ -51292,7 +51320,7 @@ manage_default_ca_cert ()
  *         from server.
  */
 int
-manage_create_user (GSList *log_config, const gchar *database,
+manage_create_user (GSList *log_config, const db_conn_info_t *database,
                     const gchar *name, const gchar *password,
                     const gchar *role_name)
 {
@@ -51386,7 +51414,7 @@ manage_create_user (GSList *log_config, const gchar *database,
  *         from server.
  */
 int
-manage_delete_user (GSList *log_config, const gchar *database,
+manage_delete_user (GSList *log_config, const db_conn_info_t *database,
                     const gchar *name, const gchar *inheritor_name)
 {
   int ret;
@@ -51450,7 +51478,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
  * @return 0 success, -1 error.
  */
 int
-manage_get_users (GSList *log_config, const gchar *database,
+manage_get_users (GSList *log_config, const db_conn_info_t *database,
                   const gchar* role_name, int verbose)
 {
   iterator_t users;
@@ -51546,7 +51574,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
  * @return 0 success, -1 error.
  */
 int
-manage_set_password (GSList *log_config, const gchar *database,
+manage_set_password (GSList *log_config, const db_conn_info_t *database,
                      const gchar *name, const gchar *password)
 {
   user_t user;
@@ -52328,8 +52356,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
-      sql ("UPDATE settings SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
       sql ("DELETE FROM tag_resources"
            " WHERE resource_type = 'user' AND resource = %llu;",
            user);
@@ -52371,6 +52397,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       delete_permissions_cache_for_user (user);
 
+      sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
 
       sql_commit ();
@@ -55693,6 +55720,8 @@ type_opts_table (const char *type, const char *filter)
   if (strcasecmp (type, "TASK") == 0)
     return task_iterator_opts_table (filter_term_apply_overrides (filter),
                                      filter_term_min_qod (filter), 0);
+  if (strcasecmp (type, "OS") == 0)
+    return asset_os_iterator_opts_table ();
   if (strcasecmp (type, "REPORT") == 0)
     return report_iterator_opts_table (filter_term_apply_overrides (filter),
                                        filter_term_min_qod (filter));
@@ -55851,8 +55880,6 @@ type_extra_where (const char *type, int trash, const char *filter,
 static const char *
 type_extra_with (const char *type)
 {
-  if (strcmp (type, "os") == 0)
-    return asset_os_extra_with ();
   return NULL;
 }
 
@@ -56300,7 +56327,8 @@ delete_permissions_cache_for_user (user_t user)
  *         from server.
  */
 int
-manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
+manage_optimize (GSList *log_config, const db_conn_info_t *database,
+                 const gchar *name)
 {
   gchar *success_text;
   int ret;
@@ -56320,14 +56348,12 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   ret = 0;
   if (strcasecmp (name, "vacuum") == 0)
     {
-      const gchar *db;
       struct stat state;
       long long int old_size, new_size;
 
-      db = database ? database : sql_default_database ();
       old_size = 0LL;
       new_size = 0LL;
-      ret = stat (db, &state);
+      ret = stat (database->name, &state);
       if (ret)
         switch (errno)
           {
@@ -56343,7 +56369,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 
       sql ("VACUUM;");
 
-      ret = stat (db, &state);
+      ret = stat (database->name, &state);
       if (ret)
         switch (errno)
           {

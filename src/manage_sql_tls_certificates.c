@@ -734,13 +734,13 @@ make_tls_certificate_from_base64 (const char *name,
                               &serial,
                               &certificate_format);
 
-  if (ret && (allow_failed_info == 0 || fallback_fpr == NULL))
+  if (ret)
     {
-      g_free (certificate_decoded);
-      return 1;
-    }
-  else
-    {
+      if (allow_failed_info == 0 || fallback_fpr == NULL)
+        {
+          g_free (certificate_decoded);
+          return 1;
+        }
       sha256_fingerprint = g_strdup (fallback_fpr);
     }
 
@@ -939,6 +939,21 @@ void
 delete_tls_certificates_user (user_t user)
 {
   /* Regular tls_certificate. */
+
+  sql ("DELETE FROM tls_certificate_sources"
+       " WHERE tls_certificate IN"
+       " (SELECT id FROM tls_certificates WHERE owner = %llu)",
+       user);
+
+  sql ("DELETE FROM tls_certificate_locations"
+       " WHERE NOT EXISTS"
+       "   (SELECT * FROM tls_certificate_sources"
+       "     WHERE location = tls_certificate_locations.id);");
+
+  sql ("DELETE FROM tls_certificate_origins"
+       " WHERE NOT EXISTS"
+       "   (SELECT * FROM tls_certificate_sources"
+       "     WHERE origin = tls_certificate_origins.id);");
 
   sql ("DELETE FROM tls_certificates WHERE owner = %llu;", user);
 }

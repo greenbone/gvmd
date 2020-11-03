@@ -4558,6 +4558,15 @@ check_db_report_formats ()
   if (make_report_format_uuids_unique ())
     return -1;
 
+  /* Warn about feed resources in the trash. */
+  if (sql_int ("SELECT EXISTS (SELECT * FROM report_formats_trash"
+               "               WHERE predefined = 1);"))
+    {
+      g_warning ("%s: There are feed report formats in the trash."
+                 " These will be excluded from the sync.",
+                 __func__);
+    }
+
   return 0;
 }
 
