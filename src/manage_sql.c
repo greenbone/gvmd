@@ -32882,7 +32882,7 @@ check_for_new_scap ()
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cves"
+                   " (SELECT * FROM scap.cves"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32892,7 +32892,7 @@ check_for_new_scap ()
         event (EVENT_NEW_SECINFO, "cve", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cpes"
+                   " (SELECT * FROM scap.cpes"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32902,7 +32902,7 @@ check_for_new_scap ()
         event (EVENT_NEW_SECINFO, "cpe", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM ovaldefs"
+                   " (SELECT * FROM scap.ovaldefs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32922,7 +32922,7 @@ check_for_new_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32932,7 +32932,7 @@ check_for_new_cert ()
         event (EVENT_NEW_SECINFO, "cert_bund_adv", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM dfn_cert_advs"
+                   " (SELECT * FROM cert.dfn_cert_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33642,7 +33642,7 @@ check_for_updated_scap ()
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cves"
+                   " (SELECT * FROM scap.cves"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33658,7 +33658,7 @@ check_for_updated_scap ()
         event (EVENT_UPDATED_SECINFO, "cve", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cpes"
+                   " (SELECT * FROM scap.cpes"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33674,7 +33674,7 @@ check_for_updated_scap ()
         event (EVENT_UPDATED_SECINFO, "cpe", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM ovaldefs"
+                   " (SELECT * FROM scap.ovaldefs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33700,7 +33700,7 @@ check_for_updated_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33716,7 +33716,7 @@ check_for_updated_cert ()
         event (EVENT_UPDATED_SECINFO, "cert_bund_adv", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM dfn_cert_advs"
+                   " (SELECT * FROM cert.dfn_cert_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
