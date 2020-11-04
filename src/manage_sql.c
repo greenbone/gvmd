@@ -30547,6 +30547,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
+ * @param[in]   allow_simult_ips_same_host  Scanner preference allow_simult_ips_same_host.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -30565,6 +30566,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
+               const char *allow_simult_ips_same_host,
                target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
@@ -30701,6 +30703,11 @@ create_target (const char* name, const char* asset_hosts_filter,
     reverse_lookup_unify = "0";
   else
     reverse_lookup_unify = "1";
+  if (allow_simult_ips_same_host
+      && strcmp (allow_simult_ips_same_host, "0") == 0)
+    allow_simult_ips_same_host = "0";
+  else
+    allow_simult_ips_same_host = "1";
 
   quoted_name = sql_quote (name ?: "");
 
@@ -30712,14 +30719,17 @@ create_target (const char* name, const char* asset_hosts_filter,
   sql ("INSERT INTO targets"
        " (uuid, name, owner, hosts, exclude_hosts, comment, "
        "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
+       "  allow_simult_ips_same_host,"
        "  creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
        " '%s', '%s', '%s', %llu, '%s', '%s', %i,"
+       " %s,"
        " m_now (), m_now ());",
         quoted_name, current_credentials.uuid,
         quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
-        reverse_lookup_only, reverse_lookup_unify, alive_test);
+        reverse_lookup_only, reverse_lookup_unify, alive_test,
+        allow_simult_ips_same_host);
 
   new_target = sql_last_insert_id ();
   if (target)

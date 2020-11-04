@@ -1570,7 +1570,7 @@ int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, const char*,
                credential_t, credential_t, credential_t, const char *,
-               const char *, const char *, target_t*);
+               const char *, const char *, const char *, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
