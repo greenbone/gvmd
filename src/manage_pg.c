@@ -2011,7 +2011,8 @@ create_tables ()
        "  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  alive_test integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  allow_simult_ips_same_host integer DEFAULT 1);");
 
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2027,7 +2028,8 @@ create_tables ()
        "  port_list_location integer,"
        "  alive_test integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  allow_simult_ips_same_host integer DEFAULT 1);");
 
   sql ("CREATE TABLE IF NOT EXISTS targets_login_data"
        " (id SERIAL PRIMARY KEY,"
