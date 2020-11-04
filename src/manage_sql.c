@@ -30921,10 +30921,12 @@ delete_target (const char *target_id, int ultimate)
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, port_list_location,"
            "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "  allow_simult_ips_same_host,"
            "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
            "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "        allow_simult_ips_same_host,"
            "        creation_time, modification_time"
            " FROM targets WHERE id = %llu;",
            target);
@@ -46233,10 +46235,12 @@ manage_restore (const char *id)
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "  alive_test, creation_time, modification_time)"
+           "  alive_test, allow_simult_ips_same_host,"
+           "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "        alive_test, creation_time, modification_time"
+           "        alive_test, allow_simult_ips_same_host,"
+           "        creation_time, modification_time"
            " FROM targets_trash WHERE id = %llu;",
            resource);
 
