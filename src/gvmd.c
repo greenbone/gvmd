@@ -219,7 +219,7 @@ static gnutls_certificate_credentials_t client_credentials;
 /**
  * @brief Database connection info.
  */
-static db_conn_info_t database = { NULL, NULL, NULL };
+static db_conn_info_t database = { NULL, NULL, NULL, NULL };
 
 /**
  * @brief Is this process parent or child?
@@ -1703,7 +1703,6 @@ gvmd (int argc, char** argv)
   static gchar *scanner_key_priv = NULL;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
-  static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1765,6 +1764,10 @@ gvmd (int argc, char** argv)
           &(database.port),
           "Use <port> as database port or socket extension for PostgreSQL.",
           "<port>" },
+        { "db-user", '\0', 0, G_OPTION_ARG_STRING,
+          &(database.user),
+          "Use <user> as database user.",
+          "<user>" },
         { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
           G_OPTION_ARG_NONE,
           &decrypt_all_credentials,
@@ -1939,7 +1942,7 @@ gvmd (int argc, char** argv)
           "<scanner-credential>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_host,
-          "Scanner host for --create-scanner and --modify-scanner.",
+          "Scanner host or socket for --create-scanner and --modify-scanner.",
           "<scanner-host>" },
         { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_key_priv,
@@ -1963,7 +1966,7 @@ gvmd (int argc, char** argv)
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
-          " Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor'"
+          " Either 'OpenVAS', 'OSP', 'OSP-Sensor'"
           " or a number as used in GMP.",
           "<scanner-type>" },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT,
@@ -1977,11 +1980,6 @@ gvmd (int argc, char** argv)
           "During CERT and SCAP sync, commit updates to the database every"
           " <number> items, 0 for unlimited, default: "
           G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
-        { "slave-commit-size", '\0', 0, G_OPTION_ARG_INT,
-          &slave_commit_size,
-          "During slave updates, commit after every <number> updated results"
-          " and hosts, 0 for unlimited",
-          "<number>"},
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING,
           &manager_address_string_unix,
           "Listen on UNIX socket at <filename>.",
@@ -2054,9 +2052,6 @@ gvmd (int argc, char** argv)
   /* Set schedule_timeout */
 
   set_schedule_timeout (schedule_timeout);
-
-  /* Set slave commit size */
-  set_slave_commit_size (slave_commit_size);
 
   /* Set SecInfo update commit size */
 
@@ -2418,15 +2413,12 @@ gvmd (int argc, char** argv)
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP"))
         type = SCANNER_TYPE_OSP;
-      else if (!strcasecmp (scanner_type, "GMP"))
-        type = SCANNER_TYPE_GMP;
       else if (!strcasecmp (scanner_type, "OSP-Sensor"))
         type = SCANNER_TYPE_OSP_SENSOR;
       else
         {
           type = atoi (scanner_type);
-          if (type <= SCANNER_TYPE_NONE
-              || type >= SCANNER_TYPE_MAX
+          if (scanner_type_valid (type) == 0
               || type == SCANNER_TYPE_CVE)
             {
               fprintf (stderr, "Invalid scanner type value.\n");
@@ -2465,15 +2457,12 @@ gvmd (int argc, char** argv)
             type = SCANNER_TYPE_OPENVAS;
           else if (strcasecmp (scanner_type, "OSP") == 0)
             type = SCANNER_TYPE_OSP;
-          else if (!strcasecmp (scanner_type, "GMP"))
-            type = SCANNER_TYPE_GMP;
           else if (!strcasecmp (scanner_type, "OSP-Sensor"))
             type = SCANNER_TYPE_OSP_SENSOR;
           else
             {
               type = atoi (scanner_type);
-              if (type <= SCANNER_TYPE_NONE
-                  || type >= SCANNER_TYPE_MAX
+              if (scanner_type_valid (type) == 0
                   || type == SCANNER_TYPE_CVE)
                 {
                   fprintf (stderr, "Invalid scanner type value.\n");

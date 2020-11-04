@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -35,8 +35,6 @@
 #define SEVERITY_LOG 0.0
 // False positive severity constant
 #define SEVERITY_FP -1.0
-// Debug message severity constant
-#define SEVERITY_DEBUG -2.0
 // Error message severity constant
 #define SEVERITY_ERROR -3.0
 // Constant for missing or invalid severity
@@ -61,10 +59,10 @@ int
 manage_count_hosts_max (const char *, const char *, int);
 
 double
-level_min_severity (const char *, const char *);
+level_min_severity (const char *);
 
 double
-level_max_severity (const char *, const char *);
+level_max_severity (const char *);
 
 int
 valid_db_resource_type (const char *);

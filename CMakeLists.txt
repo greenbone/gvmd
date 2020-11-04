@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2019 Greenbone Networks GmbH
+# Copyright (C) 2009-2020 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -19,10 +19,8 @@ cmake_minimum_required (VERSION 3.0)
 
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
-# VERSION: Set patch version for stable releases, e.g. "9.0.0",
-#          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 20.8.0
+         VERSION 21.4.0
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -53,22 +51,21 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
   endif (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
-# Add padding zero for minor version
-string(LENGTH ${PROJECT_VERSION_MINOR} PROJECT_VERSION_MINOR_LENGTH)
-if (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
-  set (PROJECT_VERSION_MINOR_STRING "${PROJECT_VERSION_MINOR}")
-else (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
-  set (PROJECT_VERSION_MINOR_STRING "0${PROJECT_VERSION_MINOR}")
-endif (${PROJECT_VERSION_MINOR_LENGTH} GREATER 1)
+# Set dev version if this is a development version and not a full release,
+# unset (put value 0 or delete line) before a full release and reset after.
+set (PROJECT_DEV_VERSION 1)
 
-# If a patch version is not defined, assume a pre-release
-if (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
-  set (PROJECT_VERSION_SUFFIX ".${PROJECT_VERSION_PATCH}")
-else (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
-  set (PROJECT_VERSION_SUFFIX "+beta1")
-endif (DEFINED PROJECT_VERSION_PATCH AND NOT PROJECT_VERSION_PATCH STREQUAL "")
+# If PROJECT_DEV_VERSION is set, the version string will be set to:
+#   "major.minor.patch~dev${PROJECT_DEV_VERSION}${GIT_REVISION}"
+# If PROJECT_DEV_VERSION is NOT set, the version string will be set to:
+#   "major.minor.patch${GIT_REVISION}"
+# For CMAKE_BUILD_TYPE "Release" the git revision will be empty.
+if (PROJECT_DEV_VERSION)
+  set (PROJECT_VERSION_SUFFIX "~dev${PROJECT_DEV_VERSION}")
+endif (PROJECT_DEV_VERSION)
 
-set (PROJECT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR_STRING}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
+set (PROJECT_VERSION_STRING 
+"${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
 
 ## CPack configuration
 
@@ -99,13 +96,14 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 233)
+set (GVMD_DATABASE_VERSION 238)
 
-set (GVMD_SCAP_DATABASE_VERSION 16)
+set (GVMD_SCAP_DATABASE_VERSION 17)
 
-set (GVMD_CERT_DATABASE_VERSION 6)
+set (GVMD_CERT_DATABASE_VERSION 7)
 
-set (GMP_VERSION "20.08")
+set (GMP_VERSION "21.4")
+set (GMP_VERSION_FEED "21.04")
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -408,12 +406,17 @@ install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-certdata-sync
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-deb-creator.sh
-               ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-rpm-creator.sh
+install (FILES ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-deb-creator
+               ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-exe-creator
+               ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-rpm-creator
          DESTINATION ${GVM_DATA_DIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE
                      WORLD_READ WORLD_EXECUTE)
+
+install (FILES ${CMAKE_SOURCE_DIR}/tools/template.nsis
+         DESTINATION ${GVMD_DATA_DIR}
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/gvm-manage-certs
          DESTINATION ${BINDIR}

@@ -339,7 +339,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--scanner-host=<arg>SCANNER-HOST</arg></opt></p>
       <optdesc>
-        <p>Scanner host for --create-scanner and --modify-scanner.</p>
+        <p>Scanner host or socket for --create-scanner and --modify-scanner.</p>
       </optdesc>
     </option>
     <option>
@@ -388,13 +388,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <optdesc>
         <p>During CERT and SCAP sync, commit updates to the database every
            NUMBER items, 0 for unlimited.</p>
-      </optdesc>
-    </option>
-    <option>
-      <p><opt>--slave-commit-size=<arg>NUMBER</arg></opt></p>
-      <optdesc>
-        <p>During slave updates, commit after every NUMBER updated results and
-           hosts, 0 for unlimited.</p>
       </optdesc>
     </option>
     <option>

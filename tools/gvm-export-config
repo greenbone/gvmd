@@ -62,7 +62,7 @@ echo "  <preferences>"
 
 # 1.3.6.1.4.1.25623.1.0.100315:5:checkbox:Mark unrechable Hosts as dead (not scanning)
 # 1.3.6.1.4.1.25623.1.0.100315:11:checkbox:nmap: try also with only -sP
-sql "SELECT E'    <preference>\n      <nvt oid=\"' || split_part (name, ':', 1) || E'\">\n        <name>' || (SELECT name FROM nvts WHERE oid = split_part (config_preferences.name, ':', 1)) || E'</name>\n      </nvt>\n      <name>' || regexp_replace(name, E'([^:]*:){3}(.*)', '\2') || E'</name>\n      <type>' || split_part (name, ':', 3) || E'</type>\n      <value>' || value || E'</value>\n      <default>' || (SELECT value FROM nvt_preferences WHERE nvt_preferences.name = config_preferences.name) || E'</default>\n      <id>' || split_part (name, ':', 2) || E'</id>\n    </preference>' FROM config_preferences WHERE type = 'PLUGINS_PREFS' AND config = (SELECT id FROM configs WHERE uuid='${UUID}');"
+sql "SELECT E'    <preference>\n      <nvt oid=\"' || split_part (name, ':', 1) || E'\">\n        <name>' || (SELECT name FROM nvts WHERE oid = split_part (config_preferences.name, ':', 1)) || E'</name>\n      </nvt>\n      <name>' || regexp_replace(name, E'([^:]*:){3}(.*)', '\2') || E'</name>\n      <type>' || split_part (name, ':', 3) || E'</type>\n      ' || xmlelement(name value, value) || E'\n      ' || xmlelement(name default, (SELECT value FROM nvt_preferences WHERE nvt_preferences.name = config_preferences.name)) || E'\n      <id>' || split_part (name, ':', 2) || E'</id>\n    </preference>' FROM config_preferences WHERE type = 'PLUGINS_PREFS' AND config = (SELECT id FROM configs WHERE uuid='${UUID}');"
 
 echo "  </preferences>"
 

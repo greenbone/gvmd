@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -8237,7 +8237,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<severity>%s</severity>"
-            "<threat>%s</threat>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_owner_name (notes)
@@ -8257,8 +8256,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              ? note_iterator_port (notes) : "",
             note_iterator_severity (notes)
              ? note_iterator_severity (notes) : "",
-            note_iterator_threat (notes)
-             ? note_iterator_threat (notes) : "",
             uuid_task ? uuid_task : "",
             name_task ? name_task : "",
             trash_task,
@@ -8273,7 +8270,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
               get_data_t *result_get;
               result_get = report_results_get_data (1, 1,
                                                     1, /* apply_overrides */
-                                                    0, /* autofp*/
                                                     0  /* min_qod */);
               result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
@@ -8556,7 +8552,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
               get_data_t *result_get;
               result_get = report_results_get_data (1, 1,
                                                     1, /* apply_overrides */
-                                                    0, /* autofp */
                                                     0  /* min_qod */);
               result_get->id = g_strdup (uuid_result);
               init_result_get_iterator (&results, result_get,
@@ -9081,19 +9076,25 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
     {
       if (g_str_has_prefix (oid, "CVE-"))
         {
+          int score;
           gchar *cvss_base;
+
           cvss_base = cve_cvss_base (oid);
+          score = cve_score (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>cve</type>"
                                     "<name>%s</name>"
                                     "<cvss_base>%s</cvss_base>"
+                                    "<severities score=\"%i\">"
+                                    "</severities>"
                                     "<cpe id='%s'/>"
                                     "<cve>%s</cve>"
                                     "</nvt>",
                                     oid,
                                     oid,
                                     cvss_base,
+                                    score,
                                     result_iterator_port (results),
                                     oid);
           g_free (cvss_base);
@@ -9120,11 +9121,12 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<type>ovaldef</type>"
                                     "<name>%s</name>"
                                     "<family/>"
-                                    "<cvss_base>%s</cvss_base>"
+                                    "<severities score=\"%i\">"
+                                    "</severities>"
                                     "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
-                                    ovaldef_info_iterator_max_cvss (&iterator),
+                                    ovaldef_info_iterator_score (&iterator),
                                     ovaldef_info_iterator_description (&iterator));
           g_free (get.id);
           cleanup_iterator (&iterator);
@@ -9168,6 +9170,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           const char *cvss_base = result_iterator_nvt_cvss_base (results);
           GString *tags = g_string_new (result_iterator_nvt_tag (results));
           int first;
+          iterator_t severities;
 
           if (!cvss_base && !strcmp (oid, "0"))
             cvss_base = "0.0";
@@ -9246,11 +9249,35 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<tags>%s</tags>",
+                                    "<severities score=\"%i\">",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
+                                    result_iterator_nvt_score (results));
+
+          init_nvt_severity_iterator (&severities, oid);
+          while (next (&severities))
+            {
+              buffer_xml_append_printf
+                  (buffer,
+                   "<severity type=\"%s\">"
+                   "<origin>%s</origin>"
+                   "<date>%s</date>"
+                   "<score>%i</score>"
+                   "<value>%s</value>"
+                   "</severity>",
+                   nvt_severity_iterator_type (&severities),
+                   nvt_severity_iterator_origin (&severities),
+                   nvt_severity_iterator_date (&severities),
+                   nvt_severity_iterator_score (&severities),
+                   nvt_severity_iterator_value (&severities));
+            }
+          cleanup_iterator (&severities);
+
+          buffer_xml_append_printf (buffer,
+                                    "</severities>"
+                                    "<tags>%s</tags>",
                                     tags->str ?: "");
 
           if (result_iterator_nvt_solution (results)
@@ -9529,8 +9556,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf
    (buffer,
     "<severity>%.1f</severity>"
+    "<score>%i</score>"
     "<qod><value>%s</value>",
     result_iterator_severity_double (results),
+    result_iterator_score (results),
     qod ? qod : "");
 
   if (qod_type && strlen (qod_type))
@@ -13217,11 +13246,11 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
                              "<nvd_id>%s</nvd_id>"
-                             "<max_cvss>%s</max_cvss>"
+                             "<score>%d</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<status>%s</status>",
                              cpe_info_iterator_nvd_id (&info),
-                             cpe_info_iterator_max_cvss (&info),
+                             cpe_info_iterator_score (&info),
                              cpe_info_iterator_cve_refs (&info),
                              cpe_info_iterator_status (&info) ?
                              cpe_info_iterator_status (&info) : "");
@@ -13245,13 +13274,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                    " id=\"%s\">"
                                    "<vuln:cvss>"
                                    "<cvss:base_metrics>"
-                                   "<cvss:score>%s</cvss:score>"
+                                   "<cvss:score>%0.1lf</cvss:score>"
                                    "</cvss:base_metrics>"
                                    "</vuln:cvss>"
                                    "</entry>"
                                    "</cve>",
                                    cve_iterator_name (&cves),
-                                   cve_iterator_cvss (&cves));
+                                   cve_iterator_score (&cves) / 10.0);
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
             }
@@ -13260,24 +13289,12 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         {
           xml_string_append (result,
                              "<cve>"
-                             "<cvss>%s</cvss>"
-                             "<vector>%s</vector>"
-                             "<complexity>%s</complexity>"
-                             "<authentication>%s</authentication>"
-                             "<confidentiality_impact>%s</confidentiality_impact>"
-                             "<integrity_impact>%s</integrity_impact>"
-                             "<availability_impact>%s</availability_impact>"
+                             "<score>%d</score>"
+                             "<cvss_vector>%s</cvss_vector>"
                              "<description>%s</description>"
                              "<products>%s</products>",
-                             cve_info_iterator_cvss (&info)
-                              ? cve_info_iterator_cvss (&info)
-                              : "",
+                             cve_info_iterator_score (&info),
                              cve_info_iterator_vector (&info),
-                             cve_info_iterator_complexity (&info),
-                             cve_info_iterator_authentication (&info),
-                             cve_info_iterator_confidentiality_impact (&info),
-                             cve_info_iterator_integrity_impact (&info),
-                             cve_info_iterator_availability_impact (&info),
                              cve_info_iterator_description (&info),
                              cve_info_iterator_products (&info));
           if (get_info_data->details == 1)
@@ -13351,7 +13368,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              "<status>%s</status>"
                              "<class>%s</class>"
                              "<title>%s</title>"
-                             "<max_cvss>%s</max_cvss>"
+                             "<score>%d</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<file>%s</file>",
                              ovaldef_info_iterator_version (&info),
@@ -13359,7 +13376,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              ovaldef_info_iterator_status (&info),
                              ovaldef_info_iterator_class (&info),
                              ovaldef_info_iterator_title (&info),
-                             ovaldef_info_iterator_max_cvss (&info),
+                             ovaldef_info_iterator_score (&info),
                              ovaldef_info_iterator_cve_refs (&info),
                              ovaldef_info_iterator_file (&info));
           description = ovaldef_info_iterator_description (&info);
@@ -13373,22 +13390,22 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            "<cert_bund_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<max_cvss>%s</max_cvss>"
+                           "<score>%d</score>"
                            "<cve_refs>%s</cve_refs>",
                            cert_bund_adv_info_iterator_title (&info),
                            cert_bund_adv_info_iterator_summary (&info),
-                           cert_bund_adv_info_iterator_max_cvss(&info),
+                           cert_bund_adv_info_iterator_score(&info),
                            cert_bund_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
         xml_string_append (result,
                            "<dfn_cert_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<max_cvss>%s</max_cvss>"
+                           "<score>%d</score>"
                            "<cve_refs>%s</cve_refs>",
                            dfn_cert_adv_info_iterator_title (&info),
                            dfn_cert_adv_info_iterator_summary (&info),
-                           dfn_cert_adv_info_iterator_max_cvss(&info),
+                           dfn_cert_adv_info_iterator_score(&info),
                            dfn_cert_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
@@ -15287,7 +15304,6 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
-                                      NULL, /* autofp */
                                       &notes,
                                       &overrides,
                                       NULL, /* apply_overrides */
@@ -17042,7 +17058,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
-      int debugs, holes = 0, infos = 0, logs, warnings = 0;
+      int holes = 0, infos = 0, logs, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int false_positives, task_scanner_type;
       int target_available, config_available;
@@ -17151,10 +17167,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               // TODO Could skip this count for tasks page.
               if (report_counts (first_report_id,
-                                 &debugs, &holes_2, &infos_2, &logs,
+                                 &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
-                                 &severity_2, apply_overrides,
-                                 0, min_qod))
+                                 &severity_2, apply_overrides, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " first report, aborting",
                          __func__);
@@ -17168,11 +17183,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (((first_report_id == NULL)
                   || (strcmp (second_last_report_id, first_report_id)))
                   && report_counts (second_last_report_id,
-                                    &debugs, &holes_2, &infos_2,
+                                    &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
-                                    apply_overrides,
-                                    0, min_qod))
+                                    apply_overrides, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
                          __func__);
@@ -17223,10 +17237,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 {
                   if (report_counts
                       (last_report_id,
-                        &debugs, &holes, &infos, &logs,
+                        &holes, &infos, &logs,
                         &warnings, &false_positives, &severity,
-                        apply_overrides,
-                        0, min_qod))
+                        apply_overrides, min_qod))
                     g_error ("%s: GET_TASKS: error getting counts for"
                              " last report, aborting",
                              __func__);
@@ -17285,7 +17298,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        "<scan_start>%s</scan_start>"
                                        "<scan_end>%s</scan_end>"
                                        "<result_count>"
-                                       "<debug>%i</debug>"
                                        "<hole>%i</hole>"
                                        "<info>%i</info>"
                                        "<log>%i</log>"
@@ -17303,7 +17315,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        timestamp,
                                        scan_start,
                                        scan_end,
-                                       debugs,
                                        holes,
                                        infos,
                                        logs,
@@ -18573,7 +18584,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           {
             case 0:   /* Authentication succeeded. */
               {
-                const char *zone, *severity;
+                const char *zone;
                 char *pw_warning;
 
                 zone = (current_credentials.timezone
@@ -18595,7 +18606,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                 manage_session_set_timezone (zone);
 
-                severity = setting_severity ();
                 pw_warning = gvm_validate_password
                               (current_credentials.password,
                                current_credentials.username);
@@ -18607,14 +18617,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
-                    "<severity>%s</severity>"
                     "<password_warning>%s</password_warning>"
                     "</authenticate_response>",
                     current_credentials.role
                       ? current_credentials.role
                       : "",
                     zone,
-                    severity,
                     pw_warning ? pw_warning : "");
                 else
                   SENDF_TO_CLIENT_OR_FAIL
@@ -18623,13 +18631,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<role>%s</role>"
                     "<timezone>%s</timezone>"
-                    "<severity>%s</severity>"
                     "</authenticate_response>",
                     current_credentials.role
                       ? current_credentials.role
                       : "",
-                    zone,
-                    severity);
+                    zone);
 
                 free (pw_warning);
                 set_client_state (CLIENT_AUTHENTIC);

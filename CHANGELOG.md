@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [21.4] (unreleased)
+
+### Added
+- Parameter `--db-user` to set a database user [#1327](https://github.com/greenbone/gvmd/pull/1327)
+
+### Changed
+- Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
+- Clarify documentation for --scan-host parameter [#1277](https://github.com/greenbone/gvmd/pull/1277)
+- In result iterator access severity directly if possible [#1321](https://github.com/greenbone/gvmd/pull/1321)
+- Change SCAP and CERT data to use new severity scoring [#1333](https://github.com/greenbone/gvmd/pull/1333)
+
+### Fixed
+- Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
+- Check db version before creating SQL functions [#1304](https://github.com/greenbone/gvmd/pull/1304)
+- Fix severity_in_level SQL function [#1312](https://github.com/greenbone/gvmd/pull/1312)
+- Fix and simplify SecInfo migration [#1331](https://github.com/greenbone/gvmd/pull/1331)
+
+### Removed
+- Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)
+- Drop GMP scanners [#1269](https://github.com/greenbone/gvmd/pull/1269)
+- Reduce Severity Classes [#1285](https://github.com/greenbone/gvmd/pull/1285)
+- Removed Severity Classes [#1288](https://github.com/greenbone/gvmd/pull/1288)
+- Remove remaining use of "Severity Class" in where_levels_auto [#1311](https://github.com/greenbone/gvmd/pull/1311)
+- Remove the functionality "autofp" (Auto False Positives) [#1300](https://github.com/greenbone/gvmd/pull/1300)
+- Remove severity type "debug" [#1316](https://github.com/greenbone/gvmd/pull/1316)
+- Remove element "threat" of element "notes" [#1324](https://github.com/greenbone/gvmd/pull/1324)
+
+[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
+
 ## [20.8.1] (unreleased)
 
 ### Added
@@ -11,6 +40,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add filter term 'predefined' [#1263](https://github.com/greenbone/gvmd/pull/1263)
 - Add missing elements in get_nvts and get_preferences GMP doc [#1307](https://github.com/greenbone/gvmd/pull/1307)
 - Add command line options db-host and db-port [#1308](https://github.com/greenbone/gvmd/pull/1308)
+- Add missing config and target to modify_task GMP doc [#1310](https://github.com/greenbone/gvmd/pull/1310)
+- Add version for NVTs and CVEs in make_osp_result [#1335](https://github.com/greenbone/gvmd/pull/1335)
 
 ### Changed
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
@@ -39,6 +70,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 - Fix GMP doc text of `active` elem for notes and overrides [#1323](https://github.com/greenbone/gvmd/pull/1323)
 - Allow config to sync even if NVT family is not available [#1347](https://github.com/greenbone/gvmd/pull/1347)
+- Move feed object in trash checks to startup [#1325](https://github.com/greenbone/gvmd/pull/1325)
+- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
+- Do not inherit settings from deleted users [#1328](https://github.com/greenbone/gvmd/pull/1328)
+- Delete TLS certificate sources when deleting users [#1334](https://github.com/greenbone/gvmd/pull/1334)
+- Fix SQL errors in SCAP and CERT update [#1343](https://github.com/greenbone/gvmd/pull/1343)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)

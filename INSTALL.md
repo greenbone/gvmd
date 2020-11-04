@@ -7,7 +7,6 @@ necessary to install dependent development packages.
 ## Prerequisites for Greenbone Vulnerability Manager
 
 Prerequisites:
-
 * GCC (Debian package: gcc)
 * cmake >= 3.0 (Debian package: cmake)
 * glib-2.0 >= 2.42 (Debian package: libglib2.0-dev)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -30,6 +30,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -268,7 +269,7 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
-  int qod, i;
+  int qod, i, highest;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -340,6 +341,37 @@ insert_nvt (const nvti_t *nvti)
       g_free (quoted_id);
       g_free (quoted_text);
     }
+
+  sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
+
+  highest = 0;
+
+  for (i = 0; i < nvti_vtseverities_len (nvti); i++)
+    {
+      vtseverity_t *severity;
+      gchar *quoted_origin, *quoted_value;
+
+      severity = nvti_vtseverity (nvti, i);
+      quoted_origin = sql_quote (vtseverity_origin (severity) ?
+                                 vtseverity_origin (severity) : "");
+      quoted_value = sql_quote (vtseverity_value (severity) ?
+                                 vtseverity_value (severity) : "");
+
+      sql ("INSERT into vt_severities (vt_oid, type, origin, date, score, value)"
+           " VALUES ('%s', '%s', '%s', %i, %i, '%s');",
+           nvti_oid (nvti), vtseverity_type (severity),
+           quoted_origin, vtseverity_date (severity),
+           vtseverity_score (severity), quoted_value);
+      if (vtseverity_score (severity) > highest)
+        highest = vtseverity_score (severity);
+
+      g_free (quoted_origin);
+      g_free (quoted_value);
+    }
+
+  sql ("UPDATE nvts SET score = %i WHERE oid = '%s';",
+       highest,
+       nvti_oid (nvti));
 
   g_free (quoted_name);
   g_free (quoted_summary);
@@ -972,6 +1004,22 @@ DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
 DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
 
 /**
+ * @brief Get the score from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Score, or -1 if iteration is complete.
+ */
+int
+nvt_iterator_score (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
@@ -1207,7 +1255,7 @@ nvti_from_vt (entity_t vt)
   entity_t name, summary, insight, affected, impact, detection, solution;
   entity_t creation_time, modification_time;
   entity_t refs, ref, custom, family, category;
-  entity_t severities;
+  entity_t severities, severity;
 
   entities_t children;
 
@@ -1287,6 +1335,70 @@ nvti_from_vt (entity_t vt)
         nvti_set_solution_method (nvti, method);
     }
 
+  severities = entity_child (vt, "severities");
+  if (severities == NULL)
+    {
+      g_warning ("%s: VT missing SEVERITIES", __func__);
+      nvti_free (nvti);
+      return NULL;
+    }
+
+  children = severities->entities;
+  while ((severity = first_entity (children)))
+    {
+      const gchar *severity_type;
+
+      severity_type = entity_attribute (severity, "type");
+
+      if (severity_type == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: SEVERITY missing type attribute", __func__);
+          print_entity_to_string (severity, debug);
+          g_warning ("%s: severity: %s", __func__, debug->str);
+          g_string_free (debug, TRUE);
+        }
+      else
+        {
+          entity_t value;
+
+          value = entity_child (severity, "value");
+
+          if (!value)
+            {
+              GString *debug = g_string_new ("");
+              g_warning ("%s: SEVERITY missing value element", __func__);
+              print_entity_to_string (severity, debug);
+              g_warning ("%s: severity: %s", __func__, debug->str);
+              g_string_free (debug, TRUE);
+            }
+          else
+            {
+              double cvss_base_dbl;
+              gchar * cvss_base;
+
+              cvss_base_dbl
+                = get_cvss_score_from_base_metrics (entity_text (value));
+
+              nvti_add_vtseverity (nvti,
+                vtseverity_new (severity_type,
+                                NULL /* origin */,
+                                nvti_modification_time (nvti),
+                                round (cvss_base_dbl * 10.0),
+                                entity_text (value)));
+
+              nvti_add_tag (nvti, "cvss_base_vector", entity_text (value));
+
+              cvss_base = g_strdup_printf ("%.1f",
+                get_cvss_score_from_base_metrics (entity_text (value)));
+              nvti_set_cvss_base (nvti, cvss_base);
+              g_free (cvss_base);
+            }
+        }
+
+      children = next_entities (children);
+    }
+
   refs = entity_child (vt, "refs");
   if (refs)
     {
@@ -1326,33 +1438,6 @@ nvti_from_vt (entity_t vt)
           children = next_entities (children);
         }
     }
-
-  severities = entity_child (vt, "severities");
-  if (severities)
-    {
-      entity_t severity;
-
-      severity = entity_child (severities, "severity");
-      if (severity
-          && entity_attribute (severity, "type")
-          && (strcmp (entity_attribute (severity, "type"),
-                      "cvss_base_v2")
-              == 0))
-        {
-          gchar * cvss_base;
-
-          nvti_add_tag (nvti, "cvss_base_vector", entity_text (severity));
-
-          cvss_base = g_strdup_printf ("%.1f",
-            get_cvss_score_from_base_metrics (entity_text (severity)));
-          nvti_set_cvss_base (nvti, cvss_base);
-          g_free (cvss_base);
-        }
-      else
-        g_warning ("%s: no severity", __func__);
-    }
-  else
-    g_warning ("%s: no severities", __func__);
 
   custom = entity_child (vt, "custom");
   if (custom == NULL)
@@ -1642,6 +1727,76 @@ check_preference_names (int trash, time_t modification_time)
 
   cleanup_iterator (&prefs);
 }
+
+/**
+ * @brief Initialise an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  oid       OID of NVT.
+ */
+void
+init_nvt_severity_iterator (iterator_t* iterator, const char *oid)
+{
+  gchar *quoted_oid;
+  quoted_oid = sql_quote (oid ? oid : "");
+
+  init_iterator (iterator,
+                 "SELECT type, origin, iso_time(date), score, value"
+                 " FROM vt_severities"
+                 " WHERE vt_oid = '%s'",
+                 quoted_oid);
+
+  g_free (quoted_oid);
+}
+
+/**
+ * @brief Gets the type from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The type of the severity.
+ */
+DEF_ACCESS (nvt_severity_iterator_type, 0)
+
+/**
+ * @brief Gets the origin from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The origin of the severity.
+ */
+DEF_ACCESS (nvt_severity_iterator_origin, 1);
+
+/**
+ * @brief Gets the date from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The date of the severity in ISO time format.
+ */
+DEF_ACCESS (nvt_severity_iterator_date, 2);
+
+/**
+ * @brief Gets the score from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The score of the severity.
+ */
+int
+nvt_severity_iterator_score (iterator_t *iterator)
+{
+  return iterator_int (iterator, 3);
+}
+
+/**
+ * @brief Gets the value from an NVT severity iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * 
+ * @return The value of the severity in ISO time format.
+ */
+DEF_ACCESS (nvt_severity_iterator_value, 4);
 
 /**
  * @brief Update VTs via OSP.

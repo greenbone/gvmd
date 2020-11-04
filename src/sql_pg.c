@@ -280,12 +280,14 @@ sql_open (const db_conn_info_t *database)
   conn_info = g_strdup_printf ("dbname='%s'"
                                " host='%s'"
                                " port='%s'"
+                               " user='%s'"
                                " application_name='%s'",
                                database->name
                                 ? database->name
                                 : sql_default_database (),
                                database->host ? database->host : "",
                                database->port ? database->port : "",
+                               database->user ? database->user : "",
                                "gvmd");
   conn = PQconnectStart (conn_info);
   g_free (conn_info);

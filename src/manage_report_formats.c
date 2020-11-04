@@ -370,7 +370,7 @@ feed_dir_report_formats ()
   static gchar *path = NULL;
   if (path == NULL)
     path = g_build_filename (GVMD_FEED_DIR,
-                             GMP_VERSION,
+                             GMP_VERSION_FEED,
                              "report_formats",
                              NULL);
   return path;
@@ -643,15 +643,6 @@ sync_report_format_with_feed (const gchar *path)
   if (find_trash_report_format_no_acl (uuid, &report_format) == 0
       && report_format)
     {
-      static int warned = 0;
-
-      if (warned == 0)
-        {
-          warned = 1;
-          g_warning ("%s: ignoring a report format ('%s'), as it is in the trashcan"
-                     " (will not warn again)",
-                     __func__, uuid);
-        }
       g_free (uuid);
       return;
     }

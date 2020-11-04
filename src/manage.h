@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -48,6 +48,7 @@ typedef struct {
   gchar *name; ///< The database name
   gchar *host; ///< The database host or socket directory
   gchar *port; ///< The database port or socket file extension
+  gchar *user; ///< The database user name
 } db_conn_info_t;
 
 /**
@@ -261,7 +262,7 @@ typedef enum
   TASK_STATUS_STOPPED = 12,
   TASK_STATUS_INTERRUPTED = 13,
   TASK_STATUS_DELETE_ULTIMATE_REQUESTED = 14,
-  TASK_STATUS_STOP_REQUESTED_GIVEUP = 15,
+  /* 15 was removed (TASK_STATUS_STOP_REQUESTED_GIVEUP). */
   TASK_STATUS_DELETE_WAITING = 16,
   TASK_STATUS_DELETE_ULTIMATE_WAITING = 17,
   TASK_STATUS_QUEUED = 18
@@ -302,13 +303,16 @@ typedef enum
 typedef enum scanner_type
 {
   SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_OSP,
-  SCANNER_TYPE_OPENVAS,
-  SCANNER_TYPE_CVE,
-  SCANNER_TYPE_GMP,
-  SCANNER_TYPE_OSP_SENSOR,
-  SCANNER_TYPE_MAX,
+  SCANNER_TYPE_OSP = 1,
+  SCANNER_TYPE_OPENVAS = 2,
+  SCANNER_TYPE_CVE = 3,
+  /* 4 was removed (SCANNER_TYPE_GMP). */
+  SCANNER_TYPE_OSP_SENSOR = 5,
+  SCANNER_TYPE_MAX = 6,
 } scanner_type_t;
+
+int
+scanner_type_valid (scanner_type_t);
 
 typedef resource_t credential_t;
 typedef resource_t alert_t;
@@ -1025,8 +1029,8 @@ void
 severity_data_add_count (severity_data_t*, double, int);
 
 void
-severity_data_level_counts (const severity_data_t*, const gchar*,
-                            int*, int*, int*, int*, int*, int*, int*);
+severity_data_level_counts (const severity_data_t*,
+                            int*, int*, int*, int*, int*, int*);
 
 
 /* General task facilities. */
@@ -1232,27 +1236,6 @@ report_add_result (report_t, result_t);
 char*
 report_uuid (report_t);
 
-void
-report_set_slave_uuid (report_t, const gchar *);
-
-void
-report_set_slave_name (report_t, const gchar *);
-
-void
-report_set_slave_host (report_t, const gchar *);
-
-void
-report_set_slave_port (report_t, int);
-
-void
-report_set_slave_username (report_t, const gchar *);
-
-void
-report_set_slave_password (report_t, const gchar *);
-
-void
-report_set_source_iface (report_t, const gchar *);
-
 int
 task_last_resumable_report (task_t, report_t *);
 
@@ -1268,19 +1251,16 @@ report_task (report_t, task_t*);
 void
 report_compliance_by_uuid (const char *, int *, int *, int *);
 
-char *
-report_slave_task_uuid (report_t);
-
 int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
-               int, int, int);
+report_counts (const char*, int*, int*, int*, int*, int*, double*,
+               int, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
+report_counts_id (report_t, int*, int*, int*, int*, int*, double*,
                   const get_data_t*, const char*);
 
 int
@@ -1288,7 +1268,7 @@ report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,
                           double*, const get_data_t*, const char*);
 
 get_data_t*
-report_results_get_data (int, int, int, int, int);
+report_results_get_data (int, int, int, int);
 
 int
 scan_start_time_epoch (report_t);
@@ -1405,6 +1385,9 @@ result_iterator_nvt_cvss_base (iterator_t *);
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
+int
+result_iterator_nvt_score (iterator_t *);
+
 const char*
 result_iterator_descr (iterator_t*);
 
@@ -1425,6 +1408,9 @@ result_iterator_severity (iterator_t *);
 
 double
 result_iterator_severity_double (iterator_t *);
+
+int
+result_iterator_score (iterator_t *);
 
 const char*
 result_iterator_original_level (iterator_t*);
@@ -1566,7 +1552,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *, int *, gchar **);
+                               int *, int *, int *, int *, gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);
@@ -1834,6 +1820,9 @@ nvt_iterator_solution_type (iterator_t*);
 const char*
 nvt_iterator_solution_method (iterator_t*);
 
+int
+nvt_iterator_score (iterator_t *);
+
 char*
 nvt_default_timeout (const char *);
 
@@ -1958,6 +1947,25 @@ task_role_iterator_name (iterator_t*);
 
 const char*
 task_role_iterator_uuid (iterator_t*);
+
+/* NVT severities */
+void
+init_nvt_severity_iterator (iterator_t *, const char *);
+
+const char *
+nvt_severity_iterator_type (iterator_t *);
+
+const char *
+nvt_severity_iterator_origin (iterator_t *);
+
+const char *
+nvt_severity_iterator_date (iterator_t *);
+
+int
+nvt_severity_iterator_score (iterator_t *);
+
+const char *
+nvt_severity_iterator_value (iterator_t *);
 
 
 /* Credentials. */
@@ -2424,11 +2432,6 @@ manage_system_report (const char *, const char *, const char *, const char *,
 
 /* Scanners. */
 
-/**
- * @brief Default for slave update commit size.
- */
-#define SLAVE_COMMIT_SIZE_DEFAULT 0
-
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
@@ -2598,9 +2601,6 @@ osp_scanner_connect (scanner_t);
 
 int
 verify_scanner (const char *, char **);
-
-void
-set_slave_commit_size (int);
 
 const char *
 get_relay_mapper_path ();
@@ -3005,9 +3005,6 @@ int
 filter_term_apply_overrides (const char *);
 
 int
-filter_term_autofp (const char *);
-
-int
 filter_term_min_qod (const char *);
 
 int
@@ -3107,8 +3104,8 @@ cpe_info_iterator_title (iterator_t*);
 const char*
 cpe_info_iterator_status (iterator_t*);
 
-const char*
-cpe_info_iterator_max_cvss (iterator_t*);
+int
+cpe_info_iterator_score (iterator_t*);
 
 const char*
 cpe_info_iterator_deprecated_by_id (iterator_t*);
@@ -3124,29 +3121,14 @@ cpe_info_iterator_nvd_id (iterator_t*);
 const char*
 cve_iterator_name (iterator_t*);
 
-const char*
-cve_iterator_cvss (iterator_t*);
+int
+cve_iterator_score (iterator_t*);
 
-const char*
-cve_info_iterator_cvss (iterator_t*);
+int
+cve_info_iterator_score (iterator_t*);
 
 const char*
 cve_info_iterator_vector (iterator_t*);
-
-const char*
-cve_info_iterator_complexity (iterator_t*);
-
-const char*
-cve_info_iterator_authentication (iterator_t*);
-
-const char*
-cve_info_iterator_confidentiality_impact (iterator_t*);
-
-const char*
-cve_info_iterator_integrity_impact (iterator_t*);
-
-const char*
-cve_info_iterator_availability_impact (iterator_t*);
 
 const char*
 cve_info_iterator_description (iterator_t*);
@@ -3162,6 +3144,9 @@ cve_info_count (const get_data_t *get);
 
 gchar *
 cve_cvss_base (const gchar *);
+
+int
+cve_score (const gchar *);
 
 /* OVAL definitions */
 int
@@ -3191,8 +3176,8 @@ ovaldef_info_iterator_file (iterator_t*);
 const char*
 ovaldef_info_iterator_status (iterator_t*);
 
-const char*
-ovaldef_info_iterator_max_cvss (iterator_t*);
+int
+ovaldef_info_iterator_score (iterator_t*);
 
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
@@ -3230,8 +3215,8 @@ cert_bund_adv_info_iterator_summary (iterator_t*);
 const char*
 cert_bund_adv_info_iterator_cve_refs (iterator_t*);
 
-const char*
-cert_bund_adv_info_iterator_max_cvss (iterator_t*);
+int
+cert_bund_adv_info_iterator_score (iterator_t*);
 
 void
 init_cve_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
@@ -3259,8 +3244,8 @@ dfn_cert_adv_info_iterator_summary (iterator_t*);
 const char*
 dfn_cert_adv_info_iterator_cve_refs (iterator_t*);
 
-const char*
-dfn_cert_adv_info_iterator_max_cvss (iterator_t*);
+int
+dfn_cert_adv_info_iterator_score (iterator_t*);
 
 void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
@@ -3297,9 +3282,6 @@ setting_is_default_ca_cert (const gchar *);
 char *
 setting_filter (const char *);
 
-const char *
-setting_severity ();
-
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
                        const char *);
@@ -3325,9 +3307,6 @@ manage_modify_setting (GSList *, const db_conn_info_t *, const gchar *,
 
 char *
 manage_default_ca_cert ();
-
-int
-manage_slave_check_period ();
 
 
 /* Users. */

@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2010-2019 Greenbone Networks GmbH
+Copyright (C) 2010-2020 Greenbone Networks GmbH
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -132,6 +132,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }</pattern>
   </type>
   <type>
+    <name>score</name>
+    <summary>A severity score</summary>
+    <description>
+      A severity score is an integer between 0 and 100 (inclusive),
+      or a special negative value (-1, -2 or -3).
+    </description>
+    <pattern>xsd:token { pattern = "-[1-3]|[1-9]?[0-9]|100" }</pattern>
+  </type>
+  <type>
     <name>sort_order</name>
     <summary>A string describing an order for sorting</summary>
     <description>
@@ -175,7 +184,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       The use of these elements is deprecated as they are otherwise replaced by
       severity elements, which should be used instead.
     </description>
-    <pattern>xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }</pattern>
+    <pattern>xsd:token { pattern = "High|Medium|Low|Alarm|Log" }</pattern>
   </type>
   <type>
     <name>time_unit</name>
@@ -547,6 +556,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>category</e>
       <e>family</e>
       <e>cvss_base</e>
+      <e>severities</e>
       <e>qod</e>
       <e>refs</e>
       <e>tags</e>
@@ -585,6 +595,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>cvss_base</name>
       <summary>CVSS base score of the vulnerability test</summary>
       <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>severities</name>
+      <summary>Severity information of the NVT</summary>
+      <pattern>
+        <attrib>
+          <name>score</name>
+          <type>integer</type>
+          <required>1</required>
+          <summary>Maximum severity score</summary>
+        </attrib>
+        <any><e>severity</e></any>
+      </pattern>
+      <ele>
+        <name>severity</name>
+        <summary>A single severity rating</summary>
+        <pattern>
+          <attrib>
+            <name>type</name>
+            <type>text</type>
+            <required>1</required>
+            <summary>Type of severity rating, e.g. cvss_base_v2</summary>
+          </attrib>
+          <e>origin</e>
+          <e>date</e>
+          <e>score</e>
+          <e>value</e>
+        </pattern>
+        <ele>
+          <name>origin</name>
+          <summary>Origin of severity rating</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>date</name>
+          <summary>Date the severity was defined</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>score</name>
+          <summary>Numeric score ranging from 0 to 100</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Detailed rating value, e.g. a CVSS vector</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>qod</name>
@@ -678,7 +737,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>hosts</e>
           <e>port</e>
           <e>severity</e>
-          <e>threat</e>
           <e>task</e>
           <o><e>end_time</e></o>
           <o><e>result</e></o>
@@ -842,13 +900,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>Severity to which note applies</summary>
       <pattern>
         <t>severity</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>threat</name>
-      <summary>Threat level to which note applies</summary>
-      <pattern>
-        <t>threat</t>
       </pattern>
     </ele>
     <ele>
@@ -1359,6 +1410,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>scan_nvt_version</e>
       <e>threat</e>
       <e>severity</e>
+      <e>score</e>
       <e>qod</e>
       <o><e>original_threat</e></o>
       <o><e>original_severity</e></o>
@@ -1603,6 +1655,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>severity</name>
       <pattern><t>severity</t></pattern>
+    </ele>
+    <ele>
+      <name>score</name>
+      <pattern><t>score</t></pattern>
     </ele>
     <ele>
       <name>qod</name>
@@ -1905,7 +1961,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>report_format</e>
         <e>sort</e>
         <e>filters</e>
-        <e>severity_class</e>
         <o><e>delta</e></o>
         <o>
           <g>
@@ -2061,7 +2116,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>apply_overrides</e>
           <e>result_hosts_only</e>
           <e>min_qod</e>
-          <e>autofp</e>
           <any><e>filter</e></any>
           <o><e>delta</e></o>
         </pattern>
@@ -2117,13 +2171,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </pattern>
         </ele>
         <ele>
-          <name>autofp</name>
-          <summary>
-            Whether to trust vendor security updates.  1 full match, 2 partial
-          </summary>
-          <pattern>xsd:token { pattern = "0|1|2" }</pattern>
-        </ele>
-        <ele>
           <name>filter</name>
           <summary>Level filter</summary>
           <pattern>
@@ -2133,7 +2180,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <alt>Medium</alt>
                 <alt>Low</alt>
                 <alt>Log</alt>
-                <alt>Debug</alt>
               </alts>
             </t>
           </pattern>
@@ -2266,7 +2312,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           text
           <e>full</e>
           <e>filtered</e>
-          <e>debug</e>
           <e>hole</e>
           <e>info</e>
           <e>log</e>
@@ -2281,26 +2326,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filtered</name>
           <summary>Number of results after filtering</summary>
           <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>debug</name>
-          <summary>
-            Number of "debug" results (threat level Debug)
-          </summary>
-          <pattern>
-            <e>full</e>
-            <e>filtered</e>
-          </pattern>
-          <ele>
-            <name>full</name>
-            <summary>Total number of results</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>filtered</name>
-            <summary>Number of results after filtering</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
         </ele>
         <ele>
           <name>hole</name>
@@ -2398,59 +2423,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filtered</name>
           <pattern><t>severity</t></pattern>
           <summary>Maximum severity of the report after filtering</summary>
-        </ele>
-      </ele>
-      <ele>
-        <name>severity_class</name>
-        <pattern>
-          <e>name</e>
-          <e>full_name</e>
-          <any><e>severity_range</e></any>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <pattern>
-            <alts>
-              <alt>nist</alt>
-              <alt>pci-dss</alt>
-            </alts>
-          </pattern>
-          <summary>Short severity class name</summary>
-        </ele>
-        <ele>
-          <name>full_name</name>
-          <pattern>text</pattern>
-          <summary>Full severity class name</summary>
-        </ele>
-        <ele>
-          <name>severity_range</name>
-          <summary>Severity range</summary>
-          <pattern>
-            <e>name</e>
-            <e>min</e>
-            <e>max</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>Name of severity range</summary>
-            <pattern>
-              <t>name</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>min</name>
-            <summary>Minimum CVSS value</summary>
-            <pattern>
-              <t>integer</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>max</name>
-            <summary>Maximum CVSS value</summary>
-            <pattern>
-              <t>integer</t>
-            </pattern>
-          </ele>
         </ele>
       </ele>
       <ele>
@@ -2568,35 +2540,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>task</name>
           <pattern>
-            <e>slave</e>
             <e>preferences</e>
           </pattern>
-          <ele>
-            <name>slave</name>
-            <summary>The task slave</summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>host</e>
-              <e>port</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>host</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>port</name>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
           <ele>
             <name>preferences</name>
             <summary>Currently only "source_iface"</summary>
@@ -4741,7 +4686,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   content_type="text/xml">
             <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
               <gmp>
-                <version>8.0</version>
+                <version>@GMP_VERSION@</version>
               </gmp>
               <truncated>...</truncated>
               <results start="1" max="-1">
@@ -7315,7 +7260,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </attrib>
       <attrib>
         <name>details</name>
-        <summary>Whether to get config families, preferences, nvt selectors and tasks</summary>
+        <summary>Whether to get config families, preferences and nvt selectors</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -12887,7 +12832,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <text>note fixed to result</text>
             <hosts>127.0.0.1</hosts>
             <port>general/tcp</port>
-            <threat>Medium</threat>
             <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
               <name>test</name>
             </task>
@@ -13032,6 +12976,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <e>summary</e>
               <e>family</e>
               <e>cvss_base</e>
+              <e>severities</e>
               <e>qod</e>
               <e>refs</e>
               <e>tags</e>
@@ -13123,6 +13068,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cvss_base</name>
           <summary>CVSS base score of the NVT</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severities</name>
+          <summary>Severity information of the NVT</summary>
+          <pattern>
+            <attrib>
+              <name>score</name>
+              <type>integer</type>
+              <required>1</required>
+              <summary>Maximum severity score</summary>
+            </attrib>
+            <any><e>severity</e></any>
+          </pattern>
+          <ele>
+            <name>severity</name>
+            <summary>A single severity rating</summary>
+            <pattern>
+              <attrib>
+                <name>type</name>
+                <type>text</type>
+                <required>1</required>
+                <summary>Type of severity rating, e.g. cvss_base_v2</summary>
+              </attrib>
+              <e>origin</e>
+              <e>date</e>
+              <e>score</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>origin</name>
+              <summary>Origin of severity rating</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>date</name>
+              <summary>Date the severity was defined</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>score</name>
+              <summary>Numeric score ranging from 0 to 100</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Detailed rating value, e.g. a CVSS vector</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>qod</name>
@@ -14979,18 +14973,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Whether to apply Overrides</summary>
           </option>
           <option>
-            <name>autofp</name>
-            <type>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-                <alt>2</alt>
-              </alts>
-            </type>
-            <summary>Whether to trust vendor security updates.
-            1 full match, 2 partial</summary>
-          </option>
-          <option>
             <name>levels</name>
             <type>levels</type>
             <summary>Severity levels to select</summary>
@@ -15063,17 +15045,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>type</name>
             <type>threat</type>
-            <summary>Severity type of the result with overrides and autofp</summary>
+            <summary>Severity type of the result with overrides</summary>
           </column>
           <column>
             <name>original_type</name>
             <type>threat</type>
             <summary>Original severity type of the result</summary>
-          </column>
-          <column>
-            <name>auto_type</name>
-            <type>boolean</type>
-            <summary>Whether autofp applies to the result</summary>
           </column>
           <column>
             <name>description</name>
@@ -15103,7 +15080,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the result with overrides and autofp</summary>
+            <summary>Severity of the result with overrides</summary>
+          </column>
+          <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Score of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -15410,7 +15392,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <alt>Medium</alt>
                 <alt>Low</alt>
                 <alt>Log</alt>
-                <alt>Debug</alt>
               </alts>
             </t>
           </pattern>
@@ -15600,7 +15581,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <filter>Medium</filter>
                 <filter>Low</filter>
                 <filter>Log</filter>
-                <filter>Debug</filter>
                 <keywords>
                   <keyword>
                     <column>first</column>
@@ -15641,10 +15621,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <result_count>
                 <full>10</full>
                 <filtered>10</filtered>
-                <debug>
-                  <full>0</full>
-                  <filtered>0</filtered>
-                </debug>
                 <hole>
                   <full>0</full>
                   <filtered>0</filtered>
@@ -16380,18 +16356,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Whether to apply Overrides</summary>
           </option>
           <option>
-            <name>autofp</name>
-            <type>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-                <alt>2</alt>
-              </alts>
-            </type>
-            <summary>Whether to trust vendor security updates.
-            1 full match, 2 partial</summary>
-          </option>
-          <option>
             <name>levels</name>
             <type>levels</type>
             <summary>Severity levels to select</summary>
@@ -16464,17 +16428,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>type</name>
             <type>threat</type>
-            <summary>Severity type of the result with overrides and autofp</summary>
+            <summary>Severity type of the result with overrides</summary>
           </column>
           <column>
             <name>original_type</name>
             <type>threat</type>
             <summary>Original severity type of the result</summary>
-          </column>
-          <column>
-            <name>auto_type</name>
-            <type>boolean</type>
-            <summary>Whether autofp applies to the result</summary>
           </column>
           <column>
             <name>description</name>
@@ -16504,7 +16463,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the result with overrides and autofp</summary>
+            <summary>Severity of the result with overrides</summary>
+          </column>
+          <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Score of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -18389,7 +18353,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </attrib>
       <attrib>
         <name>slave_id</name>
-        <summary>GMP scanner from which to get report</summary>
+        <summary>Scanner from which to get report</summary>
         <type>uuid</type>
       </attrib>
     </pattern>
@@ -20304,17 +20268,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <name>result_count</name>
               <summary>Result counts for this report</summary>
               <pattern>
-                <e>debug</e>
                 <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
                 <e>warning</e>
                 <e>hole</e>
               </pattern>
-              <ele>
-                <name>debug</name>
-                <pattern><t>integer</t></pattern>
-              </ele>
               <ele>
                 <name>false_positive</name>
                 <pattern><t>integer</t></pattern>
@@ -20543,7 +20502,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20619,7 +20577,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20636,7 +20593,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <timestamp>Mon Feb  1 18:51:38 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20647,7 +20603,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
-                  <debug>0</debug>
                   <hole>0</hole>
                   <info>7</info>
                   <log>0</log>
@@ -20742,7 +20697,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				<scan_start>2019-04-24T14:26:01+02:00</scan_start>
 				<scan_end>2019-04-24T14:50:59+02:00</scan_end>
 				<result_count>
-				  <debug>0</debug>
 				  <hole>1</hole>
 				  <info>0</info>
 				  <log>77</log>
@@ -24006,7 +23960,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>severity</e></o>
       <o><e>task</e></o>
       <e>text</e>
-      <o><e>threat</e></o>
     </pattern>
     <ele>
       <name>active</name>
@@ -24050,13 +24003,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>The text of the note</summary>
       <pattern>
         text
-      </pattern>
-    </ele>
-    <ele>
-      <name>threat</name>
-      <summary>Threat level to which note applies</summary>
-      <pattern>
-        <t>threat</t>
       </pattern>
     </ele>
     <ele>
@@ -25112,12 +25058,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>comment</e>
         <!-- Actually at least one, else command is empty. -->
         <any><e>alert</e></any>
+        <e>config</e>
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>
         <e>schedule</e>
         <e>schedule_periods</e>
         <e>scanner</e>
+        <e>target</e>
         <e>file</e>
       </or>
     </pattern>
@@ -25131,6 +25079,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>alert</name>
       <summary>Task alert</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>config</name>
+      <summary>The scan configuration used by the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -25194,6 +25153,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>scanner</name>
       <summary>Task scanner</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>target</name>
+      <summary>The hosts scanned by the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -25543,12 +25513,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <command>
     <name>move_task</name>
     <summary>
-      Moves an existing task to another GMP slave scanner or the master
+      Moves an existing task to another slave scanner or the master
     </summary>
     <description>
       <p>
         If a scan is running, this command will stop the task and resume it
-        after reassigning to the new GMP scanner or master.
+        after reassigning to the new scanner or master.
         Note that in this case, the command will wait until the task has been
         requested to resume.
       </p>
@@ -26049,6 +26019,80 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </command>
 
   <!-- Compatibility changes between versions. -->
+
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Removed element SEVERITY_CLASS from element REPORT</summary>
+    <description>
+      <p>
+        The element SEVERITY_CLASS contained the range specification for the applied classification scheme.
+        There is only fixed scheme left, so the specificion is not needed anymore.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>GET_REPORTS, GET_RESULTS</command>
+    <summary>Remove elements AUTOFP and AUTO_TYPE from element FILTERS</summary>
+    <description>
+      <p>
+        The element to specify the autofp value and the related auto_type for a filter is removed.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>CREATE_SCANNER, MODIFY_SCANNER, GET_REPORTS</command>
+    <summary>GMP scanners have been removed</summary>
+    <description>
+      <p>
+        The scanner type "GMP" has been removed.  This is the original "slave"
+        feature, where a gvmd (the master) controls another gvmd (the slave)
+        via GMP.
+      </p>
+      <p>
+        Existing GMP scanners are automatically migrated to type "OpenVAS".
+        The "OpenVAS" scanner type uses the OSP protocol, and is better suited
+        to the master-slave scenario.
+      </p>
+      <p>
+        CREATE_SCANNER and MODIFY_SCANNER no longer accept type "4".
+      </p>
+      <p>
+        In the report XML, as returned by GET_REPORTS, SLAVE has been removed
+        from REPORT/TASK.
+      </p>
+      <p>
+        All other scanner related commands work as before, but there are no
+        GMP scanners for them to work with.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Removed element RESULT_COUNT/DEBUG from element REPORT</summary>
+    <description>
+      <p>
+        The element DEBUG inside RESULT_COUNT is removed. Vulnerability tests do
+        not produce debug messages since 2012.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>GET_NOTES</command>
+    <summary>Element THREAT has been removed</summary>
+    <description>
+      <p>
+        The element "THREAT" of element "NOTE" is removed.
+      </p>
+      <p>
+        This information is redundant with the element "SEVERITY".
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
 
   <change>
     <command>CREATE_TARGET, RUN_WIZARD</command>
