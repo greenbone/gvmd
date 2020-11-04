@@ -16565,7 +16565,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
-          const char *reverse_lookup_unify;
+          const char *reverse_lookup_unify, *allow_simult_ips_same_host;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
           int port_list_trash, max_hosts, port_list_available;
@@ -16728,6 +16728,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                   (&targets);
           reverse_lookup_unify = target_iterator_reverse_lookup_unify
                                   (&targets);
+          allow_simult_ips_same_host
+            = target_iterator_allow_simult_ips_same_host (&targets);
 
           SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                    "<exclude_hosts>%s</exclude_hosts>"
@@ -16802,10 +16804,14 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                    "<reverse_lookup_unify>"
                                    "%s"
                                    "</reverse_lookup_unify>"
-                                   "<alive_tests>%s</alive_tests>",
+                                   "<alive_tests>%s</alive_tests>"
+                                   "<allow_simult_ips_same_host>"
+                                   "%s"
+                                   "</allow_simult_ips_same_host>",
                                    reverse_lookup_only,
                                    reverse_lookup_unify,
-                                   target_iterator_alive_tests (&targets));
+                                   target_iterator_alive_tests (&targets),
+                                   allow_simult_ips_same_host);
 
           if (get_targets_data->get.details)
             SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",

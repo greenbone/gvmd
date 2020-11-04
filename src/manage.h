@@ -1638,6 +1638,9 @@ int
 target_iterator_snmp_trash (iterator_t*);
 
 const char*
+target_iterator_allow_simult_ips_same_host (iterator_t*);
+
+const char*
 target_iterator_port_list_uuid (iterator_t*);
 
 const char*

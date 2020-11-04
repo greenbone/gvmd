@@ -19004,6 +19004,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>alive_tests</e>
           <e>reverse_lookup_only</e>
           <e>reverse_lookup_unify</e>
+          <e>allow_simult_ips_same_host</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -19314,6 +19315,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>reverse_lookup_unify</name>
           <summary>
             Whether to scan only one IP when multiple IPs have the same name
+          </summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>allow_simult_ips_same_host</name>
+          <summary>
+            Whether to scan multiple IPs of the same host simulaneously
           </summary>
           <pattern><t>boolean</t></pattern>
         </ele>

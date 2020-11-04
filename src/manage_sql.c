@@ -31467,6 +31467,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                  \
      KEYWORD_TYPE_INTEGER },                                \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "allow_simult_ips_same_host",                          \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
@@ -31568,6 +31571,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { "allow_simult_ips_same_host",                                  \
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
@@ -31888,6 +31894,16 @@ target_iterator_snmp_trash (iterator_t* iterator)
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
   return ret;
 }
+
+/**
+ * @brief Get the allow_simult_ips_same_host value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return allow_simult_ips_same_host or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_allow_simult_ips_same_host,
+            GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
  * @brief Return the UUID of a tag.
