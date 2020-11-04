@@ -283,15 +283,6 @@ sync_port_list_with_feed (const gchar *path)
   if (find_trash_port_list_no_acl (uuid, &port_list) == 0
       && port_list)
     {
-      static int warned = 0;
-
-      if (warned == 0)
-        {
-          warned = 1;
-          g_warning ("%s: ignoring a port list ('%s'), as it is in the trashcan"
-                     " (will not warn again)",
-                     __func__, uuid);
-        }
       g_free (uuid);
       return;
     }
