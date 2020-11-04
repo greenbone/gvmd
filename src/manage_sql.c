@@ -30823,7 +30823,8 @@ copy_target (const char* name, const char* comment, const char *target_id,
 
   ret = copy_resource ("target", name, comment, target_id,
                        "hosts, exclude_hosts, port_list, reverse_lookup_only,"
-                       " reverse_lookup_unify, alive_test",
+                       " reverse_lookup_unify, alive_test,"
+                       " allow_simult_ips_same_host",
                        1, new_target, &old_target);
   if (ret)
     return ret;
