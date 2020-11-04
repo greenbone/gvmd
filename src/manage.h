@@ -1681,6 +1681,9 @@ char*
 target_reverse_lookup_unify (target_t);
 
 char*
+target_allow_simult_ips_same_host (target_t);
+
+char*
 target_port_range (target_t);
 
 char*

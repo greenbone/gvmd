@@ -32118,6 +32118,20 @@ target_reverse_lookup_unify (target_t target)
 }
 
 /**
+ * @brief Return the allow_simult_ips_same_host value of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return The allow_simult_ips_same_host value if available, else NULL.
+ */
+char*
+target_allow_simult_ips_same_host (target_t target)
+{
+  return sql_string ("SELECT allow_simult_ips_same_host FROM targets"
+                     " WHERE id = %llu;", target);
+}
+
+/**
  * @brief Return the SSH LSC port of a target.
  *
  * @param[in]  target  Target.
