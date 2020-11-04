@@ -4516,6 +4516,7 @@ sync_cert ()
                    "                  WHERE name = 'last_update'),"
                    "                 '0');");
       g_debug ("%s: last_scap_update: %i", __func__, last_scap_update);
+      g_debug ("%s: last_cert_update: %i", __func__, last_cert_update);
 
       update_cvss_dfn_cert (updated_dfn_cert,
                             last_cert_update,
