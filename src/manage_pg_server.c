@@ -299,24 +299,11 @@ PG_FUNCTION_INFO_V1 (sql_severity_matches_ov);
  *
  * @return Postgres Datum.
  */
+ __attribute__((deprecated))
 Datum
 sql_severity_matches_ov (PG_FUNCTION_ARGS)
 {
-  if (PG_ARGISNULL (0))
-    PG_RETURN_BOOL (0);
-  else if (PG_ARGISNULL (1))
-    PG_RETURN_BOOL (1);
-  else
-    {
-      float8 arg_one, arg_two;
-
-      arg_one = PG_GETARG_FLOAT8 (0);
-      arg_two = PG_GETARG_FLOAT8 (1);
-      if (arg_one <= 0)
-        PG_RETURN_BOOL (arg_one == arg_two);
-      else
-        PG_RETURN_BOOL (arg_one >= arg_two);
-    }
+  PG_RETURN_NULL ();
 }
 
 /**
