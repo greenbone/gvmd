@@ -19019,13 +19019,26 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   assert (task);
   assert (type);
 
-  if (nvt && g_str_has_prefix (nvt, "oval:"))
-    nvt_revision = ovaldef_version (nvt);
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_path = sql_quote (path ? path : "");
+
+  if (nvt)
+    {
+      if (g_str_has_prefix (nvt, "1.3.6.1.4.1.25623."))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM nvts WHERE oid='%s'",
+                                   quoted_nvt);
+      else if (g_str_has_prefix (nvt, "oval:"))
+        nvt_revision = ovaldef_version (nvt);
+      else if (g_str_has_prefix (nvt, "CVE-"))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM scap.cves WHERE uuid='%s'",
+                                   quoted_nvt);
+    }
+  
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -32869,7 +32882,7 @@ check_for_new_scap ()
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cves"
+                   " (SELECT * FROM scap.cves"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32879,7 +32892,7 @@ check_for_new_scap ()
         event (EVENT_NEW_SECINFO, "cve", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cpes"
+                   " (SELECT * FROM scap.cpes"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32889,7 +32902,7 @@ check_for_new_scap ()
         event (EVENT_NEW_SECINFO, "cpe", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM ovaldefs"
+                   " (SELECT * FROM scap.ovaldefs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32909,7 +32922,7 @@ check_for_new_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32919,7 +32932,7 @@ check_for_new_cert ()
         event (EVENT_NEW_SECINFO, "cert_bund_adv", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM dfn_cert_advs"
+                   " (SELECT * FROM cert.dfn_cert_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33629,7 +33642,7 @@ check_for_updated_scap ()
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cves"
+                   " (SELECT * FROM scap.cves"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33645,7 +33658,7 @@ check_for_updated_scap ()
         event (EVENT_UPDATED_SECINFO, "cve", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cpes"
+                   " (SELECT * FROM scap.cpes"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33661,7 +33674,7 @@ check_for_updated_scap ()
         event (EVENT_UPDATED_SECINFO, "cpe", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM ovaldefs"
+                   " (SELECT * FROM scap.ovaldefs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33687,7 +33700,7 @@ check_for_updated_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -33703,7 +33716,7 @@ check_for_updated_cert ()
         event (EVENT_UPDATED_SECINFO, "cert_bund_adv", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM dfn_cert_advs"
+                   " (SELECT * FROM cert.dfn_cert_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -47514,10 +47527,11 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM nvt_selectors WHERE name IN"
-       " (SELECT nvt_selector FROM configs_trash"
-       "  WHERE owner = (SELECT id FROM users"
-       "                 WHERE uuid = '%s'));",
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " AND name IN (SELECT nvt_selector FROM configs_trash"
+       "              WHERE owner = (SELECT id FROM users"
+       "                             WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM config_preferences_trash"
        " WHERE config IN (SELECT id FROM configs_trash"
@@ -52343,8 +52357,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
-      sql ("UPDATE settings SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
       sql ("DELETE FROM tag_resources"
            " WHERE resource_type = 'user' AND resource = %llu;",
            user);
@@ -52386,6 +52398,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       delete_permissions_cache_for_user (user);
 
+      sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
 
       sql_commit ();

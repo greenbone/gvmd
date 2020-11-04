@@ -596,6 +596,8 @@ nvt_selector_remove (const char* quoted_selector,
                      const char* quoted_family,
                      int type)
 {
+  if (strcmp (quoted_selector, MANAGE_NVT_SELECTOR_UUID_ALL) == 0)
+    return;
   if (type == NVT_SELECTOR_TYPE_ANY)
     sql ("DELETE FROM nvt_selectors"
          " WHERE name = '%s'"
@@ -637,6 +639,8 @@ nvt_selector_remove_selector (const char* quoted_selector,
                               const char* family_or_nvt,
                               int type)
 {
+  if (strcmp (quoted_selector, MANAGE_NVT_SELECTOR_UUID_ALL) == 0)
+    return;
   if (type == NVT_SELECTOR_TYPE_ANY)
     sql ("DELETE FROM nvt_selectors"
          " WHERE name = '%s' AND family_or_nvt = '%s');",
@@ -3087,8 +3091,10 @@ delete_config (const char *config_id, int ultimate)
       permissions_set_orphans ("config", config, LOCATION_TRASH);
       tags_remove_resource ("config", config, LOCATION_TRASH);
 
-      sql ("DELETE FROM nvt_selectors WHERE name ="
-           " (SELECT nvt_selector FROM configs_trash WHERE id = %llu);",
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+           " AND name = (SELECT nvt_selector FROM configs_trash"
+           "             WHERE id = %llu);",
            config);
       sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
            config);
@@ -3109,8 +3115,10 @@ delete_config (const char *config_id, int ultimate)
           return 1;
         }
 
-      sql ("DELETE FROM nvt_selectors WHERE name ="
-           " (SELECT nvt_selector FROM configs_trash WHERE id = %llu);",
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+           " AND name = (SELECT nvt_selector FROM configs_trash"
+           "             WHERE id = %llu);",
            config);
 
       permissions_set_orphans ("config", config, LOCATION_TABLE);
@@ -4172,12 +4180,13 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
 
       /* Clear any NVT selectors for this family from the config. */
 
-      sql ("DELETE FROM nvt_selectors"
-           " WHERE name = '%s'"
-           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-           " AND family = '%s';",
-           quoted_selector,
-           quoted_family);
+      if (strcmp (quoted_selector, MANAGE_NVT_SELECTOR_UUID_ALL))
+        sql ("DELETE FROM nvt_selectors"
+             " WHERE name = '%s'"
+             " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+             " AND family = '%s';",
+             quoted_selector,
+             quoted_family);
 
       /* Exclude all no's. */
 
@@ -4214,12 +4223,13 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
 
       /* Clear any NVT selectors for this family from the config. */
 
-      sql ("DELETE FROM nvt_selectors"
-           " WHERE name = '%s'"
-           " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
-           " AND family = '%s';",
-           quoted_selector,
-           quoted_family);
+      if (strcmp (quoted_selector, MANAGE_NVT_SELECTOR_UUID_ALL))
+        sql ("DELETE FROM nvt_selectors"
+             " WHERE name = '%s'"
+             " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+             " AND family = '%s';",
+             quoted_selector,
+             quoted_family);
 
       /* Include all yes's. */
 
@@ -4776,8 +4786,9 @@ update_config (config_t config, const gchar *type, const gchar *name,
         }
 
       sql ("DELETE FROM nvt_selectors"
-           " WHERE name = (SELECT nvt_selector FROM configs"
-           "               WHERE id = %llu);",
+           " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+           " AND name = (SELECT nvt_selector FROM configs"
+           "             WHERE id = %llu);",
            config);
 
       sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
@@ -4818,4 +4829,13 @@ check_db_configs ()
 
   if (sync_configs_with_feed ())
     g_warning ("%s: Failed to sync configs with feed", __func__);
+
+  /* Warn about feed resources in the trash. */
+  if (sql_int ("SELECT EXISTS (SELECT * FROM configs_trash"
+               "               WHERE predefined = 1);"))
+    {
+      g_warning ("%s: There are feed configs/policies in the trash."
+                 " These will be excluded from the sync.",
+                 __func__);
+    }
 }

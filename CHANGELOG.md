@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add filter term 'predefined' [#1263](https://github.com/greenbone/gvmd/pull/1263)
 - Add missing elements in get_nvts and get_preferences GMP doc [#1307](https://github.com/greenbone/gvmd/pull/1307)
 - Add command line options db-host and db-port [#1308](https://github.com/greenbone/gvmd/pull/1308)
+- Add missing config and target to modify_task GMP doc [#1310](https://github.com/greenbone/gvmd/pull/1310)
+- Add version for NVTs and CVEs in make_osp_result [#1335](https://github.com/greenbone/gvmd/pull/1335)
 
 ### Changed
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
@@ -39,6 +41,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 - Fix GMP doc text of `active` elem for notes and overrides [#1323](https://github.com/greenbone/gvmd/pull/1323)
 - Account for -1 of orphans when deleting permission [#1345](https://github.com/greenbone/gvmd/pull/1345)
+- Move feed object in trash checks to startup [#1325](https://github.com/greenbone/gvmd/pull/1325)
+- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
+- Do not inherit settings from deleted users [#1328](https://github.com/greenbone/gvmd/pull/1328)
+- Delete TLS certificate sources when deleting users [#1334](https://github.com/greenbone/gvmd/pull/1334)
+- Fix SQL errors in SCAP and CERT update [#1343](https://github.com/greenbone/gvmd/pull/1343)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
