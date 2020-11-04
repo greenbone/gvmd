@@ -4510,7 +4510,6 @@ sync_cert ()
     {
       int last_scap_update;
 
-      last_scap_update = 0;
       last_scap_update
         = sql_int ("SELECT coalesce ((SELECT value FROM scap.meta"
                    "                  WHERE name = 'last_update'),"
