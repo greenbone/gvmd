@@ -19321,7 +19321,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>allow_simult_ips_same_host</name>
           <summary>
-            Whether to scan multiple IPs of the same host simulaneously
+            Whether to scan multiple IPs of the same host simultaneously
           </summary>
           <pattern><t>boolean</t></pattern>
         </ele>
@@ -24773,6 +24773,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
+      <o><e>allow_simult_ips_same_host</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -24905,6 +24906,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>reverse_lookup_unify</name>
       <summary>
         Whether to scan only one IP when multiple IPs have the same name
+      </summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>allow_simult_ips_same_host</name>
+      <summary>
+        Whether to scan multiple IPs of the same host simultaneously
       </summary>
       <pattern><t>boolean</t></pattern>
     </ele>

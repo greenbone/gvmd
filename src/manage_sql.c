@@ -30995,6 +30995,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
+ * @param[in]   allow_simult_ips_same_host Scanner preference allow_simult_ips_same_host.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -31015,7 +31016,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests)
+               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *allow_simult_ips_same_host)
 {
   target_t target;
 
@@ -31087,6 +31089,22 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            quoted_comment,
            target);
       g_free (quoted_comment);
+    }
+
+  if (allow_simult_ips_same_host)
+    {
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      sql ("UPDATE targets SET"
+           " allow_simult_ips_same_host = '%i',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           strcmp (allow_simult_ips_same_host, "0") ? 1 : 0,
+           target);
     }
 
   if (alive_tests)
