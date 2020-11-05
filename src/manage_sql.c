@@ -44381,7 +44381,8 @@ delete_permission (const char *permission_id, int ultimate)
     cache_permissions_for_resource (resource_type, resource, NULL);
 
   /* Update Reports cache */
-  if (resource_type && resource && strcmp (resource_type, "override") == 0)
+  if (resource_type && (resource > 0) && strcmp (resource_type, "override")
+      == 0)
     {
       reports = reports_for_override (resource);
     }
@@ -56123,7 +56124,7 @@ cache_permissions_for_resource (const char *type, resource_t resource,
 {
   int free_users;
 
-  if (type == NULL || resource == 0)
+  if (type == NULL || resource == 0 || resource == -1)
     return;
 
   if (cache_users == NULL)
