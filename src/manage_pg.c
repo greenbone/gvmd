@@ -288,13 +288,18 @@ manage_create_sql_functions ()
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
-       "                                                double precision)"
-       " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_severity_matches_ov'"
-       " LANGUAGE C"
-       " IMMUTABLE;",
-       GVM_LIB_INSTALL_DIR);
+  sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (a double precision,"
+       "                                                b double precision)"
+       "RETURNS BOOLEAN AS $$"
+       "BEGIN"
+       " RETURN CASE WHEN a IS NULL THEN false"
+       "        WHEN b IS NULL THEN true"
+       " ELSE CASE WHEN a::float8 <= 0 THEN a::float8 = b::float8"
+       "      ELSE a::float8 >= b::float8"
+       "      END"
+       " END;"
+       "END;"
+       "$$ LANGUAGE plpgsql IMMUTABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION regexp (text, text)"
        " RETURNS boolean"
