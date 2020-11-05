@@ -1570,7 +1570,7 @@ int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, const char*,
                credential_t, credential_t, credential_t, const char *,
-               const char *, const char *, target_t*);
+               const char *, const char *, const char *, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -1578,7 +1578,8 @@ copy_target (const char*, const char*, const char *, target_t*);
 int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*, const char *, const char*, const char*);
+               const char*, const char*, const char*, const char*,
+               const char*);
 
 int
 delete_target (const char*, int);
@@ -1638,6 +1639,9 @@ int
 target_iterator_snmp_trash (iterator_t*);
 
 const char*
+target_iterator_allow_simult_ips_same_host (iterator_t*);
+
+const char*
 target_iterator_port_list_uuid (iterator_t*);
 
 const char*
@@ -1675,6 +1679,9 @@ target_reverse_lookup_only (target_t);
 
 char*
 target_reverse_lookup_unify (target_t);
+
+char*
+target_allow_simult_ips_same_host (target_t);
 
 char*
 target_port_range (target_t);
