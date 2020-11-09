@@ -1189,19 +1189,13 @@ insert_nvt_selectors (const char *quoted_name,
 
           family = nvt_family (selector->family_or_nvt);
           if (family == NULL)
-            {
-              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                         " because the NVT does not have a family",
-                         __func__,
-                         selector->family_or_nvt,
-                         quoted_name);
-              if (allow_errors)
-                continue;
-              return -1;
-            }
+            g_debug ("%s: NVT '%s' in config '%s' does not have a family",
+                     __func__,
+                     selector->family_or_nvt,
+                     quoted_name);
 
           quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
-          quoted_family = sql_quote (family);
+          quoted_family = sql_quote (family ? family : "");
           sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
                " family)"
                " VALUES ('%s', %i, %i, '%s', '%s');",
