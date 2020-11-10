@@ -34708,6 +34708,20 @@ modify_credential (const char *credential_id,
         {
           if (key_private_to_use || password)
             {
+              if (check_private_key (key_private_truncated
+                                      ? key_private_to_use
+                                      : credential_iterator_private_key
+                                         (&iterator),
+                                     password
+                                      ? password
+                                      : credential_iterator_password
+                                         (&iterator)))
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 8;
+                }
+
               set_credential_private_key
                 (credential,
                  key_private_truncated
