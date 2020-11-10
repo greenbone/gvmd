@@ -34670,7 +34670,7 @@ modify_credential (const char *credential_id,
                  key_private_truncated
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                password
+                 password
                   ? password
                   : credential_iterator_password (&iterator));
             }
