@@ -43,9 +43,8 @@ shell_esc() {
   printf "%q" "$1"
 }
 
-# Escape destination twice because it is also expanded on the remote end.
+# Escape destination because it is also expanded on the remote end.
 DEST_ESC=`shell_esc "$DEST"`
-DEST_ESC=`shell_esc "$DEST_ESC"`
 
 if [ -z "$PRIVATE_KEY_FILE" ]
 then
