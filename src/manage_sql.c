@@ -6763,7 +6763,7 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
               return 18;
             }
 
-          if (strchr (username, '@') || strchr (username, ':'))
+          if (strchr (username, ':'))
             {
               g_free (username);
               return 18;
