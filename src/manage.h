@@ -1976,6 +1976,9 @@ typedef enum
   CREDENTIAL_FORMAT_ERROR = -1  /// Error / Invalid format
 } credential_format_t;
 
+int
+check_private_key (const char *, const char *);
+
 gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 

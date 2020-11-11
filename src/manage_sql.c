@@ -51,6 +51,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glib/gstdio.h>
+#include <gnutls/x509.h>
 #include <malloc.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -33763,6 +33764,48 @@ check_db_encryption_key ()
 }
 
 /**
+ * @brief Check that a string represents a valid Private Key.
+ *
+ * @param[in]  key_str      Private Key string.
+ * @param[in]  key_phrase   Private Key passphrase.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+int
+check_private_key (const char *key_str, const char *key_phrase)
+{
+  gnutls_x509_privkey_t key;
+  gnutls_datum_t data;
+  int ret;
+
+  assert (key_str);
+  if (gnutls_x509_privkey_init (&key))
+    return 1;
+  data.size = strlen (key_str);
+  data.data = (void *) g_strdup (key_str);
+  ret = gnutls_x509_privkey_import2 (key, &data, GNUTLS_X509_FMT_PEM,
+                                     key_phrase, 0);
+  if (ret)
+    {
+      gchar *public_key;
+      public_key = gvm_ssh_public_from_private (key_str, key_phrase);
+
+      if (public_key == NULL)
+        {
+          gnutls_x509_privkey_deinit (key);
+          g_free (data.data);
+          g_message ("%s: import failed: %s",
+                     __func__, gnutls_strerror (ret));
+          return 1;
+        }
+      g_free (public_key);
+    }
+  g_free (data.data);
+  gnutls_x509_privkey_deinit (key);
+  return 0;
+}
+
+/**
  * @brief Find a credential for a specific permission, given a UUID.
  *
  * @param[in]   uuid            UUID of credential.
@@ -34665,12 +34708,26 @@ modify_credential (const char *credential_id,
         {
           if (key_private_to_use || password)
             {
+              if (check_private_key (key_private_truncated
+                                      ? key_private_to_use
+                                      : credential_iterator_private_key
+                                         (&iterator),
+                                     password
+                                      ? password
+                                      : credential_iterator_password
+                                         (&iterator)))
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 8;
+                }
+
               set_credential_private_key
                 (credential,
                  key_private_truncated
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                password
+                 password
                   ? password
                   : credential_iterator_password (&iterator));
             }
