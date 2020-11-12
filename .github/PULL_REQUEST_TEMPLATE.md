@@ -9,7 +9,7 @@
 
 <!-- Why are these changes necessary? -->
 
-**How**:
+**How did you test it**:
 
 <!--
   How did you verify the changes in this PR?
