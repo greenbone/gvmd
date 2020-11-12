@@ -1430,9 +1430,10 @@ clean_hosts_string (const char *hosts)
   if (hosts == NULL)
     return NULL;
 
-  ipv4_match_regex = g_regex_new ("^[0-9]+(?:\\.[0-9]+){3}"
-                                  "(?:\\/[0-9]+|-[0-9]+(?:\\.[0-9]+){3})?$",
-                                  0, 0, NULL);
+  ipv4_match_regex
+    = g_regex_new ("^[0-9]+(?:\\.[0-9]+){3}"
+                   "(?:\\/[0-9]+|-[0-9]+(?:(?:\\.[0-9]+){3})?)?$",
+                   0, 0, NULL);
   ipv4_replace_regex = g_regex_new ("(0+)(?=(?:[1-9]\\d*|0)(?:\\.|\\b))",
                                     0, 0, NULL);
   new_hosts = g_string_new ("");
