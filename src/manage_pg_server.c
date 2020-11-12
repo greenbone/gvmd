@@ -262,27 +262,33 @@ sql_max_hosts (PG_FUNCTION_ARGS)
   else
     {
       text *hosts_arg;
-      char *hosts, *exclude;
+      char *hosts, *exclude, *clean_hosts, *clean_exclude;
       int ret, max_hosts;
 
       hosts_arg = PG_GETARG_TEXT_P (0);
       hosts = textndup (hosts_arg, VARSIZE (hosts_arg) - VARHDRSZ);
+      clean_hosts = clean_hosts_string (hosts);
+
       if (PG_ARGISNULL (1))
         {
           exclude = palloc (1);
           exclude[0] = 0;
+          clean_exclude = NULL;
         }
       else
         {
           text *exclude_arg;
           exclude_arg = PG_GETARG_TEXT_P (1);
           exclude = textndup (exclude_arg, VARSIZE (exclude_arg) - VARHDRSZ);
+          clean_exclude = clean_hosts_string (exclude);
         }
 
       max_hosts = get_max_hosts ();
-      ret = manage_count_hosts_max (hosts, exclude, max_hosts);
+      ret = manage_count_hosts_max (clean_hosts, clean_exclude, max_hosts);
       pfree (hosts);
       pfree (exclude);
+      g_free (clean_hosts);
+      g_free (clean_exclude);
       PG_RETURN_INT32 (ret);
     }
 }

@@ -156,22 +156,36 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 {
   int count;
   gvm_hosts_t *hosts;
+  gchar *clean_hosts, *clean_exclude_hosts;
+  
+  clean_hosts = clean_hosts_string (given_hosts);
+  clean_exclude_hosts = clean_hosts_string (exclude_hosts);
 
-  hosts = gvm_hosts_new_with_max (given_hosts, max_hosts);
+  hosts = gvm_hosts_new_with_max (clean_hosts, max_hosts);
   if (hosts == NULL)
-    return -1;
+    {
+      g_free (clean_hosts);
+      g_free (clean_exclude_hosts);
+      return -1;
+    }
 
   if (exclude_hosts)
     {
       if (gvm_hosts_exclude_with_max (hosts,
-                                      exclude_hosts,
+                                      clean_exclude_hosts,
                                       max_hosts)
           < 0)
-        return -1;
+        {
+          g_free (clean_hosts);
+          g_free (clean_exclude_hosts);
+          return -1;
+        }
     }
 
   count = gvm_hosts_count (hosts);
   gvm_hosts_free (hosts);
+  g_free (clean_hosts);
+  g_free (clean_exclude_hosts);
 
   return count;
 }
@@ -1397,4 +1411,57 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
 
   // Convert to time_t
   return icaltime_as_timet_with_zone (dtstart, tz);
+}
+
+/**
+ * @brief Cleans up a hosts string, removing extra zeroes from IPv4 addresses.
+ *
+ * @param[in]  hosts  The hosts string to clean.
+ *
+ * @return  The newly allocated, cleaned up hosts string.
+ */
+gchar *
+clean_hosts_string (const char *hosts)
+{
+  gchar **hosts_split, **item;
+  GString *new_hosts;
+  GRegex *ipv4_match_regex, *ipv4_replace_regex;
+
+  if (hosts == NULL)
+    return NULL;
+
+  ipv4_match_regex = g_regex_new ("^[0-9]+(?:\\.[0-9]+){3}"
+                                  "(?:\\/[0-9]+|-[0-9]+(?:\\.[0-9]+){3})?$",
+                                  0, 0, NULL);
+  ipv4_replace_regex = g_regex_new ("(0+)(?=(?:[1-9]\\d*|0)(?:\\.|\\b))",
+                                    0, 0, NULL);
+  new_hosts = g_string_new ("");
+
+  hosts_split = g_strsplit (hosts, ",", -1);
+  item = hosts_split;
+  while (*item)
+    {
+      g_strstrip (*item);
+      if (g_regex_match (ipv4_match_regex, *item, 0, 0))
+        {
+          // IPv4 address, address range or CIDR notation
+          gchar *new_item;
+          new_item = g_regex_replace (ipv4_replace_regex,
+                                      *item, -1, 0, "", 0, NULL);
+          g_string_append (new_hosts, new_item);
+          g_free (new_item);
+        }
+      else
+        g_string_append (new_hosts, *item);
+
+      if (*(item + 1))
+        g_string_append (new_hosts, ", ");
+      item++;
+    }
+  g_strfreev (hosts_split);
+
+  g_regex_unref (ipv4_match_regex);
+  g_regex_unref (ipv4_replace_regex);
+  
+  return g_string_free (new_hosts, FALSE);
 }
