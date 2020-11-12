@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SQL errors in SCAP and CERT update [#1343](https://github.com/greenbone/gvmd/pull/1343)
 - Check private key when modifying credential [#1351](https://github.com/greenbone/gvmd/pull/1351)
 
+
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
 
