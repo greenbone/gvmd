@@ -18819,13 +18819,26 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   assert (task);
   assert (type);
 
-  if (nvt && g_str_has_prefix (nvt, "oval:"))
-    nvt_revision = ovaldef_version (nvt);
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_path = sql_quote (path ? path : "");
+
+  if (nvt)
+    {
+      if (g_str_has_prefix (nvt, "1.3.6.1.4.1.25623."))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM nvts WHERE oid='%s'",
+                                   quoted_nvt);
+      else if (g_str_has_prefix (nvt, "oval:"))
+        nvt_revision = ovaldef_version (nvt);
+      else if (g_str_has_prefix (nvt, "CVE-"))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM scap.cves WHERE uuid='%s'",
+                                   quoted_nvt);
+    }
+  
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -20318,7 +20331,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_string_append_printf (insert,
                               " (make_uuid (), %llu, m_now (), %llu, '%s',"
                               "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-                              "  %s::float * 10)::integer, '%s', '%s',"
+                              "  (%s::float * 10)::integer, '%s', '%s',"
                               "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
                               "  %llu)",
                               owner,
@@ -21882,8 +21895,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                  "   AND result_new_severities.user = opts.user_id"
                  "   LIMIT 1))")
      /* No overrides. */
-     : g_strdup ("current_severity (results.severity,"
-                 "                  results.nvt)"));
+     : g_strdup ("severity_to_type"
+                 " (current_severity (results.severity,"
+                 "                    results.nvt))"));
 
   if (apply_overrides)
     columns[0].select
@@ -30337,6 +30351,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
+ * @param[in]   allow_simult_ips_same_host  Scanner preference allow_simult_ips_same_host.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -30355,6 +30370,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
+               const char *allow_simult_ips_same_host,
                target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
@@ -30491,6 +30507,11 @@ create_target (const char* name, const char* asset_hosts_filter,
     reverse_lookup_unify = "0";
   else
     reverse_lookup_unify = "1";
+  if (allow_simult_ips_same_host
+      && strcmp (allow_simult_ips_same_host, "0") == 0)
+    allow_simult_ips_same_host = "0";
+  else
+    allow_simult_ips_same_host = "1";
 
   quoted_name = sql_quote (name ?: "");
 
@@ -30502,14 +30523,17 @@ create_target (const char* name, const char* asset_hosts_filter,
   sql ("INSERT INTO targets"
        " (uuid, name, owner, hosts, exclude_hosts, comment, "
        "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
+       "  allow_simult_ips_same_host,"
        "  creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
        " '%s', '%s', '%s', %llu, '%s', '%s', %i,"
+       " %s,"
        " m_now (), m_now ());",
         quoted_name, current_credentials.uuid,
         quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
-        reverse_lookup_only, reverse_lookup_unify, alive_test);
+        reverse_lookup_only, reverse_lookup_unify, alive_test,
+        allow_simult_ips_same_host);
 
   new_target = sql_last_insert_id ();
   if (target)
@@ -30613,7 +30637,8 @@ copy_target (const char* name, const char* comment, const char *target_id,
 
   ret = copy_resource ("target", name, comment, target_id,
                        "hosts, exclude_hosts, port_list, reverse_lookup_only,"
-                       " reverse_lookup_unify, alive_test",
+                       " reverse_lookup_unify, alive_test,"
+                       " allow_simult_ips_same_host",
                        1, new_target, &old_target);
   if (ret)
     return ret;
@@ -30710,10 +30735,12 @@ delete_target (const char *target_id, int ultimate)
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, port_list_location,"
            "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "  allow_simult_ips_same_host,"
            "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
            "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "        allow_simult_ips_same_host,"
            "        creation_time, modification_time"
            " FROM targets WHERE id = %llu;",
            target);
@@ -30782,6 +30809,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
+ * @param[in]   allow_simult_ips_same_host Scanner preference allow_simult_ips_same_host.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -30802,7 +30830,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests)
+               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *allow_simult_ips_same_host)
 {
   target_t target;
 
@@ -30874,6 +30903,22 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            quoted_comment,
            target);
       g_free (quoted_comment);
+    }
+
+  if (allow_simult_ips_same_host)
+    {
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      sql ("UPDATE targets SET"
+           " allow_simult_ips_same_host = '%i',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           strcmp (allow_simult_ips_same_host, "0") ? 1 : 0,
+           target);
     }
 
   if (alive_tests)
@@ -31257,6 +31302,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                  \
      KEYWORD_TYPE_INTEGER },                                \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "allow_simult_ips_same_host",                          \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
@@ -31358,6 +31406,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { "allow_simult_ips_same_host",                                  \
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
@@ -31680,6 +31731,16 @@ target_iterator_snmp_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the allow_simult_ips_same_host value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return allow_simult_ips_same_host or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_allow_simult_ips_same_host,
+            GET_ITERATOR_COLUMN_COUNT + 18);
+
+/**
  * @brief Return the UUID of a tag.
  *
  * @param[in]  tag  Tag.
@@ -31857,6 +31918,20 @@ char*
 target_reverse_lookup_unify (target_t target)
 {
   return sql_string ("SELECT reverse_lookup_unify FROM targets"
+                     " WHERE id = %llu;", target);
+}
+
+/**
+ * @brief Return the allow_simult_ips_same_host value of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return The allow_simult_ips_same_host value if available, else NULL.
+ */
+char*
+target_allow_simult_ips_same_host (target_t target)
+{
+  return sql_string ("SELECT allow_simult_ips_same_host FROM targets"
                      " WHERE id = %llu;", target);
 }
 
@@ -32161,7 +32236,7 @@ check_for_new_scap ()
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cves"
+                   " (SELECT * FROM scap.cves"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32171,7 +32246,7 @@ check_for_new_scap ()
         event (EVENT_NEW_SECINFO, "cve", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cpes"
+                   " (SELECT * FROM scap.cpes"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32181,7 +32256,7 @@ check_for_new_scap ()
         event (EVENT_NEW_SECINFO, "cpe", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM ovaldefs"
+                   " (SELECT * FROM scap.ovaldefs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32201,7 +32276,7 @@ check_for_new_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32211,7 +32286,7 @@ check_for_new_cert ()
         event (EVENT_NEW_SECINFO, "cert_bund_adv", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM dfn_cert_advs"
+                   " (SELECT * FROM cert.dfn_cert_advs"
                    "  WHERE creation_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32921,7 +32996,7 @@ check_for_updated_scap ()
   if (manage_scap_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cves"
+                   " (SELECT * FROM scap.cves"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32937,7 +33012,7 @@ check_for_updated_scap ()
         event (EVENT_UPDATED_SECINFO, "cve", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cpes"
+                   " (SELECT * FROM scap.cpes"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32953,7 +33028,7 @@ check_for_updated_scap ()
         event (EVENT_UPDATED_SECINFO, "cpe", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM ovaldefs"
+                   " (SELECT * FROM scap.ovaldefs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32979,7 +33054,7 @@ check_for_updated_cert ()
   if (manage_cert_loaded ())
     {
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert_bund_advs"
+                   " (SELECT * FROM cert.cert_bund_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -32995,7 +33070,7 @@ check_for_updated_cert ()
         event (EVENT_UPDATED_SECINFO, "cert_bund_adv", 0, 0);
 
       if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM dfn_cert_advs"
+                   " (SELECT * FROM cert.dfn_cert_advs"
                    "  WHERE modification_time"
                    "        > coalesce (CAST ((SELECT value FROM meta"
                    "                           WHERE name"
@@ -45982,10 +46057,12 @@ manage_restore (const char *id)
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "  alive_test, creation_time, modification_time)"
+           "  alive_test, allow_simult_ips_same_host,"
+           "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "        alive_test, creation_time, modification_time"
+           "        alive_test, allow_simult_ips_same_host,"
+           "        creation_time, modification_time"
            " FROM targets_trash WHERE id = %llu;",
            resource);
 
@@ -46135,10 +46212,11 @@ manage_empty_trashcan ()
       return 99;
     }
 
-  sql ("DELETE FROM nvt_selectors WHERE name IN"
-       " (SELECT nvt_selector FROM configs_trash"
-       "  WHERE owner = (SELECT id FROM users"
-       "                 WHERE uuid = '%s'));",
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " AND name IN (SELECT nvt_selector FROM configs_trash"
+       "              WHERE owner = (SELECT id FROM users"
+       "                             WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM config_preferences_trash"
        " WHERE config IN (SELECT id FROM configs_trash"
@@ -50900,8 +50978,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
       sql ("UPDATE schedules_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
-      sql ("UPDATE settings SET owner = %llu WHERE owner = %llu;",
-           inheritor, user);
       sql ("DELETE FROM tag_resources"
            " WHERE resource_type = 'user' AND resource = %llu;",
            user);
@@ -50943,6 +51019,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       delete_permissions_cache_for_user (user);
 
+      sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
 
       sql_commit ();

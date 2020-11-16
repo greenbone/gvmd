@@ -349,15 +349,6 @@ sync_config_with_feed (const gchar *path)
   if (find_trash_config_no_acl (uuid, &config) == 0
       && config)
     {
-      static int warned = 0;
-
-      if (warned == 0)
-        {
-          warned = 1;
-          g_warning ("%s: ignoring a config ('%s'), as it is in the trashcan"
-                     " (will not warn again)",
-                     __func__, uuid);
-        }
       g_free (uuid);
       return;
     }

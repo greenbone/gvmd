@@ -940,6 +940,21 @@ delete_tls_certificates_user (user_t user)
 {
   /* Regular tls_certificate. */
 
+  sql ("DELETE FROM tls_certificate_sources"
+       " WHERE tls_certificate IN"
+       " (SELECT id FROM tls_certificates WHERE owner = %llu)",
+       user);
+
+  sql ("DELETE FROM tls_certificate_locations"
+       " WHERE NOT EXISTS"
+       "   (SELECT * FROM tls_certificate_sources"
+       "     WHERE location = tls_certificate_locations.id);");
+
+  sql ("DELETE FROM tls_certificate_origins"
+       " WHERE NOT EXISTS"
+       "   (SELECT * FROM tls_certificate_sources"
+       "     WHERE origin = tls_certificate_origins.id);");
+
   sql ("DELETE FROM tls_certificates WHERE owner = %llu;", user);
 }
 

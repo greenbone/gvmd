@@ -4065,7 +4065,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>active</name>
-      <summary>Seconds note will be active.  -1 on always, 0 off</summary>
+      <summary>Days note will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -4194,7 +4194,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>active</name>
-      <summary>Seconds override will be active.  -1 on always, 0 off</summary>
+      <summary>Days override will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -19004,6 +19004,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>alive_tests</e>
           <e>reverse_lookup_only</e>
           <e>reverse_lookup_unify</e>
+          <e>allow_simult_ips_same_host</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -19314,6 +19315,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>reverse_lookup_unify</name>
           <summary>
             Whether to scan only one IP when multiple IPs have the same name
+          </summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>allow_simult_ips_same_host</name>
+          <summary>
+            Whether to scan multiple IPs of the same host simultaneously
           </summary>
           <pattern><t>boolean</t></pattern>
         </ele>
@@ -23963,7 +23971,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </pattern>
     <ele>
       <name>active</name>
-      <summary>Seconds note will be active.  -1 on always, 0 off</summary>
+      <summary>Days note will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -24089,7 +24097,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </pattern>
     <ele>
       <name>active</name>
-      <summary>Seconds override will be active.  -1 on always, 0 off</summary>
+      <summary>Days override will be active. -1 on always, 0 off</summary>
       <pattern><t>integer</t></pattern>
     </ele>
     <ele>
@@ -24765,6 +24773,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
+      <o><e>allow_simult_ips_same_host</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -24897,6 +24906,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>reverse_lookup_unify</name>
       <summary>
         Whether to scan only one IP when multiple IPs have the same name
+      </summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>allow_simult_ips_same_host</name>
+      <summary>
+        Whether to scan multiple IPs of the same host simultaneously
       </summary>
       <pattern><t>boolean</t></pattern>
     </ele>
@@ -25058,12 +25074,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>comment</e>
         <!-- Actually at least one, else command is empty. -->
         <any><e>alert</e></any>
+        <e>config</e>
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>
         <e>schedule</e>
         <e>schedule_periods</e>
         <e>scanner</e>
+        <e>target</e>
         <e>file</e>
       </or>
     </pattern>
@@ -25077,6 +25095,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>alert</name>
       <summary>Task alert</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>config</name>
+      <summary>The scan configuration used by the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -25140,6 +25169,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>scanner</name>
       <summary>Task scanner</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>target</name>
+      <summary>The hosts scanned by the task</summary>
       <pattern>
         <attrib>
           <name>id</name>
