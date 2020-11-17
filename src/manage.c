@@ -4225,6 +4225,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   free (ports_str);
   free (exclude_hosts_str);
   free (finished_hosts_str);
+  g_free (clean_hosts);
+  g_free (clean_exclude_hosts);
   osp_targets = g_slist_append (NULL, osp_target);
 
   ssh_credential = target_osp_ssh_credential (target);
