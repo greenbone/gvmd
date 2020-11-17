@@ -156,21 +156,22 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 {
   int count;
   gvm_hosts_t *hosts;
-  gchar *clean_hosts, *clean_exclude_hosts;
+  gchar *clean_hosts;
   
   clean_hosts = clean_hosts_string (given_hosts);
-  clean_exclude_hosts = clean_hosts_string (exclude_hosts);
 
   hosts = gvm_hosts_new_with_max (clean_hosts, max_hosts);
   if (hosts == NULL)
     {
       g_free (clean_hosts);
-      g_free (clean_exclude_hosts);
       return -1;
     }
 
   if (exclude_hosts)
     {
+      gchar *clean_exclude_hosts;
+
+      clean_exclude_hosts = clean_hosts_string (exclude_hosts);
       if (gvm_hosts_exclude_with_max (hosts,
                                       clean_exclude_hosts,
                                       max_hosts)
@@ -180,12 +181,12 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
           g_free (clean_exclude_hosts);
           return -1;
         }
+      g_free (clean_exclude_hosts);
     }
 
   count = gvm_hosts_count (hosts);
   gvm_hosts_free (hosts);
   g_free (clean_hosts);
-  g_free (clean_exclude_hosts);
 
   return count;
 }
