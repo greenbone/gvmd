@@ -52813,8 +52813,8 @@ vuln_count (const get_data_t *get)
 static gchar*
 vulns_extra_where ()
 {
-  return g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                   "                    opts.host) > 0)"
+  return g_strdup (" AND vuln_results_exist (uuid, opts.task, opts.report,"
+                   "                         opts.host)"
                    " AND (qod >= opts.min_qod)");
 }
 
