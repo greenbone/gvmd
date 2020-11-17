@@ -16989,11 +16989,11 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "vuln") == 0)
     {
-      extra_where = g_strdup (" AND (vuln_results (vulns.uuid,"
-                              "                    cast (null AS integer),"
-                              "                    cast (null AS integer),"
-                              "                    cast (null AS text))"
-                              "      > 0)");
+      extra_where = g_strdup (" AND vuln_results_exist"
+                              "      (vulns.uuid,"
+                              "       cast (null AS integer),"
+                              "       cast (null AS integer),"
+                              "       cast (null AS text))");
     }
   else
     extra_where = NULL;
@@ -52253,18 +52253,6 @@ user_resources_in_use (user_t user,
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
    },                                                                        \
    {                                                                         \
-     "(SELECT iso_time (min (date)) FROM results"                            \
-     VULN_RESULTS_WHERE ")",                                                 \
-     NULL,                                                                   \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT iso_time (max (date)) FROM results"                            \
-     VULN_RESULTS_WHERE ")",                                                 \
-     NULL,                                                                   \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
      "type", NULL, KEYWORD_TYPE_INTEGER                                      \
    },                                                                        \
    {                                                                         \
@@ -52490,14 +52478,14 @@ vuln_iterator_qod (iterator_t* iterator)
 }
 
 /**
- * @brief Get the date of the oldest result from a vuln iterator.
+ * @brief Get the QoD from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The oldest result date.
+ * @return The QoD.
  */
 const char*
-vuln_iterator_oldest (iterator_t* iterator)
+vuln_iterator_type (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
@@ -52510,25 +52498,25 @@ vuln_iterator_oldest (iterator_t* iterator)
  *
  * @return The oldest result date.
  */
-const char*
-vuln_iterator_newest (iterator_t* iterator)
+time_t
+vuln_iterator_oldest (iterator_t* iterator)
 {
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
- * @brief Get the QoD from a vuln iterator.
+ * @brief Get the date of the oldest result from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The QoD.
+ * @return The oldest result date.
  */
-const char*
-vuln_iterator_type (iterator_t* iterator)
+time_t
+vuln_iterator_newest (iterator_t* iterator)
 {
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -52586,8 +52574,8 @@ vuln_count (const get_data_t *get)
 static gchar*
 vulns_extra_where ()
 {
-  return g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                   "                    opts.host) > 0)"
+  return g_strdup (" AND vuln_results_exist (uuid, opts.task, opts.report,"
+                   "                         opts.host)"
                    " AND (qod >= opts.min_qod)");
 }
 
