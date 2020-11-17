@@ -17009,11 +17009,11 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "vuln") == 0)
     {
-      extra_where = g_strdup (" AND (vuln_results (vulns.uuid,"
-                              "                    cast (null AS integer),"
-                              "                    cast (null AS integer),"
-                              "                    cast (null AS text))"
-                              "      > 0)");
+      extra_where = g_strdup (" AND vuln_results_exist"
+                              "      (vulns.uuid,"
+                              "       cast (null AS integer),"
+                              "       cast (null AS integer),"
+                              "       cast (null AS text))");
     }
   else
     extra_where = NULL;
