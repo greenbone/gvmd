@@ -1449,9 +1449,13 @@ clean_hosts_string (const char *hosts)
   /*
    * Regular expression matching leading zeroes in groups of digits
    * separated by dots or other characters.
+   * First line matches zeroes before non-zero numbers, e.g. "000" in "000120"
+   * Second line matches groups of all zeroes except one, e.g. "00" in "000"
    */
-  ipv4_replace_regex = g_regex_new ("(0+)(?=(?:[1-9]\\d*|0)(?:\\.|\\b))",
-                                    0, 0, NULL);
+  ipv4_replace_regex 
+    = g_regex_new ("(?<=\\D|^)(0+)(?=(?:(?:[1-9]\\d*)(?:\\D|$)))"
+                   "|(?<=\\D|^)(0+)(?=0(?:\\D|$))",
+                   0, 0, NULL);
   new_hosts = g_string_new ("");
 
   hosts_split = g_strsplit (hosts, ",", -1);
