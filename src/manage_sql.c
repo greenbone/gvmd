@@ -52492,18 +52492,6 @@ user_resources_in_use (user_t user,
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
    },                                                                        \
    {                                                                         \
-     "(SELECT iso_time (min (date)) FROM results"                            \
-     VULN_RESULTS_WHERE ")",                                                 \
-     NULL,                                                                   \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT iso_time (max (date)) FROM results"                            \
-     VULN_RESULTS_WHERE ")",                                                 \
-     NULL,                                                                   \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
      "type", NULL, KEYWORD_TYPE_INTEGER                                      \
    },                                                                        \
    {                                                                         \
@@ -52739,7 +52727,7 @@ time_t
 vuln_iterator_oldest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -52753,7 +52741,7 @@ time_t
 vuln_iterator_newest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -52767,7 +52755,7 @@ const char*
 vuln_iterator_type (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
