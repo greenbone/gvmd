@@ -52717,6 +52717,20 @@ vuln_iterator_qod (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the QoD from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The QoD.
+ */
+const char*
+vuln_iterator_type (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+}
+
+/**
  * @brief Get the date of the oldest result from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -52742,20 +52756,6 @@ vuln_iterator_newest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-}
-
-/**
- * @brief Get the QoD from a vuln iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The QoD.
- */
-const char*
-vuln_iterator_type (iterator_t* iterator)
-{
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
