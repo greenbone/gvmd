@@ -52735,11 +52735,11 @@ vuln_iterator_qod (iterator_t* iterator)
  *
  * @return The oldest result date.
  */
-const char*
+time_t
 vuln_iterator_oldest (iterator_t* iterator)
 {
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -52749,11 +52749,11 @@ vuln_iterator_oldest (iterator_t* iterator)
  *
  * @return The oldest result date.
  */
-const char*
+time_t
 vuln_iterator_newest (iterator_t* iterator)
 {
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
 }
 
 /**
