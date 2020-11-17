@@ -1647,14 +1647,6 @@ manage_create_result_indexes ()
 }
 
 /**
- * @brief Results WHERE SQL for creating views in create_tabes.
- */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
-
-/**
  * @brief Create or replace the vulns view.
  */
 void
@@ -1667,30 +1659,36 @@ create_view_vulns ()
                " ::integer;",
                sql_database ()))
     sql ("CREATE OR REPLACE VIEW vulns AS"
+         " WITH used_nvts"
+         " AS (SELECT DISTINCT nvt FROM results"
+         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
          " FROM nvts"
-         VULNS_RESULTS_WHERE
+         " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
          "       score / 10.0 AS severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
          " FROM cves"
-         VULNS_RESULTS_WHERE
+         " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
          "       score / 10.0 AS severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
          " FROM ovaldefs"
-         VULNS_RESULTS_WHERE);
+         " WHERE uuid in (SELECT * FROM used_nvts)");
   else
     sql ("CREATE OR REPLACE VIEW vulns AS"
+         " WITH used_nvts"
+         " AS (SELECT DISTINCT nvt FROM results"
+         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
          " FROM nvts"
-         VULNS_RESULTS_WHERE);
+         " WHERE uuid in (SELECT * FROM used_nvts)");
 }
 
 #undef VULNS_RESULTS_WHERE
