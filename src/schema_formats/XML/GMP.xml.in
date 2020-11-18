@@ -11970,13 +11970,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cve</name>
           <pattern>
-            <e>cvss</e>
-            <e>vector</e>
-            <e>complexity</e>
-            <e>authentication</e>
-            <e>confidentiality_impact</e>
-            <e>integrity_impact</e>
-            <e>availability_impact</e>
+            <e>score</e>
+            <e>cvss_vector</e>
             <e>description</e>
             <e>products</e>
             <o><e>nvts</e></o>
@@ -11985,50 +11980,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </pattern>
           <summary>A CVE info element</summary>
           <ele>
-            <name>cvss</name>
-            <summary>CVSS Base Score</summary>
+            <name>score</name>
+            <summary>Severity score (10 * CVSS Base Score) of the CVE</summary>
             <pattern>
-              text
+              <t>integer</t>
             </pattern>
           </ele>
           <ele>
-            <name>vector</name>
-            <summary>CVSS Access Vector metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>complexity</name>
-            <summary>CVSS Attack Complexity metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>authentication</name>
-            <summary>CVSS Authentication metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>confidentiality_impact</name>
-            <summary>CVSS Confidentiality impact metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>integrity_impact</name>
-            <summary>CVSS Integrity impact metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>availability_impact</name>
-            <summary>CVSS Availability impact metric</summary>
+            <name>cvss_vector</name>
+            <summary>CVSS base vector string</summary>
             <pattern>
               text
             </pattern>
@@ -12498,18 +12458,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>CVE-2011-0018</name>
             <comment/>
             <creation_time>2011-01-28T16:00:02Z</creation_time>
-            <modification_time>2011-02-05T07:01:22Z</modification_time>
+            <modification_time>2018-10-10T20:09:00Z</modification_time>
+            <update_time>2020-11-13T02:30:00.000+0000</update_time>
             <writable>0</writable>
             <in_use>0</in_use>
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cve>
-              <cvss>9.0</cvss>
-              <vector>NETWORK</vector>
-              <complexity>LOW</complexity>
-              <authentication>SINGLE_INSTANCE</authentication>
-              <confidentiality_impact>COMPLETE</confidentiality_impact>
-              <integrity_impact>COMPLETE</integrity_impact>
-              <availability_impact>COMPLETE</availability_impact>
+              <score>90</score>
+              <cvss_vector>AV:N/AC:L/Au:S/C:C/I:C/A:C</cvss_vector>
               <description>The email function in manage_sql.c in ...(truncated for example)</description>
               <products>cpe:/a:openvas:openvas_manager:1.0.1 ...(truncated for example)</products>
             </cve>
@@ -26036,6 +25992,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_INFO</command>
+    <summary>Replaced CVSS vector components of CVEs with vector string</summary>
+    <description>
+      <p>
+        The elements VECTOR, COMPLEXITY, AUTHENTICATION,
+        CONFIDENTIALITY_IMPACT, INTEGRITY_IMPACT and AVAILABILITY_IMPACT
+        are replaced by the CVSS_VECTOR element that contains the CVSS base
+        vector in a shorter string representation.
+      </p>
+      <p>
+        This vector string can also use newer CVSS versions like 3.1 if
+        available.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
   <change>
     <command>GET_REPORTS</command>
     <summary>Removed element SEVERITY_CLASS from element REPORT</summary>
