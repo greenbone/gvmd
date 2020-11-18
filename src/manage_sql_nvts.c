@@ -1913,6 +1913,13 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
       g_string_free (prefs_sql, TRUE);
     }
 
+  /* Update scores of all results. */
+  sql ("UPDATE results"
+       " SET score = (SELECT score FROM nvts WHERE oid = nvt),"
+       "     severity = (SELECT cvss_base::float FROM nvts WHERE oid = nvt)"
+       " WHERE score >= 0"
+       " AND score != (SELECT score FROM nvts WHERE oid = nvt);");
+
   /* Tell the main process to update its NVTi cache. */
   sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
        sql_schema ());
@@ -2090,6 +2097,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 void
 manage_sync_nvts (int (*fork_update_nvt_cache) ())
 {
+  // Defined in gvmd.c with the same name.  Calls update_nvt_cache_osp.
   fork_update_nvt_cache ();
 }
 
