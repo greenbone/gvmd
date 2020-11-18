@@ -21886,7 +21886,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[3];
+  column_t columns[2];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -22030,14 +22030,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[1].select = g_strdup_printf ("(%s::float * 10)::integer",
-                                       columns[0].select);
-  columns[1].filter = "score";
-  columns[1].type = KEYWORD_TYPE_INTEGER;
-
-  columns[2].select = NULL;
-  columns[2].filter = NULL;
-  columns[2].type = KEYWORD_TYPE_UNKNOWN;
+  columns[1].select = NULL;
+  columns[1].filter = NULL;
+  columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
   extra_tables = result_iterator_opts_table (apply_overrides,
                                              dynamic_severity);
@@ -22110,7 +22105,6 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  extra_order,
                                  with_clauses,
                                  1);
-  g_free (columns[1].select);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
