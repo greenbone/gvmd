@@ -21165,103 +21165,53 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   /* Generate SQL for constraints on message type, according to levels. */
 
+  levels_sql = g_string_new ("");
+
   if (levels == NULL || strlen (levels) == 0)
     {
-      levels_sql = g_string_new ("");
       g_string_append_printf (levels_sql,
                               " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
                               new_severity_sql);
       return levels_sql;
     }
 
-  levels_sql = NULL;
   count = 0;
 
-  /* High. */
+  g_string_append_printf (levels_sql, " AND severity_in_levels (%s", new_severity_sql);
+
   if (strchr (levels, 'h'))
     {
-      count = 1;
-      // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new ("");
-      g_string_append_printf (levels_sql,
-                              " AND (((severity_in_level (%s, 'high')",
-                              new_severity_sql);
+      g_string_append (levels_sql, ", 'high'");
+      count++;
     }
-
-  /* Medium. */
   if (strchr (levels, 'm'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'medium')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'medium')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'medium'");
       count++;
     }
-
-  /* Low. */
   if (strchr (levels, 'l'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'low')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'low')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'low'");
       count++;
     }
-
-  /* loG. */
   if (strchr (levels, 'g'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'log')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'log')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'log'");
+      count++;
+    }
+  if (strchr (levels, 'f'))
+    {
+      g_string_append (levels_sql, ", 'false'");
       count++;
     }
 
-  /* False Positive. */
-  if (strchr (levels, 'f'))
+  if (count == 0)
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (%s"
-                                  "      = " G_STRINGIFY
-                                              (SEVERITY_FP) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR %s"
-                                "    = " G_STRINGIFY
-                                          (SEVERITY_FP) "))"
-                                " )",
-                                new_severity_sql);
-      count++;
+      g_string_free (levels_sql, TRUE);
+      return NULL;
     }
-  else if (count)
-    levels_sql = g_string_append (levels_sql, ")))");
+
+  g_string_append (levels_sql, ")");
 
   if (count == 6)
     {
