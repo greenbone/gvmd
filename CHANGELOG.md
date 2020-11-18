@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Parameter `--db-user` to set a database user [#1327](https://github.com/greenbone/gvmd/pull/1327)
 - Add `allow_simult_ips_same_host` field for targets [#1346](https://github.com/greenbone/gvmd/pull/1346)
 - Speed up GET_VULNS [#1354](https://github.com/greenbone/gvmd/pull/1354) [#1355](https://github.com/greenbone/gvmd/pull/1354)
+- Speed up result counting iterator [#1358](https://github.com/greenbone/gvmd/pull/1358)
 
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
