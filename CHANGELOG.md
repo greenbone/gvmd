@@ -46,6 +46,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Do not inherit settings from deleted users [#1328](https://github.com/greenbone/gvmd/pull/1328)
 - Delete TLS certificate sources when deleting users [#1334](https://github.com/greenbone/gvmd/pull/1334)
 - Fix SQL errors in SCAP and CERT update [#1343](https://github.com/greenbone/gvmd/pull/1343)
+- Check private key when modifying credential [#1351](https://github.com/greenbone/gvmd/pull/1351)
+- Clean up hosts strings before using them [#1352](https://github.com/greenbone/gvmd/pull/1352)
+
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
