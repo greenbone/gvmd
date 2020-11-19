@@ -43,14 +43,21 @@ shell_esc() {
   printf "%q" "$1"
 }
 
+if [ -z "$GVMD_SCP_ALERT_TIMEOUT" ]
+then
+  TIMEOUT="15m"
+ else
+  TIMEOUT="$GVMD_SCP_ALERT_TIMEOUT"
+fi
+
 # Escape destination because it is also expanded on the remote end.
 DEST_ESC=`shell_esc "$DEST"`
 
 if [ -z "$PRIVATE_KEY_FILE" ]
 then
-  sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
+  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
 else
-  sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
+  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
 fi
 
 EXIT_CODE=$?
@@ -75,6 +82,9 @@ then
 elif [ $EXIT_CODE -eq 6 ]
 then
   log_error "sshpass failed with exit code ${EXIT_CODE}: Host public key is unknown: $ERROR_SHORT"
+elif [ $EXIT_CODE -eq 124 ]
+then
+  log_error "sshpass failed with exit code ${EXIT_CODE}: Timeout after $TIMEOUT: $ERROR_SHORT"
 elif [ $EXIT_CODE -eq 127 ]
 then
   log_error "sshpass failed with exit code ${EXIT_CODE}: Command not found: $ERROR_SHORT"
