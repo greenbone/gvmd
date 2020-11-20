@@ -1391,7 +1391,7 @@ nvti_from_vt (entity_t vt)
                 parsed_severity_date = strtol (entity_text (severity_date),
                                                NULL, 10);
               else
-                parsed_severity_date = nvti_modification_time (nvti);
+                parsed_severity_date = nvti_creation_time (nvti);
 
               nvti_add_vtseverity (nvti,
                 vtseverity_new (severity_type,
