@@ -1374,16 +1374,29 @@ nvti_from_vt (entity_t vt)
             }
           else
             {
+              entity_t origin, severity_date;
               double cvss_base_dbl;
               gchar * cvss_base;
+              time_t parsed_severity_date;
 
               cvss_base_dbl
                 = get_cvss_score_from_base_metrics (entity_text (value));
 
+              origin
+                = entity_child (severity, "origin");
+              severity_date
+                = entity_child (severity, "date");
+              
+              if (severity_date)
+                parsed_severity_date = strtol (entity_text (severity_date),
+                                               NULL, 10);
+              else
+                parsed_severity_date = nvti_modification_time (nvti);
+
               nvti_add_vtseverity (nvti,
                 vtseverity_new (severity_type,
-                                NULL /* origin */,
-                                nvti_modification_time (nvti),
+                                origin ? entity_text (origin) : NULL,
+                                parsed_severity_date,
                                 round (cvss_base_dbl * 10.0),
                                 entity_text (value)));
 
