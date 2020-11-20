@@ -1431,8 +1431,18 @@ manage_create_sql_functions ()
            "         THEN $1 = 0"
            "         WHEN 'log'"
            "         THEN $1 = 0"
+           "         WHEN 'false'"
+           "         THEN $1 = -1"
            "         ELSE 0::boolean"
            "         END);"
+           "$$ LANGUAGE SQL"
+           " STABLE;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_in_levels (double precision,"
+           "                                               VARIADIC text[])"
+           " RETURNS boolean AS $$"
+           "  (SELECT true = ANY (SELECT severity_in_level ($1, severity)"
+           "                      FROM unnest ($2) AS severity));"
            "$$ LANGUAGE SQL"
            " STABLE;");
 
