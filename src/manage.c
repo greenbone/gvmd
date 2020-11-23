@@ -7330,6 +7330,8 @@ feed_sync_required ()
   return FALSE;
 }
 
+
+
 /**
  * @brief Perform any syncing that is due.
  *
@@ -7338,10 +7340,12 @@ feed_sync_required ()
  * @param[in]  sigmask_current  Sigmask to restore in child.
  * @param[in]  fork_update_nvt_cache  Function that forks a child that syncs
  *                                    the NVTS.  Child does not return.
+ * @param[in]  try_gvmd_data_sync  Whether to try to sync gvmd data objects.
  */
 void
 manage_sync (sigset_t *sigmask_current,
-             int (*fork_update_nvt_cache) ())
+             int (*fork_update_nvt_cache) (),
+             gboolean try_gvmd_data_sync)
 {
   lockfile_t lockfile;
 
@@ -7360,9 +7364,12 @@ manage_sync (sigset_t *sigmask_current,
         }
     }
 
-  manage_sync_configs ();
-  manage_sync_port_lists ();
-  manage_sync_report_formats ();
+  if (try_gvmd_data_sync)
+    {
+      manage_sync_configs ();
+      manage_sync_port_lists ();
+      manage_sync_report_formats ();
+    }
 }
 
 /**
@@ -8407,6 +8414,17 @@ sort_data_free (sort_data_t *sort_data)
 
 
 /* Feeds. */
+
+/**
+ * @brief Tests if the gvmd data feed directory exists.
+ *
+ * @return TRUE if the directory exists.
+ */
+gboolean
+manage_gvmd_data_feed_dir_exists ()
+{
+  return g_file_test (GVMD_FEED_DIR, G_FILE_TEST_EXISTS);
+}
 
 /**
  * @brief Get the feed lock file path.

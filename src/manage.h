@@ -2673,7 +2673,7 @@ void
 set_scheduled_user_uuid (const gchar* uuid);
 
 void
-manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
 
 int
 manage_schedule (manage_connection_forker_t,
@@ -3656,6 +3656,9 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 #define GVMD_DATA_FEED 4
+
+gboolean
+manage_gvmd_data_feed_dir_exists ();
 
 const gchar *
 get_feed_lock_path ();

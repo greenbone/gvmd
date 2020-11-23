@@ -672,6 +672,11 @@ sync_report_formats_with_feed ()
   GDir *dir;
   const gchar *report_format_path;
 
+  /* Test if base feed directory exists */
+
+  if (manage_gvmd_data_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Setup owner. */
 
   setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
