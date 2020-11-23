@@ -379,6 +379,11 @@ sync_configs_with_feed ()
   const gchar *config_path;
   gchar *nvt_feed_version;
 
+  /* Test if base feed directory exists */
+
+  if (manage_gvmd_data_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Only sync if NVTs are up to date. */
 
   nvt_feed_version = nvts_feed_version ();
