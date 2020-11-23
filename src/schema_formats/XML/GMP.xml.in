@@ -25355,7 +25355,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>password</name>
       <summary>The password for the user</summary>
-      <pattern>text</pattern>
+      <pattern>
+        <attrib>
+          <name>modify</name>
+          <summary>If 0 then password is left alone, otherwise password is modified</summary>
+          <type>boolean</type>
+        </attrib>
+	    text
+ 	  </pattern>
     </ele>
     <ele>
       <name>role</name>
