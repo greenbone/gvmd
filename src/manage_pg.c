@@ -2759,6 +2759,33 @@ create_tables ()
 
   g_free (owned_clause);
 
+  sql ("CREATE OR REPLACE VIEW result_new_severities_dynamic AS"
+       "  SELECT results.id as result, users.id as user, 1 AS dynamic, 1 AS override,"
+       "         coalesce ((SELECT ov_new_severity FROM result_overrides"
+       "                    WHERE result = results.id"
+       "                    AND result_overrides.user = users.id"
+       "                    AND severity_matches_ov"
+       "                         (current_severity (results.severity,"
+       "                                            results.nvt),"
+       "                          ov_old_severity)"
+       "                    LIMIT 1),"
+       "                   current_severity (results.severity, results.nvt))"
+       "         AS new_severity"
+       "  FROM results, users;");
+
+  sql ("CREATE OR REPLACE VIEW result_new_severities_static AS"
+       "  SELECT results.id as result, users.id as user, 0 AS dynamic, 1 AS override,"
+       "         coalesce ((SELECT ov_new_severity FROM result_overrides"
+       "                    WHERE result = results.id"
+       "                    AND result_overrides.user = users.id"
+       "                    AND severity_matches_ov"
+       "                         (results.severity,"
+       "                          ov_old_severity)"
+       "                    LIMIT 1),"
+       "                   results.severity)"
+       "         AS new_severity"
+       "  FROM results, users;");
+
   sql ("CREATE OR REPLACE VIEW result_new_severities AS"
        "  SELECT results.id as result, users.id as user, dynamic, 1 AS override,"
        "    CASE WHEN dynamic != 0 THEN"

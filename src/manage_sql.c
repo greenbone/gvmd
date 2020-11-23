@@ -21731,15 +21731,24 @@ static gchar*
 new_severity_clause (int apply_overrides, int dynamic_severity)
 {
   if (apply_overrides)
-    /* Overrides, maybe dynamic. */
-    return g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                            " WHERE result_new_severities.result = results.id"
-                            " AND result_new_severities.user"
-                            "     = (SELECT id FROM users WHERE uuid = '%s')"
-                            " AND dynamic = %d"
-                            " LIMIT 1)",
-                            current_credentials.uuid,
-                            dynamic_severity);
+    {
+      if (dynamic_severity)
+        /* Overrides, dynamic. */
+        return g_strdup_printf ("(SELECT new_severity FROM result_new_severities_dynamic"
+                                " WHERE result_new_severities_dynamic.result = results.id"
+                                " AND result_new_severities_dynamic.user"
+                                "     = (SELECT id FROM users WHERE uuid = '%s')"
+                                " LIMIT 1)",
+                                current_credentials.uuid);
+
+      /* Overrides, no dynamic. */
+      return g_strdup_printf ("(SELECT new_severity FROM result_new_severities_static"
+                              " WHERE result_new_severities_static.result = results.id"
+                              " AND result_new_severities_static.user"
+                              "     = (SELECT id FROM users WHERE uuid = '%s')"
+                              " LIMIT 1)",
+                              current_credentials.uuid);
+    }
 
   if (dynamic_severity)
     /* Dynamic, no overrides. */
@@ -21874,14 +21883,19 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
    (filterable_columns,
     "type",
     apply_overrides
-     /* Overrides, maybe dynamic. */
-     ? g_strdup_printf ("severity_to_type"
-                        " ((SELECT new_severity FROM result_new_severities"
-                        "   WHERE result_new_severities.result = results.id"
-                        "   AND result_new_severities.user = opts.user_id"
-                        "   AND result_new_severities.dynamic = %i"
-                        "   LIMIT 1))",
-                        dynamic_severity)
+     ? (dynamic_severity
+        /* Overrides, dynamic. */
+        ? g_strdup_printf ("severity_to_type"
+                           " ((SELECT new_severity FROM result_new_severities_dynamic"
+                           "   WHERE result_new_severities_dynamic.result = results.id"
+                           "   AND result_new_severities_dynamic.user = opts.user_id"
+                           "   LIMIT 1))")
+        /* Overrides, no dynamic. */
+        : g_strdup_printf ("severity_to_type"
+                           " ((SELECT new_severity FROM result_new_severities_static"
+                           "   WHERE result_new_severities_static.result = results.id"
+                           "   AND result_new_severities_static.user = opts.user_id"
+                           "   LIMIT 1))"))
      : (dynamic_severity
          /* Dynamic, no overrides. */
          ? g_strdup ("severity_to_type (current_severity (results.severity,"
