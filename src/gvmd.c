@@ -1212,7 +1212,7 @@ fork_feed_sync ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
-  gboolean gvmd_data_feed_dir_exists;
+  gboolean gvmd_data_feed_dirs_exist;
   
   static gboolean disable_gvmd_data_feed_warning = FALSE;
 
@@ -1238,19 +1238,19 @@ fork_feed_sync ()
       return -1;
     }
 
-  gvmd_data_feed_dir_exists = manage_gvmd_data_feed_dir_exists ();
+  gvmd_data_feed_dirs_exist = manage_gvmd_data_feed_dirs_exist ();
 
-  if (disable_gvmd_data_feed_warning && gvmd_data_feed_dir_exists)
+  if (disable_gvmd_data_feed_warning && gvmd_data_feed_dirs_exist)
     {
       disable_gvmd_data_feed_warning = FALSE;
-      g_message ("Previously missing gvmd data feed directory %s found.",
-                 GVMD_FEED_DIR);
+      g_message ("Previously missing gvmd data feed directory found.");
     }
-  else if (gvmd_data_feed_dir_exists == FALSE
+  else if (gvmd_data_feed_dirs_exist == FALSE
            && disable_gvmd_data_feed_warning == FALSE)
     {
       disable_gvmd_data_feed_warning = TRUE;
-      g_warning ("The gvmd data feed directory %s does not exist.",
+      g_warning ("The gvmd data feed directory %s or one of its subdirectories"
+                 " does not exist.",
                  GVMD_FEED_DIR);
     }
 
@@ -1276,7 +1276,7 @@ fork_feed_sync ()
         /* Check the feed version. */
 
         manage_sync (sigmask_normal, fork_update_nvt_cache,
-                     gvmd_data_feed_dir_exists);
+                     gvmd_data_feed_dirs_exist);
 
         /* Exit. */
 

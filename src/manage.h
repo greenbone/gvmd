@@ -3658,7 +3658,10 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define GVMD_DATA_FEED 4
 
 gboolean
-manage_gvmd_data_feed_dir_exists ();
+manage_gvmd_data_feed_dir_exists (const char *);
+
+gboolean
+manage_gvmd_data_feed_dirs_exist ();
 
 const gchar *
 get_feed_lock_path ();
