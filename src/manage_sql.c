@@ -21864,6 +21864,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   gchar *extra_tables, *extra_where, *extra_where_single, *opts;
   gchar *owned_clause, *with_clause, *with_clauses;
   char *user_id;
+  const gchar *lateral;
 
   assert (report);
 
@@ -21912,7 +21913,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   if (dynamic_severity)
     {
       if (apply_overrides)
-        columns[0].select
+        lateral
           = "coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
@@ -21957,7 +21958,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                             END),"
             "                            results.severity))";
       else
-        columns[0].select
+        lateral
           = "coalesce ((CASE WHEN results.severity"
             "                             > " G_STRINGIFY (SEVERITY_LOG)
             "                        THEN (SELECT CAST (cvss_base"
@@ -21971,7 +21972,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   else
     {
       if (apply_overrides)
-        columns[0].select
+        lateral
           = "coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
@@ -21993,11 +21994,12 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   LIMIT 1),"
             "                  results.severity)";
       else
-        columns[0].select
+        lateral
           /* coalesce because results.severity gives syntax error. */
           = "coalesce (results.severity, results.severity)";
     }
 
+  columns[0].select = "lateralSeverity";
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
@@ -22008,8 +22010,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   opts = result_iterator_opts_table (apply_overrides,
                                      dynamic_severity);
   extra_tables = g_strdup_printf (", LATERAL %s AS lateralSeverity%s",
-                                  columns[0].select, opts);
-  columns[0].select = "lateralSeverity";
+                                  lateral, opts);
   g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
