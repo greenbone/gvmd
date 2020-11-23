@@ -427,6 +427,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <xsl:param name="line-element"/>
     <xsl:param name="element-suffix"/>
     <xsl:choose>
+      <xsl:when test="name() = 'alts'">
+        <xsl:text>One of: </xsl:text>
+        <xsl:for-each select="*">
+          <xsl:if test="name() = 'alt'">
+            <div style="margin-left: 15px">
+              <xsl:value-of select="normalize-space(.)"/>
+            </div>
+          </xsl:if>
+        </xsl:for-each>
+      </xsl:when>
       <xsl:when test="name() = 'any'">
         <xsl:for-each select="*">
           <xsl:call-template name="structure-line">
