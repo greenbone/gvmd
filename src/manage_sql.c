@@ -21768,13 +21768,14 @@ new_severity_clause (int apply_overrides, int dynamic_severity)
  * @param[in]  apply_overrides  Whether to apply overrides.
  * @param[in]  dynamic_severity Whether to use dynamic severity.
  * @param[in]  filter           Filter string.
+ * @param[in]  given_new_severity_sql  SQL for new severity, or NULL.
  *
  * @return     Newly allocated extra_where string.
  */
 static gchar*
 results_extra_where (int trash, report_t report, const gchar* host,
                      int apply_overrides, int dynamic_severity,
-                     const gchar *filter)
+                     const gchar *filter, const gchar *given_new_severity_sql)
 {
   gchar *extra_where;
   int min_qod;
@@ -21791,7 +21792,10 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  new_severity_sql = new_severity_clause (apply_overrides, dynamic_severity);
+  if (given_new_severity_sql)
+    new_severity_sql = NULL;
+  else
+    new_severity_sql = new_severity_clause (apply_overrides, dynamic_severity);
 
   // Build filter clauses
 
@@ -21810,7 +21814,9 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod_clause = where_qod (min_qod);
 
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
-                                     new_severity_sql);
+                                     given_new_severity_sql
+                                      ? given_new_severity_sql
+                                      : new_severity_sql);
   g_free (levels);
   g_free (new_severity_sql);
 
@@ -21855,7 +21861,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *extra_where_single;
+  gchar *extra_tables, *extra_where, *extra_where_single, *opts;
   gchar *owned_clause, *with_clause, *with_clauses;
   char *user_id;
 
@@ -21907,7 +21913,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     {
       if (apply_overrides)
         columns[0].select
-          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
+          = "coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
             "                   AND (valid_overrides.result = 0"
@@ -21949,10 +21955,10 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                                         = results.nvt)"
             "                             ELSE results.severity"
             "                             END),"
-            "                            results.severity)))";
+            "                            results.severity))";
       else
         columns[0].select
-          = "(SELECT coalesce ((CASE WHEN results.severity"
+          = "coalesce ((CASE WHEN results.severity"
             "                             > " G_STRINGIFY (SEVERITY_LOG)
             "                        THEN (SELECT CAST (cvss_base"
             "                                           AS double precision)"
@@ -21960,13 +21966,13 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                              WHERE nvts.oid = results.nvt)"
             "                        ELSE results.severity"
             "                        END),"
-            "                  results.severity))";
+            "                  results.severity)";
     }
   else
     {
       if (apply_overrides)
         columns[0].select
-          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
+          = "coalesce ((SELECT new_severity FROM valid_overrides"
             "                   WHERE valid_overrides.result_nvt"
             "                         = results.result_nvt"
             "                   AND (valid_overrides.result = 0"
@@ -21985,10 +21991,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                        (results.severity,"
             "                         valid_overrides.severity)"
             "                   LIMIT 1),"
-            "                  results.severity))";
+            "                  results.severity)";
       else
         columns[0].select
-          = "(SELECT results.severity)";
+          /* coalesce because results.severity gives syntax error. */
+          = "coalesce (results.severity, results.severity)";
     }
 
   columns[0].filter = "severity";
@@ -21998,17 +22005,23 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[1].filter = NULL;
   columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
-  extra_tables = result_iterator_opts_table (apply_overrides,
-                                             dynamic_severity);
+  opts = result_iterator_opts_table (apply_overrides,
+                                     dynamic_severity);
+  extra_tables = g_strdup_printf (", LATERAL %s AS lateralSeverity%s",
+                                  columns[0].select, opts);
+  columns[0].select = "lateralSeverity";
+  g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+                                     filter ? filter : get->filter,
+                                     "lateralSeverity");
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
-                                            "min_qod=0");
+                                            "min_qod=0",
+                                            "lateralSeverity");
 
   free (filter);
 
@@ -22165,12 +22178,14 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+                                     filter ? filter : get->filter,
+                                     NULL);
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
-                                            "min_qod=0");
+                                            "min_qod=0",
+                                            NULL);
 
   free (filter);
 
@@ -22240,7 +22255,8 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+                                     filter ? filter : get->filter,
+                                     NULL);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -54651,7 +54667,8 @@ type_extra_where (const char *type, int trash, const char *filter,
       extra_where = results_extra_where (trash, report, NULL,
                                          apply_overrides,
                                          setting_dynamic_severity_int (),
-                                         filter);
+                                         filter,
+                                         NULL);
     }
   else if (strcasecmp (type, "VULN") == 0)
     {
