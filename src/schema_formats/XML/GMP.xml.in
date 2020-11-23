@@ -21632,7 +21632,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>sources</name>
           <summary>Sources allowed for authentication for this user</summary>
-          <type>sources</type>
+          <pattern>
+            <any><e>source</e></any>
+          </pattern>
+          <ele>
+            <name>source</name>
+            <summary>Authentication source</summary>
+            <pattern>
+			  <alts>
+				<alt>file</alt>
+				<alt>ldap_connect</alt>
+				<alt>radius_connect</alt>
+			  </alts>
+            </pattern>
+          </ele>
         </ele>
       </ele>
       <ele>
