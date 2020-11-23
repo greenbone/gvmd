@@ -674,7 +674,7 @@ sync_report_formats_with_feed ()
 
   /* Test if base feed directory exists */
 
-  if (manage_gvmd_data_feed_dir_exists () == FALSE)
+  if (report_formats_feed_dir_exists () == FALSE)
     return 0;
 
   /* Setup owner. */
@@ -730,6 +730,17 @@ sync_report_formats_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the report formats feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+report_formats_feed_dir_exists ()
+{
+  return g_file_test (feed_dir_report_formats (), G_FILE_TEST_EXISTS);
 }
 
 /**

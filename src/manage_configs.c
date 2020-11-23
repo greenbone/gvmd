@@ -381,7 +381,7 @@ sync_configs_with_feed ()
 
   /* Test if base feed directory exists */
 
-  if (manage_gvmd_data_feed_dir_exists () == FALSE)
+  if (configs_feed_dir_exists () == FALSE)
     return 0;
 
   /* Only sync if NVTs are up to date. */
@@ -446,6 +446,17 @@ sync_configs_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the configs feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+configs_feed_dir_exists ()
+{
+  return g_file_test (feed_dir_configs (), G_FILE_TEST_EXISTS);
 }
 
 /**
