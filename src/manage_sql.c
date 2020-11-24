@@ -264,9 +264,6 @@ cache_permissions_for_resource (const char *, resource_t, GArray*);
 static void
 cache_all_permissions_for_users (GArray*);
 
-static void
-report_cache_counts (report_t, int, int, const char*);
-
 static int
 report_host_dead (report_host_t);
 
@@ -19868,7 +19865,7 @@ report_counts_build_iterator_user (iterator_t *iterator)
  *                                 overridden severity.
  * @param[in]  users_where        Optional SQL clause to limit users.
  */
-static void
+void
 report_cache_counts (report_t report, int clear_original, int clear_overridden,
                      const char* users_where)
 {

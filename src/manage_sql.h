@@ -473,4 +473,7 @@ add_role_permission_resource (const gchar *, const gchar *, const gchar *,
 void
 create_view_vulns ();
 
+void
+report_cache_counts (report_t, int, int, const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

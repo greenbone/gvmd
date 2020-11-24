@@ -1817,11 +1817,36 @@ DEF_ACCESS (nvt_severity_iterator_value, 4);
 static void
 update_result_scores ()
 {
+  iterator_t rows;
+  array_t *reports;
+  int index;
+
+  /* Get all reports that will change. */
+
+  reports = make_array ();
+  init_iterator (&rows,
+                 "SELECT DISTINCT report FROM results"
+                 " WHERE score >= 0"
+                 " AND score != (SELECT score FROM nvts WHERE oid = nvt);");
+  while (next (&rows))
+    array_add (reports, GINT_TO_POINTER (iterator_int64 (&rows, 0)));
+  cleanup_iterator (&rows);
+
+  /* Update scores. */
+
   sql ("UPDATE results"
        " SET score = (SELECT score FROM nvts WHERE oid = nvt),"
        "     severity = (SELECT cvss_base::float FROM nvts WHERE oid = nvt)"
        " WHERE score >= 0"
        " AND score != (SELECT score FROM nvts WHERE oid = nvt);");
+
+  /* Update report counts. */
+
+  for (index = 0; index < reports->len; index++)
+    report_cache_counts (GPOINTER_TO_INT (g_ptr_array_index (reports, index)),
+                         1, 1, NULL);
+
+  g_ptr_array_free (reports, TRUE);
 }
 
 /**
