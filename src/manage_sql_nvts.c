@@ -1812,6 +1812,19 @@ nvt_severity_iterator_score (iterator_t *iterator)
 DEF_ACCESS (nvt_severity_iterator_value, 4);
 
 /**
+ * @brief Update scores of all results.
+ */
+static void
+update_result_scores ()
+{
+  sql ("UPDATE results"
+       " SET score = (SELECT score FROM nvts WHERE oid = nvt),"
+       "     severity = (SELECT cvss_base::float FROM nvts WHERE oid = nvt)"
+       " WHERE score >= 0"
+       " AND score != (SELECT score FROM nvts WHERE oid = nvt);");
+}
+
+/**
  * @brief Update VTs via OSP.
  *
  * @param[in]  update_socket         Socket to use to contact scanner.
@@ -1927,11 +1940,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     }
 
   /* Update scores of all results. */
-  sql ("UPDATE results"
-       " SET score = (SELECT score FROM nvts WHERE oid = nvt),"
-       "     severity = (SELECT cvss_base::float FROM nvts WHERE oid = nvt)"
-       " WHERE score >= 0"
-       " AND score != (SELECT score FROM nvts WHERE oid = nvt);");
+
+  update_result_scores ();
 
   /* Tell the main process to update its NVTi cache. */
   sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
