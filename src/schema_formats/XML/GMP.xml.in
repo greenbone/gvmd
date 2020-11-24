@@ -510,14 +510,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         Whether the certificate is valid, expired or not active yet
       </summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>expired</alt>
-            <alt>inactive</alt>
-            <alt>unknown</alt>
-            <alt>valid</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>expired</alt>
+		  <alt>inactive</alt>
+		  <alt>unknown</alt>
+		  <alt>valid</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -2089,12 +2087,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>order</name>
             <summary>Sort order of field</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -2137,21 +2133,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>notes</name>
           <summary>Whether notes are included</summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
           <name>overrides</name>
           <summary>Whether overrides are included</summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
           <name>apply_overrides</name>
           <summary>Whether overrides are applied</summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
@@ -2160,7 +2156,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             Whether only those hosts that have results are included
           </summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
@@ -2174,14 +2170,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filter</name>
           <summary>Level filter</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>High</alt>
-                <alt>Medium</alt>
-                <alt>Low</alt>
-                <alt>Log</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>High</alt>
+			  <alt>Medium</alt>
+			  <alt>Low</alt>
+			  <alt>Log</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -3530,12 +3524,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>usage_type</name>
       <summary>Usage type (scan or policy) for the config. Can overwrite the one in get_configs_response</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>scan</alt>
-            <alt>policy</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>scan</alt>
+		  <alt>policy</alt>
+		</alts>
       </pattern>
     </ele>
     <response>
@@ -3723,12 +3715,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>md5</alt>
-            <alt>sha1</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>md5</alt>
+		  <alt>sha1</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -3741,12 +3731,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-          <t>
-            <alts>
-              <alt>aes</alt>
-              <alt>des</alt>
-            </alts>
-          </t>
+		  <alts>
+			<alt>aes</alt>
+			<alt>des</alt>
+		  </alts>
         </pattern>
       </ele>
       <ele>
@@ -3761,17 +3749,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>type</name>
       <summary>The type of credential to create</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>cc</alt>
-            <alt>pgp</alt>
-            <alt>pw</alt>
-            <alt>smime</alt>
-            <alt>snmp</alt>
-            <alt>up</alt>
-            <alt>usk</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>cc</alt>
+		  <alt>pgp</alt>
+		  <alt>pw</alt>
+		  <alt>smime</alt>
+		  <alt>snmp</alt>
+		  <alt>up</alt>
+		  <alt>usk</alt>
+		</alts>
       </pattern>
     </ele>
     <response>
@@ -5474,12 +5460,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>usage_type</name>
       <summary>Usage type for the task (scan or audit), defaulting to scan</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>scan</alt>
-            <alt>audit</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>scan</alt>
+		  <alt>audit</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -7405,24 +7389,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>type</name>
           <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>0</alt>
+			  <alt>1</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
           <name>usage_type</name>
           <summary>The usage type of the config (scan or policy)</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>scan</alt>
-                <alt>policy</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>scan</alt>
+			  <alt>policy</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -7801,12 +7781,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -8994,12 +8972,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -9712,12 +9688,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10098,17 +10072,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>type</name>
           <summary>The type of the credential</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>cc</alt>
-                <alt>pgp</alt>
-                <alt>pw</alt>
-                <alt>smime</alt>
-                <alt>snmp</alt>
-                <alt>up</alt>
-                <alt>usk</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>cc</alt>
+			  <alt>pgp</alt>
+			  <alt>pw</alt>
+			  <alt>smime</alt>
+			  <alt>snmp</alt>
+			  <alt>up</alt>
+			  <alt>usk</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -10128,15 +10100,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>format</name>
             <summary>Format as used in the command</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>key</alt>
-                  <alt>rpm</alt>
-                  <alt>deb</alt>
-                  <alt>exe</alt>
-                  <alt>pem</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>key</alt>
+				<alt>rpm</alt>
+				<alt>deb</alt>
+				<alt>exe</alt>
+				<alt>pem</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10144,12 +10114,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>auth_algorithm</name>
           <summary>The SNMP authentication algorithm</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>md5</alt>
-                <alt>sha1</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>md5</alt>
+			  <alt>sha1</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -10161,12 +10129,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>algorithm</name>
             <summary>The SNMP privacy algorithm</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>aes</alt>
-                  <alt>des</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>aes</alt>
+				<alt>des</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10335,12 +10301,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10944,12 +10908,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -11325,12 +11287,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -12283,12 +12243,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -12695,12 +12653,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -13609,12 +13565,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -14109,12 +14063,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -14609,12 +14561,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -15342,14 +15292,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filter</name>
           <summary>A severity level that is included in the report</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>High</alt>
-                <alt>Medium</alt>
-                <alt>Low</alt>
-                <alt>Log</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>High</alt>
+			  <alt>Medium</alt>
+			  <alt>Low</alt>
+			  <alt>Log</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -15446,12 +15394,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -15980,16 +15926,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <o><e>min</e></o>
               <o><e>max</e></o>
               <o><e>options</e></o>
-              <t>
-                <alts>
-                  <alt>boolean</alt>
-                  <alt>integer</alt>
-                  <alt>selection</alt>
-                  <alt>string</alt>
-                  <alt>text</alt>
-                  <alt>report_format_list</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>boolean</alt>
+				<alt>integer</alt>
+				<alt>selection</alt>
+				<alt>string</alt>
+				<alt>text</alt>
+				<alt>report_format_list</alt>
+			  </alts>
             </pattern>
             <ele>
               <name>min</name>
@@ -16069,13 +16013,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <required>1</required>
             </attrib>
             <e>time</e>
-            <t>
-              <alts>
-                <alt>yes</alt>
-                <alt>no</alt>
-                <alt>unknown</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>yes</alt>
+			  <alt>no</alt>
+			  <alt>unknown</alt>
+			</alts>
           </pattern>
           <ele>
             <name>time</name>
@@ -16168,12 +16110,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -16600,12 +16540,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -17057,12 +16995,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -17591,12 +17527,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -18033,12 +17967,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -18735,12 +18667,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -19385,12 +19315,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -19769,7 +19697,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <ele>
         <name>apply_overrides</name>
         <pattern>
-          <t><alts><alt>0</alt><alt>1</alt></alts></t>
+          <alts><alt>0</alt><alt>1</alt></alts>
         </pattern>
       </ele>
       <ele>
@@ -19947,12 +19875,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>usage_type</name>
           <summary>The usage type of the task (scan or audit)</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>scan</alt>
-                <alt>audit</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>scan</alt>
+			  <alt>audit</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -20379,12 +20305,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -21189,12 +21113,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -21632,7 +21554,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>sources</name>
           <summary>Sources allowed for authentication for this user</summary>
-          <type>sources</type>
+          <pattern>
+            <any><e>source</e></any>
+          </pattern>
+          <ele>
+            <name>source</name>
+            <summary>Authentication source</summary>
+            <pattern>
+			  <alts>
+				<alt>file</alt>
+				<alt>ldap_connect</alt>
+				<alt>radius_connect</alt>
+			  </alts>
+            </pattern>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -21709,12 +21644,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -21857,14 +21790,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               Whether the certificate is valid, expired or not active yet
             </summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>expired</alt>
-                  <alt>inactive</alt>
-                  <alt>unknown</alt>
-                  <alt>valid</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>expired</alt>
+				<alt>inactive</alt>
+				<alt>unknown</alt>
+				<alt>valid</alt>
+			  </alts>
             </pattern>
           </column>
           <column>
@@ -22071,14 +22002,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             Whether the certificate is valid, expired or not active yet
           </summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>expired</alt>
-                <alt>inactive</alt>
-                <alt>unknown</alt>
-                <alt>valid</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>expired</alt>
+			  <alt>inactive</alt>
+			  <alt>unknown</alt>
+			  <alt>valid</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -22333,12 +22262,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -22758,12 +22685,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -23708,12 +23633,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>md5</alt>
-            <alt>sha1</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>md5</alt>
+		  <alt>sha1</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -23726,12 +23649,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-          <t>
-            <alts>
-              <alt>aes</alt>
-              <alt>des</alt>
-            </alts>
-          </t>
+		  <alts>
+			<alt>aes</alt>
+			<alt>des</alt>
+		  </alts>
         </pattern>
       </ele>
       <ele>
@@ -25434,7 +25355,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>password</name>
       <summary>The password for the user</summary>
-      <pattern>text</pattern>
+      <pattern>
+        <attrib>
+          <name>modify</name>
+          <summary>If 0 then password is left alone, otherwise password is modified</summary>
+          <type>boolean</type>
+        </attrib>
+	    text
+ 	  </pattern>
     </ele>
     <ele>
       <name>role</name>
@@ -25450,7 +25378,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>sources</name>
       <summary>List of authentication sources for this user (if omitted, no changes)</summary>
-      <type>sources</type>
+	  <pattern>
+		<any><e>source</e></any>
+	  </pattern>
+	  <ele>
+		<name>source</name>
+		<summary>Authentication source</summary>
+		<pattern>
+		  <alts>
+			<alt>file</alt>
+			<alt>ldap_connect</alt>
+			<alt>radius_connect</alt>
+		  </alts>
+		</pattern>
+	  </ele>
     </ele>
     <response>
       <pattern>
