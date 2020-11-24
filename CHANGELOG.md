@@ -7,9 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.4] (unreleased)
 
 ### Added
+- Extend GMP for extended severities [#1326](https://github.com/greenbone/gvmd/pull/1326) [#1329](https://github.com/greenbone/gvmd/pull/1329) [#1359](https://github.com/greenbone/gvmd/pull/1359)
 - Parameter `--db-user` to set a database user [#1327](https://github.com/greenbone/gvmd/pull/1327)
 - Add `allow_simult_ips_same_host` field for targets [#1346](https://github.com/greenbone/gvmd/pull/1346)
 - Speed up GET_VULNS [#1354](https://github.com/greenbone/gvmd/pull/1354) [#1355](https://github.com/greenbone/gvmd/pull/1354)
+- Speed up result counting iterator [#1358](https://github.com/greenbone/gvmd/pull/1358)
 
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)

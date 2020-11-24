@@ -21145,102 +21145,53 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   /* Generate SQL for constraints on message type, according to levels. */
 
+  levels_sql = g_string_new ("");
+
   if (levels == NULL || strlen (levels) == 0)
     {
-      levels_sql = g_string_new ("");
       g_string_append_printf (levels_sql,
                               " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
                               new_severity_sql);
       return levels_sql;
     }
 
-  levels_sql = NULL;
   count = 0;
 
-  /* High. */
+  g_string_append_printf (levels_sql, " AND severity_in_levels (%s", new_severity_sql);
+
   if (strchr (levels, 'h'))
     {
-      count = 1;
-      levels_sql = g_string_new ("");
-      g_string_append_printf (levels_sql,
-                              " AND (((severity_in_level (%s, 'high')",
-                              new_severity_sql);
+      g_string_append (levels_sql, ", 'high'");
+      count++;
     }
-
-  /* Medium. */
   if (strchr (levels, 'm'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'medium')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'medium')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'medium'");
       count++;
     }
-
-  /* Low. */
   if (strchr (levels, 'l'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'low')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'low')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'low'");
       count++;
     }
-
-  /* loG. */
   if (strchr (levels, 'g'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'log')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'log')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'log'");
+      count++;
+    }
+  if (strchr (levels, 'f'))
+    {
+      g_string_append (levels_sql, ", 'false'");
       count++;
     }
 
-  /* False Positive. */
-  if (strchr (levels, 'f'))
+  if (count == 0)
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (%s"
-                                  "      = " G_STRINGIFY
-                                              (SEVERITY_FP) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR %s"
-                                "    = " G_STRINGIFY
-                                          (SEVERITY_FP) "))"
-                                " )",
-                                new_severity_sql);
-      count++;
+      g_string_free (levels_sql, TRUE);
+      return NULL;
     }
-  else if (count)
-    levels_sql = g_string_append (levels_sql, ")))");
+
+  g_string_append (levels_sql, ")");
 
   if (count == 6)
     {
@@ -21814,7 +21765,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[3];
+  column_t columns[2];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -21888,14 +21839,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[1].select = g_strdup_printf ("(%s::float * 10)::integer",
-                                       columns[0].select);
-  columns[1].filter = "score";
-  columns[1].type = KEYWORD_TYPE_INTEGER;
-
-  columns[2].select = NULL;
-  columns[2].filter = NULL;
-  columns[2].type = KEYWORD_TYPE_UNKNOWN;
+  columns[1].select = NULL;
+  columns[1].filter = NULL;
+  columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
   extra_tables = result_iterator_opts_table (apply_overrides);
 
@@ -21966,7 +21912,6 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  extra_order,
                                  with_clauses,
                                  1);
-  g_free (columns[1].select);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clauses);
