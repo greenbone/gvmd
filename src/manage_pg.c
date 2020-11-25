@@ -1378,8 +1378,18 @@ manage_create_sql_functions ()
            "         THEN $1 = 0"
            "         WHEN 'log'"
            "         THEN $1 = 0"
+           "         WHEN 'false'"
+           "         THEN $1 = -1"
            "         ELSE 0::boolean"
            "         END);"
+           "$$ LANGUAGE SQL"
+           " STABLE;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_in_levels (double precision,"
+           "                                               VARIADIC text[])"
+           " RETURNS boolean AS $$"
+           "  (SELECT true = ANY (SELECT severity_in_level ($1, severity)"
+           "                      FROM unnest ($2) AS severity));"
            "$$ LANGUAGE SQL"
            " STABLE;");
 
@@ -1551,6 +1561,26 @@ manage_create_sql_functions ()
            "                                            ('gvmd.user.uuid')))"
            "           AND task = results.task)"
            "$$ LANGUAGE SQL;");
+
+      sql ("DROP FUNCTION IF EXISTS"
+           " vuln_results_exist (text, bigint, bigint, text, integer);");
+      sql ("CREATE OR REPLACE FUNCTION"
+           " vuln_results_exist (text, bigint, bigint, text)"
+           " RETURNS boolean AS $$"
+           " SELECT EXISTS"
+           "  (SELECT * FROM results"
+           "   WHERE results.nvt = $1"
+           "   AND ($2 IS NULL OR results.task = $2)"
+           "   AND ($3 IS NULL OR results.report = $3)"
+           "   AND ($4 IS NULL OR results.host = $4)"
+           "   AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"
+           "   AND (SELECT has_permission FROM permissions_get_tasks"
+           "        WHERE \"user\" = (SELECT id FROM users"
+           "                          WHERE uuid"
+           "                                = (SELECT current_setting"
+           "                                           ('gvmd.user.uuid')))"
+           "        AND task = results.task))"
+           "$$ LANGUAGE SQL;");
     }
 
   return 0;
@@ -1574,14 +1604,6 @@ manage_create_result_indexes ()
 }
 
 /**
- * @brief Results WHERE SQL for creating views in create_tabes.
- */
-#define VULNS_RESULTS_WHERE                                           \
-  " WHERE uuid IN"                                                    \
-  "   (SELECT nvt FROM results"                                       \
-  "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
-
-/**
  * @brief Create or replace the vulns view.
  */
 void
@@ -1594,30 +1616,36 @@ create_view_vulns ()
                " ::integer;",
                sql_database ()))
     sql ("CREATE OR REPLACE VIEW vulns AS"
+         " WITH used_nvts"
+         " AS (SELECT DISTINCT nvt FROM results"
+         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
          " FROM nvts"
-         VULNS_RESULTS_WHERE
+         " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
          "       score / 10.0 AS severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
          " FROM cves"
-         VULNS_RESULTS_WHERE
+         " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
          "       score / 10.0 AS severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
          " FROM ovaldefs"
-         VULNS_RESULTS_WHERE);
+         " WHERE uuid in (SELECT * FROM used_nvts)");
   else
     sql ("CREATE OR REPLACE VIEW vulns AS"
+         " WITH used_nvts"
+         " AS (SELECT DISTINCT nvt FROM results"
+         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
          "        cast (cvss_base AS double precision) AS severity, qod,"
          "        'nvt' AS type"
          " FROM nvts"
-         VULNS_RESULTS_WHERE);
+         " WHERE uuid in (SELECT * FROM used_nvts)");
 }
 
 #undef VULNS_RESULTS_WHERE
@@ -2677,6 +2705,33 @@ create_tables ()
        owned_clause);
 
   g_free (owned_clause);
+
+  sql ("CREATE OR REPLACE VIEW result_new_severities_dynamic AS"
+       "  SELECT results.id as result, users.id as user, 1 AS dynamic, 1 AS override,"
+       "         coalesce ((SELECT ov_new_severity FROM result_overrides"
+       "                    WHERE result = results.id"
+       "                    AND result_overrides.user = users.id"
+       "                    AND severity_matches_ov"
+       "                         (current_severity (results.severity,"
+       "                                            results.nvt),"
+       "                          ov_old_severity)"
+       "                    LIMIT 1),"
+       "                   current_severity (results.severity, results.nvt))"
+       "         AS new_severity"
+       "  FROM results, users;");
+
+  sql ("CREATE OR REPLACE VIEW result_new_severities_static AS"
+       "  SELECT results.id as result, users.id as user, 0 AS dynamic, 1 AS override,"
+       "         coalesce ((SELECT ov_new_severity FROM result_overrides"
+       "                    WHERE result = results.id"
+       "                    AND result_overrides.user = users.id"
+       "                    AND severity_matches_ov"
+       "                         (results.severity,"
+       "                          ov_old_severity)"
+       "                    LIMIT 1),"
+       "                   results.severity)"
+       "         AS new_severity"
+       "  FROM results, users;");
 
   sql ("CREATE OR REPLACE VIEW result_new_severities AS"
        "  SELECT results.id as result, users.id as user, 1 AS override,"

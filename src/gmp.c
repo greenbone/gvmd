@@ -17905,6 +17905,8 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
 
   while (next (&vulns))
     {
+      time_t oldest, newest;
+
       count ++;
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
                                "<name>%s</name>"
@@ -17922,13 +17924,16 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                vuln_iterator_qod (&vulns));
 
       // results for the vulnerability
+      oldest = vuln_iterator_oldest (&vulns);
       SENDF_TO_CLIENT_OR_FAIL ("<results>"
                                "<count>%d</count>"
-                               "<oldest>%s</oldest>"
-                               "<newest>%s</newest>",
+                               "<oldest>%s</oldest>",
                                vuln_iterator_results (&vulns),
-                               vuln_iterator_oldest (&vulns),
-                               vuln_iterator_newest (&vulns));
+                               iso_time (&oldest));
+
+      newest = vuln_iterator_newest (&vulns);
+      SENDF_TO_CLIENT_OR_FAIL ("<newest>%s</newest>",
+                               iso_time (&newest));
 
       SEND_TO_CLIENT_OR_FAIL ("</results>");
 
