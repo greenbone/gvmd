@@ -52148,6 +52148,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   char *current_uuid, *feed_owner_id;
   gboolean has_rows;
   iterator_t rows;
+  gchar *deleted_user_id;
 
   assert (user_id_arg || name_arg);
 
@@ -52312,7 +52313,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (inheritor)
     {
-      gchar *deleted_user_id, *deleted_user_name;
+      gchar *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
 
       /* Transfer ownership of objects to the inheritor. */
@@ -52785,11 +52786,17 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   /* Delete user. */
 
+  deleted_user_id = user_uuid (user);
+
   sql ("DELETE FROM users WHERE id = %llu;", user);
 
   /* Delete report format dirs. */
 
-  delete_report_format_dirs_user (user, has_rows ? &rows : NULL);
+  if (deleted_user_id)
+    delete_report_format_dirs_user (deleted_user_id, has_rows ? &rows : NULL);
+  else
+    g_warning ("%s: deleted_user_id NULL, skipping removal of report formats dir",
+               __func__);
 
   sql_commit ();
   return 0;

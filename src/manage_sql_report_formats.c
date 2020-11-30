@@ -4075,9 +4075,9 @@ delete_report_formats_user (user_t user, iterator_t *rows)
  *                   before returning.
  */
 void
-delete_report_format_dirs_user (user_t user, iterator_t *rows)
+delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
 {
-  gchar *dir, *user_id;
+  gchar *dir;
 
   /* Remove trash report formats from trash directory. */
 
@@ -4100,16 +4100,10 @@ delete_report_format_dirs_user (user_t user, iterator_t *rows)
 
   /* Remove user's regular report formats directory. */
 
-  user_id = user_uuid (user);
-  if (user_id == NULL)
-    g_warning ("%s: user_id NULL, skipping removal of report formats dir",
-               __func__);
-
   dir = g_build_filename (GVMD_STATE_DIR,
                           "report_formats",
                           user_id,
                           NULL);
-  g_free (user_id);
 
   if (g_file_test (dir, G_FILE_TEST_EXISTS)
       && gvm_file_remove_recurse (dir))
