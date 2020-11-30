@@ -50,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check private key when modifying credential [#1351](https://github.com/greenbone/gvmd/pull/1351)
 - Clean up hosts strings before using them [#1352](https://github.com/greenbone/gvmd/pull/1352)
 - Improve SCP username and destination path handling [#1350](https://github.com/greenbone/gvmd/pull/1350)
+- Fix response memory handling in handle_osp_scan [#1364](https://github.com/greenbone/gvmd/pull/1364)
 
 
 ### Removed
