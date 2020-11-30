@@ -65,7 +65,7 @@ gboolean
 inherit_report_formats (user_t, user_t, iterator_t *);
 
 void
-inherit_report_format_dir (const gchar *, user_t, user_t);
+inherit_report_format_dir (const gchar *, const gchar *, user_t);
 
 void
 update_report_format (report_format_t, const gchar *, const gchar *,

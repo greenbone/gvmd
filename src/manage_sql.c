@@ -52348,7 +52348,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
              real_inheritor_name, real_inheritor_id,
              deleted_user_name, deleted_user_id);
 
-      g_free (deleted_user_id);
       g_free (deleted_user_name);
       g_free (real_inheritor_id);
       g_free (real_inheritor_name);
@@ -52465,11 +52464,17 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       /* Very last: report formats dirs. */
 
-      if (has_rows)
+      if (deleted_user_id == NULL)
+        g_warning ("%s: deleted_user_id NULL, skipping dirs", __func__);
+      else if (has_rows)
         do
         {
-          inherit_report_format_dir (iterator_string (&rows, 0), user, inheritor);
+          inherit_report_format_dir (iterator_string (&rows, 0),
+                                     deleted_user_id,
+                                     inheritor);
         } while (next (&rows));
+
+      g_free (deleted_user_id);
       cleanup_iterator (&rows);
 
       sql_commit ();

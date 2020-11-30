@@ -3957,20 +3957,13 @@ empty_trashcan_report_formats ()
  * @param[in]  inheritor         New owner.
  */
 void
-inherit_report_format_dir (const gchar *report_format_id, user_t user,
+inherit_report_format_dir (const gchar *report_format_id, const gchar *user_id,
                            user_t inheritor)
 {
-  gchar *user_id, *inheritor_id, *old_dir, *new_dir;
+  gchar *inheritor_id, *old_dir, *new_dir;
 
-  g_debug ("%s: %s from %llu to %llu", __func__, report_format_id, user,
+  g_debug ("%s: %s from %s to %llu", __func__, report_format_id, user_id,
            inheritor);
-
-  user_id = user_uuid (user);
-  if (user_id == NULL)
-    {
-      g_warning ("%s: user_id NULL, skipping report format dir", __func__);
-      return;
-    }
 
   inheritor_id = user_uuid (inheritor);
   if (inheritor_id == NULL)
@@ -3991,7 +3984,6 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
                               report_format_id,
                               NULL);
 
-  g_free (user_id);
   g_free (inheritor_id);
 
   if (move_report_format_dir (old_dir, new_dir))
