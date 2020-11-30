@@ -3953,7 +3953,7 @@ empty_trashcan_report_formats ()
  * @brief Change ownership of report formats, for user deletion.
  *
  * @param[in]  report_format_id  UUID of report format.
- * @param[in]  user              Current owner.
+ * @param[in]  user_id           UUID of current owner.
  * @param[in]  inheritor         New owner.
  */
 void
@@ -4070,9 +4070,9 @@ delete_report_formats_user (user_t user, iterator_t *rows)
 /**
  * @brief Delete all report formats owned by a user.
  *
- * @param[in]  user  The user.
- * @param[in]  rows  Trash report format ids if any, else NULL.  Cleaned up
- *                   before returning.
+ * @param[in]  user_id  UUID of user.
+ * @param[in]  rows     Trash report format ids if any, else NULL.  Cleaned up
+ *                      before returning.
  */
 void
 delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
