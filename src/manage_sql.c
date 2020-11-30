@@ -52449,7 +52449,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       /* Report Formats. */
 
-      has_rows = inherit_report_formats (inheritor, user, &rows);
+      has_rows = inherit_report_formats (user, inheritor, &rows);
 
       /* Delete user. */
 
