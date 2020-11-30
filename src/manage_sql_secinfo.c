@@ -628,13 +628,13 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
   assert (cve);
   quoted_cpe = sql_quote (cve);
   init_iterator (iterator,
-                 "SELECT id, name, cvss FROM cves WHERE id IN"
+                 "SELECT id, name, score FROM cves WHERE id IN"
                  " (SELECT cve FROM affected_products"
                  "  WHERE cpe ="
                  "  (SELECT id FROM cpes WHERE name = '%s'))"
                  " ORDER BY %s %s;",
                  quoted_cpe,
-                 sort_field ? sort_field : "cvss DESC, name",
+                 sort_field ? sort_field : "score DESC, name",
                  ascending ? "ASC" : "DESC");
   g_free (quoted_cpe);
 }
