@@ -58,8 +58,11 @@ delete_report_formats_user (user_t);
 int
 empty_trashcan_report_formats ();
 
+gboolean
+inherit_report_formats (user_t, user_t, iterator_t *);
+
 void
-inherit_report_formats (user_t, user_t);
+inherit_report_format_dir (const gchar *, user_t, user_t);
 
 void
 update_report_format (report_format_t, const gchar *, const gchar *,

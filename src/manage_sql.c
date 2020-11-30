@@ -52312,6 +52312,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
     {
       gchar *deleted_user_id, *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
+      iterator_t rows;
+      gboolean has_rows;
 
       /* Transfer ownership of objects to the inheritor. */
 
@@ -52385,7 +52387,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_port_lists (user, inheritor);
-      inherit_report_formats (user, inheritor);
 
       sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -52446,6 +52447,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      /* Report Formats. */
+
+      has_rows = inherit_report_formats (inheritor, user, &rows);
+
       /* Delete user. */
 
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
@@ -52457,6 +52462,15 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
+
+      /* Very last: report formats dirs. */
+
+      if (has_rows)
+        do
+        {
+          inherit_report_format_dir (iterator_string (&rows, 0), user, inheritor);
+        } while (next (&rows));
+      cleanup_iterator (&rows);
 
       sql_commit ();
 

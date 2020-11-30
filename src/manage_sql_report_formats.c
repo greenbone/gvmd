@@ -3956,7 +3956,7 @@ empty_trashcan_report_formats ()
  * @param[in]  user              Current owner.
  * @param[in]  inheritor         New owner.
  */
-static void
+void
 inherit_report_format_dir (const gchar *report_format_id, user_t user,
                            user_t inheritor)
 {
@@ -4008,26 +4008,25 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
  *
  * @param[in]  user       Current owner.
  * @param[in]  inheritor  New owner.
+ * @param[in]  rows       Iterator for inherited report formats, with next
+ *                        already called.
+ *
+ * @return TRUE if there is a row available, else FALSE.
  */
-void
-inherit_report_formats (user_t user, user_t inheritor)
+gboolean
+inherit_report_formats (user_t user, user_t inheritor, iterator_t *rows)
 {
-  iterator_t rows;
+  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
 
-  if (user == inheritor)
-    return;
-
-  init_iterator (&rows,
+  init_iterator (rows,
                  "UPDATE report_formats SET owner = %llu"
                  " WHERE owner = %llu"
                  " RETURNING uuid;",
                  inheritor, user);
-  while (next (&rows))
-    inherit_report_format_dir (iterator_string (&rows, 0), user, inheritor);
-  cleanup_iterator (&rows);
 
-  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
-       inheritor, user);
+  /* This executes the SQL. */
+  return next (rows);
 }
 
 /**
