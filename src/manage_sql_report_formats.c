@@ -4033,32 +4033,13 @@ inherit_report_formats (user_t user, user_t inheritor, iterator_t *rows)
  * @brief Delete all report formats owned by a user.
  *
  * @param[in]  user  The user.
+ * @param[in]  rows  Trash report format ids.
+ *
+ * @return TURE if there are rows in rows, else FALSE.
  */
-void
-delete_report_formats_user (user_t user)
+gboolean
+delete_report_formats_user (user_t user, iterator_t *rows)
 {
-  gchar *dir, *user_id;
-  iterator_t rows;
-
-  /* Remove trash report formats from trash directory. */
-
-  init_iterator (&rows,
-                 "SELECT id FROM report_formats_trash WHERE owner = %llu;",
-                 user);
-  while (next (&rows))
-    {
-      gchar *id;
-
-      id = g_strdup_printf ("%llu", iterator_int64 (&rows, 0));
-      dir = report_format_trash_dir (id);
-      g_free (id);
-      if (gvm_file_remove_recurse (dir))
-        g_warning ("%s: failed to remove dir %s, continuing anyway",
-                   __func__, dir);
-      g_free (dir);
-    }
-  cleanup_iterator (&rows);
-
   /* Remove report formats from db. */
 
   sql ("DELETE FROM report_format_param_options"
@@ -4085,7 +4066,45 @@ delete_report_formats_user (user_t user)
        "                         WHERE owner = %llu);",
        user);
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
-  sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+  init_iterator (rows,
+                 "DELETE FROM report_formats_trash WHERE owner = %llu"
+                 " RETURNING id;",
+                 user);
+
+  /* This executes the SQL. */
+  return next (rows);
+}
+
+/**
+ * @brief Delete all report formats owned by a user.
+ *
+ * @param[in]  user  The user.
+ * @param[in]  rows  Trash report format ids if any, else NULL.  Cleaned up
+ *                   before returning.
+ */
+void
+delete_report_format_dirs_user (user_t user, iterator_t *rows)
+{
+  gchar *dir, *user_id;
+
+  /* Remove trash report formats from trash directory. */
+
+  if (rows)
+    {
+      do
+      {
+        gchar *id;
+
+        id = g_strdup_printf ("%llu", iterator_int64 (rows, 0));
+        dir = report_format_trash_dir (id);
+        g_free (id);
+        if (gvm_file_remove_recurse (dir))
+          g_warning ("%s: failed to remove dir %s, continuing anyway",
+                     __func__, dir);
+        g_free (dir);
+      } while (next (rows));
+      cleanup_iterator (rows);
+    }
 
   /* Remove user's regular report formats directory. */
 

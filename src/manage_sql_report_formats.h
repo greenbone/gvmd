@@ -52,8 +52,11 @@ gchar *
 apply_report_format (gchar *, gchar *, gchar *, gchar *,
                      GList **);
 
+gboolean
+delete_report_formats_user (user_t, iterator_t *);
+
 void
-delete_report_formats_user (user_t);
+delete_report_format_dirs_user (user_t, iterator_t *);
 
 int
 empty_trashcan_report_formats ();
