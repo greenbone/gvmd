@@ -22163,13 +22163,19 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
         actual_columns = columns_no_cert;
     }
 
-  if (apply_overrides)
-    /* Overrides, maybe dynamic. */
+  if (apply_overrides && dynamic_severity)
+    /* Overrides, dynamic. */
     lateral = "(SELECT new_severity"
-              " FROM result_new_severities"
-              " WHERE result_new_severities.result = results.id"
-              " AND result_new_severities.user = opts.user_id"
-              " AND result_new_severities.dynamic = opts.dynamic"
+              " FROM result_new_severities_dynamic"
+              " WHERE result_new_severities_dynamic.result = results.id"
+              " AND result_new_severities_dynamic.user = opts.user_id"
+              " LIMIT 1)";
+  else if (apply_overrides)
+    /* Overrides, no dynamic. */
+    lateral = "(SELECT new_severity"
+              " FROM result_new_severities_static"
+              " WHERE result_new_severities_static.result = results.id"
+              " AND result_new_severities_static.user = opts.user_id"
               " LIMIT 1)";
   else if (dynamic_severity)
     /* No overrides, dynamic. */
