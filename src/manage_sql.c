@@ -21994,7 +21994,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
           = "coalesce (results.severity, results.severity)";
     }
 
-  columns[0].select = "lateralSeverity";
+  columns[0].select = "lateral_severity";
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
@@ -22004,20 +22004,20 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   opts = result_iterator_opts_table (apply_overrides,
                                      dynamic_severity);
-  extra_tables = g_strdup_printf (", LATERAL %s AS lateralSeverity%s",
+  extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
                                   lateral, opts);
   g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter,
-                                     "lateralSeverity");
+                                     "lateral_severity");
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
                                             "min_qod=0",
-                                            "lateralSeverity");
+                                            "lateral_severity");
 
   free (filter);
 
