@@ -13259,7 +13259,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              "<score>%d</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info),
+                             cpe_info_iterator_nvd_id (&info)
+                              ? cpe_info_iterator_nvd_id (&info)
+                              : "",
                              cpe_info_iterator_score (&info),
                              cpe_info_iterator_cve_refs (&info),
                              cpe_info_iterator_status (&info)
