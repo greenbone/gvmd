@@ -21560,51 +21560,9 @@ where_qod (int min_qod)
 /**
  * @brief Result iterator columns.
  */
-#define BASE_RESULT_ITERATOR_COLUMNS_D                                        \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("lateral_new_severity.new_severity")
-
-/**
- * @brief Result iterator columns.
- */
-#define BASE_RESULT_ITERATOR_COLUMNS_OD                                       \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("lateral_new_severity.new_severity")
-
-/**
- * @brief Result iterator columns.
- */
 #define RESULT_ITERATOR_COLUMNS                                               \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
-    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns.
- */
-#define RESULT_ITERATOR_COLUMNS_D                                             \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_D                                            \
-    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns.
- */
-#define RESULT_ITERATOR_COLUMNS_OD                                            \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21620,36 +21578,6 @@ where_qod (int min_qod)
 #define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns, when CERT db is not loaded.
- */
-#define RESULT_ITERATOR_COLUMNS_D_NO_CERT                                     \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_D                                            \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns, when CERT db is not loaded.
- */
-#define RESULT_ITERATOR_COLUMNS_OD_NO_CERT                                    \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -22107,11 +22035,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
-  static column_t columns_dynamic[] = RESULT_ITERATOR_COLUMNS_D;
-  static column_t columns_overrides_dynamic[] = RESULT_ITERATOR_COLUMNS_OD;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
-  static column_t columns_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_D_NO_CERT;
-  static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables, *lateral;
   int apply_overrides, dynamic_severity;
@@ -22139,29 +22063,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   dynamic_severity = setting_dynamic_severity_int ();
 
   if (manage_cert_loaded ())
-    {
-      if (apply_overrides)
-        /* Overrides, maybe dynamic. */
-        actual_columns = columns_overrides_dynamic;
-      else if (dynamic_severity)
-        /* No overrides, dynamic. */
-        actual_columns = columns_dynamic;
-      else
-        /* No overrides, no dynamic. */
-        actual_columns = columns;
-    }
+    actual_columns = columns;
   else
-    {
-      if (apply_overrides)
-        /* Overrides, maybe dynamic. */
-        actual_columns = columns_overrides_dynamic_no_cert;
-      else if (dynamic_severity)
-        /* No overrides, dynamic. */
-        actual_columns = columns_dynamic_no_cert;
-      else
-        /* No overrides, no dynamic. */
-        actual_columns = columns_no_cert;
-    }
+    actual_columns = columns_no_cert;
 
   if (apply_overrides && dynamic_severity)
     /* Overrides, dynamic. */
