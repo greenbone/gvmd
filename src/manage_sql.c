@@ -22172,10 +22172,10 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
               " LIMIT 1)";
   else if (dynamic_severity)
     /* No overrides, dynamic. */
-    lateral = "results.severity";
+    lateral = "current_severity (results.severity, results.nvt)";
   else
     /* No overrides, no dynamic. */
-    lateral = "current_severity (results.severity, results.nvt)";
+    lateral = "results.severity";
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
