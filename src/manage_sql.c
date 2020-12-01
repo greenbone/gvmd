@@ -22142,30 +22142,24 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
       if (apply_overrides)
         /* Overrides, maybe dynamic. */
         actual_columns = columns_overrides_dynamic;
+      else if (dynamic_severity)
+        /* No overrides, dynamic. */
+        actual_columns = columns_dynamic;
       else
-        {
-          if (dynamic_severity)
-            /* Dynamic, no overrides. */
-            actual_columns = columns_dynamic;
-          else
-            /* No dynamic, no overrides. */
-            actual_columns = columns;
-        }
+        /* No overrides, no dynamic. */
+        actual_columns = columns;
     }
   else
     {
       if (apply_overrides)
         /* Overrides, maybe dynamic. */
         actual_columns = columns_overrides_dynamic_no_cert;
+      else if (dynamic_severity)
+        /* No overrides, dynamic. */
+        actual_columns = columns_dynamic_no_cert;
       else
-        {
-          if (dynamic_severity)
-            /* Dynamic, no overrides. */
-            actual_columns = columns_dynamic_no_cert;
-          else
-            /* No dynamic, no overrides. */
-            actual_columns = columns_no_cert;
-        }
+        /* No overrides, no dynamic. */
+        actual_columns = columns_no_cert;
     }
 
   if (apply_overrides)
