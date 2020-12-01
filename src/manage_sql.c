@@ -21426,7 +21426,9 @@ where_qod (int min_qod)
     /* ^ 10 = 0 */                                                            \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
-    { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
+    { "severity_to_type (results.severity)",                                  \
+      "original_type",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
     { "severity_to_type (" new_severity_sql ")",                              \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -21437,7 +21439,7 @@ where_qod (int min_qod)
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
-    { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
+    { "results.severity", "original_severity", KEYWORD_TYPE_DOUBLE },         \
     /* ^ 20 = 10 */                                                           \
     { new_severity_sql,                                                       \
       "severity",                                                             \
@@ -22174,8 +22176,10 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     /* No overrides, dynamic. */
     lateral = "current_severity (results.severity, results.nvt)";
   else
-    /* No overrides, no dynamic. */
-    lateral = "results.severity";
+    /* No overrides, no dynamic.
+     *
+     * SELECT because results.severity gives syntax error. */
+    lateral = "(SELECT results.severity AS new_severity)";
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
