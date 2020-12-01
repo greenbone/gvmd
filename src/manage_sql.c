@@ -21213,7 +21213,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append (levels_sql, ")");
 
-  if (count == 6)
+  if (count == 5)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -22121,6 +22121,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
+  g_debug ("%s", __FUNCTION__);
+
   if (report == -1)
     {
       init_iterator (iterator, "SELECT NULL WHERE false;");
@@ -22210,6 +22212,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
+
+  g_debug ("%s: done", __FUNCTION__);
+
   return ret;
 }
 
