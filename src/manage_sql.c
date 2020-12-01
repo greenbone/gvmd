@@ -22173,7 +22173,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
               " LIMIT 1)";
   else if (dynamic_severity)
     /* No overrides, dynamic. */
-    lateral = "(SELECT current_severity (results.severity, results.nvt)"
+    lateral = "(SELECT coalesce ((CASE WHEN results.severity"
+              "                             > " G_STRINGIFY (SEVERITY_LOG)
+              "                   THEN CAST (nvts.cvss_base"
+              "                              AS double precision)"
+              "                   ELSE results.severity"
+              "                   END),"
+              "                  results.severity)"
               " AS new_severity)";
   else
     /* No overrides, no dynamic.
