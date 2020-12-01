@@ -21561,8 +21561,7 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define BASE_RESULT_ITERATOR_COLUMNS_D                                        \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("current_severity (results.severity,"      \
-                                   "                  results.nvt)")
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("lateral_new_severity.new_severity")
 
 /**
  * @brief Result iterator columns.
@@ -22174,7 +22173,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
               " LIMIT 1)";
   else if (dynamic_severity)
     /* No overrides, dynamic. */
-    lateral = "current_severity (results.severity, results.nvt)";
+    lateral = "(SELECT current_severity (results.severity, results.nvt)"
+              " AS new_severity)";
   else
     /* No overrides, no dynamic.
      *
