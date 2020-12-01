@@ -52,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve SCP username and destination path handling [#1350](https://github.com/greenbone/gvmd/pull/1350)
 - Fix response memory handling in handle_osp_scan [#1364](https://github.com/greenbone/gvmd/pull/1364)
 - Allow config to sync even if NVT family is not available [#1366](https://github.com/greenbone/gvmd/pull/1366)
+- Delete report format dirs last when deleting a user [#1368](https://github.com/greenbone/gvmd/pull/1368)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)

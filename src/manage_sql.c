@@ -52146,6 +52146,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   user_t user, inheritor;
   get_data_t get;
   char *current_uuid, *feed_owner_id;
+  gboolean has_rows;
+  iterator_t rows;
+  gchar *deleted_user_id;
 
   assert (user_id_arg || name_arg);
 
@@ -52310,7 +52313,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (inheritor)
     {
-      gchar *deleted_user_id, *deleted_user_name;
+      gchar *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
 
       /* Transfer ownership of objects to the inheritor. */
@@ -52346,7 +52349,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
              real_inheritor_name, real_inheritor_id,
              deleted_user_name, deleted_user_id);
 
-      g_free (deleted_user_id);
       g_free (deleted_user_name);
       g_free (real_inheritor_id);
       g_free (real_inheritor_name);
@@ -52385,7 +52387,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_port_lists (user, inheritor);
-      inherit_report_formats (user, inheritor);
 
       sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -52446,6 +52447,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      /* Report Formats. */
+
+      has_rows = inherit_report_formats (user, inheritor, &rows);
+
       /* Delete user. */
 
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
@@ -52457,6 +52462,21 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
+
+      /* Very last: report formats dirs. */
+
+      if (deleted_user_id == NULL)
+        g_warning ("%s: deleted_user_id NULL, skipping dirs", __func__);
+      else if (has_rows)
+        do
+        {
+          inherit_report_format_dir (iterator_string (&rows, 0),
+                                     deleted_user_id,
+                                     inheritor);
+        } while (next (&rows));
+
+      g_free (deleted_user_id);
+      cleanup_iterator (&rows);
 
       sql_commit ();
 
@@ -52687,7 +52707,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 9;
     }
 
-  /* Report formats (used by alerts). */
+  /* Check report formats (used by alerts). */
   if (user_resources_in_use (user,
                              "report_formats",
                              report_format_in_use,
@@ -52697,7 +52717,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  delete_report_formats_user (user);
 
   /* Delete credentials last because they can be used in various places */
 
@@ -52761,9 +52780,23 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
+  /* Delete report formats. */
+
+  has_rows = delete_report_formats_user (user, &rows);
+
   /* Delete user. */
 
+  deleted_user_id = user_uuid (user);
+
   sql ("DELETE FROM users WHERE id = %llu;", user);
+
+  /* Delete report format dirs. */
+
+  if (deleted_user_id)
+    delete_report_format_dirs_user (deleted_user_id, has_rows ? &rows : NULL);
+  else
+    g_warning ("%s: deleted_user_id NULL, skipping removal of report formats dir",
+               __func__);
 
   sql_commit ();
   return 0;
