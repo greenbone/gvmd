@@ -21566,12 +21566,7 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define BASE_RESULT_ITERATOR_COLUMNS_OD                                       \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("(SELECT new_severity"                     \
-      " FROM result_new_severities"                                           \
-      " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user = opts.user_id"                        \
-      " AND result_new_severities.dynamic = opts.dynamic"                     \
-      " LIMIT 1)")
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("lateral_new_severity.new_severity")
 
 /**
  * @brief Result iterator columns.
@@ -22117,7 +22112,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_D_NO_CERT;
   static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables, *lateral;
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
@@ -22173,10 +22168,27 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
         }
     }
 
+  if (apply_overrides)
+    /* Overrides, maybe dynamic. */
+    lateral = "(SELECT new_severity"
+              " FROM result_new_severities"
+              " WHERE result_new_severities.result = results.id"
+              " AND result_new_severities.user = opts.user_id"
+              " AND result_new_severities.dynamic = opts.dynamic"
+              " LIMIT 1)";
+  else if (dynamic_severity)
+    /* No overrides, dynamic. */
+    lateral = "results.severity";
+  else
+    /* No overrides, no dynamic. */
+    lateral = "current_severity (results.severity, results.nvt)";
+
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s",
-                                  opts_tables);
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  lateral);
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
