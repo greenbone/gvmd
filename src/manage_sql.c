@@ -22022,6 +22022,16 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 }
 
 /**
+ * @brief SQL for getting current severity.
+ */
+#define CURRENT_SEVERITY_SQL                                            \
+  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
+  "           THEN CAST (nvts.cvss_base AS double precision)"           \
+  "           ELSE results.severity"                                    \
+  "           END),"                                                    \
+  "          results.severity)"
+
+/**
  * @brief Initialise a result iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -22071,16 +22081,6 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     actual_columns = columns;
   else
     actual_columns = columns_no_cert;
-
-/**
- * @brief SQL for getting current severity.
- */
-#define CURRENT_SEVERITY_SQL                                            \
-  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
-  "           THEN CAST (nvts.cvss_base AS double precision)"           \
-  "           ELSE results.severity"                                    \
-  "           END),"                                                    \
-  "          results.severity)"
 
   if (apply_overrides && dynamic_severity)
     /* Overrides, dynamic. */
