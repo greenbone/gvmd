@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Check db version before creating SQL functions [#1304](https://github.com/greenbone/gvmd/pull/1304)
 - Fix severity_in_level SQL function [#1312](https://github.com/greenbone/gvmd/pull/1312)
 - Fix and simplify SecInfo migration [#1331](https://github.com/greenbone/gvmd/pull/1331)
+- Prevent CPE/NVD_ID from being "(null)" [#1369](https://github.com/greenbone/gvmd/pull/1369)
 
 ### Removed
 - Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)
