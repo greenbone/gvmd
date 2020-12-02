@@ -22032,6 +22032,45 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   "          results.severity)"
 
 /**
+ * @brief Get LATERAL clause for result iterator.
+ *
+ * @param[in]  apply_overrides   Whether to apply overrides.
+ * @param[in]  dynamic_severity  Whether to use dynamic severity.
+ *
+ * @return SQL clause for FROM.
+ */
+static const gchar *
+result_iterator_lateral (int apply_overrides, int dynamic_severity)
+{
+  if (apply_overrides && dynamic_severity)
+    /* Overrides, dynamic. */
+    return "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
+           " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+           "                   WHERE result = results.id"
+           "                   AND result_overrides.user = opts.user_id"
+           "                   AND severity_matches_ov"
+           "                        ((SELECT curr_severity FROM curr LIMIT 1),"
+           "                         ov_old_severity)"
+           "                   LIMIT 1),"
+           "                  (SELECT curr_severity FROM curr LIMIT 1))"
+           " AS new_severity)";
+  if (apply_overrides)
+    /* Overrides, no dynamic. */
+    return "(SELECT new_severity"
+           " FROM result_new_severities_static"
+           " WHERE result_new_severities_static.result = results.id"
+           " AND result_new_severities_static.user = opts.user_id"
+           " LIMIT 1)";
+  if (dynamic_severity)
+    /* No overrides, dynamic. */
+    return "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
+  /* No overrides, no dynamic.
+   *
+   * SELECT because results.severity gives syntax error. */
+  return "(SELECT results.severity AS new_severity)";
+}
+
+/**
  * @brief Initialise a result iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -22052,7 +22091,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables, *lateral;
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
@@ -22082,40 +22121,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   else
     actual_columns = columns_no_cert;
 
-  if (apply_overrides && dynamic_severity)
-    /* Overrides, dynamic. */
-    lateral = "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
-              " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
-              "                   WHERE result = results.id"
-              "                   AND result_overrides.user = opts.user_id"
-              "                   AND severity_matches_ov"
-              "                        ((SELECT curr_severity FROM curr LIMIT 1),"
-              "                         ov_old_severity)"
-              "                   LIMIT 1),"
-              "                  (SELECT curr_severity FROM curr LIMIT 1))"
-              " AS new_severity)";
-  else if (apply_overrides)
-    /* Overrides, no dynamic. */
-    lateral = "(SELECT new_severity"
-              " FROM result_new_severities_static"
-              " WHERE result_new_severities_static.result = results.id"
-              " AND result_new_severities_static.user = opts.user_id"
-              " LIMIT 1)";
-  else if (dynamic_severity)
-    /* No overrides, dynamic. */
-    lateral = "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
-  else
-    /* No overrides, no dynamic.
-     *
-     * SELECT because results.severity gives syntax error. */
-    lateral = "(SELECT results.severity AS new_severity)";
-
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  lateral);
+                                  result_iterator_lateral (apply_overrides,
+                                                           dynamic_severity));
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
@@ -22173,7 +22185,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables, *lateral;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables;
   int apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22192,40 +22204,13 @@ result_count (const get_data_t *get, report_t report, const char* host)
     = filter_term_apply_overrides (filter ? filter : get->filter);
   dynamic_severity = setting_dynamic_severity_int ();
 
-  if (apply_overrides && dynamic_severity)
-    /* Overrides, dynamic. */
-    lateral = "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
-              " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
-              "                   WHERE result = results.id"
-              "                   AND result_overrides.user = opts.user_id"
-              "                   AND severity_matches_ov"
-              "                        ((SELECT curr_severity FROM curr LIMIT 1),"
-              "                         ov_old_severity)"
-              "                   LIMIT 1),"
-              "                  (SELECT curr_severity FROM curr LIMIT 1))"
-              " AS new_severity)";
-  else if (apply_overrides)
-    /* Overrides, no dynamic. */
-    lateral = "(SELECT new_severity"
-              " FROM result_new_severities_static"
-              " WHERE result_new_severities_static.result = results.id"
-              " AND result_new_severities_static.user = opts.user_id"
-              " LIMIT 1)";
-  else if (dynamic_severity)
-    /* No overrides, dynamic. */
-    lateral = "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
-  else
-    /* No overrides, no dynamic.
-     *
-     * SELECT because results.severity gives syntax error. */
-    lateral = "(SELECT results.severity AS new_severity)";
-
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  lateral);
+                                  result_iterator_lateral (apply_overrides,
+                                                           dynamic_severity));
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
