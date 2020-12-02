@@ -22081,14 +22081,15 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 
   if (apply_overrides && dynamic_severity)
     /* Overrides, dynamic. */
-    lateral = "(SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+    lateral = "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
+              " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
               "                   WHERE result = results.id"
               "                   AND result_overrides.user = opts.user_id"
               "                   AND severity_matches_ov"
-              "                        (" CURRENT_SEVERITY_SQL ","
+              "                        ((SELECT curr_severity FROM curr LIMIT 1),"
               "                         ov_old_severity)"
               "                   LIMIT 1),"
-              "                  " CURRENT_SEVERITY_SQL ")"
+              "                  (SELECT curr_severity FROM curr LIMIT 1))"
               " AS new_severity)";
   else if (apply_overrides)
     /* Overrides, no dynamic. */
