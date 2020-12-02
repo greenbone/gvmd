@@ -5644,6 +5644,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   else
     filter = NULL;
 
+  g_debug ("%s", __func__);
+
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           get->trash && trash_select_columns
                            ? trash_select_columns
@@ -5712,6 +5714,9 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   g_free (columns);
   g_free (owned_clause);
   g_free (clause);
+
+  g_debug ("%s: done", __func__);
+
   return ret;
 }
 
@@ -22041,7 +22046,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
-  g_debug ("%s", __FUNCTION__);
+  g_debug ("%s", __func__);
 
   if (report == -1)
     {
@@ -22067,13 +22072,24 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   else
     actual_columns = columns_no_cert;
 
+#define CURRENT_SEVERITY_SQL                                            \
+  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
+  "           THEN CAST (nvts.cvss_base AS double precision)"           \
+  "           ELSE results.severity"                                    \
+  "           END),"                                                    \
+  "          results.severity)"
+
   if (apply_overrides && dynamic_severity)
     /* Overrides, dynamic. */
-    lateral = "(SELECT new_severity"
-              " FROM result_new_severities_dynamic"
-              " WHERE result_new_severities_dynamic.result = results.id"
-              " AND result_new_severities_dynamic.user = opts.user_id"
-              " LIMIT 1)";
+    lateral = "(SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+              "                   WHERE result = results.id"
+              "                   AND result_overrides.user = opts.user_id"
+              "                   AND severity_matches_ov"
+              "                        (" CURRENT_SEVERITY_SQL ","
+              "                         ov_old_severity)"
+              "                   LIMIT 1),"
+              "                  " CURRENT_SEVERITY_SQL ")"
+              " AS new_severity)";
   else if (apply_overrides)
     /* Overrides, no dynamic. */
     lateral = "(SELECT new_severity"
@@ -22083,14 +22099,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
               " LIMIT 1)";
   else if (dynamic_severity)
     /* No overrides, dynamic. */
-    lateral = "(SELECT coalesce ((CASE WHEN results.severity"
-              "                             > " G_STRINGIFY (SEVERITY_LOG)
-              "                   THEN CAST (nvts.cvss_base"
-              "                              AS double precision)"
-              "                   ELSE results.severity"
-              "                   END),"
-              "                  results.severity)"
-              " AS new_severity)";
+    lateral = "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
   else
     /* No overrides, no dynamic.
      *
@@ -22139,7 +22148,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   g_free (extra_where);
   g_free (extra_where_single);
 
-  g_debug ("%s: done", __FUNCTION__);
+  g_debug ("%s: done", __func__);
 
   return ret;
 }
