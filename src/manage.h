@@ -3477,6 +3477,9 @@ double
 vuln_iterator_severity (iterator_t*);
 
 int
+vuln_iterator_score (iterator_t*);
+
+int
 vuln_iterator_qod (iterator_t*);
 
 int
