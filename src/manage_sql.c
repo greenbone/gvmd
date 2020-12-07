@@ -54715,11 +54715,19 @@ type_build_select (const char *type, const char *columns_str,
   if (strcasecmp (type, "RESULT") == 0)
     {
       gchar *original;
+      int overrides, dynamic;
+
+      overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+      dynamic = setting_dynamic_severity_int ();
 
       original = opts_table;
+
       opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                    " ON results.nvt = nvts.oid %s",
-                                    original);
+                                    " ON results.nvt = nvts.oid %s,"
+                                    " LATERAL %s AS lateral_new_severity",
+                                    original,
+                                    result_iterator_lateral (overrides,
+                                                             dynamic));
       g_free (original);
     }
 
