@@ -4027,7 +4027,7 @@ inherit_report_formats (user_t user, user_t inheritor, iterator_t *rows)
  * @param[in]  user  The user.
  * @param[in]  rows  Trash report format ids.
  *
- * @return TURE if there are rows in rows, else FALSE.
+ * @return TRUE if there are rows in rows, else FALSE.
  */
 gboolean
 delete_report_formats_user (user_t user, iterator_t *rows)
