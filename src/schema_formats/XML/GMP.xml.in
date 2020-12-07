@@ -22471,6 +22471,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the vulnerability</summary>
           </column>
           <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Score of the vulnerability</summary>
+          </column>
+          <column>
             <name>qod</name>
             <type>integer</type>
             <summary>QoD of the vulnerability</summary>
@@ -22529,6 +22534,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>creation_time</e>
           <e>modification_time</e>
           <e>severity</e>
+          <e>score</e>
           <e>qod</e>
           <e>results</e>
           <e>hosts</e>
@@ -22564,6 +22570,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Severity of the vulnerability</summary>
           <pattern>
             <t>severity</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>score</name>
+          <summary>Score of the vulnerability</summary>
+          <pattern>
+            <t>score</t>
           </pattern>
         </ele>
         <ele>
