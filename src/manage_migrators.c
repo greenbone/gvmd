@@ -2534,18 +2534,18 @@ migrate_238_to_239 ()
 }
 
 /**
- * @brief Migrate the database from version 239 to version 240.
+ * @brief Migrate the database from version 239 to version 241.
  *
  * @return 0 success, -1 error.
  */
 int
-migrate_239_to_240 ()
+migrate_240_to_241 ()
 {
   sql_begin_immediate ();
 
-  /* Ensure that the database is currently version 239. */
+  /* Ensure that the database is currently version 240. */
 
-  if (manage_db_version () != 239)
+  if (manage_db_version () != 240)
     {
       sql_rollback ();
       return -1;
@@ -2557,9 +2557,9 @@ migrate_239_to_240 ()
 
   sql ("DROP VIEW result_new_severities;");
 
-  /* Set the database version to 240. */
+  /* Set the database version to 241. */
 
-  set_db_version (240);
+  set_db_version (241);
 
   sql_commit ();
 
@@ -2611,7 +2611,7 @@ static migrator_t database_migrators[] = {
   {237, migrate_236_to_237},
   {238, migrate_237_to_238},
   {239, migrate_238_to_239},
-  {240, migrate_239_to_240},
+  {241, migrate_240_to_241},
   /* End marker. */
   {-1, NULL}};
 
