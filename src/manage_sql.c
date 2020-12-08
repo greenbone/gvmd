@@ -5638,6 +5638,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   else
     filter = NULL;
 
+  g_debug ("%s", __func__);
+
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           get->trash && trash_select_columns
                            ? trash_select_columns
@@ -5706,6 +5708,9 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   g_free (columns);
   g_free (owned_clause);
   g_free (clause);
+
+  g_debug ("%s: done", __func__);
+
   return ret;
 }
 
@@ -21190,7 +21195,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append (levels_sql, ")");
 
-  if (count == 6)
+  if (count == 5)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -21403,18 +21408,20 @@ where_qod (int min_qod)
     /* ^ 10 = 0 */                                                            \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
-    { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
+    { "severity_to_type (results.severity)",                                  \
+      "original_type",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
     { "severity_to_type (" new_severity_sql ")",                              \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
-    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)",                   \
+    { "nvts.cvss_base",                                                       \
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
-    { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
+    { "results.severity", "original_severity", KEYWORD_TYPE_DOUBLE },         \
     /* ^ 20 = 10 */                                                           \
     { new_severity_sql,                                                       \
       "severity",                                                             \
@@ -21530,17 +21537,7 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define BASE_RESULT_ITERATOR_COLUMNS                                          \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("results.severity")
-
-/**
- * @brief Result iterator columns.
- */
-#define BASE_RESULT_ITERATOR_COLUMNS_O                                        \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("(SELECT new_severity"                     \
-      " FROM result_new_severities"                                           \
-      " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user = opts.user_id"                        \
-      " LIMIT 1)")
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("lateral_new_severity.new_severity")
 
 /**
  * @brief Result iterator columns.
@@ -21558,41 +21555,11 @@ where_qod (int min_qod)
   }
 
 /**
- * @brief Result iterator columns.
- */
-#define RESULT_ITERATOR_COLUMNS_O                                             \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_O                                            \
-    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
  * @brief Result iterator columns, when CERT db is not loaded.
  */
 #define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns, when CERT db is not loaded.
- */
-#define RESULT_ITERATOR_COLUMNS_O_NO_CERT                                     \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_O                                            \
     { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21842,7 +21809,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
       /* coalesce because results.severity gives syntax error. */
       = "coalesce (results.severity, results.severity)";
 
-  columns[0].select = "lateralSeverity";
+  columns[0].select = "lateral_severity";
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
@@ -21851,19 +21818,19 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
   opts = result_iterator_opts_table (apply_overrides);
-  extra_tables = g_strdup_printf (", LATERAL %s AS lateralSeverity%s",
+  extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
                                   lateral, opts);
   g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides,
                                      filter ? filter : get->filter,
-                                     "lateralSeverity");
+                                     "lateral_severity");
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             "min_qod=0",
-                                            "lateralSeverity");
+                                            "lateral_severity");
 
   free (filter);
 
@@ -21934,6 +21901,42 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 }
 
 /**
+ * @brief SQL for getting current severity.
+ */
+#define CURRENT_SEVERITY_SQL                                            \
+  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
+  "           THEN CAST (nvts.cvss_base AS double precision)"           \
+  "           ELSE results.severity"                                    \
+  "           END),"                                                    \
+  "          results.severity)"
+
+/**
+ * @brief Get LATERAL clause for result iterator.
+ *
+ * @param[in]  apply_overrides   Whether to apply overrides.
+ *
+ * @return SQL clause for FROM.
+ */
+static const gchar *
+result_iterator_lateral (int apply_overrides)
+{
+  if (apply_overrides)
+    /* Overrides. */
+    return "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
+           " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+           "                   WHERE result = results.id"
+           "                   AND result_overrides.user = opts.user_id"
+           "                   AND severity_matches_ov"
+           "                        ((SELECT curr_severity FROM curr LIMIT 1),"
+           "                         ov_old_severity)"
+           "                   LIMIT 1),"
+           "                  (SELECT curr_severity FROM curr LIMIT 1))"
+           " AS new_severity)";
+  /* No overrides. */
+  return "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
+}
+
+/**
  * @brief Initialise a result iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -21952,13 +21955,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
-  static column_t columns_overrides[] = RESULT_ITERATOR_COLUMNS_O;
-  static column_t columns_overrides_no_cert[] = RESULT_ITERATOR_COLUMNS_O_NO_CERT;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
   int apply_overrides;
   column_t *actual_columns;
+
+  g_debug ("%s", __func__);
 
   if (report == -1)
     {
@@ -21979,24 +21982,16 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     = filter_term_apply_overrides (filter ? filter : get->filter);
 
   if (manage_cert_loaded ())
-    {
-      if (apply_overrides)
-        actual_columns = columns_overrides;
-      else
-        actual_columns = columns;
-    }
+    actual_columns = columns;
   else
-    {
-      if (apply_overrides)
-        actual_columns = columns_overrides_no_cert;
-      else
-        actual_columns = columns_no_cert;
-    }
+    actual_columns = columns_no_cert;
 
   opts_tables = result_iterator_opts_table (apply_overrides);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s",
-                                  opts_tables);
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  result_iterator_lateral (apply_overrides));
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
@@ -22031,6 +22026,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
+
+  g_debug ("%s: done", __func__);
+
   return ret;
 }
 
@@ -22070,8 +22068,10 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables = result_iterator_opts_table (apply_overrides);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s",
-                                  opts_tables);
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  result_iterator_lateral (apply_overrides));
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
@@ -52158,8 +52158,8 @@ user_resources_in_use (user_t user,
  */
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
  {                                                                           \
-   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "qod",       \
-   "oldest", "newest", "type", NULL                                          \
+   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "score",     \
+   "qod", "oldest", "newest", "type", NULL                                   \
  }
 
 /**
@@ -52210,7 +52210,10 @@ user_resources_in_use (user_t user,
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "severity", NULL, KEYWORD_TYPE_DOUBLE                                   \
+     "(score / 10.0)", "severity", KEYWORD_TYPE_DOUBLE                       \
+   },                                                                        \
+   {                                                                         \
+     "score", NULL, KEYWORD_TYPE_DOUBLE                                      \
    },                                                                        \
    {                                                                         \
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
@@ -52427,6 +52430,20 @@ vuln_iterator_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+vuln_iterator_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
  * @brief Get the QoD from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -52437,7 +52454,7 @@ int
 vuln_iterator_qod (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -52451,7 +52468,7 @@ const char*
 vuln_iterator_type (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -52465,7 +52482,7 @@ time_t
 vuln_iterator_oldest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -52479,7 +52496,7 @@ time_t
 vuln_iterator_newest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -54503,11 +54520,17 @@ type_build_select (const char *type, const char *columns_str,
   if (strcasecmp (type, "RESULT") == 0)
     {
       gchar *original;
+      int overrides;
+
+      overrides = filter_term_apply_overrides (filter ? filter : get->filter);
 
       original = opts_table;
+
       opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                    " ON results.nvt = nvts.oid %s",
-                                    original);
+                                    " ON results.nvt = nvts.oid %s,"
+                                    " LATERAL %s AS lateral_new_severity",
+                                    original,
+                                    result_iterator_lateral (overrides));
       g_free (original);
     }
 

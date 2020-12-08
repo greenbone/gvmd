@@ -7,24 +7,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.4] (unreleased)
 
 ### Added
-- Extend GMP for extended severities [#1326](https://github.com/greenbone/gvmd/pull/1326) [#1329](https://github.com/greenbone/gvmd/pull/1329) [#1359](https://github.com/greenbone/gvmd/pull/1359)
+- Extend GMP for extended severities [#1326](https://github.com/greenbone/gvmd/pull/1326) [#1329](https://github.com/greenbone/gvmd/pull/1329) [#1359](https://github.com/greenbone/gvmd/pull/1359) [#1371](https://github.com/greenbone/gvmd/pull/1371)
 - Parameter `--db-user` to set a database user [#1327](https://github.com/greenbone/gvmd/pull/1327)
 - Add `allow_simult_ips_same_host` field for targets [#1346](https://github.com/greenbone/gvmd/pull/1346)
 - Speed up GET_VULNS [#1354](https://github.com/greenbone/gvmd/pull/1354) [#1355](https://github.com/greenbone/gvmd/pull/1354)
 - Speed up result counting iterator [#1358](https://github.com/greenbone/gvmd/pull/1358) [#1361](https://github.com/greenbone/gvmd/pull/1361)
+- Speed up result iterator [#1370](https://github.com/greenbone/gvmd/pull/1358) [#1361](https://github.com/greenbone/gvmd/pull/1370)
 - Improve GMP docs around users [#1363](https://github.com/greenbone/gvmd/pull/1363)
 
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
 - Clarify documentation for --scan-host parameter [#1277](https://github.com/greenbone/gvmd/pull/1277)
 - In result iterator access severity directly if possible [#1321](https://github.com/greenbone/gvmd/pull/1321)
-- Change SCAP and CERT data to use new severity scoring [#1333](https://github.com/greenbone/gvmd/pull/1333) [#1357](https://github.com/greenbone/gvmd/pull/1357)
+- Change SCAP and CERT data to use new severity scoring [#1333](https://github.com/greenbone/gvmd/pull/1333) [#1357](https://github.com/greenbone/gvmd/pull/1357) [#1365](https://github.com/greenbone/gvmd/pull/1365)
 
 ### Fixed
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
 - Check db version before creating SQL functions [#1304](https://github.com/greenbone/gvmd/pull/1304)
 - Fix severity_in_level SQL function [#1312](https://github.com/greenbone/gvmd/pull/1312)
 - Fix and simplify SecInfo migration [#1331](https://github.com/greenbone/gvmd/pull/1331)
+- Prevent CPE/NVD_ID from being "(null)" [#1369](https://github.com/greenbone/gvmd/pull/1369)
 
 ### Removed
 - Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)

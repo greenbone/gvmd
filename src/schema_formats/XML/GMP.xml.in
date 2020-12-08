@@ -597,51 +597,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>severities</name>
       <summary>Severity information of the NVT</summary>
-      <pattern>
-        <attrib>
-          <name>score</name>
-          <type>integer</type>
-          <required>1</required>
-          <summary>Maximum severity score</summary>
-        </attrib>
-        <any><e>severity</e></any>
-      </pattern>
-      <ele>
-        <name>severity</name>
-        <summary>A single severity rating</summary>
-        <pattern>
-          <attrib>
-            <name>type</name>
-            <type>text</type>
-            <required>1</required>
-            <summary>Type of severity rating, e.g. cvss_base_v2</summary>
-          </attrib>
-          <e>origin</e>
-          <e>date</e>
-          <e>score</e>
-          <e>value</e>
-        </pattern>
-        <ele>
-          <name>origin</name>
-          <summary>Origin of severity rating</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>date</name>
-          <summary>Date the severity was defined</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>score</name>
-          <summary>Numeric score ranging from 0 to 100</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>value</name>
-          <summary>Detailed rating value, e.g. a CVSS vector</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
+      <type>severities</type>
     </ele>
     <ele>
       <name>qod</name>
@@ -971,6 +927,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>name</e>
           <e>type</e>
           <e>cvss_base</e>
+          <e>severities</e>
           <o><e>cve</e></o>
           <o><e>bid</e></o>
         </pattern>
@@ -986,6 +943,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severities</name>
+          <summary>Severity info of the NVT</summary>
+          <type>severities</type>
         </ele>
         <ele>
           <name>cve</name>
@@ -1321,6 +1283,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>name</e>
           <e>type</e>
           <e>cvss_base</e>
+          <e>severities</e>
           <o><e>cve</e></o>
           <o><e>bid</e></o>
         </pattern>
@@ -1336,6 +1299,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severities</name>
+          <summary>Severity score information of the NVT</summary>
+          <type>severities</type>
         </ele>
         <ele>
           <name>cve</name>
@@ -1582,6 +1550,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>type</e>
         <e>family</e>
         <e>cvss_base</e>
+        <e>severities</e>
         <e>cpe</e>
         <e>tags</e>
         <e>refs</e>
@@ -1605,6 +1574,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>cvss_base</name>
         <summary>CVSS base value associated with the NVT</summary>
         <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>severities</name>
+        <summary>Severity score information of the NVT</summary>
+        <type>severities</type>
       </ele>
       <ele>
         <name>cpe</name>
@@ -2994,6 +2968,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>severity</t></pattern>
           </ele>
         </ele>
+      </ele>
+    </ele>
+  </element>
+  <element>
+    <name>severities</name>
+    <summary>A collection of severity scoring info</summary>
+    <pattern>
+      <attrib>
+        <name>score</name>
+        <required>1</required>
+        <summary>The maximum severity score</summary>
+        <type>score</type>
+      </attrib>
+      <any><e>severity</e></any>
+    </pattern>
+    <ele>
+      <name>severity</name>
+      <summary>Individual severity ratings and info</summary>
+      <pattern>
+        <attrib>
+          <name>type</name>
+          <type>text</type>
+          <required>1</required>
+          <summary>Type of severity rating, e.g. cvss_base_v2</summary>
+        </attrib>
+        <e>origin</e>
+        <e>date</e>
+        <e>score</e>
+        <e>value</e>
+      </pattern>
+      <ele>
+        <name>origin</name>
+        <summary>Origin of severity rating</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>date</name>
+        <summary>Date the severity was defined</summary>
+        <pattern><t>iso_time</t></pattern>
+      </ele>
+      <ele>
+        <name>score</name>
+        <summary>Numeric score ranging from 0 to 100</summary>
+        <pattern><t>score</t></pattern>
+      </ele>
+      <ele>
+        <name>value</name>
+        <summary>Detailed rating value, e.g. a CVSS vector</summary>
+        <pattern>text</pattern>
       </ele>
     </ele>
   </element>
@@ -11436,9 +11459,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Name of the owner</summary>
           </column>
           <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Severity score of the SecInfo</summary>
+          </column>
+          <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the SecInfo</summary>
+            <summary>CVSS-based severity of the SecInfo</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -11812,7 +11840,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>summary</e>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <o><e>raw_data</e></o>
           </pattern>
@@ -11832,9 +11860,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>Highest CVSS score of CVEs referenced by the advisory</summary>
-            <pattern>text</pattern>
+            <name>score</name>
+            <summary>Highest 0-100 severity score of CVEs referenced by the advisory</summary>
+            <pattern>
+              <t>score</t>
+            </pattern>
           </ele>
           <ele>
             <name>cve_refs</name>
@@ -11856,7 +11886,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>nvd_id</e>
             <o><e>title</e></o>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <e>status</e>
             <o><e>cves</e></o>
@@ -11878,10 +11908,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>The highest CVSS recorder for this CPE</summary>
+            <name>score</name>
+            <summary>The highest 0-100 severity score recorded for this CPE</summary>
             <pattern>
-              <t>integer</t>
+              <t>score</t>
             </pattern>
           </ele>
           <ele>
@@ -12047,7 +12077,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>summary</e>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <o><e>raw_data</e></o>
           </pattern>
@@ -12067,9 +12097,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>Highest CVSS score of CVEs referenced by the advisory</summary>
-            <pattern>text</pattern>
+            <name>score</name>
+            <summary>Highest 0-100 severity score of CVEs referenced by the advisory</summary>
+            <pattern>
+              <t>score</t>
+            </pattern>
           </ele>
           <ele>
             <name>cve_refs</name>
@@ -12094,7 +12126,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>status</e>
             <e>class</e>
             <e>title</e>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <e>file</e>
             <o><e>description</e></o>
@@ -12137,9 +12169,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>Highest CVSS score of CVEs referenced by the definition</summary>
-            <pattern>text</pattern>
+            <name>score</name>
+            <summary>Highest 0-100 severity score of CVEs referenced by the definition</summary>
+            <pattern>
+              <t>score</t>
+            </pattern>
           </ele>
           <ele>
             <name>cve_refs</name>
@@ -12291,7 +12325,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cpe>
               <title>GNU Gzip 1.3.3</title>
-              <max_cvss>10.0</max_cvss>
+              <score>100</score>
               <cve_refs>5</cve_refs>
               <status>DRAFT</status>
               <cves>
@@ -12753,7 +12787,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <port>general/tcp</port>
               <nvt oid="1.3.6.1.4.1.25623.1.0.77">
                 <name>Test NVT: control chars in report result</name>
-                <cvss_base></cvss_base>
+                <cvss_base>5</cvss_base>
+                <severities score="50"/>
                 <cve></cve>
                 <bid></bid>
               </nvt>
@@ -12984,51 +13019,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>severities</name>
           <summary>Severity information of the NVT</summary>
-          <pattern>
-            <attrib>
-              <name>score</name>
-              <type>integer</type>
-              <required>1</required>
-              <summary>Maximum severity score</summary>
-            </attrib>
-            <any><e>severity</e></any>
-          </pattern>
-          <ele>
-            <name>severity</name>
-            <summary>A single severity rating</summary>
-            <pattern>
-              <attrib>
-                <name>type</name>
-                <type>text</type>
-                <required>1</required>
-                <summary>Type of severity rating, e.g. cvss_base_v2</summary>
-              </attrib>
-              <e>origin</e>
-              <e>date</e>
-              <e>score</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>origin</name>
-              <summary>Origin of severity rating</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>date</name>
-              <summary>Date the severity was defined</summary>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>score</name>
-              <summary>Numeric score ranging from 0 to 100</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Detailed rating value, e.g. a CVSS vector</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
+          <type>severities</type>
         </ele>
         <ele>
           <name>qod</name>
@@ -13219,6 +13210,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
+            <severities score="0"/>
             <refs/>
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
@@ -15567,6 +15559,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   <nvt oid="1.3.6.1.4.1.25623.1.0.74">
                     <name>Test NVT: fields with ISO-8859-1 chars ()</name>
                     <cvss_base>5.0</cvss_base>
+                    <severities score="50">
+                      <severity>
+                        [...]
+                      </severity>
+                    </severities>
                     <tags>NOTAGS</tags>
                     <refs>
                       <ref id="CVE-2013-1406" type="cve"/>
@@ -16602,6 +16599,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <nvt oid="1.3.6.1.4.1.25623.1.0.74">
               <name>Test NVT: fields with ISO-8859-1 chars</name>
               <cvss_base>5.0</cvss_base>
+              <severities score="50">
+                <severity>
+                  [...]
+                </severity>
+              </severities>
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
@@ -16660,6 +16662,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
               <name>Test NVT: long lines</name>
               <cvss_base>9</cvss_base>
+              <severities score="90">
+                <severity>
+                  [...]
+                </severity>
+              </severities>
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
@@ -22464,6 +22471,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the vulnerability</summary>
           </column>
           <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Score of the vulnerability</summary>
+          </column>
+          <column>
             <name>qod</name>
             <type>integer</type>
             <summary>QoD of the vulnerability</summary>
@@ -22522,6 +22534,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>creation_time</e>
           <e>modification_time</e>
           <e>severity</e>
+          <e>score</e>
           <e>qod</e>
           <e>results</e>
           <e>hosts</e>
@@ -22557,6 +22570,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Severity of the vulnerability</summary>
           <pattern>
             <t>severity</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>score</name>
+          <summary>Score of the vulnerability</summary>
+          <pattern>
+            <t>score</t>
           </pattern>
         </ele>
         <ele>
@@ -25933,6 +25953,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_INFO</command>
+    <summary>Replaced CVSS score elements by integer score</summary>
+    <description>
+      <p>
+        The elements CVSS and MAX_CVSS of CPEs, CVEs, OVAL definitions and
+        CERT advisories are replaced by the SCORE element that contains an
+        integer score in the range 0-100, which is generally the ten times
+        the CVSS base score.
+      </p>
+      <p>
+        NVTs still contain the CVSS_BASE element in addition to the new
+        SCORE for backward compatibility of reports. However, the use of
+        the CVSS_BASE element is deprecated.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
   <change>
     <command>GET_INFO</command>
     <summary>Replaced CVSS vector components of CVEs with vector string</summary>
