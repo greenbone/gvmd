@@ -5334,7 +5334,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                       order_column = g_strdup_printf ("max (aggregate_max_%d)",
                                                       index);
                     else if (strcmp (sort_stat, "mean") == 0)
-                      order_column = g_strdup_printf ("sum (aggregate_avg_%d)",
+                      order_column = g_strdup_printf ("sum (aggregate_sum_%d)"
+                                                      " / sum(aggregate_count)",
                                                       index);
                     else
                       order_column = g_strdup_printf ("%s (aggregate_%s_%d)",
