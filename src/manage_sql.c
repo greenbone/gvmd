@@ -21852,7 +21852,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
   opts = result_iterator_opts_table (apply_overrides);
-  extra_tables = g_strdup_printf (", LATERAL %s AS lateralSeverity%s",
+  extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
                                   lateral, opts);
   g_free (opts);
 
