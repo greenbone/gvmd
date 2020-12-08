@@ -52368,8 +52368,8 @@ user_resources_in_use (user_t user,
  */
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
  {                                                                           \
-   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "qod",       \
-   "oldest", "newest", "type", NULL                                          \
+   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "score",     \
+   "qod", "oldest", "newest", "type", NULL                                   \
  }
 
 /**
@@ -52420,7 +52420,10 @@ user_resources_in_use (user_t user,
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "severity", NULL, KEYWORD_TYPE_DOUBLE                                   \
+     "(score / 10.0)", "severity", KEYWORD_TYPE_DOUBLE                       \
+   },                                                                        \
+   {                                                                         \
+     "score", NULL, KEYWORD_TYPE_DOUBLE                                      \
    },                                                                        \
    {                                                                         \
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
@@ -52637,6 +52640,20 @@ vuln_iterator_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+vuln_iterator_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
  * @brief Get the QoD from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -52647,7 +52664,7 @@ int
 vuln_iterator_qod (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -52661,7 +52678,7 @@ const char*
 vuln_iterator_type (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -52675,7 +52692,7 @@ time_t
 vuln_iterator_oldest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -52689,7 +52706,7 @@ time_t
 vuln_iterator_newest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**

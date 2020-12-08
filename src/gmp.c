@@ -17917,6 +17917,7 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                "<creation_time>%s</creation_time>"
                                "<modification_time>%s</modification_time>"
                                "<severity>%1.1f</severity>"
+                               "<score>%i</score>"
                                "<qod>%d</qod>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
@@ -17924,6 +17925,7 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                get_iterator_creation_time (&vulns),
                                get_iterator_modification_time (&vulns),
                                vuln_iterator_severity (&vulns),
+                               vuln_iterator_score (&vulns),
                                vuln_iterator_qod (&vulns));
 
       // results for the vulnerability
