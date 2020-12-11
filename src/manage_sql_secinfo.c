@@ -4397,6 +4397,7 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
 static int
 sync_cert ()
 {
+  int scap_db_version;
   int last_feed_update, last_cert_update, updated_dfn_cert;
   int updated_cert_bund;
 
@@ -4458,7 +4459,19 @@ sync_cert ()
 
   g_debug ("%s: update cvss", __func__);
 
-  if (manage_scap_loaded ())
+  /* Update CERT data that depends on SCAP. */
+  scap_db_version = manage_scap_db_version();
+
+  if (scap_db_version == -1)
+    g_info ("SCAP database does not exist (yet),"
+            " skipping CERT severity score update");
+  else if (scap_db_version < GVMD_SCAP_DATABASE_VERSION)
+    g_info ("SCAP database has to be migrated,"
+            " skipping CERT severity score update");
+  else if (scap_db_version > GVMD_SCAP_DATABASE_VERSION)
+    g_warning ("SCAP database is newer than supported version,"
+               " skipping CERT severity score update");
+  else
     {
       int last_scap_update;
 
@@ -4644,6 +4657,8 @@ update_scap_placeholders ()
 static int
 update_scap_end ()
 {
+  int cert_db_version;
+
   g_debug ("%s: update timestamp", __func__);
 
   if (update_scap_timestamp ())
@@ -4666,8 +4681,18 @@ update_scap_end ()
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
 
   /* Update CERT data that depends on SCAP. */
+  cert_db_version = manage_cert_db_version();
 
-  if (manage_cert_loaded ())
+  if (cert_db_version == -1)
+    g_info ("CERT database does not exist (yet),"
+            " skipping CERT severity score update");
+  else if (cert_db_version < GVMD_CERT_DATABASE_VERSION)
+    g_info ("CERT database has to be migrated,"
+            " skipping CERT severity score update");
+  else if (cert_db_version > GVMD_CERT_DATABASE_VERSION)
+    g_warning ("CERT database is newer than supported version,"
+               " skipping CERT severity score update");
+  else
     {
       int last_cert_update, last_scap_update;
 
