@@ -19688,44 +19688,6 @@ reports_hashtable ()
 }
 
 /**
- * @brief Rebuild the report count cache for all reports and users.
- *
- * @param[in]  clear        Whether to clear the cache before rebuilding.
- * @param[out] changes_out  The number of processed user/report combinations.
- */
-static void
-reports_build_count_cache (int clear, int* changes_out)
-{
-  int changes;
-  iterator_t reports;
-  changes = 0;
-
-  /* Clear cache of trashcan reports, we won't count them. */
-  sql ("DELETE FROM report_counts"
-       " WHERE (SELECT hidden = 2 FROM tasks"
-       "        WHERE tasks.id = (SELECT task FROM reports"
-       "                          WHERE reports.id = report_counts.report));");
-
-  init_iterator (&reports,
-                 "SELECT id FROM reports"
-                 " WHERE (SELECT hidden = 0 FROM tasks"
-                 "        WHERE tasks.id = task);");
-
-  while (next (&reports))
-    {
-      report_t report = iterator_int64 (&reports, 0);
-
-      report_cache_counts (report, clear, clear, NULL);
-      changes ++;
-    }
-
-  cleanup_iterator (&reports);
-
-  if (changes_out)
-    *changes_out = changes;
-}
-
-/**
  * @brief Initializes an iterator for updating the report cache
  *
  * @param[in]  iterator       Iterator.
@@ -54980,36 +54942,6 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
 
       success_text = g_strdup_printf ("Optimized: rebuild-permissions-cache."
                                       " Permission cache rebuilt.");
-    }
-  else if (strcasecmp (name, "rebuild-report-cache") == 0)
-    {
-      int changes;
-
-      sql_begin_immediate ();
-
-      reports_build_count_cache (1, &changes);
-
-      sql_commit ();
-
-      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
-                                      " Result counts recalculated for %d"
-                                      " reports.",
-                                      changes);
-    }
-  else if (strcasecmp (name, "update-report-cache") == 0)
-    {
-      int changes;
-
-      sql_begin_immediate ();
-
-      reports_build_count_cache (0, &changes);
-
-      sql_commit ();
-
-      success_text = g_strdup_printf ("Optimized: update-report-cache."
-                                      " Result counts calculated for %d"
-                                      " reports.",
-                                      changes);
     }
   else
     {
