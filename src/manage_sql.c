@@ -21790,9 +21790,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *extra_where_single, *opts;
-  gchar *owned_clause, *with_clause, *with_clauses;
-  char *user_id;
+  gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clauses;
   const gchar *lateral;
 
   assert (report);
@@ -21955,42 +21953,50 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   free (filter);
 
-  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
-                        current_credentials.uuid);
-  owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
-  free (user_id);
-  with_clauses = g_strdup_printf
-                  ("%s%s"
-                   " valid_overrides"
-                   " AS (SELECT result_nvt, hosts, new_severity, port,"
-                   "            severity, result"
-                   "     FROM overrides"
-                   "     WHERE %s"
-                   /*    Only use if override's NVT is in report. */
-                   "     AND EXISTS (SELECT * FROM result_nvt_reports"
-                   "                 WHERE report = %llu"
-                   "                 AND result_nvt"
-                   "                     = overrides.result_nvt)"
-                   "     AND (task = 0"
-                   "          OR task = (SELECT reports.task"
-                   "                     FROM reports"
-                   "                     WHERE reports.id = %llu))"
-                   "     AND ((end_time = 0) OR (end_time >= m_now ()))"
-                   "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
-                   "           creation_time DESC)"
-                   " ",
-                   with_clause
-                    /* Skip the leading "WITH" because init_get..
-                     * below will add it.  A bit of a hack, but
-                     * it's the only place that needs this. */
-                    ? with_clause + 4
-                    : "",
-                   with_clause ? "," : "",
-                   owned_clause,
-                   report,
-                   report);
-  g_free (with_clause);
-  g_free (owned_clause);
+  if (apply_overrides)
+    {
+      gchar *owned_clause, *with_clause;
+      char *user_id;
+
+      user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                            current_credentials.uuid);
+      owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
+      free (user_id);
+      with_clauses = g_strdup_printf
+                      ("%s%s"
+                       " valid_overrides"
+                       " AS (SELECT result_nvt, hosts, new_severity, port,"
+                       "            severity, result"
+                       "     FROM overrides"
+                       "     WHERE %s"
+                       /*    Only use if override's NVT is in report. */
+                       "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                       "                 WHERE report = %llu"
+                       "                 AND result_nvt"
+                       "                     = overrides.result_nvt)"
+                       "     AND (task = 0"
+                       "          OR task = (SELECT reports.task"
+                       "                     FROM reports"
+                       "                     WHERE reports.id = %llu))"
+                       "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                       "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                       "           creation_time DESC)"
+                       " ",
+                       with_clause
+                        /* Skip the leading "WITH" because init_get..
+                         * below will add it.  A bit of a hack, but
+                         * it's the only place that needs this. */
+                        ? with_clause + 4
+                        : "",
+                       with_clause ? "," : "",
+                       owned_clause,
+                       report,
+                       report);
+      g_free (with_clause);
+      g_free (owned_clause);
+    }
+  else
+    with_clauses = NULL;
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
