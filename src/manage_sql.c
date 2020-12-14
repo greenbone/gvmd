@@ -23616,21 +23616,27 @@ report_level_counts (int unfiltered_requested, int filtered_requested,
                         filtered_requested
                           ? &filtered_severity_data : NULL);
 
-  severity_data_level_counts (&severity_data,
-                              NULL, false_positives,
-                              logs, lows, mediums, highs);
+  /* Filtered. */
+
   severity_data_level_counts (&filtered_severity_data,
                               NULL, filtered_false_positives,
                               filtered_logs, filtered_lows,
                               filtered_mediums, filtered_highs);
 
-  if (severity)
-    *severity = severity_data.max;
   if (filtered_severity && filtered_requested)
     *filtered_severity = filtered_severity_data.max;
 
-  cleanup_severity_data (&severity_data);
   cleanup_severity_data (&filtered_severity_data);
+
+  /* Regular. */
+
+  severity_data_level_counts (&severity_data,
+                              NULL, false_positives,
+                              logs, lows, mediums, highs);
+  if (severity)
+    *severity = severity_data.max;
+
+  cleanup_severity_data (&severity_data);
 }
 
 /**
