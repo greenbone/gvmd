@@ -256,9 +256,6 @@ cache_permissions_for_resource (const char *, resource_t, GArray*);
 static void
 cache_all_permissions_for_users (GArray*);
 
-static void
-report_cache_counts (report_t, int, int, const char*);
-
 static int
 report_host_dead (report_host_t);
 
@@ -295,9 +292,6 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
 
 static int
 setting_value_int (const char *, int *);
-
-static int
-setting_auto_cache_rebuild_int ();
 
 static double
 setting_default_severity_dbl ();
@@ -17512,8 +17506,6 @@ set_task_run_status_internal (task_t task, task_status_t status)
       sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
            status,
            global_current_report);
-      if (setting_auto_cache_rebuild_int ())
-        report_cache_counts (global_current_report, 0, 0, NULL);
     }
 
   sql ("UPDATE tasks SET run_status = %u WHERE id = %llu;",
@@ -19543,151 +19535,6 @@ DEF_ACCESS (prognosis_iterator_cpe, 3);
 int ignore_max_rows_per_page = 0;
 
 /**
- * @brief Create a new GHashTable for containing resource rowids.
- *
- * @return The newly allocated GHashTable
- */
-static GHashTable *
-new_resources_hashtable ()
-{
-  return g_hash_table_new_full (g_int64_hash, g_int64_equal, g_free, NULL);
-}
-
-/**
- * @brief Add reports affected by an override to an existing GHashtable.
- * This is used to add more reports to the hashtable from reports_for_override.
- *
- * @param[in]  reports_table The GHashtable to contain the report rowids.
- * @param[in]  override The override that selected reports must be affected by.
- */
-static void
-reports_add_for_override (GHashTable *reports_table,
-                          override_t override)
-{
-  result_t result;
-  task_t task;
-  gchar *nvt_id;
-  iterator_t reports;
-
-  if (override == 0)
-    return;
-
-  sql_int64 (&result,
-             "SELECT result FROM overrides WHERE id = %llu",
-             override);
-  sql_int64 (&task,
-             "SELECT task FROM overrides WHERE id = %llu",
-             override);
-  nvt_id = sql_string ("SELECT nvt FROM overrides WHERE id = %llu",
-                       override);
-
-  if (result)
-    {
-      report_t *report = g_malloc0 (sizeof (report_t));
-      sql_int64 (report,
-                 "SELECT report FROM results"
-                 " WHERE id = %llu AND nvt = '%s'",
-                 result, nvt_id);
-
-      if (*report)
-        g_hash_table_add (reports_table, report);
-      else
-        g_free (report);
-
-      return;
-    }
-  else if (task)
-    {
-      init_iterator (&reports,
-                     "SELECT DISTINCT report FROM results"
-                     " WHERE task = %llu AND nvt = '%s'",
-                     task, nvt_id);
-    }
-  else
-    {
-      init_iterator (&reports,
-                     "SELECT DISTINCT report FROM results"
-                     " WHERE nvt = '%s'",
-                     nvt_id);
-    }
-
-  while (next (&reports))
-    {
-      report_t *report = g_malloc0 (sizeof (report_t));
-
-      *report = iterator_int64 (&reports, 0);
-
-      if (g_hash_table_contains (reports_table, report) == 0)
-        g_hash_table_add (reports_table, report);
-      else
-        g_free (report);
-    }
-  cleanup_iterator (&reports);
-}
-
-/**
- * @brief Get reports affected by an override in a GHashTable.
- *
- * @param[in]  override The override that selected reports must be affected by.
- *
- * @return A GHashtable containing the affected report rowids.
- */
-static GHashTable *
-reports_for_override (override_t override)
-{
-  GHashTable *reports_table;
-  reports_table = new_resources_hashtable ();
-
-  reports_add_for_override (reports_table, override);
-
-  return reports_table;
-}
-
-/**
- * @brief Add all reports to an existing GHashtable.
- *
- * @param[in]  reports_table The GHashtable to contain the report rowids.
- */
-static void
-reports_add_all (GHashTable *reports_table)
-{
-  iterator_t reports;
-
-  init_iterator (&reports,
-                 "SELECT id FROM reports");
-
-  while (next (&reports))
-    {
-      report_t *report = g_malloc0 (sizeof (report_t));
-
-      *report = iterator_int64 (&reports, 0);
-
-      if (g_hash_table_contains (reports_table, report) == 0)
-        g_hash_table_add (reports_table, report);
-      else
-        g_free (report);
-    }
-
-  cleanup_iterator (&reports);
-}
-
-/**
- * @brief Get all reports in a GHashTable.
- *
- * @return A GHashtable containing the report rowids.
- */
-static GHashTable *
-reports_hashtable ()
-{
-  GHashTable *reports_table;
-  reports_table = new_resources_hashtable ();
-
-  reports_add_all (reports_table);
-
-  return reports_table;
-}
-
-/**
  * @brief Initializes an iterator for updating the report cache
  *
  * @param[in]  iterator       Iterator.
@@ -19815,109 +19662,6 @@ static user_t
 report_counts_build_iterator_user (iterator_t *iterator)
 {
   return iterator_int64 (iterator, 2);
-}
-
-/**
- * @brief Cache report counts and clear existing caches if requested.
- *
- * @param[in]  report             Report to cache counts of.
- * @param[in]  clear_original     Whether to clear existing cache for
- *                                 original severity.
- * @param[in]  clear_overridden   Whether to clear existing cache for
- *                                 overridden severity.
- * @param[in]  users_where        Optional SQL clause to limit users.
- */
-static void
-report_cache_counts (report_t report, int clear_original, int clear_overridden,
-                     const char* users_where)
-{
-  iterator_t cache_iterator;
-  int holes, infos, logs, warnings, false_positives;
-  double severity;
-  get_data_t *get = NULL;
-  gchar *old_user_id;
-
-  old_user_id = current_credentials.uuid;
-  init_report_counts_build_iterator (&cache_iterator, report, INT_MAX, 1,
-                                     users_where);
-
-  while (next (&cache_iterator))
-    {
-      int override = report_counts_build_iterator_override (&cache_iterator);
-      int min_qod = report_counts_build_iterator_min_qod (&cache_iterator);
-      user_t user = report_counts_build_iterator_user (&cache_iterator);
-
-      current_credentials.uuid
-        = sql_string ("SELECT uuid FROM users WHERE id = %llu",
-                      user);
-      manage_session_init (current_credentials.uuid);
-
-      get = report_results_get_data (1, -1, override, min_qod);
-
-      if ((clear_original && override == 0) || (clear_overridden && override))
-        {
-          sql ("DELETE FROM report_counts"
-               " WHERE report = %llu"
-               "   AND \"user\" = %llu"
-               "   AND override = %d"
-               "   AND min_qod = %d",
-               report, user, override, min_qod);
-        }
-
-      report_counts_id (report, &holes, &infos, &logs, &warnings,
-                        &false_positives, &severity, get, NULL);
-
-      get_data_reset (get);
-      g_free (get);
-      g_free (current_credentials.uuid);
-    }
-  cleanup_iterator (&cache_iterator);
-  current_credentials.uuid = old_user_id;
-  manage_session_init (current_credentials.uuid);
-}
-
-/**
- * @brief Clear report counts .
- *
- * @param[in]  report  Report.
- * @param[in]  clear_original     Whether to clear existing cache for
- *                                 original severity.
- * @param[in]  clear_overridden   Whether to clear existing cache for
- *                                 overridden severity.
- * @param[in]  users_where        Optional SQL clause to limit users.
- */
-static void
-report_clear_count_cache (report_t report,
-                          int clear_original, int clear_overridden,
-                          const char* users_where)
-{
-  gchar *extra_where = NULL;
-  if (users_where)
-    {
-      extra_where
-        = g_strdup_printf (" AND \"user\" IN (SELECT id FROM users WHERE %s)",
-                           users_where);
-    }
-
-  if (clear_original && clear_overridden)
-    {
-      sql ("DELETE FROM report_counts"
-           " WHERE report = %llu"
-           "%s",
-           report,
-           extra_where ? extra_where : "");
-    }
-  else if (clear_original || clear_overridden)
-    {
-      int override = clear_overridden ? 1 : 0;
-      sql ("DELETE FROM report_counts"
-           " WHERE report = %llu"
-           "   AND override = %d"
-           "%s",
-           report,
-           override,
-           extra_where ? extra_where : "");
-    }
 }
 
 /**
@@ -20322,7 +20066,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
           if (count == CREATE_REPORT_CHUNK_SIZE)
             {
-              report_cache_counts (report, 1, 1, NULL);
               sql_commit ();
               gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
               sql_begin_immediate ();
@@ -20345,7 +20088,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
   if (first == 0)
     {
       sql ("%s", insert->str);
-      report_cache_counts (report, 1, 1, NULL);
       sql_commit ();
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
       sql_begin_immediate ();
@@ -22768,7 +22510,6 @@ cleanup_result_nvts ()
       report = g_array_index (affected, report_t, index);
       g_debug ("%s: Updating cache of affected report %llu",
                __func__, report);
-      report_cache_counts (report, 0, 1, NULL);
     }
   g_array_free (affected, TRUE);
 
@@ -23520,8 +23261,6 @@ set_report_scan_run_status (report_t report, task_status_t status)
   sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
        status,
        report);
-  if (setting_auto_cache_rebuild_int ())
-    report_cache_counts (report, 0, 0, NULL);
   return 0;
 }
 
@@ -23957,12 +23696,6 @@ trim_report (report_t report)
   sql ("DELETE FROM report_hosts"
        " WHERE report = %llu;",
        report);
-
-  /* Clear and rebuild counts cache */
-  if (setting_auto_cache_rebuild_int ())
-    report_cache_counts (report, 1, 1, NULL);
-  else
-    report_clear_count_cache (report, 1, 1, NULL);
 }
 
 /**
@@ -23996,12 +23729,6 @@ trim_partial_report (report_t report)
        " WHERE report = %llu"
        " AND end_time is NULL;",
        report);
-
-  /* Clear and rebuild counts cache */
-  if (setting_auto_cache_rebuild_int ())
-    report_cache_counts (report, 1, 1, NULL);
-  else
-    report_clear_count_cache (report, 1, 1, NULL);
 }
 
 /**
@@ -36219,12 +35946,6 @@ create_override (const char* active, const char* nvt, const char* text,
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
-  GHashTable *reports;
-  GHashTableIter reports_iter;
-  report_t *reports_ptr;
-  gchar *override_id, *users_where;
-  int auto_cache_rebuild;
-  override_t new_override;
 
   if (acl_user_may ("create_override") == 0)
     return 99;
@@ -36352,27 +36073,6 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (override)
     *override = sql_last_insert_id ();
-  new_override = sql_last_insert_id ();
-
-  override_uuid (new_override, &override_id);
-  users_where = acl_users_with_access_where ("override", override_id, NULL,
-                                             "id");
-
-  reports = reports_for_override (new_override);
-  reports_ptr = NULL;
-  g_hash_table_iter_init (&reports_iter, reports);
-  auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-  while (g_hash_table_iter_next (&reports_iter,
-                                 ((gpointer*)&reports_ptr), NULL))
-    {
-      if (auto_cache_rebuild)
-        report_cache_counts (*reports_ptr, 0, 1, users_where);
-      else
-        report_clear_count_cache (*reports_ptr, 0, 1, users_where);
-    }
-  g_hash_table_destroy (reports);
-  g_free (override_id);
-  g_free (users_where);
 
   return 0;
 }
@@ -36423,11 +36123,6 @@ int
 delete_override (const char *override_id, int ultimate)
 {
   override_t override;
-  GHashTable *reports;
-  GHashTableIter reports_iter;
-  report_t *reports_ptr;
-  gchar *users_where;
-  int auto_cache_rebuild;
 
   sql_begin_immediate ();
 
@@ -36472,11 +36167,6 @@ delete_override (const char *override_id, int ultimate)
       return 0;
     }
 
-  reports = reports_for_override (override);
-
-  users_where = acl_users_with_access_where ("override", override_id, NULL,
-                                             "id");
-
   if (ultimate == 0)
     {
       sql ("INSERT INTO overrides_trash"
@@ -36502,20 +36192,6 @@ delete_override (const char *override_id, int ultimate)
     }
 
   sql ("DELETE FROM overrides WHERE id = %llu;", override);
-
-  g_hash_table_iter_init (&reports_iter, reports);
-  reports_ptr = NULL;
-  auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-  while (g_hash_table_iter_next (&reports_iter,
-                                 ((gpointer*)&reports_ptr), NULL))
-    {
-      if (auto_cache_rebuild)
-        report_cache_counts (*reports_ptr, 0, 1, users_where);
-      else
-        report_clear_count_cache (*reports_ptr, 0, 1, users_where);
-    }
-  g_hash_table_destroy (reports);
-  g_free (users_where);
 
   sql_commit ();
   return 0;
@@ -36552,15 +36228,9 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
   double severity_dbl, new_severity_dbl;
   gchar *quoted_nvt;
-  GHashTable *reports;
-  GString *cache_invalidated_sql;
-  int cache_invalidated;
   override_t override;
   task_t task;
   result_t result;
-
-  reports = NULL;
-  cache_invalidated = 0;
 
   override = 0;
   if (find_override_with_permission (override_id, &override, "modify_override"))
@@ -36681,65 +36351,11 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   quoted_port = sql_insert (port);
   quoted_nvt = sql_quote (nvt);
 
-  // Tests if a cache rebuild is necessary.
-  //  The "active" status is checked separately
-  cache_invalidated_sql = g_string_new ("");
-
-  g_string_append_printf (cache_invalidated_sql,
-                          "SELECT (cast (new_severity AS numeric) != %1.1f)",
-                          new_severity_dbl);
-
-  g_string_append_printf (cache_invalidated_sql,
-                          " OR (task != %llu)",
-                          task);
-
-  g_string_append_printf (cache_invalidated_sql,
-                          " OR (result != %llu)",
-                          result);
-
-  if (strcmp (quoted_severity, "NULL") == 0)
-    g_string_append_printf (cache_invalidated_sql,
-                            " OR (severity IS NOT NULL)");
-  else
-    g_string_append_printf (cache_invalidated_sql,
-                            " OR (cast (severity AS numeric) != %1.1f)",
-                            severity_dbl);
-
-  if (strcmp (quoted_hosts, "NULL") == 0)
-    g_string_append_printf (cache_invalidated_sql,
-                            " OR (hosts IS NOT NULL)");
-  else
-    g_string_append_printf (cache_invalidated_sql,
-                            " OR (hosts != %s)",
-                            quoted_hosts);
-
-  if (strcmp (quoted_port, "NULL") == 0)
-    g_string_append_printf (cache_invalidated_sql,
-                            " OR (hosts IS NOT NULL)");
-  else
-    g_string_append_printf (cache_invalidated_sql,
-                            " OR (port != %s)",
-                            quoted_port);
-
-  g_string_append_printf (cache_invalidated_sql,
-                          " FROM overrides WHERE id = %llu",
-                          override);
-
-  if (sql_int ("%s", cache_invalidated_sql->str))
-    {
-      cache_invalidated = 1;
-    }
-
-  g_string_free (cache_invalidated_sql, TRUE);
-
   // Check active status for changes, get old reports for rebuild if necessary
   //  and update override.
   result_nvt_notice (quoted_nvt);
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     {
-      if (cache_invalidated)
-        reports = reports_for_override (override);
-
       sql ("UPDATE overrides SET"
            " modification_time = %i,"
            " text = %s,"
@@ -36789,15 +36405,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
                             : 1)
                         : 0);
 
-      if (cache_invalidated == 0
-          && sql_int ("SELECT end_time != %d FROM overrides"
-                      " WHERE id = %llu",
-                      new_end_time, override))
-        cache_invalidated = 1;
-
-      if (cache_invalidated)
-        reports = reports_for_override (override);
-
       sql ("UPDATE overrides SET"
            " end_time = %i,"
            " modification_time = %i,"
@@ -36834,35 +36441,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   g_free (quoted_port);
   g_free (quoted_severity);
   g_free (quoted_nvt);
-
-  if (cache_invalidated)
-    {
-      GHashTableIter reports_iter;
-      report_t *reports_ptr;
-      gchar *users_where;
-      int auto_cache_rebuild;
-
-      users_where = acl_users_with_access_where ("override", override_id, NULL,
-                                                 "id");
-
-      reports_add_for_override (reports, override);
-
-      g_hash_table_iter_init (&reports_iter, reports);
-      reports_ptr = NULL;
-      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-      while (g_hash_table_iter_next (&reports_iter,
-                                    ((gpointer*)&reports_ptr), NULL))
-        {
-          if (auto_cache_rebuild)
-            report_cache_counts (*reports_ptr, 0, 1, users_where);
-          else
-            report_clear_count_cache (*reports_ptr, 0, 1, users_where);
-        }
-      g_free (users_where);
-    }
-
-  if (reports)
-    g_hash_table_destroy (reports);
 
   return 0;
 }
@@ -41823,8 +41401,6 @@ create_permission_internal (int check_access, const char *name_arg,
   gchar *name, *quoted_name, *quoted_comment, *resource_type;
   resource_t resource, subject;
   const char *resource_id;
-  GHashTable *reports = NULL;
-  int clear_original = 0;
   gchar *subject_where;
 
   assert (current_credentials.uuid);
@@ -41875,41 +41451,6 @@ create_permission_internal (int check_access, const char *name_arg,
     cache_all_permissions_for_users (NULL);
   else if (resource_type && resource)
     cache_permissions_for_resource (resource_type, resource, NULL);
-
-  /* Update Reports cache */
-  if (resource_type && resource_id && strcmp (resource_type, "override") == 0)
-    {
-      reports = reports_for_override (resource);
-    }
-  else if (strcasecmp (quoted_name, "super") == 0)
-    {
-      reports = reports_hashtable ();
-      clear_original = 1;
-    }
-
-  if (reports && g_hash_table_size (reports))
-    {
-      GHashTableIter reports_iter;
-      report_t *reports_ptr;
-      int auto_cache_rebuild;
-
-      reports_ptr = NULL;
-      g_hash_table_iter_init (&reports_iter, reports);
-      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-      while (g_hash_table_iter_next (&reports_iter,
-                                    ((gpointer*)&reports_ptr), NULL))
-        {
-          if (auto_cache_rebuild)
-            report_cache_counts (*reports_ptr, clear_original, 1,
-                                 subject_where);
-          else
-            report_clear_count_cache (*reports_ptr, clear_original, 1,
-                                      subject_where);
-        }
-    }
-
-  if (reports)
-    g_hash_table_destroy (reports);
 
   g_free (quoted_comment);
   g_free (quoted_name);
@@ -42706,8 +42247,6 @@ delete_permission (const char *permission_id, int ultimate)
   permission_t permission = 0;
   char *name, *subject_type, *resource_type;
   resource_t subject, resource;
-  GHashTable *reports = NULL;
-  int clear_original = 0;
   gchar *subject_where;
 
   if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
@@ -42800,44 +42339,10 @@ delete_permission (const char *permission_id, int ultimate)
   else if (resource_type && resource)
     cache_permissions_for_resource (resource_type, resource, NULL);
 
-  /* Update Reports cache */
-  if (resource_type && resource && strcmp (resource_type, "override") == 0)
-    {
-      reports = reports_for_override (resource);
-    }
-  else if (strcasecmp (name, "super") == 0)
-    {
-      reports = reports_hashtable ();
-      clear_original = 1;
-    }
   free (name);
   free (resource_type);
 
-  if (reports && g_hash_table_size (reports))
-    {
-      GHashTableIter reports_iter;
-      report_t *reports_ptr;
-      int auto_cache_rebuild;
-
-      reports_ptr = NULL;
-      g_hash_table_iter_init (&reports_iter, reports);
-      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-      while (g_hash_table_iter_next (&reports_iter,
-                                    ((gpointer*)&reports_ptr), NULL))
-        {
-          if (auto_cache_rebuild)
-            report_cache_counts (*reports_ptr, clear_original, 1,
-                                 subject_where);
-          else
-            report_clear_count_cache (*reports_ptr, clear_original, 1,
-                                      subject_where);
-        }
-    }
-
   g_free (subject_where);
-
-  if (reports)
-    g_hash_table_destroy (reports);
 
   sql_commit ();
   return 0;
@@ -42875,8 +42380,6 @@ modify_permission (const char *permission_id, const char *name_arg,
   const char *resource_id;
   char *old_name, *old_resource_type;
   resource_t old_resource;
-  GHashTable *reports = NULL;
-  int clear_original = 0;
   gchar *subject_where_old, *subject_where_new, *subject_where;
 
   if (permission_id == NULL)
@@ -43017,21 +42520,6 @@ modify_permission (const char *permission_id, const char *name_arg,
   old_resource = permission_resource (permission);
 
 
-  if (old_resource
-      && strcmp (old_resource_type, "override") == 0)
-    {
-      reports = reports_for_override (resource);
-    }
-  else if (strcasecmp (old_name, "super"))
-    {
-      reports = reports_hashtable ();
-      clear_original = 1;
-    }
-  else
-    {
-      reports = new_resources_hashtable ();
-    }
-
   /* Modify the permission. */
 
   assert (subject);
@@ -43075,46 +42563,6 @@ modify_permission (const char *permission_id, const char *name_arg,
               || (resource_type
                   && strcmp (old_resource_type, resource_type))))
         cache_permissions_for_resource (old_resource_type, old_resource, NULL);
-    }
-
-  /* Check if caches are affected by the permission and update reports cache */
-
-  if (resource_type
-      && resource
-      && (resource != old_resource
-          || strcmp (old_resource_type, "override"))
-      && strcmp (resource_type, "override") == 0)
-    {
-      reports_add_for_override (reports, resource);
-    }
-  else if (strcasecmp (quoted_name, "super") == 0
-           && strcasecmp (old_name, quoted_name))
-    {
-      reports_add_all (reports);
-      clear_original = 1;
-    }
-
-  if (reports)
-    {
-      GHashTableIter reports_iter;
-      report_t *reports_ptr;
-      int auto_cache_rebuild;
-
-      g_hash_table_iter_init (&reports_iter, reports);
-      reports_ptr = NULL;
-      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-      while (g_hash_table_iter_next (&reports_iter,
-                                    ((gpointer*)&reports_ptr), NULL))
-        {
-          if (auto_cache_rebuild)
-            report_cache_counts (*reports_ptr, clear_original, 1,
-                                 subject_where);
-          else
-            report_clear_count_cache (*reports_ptr, clear_original, 1,
-                                      subject_where);
-        }
-      g_hash_table_destroy (reports);
-      reports = NULL;
     }
 
   /* Cleanup. */
@@ -45364,11 +44812,6 @@ manage_restore (const char *id)
   if (resource)
     {
       override_t override;
-      GHashTable *reports;
-      GHashTableIter reports_iter;
-      report_t *reports_ptr;
-      gchar *users_where;
-      int auto_cache_rebuild;
 
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
@@ -45387,23 +44830,6 @@ manage_restore (const char *id)
       tags_set_locations ("override", resource,
                           override,
                           LOCATION_TABLE);
-      users_where = acl_users_with_access_where ("override", id, NULL,
-                                                 "id");
-
-      reports = reports_for_override (override);
-      g_hash_table_iter_init (&reports_iter, reports);
-      reports_ptr = NULL;
-      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-      while (g_hash_table_iter_next (&reports_iter,
-                                    ((gpointer*)&reports_ptr), NULL))
-        {
-          if (auto_cache_rebuild)
-            report_cache_counts (*reports_ptr, 0, 1, users_where);
-          else
-            report_clear_count_cache (*reports_ptr, 0, 1, users_where);
-        }
-      g_hash_table_destroy (reports);
-      g_free (users_where);
 
       sql ("DELETE FROM overrides_trash WHERE id = %llu;", resource);
 
@@ -45422,13 +44848,6 @@ manage_restore (const char *id)
   if (resource)
     {
       permission_t permission;
-      char *name, *resource_type;
-      resource_t perm_resource;
-      GHashTable *reports = NULL;
-      int clear_original = 0;
-      char *subject_type;
-      resource_t subject;
-      gchar *subject_where;
 
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
@@ -45442,62 +44861,8 @@ manage_restore (const char *id)
            resource);
 
       permission = sql_last_insert_id ();
-      name = permission_name (permission);
-      resource_type = permission_resource_type (permission);
-      perm_resource = permission_resource (permission);
-
-      subject_type = permission_subject_type (permission);
-      subject = permission_subject (permission);
-      subject_where = subject_where_clause (subject_type, subject);
-      free (subject_type);
 
       tags_set_locations ("permission", resource, permission, LOCATION_TABLE);
-
-      if (strcasecmp (name, "super") == 0)
-        cache_all_permissions_for_users (NULL);
-      else if (perm_resource != 0
-               && resource_type && strcmp (resource_type, ""))
-        cache_permissions_for_resource (resource_type, perm_resource, NULL);
-
-      /* Update Reports cache */
-      if (resource_type && perm_resource
-          && strcmp (resource_type, "override") == 0)
-        {
-          reports = reports_for_override (perm_resource);
-        }
-      else if (strcasecmp (name, "super") == 0)
-        {
-          reports = reports_hashtable ();
-          clear_original = 1;
-        }
-
-      if (reports && g_hash_table_size (reports))
-        {
-          GHashTableIter reports_iter;
-          report_t *reports_ptr;
-          int auto_cache_rebuild;
-
-          reports_ptr = NULL;
-          g_hash_table_iter_init (&reports_iter, reports);
-          auto_cache_rebuild = setting_auto_cache_rebuild_int ();
-          while (g_hash_table_iter_next (&reports_iter,
-                                        ((gpointer*)&reports_ptr), NULL))
-            {
-              if (auto_cache_rebuild)
-                report_cache_counts (*reports_ptr, clear_original, 1,
-                                     subject_where);
-              else
-                report_clear_count_cache (*reports_ptr, clear_original, 1,
-                                          subject_where);
-            }
-        }
-      g_free (subject_where);
-
-      if (reports)
-        g_hash_table_destroy (reports);
-
-      free (name);
-      free (resource_type);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
       sql_commit ();
@@ -48407,23 +47772,6 @@ setting_timezone ()
 {
   return sql_string ("SELECT timezone FROM users WHERE uuid = '%s'",
                      current_credentials.uuid);
-}
-
-/**
- * @brief Return the Auto Cache Rebuild user setting as an int.
- *
- * @return 1 if cache is rebuilt automatically, 0 if not.
- */
-static int
-setting_auto_cache_rebuild_int ()
-{
-  return sql_int ("SELECT coalesce"
-                  "        ((SELECT value FROM settings"
-                  "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
-                  "          AND " ACL_USER_OWNS () ""
-                  "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
-                  "         '1');",
-                  current_credentials.uuid);
 }
 
 /**
