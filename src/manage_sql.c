@@ -164,14 +164,6 @@ set_task_interrupted (task_t, const gchar *);
 
 /* Static headers. */
 
-static int
-report_counts_cache_exists (report_t, int, int);
-
-static void report_severity_data (report_t, const char *, const get_data_t *,
-                                  severity_data_t*, severity_data_t*);
-
-static int cache_report_counts (report_t, int, int, severity_data_t*);
-
 static char*
 task_owner_uuid (task_t);
 
@@ -23603,6 +23595,44 @@ report_severity_data (report_t report, const char *host,
     }
 }
 
+static void
+report_level_counts (int unfiltered_requested, int filtered_requested,
+                     report_t report, const char *host, const get_data_t* get,
+                     double* severity, double* filtered_severity,
+                     int *false_positives,
+                     int *logs, int *lows, int *mediums, int *highs,
+                     int *filtered_false_positives,
+                     int *filtered_logs, int *filtered_lows,
+                     int *filtered_mediums, int *filtered_highs)
+{
+  severity_data_t severity_data, filtered_severity_data;
+
+  init_severity_data (&severity_data);
+  init_severity_data (&filtered_severity_data);
+
+  report_severity_data (report, host, get,
+                        unfiltered_requested
+                          ? &severity_data : NULL,
+                        filtered_requested
+                          ? &filtered_severity_data : NULL);
+
+  severity_data_level_counts (&severity_data,
+                              NULL, false_positives,
+                              logs, lows, mediums, highs);
+  severity_data_level_counts (&filtered_severity_data,
+                              NULL, filtered_false_positives,
+                              filtered_logs, filtered_lows,
+                              filtered_mediums, filtered_highs);
+
+  if (severity)
+    *severity = severity_data.max;
+  if (filtered_severity && filtered_requested)
+    *filtered_severity = filtered_severity_data.max;
+
+  cleanup_severity_data (&severity_data);
+  cleanup_severity_data (&filtered_severity_data);
+}
+
 /**
  * @brief Get the message counts for a report given the UUID.
  *
@@ -23644,70 +23674,6 @@ report_counts (const char* report_id, int* holes, int* infos,
 }
 
 /**
- * @brief Test if a counts cache exists for a report and the current user.
- * @param[in]           report    The report to check.
- * @param[in]           override  Whether to check for overridden results.
- * @param[in]           min_qod   Minimum QoD of results to count.
- *
- * @return 1 if cache exists, 0 otherwise.
- */
-static int
-report_counts_cache_exists (report_t report, int override, int min_qod)
-{
-  // FIX huge
-  return 0;
-}
-
-/**
- * @brief Get cached result counts for a report and the current user.
- *
- * @param[in]           report    The report to get counts from.
- * @param[in]           override  Whether to get overridden results.
- * @param[in]           min_qod   Minimum QoD of results to count.
- * @param[out]          data      The severity_data_t to save counts in.
- */
-static void
-report_counts_from_cache (report_t report, int override, int min_qod,
-                          severity_data_t* data)
-{
-  iterator_t iterator;
-  init_iterator (&iterator,
-                 "SELECT severity, count FROM report_counts"
-                 " WHERE report = %llu"
-                 "   AND override = %i"
-                 "   AND \"user\" = (SELECT id FROM users"
-                 "                   WHERE users.uuid = '%s')"
-                 "   AND min_qod = %d"
-                 "   AND (end_time = 0 OR end_time >= m_now ());",
-                 report, override, current_credentials.uuid, min_qod);
-  while (next (&iterator))
-    {
-      severity_data_add_count (data,
-                               iterator_double (&iterator, 0),
-                               iterator_int (&iterator, 1));
-    }
-  cleanup_iterator (&iterator);
-}
-
-/**
- * @brief Cache the message counts for a report.
- *
- * @param[in]   report    Report.
- * @param[in]   override  Whether overrides were applied to the results.
- * @param[in]   min_qod   The minimum QoD of the results.
- * @param[in]   data      Severity data struct containing the message counts.
- *
- * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
- */
-static int
-cache_report_counts (report_t report, int override, int min_qod,
-                     severity_data_t* data)
-{
-  // FIX huge
-  return 0;
-}
-
-/**
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
@@ -23739,12 +23705,7 @@ report_counts_id_full (report_t report, int* holes, int* infos,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
 {
-  const char *filter;
-  keyword_t **point;
-  array_t *split;
-  int filter_cacheable, unfiltered_requested, filtered_requested, cache_exists;
-  int override, min_qod_int;
-  severity_data_t severity_data, filtered_severity_data;
+  int unfiltered_requested, filtered_requested;
 
   unfiltered_requested = (holes || warnings || infos || logs || false_positives
                           || severity);
@@ -23756,117 +23717,13 @@ report_counts_id_full (report_t report, int* holes, int* infos,
       || strcmp (current_credentials.uuid, "") == 0)
     g_warning ("%s: called by NULL or dummy user", __func__);
 
-  if (get->filt_id && strlen (get->filt_id)
-      && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        {
-          return -1;
-        }
-    }
-  else
-    {
-      filter = get->filter;
-    }
-
-  filter_cacheable = TRUE;
-  override = 0;
-  min_qod_int = MIN_QOD_DEFAULT;
-
-  if (filter == NULL)
-    filter = "";
-
-  split = split_filter (filter);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-
-      keyword = *point;
-      if (keyword->column == NULL)
-        {
-          filter_cacheable = FALSE;
-        }
-      else if (strcasecmp (keyword->column, "first") == 0
-               || strcasecmp (keyword->column, "rows") == 0
-               || strcasecmp (keyword->column, "sort") == 0
-               || strcasecmp (keyword->column, "sort-reverse") == 0
-               || strcasecmp (keyword->column, "notes") == 0
-               || strcasecmp (keyword->column, "overrides") == 0)
-        {
-          // ignore
-        }
-      else if (strcasecmp (keyword->column, "apply_overrides") == 0)
-        {
-          if (keyword->string
-              && strcmp (keyword->string, "")
-              && strcmp (keyword->string, "0"))
-            override = 1;
-        }
-      else if (strcasecmp (keyword->column, "min_qod") == 0)
-        {
-          if (keyword->string == NULL
-              || sscanf (keyword->string, "%d", &min_qod_int) != 1)
-            min_qod_int = MIN_QOD_DEFAULT;
-        }
-      else
-        {
-          filter_cacheable = FALSE;
-        }
-      point++;
-    }
-  filter_free (split);
-
-  cache_exists = filter_cacheable
-                 && report_counts_cache_exists (report, override, min_qod_int);
-  init_severity_data (&severity_data);
-  init_severity_data (&filtered_severity_data);
-
-  if (cache_exists && filter_cacheable)
-    {
-      /* Get unfiltered counts from cache. */
-      if (unfiltered_requested)
-        report_counts_from_cache (report, override, min_qod_int,
-                                  &severity_data);
-      if (filtered_requested)
-        report_counts_from_cache (report, override, min_qod_int,
-                                  &filtered_severity_data);
-    }
-  else
-    {
-      /* Recalculate. */
-      report_severity_data (report, host, get,
-                            unfiltered_requested
-                              ? &severity_data : NULL,
-                            filtered_requested
-                              ? &filtered_severity_data : NULL);
-    }
-
-  severity_data_level_counts (&severity_data,
-                              NULL, false_positives,
-                              logs, infos, warnings, holes);
-  severity_data_level_counts (&filtered_severity_data,
-                              NULL, filtered_false_positives,
-                              filtered_logs, filtered_infos,
-                              filtered_warnings, filtered_holes);
-
-  if (severity)
-    *severity = severity_data.max;
-  if (filtered_severity && filtered_requested)
-    *filtered_severity = filtered_severity_data.max;
-
-  if (filter_cacheable && !cache_exists)
-    {
-      if (unfiltered_requested)
-        cache_report_counts (report, override, 0, &severity_data);
-      if (filtered_requested)
-        cache_report_counts (report, override, min_qod_int,
-                             &filtered_severity_data);
-    }
-
-  cleanup_severity_data (&severity_data);
-  cleanup_severity_data (&filtered_severity_data);
+  report_level_counts (unfiltered_requested, filtered_requested,
+                       report, host, get, severity, filtered_severity,
+                       false_positives,
+                       logs, infos, warnings, holes,
+                       filtered_false_positives,
+                       filtered_logs, filtered_infos, filtered_warnings,
+                       filtered_holes);
 
   return 0;
 }
