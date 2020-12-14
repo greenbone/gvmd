@@ -21861,12 +21861,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                  ((CASE WHEN results.severity"
             "                              > " G_STRINGIFY
                                                              (SEVERITY_LOG)
-            "                    THEN (SELECT"
-            "                           CAST (cvss_base"
-            "                                 AS double precision)"
-            "                          FROM nvts"
-            "                          WHERE nvts.oid"
-            "                                = results.nvt)"
+            "                    THEN CAST (nvts.cvss_base"
+            "                               AS double precision)"
             "                    ELSE results.severity"
             "                    END),"
             "                   results.severity),"
@@ -21875,12 +21871,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "          coalesce ((CASE WHEN results.severity"
             "                               > " G_STRINGIFY
                                                               (SEVERITY_LOG)
-            "                     THEN (SELECT"
-            "                           CAST (cvss_base"
-            "                                 AS double precision)"
-            "                           FROM nvts"
-            "                           WHERE nvts.oid"
-            "                                 = results.nvt)"
+            "                     THEN CAST (nvts.cvss_base"
+            "                                AS double precision)"
             "                     ELSE results.severity"
             "                     END),"
             "                    results.severity))";
@@ -21888,10 +21880,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
         lateral
           = "coalesce ((CASE WHEN results.severity"
             "                     > " G_STRINGIFY (SEVERITY_LOG)
-            "                THEN (SELECT CAST (cvss_base"
-            "                                   AS double precision)"
-            "                      FROM nvts"
-            "                      WHERE nvts.oid = results.nvt)"
+            "                THEN CAST (nvts.cvss_base"
+            "                           AS double precision)"
             "                ELSE results.severity"
             "                END),"
             "          results.severity)";
@@ -21936,8 +21926,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   opts = result_iterator_opts_table (apply_overrides,
                                      dynamic_severity);
-  extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
-                                  lateral, opts);
+  if (dynamic_severity)
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                    " ON results.nvt = nvts.oid,"
+                                    " LATERAL %s AS lateral_severity%s",
+                                    lateral, opts);
+  else
+    extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
+                                    lateral, opts);
   g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
