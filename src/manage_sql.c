@@ -21727,6 +21727,271 @@ results_extra_where (int trash, report_t report, const gchar* host,
  *         -1 error.
  */
 static int
+report_count_levels (const get_data_t *get,
+                     report_t report, const char* host, double* severity,
+                     int *false_positives,
+                     int *logs, int *lows, int *mediums, int *highs)
+{
+  iterator_t iterator;
+  column_t columns[7];
+  static column_t static_filterable_columns[]
+    = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
+  static column_t static_filterable_columns_no_cert[]
+    = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE_NO_CERT;
+  static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  column_t *filterable_columns;
+  int ret, apply_overrides;
+  gchar *filter;
+  gchar *extra_tables, *extra_where, *extra_where_single, *opts;
+  gchar *owned_clause, *with_clause, *with_clauses;
+  char *user_id;
+  const gchar *lateral;
+
+  assert (report);
+
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+
+  if (manage_cert_loaded ())
+    filterable_columns = column_array_copy (static_filterable_columns);
+  else
+    filterable_columns = column_array_copy (static_filterable_columns_no_cert);
+  column_array_set
+   (filterable_columns,
+    "type",
+    apply_overrides
+     /* Overrides. */
+     ? g_strdup ("severity_to_type"
+                 " ((SELECT new_severity FROM result_new_severities"
+                 "   WHERE result_new_severities.result = results.id"
+                 "   AND result_new_severities.user = opts.user_id"
+                 "   LIMIT 1))")
+     /* No overrides. */
+     : g_strdup ("severity_to_type"
+                 " (current_severity (results.severity,"
+                 "                    results.nvt))"));
+
+  if (apply_overrides)
+    lateral
+      = "coalesce ((SELECT new_severity FROM valid_overrides"
+        "           WHERE valid_overrides.result_nvt"
+        "                 = results.result_nvt"
+        "           AND (valid_overrides.result = 0"
+        "                OR valid_overrides.result"
+        "                   = results.id)"
+        "           AND (valid_overrides.hosts is NULL"
+        "                OR valid_overrides.hosts = ''"
+        "                OR hosts_contains"
+        "                    (valid_overrides.hosts,"
+        "                     results.host))"
+        "           AND (valid_overrides.port is NULL"
+        "                OR valid_overrides.port = ''"
+        "                OR valid_overrides.port"
+        "                   = results.port)"
+        "           AND severity_matches_ov"
+        "                (coalesce"
+        "                  ((CASE WHEN results.severity"
+        "                              > " G_STRINGIFY
+                                                         (SEVERITY_LOG)
+        "                    THEN (SELECT"
+        "                           CAST (cvss_base"
+        "                                 AS double precision)"
+        "                          FROM nvts"
+        "                          WHERE nvts.oid"
+        "                                = results.nvt)"
+        "                    ELSE results.severity"
+        "                    END),"
+        "                   results.severity),"
+        "                 valid_overrides.severity)"
+        "           LIMIT 1),"
+        "          coalesce ((CASE WHEN results.severity"
+        "                               > " G_STRINGIFY
+                                                          (SEVERITY_LOG)
+        "                     THEN (SELECT"
+        "                           CAST (cvss_base"
+        "                                 AS double precision)"
+        "                           FROM nvts"
+        "                           WHERE nvts.oid"
+        "                                 = results.nvt)"
+        "                     ELSE results.severity"
+        "                     END),"
+        "                    results.severity))";
+  else
+    lateral
+      = "coalesce ((CASE WHEN results.severity"
+        "                     > " G_STRINGIFY (SEVERITY_LOG)
+        "                THEN (SELECT CAST (cvss_base"
+        "                                   AS double precision)"
+        "                      FROM nvts"
+        "                      WHERE nvts.oid = results.nvt)"
+        "                ELSE results.severity"
+        "                END),"
+        "          results.severity)";
+
+  columns[0].select = "count(*) FILTER (WHERE lateral_severity = -1)";
+  columns[0].filter = "false";
+  columns[0].type = KEYWORD_TYPE_INTEGER;
+
+  columns[1].select = "count(*) FILTER (WHERE lateral_severity = 0)";
+  columns[1].filter = "log";
+  columns[1].type = KEYWORD_TYPE_INTEGER;
+
+  columns[2].select = "count(*) FILTER (WHERE lateral_severity > 0 AND lateral_severity < 4)";
+  columns[2].filter = "low";
+  columns[2].type = KEYWORD_TYPE_INTEGER;
+
+  columns[3].select = "count(*) FILTER (WHERE lateral_severity >= 4 AND lateral_severity < 7)";
+  columns[3].filter = "medium";
+  columns[3].type = KEYWORD_TYPE_INTEGER;
+
+  columns[4].select = "count(*) FILTER (WHERE lateral_severity >= 7 AND lateral_severity <= 10)";
+  columns[4].filter = "high";
+  columns[4].type = KEYWORD_TYPE_INTEGER;
+
+  columns[5].select = "max (lateral_severity)";
+  columns[5].filter = "severity";
+  columns[5].type = KEYWORD_TYPE_DOUBLE;
+
+  columns[6].select = NULL;
+  columns[6].filter = NULL;
+  columns[6].type = KEYWORD_TYPE_UNKNOWN;
+
+  opts = result_iterator_opts_table (apply_overrides);
+  extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
+                                  lateral, opts);
+  g_free (opts);
+
+  extra_where = results_extra_where (get->trash, report, host,
+                                     apply_overrides,
+                                     filter ? filter : get->filter,
+                                     "lateral_severity");
+
+  extra_where_single = results_extra_where (get->trash, report, host,
+                                            apply_overrides,
+                                            "min_qod=0",
+                                            "lateral_severity");
+
+  free (filter);
+
+  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                        current_credentials.uuid);
+  owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
+  free (user_id);
+  with_clauses = g_strdup_printf
+                  ("%s%s"
+                   " valid_overrides"
+                   " AS (SELECT result_nvt, hosts, new_severity, port,"
+                   "            severity, result"
+                   "     FROM overrides"
+                   "     WHERE %s"
+                   /*    Only use if override's NVT is in report. */
+                   "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                   "                 WHERE report = %llu"
+                   "                 AND result_nvt"
+                   "                     = overrides.result_nvt)"
+                   "     AND (task = 0"
+                   "          OR task = (SELECT reports.task"
+                   "                     FROM reports"
+                   "                     WHERE reports.id = %llu))"
+                   "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                   "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                   "           creation_time DESC)"
+                   " ",
+                   with_clause
+                    /* Skip the leading "WITH" because init_get..
+                     * below will add it.  A bit of a hack, but
+                     * it's the only place that needs this. */
+                    ? with_clause + 4
+                    : "",
+                   with_clause ? "," : "",
+                   owned_clause,
+                   report,
+                   report);
+  g_free (with_clause);
+  g_free (owned_clause);
+
+  table_order_if_sort_not_specified = 1;
+  ignore_max_rows_per_page = 1;
+  ret = init_get_iterator2_with (&iterator,
+                                 "result",
+                                 get,
+                                 /* SELECT columns. */
+                                 columns,
+                                 NULL,
+                                 /* Filterable columns not in SELECT columns. */
+                                 filterable_columns,
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 extra_tables,
+                                 extra_where,
+                                 extra_where_single,
+                                 TRUE,
+                                 report ? TRUE : FALSE,
+                                 NULL,
+                                 with_clauses,
+                                 1);
+  ignore_max_rows_per_page = 0;
+  table_order_if_sort_not_specified = 0;
+  column_array_free (filterable_columns);
+  g_free (with_clauses);
+  g_free (extra_tables);
+  g_free (extra_where);
+  g_free (extra_where_single);
+
+
+  if (false_positives)
+    *false_positives = 0;
+  if (logs)
+    *logs = 0;
+  if (lows)
+    *lows = 0;
+  if (mediums)
+    *mediums = 0;
+  if (highs)
+    *highs = 0;
+  if (next (&iterator))
+    {
+      if (false_positives)
+        *false_positives = iterator_int (&iterator, 0);
+      if (logs)
+        *logs = iterator_int (&iterator, 1);
+      if (lows)
+        *lows = iterator_int (&iterator, 2);
+      if (mediums)
+        *mediums = iterator_int (&iterator, 3);
+      if (highs)
+        *highs = iterator_int (&iterator, 4);
+
+      *severity = iterator_double (&iterator, 5);
+    }
+  cleanup_iterator (&iterator);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise the severity-only result iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ * @param[in]  report      Report to restrict returned results to.
+ * @param[in]  host        Host to limit results to.
+ * @param[in]  extra_order Extra text for ORDER term in SQL.
+ *
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
+ *         -1 error.
+ */
+static int
 init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
@@ -23605,18 +23870,26 @@ report_level_counts (int unfiltered_requested, int filtered_requested,
                      int *filtered_logs, int *filtered_lows,
                      int *filtered_mediums, int *filtered_highs)
 {
-  severity_data_t severity_data, filtered_severity_data;
+  severity_data_t filtered_severity_data;
+  gchar *filter;
+  int apply_overrides;
 
-  init_severity_data (&severity_data);
-  init_severity_data (&filtered_severity_data);
+  if (report == 0)
+    return;
 
-  report_severity_data (report, host, get,
-                        unfiltered_requested
-                          ? &severity_data : NULL,
-                        filtered_requested
-                          ? &filtered_severity_data : NULL);
+  filter = NULL;
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    filter = filter_term (get->filt_id);
+
+  apply_overrides = filter_term_apply_overrides (filter ? filter : get->filter);
 
   /* Filtered. */
+
+  init_severity_data (&filtered_severity_data);
+
+  report_severity_data (report, host, get, NULL,
+                        filtered_requested
+                          ? &filtered_severity_data : NULL);
 
   severity_data_level_counts (&filtered_severity_data,
                               NULL, filtered_false_positives,
@@ -23630,13 +23903,16 @@ report_level_counts (int unfiltered_requested, int filtered_requested,
 
   /* Regular. */
 
-  severity_data_level_counts (&severity_data,
-                              NULL, false_positives,
-                              logs, lows, mediums, highs);
-  if (severity)
-    *severity = severity_data.max;
+  if (unfiltered_requested)
+    {
+      get_data_t *get_all;
 
-  cleanup_severity_data (&severity_data);
+      get_all = report_results_get_data (1, -1, apply_overrides, 0);
+      report_count_levels (get_all, report, host, severity,
+                           false_positives, logs, lows, mediums, highs);
+      get_data_reset (get_all);
+      free (get_all);
+    }
 }
 
 /**
