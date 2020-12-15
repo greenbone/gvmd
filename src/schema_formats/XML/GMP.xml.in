@@ -8044,13 +8044,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>Optional tuples of sort criteria</summary>
       <pattern>
         <attrib>
-          <name>sort_field</name>
+          <name>field</name>
           <summary>The column to sort the aggregated rows by.
-          With a subgroup column, groups will be sorted by the group_column first.</summary>
+          With a subgroup column, groups will be sorted by the group_column first</summary>
           <type>text</type>
         </attrib>
         <attrib>
-          <name>sort_order</name>
+          <name>order</name>
           <summary>The order to sort by</summary>
           <type>
             <alts>
@@ -8060,7 +8060,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </type>
         </attrib>
         <attrib>
-          <name>sort_stat</name>
+          <name>stat</name>
           <summary>The statistic to sort the aggregated rows by</summary>
           <type>
             <alts>

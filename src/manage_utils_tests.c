@@ -148,6 +148,46 @@ Ensure (manage_utils, icalendar_next_time_from_string_tz)
   assert_that (verify_next (next, EPOCH_2020JAN1_HAR, now, 2 * 60), is_equal_to (1));
 }
 
+/* Hosts test */
+
+Ensure (manage_utils, clean_hosts_string_zeroes)
+{
+  gchar *clean_str;
+
+  // Simple IP address
+  clean_str = clean_hosts_string ("000.001.002.003");
+  assert_that (clean_str, is_equal_to_string ("0.1.2.3"));
+  g_free (clean_str);
+
+  // Long form range
+  clean_str = clean_hosts_string ("000.001.002.003-000.001.010.100");
+  assert_that (clean_str, is_equal_to_string ("0.1.2.3-0.1.10.100"));
+  g_free (clean_str);
+
+  // Short form range
+  clean_str = clean_hosts_string ("000.001.002.003-004");
+  assert_that (clean_str, is_equal_to_string ("0.1.2.3-4"));
+  g_free (clean_str);
+
+  // CIDR notation range
+  clean_str = clean_hosts_string ("000.001.002.003/004");
+  assert_that (clean_str, is_equal_to_string ("0.1.2.3/4"));
+  g_free (clean_str);
+
+  // Hostname with multiple zeroes (should stay the same)
+  clean_str = clean_hosts_string ("server001.example.com");
+  assert_that (clean_str, is_equal_to_string ("server001.example.com"));
+  g_free (clean_str);
+
+  // List of addresses and ranges
+  clean_str = clean_hosts_string ("000.001.002.003,  040.050.060.070-80,"
+                                  " 123.012.001.001-123.012.001.010");
+  assert_that (clean_str,
+               is_equal_to_string ("0.1.2.3, 40.50.60.70-80,"
+                                   " 123.12.1.1-123.12.1.10"));
+  g_free (clean_str);
+}
+
 /* Test suite. */
 
 int
@@ -163,6 +203,8 @@ main (int argc, char **argv)
 
   add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_utc);
   add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_tz);
+  
+  add_test_with_context (suite, manage_utils, clean_hosts_string_zeroes);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());

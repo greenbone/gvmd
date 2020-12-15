@@ -228,6 +228,9 @@ init_param_option_iterator (iterator_t*, report_format_param_t, int,
 const char*
 param_option_iterator_value (iterator_t *);
 
+gboolean
+report_formats_feed_dir_exists ();
+
 void
 manage_sync_report_formats ();
 
