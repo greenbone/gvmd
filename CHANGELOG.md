@@ -50,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add command line options db-host and db-port [#1308](https://github.com/greenbone/gvmd/pull/1308)
 - Add missing config and target to modify_task GMP doc [#1310](https://github.com/greenbone/gvmd/pull/1310)
 - Add version for NVTs and CVEs in make_osp_result [#1335](https://github.com/greenbone/gvmd/pull/1335)
+- Add check if gvmd data feed dir exists [#1360](https://github.com/greenbone/gvmd/pull/1360) [#1362](https://github.com/greenbone/gvmd/pull/1362)
 
 ### Changed
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
@@ -77,12 +78,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Switch result filter column 'task' from task ID to name task name [#1317](https://github.com/greenbone/gvmd/pull/1317)
 - Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 - Fix GMP doc text of `active` elem for notes and overrides [#1323](https://github.com/greenbone/gvmd/pull/1323)
-- Allow config to sync even if NVT family is not available [#1347](https://github.com/greenbone/gvmd/pull/1347)
 - Move feed object in trash checks to startup [#1325](https://github.com/greenbone/gvmd/pull/1325)
-- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
 - Do not inherit settings from deleted users [#1328](https://github.com/greenbone/gvmd/pull/1328)
 - Delete TLS certificate sources when deleting users [#1334](https://github.com/greenbone/gvmd/pull/1334)
 - Fix SQL errors in SCAP and CERT update [#1343](https://github.com/greenbone/gvmd/pull/1343)
+- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
+- Account for -1 of orphans when deleting permission [#1345](https://github.com/greenbone/gvmd/pull/1345)
+- Allow config to sync even if NVT family is not available [#1347](https://github.com/greenbone/gvmd/pull/1347)
+- Check private key when modifying credential [#1351](https://github.com/greenbone/gvmd/pull/1351)
+- Clean up hosts strings before using them [#1352](https://github.com/greenbone/gvmd/pull/1352)
+- Improve SCP username and destination path handling [#1350](https://github.com/greenbone/gvmd/pull/1350)
+- Fix response memory handling in handle_osp_scan [#1364](https://github.com/greenbone/gvmd/pull/1364)
+- Allow config to sync even if NVT family is not available [#1366](https://github.com/greenbone/gvmd/pull/1366)
+- Delete report format dirs last when deleting a user [#1368](https://github.com/greenbone/gvmd/pull/1368)
+- Fix sorting in get_aggregates and its documentation [#1375](https://github.com/greenbone/gvmd/pull/1375)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
