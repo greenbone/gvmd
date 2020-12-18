@@ -132,6 +132,9 @@ port_list_target_iterator_name (iterator_t *);
 int
 port_list_target_iterator_readable (iterator_t *);
 
+gboolean
+port_lists_feed_dir_exists ();
+
 void
 manage_sync_port_lists ();
 

@@ -1824,7 +1824,6 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
   while (1)
     {
-      char *report_xml = NULL;
       int run_status, progress;
       osp_scan_status_t osp_scan_status;
 
@@ -1837,7 +1836,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
         }
 
       progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                      key_priv, 0, 0, &report_xml);
+                                      key_priv, 0, 0, NULL);
       if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
@@ -1854,10 +1853,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       else
         {
           /* Get the full OSP report. */
+          char *report_xml = NULL;
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
                                           key_priv, 1, 1, &report_xml);
           if (progress < 0 || progress > 100)
             {
+              g_free (report_xml);
               result_t result = make_osp_result
                                  (task, "", "", "",
                                   threat_message_type ("Error"),
@@ -2407,6 +2408,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
+  gchar *clean_hosts, *clean_exclude_hosts;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
@@ -2445,6 +2447,9 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   hosts_str = target_hosts (target);
   ports_str = target_port_range (target);
   exclude_hosts_str = target_exclude_hosts (target);
+  
+  clean_hosts = clean_hosts_string (hosts_str);
+  clean_exclude_hosts = clean_hosts_string (exclude_hosts_str);
 
   if (target_alive_tests (target) > 0)
    alive_test = target_alive_tests (target);
@@ -2466,7 +2471,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       exclude_hosts_str = new_exclude_hosts;
     }
 
-  osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str,
+  osp_target = osp_target_new (clean_hosts, ports_str, clean_exclude_hosts,
                                alive_test, reverse_lookup_unify,
                                reverse_lookup_only);
   if (finished_hosts_str)
@@ -2476,6 +2481,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   free (ports_str);
   free (exclude_hosts_str);
   free (finished_hosts_str);
+  g_free (clean_hosts);
+  g_free (clean_exclude_hosts);
   osp_targets = g_slist_append (NULL, osp_target);
 
   ssh_credential = target_osp_ssh_credential (target);
@@ -4821,6 +4828,8 @@ feed_sync_required ()
   return FALSE;
 }
 
+
+
 /**
  * @brief Perform any syncing that is due.
  *
@@ -4829,10 +4838,12 @@ feed_sync_required ()
  * @param[in]  sigmask_current  Sigmask to restore in child.
  * @param[in]  fork_update_nvt_cache  Function that forks a child that syncs
  *                                    the NVTS.  Child does not return.
+ * @param[in]  try_gvmd_data_sync  Whether to try to sync gvmd data objects.
  */
 void
 manage_sync (sigset_t *sigmask_current,
-             int (*fork_update_nvt_cache) ())
+             int (*fork_update_nvt_cache) (),
+             gboolean try_gvmd_data_sync)
 {
   lockfile_t lockfile;
 
@@ -4851,9 +4862,12 @@ manage_sync (sigset_t *sigmask_current,
         }
     }
 
-  manage_sync_configs ();
-  manage_sync_port_lists ();
-  manage_sync_report_formats ();
+  if (try_gvmd_data_sync)
+    {
+      manage_sync_configs ();
+      manage_sync_port_lists ();
+      manage_sync_report_formats ();
+    }
 }
 
 /**
@@ -5784,6 +5798,20 @@ sort_data_free (sort_data_t *sort_data)
 
 
 /* Feeds. */
+
+/**
+ * @brief Tests if the gvmd data feed directory and its subdirectories exist.
+ *
+ * @return TRUE if the directory exists.
+ */
+gboolean
+manage_gvmd_data_feed_dirs_exist ()
+{
+  return g_file_test (GVMD_FEED_DIR, G_FILE_TEST_EXISTS)
+         && configs_feed_dir_exists ()
+         && port_lists_feed_dir_exists ()
+         && report_formats_feed_dir_exists ();
+}
 
 /**
  * @brief Get the feed lock file path.
