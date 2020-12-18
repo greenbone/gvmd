@@ -52,14 +52,20 @@ gchar *
 apply_report_format (gchar *, gchar *, gchar *, gchar *,
                      GList **);
 
+gboolean
+delete_report_formats_user (user_t, iterator_t *);
+
 void
-delete_report_formats_user (user_t);
+delete_report_format_dirs_user (const gchar *, iterator_t *);
 
 int
 empty_trashcan_report_formats ();
 
+gboolean
+inherit_report_formats (user_t, user_t, iterator_t *);
+
 void
-inherit_report_formats (user_t, user_t);
+inherit_report_format_dir (const gchar *, const gchar *, user_t);
 
 void
 update_report_format (report_format_t, const gchar *, const gchar *,
