@@ -2554,7 +2554,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   while (next (&families))
     {
       const char *family = family_iterator_name (&families);
-      if (family)
+      g_warning ("%s: FAM %s", __func__, family);
+      if (family && config_family_entire_and_growing (config, family))
+        {
+          g_warning ("%s:     ADD FAM", __func__);
+        }
+      else if (family)
         {
           iterator_t nvts;
           init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);

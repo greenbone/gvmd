@@ -473,4 +473,7 @@ add_role_permission_resource (const gchar *, const gchar *, const gchar *,
 void
 create_view_vulns ();
 
+int
+config_family_entire_and_growing (config_t, const char*);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
