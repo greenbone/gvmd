@@ -450,13 +450,13 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
 DEF_ACCESS (family_iterator_name, 0);
 
 /**
- * @brief Get whether an NVT selector family is growing.
+ * @brief Get whether an NVT selector selects every NVT in a family.
  *
  * @param[in]  selector  NVT selector.
  * @param[in]  family    Family name.
  * @param[in]  all       True if selector is an "all" selector, else 0.
  *
- * @return 1 growing, 0 static.
+ * @return 1 yes, 0 no.
  */
 static int
 nvt_selector_entire_and_growing (const char *selector,
@@ -4207,11 +4207,10 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
 }
 
 /**
- * @brief Set the NVT's selected for a single family of a config.
+ * @brief Get whether a config selects every NVT in a given family.
  *
- * @param[in]  config_id      Config.
- * @param[in]  family         Family name.
- * @param[in]  selected_nvts  NVT's.
+ * @param[in]  config      Config.
+ * @param[in]  family      Family name.
  *
  * @return 0 no, 1 yes, -1 error.
  */
