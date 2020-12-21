@@ -2555,7 +2555,7 @@ migrate_239_to_240 ()
 
   /* Table results also got a score column, for extended severities. */
 
-  sql ("DROP VIEW vulns;");
+  sql ("DROP VIEW IF EXISTS vulns;");
 
   /* Set the database version to 240. */
 

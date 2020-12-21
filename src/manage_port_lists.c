@@ -312,6 +312,11 @@ sync_port_lists_with_feed ()
   GDir *dir;
   const gchar *port_list_path;
 
+  /* Test if base feed directory exists */
+
+  if (port_lists_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Setup owner. */
 
   setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
@@ -364,6 +369,17 @@ sync_port_lists_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the port lists feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+port_lists_feed_dir_exists ()
+{
+  return g_file_test (feed_dir_port_lists (), G_FILE_TEST_EXISTS);
 }
 
 /**

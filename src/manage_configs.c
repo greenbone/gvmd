@@ -379,6 +379,11 @@ sync_configs_with_feed ()
   const gchar *config_path;
   gchar *nvt_feed_version;
 
+  /* Test if base feed directory exists */
+
+  if (configs_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Only sync if NVTs are up to date. */
 
   nvt_feed_version = nvts_feed_version ();
@@ -441,6 +446,17 @@ sync_configs_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the configs feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+configs_feed_dir_exists ()
+{
+  return g_file_test (feed_dir_configs (), G_FILE_TEST_EXISTS);
 }
 
 /**
