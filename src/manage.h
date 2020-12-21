@@ -1085,6 +1085,7 @@ user_has_super (const char *, user_t);
   " 'HP-UX Local Security Checks',"                \
   " 'Huawei EulerOS Local Security Checks',"       \
   " 'JunOS Local Security Checks',"                \
+  " 'Local Security Checks: EulerOS',"             \
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
@@ -1991,6 +1992,9 @@ typedef enum
   CREDENTIAL_FORMAT_ERROR = -1  /// Error / Invalid format
 } credential_format_t;
 
+int
+check_private_key (const char *, const char *);
+
 gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 
@@ -2677,7 +2681,7 @@ void
 set_scheduled_user_uuid (const gchar* uuid);
 
 void
-manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
 
 int
 manage_schedule (manage_connection_forker_t,
@@ -3642,6 +3646,12 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 #define GVMD_DATA_FEED 4
+
+gboolean
+manage_gvmd_data_feed_dir_exists (const char *);
+
+gboolean
+manage_gvmd_data_feed_dirs_exist ();
 
 const gchar *
 get_feed_lock_path ();

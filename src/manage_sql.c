@@ -51,6 +51,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glib/gstdio.h>
+#include <gnutls/x509.h>
 #include <malloc.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -5272,7 +5273,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                       order_column = g_strdup_printf ("max (aggregate_max_%d)",
                                                       index);
                     else if (strcmp (sort_stat, "mean") == 0)
-                      order_column = g_strdup_printf ("sum (aggregate_avg_%d)",
+                      order_column = g_strdup_printf ("sum (aggregate_sum_%d)"
+                                                      " / sum(aggregate_count)",
                                                       index);
                     else
                       order_column = g_strdup_printf ("%s (aggregate_%s_%d)",
@@ -6707,7 +6709,7 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
               return 18;
             }
 
-          if (strchr (username, '@') || strchr (username, ':'))
+          if (strchr (username, ':'))
             {
               g_free (username);
               return 18;
@@ -21790,9 +21792,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *extra_where_single, *opts;
-  gchar *owned_clause, *with_clause, *with_clauses;
-  char *user_id;
+  gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clauses;
   const gchar *lateral;
 
   assert (report);
@@ -21863,12 +21863,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                  ((CASE WHEN results.severity"
             "                              > " G_STRINGIFY
                                                              (SEVERITY_LOG)
-            "                    THEN (SELECT"
-            "                           CAST (cvss_base"
-            "                                 AS double precision)"
-            "                          FROM nvts"
-            "                          WHERE nvts.oid"
-            "                                = results.nvt)"
+            "                    THEN CAST (nvts.cvss_base"
+            "                               AS double precision)"
             "                    ELSE results.severity"
             "                    END),"
             "                   results.severity),"
@@ -21877,12 +21873,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "          coalesce ((CASE WHEN results.severity"
             "                               > " G_STRINGIFY
                                                               (SEVERITY_LOG)
-            "                     THEN (SELECT"
-            "                           CAST (cvss_base"
-            "                                 AS double precision)"
-            "                           FROM nvts"
-            "                           WHERE nvts.oid"
-            "                                 = results.nvt)"
+            "                     THEN CAST (nvts.cvss_base"
+            "                                AS double precision)"
             "                     ELSE results.severity"
             "                     END),"
             "                    results.severity))";
@@ -21890,10 +21882,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
         lateral
           = "coalesce ((CASE WHEN results.severity"
             "                     > " G_STRINGIFY (SEVERITY_LOG)
-            "                THEN (SELECT CAST (cvss_base"
-            "                                   AS double precision)"
-            "                      FROM nvts"
-            "                      WHERE nvts.oid = results.nvt)"
+            "                THEN CAST (nvts.cvss_base"
+            "                           AS double precision)"
             "                ELSE results.severity"
             "                END),"
             "          results.severity)";
@@ -21938,8 +21928,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   opts = result_iterator_opts_table (apply_overrides,
                                      dynamic_severity);
-  extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
-                                  lateral, opts);
+  if (dynamic_severity)
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                    " ON results.nvt = nvts.oid,"
+                                    " LATERAL %s AS lateral_severity%s",
+                                    lateral, opts);
+  else
+    extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
+                                    lateral, opts);
   g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
@@ -21955,42 +21951,50 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   free (filter);
 
-  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
-                        current_credentials.uuid);
-  owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
-  free (user_id);
-  with_clauses = g_strdup_printf
-                  ("%s%s"
-                   " valid_overrides"
-                   " AS (SELECT result_nvt, hosts, new_severity, port,"
-                   "            severity, result"
-                   "     FROM overrides"
-                   "     WHERE %s"
-                   /*    Only use if override's NVT is in report. */
-                   "     AND EXISTS (SELECT * FROM result_nvt_reports"
-                   "                 WHERE report = %llu"
-                   "                 AND result_nvt"
-                   "                     = overrides.result_nvt)"
-                   "     AND (task = 0"
-                   "          OR task = (SELECT reports.task"
-                   "                     FROM reports"
-                   "                     WHERE reports.id = %llu))"
-                   "     AND ((end_time = 0) OR (end_time >= m_now ()))"
-                   "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
-                   "           creation_time DESC)"
-                   " ",
-                   with_clause
-                    /* Skip the leading "WITH" because init_get..
-                     * below will add it.  A bit of a hack, but
-                     * it's the only place that needs this. */
-                    ? with_clause + 4
-                    : "",
-                   with_clause ? "," : "",
-                   owned_clause,
-                   report,
-                   report);
-  g_free (with_clause);
-  g_free (owned_clause);
+  if (apply_overrides)
+    {
+      gchar *owned_clause, *with_clause;
+      char *user_id;
+
+      user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                            current_credentials.uuid);
+      owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
+      free (user_id);
+      with_clauses = g_strdup_printf
+                      ("%s%s"
+                       " valid_overrides"
+                       " AS (SELECT result_nvt, hosts, new_severity, port,"
+                       "            severity, result"
+                       "     FROM overrides"
+                       "     WHERE %s"
+                       /*    Only use if override's NVT is in report. */
+                       "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                       "                 WHERE report = %llu"
+                       "                 AND result_nvt"
+                       "                     = overrides.result_nvt)"
+                       "     AND (task = 0"
+                       "          OR task = (SELECT reports.task"
+                       "                     FROM reports"
+                       "                     WHERE reports.id = %llu))"
+                       "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                       "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                       "           creation_time DESC)"
+                       " ",
+                       with_clause
+                        /* Skip the leading "WITH" because init_get..
+                         * below will add it.  A bit of a hack, but
+                         * it's the only place that needs this. */
+                        ? with_clause + 4
+                        : "",
+                       with_clause ? "," : "",
+                       owned_clause,
+                       report,
+                       report);
+      g_free (with_clause);
+      g_free (owned_clause);
+    }
+  else
+    with_clauses = NULL;
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
@@ -33247,6 +33251,48 @@ check_db_encryption_key ()
 }
 
 /**
+ * @brief Check that a string represents a valid Private Key.
+ *
+ * @param[in]  key_str      Private Key string.
+ * @param[in]  key_phrase   Private Key passphrase.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+int
+check_private_key (const char *key_str, const char *key_phrase)
+{
+  gnutls_x509_privkey_t key;
+  gnutls_datum_t data;
+  int ret;
+
+  assert (key_str);
+  if (gnutls_x509_privkey_init (&key))
+    return 1;
+  data.size = strlen (key_str);
+  data.data = (void *) g_strdup (key_str);
+  ret = gnutls_x509_privkey_import2 (key, &data, GNUTLS_X509_FMT_PEM,
+                                     key_phrase, 0);
+  if (ret)
+    {
+      gchar *public_key;
+      public_key = gvm_ssh_public_from_private (key_str, key_phrase);
+
+      if (public_key == NULL)
+        {
+          gnutls_x509_privkey_deinit (key);
+          g_free (data.data);
+          g_message ("%s: import failed: %s",
+                     __func__, gnutls_strerror (ret));
+          return 1;
+        }
+      g_free (public_key);
+    }
+  g_free (data.data);
+  gnutls_x509_privkey_deinit (key);
+  return 0;
+}
+
+/**
  * @brief Find a credential for a specific permission, given a UUID.
  *
  * @param[in]   uuid            UUID of credential.
@@ -34149,12 +34195,26 @@ modify_credential (const char *credential_id,
         {
           if (key_private_to_use || password)
             {
+              if (check_private_key (key_private_truncated
+                                      ? key_private_to_use
+                                      : credential_iterator_private_key
+                                         (&iterator),
+                                     password
+                                      ? password
+                                      : credential_iterator_password
+                                         (&iterator)))
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 8;
+                }
+
               set_credential_private_key
                 (credential,
                  key_private_truncated
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                password
+                 password
                   ? password
                   : credential_iterator_password (&iterator));
             }
@@ -43244,7 +43304,8 @@ delete_permission (const char *permission_id, int ultimate)
     cache_permissions_for_resource (resource_type, resource, NULL);
 
   /* Update Reports cache */
-  if (resource_type && resource && strcmp (resource_type, "override") == 0)
+  if (resource_type && (resource > 0) && strcmp (resource_type, "override")
+      == 0)
     {
       reports = reports_for_override (resource);
     }
@@ -50884,6 +50945,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   user_t user, inheritor;
   get_data_t get;
   char *current_uuid, *feed_owner_id;
+  gboolean has_rows;
+  iterator_t rows;
+  gchar *deleted_user_id;
 
   assert (user_id_arg || name_arg);
 
@@ -51047,7 +51111,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (inheritor)
     {
-      gchar *deleted_user_id, *deleted_user_name;
+      gchar *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
 
       /* Transfer ownership of objects to the inheritor. */
@@ -51083,7 +51147,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
              real_inheritor_name, real_inheritor_id,
              deleted_user_name, deleted_user_id);
 
-      g_free (deleted_user_id);
       g_free (deleted_user_name);
       g_free (real_inheritor_id);
       g_free (real_inheritor_name);
@@ -51122,7 +51185,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_port_lists (user, inheritor);
-      inherit_report_formats (user, inheritor);
 
       sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -51183,6 +51245,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      /* Report Formats. */
+
+      has_rows = inherit_report_formats (user, inheritor, &rows);
+
       /* Delete user. */
 
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
@@ -51194,6 +51260,21 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
+
+      /* Very last: report formats dirs. */
+
+      if (deleted_user_id == NULL)
+        g_warning ("%s: deleted_user_id NULL, skipping dirs", __func__);
+      else if (has_rows)
+        do
+        {
+          inherit_report_format_dir (iterator_string (&rows, 0),
+                                     deleted_user_id,
+                                     inheritor);
+        } while (next (&rows));
+
+      g_free (deleted_user_id);
+      cleanup_iterator (&rows);
 
       sql_commit ();
 
@@ -51424,7 +51505,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 9;
     }
 
-  /* Report formats (used by alerts). */
+  /* Check report formats (used by alerts). */
   if (user_resources_in_use (user,
                              "report_formats",
                              report_format_in_use,
@@ -51434,7 +51515,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  delete_report_formats_user (user);
 
   /* Delete credentials last because they can be used in various places */
 
@@ -51498,9 +51578,23 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
+  /* Delete report formats. */
+
+  has_rows = delete_report_formats_user (user, &rows);
+
   /* Delete user. */
 
+  deleted_user_id = user_uuid (user);
+
   sql ("DELETE FROM users WHERE id = %llu;", user);
+
+  /* Delete report format dirs. */
+
+  if (deleted_user_id)
+    delete_report_format_dirs_user (deleted_user_id, has_rows ? &rows : NULL);
+  else
+    g_warning ("%s: deleted_user_id NULL, skipping removal of report formats dir",
+               __func__);
 
   sql_commit ();
   return 0;
@@ -54918,7 +55012,7 @@ cache_permissions_for_resource (const char *type, resource_t resource,
 {
   int free_users;
 
-  if (type == NULL || resource == 0)
+  if (type == NULL || resource == 0 || resource == -1)
     return;
 
   if (cache_users == NULL)

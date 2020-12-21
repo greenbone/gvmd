@@ -377,6 +377,9 @@ is_feed_current () {
     fi
     remove_tmp_key
   else
+    # Sleep for five seconds (a previous feed might have been synced a few seconds before) to prevent
+    # IP blocking due to network equipment in between keeping the previous connection too long open.
+    sleep 5
     log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     eval "$RSYNC -ltvrP \"$COMMUNITY_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
     if [ $? -ne 0 ]
@@ -434,6 +437,9 @@ do_rsync_community_feed () {
   if [ -z "$RSYNC" ]; then
     log_err "rsync not found!"
   else
+    # Sleep for five seconds (after is_feed_current) to prevent IP blocking due to
+    # network equipment in between keeping the previous connection too long open.
+    sleep 5
     log_notice "Using rsync: $RSYNC"
     log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
     mkdir -p "$FEED_DIR"

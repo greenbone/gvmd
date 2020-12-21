@@ -183,6 +183,9 @@ void
 update_config_preference (const char *, const char *, const char *,
                           const char *, gboolean);
 
+gboolean
+configs_feed_dir_exists ();
+
 void
 manage_sync_configs ();
 

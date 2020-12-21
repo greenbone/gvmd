@@ -3953,24 +3953,17 @@ empty_trashcan_report_formats ()
  * @brief Change ownership of report formats, for user deletion.
  *
  * @param[in]  report_format_id  UUID of report format.
- * @param[in]  user              Current owner.
+ * @param[in]  user_id           UUID of current owner.
  * @param[in]  inheritor         New owner.
  */
-static void
-inherit_report_format_dir (const gchar *report_format_id, user_t user,
+void
+inherit_report_format_dir (const gchar *report_format_id, const gchar *user_id,
                            user_t inheritor)
 {
-  gchar *user_id, *inheritor_id, *old_dir, *new_dir;
+  gchar *inheritor_id, *old_dir, *new_dir;
 
-  g_debug ("%s: %s from %llu to %llu", __func__, report_format_id, user,
+  g_debug ("%s: %s from %s to %llu", __func__, report_format_id, user_id,
            inheritor);
-
-  user_id = user_uuid (user);
-  if (user_id == NULL)
-    {
-      g_warning ("%s: user_id NULL, skipping report format dir", __func__);
-      return;
-    }
 
   inheritor_id = user_uuid (inheritor);
   if (inheritor_id == NULL)
@@ -3991,7 +3984,6 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
                               report_format_id,
                               NULL);
 
-  g_free (user_id);
   g_free (inheritor_id);
 
   if (move_report_format_dir (old_dir, new_dir))
@@ -4008,58 +4000,38 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
  *
  * @param[in]  user       Current owner.
  * @param[in]  inheritor  New owner.
+ * @param[in]  rows       Iterator for inherited report formats, with next
+ *                        already called.
+ *
+ * @return TRUE if there is a row available, else FALSE.
  */
-void
-inherit_report_formats (user_t user, user_t inheritor)
+gboolean
+inherit_report_formats (user_t user, user_t inheritor, iterator_t *rows)
 {
-  iterator_t rows;
+  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
 
-  if (user == inheritor)
-    return;
-
-  init_iterator (&rows,
+  init_iterator (rows,
                  "UPDATE report_formats SET owner = %llu"
                  " WHERE owner = %llu"
                  " RETURNING uuid;",
                  inheritor, user);
-  while (next (&rows))
-    inherit_report_format_dir (iterator_string (&rows, 0), user, inheritor);
-  cleanup_iterator (&rows);
 
-  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
-       inheritor, user);
+  /* This executes the SQL. */
+  return next (rows);
 }
 
 /**
  * @brief Delete all report formats owned by a user.
  *
  * @param[in]  user  The user.
+ * @param[in]  rows  Trash report format ids.
+ *
+ * @return TRUE if there are rows in rows, else FALSE.
  */
-void
-delete_report_formats_user (user_t user)
+gboolean
+delete_report_formats_user (user_t user, iterator_t *rows)
 {
-  gchar *dir, *user_id;
-  iterator_t rows;
-
-  /* Remove trash report formats from trash directory. */
-
-  init_iterator (&rows,
-                 "SELECT id FROM report_formats_trash WHERE owner = %llu;",
-                 user);
-  while (next (&rows))
-    {
-      gchar *id;
-
-      id = g_strdup_printf ("%llu", iterator_int64 (&rows, 0));
-      dir = report_format_trash_dir (id);
-      g_free (id);
-      if (gvm_file_remove_recurse (dir))
-        g_warning ("%s: failed to remove dir %s, continuing anyway",
-                   __func__, dir);
-      g_free (dir);
-    }
-  cleanup_iterator (&rows);
-
   /* Remove report formats from db. */
 
   sql ("DELETE FROM report_format_param_options"
@@ -4086,20 +4058,52 @@ delete_report_formats_user (user_t user)
        "                         WHERE owner = %llu);",
        user);
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
-  sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+  init_iterator (rows,
+                 "DELETE FROM report_formats_trash WHERE owner = %llu"
+                 " RETURNING id;",
+                 user);
+
+  /* This executes the SQL. */
+  return next (rows);
+}
+
+/**
+ * @brief Delete all report formats owned by a user.
+ *
+ * @param[in]  user_id  UUID of user.
+ * @param[in]  rows     Trash report format ids if any, else NULL.  Cleaned up
+ *                      before returning.
+ */
+void
+delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
+{
+  gchar *dir;
+
+  /* Remove trash report formats from trash directory. */
+
+  if (rows)
+    {
+      do
+      {
+        gchar *id;
+
+        id = g_strdup_printf ("%llu", iterator_int64 (rows, 0));
+        dir = report_format_trash_dir (id);
+        g_free (id);
+        if (gvm_file_remove_recurse (dir))
+          g_warning ("%s: failed to remove dir %s, continuing anyway",
+                     __func__, dir);
+        g_free (dir);
+      } while (next (rows));
+      cleanup_iterator (rows);
+    }
 
   /* Remove user's regular report formats directory. */
-
-  user_id = user_uuid (user);
-  if (user_id == NULL)
-    g_warning ("%s: user_id NULL, skipping removal of report formats dir",
-               __func__);
 
   dir = g_build_filename (GVMD_STATE_DIR,
                           "report_formats",
                           user_id,
                           NULL);
-  g_free (user_id);
 
   if (g_file_test (dir, G_FILE_TEST_EXISTS)
       && gvm_file_remove_recurse (dir))
