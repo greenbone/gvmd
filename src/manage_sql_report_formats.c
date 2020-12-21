@@ -3451,9 +3451,8 @@ run_report_format_script (gchar *report_format_id,
                 }
 
               ret = system (command);
-              /* Ignore the shell command exit status, because we've not
-                * specified what it must be in the past. */
-              if (ret == -1)
+              /* Report scripts should return 0 since version 21.04 */
+              if (ret)
                 {
                   g_warning ("%s (child):"
                               " system failed with ret %i, %i, %s",
@@ -3551,9 +3550,8 @@ run_report_format_script (gchar *report_format_id,
       /* Just run the command as the current user. */
 
       ret = system (command);
-      /* Ignore the shell command exit status, because we've not
-        * specified what it must be in the past. */
-      if (ret == -1)
+      /* Report scripts should return 0 since version 21.04 */
+      if (ret)
         {
           g_warning ("%s: system failed with ret %i, %i, %s",
                       __func__,
