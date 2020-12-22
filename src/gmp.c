@@ -18358,6 +18358,13 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
             log_event_fail ("config", "Scan Config",
                             modify_config_data->config_id, "modified");
             goto modify_config_leave;
+          case 3:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "Attempt to modify NVT in whole-only family"));
+            log_event_fail ("config", "Scan Config",
+                            modify_config_data->config_id, "modified");
+            goto modify_config_leave;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",

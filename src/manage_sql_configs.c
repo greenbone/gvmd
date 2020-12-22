@@ -4103,13 +4103,32 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
 }
 
 /**
+ * @brief Check whether a family is "whole-only".
+ *
+ * @param[in]  family         Family name.
+ *
+ * @return 1 if whole-only, else 0.
+ */
+int
+family_whole_only (const gchar *family)
+{
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    if (strcmp (*whole, family) == 0)
+      return 1;
+  return 0;
+}
+
+/**
  * @brief Set the NVT's selected for a single family of a config.
  *
  * @param[in]  config_id      Config.
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
+ * @return 0 success, 1 config in use, 2 failed to find config, 3 whole-only
+ *         family, -1 error.
  */
 int
 manage_set_config_nvts (const gchar *config_id, const char* family,
@@ -4119,6 +4138,9 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
   char *selector;
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
+
+  if (family_whole_only (family))
+    return 3;
 
   sql_begin_immediate ();
 

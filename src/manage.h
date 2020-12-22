@@ -1099,6 +1099,20 @@ user_has_super (const char *, user_t);
   " 'Ubuntu Local Security Checks',"               \
   " 'Windows : Microsoft Bulletins'"
 
+/**
+ * @brief Whole only families.
+ */
+#define FAMILIES_WHOLE_ONLY                        \
+  { "CentOS Local Security Checks",                \
+    "Debian Local Security Checks",                \
+    "Fedora Local Security Checks",                \
+    "Huawei EulerOS Local Security Checks",        \
+    "Oracle Linux Local Security Checks",          \
+    "Red Hat Local Security Checks",               \
+    "SuSE Local Security Checks",                  \
+    "Ubuntu Local Security Checks",                \
+    NULL }
+
 gboolean
 find_result_with_permission (const char*, result_t*, const char *);
 
