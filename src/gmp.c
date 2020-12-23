@@ -18415,6 +18415,14 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
             log_event_fail ("config", "Scan Config",
                             modify_config_data->config_id, "modified");
             goto modify_config_leave;
+          case 3:
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("modify_config",
+                                "Whole-only families must include entire"
+                                " family and be growing"));
+            log_event_fail ("config", "Scan Config",
+                            modify_config_data->config_id, "modified");
+            goto modify_config_leave;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_config",

@@ -790,7 +790,8 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
+ * @return 0 success, 1 config in use, 2 failed to find config, 3 whole-only
+ *         families must be growing and include entire family, -1 error.
  */
 int
 manage_set_config_families (const gchar *config_id,
@@ -799,11 +800,21 @@ manage_set_config_families (const gchar *config_id,
                             GPtrArray* growing_families,
                             int grow_families)
 {
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
   config_t config;
   iterator_t families;
   gchar *quoted_selector;
   int constraining;
   char *selector;
+
+  /* Ensure that whole-only families include all NVTs and are growing. */
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    if (member (growing_all_families, *whole)
+        || member (static_all_families, *whole))
+      return 3;
+
+  /* Check the args. */
 
   sql_begin_immediate ();
 
