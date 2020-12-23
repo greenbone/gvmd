@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - In result iterator access severity directly if possible [#1321](https://github.com/greenbone/gvmd/pull/1321)
 - Change SCAP and CERT data to use new severity scoring [#1333](https://github.com/greenbone/gvmd/pull/1333) [#1357](https://github.com/greenbone/gvmd/pull/1357) [#1365](https://github.com/greenbone/gvmd/pull/1365)
 - Expect report format scripts to exit with code 0 [#1383](https://github.com/greenbone/gvmd/pull/1383)
+- Send entire families to ospd-openvas using VT_GROUP [#1384](https://github.com/greenbone/gvmd/pull/1384)
+- The internal list of current Local Security Checks for the 'Closed CVEs' feature was updated [#1381](https://github.com/greenbone/gvmd/pull/1381)
 
 ### Fixed
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
