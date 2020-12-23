@@ -4996,3 +4996,28 @@ check_db_configs ()
                  __func__);
     }
 }
+
+/**
+ * @brief Check whole-only families.
+ *
+ * Called after NVT sync.
+ */
+void
+check_whole_only_in_configs ()
+{
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    {
+      gchar *quoted_family;
+
+      quoted_family = sql_quote (*whole);
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           " AND EXISTS (SELECT * FROM nvts"
+           "             WHERE oid = family_or_nvt"
+           "             AND family = '%s');",
+           quoted_family);
+      g_free (quoted_family);
+    }
+}

@@ -40,6 +40,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_preferences.h"
 #include "manage_sql.h"
+#include "manage_sql_configs.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -1953,6 +1954,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 
   check_preference_names (0, old_nvts_last_modified);
   check_preference_names (1, old_nvts_last_modified);
+
+  check_whole_only_in_configs ();
 
   return 0;
 }

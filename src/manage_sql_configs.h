@@ -100,4 +100,7 @@ update_config (config_t, const gchar *, const gchar *, const gchar *,
 void
 check_db_configs ();
 
+void
+check_whole_only_in_configs ();
+
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */
