@@ -2567,7 +2567,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
           gchar *filter;
           osp_vt_group_t *vt_group;
 
-          filter = g_strdup_printf ("filter=%s", family);
+          filter = g_strdup_printf ("family=%s", family);
           vt_group = osp_vt_group_new (filter);
           g_free (filter);
 
