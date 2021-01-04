@@ -23765,17 +23765,14 @@ report_counts (const char* report_id, int* holes, int* infos,
 static int
 report_counts_cache_exists (report_t report, int override, int min_qod)
 {
-  if (setting_dynamic_severity_int ())
-    return 0;
-  else
-    return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
-                    " WHERE report = %llu"
-                    "   AND override = %d"
-                    "   AND \"user\" = (SELECT id FROM users"
-                    "                   WHERE users.uuid = '%s')"
-                    "   AND min_qod = %d"
-                    "   AND (end_time = 0 OR end_time >= m_now ()));",
-                    report, override, current_credentials.uuid, min_qod);
+  return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
+                  " WHERE report = %llu"
+                  "   AND override = %d"
+                  "   AND \"user\" = (SELECT id FROM users"
+                  "                   WHERE users.uuid = '%s')"
+                  "   AND min_qod = %d"
+                  "   AND (end_time = 0 OR end_time >= m_now ()));",
+                  report, override, current_credentials.uuid, min_qod);
 }
 
 /**
@@ -23826,11 +23823,6 @@ cache_report_counts (report_t report, int override, int min_qod,
   int i, ret;
   double severity;
   int end_time;
-
-  /* Do not cache results when using dynamic severity. */
-
-  if (setting_dynamic_severity_int ())
-    return 0;
 
   /* Try cache results. */
 
