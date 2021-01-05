@@ -19727,6 +19727,18 @@ reports_clear_count_cache ()
 }
 
 /**
+ * @brief Clear all report counts for all dynamic severity users.
+ */
+void
+reports_clear_count_cache_dynamic ()
+{
+  sql ("DELETE FROM report_counts"
+       " WHERE report_counts.user IN (SELECT owner FROM settings"
+       "                              WHERE name = 'Dynamic Severity'"
+       "                              AND value = '1');");
+}
+
+/**
  * @brief Rebuild the report count cache for all reports and users.
  *
  * @param[in]  clear        Whether to clear the cache before rebuilding.
