@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Speed up result counting iterator [#1358](https://github.com/greenbone/gvmd/pull/1358) [#1361](https://github.com/greenbone/gvmd/pull/1361)
 - Speed up result iterator [#1370](https://github.com/greenbone/gvmd/pull/1358) [#1361](https://github.com/greenbone/gvmd/pull/1370)
 - Improve GMP docs around users [#1363](https://github.com/greenbone/gvmd/pull/1363)
+- Cache report counts when Dynamic Severity is enabled [#1389](https://github.com/greenbone/gvmd/pull/1389)
 
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
