@@ -19718,6 +19718,15 @@ reports_hashtable ()
 }
 
 /**
+ * @brief Clear the report count cache for all reports and users.
+ */
+static void
+reports_clear_count_cache ()
+{
+  sql ("DELETE FROM report_counts;");
+}
+
+/**
  * @brief Rebuild the report count cache for all reports and users.
  *
  * @param[in]  clear        Whether to clear the cache before rebuilding.
@@ -49345,6 +49354,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
+          reports_clear_count_cache ();
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
