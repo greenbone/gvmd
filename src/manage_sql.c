@@ -19718,12 +19718,21 @@ reports_hashtable ()
 }
 
 /**
- * @brief Clear the report count cache for all reports and users.
+ * @brief Clear the report count cache for all reports of a user.
+ *
+ * @param[in]  uuid  UUID of user.
  */
 static void
-reports_clear_count_cache ()
+reports_clear_count_cache (const gchar *uuid)
 {
-  sql ("DELETE FROM report_counts;");
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  sql ("DELETE FROM report_counts"
+       " WHERE report_counts.user = (SELECT id FROM users"
+       "                             WHERE uuid = '%s');",
+       quoted_uuid);
+  g_free (quoted_uuid);
 }
 
 /**
@@ -49366,7 +49375,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
-          reports_clear_count_cache ();
+          reports_clear_count_cache (current_credentials.uuid);
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
