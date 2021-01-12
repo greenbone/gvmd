@@ -19718,6 +19718,36 @@ reports_hashtable ()
 }
 
 /**
+ * @brief Clear the report count cache for all reports of a user.
+ *
+ * @param[in]  uuid  UUID of user.
+ */
+static void
+reports_clear_count_cache (const gchar *uuid)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  sql ("DELETE FROM report_counts"
+       " WHERE report_counts.user = (SELECT id FROM users"
+       "                             WHERE uuid = '%s');",
+       quoted_uuid);
+  g_free (quoted_uuid);
+}
+
+/**
+ * @brief Clear all report counts for all dynamic severity users.
+ */
+void
+reports_clear_count_cache_dynamic ()
+{
+  sql ("DELETE FROM report_counts"
+       " WHERE report_counts.user IN (SELECT owner FROM settings"
+       "                              WHERE name = 'Dynamic Severity'"
+       "                              AND value = '1');");
+}
+
+/**
  * @brief Rebuild the report count cache for all reports and users.
  *
  * @param[in]  clear        Whether to clear the cache before rebuilding.
@@ -23765,17 +23795,14 @@ report_counts (const char* report_id, int* holes, int* infos,
 static int
 report_counts_cache_exists (report_t report, int override, int min_qod)
 {
-  if (setting_dynamic_severity_int ())
-    return 0;
-  else
-    return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
-                    " WHERE report = %llu"
-                    "   AND override = %d"
-                    "   AND \"user\" = (SELECT id FROM users"
-                    "                   WHERE users.uuid = '%s')"
-                    "   AND min_qod = %d"
-                    "   AND (end_time = 0 OR end_time >= m_now ()));",
-                    report, override, current_credentials.uuid, min_qod);
+  return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
+                  " WHERE report = %llu"
+                  "   AND override = %d"
+                  "   AND \"user\" = (SELECT id FROM users"
+                  "                   WHERE users.uuid = '%s')"
+                  "   AND min_qod = %d"
+                  "   AND (end_time = 0 OR end_time >= m_now ()));",
+                  report, override, current_credentials.uuid, min_qod);
 }
 
 /**
@@ -23826,11 +23853,6 @@ cache_report_counts (report_t report, int override, int min_qod,
   int i, ret;
   double severity;
   int end_time;
-
-  /* Do not cache results when using dynamic severity. */
-
-  if (setting_dynamic_severity_int ())
-    return 0;
 
   /* Try cache results. */
 
@@ -49353,6 +49375,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
+          reports_clear_count_cache (current_credentials.uuid);
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
