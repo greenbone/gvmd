@@ -5012,12 +5012,35 @@ check_whole_only_in_configs ()
       gchar *quoted_family;
 
       quoted_family = sql_quote (*whole);
+
+      /* Delete any excluding NVT selectors. */
+
       sql ("DELETE FROM nvt_selectors"
            " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           " AND exclude = 1"
            " AND EXISTS (SELECT * FROM nvts"
            "             WHERE oid = family_or_nvt"
            "             AND family = '%s');",
            quoted_family);
+
+      /* Convert any including NVT selectors to family selectors. */
+
+      sql ("WITH sels AS (DELETE FROM nvt_selectors"
+           "                     WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           "              AND EXISTS (SELECT * FROM nvts"
+           "                          WHERE oid = family_or_nvt"
+           "                          AND family = '%s')"
+           "              RETURNING name),"
+           "     names AS (SELECT distinct * FROM sels)"
+           " INSERT INTO nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " SELECT names.name, 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
+           "        '%s', '%s'"
+           " FROM names;",
+           quoted_family,
+           quoted_family,
+           quoted_family);
+
       g_free (quoted_family);
     }
 }
