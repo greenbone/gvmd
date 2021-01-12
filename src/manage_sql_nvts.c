@@ -1927,6 +1927,10 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
       g_string_free (prefs_sql, TRUE);
     }
 
+  /* Update the cache of report counts. */
+
+  reports_clear_count_cache_dynamic ();
+
   /* Tell the main process to update its NVTi cache. */
   sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
        sql_schema ());
