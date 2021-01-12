@@ -1145,9 +1145,6 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 #define MIN_QOD_DEFAULT 70
 
 void
-reports_clear_count_cache (int);
-
-void
 reports_clear_count_cache_for_override (override_t, int);
 
 void
