@@ -1524,6 +1524,7 @@ run_status_name (task_status_t status)
 const char*
 run_status_name_internal (task_status_t status)
 {
+<<<<<<< HEAD
   switch (status)
     {
       case TASK_STATUS_DELETE_REQUESTED: return "Delete Requested";
@@ -1534,6 +1535,12 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_DELETE_WAITING:   return "Delete Waiting";
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
+=======
+  char *name, *uuid;
+  int ret;
+  time_t now;
+  gchar *slave_task_name;
+>>>>>>> 7a885911f... Use timestamp in automatic sensor task names
 
       case TASK_STATUS_REQUESTED:        return "Requested";
 
@@ -1550,7 +1557,61 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_STOPPED:          return "Stopped";
       default:                           return "Interrupted";
     }
+<<<<<<< HEAD
 }
+=======
+  now = time (NULL);
+  slave_task_name = g_strdup_printf ("%s (%s) %s",
+                                     name,
+                                     uuid,
+                                     iso_time (&now));
+  free (name);
+  free (uuid);
+
+  while ((ret = slave_connect (connection)))
+    if (ret == 1)
+      {
+        result_t result;
+        gchar *port_string;
+
+        /* Login failed. */
+
+        port_string = g_strdup_printf ("%i", connection->port);
+        result = make_result (task,
+                              connection->host_string,
+                              "",
+                              port_string,
+                              /* NVT: Global variable settings. */
+                              OID_GLOBAL_SETTINGS,
+                              "Error Message",
+                              "Authentication with the slave failed.",
+                              NULL);
+        g_free (port_string);
+        if (global_current_report)
+          report_add_result (global_current_report, result);
+
+        g_free (slave_task_name);
+        return 1;
+      }
+    else
+      {
+        if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
+            || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
+          {
+            if (global_current_report)
+              {
+                set_report_scan_run_status (global_current_report,
+                                            TASK_STATUS_STOPPED);
+              }
+            set_task_run_status (task, TASK_STATUS_STOPPED);
+            g_free (slave_task_name);
+            return 0;
+          }
+        g_debug ("   %s: sleeping for %i\n", __func__,
+                 manage_slave_check_period ());
+        gvm_sleep (manage_slave_check_period ());
+      }
+>>>>>>> 7a885911f... Use timestamp in automatic sensor task names
 
 /**
  * @brief Set a task to interrupted.
