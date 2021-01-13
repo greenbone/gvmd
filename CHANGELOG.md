@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
 - The xsltproc binary is now marked as mandatory [#1259](https://github.com/greenbone/gvmd/pull/1259)
 - Check feed status without acquiring lock [#1266](https://github.com/greenbone/gvmd/pull/1266)
+- Use timestamp in automatic sensor task names [#1390](https://github.com/greenbone/gvmd/pull/1390)
 
 ### Fixed
 - Add dummy functions to allow restoring old dumps [#1251](https://github.com/greenbone/gvmd/pull/1251)
