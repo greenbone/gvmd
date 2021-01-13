@@ -894,7 +894,8 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
+ * @return 0 success, 1 config in use, 2 failed to find config, 3 whole-only
+ *         families must be growing and include entire family, -1 error.
  */
 int
 manage_set_config_families (const gchar *config_id,
@@ -903,11 +904,21 @@ manage_set_config_families (const gchar *config_id,
                             GPtrArray* growing_families,
                             int grow_families)
 {
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
   config_t config;
   iterator_t families;
   gchar *quoted_selector;
   int constraining;
   char *selector;
+
+  /* Ensure that whole-only families include all NVTs and are growing. */
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    if (member (growing_all_families, *whole)
+        || member (static_all_families, *whole))
+      return 3;
+
+  /* Check the args. */
 
   sql_begin_immediate ();
 
@@ -4207,6 +4218,24 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
 }
 
 /**
+ * @brief Check whether a family is "whole-only".
+ *
+ * @param[in]  family         Family name.
+ *
+ * @return 1 if whole-only, else 0.
+ */
+int
+family_whole_only (const gchar *family)
+{
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    if (strcmp (*whole, family) == 0)
+      return 1;
+  return 0;
+}
+
+/**
  * @brief Get whether a config selects every NVT in a given family.
  *
  * @param[in]  config      Config.
@@ -4245,7 +4274,8 @@ config_family_entire_and_growing (config_t config, const char* family)
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
+ * @return 0 success, 1 config in use, 2 failed to find config, 3 whole-only
+ *         family, -1 error.
  */
 int
 manage_set_config_nvts (const gchar *config_id, const char* family,
@@ -4255,6 +4285,9 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
   char *selector;
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
+
+  if (family_whole_only (family))
+    return 3;
 
   sql_begin_immediate ();
 
@@ -4961,5 +4994,53 @@ check_db_configs ()
       g_warning ("%s: There are feed configs/policies in the trash."
                  " These will be excluded from the sync.",
                  __func__);
+    }
+}
+
+/**
+ * @brief Check whole-only families.
+ *
+ * Called after NVT sync.
+ */
+void
+check_whole_only_in_configs ()
+{
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    {
+      gchar *quoted_family;
+
+      quoted_family = sql_quote (*whole);
+
+      /* Delete any excluding NVT selectors. */
+
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           " AND exclude = 1"
+           " AND EXISTS (SELECT * FROM nvts"
+           "             WHERE oid = family_or_nvt"
+           "             AND family = '%s');",
+           quoted_family);
+
+      /* Convert any including NVT selectors to family selectors. */
+
+      sql ("WITH sels AS (DELETE FROM nvt_selectors"
+           "                     WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           "              AND EXISTS (SELECT * FROM nvts"
+           "                          WHERE oid = family_or_nvt"
+           "                          AND family = '%s')"
+           "              RETURNING name),"
+           "     names AS (SELECT distinct * FROM sels)"
+           " INSERT INTO nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " SELECT names.name, 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
+           "        '%s', '%s'"
+           " FROM names;",
+           quoted_family,
+           quoted_family,
+           quoted_family);
+
+      g_free (quoted_family);
     }
 }
