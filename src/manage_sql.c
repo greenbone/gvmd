@@ -9297,7 +9297,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
 
   script = g_build_filename (script_dir, "alert", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (! gvm_file_is_readable (script))
     {
       g_warning ("%s: Failed to find alert script: %s",
            __func__,
@@ -10088,7 +10088,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   script = g_build_filename (script_dir, "alert", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (! gvm_file_is_readable (script))
     {
       g_free (report_file);
       g_free (pkcs12_file);
@@ -10408,7 +10408,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
   script = g_build_filename (script_dir, "alert", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (! gvm_file_is_readable (script))
     {
       g_warning ("%s: Failed to find alert script: %s",
            __func__,
@@ -46460,7 +46460,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
     script = g_build_filename (script_dir, "generate", NULL);
 
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
+    if (! gvm_file_is_readable (script))
       {
         g_free (script);
         g_free (script_dir);
