@@ -95,6 +95,7 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/proctitle.h>
+#include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 
 #include "manage.h"
@@ -2140,7 +2141,7 @@ gvmd (int argc, char** argv)
   rc_name = g_build_filename (GVM_SYSCONF_DIR,
                               "gvmd_log.conf",
                               NULL);
-  if (g_file_test (rc_name, G_FILE_TEST_EXISTS))
+  if (gvm_file_is_readable (rc_name))
     log_config = load_log_configuration (rc_name);
   g_free (rc_name);
   setup_log_handlers (log_config);
@@ -2159,9 +2160,11 @@ gvmd (int argc, char** argv)
     {
       if (strcmp (relay_mapper, ""))
         {
-          if (g_file_test (relay_mapper, G_FILE_TEST_EXISTS) == 0)
+          if (gvm_file_exists (relay_mapper) == 0)
             g_warning ("Relay mapper '%s' not found.", relay_mapper);
-          else if (g_file_test (relay_mapper, G_FILE_TEST_IS_EXECUTABLE) == 0)
+          else if (gvm_file_is_readable (relay_mapper) == 0)
+            g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
+          else if (gvm_file_is_executable (relay_mapper) == 0)
             g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
           else
             {
@@ -2341,8 +2344,12 @@ gvmd (int argc, char** argv)
       password_policy = g_build_filename (GVM_SYSCONF_DIR,
                                           "pwpolicy.conf",
                                           NULL);
-      if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
+      if (gvm_file_exists (password_policy) == FALSE)
         g_warning ("%s: password policy missing: %s",
+                   __func__,
+                   password_policy);
+      else if (gvm_file_is_readable (password_policy) == FALSE)
+        g_warning ("%s: password policy not readable: %s",
                    __func__,
                    password_policy);
       g_free (password_policy);
