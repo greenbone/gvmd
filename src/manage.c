@@ -3230,6 +3230,7 @@ handle_gmp_slave_task (task_t task, target_t target,
 {
   char *name, *uuid;
   int ret;
+  time_t now;
   gchar *slave_task_name;
 
   /* Some of the cases in here must write to the session outside an open
@@ -3261,7 +3262,11 @@ handle_gmp_slave_task (task_t task, target_t target,
       g_warning ("%s: Failed to get task name", __func__);
       return -2;
     }
-  slave_task_name = g_strdup_printf ("%s for %s", uuid, name);
+  now = time (NULL);
+  slave_task_name = g_strdup_printf ("%s (%s) %s",
+                                     name,
+                                     uuid,
+                                     iso_time (&now));
   free (name);
   free (uuid);
 
