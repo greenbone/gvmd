@@ -29052,7 +29052,6 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   sql_begin_immediate ();
 
-  // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
                             "config, target, schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
@@ -29083,7 +29082,6 @@ copy_task (const char* name, const char* comment, const char *task_id,
        new,
        old);
 
-  // FIX do this for all types, or none
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
        "  resource_location, subject_type, subject, subject_location,"
