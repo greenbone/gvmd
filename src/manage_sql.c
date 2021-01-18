@@ -32379,7 +32379,7 @@ target_task_iterator_readable (iterator_t* iterator)
 }
 
 
-/* FIX From old NVTs section. */
+/* SecInfo Alerts. */
 
 /**
  * @brief Check for new SCAP SecInfo after an update.
