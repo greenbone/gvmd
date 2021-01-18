@@ -532,10 +532,6 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                          PQresultStatus (result));
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
-#if 0
-          PQclear (result);
-          PQfinish (conn);
-#endif
           return -1;
         }
 
