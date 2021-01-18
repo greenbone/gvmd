@@ -32538,7 +32538,7 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
     buffer = g_string_new (NEW_NVTS_HEADER_OID);
 
   count = 0;
-  // FIX this should use an iterator provided by manage_sql_nvts.c
+  // TODO This should use an iterator provided by manage_sql_nvts.c.
   if (example)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
@@ -51681,7 +51681,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           || (strlen (g_ptr_array_index (allowed_methods, 0)) == 0)))
     allowed_methods = NULL;
 
-  // FIX validate methods  single source, one of "", "ldap", ...
+  // TODO Validate methods: single source, one of "", "ldap", ...
 
   sql_begin_immediate ();
 
