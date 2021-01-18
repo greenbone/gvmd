@@ -630,7 +630,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         quoted_family,
                         quoted_selector,
                         quoted_family,
-                        // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                        /* This works around "ERROR: missing FROM-clause" from
+                         * Postgres when using nvts.name. */
                         sort_field && strcmp (sort_field, "nvts.name")
                          ? sort_field : "3", /* 3 is nvts.name. */
                         ascending ? "ASC" : "DESC");
@@ -674,7 +675,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     quoted_family,
                     quoted_selector,
                     quoted_family,
-                    // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                    /* This works around "ERROR: missing FROM-clause" from
+                     * Postgres when using nvts.name. */
                     sort_field && strcmp (sort_field, "nvts.name")
                      ? sort_field : "3", /* 3 is nvts.name. */
                     ascending ? "ASC" : "DESC");
