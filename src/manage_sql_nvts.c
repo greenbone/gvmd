@@ -410,7 +410,6 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 
   if (get->id)
     {
-      // FIX what for anyway?
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
