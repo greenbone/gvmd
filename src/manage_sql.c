@@ -25117,20 +25117,6 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
     }                                                                        \
   while (0)
 
-#if 0
-void
-dump (GArray *ports)
-{
-  int index;
-  for (index = 0; index < ports->len; index++)
-    {
-      char *port = g_array_index (ports, char*, index);
-      char *threat = port + strlen (port) + 1;
-      g_debug ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
-    }
-}
-#endif
-
 /**
  * @brief Add a port to a port tree.
  *
