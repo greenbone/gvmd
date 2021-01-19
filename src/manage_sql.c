@@ -1946,7 +1946,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
 }
 
 /**
- * @brief Get info from a filter for report.
+ * @brief Get info from a result filter for a report.
  *
  * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
  * (by calling manage_max_rows).
@@ -2063,8 +2063,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
           point++;
         }
       if (sort_field && (*sort_field == NULL))
-        // FIX name??
-        *sort_field = g_strdup ("name");
+        *sort_field = g_strdup ("name"); /* NVT name. */
     }
 
   if (search_phrase)
