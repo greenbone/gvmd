@@ -26180,6 +26180,8 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   ignore_max_rows_per_page = 1;
 
 #if 0
+  /* For debugging. */
+
   iterator_t results2;
 
   res = init_result_get_iterator (results, &delta_get, report, NULL, order);
