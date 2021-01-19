@@ -1014,7 +1014,6 @@ manage_create_sql_functions ()
              /* Calculate the severity of a report. */
              "  WITH max_severity AS (SELECT max(severity) AS max"
              "                        FROM report_counts"
-             // FIX should have user like report_counts_cache_exists?  c version too?
              "                        WHERE report = $1"
              "                        AND override = $2"
              "                        AND min_qod = $3"
@@ -1185,8 +1184,9 @@ manage_create_sql_functions ()
 
       /* result_nvt column (in OVERRIDES_SQL) was added in version 189. */
       if (current_db_version >= 189)
-        sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer,"
-             "                                          integer)"
+        sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
+             "                                          integer,"  // overrides
+             "                                          integer)"  // min_qod
              " RETURNS double precision AS $$"
              /* Calculate the severity of a task. */
              "  SELECT CASE"
