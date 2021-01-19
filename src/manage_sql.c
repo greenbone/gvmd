@@ -21143,18 +21143,6 @@ init_report_iterator_task (iterator_t* iterator, task_t task)
                  task);
 }
 
-#if 0
-/**
- * @brief Get the NAME from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The NAME of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-#endif
-
-
 /**
  * @brief Get the UUID from a report iterator.
  *
