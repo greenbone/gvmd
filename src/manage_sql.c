@@ -1946,7 +1946,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
 }
 
 /**
- * @brief Get info from a filter for report.
+ * @brief Get info from a result filter for a report.
  *
  * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
  * (by calling manage_max_rows).
@@ -2063,8 +2063,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
           point++;
         }
       if (sort_field && (*sort_field == NULL))
-        // FIX name??
-        *sort_field = g_strdup ("name");
+        *sort_field = g_strdup ("name"); /* NVT name. */
     }
 
   if (search_phrase)
@@ -29052,7 +29051,6 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   sql_begin_immediate ();
 
-  // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
                             "config, target, schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
@@ -29083,7 +29081,6 @@ copy_task (const char* name, const char* comment, const char *task_id,
        new,
        old);
 
-  // FIX do this for all types, or none
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
        "  resource_location, subject_type, subject, subject_location,"
@@ -32381,7 +32378,7 @@ target_task_iterator_readable (iterator_t* iterator)
 }
 
 
-/* FIX From old NVTs section. */
+/* SecInfo Alerts. */
 
 /**
  * @brief Check for new SCAP SecInfo after an update.
@@ -32540,7 +32537,7 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
     buffer = g_string_new (NEW_NVTS_HEADER_OID);
 
   count = 0;
-  // FIX this should use an iterator provided by manage_sql_nvts.c
+  // TODO This should use an iterator provided by manage_sql_nvts.c.
   if (example)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
@@ -51683,7 +51680,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           || (strlen (g_ptr_array_index (allowed_methods, 0)) == 0)))
     allowed_methods = NULL;
 
-  // FIX validate methods  single source, one of "", "ldap", ...
+  // TODO Validate methods: single source, one of "", "ldap", ...
 
   sql_begin_immediate ();
 

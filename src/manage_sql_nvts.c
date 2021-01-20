@@ -410,7 +410,6 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 
   if (get->id)
     {
-      // FIX what for anyway?
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
@@ -630,7 +629,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         quoted_family,
                         quoted_selector,
                         quoted_family,
-                        // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                        /* This works around "ERROR: missing FROM-clause" from
+                         * Postgres when using nvts.name. */
                         sort_field && strcmp (sort_field, "nvts.name")
                          ? sort_field : "3", /* 3 is nvts.name. */
                         ascending ? "ASC" : "DESC");
@@ -674,7 +674,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     quoted_family,
                     quoted_selector,
                     quoted_family,
-                    // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                    /* This works around "ERROR: missing FROM-clause" from
+                     * Postgres when using nvts.name. */
                     sort_field && strcmp (sort_field, "nvts.name")
                      ? sort_field : "3", /* 3 is nvts.name. */
                     ascending ? "ASC" : "DESC");
