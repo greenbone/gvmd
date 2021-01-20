@@ -13197,8 +13197,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       switch (ret)
         {
         case 1:
-          if (send_find_error_to_client ("get_info", "type",
-                                         get_info_data->type,
+          if (send_find_error_to_client ("get_info",
+                                         get_info_data->name
+                                          ? "name"
+                                          : "ID",
+                                         get_info_data->name
+                                          ? get_info_data->name
+                                          : get_info_data->get.id,
                                          gmp_parser))
             {
               error_send_to_client (error);
