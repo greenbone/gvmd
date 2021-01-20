@@ -2887,21 +2887,14 @@ create_tables ()
   sql ("SELECT create_index ('vt_severities_by_vt_oid',"
        "                     'vt_severities', 'vt_oid');");
 
-#if 0
-  /* TODO The value column can be bigger than 8191, the maximum size that
-   *      Postgres can handle.  For example, this can happen for "ports".
-   *      Mostly value is short, like a CPE for the "App" detail, which is
-   *      what the index is for. */
-  sql ("SELECT create_index"
-       "        ('report_host_details_by_report_host_and_name_and_value',"
-       "         'report_host_details',"
-       "         'report_host, name, value');");
-#else
+  /* Previously this included the value column but that can be bigger than 8191,
+   * the maximum size that Postgres can handle.  For example, this can happen
+   * for "ports".  Mostly value is short, like a CPE for the "App" detail,
+   * which is what the index is for. */
   sql ("SELECT create_index"
        "        ('report_host_details_by_report_host_and_name',"
        "         'report_host_details',"
        "         'report_host, name');");
-#endif
   sql ("SELECT create_index"
        "        ('report_hosts_by_report_and_host',"
        "         'report_hosts',"

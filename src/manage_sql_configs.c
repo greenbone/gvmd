@@ -195,22 +195,12 @@ static int
 nvt_selector_families_growing (const char* selector)
 {
   gchar *quoted_selector;
+  char *string;
 
   /* The number of families can only grow if there is selector that includes
    * all. */
 
   quoted_selector = sql_quote (selector);
-#if 0
-  ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                 " WHERE name = '%s'"
-                 " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                 " AND exclude = 0"
-                 " LIMIT 1;",
-                 quoted_selector);
-  g_free (quoted_selector);
-  return ret;
-#else
-  char *string;
   string = sql_string ("SELECT name FROM nvt_selectors"
                        " WHERE name = '%s'"
                        " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
@@ -221,7 +211,6 @@ nvt_selector_families_growing (const char* selector)
   if (string == NULL) return 0;
   free (string);
   return 1;
-#endif
 }
 
 /**

@@ -21142,18 +21142,6 @@ init_report_iterator_task (iterator_t* iterator, task_t task)
                  task);
 }
 
-#if 0
-/**
- * @brief Get the NAME from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The NAME of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-#endif
-
-
 /**
  * @brief Get the UUID from a report iterator.
  *
@@ -25128,20 +25116,6 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
     }                                                                        \
   while (0)
 
-#if 0
-void
-dump (GArray *ports)
-{
-  int index;
-  for (index = 0; index < ports->len; index++)
-    {
-      char *port = g_array_index (ports, char*, index);
-      char *threat = port + strlen (port) + 1;
-      g_debug ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
-    }
-}
-#endif
-
 /**
  * @brief Add a port to a port tree.
  *
@@ -26205,6 +26179,8 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   ignore_max_rows_per_page = 1;
 
 #if 0
+  /* For debugging. */
+
   iterator_t results2;
 
   res = init_result_get_iterator (results, &delta_get, report, NULL, order);

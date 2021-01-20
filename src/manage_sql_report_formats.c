@@ -239,16 +239,6 @@ verify_signature (const gchar *installer, gsize installer_size,
         *trust = TRUST_NO;
       else
         {
-#if 0
-          g_debug ("%s: failed to run gpgv(%s): %d (WIF %i, WEX %i)",
-                   __func__, get_trustedkeys_name (),
-                   exit_status,
-                   WIFEXITED (exit_status),
-                   WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s", __func__, standard_out);
-          g_debug ("%s: stderr: %s", __func__, standard_err);
-          ret = -1;
-#endif
           /* This can be caused by the contents of the signature file, so
            * always return success. */
           *trust = TRUST_UNKNOWN;
