@@ -1283,7 +1283,7 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 
   /* Check that the source directory exists. */
 
-  if (! gvm_file_is_readable (source_dir))
+  if (!gvm_file_is_readable (source_dir))
     {
       g_warning ("%s: report format directory %s not found",
                  __func__, source_dir);
@@ -3331,7 +3331,7 @@ run_report_format_script (gchar *report_format_id,
 
   script = g_build_filename (script_dir, "generate", NULL);
 
-  if (! gvm_file_is_readable (script))
+  if (!gvm_file_is_readable (script))
     {
       g_warning ("%s: No generate script found at %s",
                  __func__, script);
@@ -3339,7 +3339,7 @@ run_report_format_script (gchar *report_format_id,
       g_free (script_dir);
       return -1;
     }
-  else if (! gvm_file_is_executable (script))
+  else if (!gvm_file_is_executable (script))
     {
       g_warning ("%s: script %s is not executable",
                  __func__, script);
