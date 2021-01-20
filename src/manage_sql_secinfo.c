@@ -4791,12 +4791,12 @@ try_load_csv ()
                                              "table-affected-ovaldefs.csv",
                                              NULL);
 
-  if (g_file_test (file_cves, G_FILE_TEST_EXISTS)
-      && g_file_test (file_cpes, G_FILE_TEST_EXISTS)
-      && g_file_test (file_affected_products, G_FILE_TEST_EXISTS)
-      && g_file_test (file_ovaldefs, G_FILE_TEST_EXISTS)
-      && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
-      && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
+  if (gvm_file_is_readable (file_cves)
+      && gvm_file_is_readable (file_cpes)
+      && gvm_file_is_readable (file_affected_products)
+      && gvm_file_is_readable (file_ovaldefs)
+      && gvm_file_is_readable (file_ovalfiles)
+      && gvm_file_is_readable (file_affected_ovaldefs))
     {
       /* Create a new schema, "scap2". */
 

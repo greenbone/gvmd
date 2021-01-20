@@ -31,7 +31,7 @@
 
 #include <errno.h>
 #include <glib.h>
-#include <glib/gstdio.h>
+#include <gvm/util/fileutils.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -456,7 +456,7 @@ sync_configs_with_feed ()
 gboolean
 configs_feed_dir_exists ()
 {
-  return g_file_test (feed_dir_configs (), G_FILE_TEST_EXISTS);
+  return gvm_file_is_readable (feed_dir_configs ());
 }
 
 /**

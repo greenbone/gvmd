@@ -29,6 +29,7 @@
 #include "manage_sql_port_lists.h"
 #include "utils.h"
 
+#include <gvm/util/fileutils.h>
 #include <string.h>
 
 #undef G_LOG_DOMAIN
@@ -379,7 +380,7 @@ sync_port_lists_with_feed ()
 gboolean
 port_lists_feed_dir_exists ()
 {
-  return g_file_test (feed_dir_port_lists (), G_FILE_TEST_EXISTS);
+  return gvm_file_is_readable (feed_dir_port_lists ());
 }
 
 /**
