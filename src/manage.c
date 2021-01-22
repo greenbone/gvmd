@@ -1590,7 +1590,7 @@ task_scanner_options (task_t task, target_t target)
   GHashTable *table;
   config_t config;
   iterator_t prefs;
-  char *allow_simult_ips_same_host;
+  char *allow_simultaneous_ips;
 
   config = task_config (task);
   init_config_preference_iterator (&prefs, config);
@@ -1671,16 +1671,16 @@ task_scanner_options (task_t task, target_t target)
   cleanup_iterator (&prefs);
 
   // Target options sent as scanner preferences
-  allow_simult_ips_same_host = target_allow_simult_ips_same_host (target);
-  if (allow_simult_ips_same_host)
+  allow_simultaneous_ips = target_allow_simultaneous_ips (target);
+  if (allow_simultaneous_ips)
     {
       g_hash_table_replace (table,
-                            g_strdup (strcmp (allow_simult_ips_same_host, "0")
+                            g_strdup ("allow_simultaneous_ips"),
+                            g_strdup (strcmp (allow_simultaneous_ips, "0")
                                         ? "yes" 
-                                        : "no"),
-                            g_strdup (allow_simult_ips_same_host));
+                                        : "no"));
     }
-  free (allow_simult_ips_same_host);
+  free (allow_simultaneous_ips);
 
   return table;
 }

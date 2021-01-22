@@ -1651,7 +1651,7 @@ int
 target_iterator_snmp_trash (iterator_t*);
 
 const char*
-target_iterator_allow_simult_ips_same_host (iterator_t*);
+target_iterator_allow_simultaneous_ips (iterator_t*);
 
 const char*
 target_iterator_port_list_uuid (iterator_t*);
@@ -1693,7 +1693,7 @@ char*
 target_reverse_lookup_unify (target_t);
 
 char*
-target_allow_simult_ips_same_host (target_t);
+target_allow_simultaneous_ips (target_t);
 
 char*
 target_port_range (target_t);
