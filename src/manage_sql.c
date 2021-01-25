@@ -6265,10 +6265,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 
 /**
  * @brief Check if any SecInfo alerts are due.
- *
- * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
  */
 void
 check_alerts ()
