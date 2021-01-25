@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix and simplify SecInfo migration [#1331](https://github.com/greenbone/gvmd/pull/1331)
 - Prevent CPE/NVD_ID from being "(null)" [#1369](https://github.com/greenbone/gvmd/pull/1369)
 - Check DB versions before CERT severity updates [#1376](https://github.com/greenbone/gvmd/pull/1376)
+- Add owner checks to report_count queries [#1397](https://github.com/greenbone/gvmd/pull/1397)
 
 ### Removed
 - Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)
