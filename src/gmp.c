@@ -915,7 +915,7 @@ create_schedule_data_reset (create_schedule_data_t *data)
 typedef struct
 {
   char *alive_tests;             ///< Alive tests.
-  char *allow_simult_ips_same_host; ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
+  char *allow_simultaneous_ips;  ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *asset_hosts_filter;      ///< Asset hosts.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
@@ -946,7 +946,7 @@ static void
 create_target_data_reset (create_target_data_t *data)
 {
   free (data->alive_tests);
-  free (data->allow_simult_ips_same_host);
+  free (data->allow_simultaneous_ips);
   free (data->asset_hosts_filter);
   free (data->comment);
   free (data->exclude_hosts);
@@ -2834,7 +2834,7 @@ modify_setting_data_reset (modify_setting_data_t *data)
 typedef struct
 {
   char *alive_tests;             ///< Alive tests.
-  char *allow_simult_ips_same_host; ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
+  char *allow_simultaneous_ips;  ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
   char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
@@ -2863,7 +2863,7 @@ static void
 modify_target_data_reset (modify_target_data_t *data)
 {
   free (data->alive_tests);
-  free (data->allow_simult_ips_same_host);
+  free (data->allow_simultaneous_ips);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
   free (data->reverse_lookup_unify);
@@ -4266,7 +4266,7 @@ typedef enum
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
-  CLIENT_CREATE_TARGET_ALLOW_SIMULT_IPS_SAME_HOST,
+  CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_CREATE_TARGET_ASSET_HOSTS,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY,
@@ -4513,7 +4513,7 @@ typedef enum
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
-  CLIENT_MODIFY_TARGET_ALLOW_SIMULT_IPS_SAME_HOST,
+  CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_ESXI_CREDENTIAL,
   CLIENT_MODIFY_TARGET_ESXI_LSC_CREDENTIAL,
@@ -6596,8 +6596,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY);
         else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
-        else if (strcasecmp ("ALLOW_SIMULT_IPS_SAME_HOST", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_ALLOW_SIMULT_IPS_SAME_HOST);
+        else if (strcasecmp ("ALLOW_SIMULTANEOUS_IPS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             gvm_append_string (&modify_target_data->comment, "");
@@ -7565,8 +7565,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY);
         else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS);
-        else if (strcasecmp ("ALLOW_SIMULT_IPS_SAME_HOST", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_ALLOW_SIMULT_IPS_SAME_HOST);
+        else if (strcasecmp ("ALLOW_SIMULTANEOUS_IPS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
@@ -16536,7 +16536,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
-          const char *reverse_lookup_unify, *allow_simult_ips_same_host;
+          const char *reverse_lookup_unify, *allow_simultaneous_ips;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
           int port_list_trash, max_hosts, port_list_available;
@@ -16699,8 +16699,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                   (&targets);
           reverse_lookup_unify = target_iterator_reverse_lookup_unify
                                   (&targets);
-          allow_simult_ips_same_host
-            = target_iterator_allow_simult_ips_same_host (&targets);
+          allow_simultaneous_ips
+            = target_iterator_allow_simultaneous_ips (&targets);
 
           SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                    "<exclude_hosts>%s</exclude_hosts>"
@@ -16776,13 +16776,13 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                    "%s"
                                    "</reverse_lookup_unify>"
                                    "<alive_tests>%s</alive_tests>"
-                                   "<allow_simult_ips_same_host>"
+                                   "<allow_simultaneous_ips>"
                                    "%s"
-                                   "</allow_simult_ips_same_host>",
+                                   "</allow_simultaneous_ips>",
                                    reverse_lookup_only,
                                    reverse_lookup_unify,
                                    target_iterator_alive_tests (&targets),
-                                   allow_simult_ips_same_host);
+                                   allow_simultaneous_ips);
 
           if (get_targets_data->get.details)
             SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
@@ -21885,7 +21885,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
-                         create_target_data->allow_simult_ips_same_host,
+                         create_target_data->allow_simultaneous_ips,
                          &new_target))
             {
               case 1:
@@ -22003,7 +22003,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_CREATE_TARGET, ALIVE_TESTS);
-      CLOSE (CLIENT_CREATE_TARGET, ALLOW_SIMULT_IPS_SAME_HOST);
+      CLOSE (CLIENT_CREATE_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
@@ -24505,7 +24505,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests,
-                         modify_target_data->allow_simult_ips_same_host))
+                         modify_target_data->allow_simultaneous_ips))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -24748,7 +24748,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_MODIFY_TARGET, ALIVE_TESTS);
-      CLOSE (CLIENT_MODIFY_TARGET, ALLOW_SIMULT_IPS_SAME_HOST);
+      CLOSE (CLIENT_MODIFY_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
@@ -26594,8 +26594,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS,
               &create_target_data->alive_tests);
 
-      APPEND (CLIENT_CREATE_TARGET_ALLOW_SIMULT_IPS_SAME_HOST,
-              &create_target_data->allow_simult_ips_same_host);
+      APPEND (CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
+              &create_target_data->allow_simultaneous_ips);
 
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);
@@ -26909,8 +26909,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS,
               &modify_target_data->alive_tests);
 
-      APPEND (CLIENT_MODIFY_TARGET_ALLOW_SIMULT_IPS_SAME_HOST,
-              &modify_target_data->allow_simult_ips_same_host);
+      APPEND (CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
+              &modify_target_data->allow_simultaneous_ips);
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);

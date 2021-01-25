@@ -30480,7 +30480,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
- * @param[in]   allow_simult_ips_same_host  Scanner preference allow_simult_ips_same_host.
+ * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -30499,7 +30499,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
-               const char *allow_simult_ips_same_host,
+               const char *allow_simultaneous_ips,
                target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
@@ -30636,11 +30636,11 @@ create_target (const char* name, const char* asset_hosts_filter,
     reverse_lookup_unify = "0";
   else
     reverse_lookup_unify = "1";
-  if (allow_simult_ips_same_host
-      && strcmp (allow_simult_ips_same_host, "0") == 0)
-    allow_simult_ips_same_host = "0";
+  if (allow_simultaneous_ips
+      && strcmp (allow_simultaneous_ips, "0") == 0)
+    allow_simultaneous_ips = "0";
   else
-    allow_simult_ips_same_host = "1";
+    allow_simultaneous_ips = "1";
 
   quoted_name = sql_quote (name ?: "");
 
@@ -30652,7 +30652,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   sql ("INSERT INTO targets"
        " (uuid, name, owner, hosts, exclude_hosts, comment, "
        "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
-       "  allow_simult_ips_same_host,"
+       "  allow_simultaneous_ips,"
        "  creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
@@ -30662,7 +30662,7 @@ create_target (const char* name, const char* asset_hosts_filter,
         quoted_name, current_credentials.uuid,
         quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
         reverse_lookup_only, reverse_lookup_unify, alive_test,
-        allow_simult_ips_same_host);
+        allow_simultaneous_ips);
 
   new_target = sql_last_insert_id ();
   if (target)
@@ -30767,7 +30767,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
   ret = copy_resource ("target", name, comment, target_id,
                        "hosts, exclude_hosts, port_list, reverse_lookup_only,"
                        " reverse_lookup_unify, alive_test,"
-                       " allow_simult_ips_same_host",
+                       " allow_simultaneous_ips",
                        1, new_target, &old_target);
   if (ret)
     return ret;
@@ -30864,12 +30864,12 @@ delete_target (const char *target_id, int ultimate)
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, port_list_location,"
            "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
-           "  allow_simult_ips_same_host,"
+           "  allow_simultaneous_ips,"
            "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
            "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
-           "        allow_simult_ips_same_host,"
+           "        allow_simultaneous_ips,"
            "        creation_time, modification_time"
            " FROM targets WHERE id = %llu;",
            target);
@@ -30938,7 +30938,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
- * @param[in]   allow_simult_ips_same_host Scanner preference allow_simult_ips_same_host.
+ * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -30960,7 +30960,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
-               const char *allow_simult_ips_same_host)
+               const char *allow_simultaneous_ips)
 {
   target_t target;
 
@@ -31034,7 +31034,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       g_free (quoted_comment);
     }
 
-  if (allow_simult_ips_same_host)
+  if (allow_simultaneous_ips)
     {
       if (target_in_use (target))
         {
@@ -31043,10 +31043,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
 
       sql ("UPDATE targets SET"
-           " allow_simult_ips_same_host = '%i',"
+           " allow_simultaneous_ips = '%i',"
            " modification_time = m_now ()"
            " WHERE id = %llu;",
-           strcmp (allow_simult_ips_same_host, "0") ? 1 : 0,
+           strcmp (allow_simultaneous_ips, "0") ? 1 : 0,
            target);
     }
 
@@ -31431,7 +31431,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                  \
      KEYWORD_TYPE_INTEGER },                                \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "allow_simult_ips_same_host",                          \
+   { "allow_simultaneous_ips",                              \
      NULL,                                                  \
      KEYWORD_TYPE_INTEGER },                                \
    {                                                        \
@@ -31537,7 +31537,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
-   { "allow_simult_ips_same_host",                                  \
+   { "allow_simultaneous_ips",                                      \
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
@@ -31860,13 +31860,13 @@ target_iterator_snmp_trash (iterator_t* iterator)
 }
 
 /**
- * @brief Get the allow_simult_ips_same_host value from a target iterator.
+ * @brief Get the allow_simultaneous_ips value from a target iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return allow_simult_ips_same_host or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_allow_simult_ips_same_host,
+DEF_ACCESS (target_iterator_allow_simultaneous_ips,
             GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
@@ -32051,16 +32051,16 @@ target_reverse_lookup_unify (target_t target)
 }
 
 /**
- * @brief Return the allow_simult_ips_same_host value of a target.
+ * @brief Return the allow_simultaneous_ips value of a target.
  *
  * @param[in]  target  Target.
  *
- * @return The allow_simult_ips_same_host value if available, else NULL.
+ * @return The allow_simultaneous_ips value if available, else NULL.
  */
 char*
-target_allow_simult_ips_same_host (target_t target)
+target_allow_simultaneous_ips (target_t target)
 {
-  return sql_string ("SELECT allow_simult_ips_same_host FROM targets"
+  return sql_string ("SELECT allow_simultaneous_ips FROM targets"
                      " WHERE id = %llu;", target);
 }
 
@@ -46267,11 +46267,11 @@ manage_restore (const char *id)
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "  alive_test, allow_simult_ips_same_host,"
+           "  alive_test, allow_simultaneous_ips,"
            "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "        alive_test, allow_simult_ips_same_host,"
+           "        alive_test, allow_simultaneous_ips,"
            "        creation_time, modification_time"
            " FROM targets_trash WHERE id = %llu;",
            resource);

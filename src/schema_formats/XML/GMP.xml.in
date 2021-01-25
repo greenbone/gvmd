@@ -5200,6 +5200,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
       <o><e>alive_tests</e></o>
+      <o><e>allow_simultaneous_ips</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
       <or>
@@ -5349,6 +5350,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         <t>alive_test</t>
       </pattern>
+    </ele>
+    <ele>
+      <name>allow_simultaneous_ips</name>
+      <summary>
+        Whether to scan multiple IPs of the same host simultaneously
+      </summary>
+      <pattern><t>boolean</t></pattern>
     </ele>
     <ele>
       <name>reverse_lookup_only</name>
@@ -18897,7 +18905,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>alive_tests</e>
           <e>reverse_lookup_only</e>
           <e>reverse_lookup_unify</e>
-          <e>allow_simult_ips_same_host</e>
+          <e>allow_simultaneous_ips</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -19212,7 +19220,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
-          <name>allow_simult_ips_same_host</name>
+          <name>allow_simultaneous_ips</name>
           <summary>
             Whether to scan multiple IPs of the same host simultaneously
           </summary>
@@ -24670,7 +24678,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
-      <o><e>allow_simult_ips_same_host</e></o>
+      <o><e>allow_simultaneous_ips</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -24807,7 +24815,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern><t>boolean</t></pattern>
     </ele>
     <ele>
-      <name>allow_simult_ips_same_host</name>
+      <name>allow_simultaneous_ips</name>
       <summary>
         Whether to scan multiple IPs of the same host simultaneously
       </summary>
