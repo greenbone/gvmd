@@ -320,8 +320,6 @@ gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
  * @brief Free a GMP parser.
  *
  * @param[in]  gmp_parser  GMP parser.
- *
- * @return A GMP parser.
  */
 static void
 gmp_parser_free (gmp_parser_t *gmp_parser)
@@ -9912,8 +9910,6 @@ buffer_word_counts_tree (gpointer key, gpointer value, gpointer data)
  *
  * @param[in]  value  The value
  * @param      buffer The buffer object
- *
- * @return TRUE if strings are equal, FALSE otherwise
  */
 static void
 buffer_word_counts_seq (gpointer value, gpointer buffer)
@@ -27149,6 +27145,10 @@ process_gmp_write (const char* msg, void* buffer)
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
+ *
+ * @param[in]  parser    Parser.
+ * @param[in]  command   Command.
+ * @param[in]  response  Response.
  *
  * @return 0 success,
  *         -4 XML syntax error.
