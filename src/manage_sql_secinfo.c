@@ -327,8 +327,6 @@ typedef struct
  * @param[in]  max_chunk_size  Max chunk size.
  * @param[in]  open_sql        SQL to to start each statement.
  * @param[in]  close_sql       SQL to append to the end of each statement.
- *
- * @return Whether this is the first value in the statement.
  */
 static void
 inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *open_sql,

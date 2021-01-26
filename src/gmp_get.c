@@ -43,8 +43,6 @@
  * @param[in]  type              Resource type.
  * @param[in]  attribute_names   XML attribute names.
  * @param[in]  attribute_values  XML attribute values.
- *
- * @param[in]  data  Command data.
  */
 void
 get_data_parse_attributes (get_data_t *data, const gchar *type,

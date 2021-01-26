@@ -606,7 +606,7 @@ nvt_selector_family_growing (const char *selector,
  * @param[in]  selector  NVT selector.
  * @param[in]  family    Family name.  NULL for all.
  * @param[in]  growing   True if the given family is growing, else 0.
- *                       If \param family is NULL, true if the the families
+ *                       If family is NULL, true if the the families
  *                       are growing, else 0.
  *
  * @return Number of NVTs selected in one or all families.
@@ -681,8 +681,6 @@ nvt_selector_nvt_count (const char *selector,
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  quoted_family    SQL-quoted family name.
  * @param[in]  type             Selector type to remove.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_remove (const char* quoted_selector,
@@ -724,8 +722,6 @@ nvt_selector_remove (const char* quoted_selector,
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  family_or_nvt    SQL-quoted family name or NVT UUID.
  * @param[in]  type             Selector type to remove.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_remove_selector (const char* quoted_selector,
@@ -761,8 +757,6 @@ nvt_selector_remove_selector (const char* quoted_selector,
  * @param[in]  quoted_family_or_nvt  SQL-quoted family or NVT name.
  * @param[in]  quoted_family    SQL-quoted family name (NULL for families).
  * @param[in]  exclude          1 exclude selector, 0 include selector.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_add (const char* quoted_selector,
@@ -799,8 +793,6 @@ nvt_selector_add (const char* quoted_selector,
  * @param[in]  family_or_nvt    Family name or NVT OID of selector.
  * @param[in]  type             Selector type to remove.
  * @param[in]  family           New family.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_set_family (const char* quoted_selector,
