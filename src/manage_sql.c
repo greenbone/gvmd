@@ -15117,7 +15117,7 @@ init_manage_open_db (const db_conn_info_t *database)
     }
 
   /* Ensure the user session variables always exists. */
-  sql ("SET SESSION \"gvmd.user.uuid\" = '';");
+  sql ("SET SESSION \"gvmd.user.id\" = 0;");
   sql ("SET SESSION \"gvmd.tz_override\" = '';");
 
   /* Attach the SCAP and CERT databases. */
@@ -52468,11 +52468,7 @@ user_resources_in_use (user_t user,
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
-     "         WHERE \"user\""                                               \
-     "                = (SELECT id FROM users"                               \
-     "                   WHERE uuid"                                         \
-     "                         = (SELECT current_setting"                    \
-     "                                    ('gvmd.user.uuid')))"              \
+     "         WHERE \"user\" = gvmd_user ()"                                \
      "           AND task = results.task)"
 
 /**
