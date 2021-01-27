@@ -111,10 +111,7 @@ ticket_status_integer (const char *status)
      "                WHERE ticket = tickets.id"                              \
      "                LIMIT 1)"                                               \
      "       AND result_new_severities.user"                                  \
-     "           = (SELECT users.id"                                          \
-     "              FROM users"                                               \
-     "              WHERE users.uuid"                                         \
-     "                    = (SELECT current_setting ('gvmd.user.uuid')))"     \
+     "           = gvmd_user ()"                                              \
      "       AND result_new_severities.dynamic = 0"                           \
      "       LIMIT 1)"                                                        \
      " ELSE severity"                                                         \
