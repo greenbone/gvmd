@@ -1863,7 +1863,6 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   g_free (get_vts_opts.filter);
 
   osp_connection_close (connection);
-
   ret = update_nvts_from_vts (&vts, scanner_feed_version);
   free_entity (vts);
   if (ret)
