@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 /* Copyright (C) 2009-2020 Greenbone Networks GmbH
+=======
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
+>>>>>>> 6951ab7a2... Update copyright text in headers and README.md
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
