@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.8.1] (unreleased)
+## [20.8.1] (2021-02-02)
 
 ### Added
 - Added ability to enter Subject Alternative Names (SAN) when generating a CSR [#1246](https://github.com/greenbone/gvmd/pull/1246)
@@ -61,7 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
 
-[20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
+[20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...v20.8.1
 
 ## [20.8.0] (2020-08-11)
 
