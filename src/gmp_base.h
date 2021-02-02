@@ -57,6 +57,31 @@ void
 internal_error_send_to_client (GError **);
 
 /**
+ * @brief Send response message to client and return a given value on error.
+ *
+ * Queue a message in \ref to_client with \ref send_to_client.  On failure
+ * call \ref error_send_to_client on a GError* called "error" and do a return.
+ *
+ * @param[in]   err_ret   Return value on send error.
+ * @param[in]   format    Format string for message.
+ * @param[in]   args      Arguments for format string.
+ */
+#define SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN(err_ret, format, args...)  \
+  do                                                                   \
+    {                                                                  \
+      gchar *msg = g_markup_printf_escaped (format, ##args);           \
+      if (send_to_client (msg, gmp_parser->client_writer,              \
+                          gmp_parser->client_writer_data))             \
+        {                                                              \
+          g_free (msg);                                                \
+          error_send_to_client (error);                                \
+          return err_ret;                                              \
+        }                                                              \
+      g_free (msg);                                                    \
+    }                                                                  \
+  while (0)
+
+/**
  * @brief Send response message to client, returning on fail.
  *
  * Queue a message in \ref to_client with \ref send_to_client.  On failure

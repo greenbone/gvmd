@@ -26,6 +26,7 @@
 #include "gmp_configs.h"
 #include "gmp_base.h"
 #include "gmp_get.h"
+#include "manage_acl.h"
 #include "manage_configs.h"
 
 #include <assert.h>
@@ -698,4 +699,534 @@ void
 create_config_element_text (const gchar *text, gsize text_len)
 {
   xml_handle_text (create_config_data.context, text, text_len);
+}
+
+
+/* MODIFY_CONFIG. */
+
+/**
+ * @brief The modify_config command.
+ */
+typedef struct
+{
+  context_data_t *context;     ///< XML parser context.
+} modify_config_t;
+
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
+static modify_config_t modify_config_data;
+
+/**
+ * @brief Reset command data.
+ */
+static void
+modify_config_reset ()
+{
+  if (modify_config_data.context->first)
+    {
+      free_entity (modify_config_data.context->first->data);
+      g_slist_free_1 (modify_config_data.context->first);
+    }
+  g_free (modify_config_data.context);
+  memset (&modify_config_data, 0, sizeof (modify_config_t));
+}
+
+/**
+ * @brief Start a command.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+modify_config_start (gmp_parser_t *gmp_parser,
+                     const gchar **attribute_names,
+                     const gchar **attribute_values)
+{
+  memset (&modify_config_data, 0, sizeof (modify_config_t));
+  modify_config_data.context = g_malloc0 (sizeof (context_data_t));
+  modify_config_element_start (gmp_parser, "modify_config", attribute_names,
+                               attribute_values);
+}
+
+/**
+ * @brief Start element.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  name              Element name.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+modify_config_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+                             const gchar **attribute_names,
+                             const gchar **attribute_values)
+{
+  xml_handle_start_element (modify_config_data.context, name, attribute_names,
+                            attribute_values);
+}
+
+static int
+modify_config_handle_basic_fields (const char *config_id,
+                                   const char *name,
+                                   const char *comment,
+                                   const char *scanner_id,
+                                   gmp_parser_t *gmp_parser,
+                                   GError **error)
+{
+  switch (manage_set_config (config_id, name, comment, scanner_id))
+    {
+      case 0:
+        return 0;
+      case 1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_ERROR_SYNTAX ("modify_config", "Name must be unique"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 2:
+        if (send_find_error_to_client ("modify_config",
+                                       "scanner",
+                                       scanner_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return -1;
+          }
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 3:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 4:
+        if (send_find_error_to_client ("modify_config",
+                                       "config",
+                                       config_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return -1;
+          }
+        return -1;
+      case -1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      default:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+    }
+}
+
+static int
+modify_config_collect_selection_families (entities_t entities,
+                                          array_t **families_growing_all,
+                                          array_t **families_growing_empty,
+                                          array_t **families_static_all)
+{
+  entities_t iter_entities;
+  entity_t entity;
+
+  assert (families_growing_all);
+  assert (families_growing_empty);
+  assert (families_static_all);
+
+  *families_growing_all = make_array ();
+  *families_growing_empty = make_array ();
+  *families_static_all = make_array ();
+
+  iter_entities = entities;
+  while ((entity = first_entity (iter_entities)))
+    {
+      if (strcmp (entity_name (entity), "family") == 0)
+        {
+          char *name, *growing_str, *all_str;
+          name = text_or_null (entity_child (entity, "name"));
+          all_str = text_or_null (entity_child (entity, "all"));
+          growing_str = text_or_null (entity_child (entity, "growing"));
+
+          if (growing_str && strcmp (growing_str, "0"))
+            {
+              if (all_str && strcmp (all_str, "0"))
+                array_add (*families_growing_all, name);
+              else
+                array_add (*families_growing_empty, name);
+            }
+          else if (all_str && strcmp (all_str, "0"))
+            array_add (*families_static_all, name);
+        }
+      iter_entities = next_entities (iter_entities);
+    }
+
+  array_terminate (*families_growing_all);
+  array_terminate (*families_growing_empty);
+  array_terminate (*families_static_all);
+
+  return 0;
+}
+
+static int
+modify_config_handle_family_selection (const char *config_id,
+                                       array_t *families_growing_all,
+                                       array_t *families_growing_empty,
+                                       array_t *families_static_all,
+                                       int family_selection_growing,
+                                       gmp_parser_t *gmp_parser,
+                                       GError **error)
+{
+  switch (manage_set_config_families
+             (config_id,
+              families_growing_all,
+              families_static_all,
+              families_growing_empty,
+              family_selection_growing))
+    {
+      case 0:
+        return 0;
+      case 1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 2:
+        if (send_find_error_to_client ("modify_config",
+                                       "config",
+                                       config_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return -1;
+          }
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 3:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_ERROR_SYNTAX ("modify_config",
+                            "Whole-only families must include entire"
+                            " family and be growing"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case -1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      default:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+    }
+}
+
+static int
+modify_config_collect_selection_nvts (entities_t entities,
+                                      array_t **nvt_oids)
+{
+  entities_t iter_entities;
+  entity_t entity;
+
+  assert (entities);
+  assert (nvt_oids);
+
+  *nvt_oids = make_array ();
+
+  iter_entities = entities;
+  while ((entity = first_entity (iter_entities)))
+    {
+      if (strcmp (entity_name (entity), "nvt") == 0)
+        {
+          char *oid;
+          oid = attr_or_null (entity, "oid");
+          if (oid)
+            array_add (*nvt_oids, oid);
+        }
+      iter_entities = next_entities (iter_entities);
+    }
+
+  array_terminate (*nvt_oids);
+
+  return 0;
+}
+
+static int
+modify_config_handle_nvt_selection (const char *config_id,
+                                    const char *nvt_selection_family,
+                                    GPtrArray *nvt_selection,
+                                    gmp_parser_t *gmp_parser,
+                                    GError **error)
+{
+  switch (manage_set_config_nvts
+            (config_id,
+             nvt_selection_family,
+             nvt_selection))
+    {
+      case 0:
+        return 0;
+      case 1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 2:
+        if (send_find_error_to_client ("modify_config",
+                                        "config",
+                                        config_id,
+                                        gmp_parser))
+          {
+            error_send_to_client (error);
+            return -1;
+          }
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 3:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1,
+           XML_ERROR_SYNTAX ("modify_config",
+                             "Attempt to modify NVT in whole-only family %s"),
+           nvt_selection_family);
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case -1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      default:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+    }
+}
+
+static int
+modify_config_handle_preference (const char *config_id,
+                                 const char *nvt_oid,
+                                 const char *name,
+                                 const char *value,
+                                 gmp_parser_t *gmp_parser,
+                                 GError **error)
+{
+  switch (manage_set_config_preference (config_id, nvt_oid, name, value))
+    {
+      case 0:
+        return 0;
+      case 1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 2:
+        if (nvt_oid)
+          {
+            SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+              (-1, 
+               XML_ERROR_SYNTAX ("modify_config",
+                                 "Empty radio value for preference %s"
+                                 " of NVT %s"),
+               name,
+               nvt_oid);
+          }
+        else
+          {
+            SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
+              (-1, 
+               XML_ERROR_SYNTAX ("modify_config",
+                                 "Empty radio value for preference %s"),
+               nvt_oid);
+          }
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      case 3:
+        if (send_find_error_to_client ("modify_config",
+                                       "config",
+                                       config_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return -1;
+          }
+        return -1;
+      case -1:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN 
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+      default:
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN 
+          (-1, XML_INTERNAL_ERROR ("modify_config"));
+        log_event_fail ("config", "Scan Config", config_id, "modified");
+        return -1;
+    }
+}
+
+/**
+ * @brief Execute command.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[out] error        Error parameter.
+ */
+static void
+modify_config_run (gmp_parser_t *gmp_parser, GError **error)
+{
+  entity_t entity, child;
+  entities_t children;
+  const char *config_id;
+
+  entity = (entity_t) modify_config_data.context->first->data;
+
+  // Check command permission
+  if (acl_user_may ("modify_config") == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                                "Permission denied"));
+      return;
+    }
+
+  // Basic attributes and elements
+  config_id = attr_or_null (entity, "config_id");
+
+  if (config_id == NULL)
+    SEND_TO_CLIENT_OR_FAIL
+     (XML_ERROR_SYNTAX ("modify_config",
+                        "A config_id attribute is required"));
+  else if (config_predefined_uuid (config_id))
+    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                              "Permission denied"));
+
+  if (modify_config_handle_basic_fields 
+         (config_id,
+          text_or_null (entity_child (entity, "name")),
+          text_or_null (entity_child (entity, "comment")),
+          text_or_null (entity_child (entity, "scanner")),
+          gmp_parser,
+          error))
+    {
+      // FIXME: sql_rollback ();
+      return;
+    }
+
+  // Preferences and NVT selections
+  children = entity->entities;
+  while ((child = first_entity (children)))
+    {
+      if (strcmp (child->name, "family_selection") == 0)
+        {
+          array_t *families_growing_all;
+          array_t *families_growing_empty;
+          array_t *families_static_all;
+          const char *growing_str;
+          int growing;
+
+          growing_str = text_or_null (entity_child (child, "growing"));
+          growing = (growing_str && strcmp (growing_str, "0")) ? 1 : 0;
+
+          if (modify_config_collect_selection_families
+                 (child->entities,
+                  &families_growing_all,
+                  &families_growing_empty,
+                  &families_static_all)
+              || modify_config_handle_family_selection
+                   (config_id,
+                    families_growing_all,
+                    families_growing_empty,
+                    families_static_all,
+                    growing,
+                    gmp_parser,
+                    error))
+            {
+              // FIXME: sql_rollback ();
+              g_ptr_array_free (families_growing_all, TRUE);
+              g_ptr_array_free (families_growing_empty, TRUE);
+              g_ptr_array_free (families_static_all, TRUE);
+              return;
+            }
+          g_ptr_array_free (families_growing_all, TRUE);
+          g_ptr_array_free (families_growing_empty, TRUE);
+          g_ptr_array_free (families_static_all, TRUE);
+        }
+      else if (strcmp (child->name, "nvt_selection") == 0)
+        {
+          array_t *nvt_selection;
+
+          if (modify_config_collect_selection_nvts
+                 (child->entities,
+                  &nvt_selection)
+              || modify_config_handle_nvt_selection
+                   (config_id,
+                    text_or_null (entity_child (child, "family")),
+                    nvt_selection,
+                    gmp_parser,
+                    error))
+            {
+              // FIXME: sql_rollback ();
+              g_ptr_array_free (nvt_selection, TRUE);
+              return;
+            }
+          g_ptr_array_free (nvt_selection, TRUE);
+        }
+      else if (strcmp (child->name, "preference") == 0)
+        {
+          if (modify_config_handle_preference
+                 (config_id,
+                  attr_or_null (entity_child (child, "nvt"), "oid"),
+                  text_or_null (entity_child (child, "name")),
+                  text_or_null (entity_child (child, "value")),
+                  gmp_parser,
+                  error))
+            {
+              // FIXME: sql_rollback ();
+              return;
+            }
+        }
+      children = next_entities (children);
+    }
+
+  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
+  log_event ("config", "Scan Config", config_id, "modified");
+
+  // Cleanup
+  modify_config_reset ();
+}
+
+/**
+ * @brief End element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  name         Element name.
+ *
+ * @return 0 success, 1 command finished.
+ */
+int
+modify_config_element_end (gmp_parser_t *gmp_parser, GError **error,
+                           const gchar *name)
+{
+  xml_handle_end_element (modify_config_data.context, name);
+  if (modify_config_data.context->done)
+    {
+      modify_config_run (gmp_parser, error);
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Add text to element.
+ *
+ * @param[in]  text         Text.
+ * @param[in]  text_len     Text length.
+ */
+void
+modify_config_element_text (const gchar *text, gsize text_len)
+{
+  xml_handle_text (modify_config_data.context, text, text_len);
 }
