@@ -26594,7 +26594,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         gvm_append_text (&create_report_data->result_detection_name, text, text_len);
         break;
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_VALUE:
-        if (create_report_data->result_detection_name != NULL){
+        if (create_report_data->result_detection_name != NULL)
+          {
             if (strcmp("product", create_report_data->result_detection_name) == 0)
               {
                 gvm_append_text (&create_report_data->result_detection_product, text, text_len);
@@ -26622,7 +26623,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
                 detection_detail_t *detail = 
                     (detection_detail_t*) g_malloc (sizeof (detection_detail_t));
-                if (detail){
+                if (detail)
+                  {
                     detail->product = create_report_data->result_detection_product;
                     create_report_data->result_detection_product = NULL;
                     detail->location = create_report_data->result_detection_location;
@@ -26632,7 +26634,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                     detail->source_name = create_report_data->result_detection_source_name; 
                     create_report_data->result_detection_source_name = NULL;
                     array_add(create_report_data->result_detection, detail);
-                }
+                  }
             }
 
  
