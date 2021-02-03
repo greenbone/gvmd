@@ -7376,14 +7376,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT);
         ELSE_READ_OVER;
 
-      // The _DETECTION_ case statements are hierachical, they're setup that
-      // on a known field they react and jump to the next field (break;) but on
-      // an unknown element_name they set the state to the previous without
-      // going to the next field to prevent overjumping of valid fields within
-      // CLIENT_CREATE_REPORT_RR_RESULTS_RESULT.
-      // Hence they're sorted from specific to abstract cases.
-
-
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
