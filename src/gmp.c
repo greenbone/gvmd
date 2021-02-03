@@ -718,7 +718,7 @@ typedef struct
   char *result_detection_source_name; ///< source_name of detection in result.
   char *result_detection_source_oid; ///< source_oid of detection in result.
   char *result_detection_location; ///< location of detection in result.
-  array_t *result_detection; 	  ///< Detections for current result
+  array_t *result_detection;      ///< Detections for current result
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
   char *scan_start;               ///< Start time for a scan.
@@ -18668,19 +18668,16 @@ gmp_xml_handle_result ()
       for (unsigned int i = 0; i < create_report_data->result_detection->len;
            i++)
         {
+          host_detail_t *detail;
           // prepare detection to be found within
           // result_detection_reference
           detection_detail_t *detection =
             (detection_detail_t *) g_ptr_array_index (
               create_report_data->result_detection, i);
 
-          host_detail_t *detail;
           // used to find location within report_host_details via
           // - oid as source_name
           // - detected_at as name
-          // could be simplified by using detected_by as a key for
-          // location,
-          // but may have unwanted sideeffects.
           detail = g_malloc (sizeof (host_detail_t));
           detail->ip = g_strdup (result->host);
           detail->name = g_strdup ("detected_at");
@@ -18693,13 +18690,9 @@ gmp_xml_handle_result ()
           // used to find oid within report_host_details via
           // - oid as source_name
           // - detected_by as name
-          // could be simplified by using detected_at as a key for
-          // oid,
-          // but may have unwanted sideeffects.
-          // Doubling the  data set.
           detail = g_malloc (sizeof (host_detail_t));
           detail->ip = g_strdup (result->host);
-          detail->name = g_strdup ("detected_by");
+          detail->name = g_strconcat ("detected_by@", detection->location, NULL);
           detail->source_desc = g_strdup ("create_report_import");
           detail->source_name = g_strdup (detection->source_oid);
           detail->source_type = g_strdup ("create_report_import");
@@ -21305,6 +21298,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR, ERRORS);
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR:
         {
+          if (create_report_data->result_severity == NULL)
+            {
+              create_report_data->result_severity = strdup ("-3.0");
+            }
+          if (create_report_data->result_threat == NULL)
+            {
+              create_report_data->result_threat = strdup ("Error");
+            }
           gmp_xml_handle_result();
           set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS);
           break;
@@ -26589,48 +26590,56 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
               &create_report_data->result_threat);
 
-	  case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_NAME:
-		gvm_append_text (&create_report_data->result_detection_name, text, text_len);
-		break;
-	  case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_VALUE:
-		if (create_report_data->result_detection_name != NULL){
-			if (strcmp("product", create_report_data->result_detection_name) == 0){
-				gvm_append_text (&create_report_data->result_detection_product, text, text_len);
-			} else if (strcmp("location", create_report_data->result_detection_name) == 0){
-				gvm_append_text (&create_report_data->result_detection_location, text, text_len);
-			} else if (strcmp("source_oid", create_report_data->result_detection_name) == 0){
-				gvm_append_text (&create_report_data->result_detection_source_oid, text, text_len);
-			} else if (strcmp("source_name", create_report_data->result_detection_name) == 0){
-				gvm_append_text (&create_report_data->result_detection_source_name, text, text_len);
-			}
-			free(create_report_data->result_detection_name);
-			create_report_data->result_detection_name = NULL;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_NAME:
+        gvm_append_text (&create_report_data->result_detection_name, text, text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_VALUE:
+        if (create_report_data->result_detection_name != NULL){
+            if (strcmp("product", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_product, text, text_len);
+              }
+            else if (strcmp("location", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_location, text, text_len);
+              }
+            else if (strcmp("source_oid", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_source_oid, text, text_len);
+              }
+            else if (strcmp("source_name", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_source_name, text, text_len);
+              }
+            free(create_report_data->result_detection_name);
+            create_report_data->result_detection_name = NULL;
 
-			if (create_report_data->result_detection_product &&
-					create_report_data->result_detection_location &&
-					create_report_data->result_detection_source_oid &&
-					create_report_data->result_detection_source_name){
+            if (create_report_data->result_detection_product &&
+                    create_report_data->result_detection_location &&
+                    create_report_data->result_detection_source_oid &&
+                    create_report_data->result_detection_source_name)
+              {
 
-				detection_detail_t *detail = 
-					(detection_detail_t*) g_malloc (sizeof (detection_detail_t));
-				if (detail){
-					detail->product = create_report_data->result_detection_product;
-					create_report_data->result_detection_product = NULL;
-					detail->location = create_report_data->result_detection_location;
-					create_report_data->result_detection_location = NULL;
-					detail->source_oid = create_report_data->result_detection_source_oid;
-					create_report_data->result_detection_source_oid = NULL;
-					detail->source_name = create_report_data->result_detection_source_name; 
-					create_report_data->result_detection_source_name = NULL;
-					array_add(create_report_data->result_detection, detail);
-				}
-			}
+                detection_detail_t *detail = 
+                    (detection_detail_t*) g_malloc (sizeof (detection_detail_t));
+                if (detail){
+                    detail->product = create_report_data->result_detection_product;
+                    create_report_data->result_detection_product = NULL;
+                    detail->location = create_report_data->result_detection_location;
+                    create_report_data->result_detection_location = NULL;
+                    detail->source_oid = create_report_data->result_detection_source_oid;
+                    create_report_data->result_detection_source_oid = NULL;
+                    detail->source_name = create_report_data->result_detection_source_name; 
+                    create_report_data->result_detection_source_name = NULL;
+                    array_add(create_report_data->result_detection, detail);
+                }
+            }
 
  
 
-		}
-		break;
-	
+        }
+        break;
+    
       APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME,
               &create_report_data->detail_name);
 
