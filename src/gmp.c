@@ -18615,20 +18615,34 @@ gmp_xml_handle_result ()
   if (create_report_data->result_severity == NULL)
     {
       if (create_report_data->result_threat == NULL)
-        create_report_data->result_severity = strdup ("");
+        {
+          create_report_data->result_severity = strdup ("");
+        }
       else if (strcasecmp (create_report_data->result_threat, "High") == 0)
-        create_report_data->result_severity = strdup ("10.0");
+        {
+          create_report_data->result_severity = strdup ("10.0");
+        }
       else if (strcasecmp (create_report_data->result_threat, "Medium") == 0)
-        create_report_data->result_severity = strdup ("5.0");
+        {
+          create_report_data->result_severity = strdup ("5.0");
+        }
       else if (strcasecmp (create_report_data->result_threat, "Low") == 0)
-        create_report_data->result_severity = strdup ("2.0");
+        {
+          create_report_data->result_severity = strdup ("2.0");
+        }
       else if (strcasecmp (create_report_data->result_threat, "Log") == 0)
-        create_report_data->result_severity = strdup ("0.0");
+        {
+          create_report_data->result_severity = strdup ("0.0");
+        }
       else if (strcasecmp (create_report_data->result_threat, "False Positive")
                == 0)
-        create_report_data->result_severity = strdup ("-1.0");
+        {
+          create_report_data->result_severity = strdup ("-1.0");
+        }
       else
-        create_report_data->result_severity = strdup ("");
+        {
+          create_report_data->result_severity = strdup ("");
+        }
     }
 
   result = g_malloc (sizeof (create_report_result_t));
@@ -18687,15 +18701,14 @@ gmp_xml_handle_result ()
           detail->ip = g_strdup (result->host);
           detail->name = g_strdup ("detected_by");
           detail->source_desc = g_strdup ("create_report_import");
-          detail->source_name = g_strdup (
-            detection->source_oid);
+          detail->source_name = g_strdup (detection->source_oid);
           detail->source_type = g_strdup ("create_report_import");
           detail->value = g_strdup (detection->source_oid);
           array_add (create_report_data->details, detail);
-		  g_free (detection->location);
-		  g_free (detection->product);
-		  g_free (detection->source_name);
-		  g_free (detection->source_oid);
+          g_free (detection->location);
+          g_free (detection->product);
+          g_free (detection->source_name);
+          g_free (detection->source_oid);
           g_free (detection);
         }
     }
