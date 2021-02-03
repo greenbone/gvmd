@@ -19367,10 +19367,10 @@ result_detection_reference (result_t result, report_t report,
                               "                    WHERE id = %llu);",
                               report, quoted_host, result);
     }
-  if (*location == NULL){
-	  
-    goto detect_cleanup;
-  }
+  if (*location == NULL)
+    {
+        goto detect_cleanup;
+    }
 
   quoted_location = sql_quote (*location);
 
@@ -19404,9 +19404,10 @@ result_detection_reference (result_t result, report_t report,
                       report, quoted_host, result);
     }
 
-  if (*oid == NULL){
-	  goto detect_cleanup;
-  }
+  if (*oid == NULL)
+    {
+        goto detect_cleanup;
+    }
 
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
