@@ -7234,7 +7234,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_report_data->host_ends = make_array ();
             create_report_data->host_starts = make_array ();
             create_report_data->results = make_array ();
-			create_report_data->result_detection = make_array ();
+             create_report_data->result_detection = make_array ();
             set_client_state (CLIENT_CREATE_REPORT_RR);
           }
         ELSE_READ_OVER;
@@ -7416,7 +7416,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT);
           }
        ELSE_READ_OVER; 
-      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT:
+     case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT:
         if (strcasecmp ("DETAILS", element_name) == 0)
           {
             set_client_state (
