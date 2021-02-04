@@ -19341,8 +19341,8 @@ result_detection_reference (result_t result, report_t report,
 
   quoted_location = NULL;
   *oid = *ref = *product = *location = *name = NULL;
-
   quoted_host = sql_quote (host);
+
 
   if (path && strcmp (path, ""))
     {
@@ -19367,9 +19367,11 @@ result_detection_reference (result_t result, report_t report,
                               "                    WHERE id = %llu);",
                               report, quoted_host, result);
     }
-
   if (*location == NULL)
-    goto detect_cleanup;
+    {
+        goto detect_cleanup;
+    }
+
   quoted_location = sql_quote (*location);
 
   *oid
@@ -19385,7 +19387,6 @@ result_detection_reference (result_t result, report_t report,
                   "                    WHERE id = %llu)"
                   " LIMIT 1",
                   report, quoted_host, quoted_location, result);
-
   if (*oid == NULL)
     {
       *oid
@@ -19404,7 +19405,9 @@ result_detection_reference (result_t result, report_t report,
     }
 
   if (*oid == NULL)
-    goto detect_cleanup;
+    {
+        goto detect_cleanup;
+    }
 
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
@@ -20348,7 +20351,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_host, *quoted_hostname, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
-
       g_debug ("%s: add results: index: %i", __func__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
