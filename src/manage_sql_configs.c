@@ -866,6 +866,14 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
                   family_or_nvt);
 }
 
+/**
+ * @brief Starts the SQL transaction for modify_config and finds the config.
+ *
+ * @param[in]  config_id    UUID of the config to find.
+ * @param[out] config_out   Row ID of the config or 0 if not found.
+ * 
+ * @return 0 success, 1 config not found, -1 error.
+ */
 int
 manage_modify_config_start (const char *config_id, config_t *config_out)
 {
@@ -885,12 +893,18 @@ manage_modify_config_start (const char *config_id, config_t *config_out)
   return 0;
 }
 
+/**
+ * @brief Cancels a manage_config command and rolls back the changes.
+ */
 void
 manage_modify_config_cancel ()
 {
   sql_rollback ();
 }
 
+/**
+ * @brief Commits the changes of a manage_config command.
+ */
 void
 manage_modify_config_commit ()
 {
@@ -900,7 +914,7 @@ manage_modify_config_commit ()
 /**
  * @brief Refresh NVT selection of a config from given families.
  *
- * @param[in]  config_id             Config.
+ * @param[in]  config                Config to modify.
  * @param[in]  growing_all_families  Growing families with all selection.
  * @param[in]  static_all_families   Static families with all selection.
  * @param[in]  growing_families      The rest of the growing families.
@@ -4208,7 +4222,7 @@ config_family_entire_and_growing (config_t config, const char* family)
 /**
  * @brief Set the NVT's selected for a single family of a config.
  *
- * @param[in]  config_id      Config.
+ * @param[in]  config         Config to modify.
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *

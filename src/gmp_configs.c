@@ -769,6 +769,18 @@ modify_config_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                             attribute_values);
 }
 
+/**
+ * @brief Handle basic, single-value fields of modify_config.
+ * 
+ * @param[in]  config       The config to modify.
+ * @param[in]  name         The name to set or NULL to keep old value.
+ * @param[in]  comment      The comment to set or NULL to keep old value.
+ * @param[in]  scanner_id   The scanner ID to set or NULL to keep old value.
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[out] error        GError output.
+ * 
+ * @return 0 on success, -1 on error.
+ */
 static int
 modify_config_handle_basic_fields (config_t config,
                                    const char *name,
@@ -810,6 +822,19 @@ modify_config_handle_basic_fields (config_t config,
     }
 }
 
+/**
+ * @brief Collect VT families from parsed modify_config XML into arrays.
+ *
+ * Family name strings are to be freed with entity.
+ * VT families not collected are assumed to be static and empty.
+ *
+ * @param[in]  entities   The entities struct with family elems as children.
+ * @param[out] families_growing_all    Array of growing families with all VTs.
+ * @param[out] families_growing_empty  Array of growing, empty families.
+ * @param[out] families_static_all     Array of static families with all VTs.
+ * 
+ * @return 0 on success, -1 on error.
+ */
 static int
 modify_config_collect_selection_families (entities_t entities,
                                           array_t **families_growing_all,
@@ -857,6 +882,19 @@ modify_config_collect_selection_families (entities_t entities,
   return 0;
 }
 
+/**
+ * @brief Handles a family selection inside a modify_config command.
+ * 
+ * @param[in]  config                   The config to modify.
+ * @param[in]  families_growing_all     Array of growing families with all VTs.
+ * @param[in]  families_growing_empty   Array of growing, empty families.
+ * @param[in]  families_static_all      Array of static families with all VTs.
+ * @param[in]  family_selection_growing 1 if families should grow, else 0.
+ * @param[in]  gmp_parser               The GMP parser.
+ * @param[out] error                    GError output.
+ * 
+ * @return 0 on success, -1 on error.
+ */
 static int
 modify_config_handle_family_selection (config_t config,
                                        array_t *families_growing_all,
@@ -896,6 +934,14 @@ modify_config_handle_family_selection (config_t config,
     }
 }
 
+/**
+ * @brief Collect a list of VT OIDs for a particular family in modify_config.
+ *
+ * @param[in]  entities  The entities containing nvt elements as children.
+ * @param[out] nvt_oids  The list of VT OIDs to select.
+ *
+ * @return 0 on success, -1 on error.
+ */
 static int
 modify_config_collect_selection_nvts (entities_t entities,
                                       array_t **nvt_oids)
@@ -926,6 +972,17 @@ modify_config_collect_selection_nvts (entities_t entities,
   return 0;
 }
 
+/**
+ * @brief Changes the VT selection of a given family in modify_config.
+ *
+ * @param[in]  config               The config to modify.
+ * @param[in]  nvt_selection_family The family to set the VT selection of.
+ * @param[in]  nvt_selection        Array of VT OIDs to select of the family.
+ * @param[in]  gmp_parser           The GMP parser.
+ * @param[out] error                GError output.
+ *
+ * @return 0 on success, -1 on error.
+ */
 static int
 modify_config_handle_nvt_selection (config_t config,
                                     const char *nvt_selection_family,
@@ -962,6 +1019,18 @@ modify_config_handle_nvt_selection (config_t config,
     }
 }
 
+/**
+ * @brief Modifies a single preference inside a modify_config command.
+ *
+ * @param[in]  config     The config to modify
+ * @param[in]  nvt_oid    VT OID of the preference or NULL for scanner pref.
+ * @param[in]  name       Name of the prefernce to Changes
+ * @param[in]  value      Value to set for the preference.
+ * @param[in]  gmp_parser The GMP parser.
+ * @param[out] error      GError output.
+ * 
+ * @return 0 on success, -1 on error.
+ */
 static int
 modify_config_handle_preference (config_t config,
                                  const char *nvt_oid,
