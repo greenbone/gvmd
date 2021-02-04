@@ -4795,11 +4795,13 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
 
   with_clause = NULL;
 
-  if (resource)
-    /* Ownership test is done above by find function. */
-    owned_clause = g_strdup (" t ()");
-  else if (assume_permitted)
-    owned_clause = g_strdup (" t ()");
+  if (resource || assume_permitted)
+    /* Ownership test of single resources is done above by find function
+     * but acl_where_owned has to be called to generate WITH clause
+     * in case subqueries depend on it.
+     */
+    owned_clause = acl_where_owned (type, get, 0, owner_filter, resource,
+                                    permissions, &with_clause);
   else
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
                                     permissions, &with_clause);
@@ -21806,9 +21808,16 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t *filterable_columns;
   int ret;
   gchar *filter;
+<<<<<<< HEAD
   int apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clauses;
   const gchar *lateral;
+=======
+  int autofp, apply_overrides, dynamic_severity;
+  gchar *extra_tables, *extra_where, *extra_where_single;
+  gchar *owned_clause, *with_clause;
+  char *user_id;
+>>>>>>> 69f484d09... Also create owner WITH clause for single resources
 
   assert (report);
 
@@ -21966,6 +21975,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   free (filter);
 
+<<<<<<< HEAD
   if (apply_overrides)
     {
       gchar *owned_clause, *with_clause;
@@ -22010,6 +22020,37 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     }
   else
     with_clauses = NULL;
+=======
+  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                        current_credentials.uuid);
+  // Do not get ACL with_clause as it will be added by init_get_iterator2_with.
+  owned_clause = acl_where_owned_for_get ("override", user_id, NULL);
+  free (user_id);
+
+  with_clause = g_strdup_printf
+                  (" valid_overrides"
+                   " AS (SELECT result_nvt, hosts, new_severity, port,"
+                   "            severity, result"
+                   "     FROM overrides"
+                   "     WHERE %s"
+                   /*    Only use if override's NVT is in report. */
+                   "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                   "                 WHERE report = %llu"
+                   "                 AND result_nvt"
+                   "                     = overrides.result_nvt)"
+                   "     AND (task = 0"
+                   "          OR task = (SELECT reports.task"
+                   "                     FROM reports"
+                   "                     WHERE reports.id = %llu))"
+                   "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                   "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                   "           creation_time DESC)"
+                   " ",
+                   owned_clause,
+                   report,
+                   report);
+  g_free (owned_clause);
+>>>>>>> 69f484d09... Also create owner WITH clause for single resources
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
@@ -22029,11 +22070,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  TRUE,
                                  report ? TRUE : FALSE,
                                  extra_order,
-                                 with_clauses,
+                                 with_clause,
                                  1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
-  g_free (with_clauses);
+  g_free (with_clause);
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
