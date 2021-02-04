@@ -866,10 +866,23 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
                   family_or_nvt);
 }
 
-void
-manage_modify_config_start ()
+int
+manage_modify_config_start (const char *config_id, config_t *config_out)
 {
   sql_begin_immediate ();
+  
+  if (find_config_with_permission (config_id, config_out, "modify_config"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (*config_out == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+  
+  return 0;
 }
 
 void
@@ -893,18 +906,17 @@ manage_modify_config_commit ()
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, 3 whole-only
- *         families must be growing and include entire family, -1 error.
+ * @return 0 success, 1 config in use, 2 whole-only families must be growing
+ *         and include entire family, -1 error.
  */
 int
-manage_set_config_families (const gchar *config_id,
+manage_set_config_families (config_t config,
                             GPtrArray* growing_all_families,
                             GPtrArray* static_all_families,
                             GPtrArray* growing_families,
                             int grow_families)
 {
   static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
-  config_t config;
   iterator_t families;
   gchar *quoted_selector;
   int constraining;
@@ -915,18 +927,9 @@ manage_set_config_families (const gchar *config_id,
   for (const gchar **whole = wholes; *whole; whole++)
     if (member (growing_all_families, *whole)
         || member (static_all_families, *whole))
-      return 3;
+      return 2;
 
   /* Check the args. */
-
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      return -1;
-    }
-  if (config == 0)
-    {
-      return 2;
-    }
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND hidden = 0;",
@@ -4031,35 +4034,24 @@ modify_config_preference (config_t config, const char* nvt,
 /**
  * @brief Set a preference of a config.
  *
- * @param[in]  config_id  Config.
+ * @param[in]  config      Config to modify.
  * @param[in]  nvt         UUID of NVT.  NULL for scanner preference.
  * @param[in]  name        Preference name, including NVT name and preference
  *                         type.
  * @param[in]  value_64    Preference value in base64.  NULL for an NVT
  *                         preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, 2 empty radio value, 3 failed to find
- *         config, -1 error.
+ * @return 0 success, 1 config in use, 2 empty radio value, -1 error.
  */
 int
-manage_set_config_preference (const gchar *config_id, const char* nvt,
+manage_set_config_preference (config_t config, const char* nvt,
                               const char* name, const char* value_64)
 {
   int ret;
-  config_t config;
 
   if (value_64 == NULL)
     {
       gchar *quoted_name, **splits;
-
-      if (find_config_with_permission (config_id, &config, "modify_config"))
-        {
-          return -1;
-        }
-      if (config == 0)
-        {
-          return 3;
-        }
 
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu AND hidden = 0;",
@@ -4091,15 +4083,6 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
       return 0;
     }
 
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      return -1;
-    }
-  if (config == 0)
-    {
-      return 3;
-    }
-
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND hidden = 0;",
                config))
@@ -4119,31 +4102,19 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
 /**
  * @brief Set the name, comment and scanner of a config.
  *
- * @param[in]  config_id    Config.
+ * @param[in]  config       Config to modify.
  * @param[in]  name         New name, not updated if NULL.
  * @param[in]  comment      New comment, not updated if NULL.
  * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
  * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
- *         exist, 3 modification not allowed while config is in use, 4 failed to
- *         find config, -1 error.
+ *         exist, 3 modification not allowed while config is in use, -1 error.
  */
 int
-manage_set_config (const gchar *config_id, const char*name, const char *comment,
+manage_set_config (config_t config, const char *name, const char *comment,
                    const char *scanner_id)
 {
-  config_t config;
-
   assert (current_credentials.uuid);
-
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      return -1;
-    }
-  if (config == 0)
-    {
-      return 4;
-    }
 
   if (name)
     {
@@ -4241,29 +4212,18 @@ config_family_entire_and_growing (config_t config, const char* family)
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, 3 whole-only
- *         family, -1 error.
+ * @return 0 success, 1 config in use, 2 whole-only family, -1 error.
  */
 int
-manage_set_config_nvts (const gchar *config_id, const char* family,
+manage_set_config_nvts (config_t config, const char* family,
                         GPtrArray* selected_nvts)
 {
-  config_t config;
   char *selector;
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
 
   if (family_whole_only (family))
-    return 3;
-
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      return -1;
-    }
-  if (config == 0)
-    {
-      return 2;
-    }
+    return 2;
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND hidden = 0;",
