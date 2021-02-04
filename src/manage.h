@@ -1213,6 +1213,18 @@ typedef struct
   char *value;        ///< Detail value.
 } host_detail_t;
 
+
+/**
+ * @brief A detection detail for create_report.
+ */
+typedef struct
+{
+  char *product; ///< product of detection in result.
+  char *source_name; ///< source_name of detection in result.
+  char *source_oid; ///< source_oid of detection in result.
+  char *location; ///< location of detection in result.
+} detection_detail_t;
+
 void
 host_detail_free (host_detail_t *);
 
