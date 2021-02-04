@@ -1102,6 +1102,8 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
     SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
                                               "Permission denied"));
 
+  manage_modify_config_start ();
+
   if (modify_config_handle_basic_fields 
          (config_id,
           text_or_null (entity_child (entity, "name")),
@@ -1110,7 +1112,7 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
           gmp_parser,
           error))
     {
-      // FIXME: sql_rollback ();
+      manage_modify_config_cancel ();
       return;
     }
 
@@ -1143,7 +1145,7 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
                     gmp_parser,
                     error))
             {
-              // FIXME: sql_rollback ();
+              manage_modify_config_cancel ();
               g_ptr_array_free (families_growing_all, TRUE);
               g_ptr_array_free (families_growing_empty, TRUE);
               g_ptr_array_free (families_static_all, TRUE);
@@ -1167,7 +1169,7 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
                     gmp_parser,
                     error))
             {
-              // FIXME: sql_rollback ();
+              manage_modify_config_cancel ();
               g_ptr_array_free (nvt_selection, TRUE);
               return;
             }
@@ -1183,13 +1185,14 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
                   gmp_parser,
                   error))
             {
-              // FIXME: sql_rollback ();
+              manage_modify_config_cancel ();
               return;
             }
         }
       children = next_entities (children);
     }
 
+  manage_modify_config_commit ();
   SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
   log_event ("config", "Scan Config", config_id, "modified");
 

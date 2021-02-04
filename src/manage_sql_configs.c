@@ -866,6 +866,24 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
                   family_or_nvt);
 }
 
+void
+manage_modify_config_start ()
+{
+  sql_begin_immediate ();
+}
+
+void
+manage_modify_config_cancel ()
+{
+  sql_rollback ();
+}
+
+void
+manage_modify_config_commit ()
+{
+  sql_commit ();
+}
+
 /**
  * @brief Refresh NVT selection of a config from given families.
  *
@@ -901,16 +919,12 @@ manage_set_config_families (const gchar *config_id,
 
   /* Check the args. */
 
-  sql_begin_immediate ();
-
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
-      sql_rollback ();
       return -1;
     }
   if (config == 0)
     {
-      sql_rollback ();
       return 2;
     }
 
@@ -918,13 +932,11 @@ manage_set_config_families (const gchar *config_id,
                " WHERE config = %llu AND hidden = 0;",
                config))
     {
-      sql_rollback ();
       return 1;
     }
 
   if (config_type (config) > 0)
     {
-      sql_rollback ();
       return 0;
     }
   constraining = config_families_growing (config);
@@ -933,7 +945,6 @@ manage_set_config_families (const gchar *config_id,
     {
       if (switch_representation (config, constraining))
         {
-          sql_rollback ();
           return -1;
         }
       constraining = constraining == 0;
@@ -943,7 +954,6 @@ manage_set_config_families (const gchar *config_id,
   if (selector == NULL)
     {
       /* The config should always have a selector. */
-      sql_rollback ();
       return -1;
     }
   quoted_selector = sql_quote (selector);
@@ -1242,8 +1252,6 @@ manage_set_config_families (const gchar *config_id,
         }
     }
   cleanup_iterator (&families);
-
-  sql_commit ();
 
   g_free (quoted_selector);
   free (selector);
@@ -4044,16 +4052,12 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
     {
       gchar *quoted_name, **splits;
 
-      sql_begin_immediate ();
-
       if (find_config_with_permission (config_id, &config, "modify_config"))
         {
-          sql_rollback ();
           return -1;
         }
       if (config == 0)
         {
-          sql_rollback ();
           return 3;
         }
 
@@ -4061,7 +4065,6 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
                    " WHERE config = %llu AND hidden = 0;",
                    config))
         {
-          sql_rollback ();
           return 1;
         }
 
@@ -4084,22 +4087,16 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
            config,
            quoted_name);
 
-      sql_commit ();
-
       g_free (quoted_name);
       return 0;
     }
 
-  sql_begin_immediate ();
-
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
-      sql_rollback ();
       return -1;
     }
   if (config == 0)
     {
-      sql_rollback ();
       return 3;
     }
 
@@ -4107,18 +4104,15 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
                " WHERE config = %llu AND hidden = 0;",
                config))
     {
-      sql_rollback ();
       return 1;
     }
 
   ret = modify_config_preference (config, nvt, name, value_64);
   if (ret)
     {
-      sql_rollback ();
       return ret;
     }
 
-  sql_commit ();
   return 0;
 }
 
@@ -4142,16 +4136,12 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  sql_begin_immediate ();
-
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
-      sql_rollback ();
       return -1;
     }
   if (config == 0)
     {
-      sql_rollback ();
       return 4;
     }
 
@@ -4160,7 +4150,6 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
       gchar *quoted_name;
       if (resource_with_name_exists (name, "config", config))
         {
-          sql_rollback ();
           return 1;
         }
       quoted_name = sql_quote (name);
@@ -4180,7 +4169,6 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
     {
       if (config_in_use (config))
         {
-          sql_rollback ();
           return 3;
         }
       scanner_t scanner = 0;
@@ -4188,13 +4176,11 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
       if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners")
           || scanner == 0)
         {
-          sql_rollback ();
           return 2;
         }
       sql ("UPDATE configs SET scanner = %llu, modification_time = m_now ()"
            " WHERE id = %llu;", scanner, config);
     }
-  sql_commit ();
   return 0;
 }
 
@@ -4270,16 +4256,12 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
   if (family_whole_only (family))
     return 3;
 
-  sql_begin_immediate ();
-
   if (find_config_with_permission (config_id, &config, "modify_config"))
     {
-      sql_rollback ();
       return -1;
     }
   if (config == 0)
     {
-      sql_rollback ();
       return 2;
     }
 
@@ -4287,7 +4269,6 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
                " WHERE config = %llu AND hidden = 0;",
                config))
     {
-      sql_rollback ();
       return 1;
     }
 
@@ -4406,8 +4387,6 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
        old_nvt_count,
        MAX (new_nvt_count, 0),
        config);
-
-  sql_commit ();
 
   g_free (quoted_family);
   g_free (quoted_selector);

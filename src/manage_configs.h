@@ -135,6 +135,15 @@ config_families_growing (config_t);
 int
 config_nvts_growing (config_t);
 
+void
+manage_modify_config_start ();
+
+void
+manage_modify_config_cancel ();
+
+void
+manage_modify_config_commit ();
+
 int
 manage_set_config_preference (const gchar *, const char*, const char*,
                               const char*);
