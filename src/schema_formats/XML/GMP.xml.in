@@ -23280,19 +23280,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <summary>Modify an existing config</summary>
     <description>
       <p>
-        This command can take five forms: with a preference, with a family
-        selection, with an NVT selection, or with a name or comment.
+        This command can perform four types of actions: 1) modifying
+        preferences, 2) changing the family selection, 3) changing the
+        NVT selection of families, or 4) modifying basic fields like
+        the name or comment.
       </p>
+
       <p>
-        The first form modifies a preference on the config.
-        If the preference includes an NVT, then the preference is an NVT preference,
+        Since version 21.04 it is possible to perform multiple of these actions
+        at once in the order they appear in the command. Note that the changes
+        can influence each other, so this can change the overall result.
+      </p>
+
+      <p>
+        The first type modifies the preferences on the config.
+        If a preference includes an NVT, then the preference is an NVT preference,
         otherwise the preference is a scanner preference.  If the preference includes
         a value then the manager updates the value of the preference, otherwise the
         manager removes the preference.  The value must be base64 encoded.
       </p>
 
       <p>
-        The second form, with a family selection, lets the client modify the
+        The second type, with a family selection, lets the client modify the
         NVTs selected by the config at a family level.  The idea is that the
         client modifies the entire family selection at once, so a client will
         often need to include many families in a family selection.
@@ -23322,9 +23331,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </p>
 
       <p>
-        The third option, an NVT selection, must include a family and may include any
-        number of NVTs.  The manager updates the given family in the config to
-        include only the given NVTs.
+        The third option, NVT selections, must include a family and may include any
+        number of NVTs.  The manager updates each given family in the config to
+        include only the given NVTs. If the family selection is also changed,
+        this should be done first as it can also change the NVT selection of
+        families.
       </p>
 
       <p>
@@ -23340,14 +23351,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>uuid</type>
         <required>1</required>
       </attrib>
-      <or>
-        <e>name</e>
-        <e>comment</e>
-        <e>scanner</e>
-        <e>preference</e>
-        <e>family_selection</e>
-        <e>nvt_selection</e>
-      </or>
+      <o>><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>scanner</e></o>
+      <any><e>preference</e></any>
+      <o><e>family_selection</e></o>
+      <any><e>nvt_selection</e></any>
     </pattern>
     <ele>
       <name>name</name>
