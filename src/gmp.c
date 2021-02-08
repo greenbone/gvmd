@@ -11218,7 +11218,7 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_alerts", "alert", get_alerts_data->get.filt_id,
+                  ("get_alerts", "filter", get_alerts_data->get.filt_id,
                    gmp_parser))
               {
                 error_send_to_client (error);
@@ -11782,7 +11782,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                 ("get_configs", "config", get_configs_data->get.filt_id,
+                 ("get_configs", "filter", get_configs_data->get.filt_id,
                   gmp_parser))
               {
                 error_send_to_client (error);
@@ -12152,7 +12152,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client ("get_credentials",
-                                           "credential",
+                                           "filter",
                                            get_credentials_data->get.filt_id,
                                            gmp_parser))
               {
@@ -12941,7 +12941,7 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_groups", "group", get_groups_data->get.filt_id,
+                  ("get_groups", "filter", get_groups_data->get.filt_id,
                    gmp_parser))
               {
                 error_send_to_client (error);
@@ -13197,8 +13197,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       switch (ret)
         {
         case 1:
-          if (send_find_error_to_client ("get_info", "type",
-                                         get_info_data->type,
+          if (send_find_error_to_client ("get_info",
+                                         get_info_data->name
+                                          ? "name"
+                                          : "ID",
+                                         get_info_data->name
+                                          ? get_info_data->name
+                                          : get_info_data->get.id,
                                          gmp_parser))
             {
               error_send_to_client (error);
@@ -14103,7 +14108,7 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_port_lists", "port_list",
+                  ("get_port_lists", "filter",
                    get_port_lists_data->get.filt_id, gmp_parser))
               {
                 error_send_to_client (error);
@@ -15435,7 +15440,7 @@ handle_get_roles (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_roles", "role", get_roles_data->get.filt_id,
+                  ("get_roles", "filter", get_roles_data->get.filt_id,
                   gmp_parser))
               {
                 error_send_to_client (error);
@@ -17021,7 +17026,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_tasks", "task", get_tasks_data->get.filt_id,
+                  ("get_tasks", "filter", get_tasks_data->get.filt_id,
                   gmp_parser))
               {
                 error_send_to_client (error);
@@ -17734,7 +17739,7 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_users", "user", get_users_data->get.filt_id,
+                  ("get_users", "filter", get_users_data->get.filt_id,
                    gmp_parser))
               {
                 error_send_to_client (error);
