@@ -49,7 +49,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
 
-## [20.8.1] (unreleased)
+## [20.8.2] (unreleased)
+
+### Added
+
+### Changed
+
+### Fixed
+- Also create owner WITH clause for single resources [#1406](https://github.com/greenbone/gvmd/pull/1406)
+
+### Removed
+
+[20.8.2]: https://github.com/greenbone/gvmd/compare/v20.8.1...gvmd-20.08
+
+
+## [20.8.1] (2021-02-02)
 
 ### Added
 - Added ability to enter Subject Alternative Names (SAN) when generating a CSR [#1246](https://github.com/greenbone/gvmd/pull/1246)
@@ -64,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
 - The xsltproc binary is now marked as mandatory [#1259](https://github.com/greenbone/gvmd/pull/1259)
 - Check feed status without acquiring lock [#1266](https://github.com/greenbone/gvmd/pull/1266)
+- Replace g_file_test with gvm-libs file tests [#1391](https://github.com/greenbone/gvmd/pull/1391)
 
 ### Fixed
 - Add dummy functions to allow restoring old dumps [#1251](https://github.com/greenbone/gvmd/pull/1251)
@@ -100,6 +115,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Allow config to sync even if NVT family is not available [#1366](https://github.com/greenbone/gvmd/pull/1366)
 - Delete report format dirs last when deleting a user [#1368](https://github.com/greenbone/gvmd/pull/1368)
 - Fix sorting in get_aggregates and its documentation [#1375](https://github.com/greenbone/gvmd/pull/1375)
+- Improve "Failed to find..." messages [#1395](https://github.com/greenbone/gvmd/pull/1395)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
