@@ -4795,11 +4795,13 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
 
   with_clause = NULL;
 
-  if (resource)
-    /* Ownership test is done above by find function. */
-    owned_clause = g_strdup (" t ()");
-  else if (assume_permitted)
-    owned_clause = g_strdup (" t ()");
+  if (resource || assume_permitted)
+    /* Ownership test of single resources is done above by find function
+     * but acl_where_owned has to be called to generate WITH clause
+     * in case subqueries depend on it.
+     */
+    owned_clause = acl_where_owned (type, get, 0, owner_filter, resource,
+                                    permissions, &with_clause);
   else
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
                                     permissions, &with_clause);
@@ -21807,7 +21809,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clauses;
+  gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clause;
   const gchar *lateral;
 
   assert (report);
@@ -21968,16 +21970,18 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   if (apply_overrides)
     {
-      gchar *owned_clause, *with_clause;
+      gchar *owned_clause;
       char *user_id;
 
       user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
                             current_credentials.uuid);
-      owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
+      // Do not get ACL with_clause as it will be added by
+      // init_get_iterator2_with.
+      owned_clause = acl_where_owned_for_get ("override", user_id, NULL);
       free (user_id);
-      with_clauses = g_strdup_printf
-                      ("%s%s"
-                       " valid_overrides"
+
+      with_clause = g_strdup_printf
+                      (" valid_overrides"
                        " AS (SELECT result_nvt, hosts, new_severity, port,"
                        "            severity, result"
                        "     FROM overrides"
@@ -21995,21 +21999,13 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                        "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
                        "           creation_time DESC)"
                        " ",
-                       with_clause
-                        /* Skip the leading "WITH" because init_get..
-                         * below will add it.  A bit of a hack, but
-                         * it's the only place that needs this. */
-                        ? with_clause + 4
-                        : "",
-                       with_clause ? "," : "",
                        owned_clause,
                        report,
                        report);
-      g_free (with_clause);
       g_free (owned_clause);
     }
   else
-    with_clauses = NULL;
+    with_clause = NULL;
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
@@ -22029,11 +22025,11 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  TRUE,
                                  report ? TRUE : FALSE,
                                  extra_order,
-                                 with_clauses,
+                                 with_clause,
                                  1);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
-  g_free (with_clauses);
+  g_free (with_clause);
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
