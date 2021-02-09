@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 Greenbone Networks GmbH
+/* Copyright (C) 2020-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -580,7 +580,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
                           report_id,
                           NULL);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+  if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
     {
       g_warning ("%s: failed to remove dir %s", __func__, dir);
       g_free (dir);
@@ -1283,7 +1283,7 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 
   /* Check that the source directory exists. */
 
-  if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
+  if (!gvm_file_is_readable (source_dir))
     {
       g_warning ("%s: report format directory %s not found",
                  __func__, source_dir);
@@ -1294,7 +1294,7 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 
   copy_dir = g_build_filename (copy_parent, copy_uuid, NULL);
 
-  if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
+  if (gvm_file_exists (copy_dir)
       && gvm_file_remove_recurse (copy_dir))
     {
       g_warning ("%s: failed to remove dir %s", __func__, copy_dir);
@@ -1581,7 +1581,7 @@ modify_report_format (const char *report_format_id, const char *name,
 static int
 move_report_format_dir (const char *dir, const char *new_dir)
 {
-  if (g_file_test (dir, G_FILE_TEST_EXISTS)
+  if (gvm_file_is_readable (dir)
       && gvm_file_check_is_dir (dir))
     {
       gchar *new_dir_parent;
@@ -1783,7 +1783,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       report_format_string = g_strdup_printf ("%llu", report_format);
       dir = report_format_trash_dir (report_format_string);
       g_free (report_format_string);
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+      if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
         {
           g_free (dir);
           g_free (base);
@@ -1839,7 +1839,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Remove directory. */
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+      if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
         {
           g_free (dir);
           sql_rollback ();
@@ -3331,8 +3331,7 @@ run_report_format_script (gchar *report_format_id,
 
   script = g_build_filename (script_dir, "generate", NULL);
 
-  if (!g_file_test (script,
-                    G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
+  if (!gvm_file_is_readable (script))
     {
       g_warning ("%s: No generate script found at %s",
                  __func__, script);
@@ -3340,8 +3339,7 @@ run_report_format_script (gchar *report_format_id,
       g_free (script_dir);
       return -1;
     }
-  else if (!g_file_test (script,
-                         G_FILE_TEST_IS_EXECUTABLE))
+  else if (!gvm_file_is_executable (script))
     {
       g_warning ("%s: script %s is not executable",
                  __func__, script);
@@ -3923,7 +3921,7 @@ empty_trashcan_report_formats ()
       dir = report_format_trash_dir (name);
       g_free (name);
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+      if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
         {
           g_warning ("%s: failed to remove trash dir %s", __func__, dir);
           g_free (dir);
@@ -4093,8 +4091,7 @@ delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
                           user_id,
                           NULL);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS)
-      && gvm_file_remove_recurse (dir))
+  if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
     g_warning ("%s: failed to remove dir %s, continuing anyway",
                __func__, dir);
   g_free (dir);

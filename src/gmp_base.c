@@ -1,4 +1,4 @@
-/* Copyright (C) 2018 Greenbone Networks GmbH
+/* Copyright (C) 2018-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -151,10 +151,10 @@ send_find_error_to_client (const char* command, const char* type,
   gchar *msg;
   gboolean ret;
 
-  msg = g_strdup_printf ("<%s_response status=\""
-                         STATUS_ERROR_MISSING
-                         "\" status_text=\"Failed to find %s '%s'\"/>",
-                         command, type, id);
+  msg = g_markup_printf_escaped ("<%s_response status=\""
+                                 STATUS_ERROR_MISSING
+                                 "\" status_text=\"Failed to find %s '%s'\"/>",
+                                 command, type, id);
   ret = send_to_client (msg, gmp_parser->client_writer,
                         gmp_parser->client_writer_data);
   g_free (msg);

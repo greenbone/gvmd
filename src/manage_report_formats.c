@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 Greenbone Networks GmbH
+/* Copyright (C) 2020-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <glib.h>
+#include <gvm/util/fileutils.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
@@ -740,7 +741,7 @@ sync_report_formats_with_feed ()
 gboolean
 report_formats_feed_dir_exists ()
 {
-  return g_file_test (feed_dir_report_formats (), G_FILE_TEST_EXISTS);
+  return gvm_file_is_readable (feed_dir_report_formats ());
 }
 
 /**

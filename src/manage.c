@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2020 Greenbone Networks GmbH
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -5821,7 +5821,7 @@ sort_data_free (sort_data_t *sort_data)
 gboolean
 manage_gvmd_data_feed_dirs_exist ()
 {
-  return g_file_test (GVMD_FEED_DIR, G_FILE_TEST_EXISTS)
+  return gvm_file_is_readable (GVMD_FEED_DIR)
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();
