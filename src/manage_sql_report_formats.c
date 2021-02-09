@@ -3485,7 +3485,6 @@ run_report_format_script (gchar *report_format_id,
 
               /* Parent on success.  Wait for child, and check result. */
 
-              g_free (command);
 
               while (waitpid (pid, &status, 0) < 0)
                 {
@@ -3524,6 +3523,7 @@ run_report_format_script (gchar *report_format_id,
                         g_warning ("%s: and chdir failed",
                                     __func__);
                       g_free (previous_dir);
+                      g_free (command);
                       return -1;
                   }
               else
@@ -3534,9 +3534,11 @@ run_report_format_script (gchar *report_format_id,
                   if (chdir (previous_dir))
                     g_warning ("%s: and chdir failed",
                                 __func__);
+                  g_free (command);
                   g_free (previous_dir);
                   return -1;
                 }
+              g_free (command);
 
               /* Child succeeded, continue to process result. */
 
@@ -3854,14 +3856,14 @@ apply_report_format (gchar *report_format_id,
   while (temp_dirs)
     {
       gvm_file_remove_recurse (temp_dirs->data);
-      g_free (temp_dirs->data);
       temp_dirs = g_list_remove (temp_dirs, temp_dirs->data);
     }
   while (temp_files)
     {
-      g_free (temp_files->data);
       temp_files = g_list_remove (temp_files, temp_files->data);
     }
+  g_free (temp_dirs->data);
+  g_free (temp_files->data);
   g_free (files_xml);
   g_hash_table_destroy (subreports);
   if (close (output_fd))
