@@ -41999,7 +41999,7 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
     }
   else
     {
-      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
