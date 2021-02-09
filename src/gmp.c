@@ -2456,36 +2456,6 @@ modify_auth_data_reset (modify_auth_data_t * data)
 }
 
 /**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_config_data_reset (modify_config_data_t *data)
-{
-  free (data->comment);
-  free (data->config_id);
-  array_free (data->families_growing_empty);
-  array_free (data->families_growing_all);
-  array_free (data->families_static_all);
-  free (data->family_selection_family_all_text);
-  free (data->family_selection_family_growing_text);
-  free (data->family_selection_family_name);
-  free (data->family_selection_growing_text);
-  free (data->name);
-  free (data->scanner_id);
-  array_free (data->nvt_selection);
-  free (data->nvt_selection_family);
-  free (data->nvt_selection_nvt_oid);
-  free (data->preference_id);
-  free (data->preference_name);
-  free (data->preference_nvt_oid);
-  free (data->preference_value);
-
-  memset (data, 0, sizeof (modify_config_data_t));
-}
-
-/**
  * @brief Command data for the modify_credential command.
  */
 typedef struct
@@ -3842,12 +3812,6 @@ static help_data_t *help_data
  = &(command_data.help);
 
 /**
- * @brief Parser callback data for MODIFY_CONFIG.
- */
-static modify_config_data_t *modify_config_data
- = &(command_data.modify_config);
-
-/**
  * @brief Parser callback data for MODIFY_ALERT.
  */
 static modify_alert_data_t *modify_alert_data
@@ -4414,23 +4378,6 @@ typedef enum
   CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_KEY,
   CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_VALUE,
   CLIENT_MODIFY_CONFIG,
-  CLIENT_MODIFY_CONFIG_COMMENT,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
-  CLIENT_MODIFY_CONFIG_NAME,
-  CLIENT_MODIFY_CONFIG_SCANNER,
-  CLIENT_MODIFY_CONFIG_NVT_SELECTION,
-  CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
-  CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
-  CLIENT_MODIFY_CONFIG_PREFERENCE,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_ID,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
   CLIENT_MODIFY_CREDENTIAL,
   CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
   CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
@@ -5803,8 +5750,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_AUTH);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "config_id",
-                              &modify_config_data->config_id);
+            modify_config_start (gmp_parser, attribute_names,
+                                 attribute_values);
             set_client_state (CLIENT_MODIFY_CONFIG);
           }
         else if (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0)
@@ -6201,91 +6148,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_config_data->comment);
-            gvm_append_string (&modify_config_data->comment, "");
-            set_client_state (CLIENT_MODIFY_CONFIG_COMMENT);
-          }
-        else if (strcasecmp ("SCANNER", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_config_data->scanner_id);
-            gvm_append_string (&modify_config_data->scanner_id, "");
-            set_client_state (CLIENT_MODIFY_CONFIG_SCANNER);
-          }
-        else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
-          {
-            modify_config_data->families_growing_all = make_array ();
-            modify_config_data->families_static_all = make_array ();
-            modify_config_data->families_growing_empty = make_array ();
-            /* For GROWING entity, in case missing. */
-            modify_config_data->family_selection_growing = 0;
-            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_NAME);
-        else if (strcasecmp ("NVT_SELECTION", element_name) == 0)
-          {
-            modify_config_data->nvt_selection = make_array ();
-            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
-          }
-        else if (strcasecmp ("PREFERENCE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_config_data->preference_id);
-            gvm_free_string_var (&modify_config_data->preference_name);
-            gvm_free_string_var (&modify_config_data->preference_nvt_oid);
-            gvm_free_string_var (&modify_config_data->preference_value);
-            set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        if (strcasecmp ("FAMILY", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY);
-        else if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &modify_config_data->nvt_selection_nvt_oid);
-            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        if (strcasecmp ("FAMILY", element_name) == 0)
-          {
-            /* For ALL entity, in case missing. */
-            modify_config_data->family_selection_family_all = 0;
-            /* For GROWING entity, in case missing. */
-            modify_config_data->family_selection_family_growing = 0;
-            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-          }
-        else if (strcasecmp ("GROWING", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        if (strcasecmp ("ALL", element_name) == 0)
-          set_client_state
-           (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL);
-        else if (strcasecmp ("GROWING", element_name) == 0)
-          set_client_state
-           (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_PREFERENCE:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME);
-        else if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &modify_config_data->preference_nvt_oid);
-            set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NVT);
-          }
-        else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
-        ELSE_READ_OVER;
+        modify_config_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
 
       case CLIENT_MODIFY_CREDENTIAL:
         if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
@@ -18342,244 +18208,6 @@ modify_scanner_leave:
   set_client_state (CLIENT_AUTHENTIC);
 }
 
-/**
- * @brief Handle end of MODIFY_CONFIG element.
- *
- * @param[in]  gmp_parser   GMP parser.
- * @param[in]  error        Error parameter.
- */
-static void
-handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
-{
-  if (acl_user_may ("modify_config") == 0)
-    {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
-                                                "Permission denied"));
-      set_client_state (CLIENT_AUTHENTIC);
-      goto modify_config_leave;
-    }
-
-  if (modify_config_data->config_id == NULL
-      || strlen (modify_config_data->config_id) == 0)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "A config_id attribute is required"));
-  else if (config_predefined_uuid (modify_config_data->config_id))
-    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
-                                              "Permission denied"));
-  else if ((modify_config_data->nvt_selection_family
-            /* This array implies FAMILY_SELECTION. */
-            && modify_config_data->families_static_all)
-           || ((modify_config_data->nvt_selection_family
-                || modify_config_data->families_static_all)
-               && (modify_config_data->preference_name
-                   || modify_config_data->preference_value
-                   || modify_config_data->preference_nvt_oid)))
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "Either a PREFERENCE or an NVT_SELECTION"
-                        " or a FAMILY_SELECTION is required"));
-  else if (modify_config_data->nvt_selection_family)
-    {
-      switch (manage_set_config_nvts
-               (modify_config_data->config_id,
-                modify_config_data->nvt_selection_family,
-                modify_config_data->nvt_selection))
-        {
-          case 0:
-            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-            log_event ("config", "Scan config",
-                       modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 2:
-            if (send_find_error_to_client ("modify_config",
-                                           "config",
-                                           modify_config_data->config_id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 3:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "Attempt to modify NVT in whole-only family"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case -1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "PREFERENCE requires at"
-                                " least one of the VALUE and NVT elements"));
-            goto modify_config_leave;
-
-          default:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_config"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-        }
-    }
-  else if (modify_config_data->families_static_all)
-    {
-      /* There was a FAMILY_SELECTION. */
-
-      switch (manage_set_config_families
-               (modify_config_data->config_id,
-                modify_config_data->families_growing_all,
-                modify_config_data->families_static_all,
-                modify_config_data->families_growing_empty,
-                modify_config_data->family_selection_growing))
-        {
-          case 0:
-            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-            log_event ("config", "Scan config",
-                       modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-
-          case 2:
-            if (send_find_error_to_client ("modify_config",
-                                           "config",
-                                           modify_config_data->config_id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 3:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "Whole-only families must include entire"
-                                " family and be growing"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case -1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "PREFERENCE requires at"
-                                " least one of the VALUE and NVT elements"));
-            goto modify_config_leave;
-
-          default:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_config"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-        }
-    }
-  else if (modify_config_data->name || modify_config_data->comment
-           || modify_config_data->scanner_id)
-    switch (manage_set_config
-             (modify_config_data->config_id, modify_config_data->name,
-              modify_config_data->comment, modify_config_data->scanner_id))
-      {
-        case 0:
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-          goto modify_config_leave;
-        case 1:
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "Name must be unique"));
-          goto modify_config_leave;
-        case 2:
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "Scanner not found"));
-          goto modify_config_leave;
-        case 3:
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-          log_event_fail ("config", "Scan Config",
-                          modify_config_data->config_id, "modified");
-          goto modify_config_leave;
-        case 4:
-          if (send_find_error_to_client ("modify_config",
-                                         "config",
-                                         modify_config_data->config_id,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
-          log_event_fail ("config", "Scan Config",
-                          modify_config_data->config_id, "modified");
-          goto modify_config_leave;
-        case -1:
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-          goto modify_config_leave;
-        default:
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-          goto modify_config_leave;
-      }
-  else if (modify_config_data->preference_name == NULL
-           || strlen (modify_config_data->preference_name) == 0)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "PREFERENCE requires a NAME element"));
-  else switch (manage_set_config_preference
-                (modify_config_data->config_id,
-                 modify_config_data->preference_nvt_oid,
-                 modify_config_data->preference_name,
-                 modify_config_data->preference_value))
-    {
-      case 0:
-        SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-        goto modify_config_leave;
-      case 1:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-        goto modify_config_leave;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
-        goto modify_config_leave;
-      case 3:
-        if (send_find_error_to_client ("modify_config",
-                                       "config",
-                                       modify_config_data->config_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        log_event_fail ("config", "Scan Config",
-                        modify_config_data->config_id, "modified");
-        goto modify_config_leave;
-      case -1:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-        goto modify_config_leave;
-      default:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-        goto modify_config_leave;
-    }
-
-modify_config_leave:
-  modify_config_data_reset (modify_config_data);
-  set_client_state (CLIENT_AUTHENTIC);
-}
-
 extern char client_address[];
 
 /**
@@ -23355,108 +22983,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
-        handle_modify_config (gmp_parser, error);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
-      CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        assert (modify_config_data->families_growing_all);
-        assert (modify_config_data->families_static_all);
-        assert (modify_config_data->families_growing_empty);
-        array_terminate (modify_config_data->families_growing_all);
-        array_terminate (modify_config_data->families_static_all);
-        array_terminate (modify_config_data->families_growing_empty);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, NAME);
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        assert (modify_config_data->nvt_selection);
-        array_terminate (modify_config_data->nvt_selection);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        if (modify_config_data->family_selection_family_name)
-          {
-            if (modify_config_data->family_selection_family_growing)
-              {
-                if (modify_config_data->family_selection_family_all)
-                  /* Growing 1 and select all 1. */
-                  array_add (modify_config_data->families_growing_all,
-                             modify_config_data->family_selection_family_name);
-                else
-                  /* Growing 1 and select all 0. */
-                  array_add (modify_config_data->families_growing_empty,
-                             modify_config_data->family_selection_family_name);
-              }
-            else
-              {
-                if (modify_config_data->family_selection_family_all)
-                  /* Growing 0 and select all 1. */
-                  array_add (modify_config_data->families_static_all,
-                             modify_config_data->family_selection_family_name);
-                /* Else growing 0 and select all 0. */
-              }
-          }
-        modify_config_data->family_selection_family_name = NULL;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-        break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        if (modify_config_data->family_selection_growing_text)
-          {
-            modify_config_data->family_selection_growing
-             = atoi (modify_config_data->family_selection_growing_text);
-            gvm_free_string_var
-             (&modify_config_data->family_selection_growing_text);
-          }
-        else
-          modify_config_data->family_selection_growing = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-        break;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
-        if (modify_config_data->family_selection_family_all_text)
-          {
-            modify_config_data->family_selection_family_all
-             = atoi (modify_config_data->family_selection_family_all_text);
-            gvm_free_string_var
-             (&modify_config_data->family_selection_family_all_text);
-          }
-        else
-          modify_config_data->family_selection_family_all = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        if (modify_config_data->family_selection_family_growing_text)
-          {
-            modify_config_data->family_selection_family_growing
-             = atoi (modify_config_data->family_selection_family_growing_text);
-            gvm_free_string_var
-             (&modify_config_data->family_selection_family_growing_text);
-          }
-        else
-          modify_config_data->family_selection_family_growing = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
-
-      CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
-        if (modify_config_data->nvt_selection_nvt_oid)
-          array_add (modify_config_data->nvt_selection,
-                     modify_config_data->nvt_selection_nvt_oid);
-        modify_config_data->nvt_selection_nvt_oid = NULL;
-        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
-        break;
-
-      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
-      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        /* Init, so it's the empty string when the value is empty. */
-        gvm_append_string (&modify_config_data->preference_value, "");
-        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        if (modify_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_MODIFY_CREDENTIAL:
@@ -26163,20 +25691,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
-      APPEND (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
-              &modify_config_data->nvt_selection_family);
 
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL,
-              &modify_config_data->family_selection_family_all_text);
-
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING,
-              &modify_config_data->family_selection_family_growing_text);
-
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
-              &modify_config_data->family_selection_family_name);
-
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
-              &modify_config_data->family_selection_growing_text);
+      case CLIENT_MODIFY_CONFIG:
+        modify_config_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
@@ -26218,24 +25736,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
               &modify_credential_data->privacy_password);
 
-
-      APPEND (CLIENT_MODIFY_CONFIG_COMMENT,
-              &modify_config_data->comment);
-
-      APPEND (CLIENT_MODIFY_CONFIG_SCANNER,
-              &modify_config_data->scanner_id);
-
-      APPEND (CLIENT_MODIFY_CONFIG_NAME,
-              &modify_config_data->name);
-
-      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
-              &modify_config_data->preference_name);
-
-      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_ID,
-              &modify_config_data->preference_id);
-
-      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
-              &modify_config_data->preference_value);
 
 
       APPEND (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
