@@ -3862,8 +3862,14 @@ apply_report_format (gchar *report_format_id,
     {
       temp_files = g_list_remove (temp_files, temp_files->data);
     }
-  g_free (temp_dirs->data);
-  g_free (temp_files->data);
+  if (temp_dirs)
+    {
+      g_free (temp_dirs->data);
+    }
+  if (temp_files)
+    {
+      g_free (temp_files->data);
+    }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
   if (close (output_fd))

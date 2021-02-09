@@ -1304,7 +1304,6 @@ create_port_list_internal (int check_access, const char *id, const char *name,
       array_free (ranges);
       if (ret)
         {
-          g_free (quoted_name);
           sql_rollback ();
           return ret;
         }
