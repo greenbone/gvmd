@@ -117,6 +117,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Delete report format dirs last when deleting a user [#1368](https://github.com/greenbone/gvmd/pull/1368)
 - Fix sorting in get_aggregates and its documentation [#1375](https://github.com/greenbone/gvmd/pull/1375)
 - Improve "Failed to find..." messages [#1395](https://github.com/greenbone/gvmd/pull/1395)
+- Memory handling in various occasions [#1417](https://github.com/greenbone/gvmd/pull/1417)
 
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
