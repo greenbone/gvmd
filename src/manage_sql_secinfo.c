@@ -285,10 +285,10 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
                  WIFEXITED (ret) ? WEXITSTATUS (ret) : 0,
                  command);
       g_free (command);
-      g_free (previous_dir);
 
       if (chdir (previous_dir))
         g_warning ("%s: and failed to chdir back", __func__);
+      g_free (previous_dir);
 
       return NULL;
     }
@@ -3788,7 +3788,7 @@ oval_files_free ()
   int index;
 
   index = 0;
-  while (index < oval_files->len)
+  while (oval_files && index < oval_files->len)
     {
       gchar **pair;
 
@@ -3923,7 +3923,6 @@ update_scap_ovaldefs (int private)
           if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
             {
               g_warning ("No user data directory '%s' found.", oval_dir);
-              g_free (oval_dir);
               g_error_free (error);
             }
           else
