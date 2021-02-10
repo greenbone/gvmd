@@ -3844,19 +3844,15 @@ apply_report_format (gchar *report_format_id,
   while (temp_dirs)
     {
       gvm_file_remove_recurse (temp_dirs->data);
-      temp_dirs = g_list_remove (temp_dirs, temp_dirs->data);
+      gpointer data = temp_dirs->data;
+      temp_dirs = g_list_remove (temp_dirs, data);
+      g_free (data);
     }
   while (temp_files)
     {
-      temp_files = g_list_remove (temp_files, temp_files->data);
-    }
-  if (temp_dirs)
-    {
-      g_free (temp_dirs->data);
-    }
-  if (temp_files)
-    {
-      g_free (temp_files->data);
+      gpointer data = temp_files->data;
+      temp_files = g_list_remove (temp_files, data);
+      g_free (data);
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
