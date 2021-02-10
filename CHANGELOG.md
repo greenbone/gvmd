@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [21.10] (unreleased)
+
+### Added
+### Changed
+### Fixed
+### Removed
+
+[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
+
 ## [21.4] (unreleased)
 
 ### Added
@@ -48,7 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove severity type "debug" [#1316](https://github.com/greenbone/gvmd/pull/1316)
 - Remove element "threat" of element "notes" [#1324](https://github.com/greenbone/gvmd/pull/1324)
 
-[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...master
+[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...gvmd-21.04
 
 ## [20.8.2] (unreleased)
 
