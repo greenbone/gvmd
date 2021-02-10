@@ -25625,6 +25625,10 @@ add_port (GTree *ports, iterator_t *results)
       *old_severity = *severity;
       g_free (severity);
     }
+  else
+    {
+      g_free (severity);
+    }
 }
 
 /**
