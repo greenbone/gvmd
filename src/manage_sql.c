@@ -27023,6 +27023,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   zone = NULL;
   delta_states = NULL;
   min_qod = NULL;
+  search_phrase = NULL;
   total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
