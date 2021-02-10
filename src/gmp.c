@@ -10434,21 +10434,23 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       iso_time (&mean));
             }
           else
-            g_string_append_printf (xml,
-                                    "<stats column=\"%s\">"
-                                    "<min>%g</min>"
-                                    "<max>%g</max>"
-                                    "<mean>%g</mean>"
-                                    "<sum>%g</sum>"
-                                    "<c_sum>%g</c_sum>"
-                                    "</stats>",
-                                    data_column,
-                                    aggregate_iterator_min (aggregate, index),
-                                    aggregate_iterator_max (aggregate, index),
-                                    aggregate_iterator_mean (aggregate, index),
-                                    aggregate_iterator_sum (aggregate, index),
-                                    subgroup_column
-                                      ? *subgroup_c_sum : c_sum);
+            {
+              g_string_append_printf (xml,
+                                      "<stats column=\"%s\">"
+                                      "<min>%g</min>"
+                                      "<max>%g</max>"
+                                      "<mean>%g</mean>"
+                                      "<sum>%g</sum>"
+                                      "<c_sum>%g</c_sum>"
+                                      "</stats>",
+                                      data_column,
+                                      aggregate_iterator_min (aggregate, index),
+                                      aggregate_iterator_max (aggregate, index),
+                                      aggregate_iterator_mean (aggregate, index),
+                                      aggregate_iterator_sum (aggregate, index),
+                                      subgroup_column && subgroup_c_sum
+                                        ? *subgroup_c_sum : c_sum);
+          }
         }
 
       for (index = 0; index < text_columns->len; index++)
@@ -16952,9 +16954,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
-      int holes = 0, infos = 0, logs, warnings = 0;
+      int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-      int false_positives, task_scanner_type;
+      int false_positives = 0, task_scanner_type;
       int target_available, config_available;
       int scanner_available;
       double severity = 0, severity_2 = 0;
@@ -22026,12 +22028,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           if (create_task_data->groups->len)
             {
-              int fail;
               gchar *fail_group_id;
 
-              switch ((fail = set_task_groups (create_task_data->task,
+              switch (set_task_groups (create_task_data->task,
                                                create_task_data->groups,
-                                               &fail_group_id)))
+                                               &fail_group_id))
                 {
                   case 0:
                     break;

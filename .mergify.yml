@@ -1,4 +1,14 @@
 pull_request_rules:
+  # backports from master branch
+  - name: backport master patches to 21.04 branch
+    conditions:
+      - base=master
+      - label=backport-to-21.04
+    actions:
+      backport:
+        branches:
+          - gvmd-21.04
+
   - name: backport master patches to 20.08 branch
     conditions:
       - base=master
@@ -8,6 +18,26 @@ pull_request_rules:
         branches:
           - gvmd-20.08
 
+  # backports from upcoming release branch
+  - name: backport 21.04 patches to master branch
+    conditions:
+      - base=gvmd-21.04
+      - label=backport-to-master
+    actions:
+      backport:
+        branches:
+          - master
+
+  - name: backport 21.04 patches to master branch
+    conditions:
+      - base=gvmd-21.04
+      - label=backport-to-20.08
+    actions:
+      backport:
+        branches:
+          - gvmd-20.08
+
+  # backports from current release branch
   - name: backport 20.08 patches to master branch
     conditions:
       - base=gvmd-20.08
@@ -16,3 +46,12 @@ pull_request_rules:
       backport:
         branches:
           - master
+
+  - name: backport 20.08 patches to 21.04 branch
+    conditions:
+      - base=gvmd-20.08
+      - label=backport-to-21.04
+    actions:
+      backport:
+        branches:
+          - gvmd-21.04
