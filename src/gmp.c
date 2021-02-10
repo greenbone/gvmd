@@ -10482,22 +10482,23 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       iso_time (&max),
                                       iso_time (&mean));
             }
-          else{
-            g_string_append_printf (xml,
-                                    "<stats column=\"%s\">"
-                                    "<min>%g</min>"
-                                    "<max>%g</max>"
-                                    "<mean>%g</mean>"
-                                    "<sum>%g</sum>"
-                                    "<c_sum>%g</c_sum>"
-                                    "</stats>",
-                                    data_column,
-                                    aggregate_iterator_min (aggregate, index),
-                                    aggregate_iterator_max (aggregate, index),
-                                    aggregate_iterator_mean (aggregate, index),
-                                    aggregate_iterator_sum (aggregate, index),
-                                    subgroup_column && subgroup_c_sum
-                                      ? *subgroup_c_sum : c_sum);
+          else
+            {
+              g_string_append_printf (xml,
+                                      "<stats column=\"%s\">"
+                                      "<min>%g</min>"
+                                      "<max>%g</max>"
+                                      "<mean>%g</mean>"
+                                      "<sum>%g</sum>"
+                                      "<c_sum>%g</c_sum>"
+                                      "</stats>",
+                                      data_column,
+                                      aggregate_iterator_min (aggregate, index),
+                                      aggregate_iterator_max (aggregate, index),
+                                      aggregate_iterator_mean (aggregate, index),
+                                      aggregate_iterator_sum (aggregate, index),
+                                      subgroup_column && subgroup_c_sum
+                                        ? *subgroup_c_sum : c_sum);
           }
         }
 
