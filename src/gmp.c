@@ -16954,11 +16954,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
-<<<<<<< HEAD
-      int holes = 0, infos = 0, logs, warnings = 0;
-=======
-      int debugs = 0, holes = 0, infos = 0, logs = 0, warnings = 0;
->>>>>>> bc370701f... Initializing logs, debugs and false_positives with 0
+      int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int false_positives = 0, task_scanner_type;
       int target_available, config_available;
