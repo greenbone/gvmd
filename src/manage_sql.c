@@ -5322,7 +5322,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             int index;
             order_column = NULL;
             for (index = 0;
-                 index < data_columns->len && order_column == NULL;
+                 data_columns && index < data_columns->len && order_column == NULL;
                  index++)
               {
                 gchar *column = g_array_index (data_columns, gchar*, index);
@@ -5347,7 +5347,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
               }
 
             for (index = 0;
-                index < text_columns->len && order_column == NULL;
+                text_columns && index < text_columns->len && order_column == NULL;
                 index++)
               {
                 gchar *column = g_array_index (text_columns, gchar*, index);
@@ -10249,7 +10249,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
                 /* Parent on success.  Wait for child, and check result. */
 
-                g_free (command);
 
                 while (waitpid (pid, &status, 0) < 0)
                   {
@@ -10272,6 +10271,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                       g_warning ("%s: and chdir failed",
                                  __func__);
                     g_free (previous_dir);
+                    g_free (command);
                     return -1;
                   }
                 if (WIFEXITED (status))
@@ -10288,6 +10288,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                         g_warning ("%s: and chdir failed",
                                    __func__);
                       g_free (previous_dir);
+                      g_free (command);
                       return -1;
                     }
                 else
@@ -10299,11 +10300,12 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                       g_warning ("%s: and chdir failed",
                                  __func__);
                     g_free (previous_dir);
+                    g_free (command);
                     return -1;
                   }
 
                 /* Child succeeded, continue to process result. */
-
+                g_free (command);
                 break;
               }
           }
@@ -10709,7 +10711,8 @@ buffer_vfire_call_input (gchar *key, gchar *value, GString *buffer)
                        param);                                                \
   else                                                                        \
     {                                                                         \
-      *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");      \
+      if (message)                                                            \
+        *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");    \
       g_warning ("%s: Missing " G_STRINGIFY(param) ".", __func__);        \
       g_string_free (config_xml, TRUE);                                       \
       return -1;                                                              \
@@ -10860,7 +10863,7 @@ send_to_vfire (const char *base_url, const char *client_id,
       g_warning ("%s: Alert script exited with status %d",
                  __func__, exit_status);
       g_message ("%s: stderr: %s",
-                 __func__, *message);
+                 __func__, message ? *message: "");
       ret = -5;
     }
 
@@ -11918,6 +11921,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
             break;
         case 1:        /* Too few rows in result of query. */
         case -1:
+          g_free(alert_filter_get);
           return -1;
           break;
         default:       /* Programming error. */
@@ -11948,6 +11952,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                          __func__, format_uuid,
                          alert_method_name (alert_method (alert)));
               g_free (format_uuid);
+              g_free (alert_filter_get);
               return -2;
             }
           g_free (format_uuid);
@@ -25618,6 +25623,10 @@ add_port (GTree *ports, iterator_t *results)
   else if (severity > old_severity)
     {
       *old_severity = *severity;
+      g_free (severity);
+    }
+  else
+    {
       g_free (severity);
     }
 }
@@ -41994,7 +42003,7 @@ buffer_insert (GString *results_buffer, GString *result_nvts_buffer,
     }
   else
     {
-      qod = G_STRINGIFY (QOD_DEFAULT);
+      qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       qod_type = g_strdup ("''");
       nvt_revision = g_strdup ("");
     }
@@ -52908,7 +52917,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
       user_name = sql_string ("SELECT name FROM users WHERE id = %llu",
                               user);
       errstr = gvm_validate_password (password, user_name);
-      g_free (user_name);
       if (errstr)
         {
           g_warning ("new password for '%s' rejected: %s", user_name, errstr);
@@ -52917,8 +52925,10 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           else
             g_free (errstr);
           sql_rollback ();
+          g_free (user_name);
           return -1;
         }
+      g_free (user_name);
     }
 
   /* Check hosts. */

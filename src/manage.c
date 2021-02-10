@@ -9109,10 +9109,13 @@ manage_run_wizard (const gchar *wizard_name,
 
                       if (g_regex_match_simple (regex, pair->value, 0, 0) == 0)
                         {
-                          *command_error
-                            = g_strdup_printf ("Value '%s' is not valid for"
-                                              " parameter '%s'.",
-                                              pair->value, name);
+                          if (command_error)
+                            {
+                              *command_error
+                                = g_strdup_printf ("Value '%s' is not valid for"
+                                                  " parameter '%s'.",
+                                                  pair->value, name);
+                            }
                           free_entity (entity);
                           g_string_free (params_xml, TRUE);
                           return 6;
@@ -9123,9 +9126,12 @@ manage_run_wizard (const gchar *wizard_name,
 
           if (optional == 0 && param_found == 0)
             {
-              *command_error = g_strdup_printf ("Mandatory wizard param '%s'"
-                                                " missing",
-                                                name);
+              if (command_error)
+                {
+                  *command_error = g_strdup_printf ("Mandatory wizard param '%s'"
+                                                    " missing",
+                                                    name);
+                }
               free_entity (entity);
               return 6;
             }
