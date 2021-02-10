@@ -27018,6 +27018,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   task_status_t run_status;
 
   /* Init some vars to prevent warnings from older compilers. */
+  max_results = -1;
   total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
