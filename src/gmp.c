@@ -13032,53 +13032,11 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       info_count = cve_info_count;
       get_info_data->get.subtype = g_strdup ("cve");
     }
-  else if ((g_strcmp0 ("nvt", get_info_data->type) == 0)
-            && (get_info_data->name == NULL)
-            && (get_info_data->get.id == NULL))
+  else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
     {
       init_info_iterator = init_nvt_info_iterator;
       info_count = nvt_info_count;
       get_info_data->get.subtype = g_strdup ("nvt");
-    }
-  else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
-    {
-      gchar *result;
-
-      get_info_data->get.subtype = g_strdup ("nvt");
-
-      manage_read_info (get_info_data->type, get_info_data->get.id,
-                        get_info_data->name, &result);
-      if (result)
-        {
-          SEND_GET_START ("info");
-          SEND_TO_CLIENT_OR_FAIL ("<info>");
-          SEND_TO_CLIENT_OR_FAIL (result);
-          SEND_TO_CLIENT_OR_FAIL ("</info>");
-          SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
-          SEND_GET_END ("info", &get_info_data->get, 1, 1);
-          g_free (result);
-          get_info_data_reset (get_info_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-      else
-        {
-          if (send_find_error_to_client ("get_info",
-                                         get_info_data->name
-                                          ? "name"
-                                          : "ID",
-                                         get_info_data->name
-                                          ? get_info_data->name
-                                          : get_info_data->get.id,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
-          get_info_data_reset (get_info_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
     }
   else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
     {
