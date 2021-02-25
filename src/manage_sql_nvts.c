@@ -329,16 +329,18 @@ insert_nvt (const nvti_t *nvti)
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
       vtref_t *ref;
-      gchar *quoted_id, *quoted_text;
+      gchar *quoted_type, *quoted_id, *quoted_text;
 
       ref = nvti_vtref (nvti, i);
+      quoted_type = sql_quote (vtref_type (ref));
       quoted_id = sql_quote (vtref_id (ref));
       quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
       sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
            " VALUES ('%s', '%s', '%s', '%s');",
-           nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
+           nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
 
+      g_free (quoted_type);
       g_free (quoted_id);
       g_free (quoted_text);
     }
