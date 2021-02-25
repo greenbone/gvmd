@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [20.8.2] (unreleased)
 
 ### Added
+- Add standard info elem fields for NVTs in get_info [#1426](https://github.com/greenbone/gvmd/pull/1426)
 
 ### Changed
 
