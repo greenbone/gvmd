@@ -37035,7 +37035,9 @@ delete_override (const char *override_id, int ultimate)
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
  *         3 invalid severity score, 4 failed to find NVT, 5 failed to find
- *         override, 6 failed to find task, 7 failed to find result.
+ *         override, 6 failed to find task, 7 failed to find result,
+ *         8 invalid threat, 9 invalid new_threat, 10 invalid new_severity,
+ *         11 missing new_severity.
  */
 int
 modify_override (const gchar *override_id, const char *active, const char *nvt,
@@ -37095,6 +37097,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   if (nvt && !nvt_exists (nvt))
     return 4;
 
+<<<<<<< HEAD
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
       && strcmp (threat, "Alarm") && strcmp (threat, ""))
@@ -37106,6 +37109,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
+=======
+>>>>>>> 99918c446... Improve modify_override errors, fix no NVT case
   severity_dbl = 0.0;
   if (severity != NULL && strcmp (severity, ""))
     {
@@ -37128,7 +37133,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
       else
-        return -1;
+        return 8;
 
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -37144,7 +37149,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
               && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
-          return 3;
+          return 10;
         }
     }
   else if (new_threat != NULL && strcmp (new_threat, ""))
@@ -37162,19 +37167,19 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       else
         {
           g_free (quoted_severity);
-          return -1;
+          return 9;
         }
     }
   else
     {
       g_free (quoted_severity);
-      return -1;
+      return 11;
     }
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_nvt = sql_quote (nvt);
+  quoted_nvt = nvt ? sql_quote (nvt) : NULL;
 
   // Tests if a cache rebuild is necessary.
   //  The "active" status is checked separately
