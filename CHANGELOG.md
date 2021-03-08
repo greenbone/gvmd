@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add standard info elem fields for NVTs in get_info [#1426](https://github.com/greenbone/gvmd/pull/1426)
 
 ### Changed
+- Improve report counts performance [#1438](https://github.com/greenbone/gvmd/pull/1438)
 
 ### Fixed
 - Also create owner WITH clause for single resources [#1406](https://github.com/greenbone/gvmd/pull/1406)
