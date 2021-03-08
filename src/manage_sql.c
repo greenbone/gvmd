@@ -20757,7 +20757,7 @@ report_add_result_for_buffer (report_t report, result_t result)
           char *ov_severity_str;
           gchar *owned_clause, *with_clause;
 
-          owned_clause = acl_where_owned_for_get ("override", NULL,
+          owned_clause = acl_where_owned_for_get ("override", NULL, NULL,
                                                   &with_clause);
 
           ov_severity_str
@@ -21818,9 +21818,16 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   column_t *filterable_columns;
   int ret;
   gchar *filter;
+<<<<<<< HEAD
   int apply_overrides, dynamic_severity;
   gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clause;
   const gchar *lateral;
+=======
+  int autofp, apply_overrides, dynamic_severity;
+  gchar *extra_tables, *extra_where, *extra_where_single;
+  gchar *owned_clause, *overrides_with, *with_clause;
+  char *user_id;
+>>>>>>> 87714c2f6... Use WITH for result count overrides permissions
 
   assert (report);
 
@@ -21978,6 +21985,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
 
   free (filter);
 
+<<<<<<< HEAD
   if (apply_overrides)
     {
       gchar *owned_clause;
@@ -22016,6 +22024,41 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
     }
   else
     with_clause = NULL;
+=======
+  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                        current_credentials.uuid);
+  // Do not get ACL with_clause as it will be added by init_get_iterator2_with.
+  owned_clause = acl_where_owned_for_get ("override", user_id,
+                                          "valid_overrides_", &overrides_with);
+  free (user_id);
+
+  with_clause = g_strdup_printf
+                  (" %s,"
+                   " valid_overrides"
+                   " AS (SELECT result_nvt, hosts, new_severity, port,"
+                   "            severity, result"
+                   "     FROM overrides"
+                   "     WHERE %s"
+                   /*    Only use if override's NVT is in report. */
+                   "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                   "                 WHERE report = %llu"
+                   "                 AND result_nvt"
+                   "                     = overrides.result_nvt)"
+                   "     AND (task = 0"
+                   "          OR task = (SELECT reports.task"
+                   "                     FROM reports"
+                   "                     WHERE reports.id = %llu))"
+                   "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                   "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                   "           creation_time DESC)"
+                   " ",
+                   overrides_with + strlen ("WITH "),
+                   owned_clause,
+                   report,
+                   report);
+  g_free (overrides_with);
+  g_free (owned_clause);
+>>>>>>> 87714c2f6... Use WITH for result count overrides permissions
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
@@ -47192,7 +47235,7 @@ host_routes_xml (host_t host)
 
   gchar *owned_clause, *with_clause;
 
-  owned_clause = acl_where_owned_for_get ("host", NULL, &with_clause);
+  owned_clause = acl_where_owned_for_get ("host", NULL, NULL, &with_clause);
 
   buffer = g_string_new ("<routes>");
   init_iterator (&routes,
