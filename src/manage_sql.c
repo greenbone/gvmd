@@ -37097,20 +37097,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   if (nvt && !nvt_exists (nvt))
     return 4;
 
-<<<<<<< HEAD
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Alarm") && strcmp (threat, ""))
-    return -1;
-
-  if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
-      && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "False Positive")
-      && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
-    return -1;
-
-=======
->>>>>>> 99918c446... Improve modify_override errors, fix no NVT case
   severity_dbl = 0.0;
   if (severity != NULL && strcmp (severity, ""))
     {
