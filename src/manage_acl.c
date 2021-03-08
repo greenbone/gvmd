@@ -996,6 +996,7 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
  * @param[in]  resource        Resource.
  * @param[in]  permissions     Permissions.
  * @param[in]  with_optional   Whether the WITH clause is optional.
+ * @param[in]  with_prefix     Optional prefix for WITH subqueries.
  * @param[out] with            Address for WITH clause if allowed, else NULL.
  *
  * @return Newly allocated owned clause.
@@ -1004,7 +1005,8 @@ static gchar *
 acl_where_owned_user (const char *user_id, const char *user_sql,
                       const char *type, const get_data_t *get, int owned,
                       const gchar *owner_filter, resource_t resource,
-                      array_t *permissions, int with_optional, gchar **with)
+                      array_t *permissions, int with_optional,
+                      const char *with_prefix, gchar **with)
 {
   gchar *owned_clause, *filter_owned_clause;
   GString *permission_or;
@@ -1014,7 +1016,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
   if (with)
     {
       *with = g_strdup_printf
-               ("WITH permissions_subject"
+               ("WITH %spermissions_subject"
                 "     AS (SELECT * FROM permissions"
                 "         WHERE subject_location"
                 "               = " G_STRINGIFY (LOCATION_TABLE)
@@ -1033,29 +1035,34 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                 "                          FROM role_users"
                 "                          WHERE \"user\""
                 "                                = (%s))))),"
-                "     super_on_users"
+                "     %ssuper_on_users"
                 "     AS (SELECT DISTINCT *"
-                "         FROM (SELECT resource FROM permissions_subject"
+                "         FROM (SELECT resource FROM %spermissions_subject"
                 "               WHERE name = 'Super'"
                 "               AND resource_type = 'user'"
                 "               UNION"
                 "               SELECT \"user\" FROM role_users"
                 "               WHERE role"
                 "                     IN (SELECT resource"
-                "                         FROM permissions_subject"
+                "                         FROM %spermissions_subject"
                 "                         WHERE name = 'Super'"
                 "                         AND resource_type = 'role')"
                 "               UNION"
                 "               SELECT \"user\" FROM group_users"
                 "               WHERE \"group\""
                 "                     IN (SELECT resource"
-                "                         FROM permissions_subject"
+                "                         FROM %spermissions_subject"
                 "                         WHERE name = 'Super'"
                 "                         AND resource_type = 'group'))"
                 "              AS all_users)",
+                with_prefix ? with_prefix : "",
                 user_sql,
                 user_sql,
-                user_sql);
+                user_sql,
+                with_prefix ? with_prefix : "",
+                with_prefix ? with_prefix : "",
+                with_prefix ? with_prefix : "",
+                with_prefix ? with_prefix : "");
     }
 
   if (owned == 0)
@@ -1113,11 +1120,12 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
           gchar *clause;
           clause
            = g_strdup_printf ("OR EXISTS"
-                              " (SELECT id FROM permissions_subject"
+                              " (SELECT id FROM %spermissions_subject"
                               "  WHERE resource = %ss%s.id"
                               "  AND resource_type = '%s'"
                               "  AND resource_location = %i"
                               "  AND (%s))",
+                              with_prefix ? with_prefix : "",
                               type,
                               get->trash && strcmp (type, "task") ? "_trash" : "",
                               type,
@@ -1128,22 +1136,24 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
             permission_clause
              = g_strdup_printf ("%s"
                                 " OR EXISTS"
-                                " (SELECT id FROM permissions_subject"
+                                " (SELECT id FROM %spermissions_subject"
                                 "  WHERE resource = reports%s.task"
                                 "  AND resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
+                                with_prefix ? with_prefix : "",
                                 get->trash ? "_trash" : "",
                                 permission_or->str);
           else if (strcmp (type, "result") == 0)
             permission_clause
              = g_strdup_printf ("%s"
                                 " OR EXISTS"
-                                " (SELECT id FROM permissions_subject"
+                                " (SELECT id FROM %spermissions_subject"
                                 "  WHERE resource = results%s.task"
                                 "  AND resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
+                                with_prefix ? with_prefix : "",
                                 get->trash ? "_trash" : "",
                                 permission_or->str);
 
@@ -1192,13 +1202,13 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                               "                   FROM role_users"
                               "                   WHERE \"user\" = (%s))))"
                               /* Or the user has super permission on all. */
-                              "  OR EXISTS (SELECT * FROM permissions_subject"
+                              "  OR EXISTS (SELECT * FROM %spermissions_subject"
                               "             WHERE name = 'Super'"
                               "             AND (resource = 0))"
                               /* Or the user has super permission on the owner,
                                * (directly, via the role, or via the group). */
-                              "  OR permissions%s.owner IN (SELECT *"
-                              "                            FROM super_on_users)"
+                              "  OR permissions%s.owner IN"
+                              "      (SELECT * FROM %ssuper_on_users)"
                               "  %s)",
                               get->trash ? "_trash" : "",
                               user_sql,
@@ -1222,7 +1232,9 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               user_sql,
+                              with_prefix ? with_prefix : "",
                               table_trash ? "_trash" : "",
+                              with_prefix ? with_prefix : "",
                               permission_clause ? permission_clause : "");
         }
       else
@@ -1232,19 +1244,21 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                             " ((%ss%s.owner"
                             "   = (%s))"
                             /* Or the user has super permission on all. */
-                            "  OR EXISTS (SELECT * FROM permissions_subject"
+                            "  OR EXISTS (SELECT * FROM %spermissions_subject"
                             "             WHERE name = 'Super'"
                             "             AND (resource = 0))"
                             /* Or the user has super permission on the owner,
                              * (directly, via the role, or via the group). */
                             "  OR %ss%s.owner IN (SELECT *"
-                            "                     FROM super_on_users)"
+                            "                     FROM %ssuper_on_users)"
                             "  %s)",
                             type,
                             table_trash ? "_trash" : "",
                             user_sql,
+                            with_prefix ? with_prefix : "",
                             type,
                             table_trash ? "_trash" : "",
+                            with_prefix ? with_prefix : "",
                             permission_clause ? permission_clause : "");
 
       g_free (permission_clause);
@@ -1495,7 +1509,7 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
     user_sql = NULL;
   ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
                               owned, owner_filter, resource, permissions,
-                              with_optional, with);
+                              with_optional, NULL, with);
   g_free (user_sql);
   return ret;
 }
@@ -1506,13 +1520,15 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
  * @param[in]  type      Type of resource.
  * @param[in]  user_sql  SQL for getting user.  If NULL SQL will be for current
  *                       user.
+ * @param[in]  with_prefix  Optional prefix for WITH clause.
  * @param[out] with      Return location for WITH preselection clause if
  *                       desired, else NULL.
  *
  * @return Newly allocated owned clause.
  */
 gchar *
-acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
+acl_where_owned_for_get (const char *type, const char *user_sql, 
+                         const char *with_prefix, gchar **with)
 {
   gchar *owned_clause;
   get_data_t get;
@@ -1542,6 +1558,7 @@ acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
                                        0,              /* Resource. */
                                        permissions,
                                        0,              /* WITH not optional */
+                                       with_prefix,
                                        with);
   array_free (permissions);
   g_free (user_sql_new);
