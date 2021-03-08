@@ -995,6 +995,7 @@ acl_user_has_access_uuid (const char *type, const char *uuid,
  * @param[in]  owner_filter    Owner filter keyword.
  * @param[in]  resource        Resource.
  * @param[in]  permissions     Permissions.
+ * @param[in]  with_optional   Whether the WITH clause is optional.
  * @param[out] with            Address for WITH clause if allowed, else NULL.
  *
  * @return Newly allocated owned clause.
@@ -1003,7 +1004,7 @@ static gchar *
 acl_where_owned_user (const char *user_id, const char *user_sql,
                       const char *type, const get_data_t *get, int owned,
                       const gchar *owner_filter, resource_t resource,
-                      array_t *permissions, gchar **with)
+                      array_t *permissions, int with_optional, gchar **with)
 {
   gchar *owned_clause, *filter_owned_clause;
   GString *permission_or;
@@ -1058,7 +1059,14 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
     }
 
   if (owned == 0)
-   return g_strdup (" t ()");
+    {
+      if (with_optional)
+        {
+          g_free (*with);
+          *with = NULL;
+        }
+      return g_strdup (" t ()");
+    }
 
   permission_or = g_string_new ("");
   index = 0;
@@ -1469,6 +1477,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
  * @param[in]  owner_filter    Owner filter keyword.
  * @param[in]  resource        Resource.
  * @param[in]  permissions     Permissions.
+ * @param[in]  with_optional   Whether permissions WITH clauses are optional.
  * @param[out] with            Address for WITH clause if allowed, else NULL.
  *
  * @return Newly allocated owned clause.
@@ -1476,7 +1485,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
 gchar *
 acl_where_owned (const char *type, const get_data_t *get, int owned,
                  const gchar *owner_filter, resource_t resource,
-                 array_t *permissions, gchar **with)
+                 array_t *permissions, int with_optional, gchar **with)
 {
   gchar *ret, *user_sql;
   if (current_credentials.uuid)
@@ -1486,7 +1495,7 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
     user_sql = NULL;
   ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
                               owned, owner_filter, resource, permissions,
-                              with);
+                              with_optional, with);
   g_free (user_sql);
   return ret;
 }
@@ -1532,6 +1541,7 @@ acl_where_owned_for_get (const char *type, const char *user_sql, gchar **with)
                                        "any",
                                        0,              /* Resource. */
                                        permissions,
+                                       0,              /* WITH not optional */
                                        with);
   array_free (permissions);
   g_free (user_sql_new);

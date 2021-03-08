@@ -2843,7 +2843,7 @@ init_report_format_alert_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions,
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions, 0,
                                &with_clause);
   array_free (permissions);
 
