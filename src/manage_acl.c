@@ -1067,7 +1067,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
 
   if (owned == 0)
     {
-      if (with_optional)
+      if (with_optional && with)
         {
           g_free (*with);
           *with = NULL;
