@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Greenbone Networks GmbH
+/* Copyright (C) 2019-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -195,22 +195,12 @@ static int
 nvt_selector_families_growing (const char* selector)
 {
   gchar *quoted_selector;
+  char *string;
 
   /* The number of families can only grow if there is selector that includes
    * all. */
 
   quoted_selector = sql_quote (selector);
-#if 0
-  ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
-                 " WHERE name = '%s'"
-                 " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
-                 " AND exclude = 0"
-                 " LIMIT 1;",
-                 quoted_selector);
-  g_free (quoted_selector);
-  return ret;
-#else
-  char *string;
   string = sql_string ("SELECT name FROM nvt_selectors"
                        " WHERE name = '%s'"
                        " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
@@ -221,7 +211,6 @@ nvt_selector_families_growing (const char* selector)
   if (string == NULL) return 0;
   free (string);
   return 1;
-#endif
 }
 
 /**
@@ -450,6 +439,110 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
 DEF_ACCESS (family_iterator_name, 0);
 
 /**
+ * @brief Get whether an NVT selector selects every NVT in a family.
+ *
+ * @param[in]  selector  NVT selector.
+ * @param[in]  family    Family name.
+ * @param[in]  all       True if selector is an "all" selector, else 0.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+nvt_selector_entire_and_growing (const char *selector,
+                                 const char *family,
+                                 int all)
+{
+  int ret;
+  gchar *quoted_family;
+  gchar *quoted_selector;
+
+  quoted_selector = sql_quote (selector);
+  quoted_family = sql_quote (family);
+
+  if (all)
+    {
+      /* Constraining the universe. */
+
+      ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                     " WHERE name = '%s'"
+                     " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                     " AND family_or_nvt = '%s'"
+                     " AND exclude = 1"
+                     " LIMIT 1;",
+                     quoted_selector,
+                     quoted_family);
+
+      if (ret)
+        /* There's an exclude for the family, so family is static. */
+        ret = 0;
+      else
+        {
+          ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                         " WHERE name = '%s'"
+                         " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                         " AND exclude = 1"
+                         /* And NVT is in family. */
+                         " AND EXISTS (SELECT * FROM nvts"
+                         "             WHERE oid = family_or_nvt"
+                         "             AND family = '%s')"
+                         " LIMIT 1;",
+                         quoted_selector,
+                         quoted_family);
+          if (ret)
+            /* Growing, but some NVTs excluded. */
+            ret = 0;
+          else
+            /* Growing, every NVT included. */
+            ret = 1;
+        }
+
+      g_free (quoted_selector);
+      g_free (quoted_family);
+
+      return ret;
+    }
+
+  /* Generating from empty. */
+
+  ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                 " WHERE name = '%s'"
+                 " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
+                 " AND family_or_nvt = '%s'"
+                 " AND exclude = 0"
+                 " LIMIT 1;",
+                 quoted_selector,
+                 quoted_family);
+
+  if (ret)
+    {
+      if (sql_int ("SELECT COUNT(*) FROM nvt_selectors"
+                   " WHERE name = '%s'"
+                   " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+                   " AND exclude = 1"
+                   /* And NVT is in family. */
+                   " AND EXISTS (SELECT * FROM nvts"
+                   "             WHERE oid = family_or_nvt"
+                   "             AND family = '%s')"
+                   " LIMIT 1;",
+                   quoted_selector,
+                   quoted_family))
+        /* Growing, but some NVTs excluded. */
+        ret = 0;
+      else
+        /* Growing, every NVT included. */
+        ret = 1;
+    }
+  else
+    /* Family is not included, so family is static. */
+    ret = 0;
+
+  g_free (quoted_selector);
+  g_free (quoted_family);
+
+  return ret;
+}
+
+/**
  * @brief Get whether an NVT selector family is growing.
  *
  * @param[in]  selector  NVT selector.
@@ -513,7 +606,7 @@ nvt_selector_family_growing (const char *selector,
  * @param[in]  selector  NVT selector.
  * @param[in]  family    Family name.  NULL for all.
  * @param[in]  growing   True if the given family is growing, else 0.
- *                       If \param family is NULL, true if the the families
+ *                       If family is NULL, true if the the families
  *                       are growing, else 0.
  *
  * @return Number of NVTs selected in one or all families.
@@ -588,8 +681,6 @@ nvt_selector_nvt_count (const char *selector,
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  quoted_family    SQL-quoted family name.
  * @param[in]  type             Selector type to remove.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_remove (const char* quoted_selector,
@@ -631,8 +722,6 @@ nvt_selector_remove (const char* quoted_selector,
  * @param[in]  quoted_selector  SQL-quoted selector name.
  * @param[in]  family_or_nvt    SQL-quoted family name or NVT UUID.
  * @param[in]  type             Selector type to remove.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_remove_selector (const char* quoted_selector,
@@ -668,8 +757,6 @@ nvt_selector_remove_selector (const char* quoted_selector,
  * @param[in]  quoted_family_or_nvt  SQL-quoted family or NVT name.
  * @param[in]  quoted_family    SQL-quoted family name (NULL for families).
  * @param[in]  exclude          1 exclude selector, 0 include selector.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_add (const char* quoted_selector,
@@ -706,8 +793,6 @@ nvt_selector_add (const char* quoted_selector,
  * @param[in]  family_or_nvt    Family name or NVT OID of selector.
  * @param[in]  type             Selector type to remove.
  * @param[in]  family           New family.
- *
- * @return 0 success, -1 error.
  */
 static void
 nvt_selector_set_family (const char* quoted_selector,
@@ -782,53 +867,93 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
 }
 
 /**
+ * @brief Starts the SQL transaction for modify_config and finds the config.
+ *
+ * @param[in]  config_id    UUID of the config to find.
+ * @param[out] config_out   Row ID of the config or 0 if not found.
+ * 
+ * @return 0 success, 1 config not found, -1 error.
+ */
+int
+manage_modify_config_start (const char *config_id, config_t *config_out)
+{
+  sql_begin_immediate ();
+  
+  if (find_config_with_permission (config_id, config_out, "modify_config"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (*config_out == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+  
+  return 0;
+}
+
+/**
+ * @brief Cancels a manage_config command and rolls back the changes.
+ */
+void
+manage_modify_config_cancel ()
+{
+  sql_rollback ();
+}
+
+/**
+ * @brief Commits the changes of a manage_config command.
+ */
+void
+manage_modify_config_commit ()
+{
+  sql_commit ();
+}
+
+/**
  * @brief Refresh NVT selection of a config from given families.
  *
- * @param[in]  config_id             Config.
+ * @param[in]  config                Config to modify.
  * @param[in]  growing_all_families  Growing families with all selection.
  * @param[in]  static_all_families   Static families with all selection.
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
+ * @return 0 success, 1 config in use, 2 whole-only families must be growing
+ *         and include entire family, -1 error.
  */
 int
-manage_set_config_families (const gchar *config_id,
+manage_set_config_families (config_t config,
                             GPtrArray* growing_all_families,
                             GPtrArray* static_all_families,
                             GPtrArray* growing_families,
                             int grow_families)
 {
-  config_t config;
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
   iterator_t families;
   gchar *quoted_selector;
   int constraining;
   char *selector;
 
-  sql_begin_immediate ();
+  /* Ensure that whole-only families include all NVTs and are growing. */
 
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (config == 0)
-    {
-      sql_rollback ();
+  for (const gchar **whole = wholes; *whole; whole++)
+    if (member (growing_all_families, *whole)
+        || member (static_all_families, *whole))
       return 2;
-    }
+
+  /* Check the args. */
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND hidden = 0;",
                config))
     {
-      sql_rollback ();
       return 1;
     }
 
   if (config_type (config) > 0)
     {
-      sql_rollback ();
       return 0;
     }
   constraining = config_families_growing (config);
@@ -837,7 +962,6 @@ manage_set_config_families (const gchar *config_id,
     {
       if (switch_representation (config, constraining))
         {
-          sql_rollback ();
           return -1;
         }
       constraining = constraining == 0;
@@ -847,7 +971,6 @@ manage_set_config_families (const gchar *config_id,
   if (selector == NULL)
     {
       /* The config should always have a selector. */
-      sql_rollback ();
       return -1;
     }
   quoted_selector = sql_quote (selector);
@@ -1147,8 +1270,6 @@ manage_set_config_families (const gchar *config_id,
     }
   cleanup_iterator (&families);
 
-  sql_commit ();
-
   g_free (quoted_selector);
   free (selector);
   return 0;
@@ -1189,19 +1310,13 @@ insert_nvt_selectors (const char *quoted_name,
 
           family = nvt_family (selector->family_or_nvt);
           if (family == NULL)
-            {
-              g_warning ("%s: skipping NVT '%s' from import of config '%s'"
-                         " because the NVT does not have a family",
-                         __func__,
-                         selector->family_or_nvt,
-                         quoted_name);
-              if (allow_errors)
-                continue;
-              return -1;
-            }
+            g_debug ("%s: NVT '%s' in config '%s' does not have a family",
+                     __func__,
+                     selector->family_or_nvt,
+                     quoted_name);
 
           quoted_family_or_nvt = sql_quote (selector->family_or_nvt);
-          quoted_family = sql_quote (family);
+          quoted_family = sql_quote (family ? family : "");
           sql ("INSERT into nvt_selectors (name, exclude, type, family_or_nvt,"
                " family)"
                " VALUES ('%s', %i, %i, '%s', '%s');",
@@ -3933,45 +4048,29 @@ modify_config_preference (config_t config, const char* nvt,
 /**
  * @brief Set a preference of a config.
  *
- * @param[in]  config_id  Config.
+ * @param[in]  config      Config to modify.
  * @param[in]  nvt         UUID of NVT.  NULL for scanner preference.
  * @param[in]  name        Preference name, including NVT name and preference
  *                         type.
  * @param[in]  value_64    Preference value in base64.  NULL for an NVT
  *                         preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, 2 empty radio value, 3 failed to find
- *         config, -1 error.
+ * @return 0 success, 1 config in use, 2 empty radio value, -1 error.
  */
 int
-manage_set_config_preference (const gchar *config_id, const char* nvt,
+manage_set_config_preference (config_t config, const char* nvt,
                               const char* name, const char* value_64)
 {
   int ret;
-  config_t config;
 
   if (value_64 == NULL)
     {
       gchar *quoted_name, **splits;
 
-      sql_begin_immediate ();
-
-      if (find_config_with_permission (config_id, &config, "modify_config"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (config == 0)
-        {
-          sql_rollback ();
-          return 3;
-        }
-
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu AND hidden = 0;",
                    config))
         {
-          sql_rollback ();
           return 1;
         }
 
@@ -3994,83 +4093,48 @@ manage_set_config_preference (const gchar *config_id, const char* nvt,
            config,
            quoted_name);
 
-      sql_commit ();
-
       g_free (quoted_name);
       return 0;
-    }
-
-  sql_begin_immediate ();
-
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (config == 0)
-    {
-      sql_rollback ();
-      return 3;
     }
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND hidden = 0;",
                config))
     {
-      sql_rollback ();
       return 1;
     }
 
   ret = modify_config_preference (config, nvt, name, value_64);
   if (ret)
     {
-      sql_rollback ();
       return ret;
     }
 
-  sql_commit ();
   return 0;
 }
 
 /**
  * @brief Set the name, comment and scanner of a config.
  *
- * @param[in]  config_id    Config.
+ * @param[in]  config       Config to modify.
  * @param[in]  name         New name, not updated if NULL.
  * @param[in]  comment      New comment, not updated if NULL.
  * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
  * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
- *         exist, 3 modification not allowed while config is in use, 4 failed to
- *         find config, -1 error.
+ *         exist, 3 modification not allowed while config is in use, -1 error.
  */
 int
-manage_set_config (const gchar *config_id, const char*name, const char *comment,
+manage_set_config (config_t config, const char *name, const char *comment,
                    const char *scanner_id)
 {
-  config_t config;
-
   assert (current_credentials.uuid);
-
-  sql_begin_immediate ();
-
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (config == 0)
-    {
-      sql_rollback ();
-      return 4;
-    }
 
   if (name)
     {
       gchar *quoted_name;
       if (resource_with_name_exists (name, "config", config))
         {
-          sql_rollback ();
           return 1;
         }
       quoted_name = sql_quote (name);
@@ -4090,7 +4154,6 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
     {
       if (config_in_use (config))
         {
-          sql_rollback ();
           return 3;
         }
       scanner_t scanner = 0;
@@ -4098,52 +4161,88 @@ manage_set_config (const gchar *config_id, const char*name, const char *comment,
       if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners")
           || scanner == 0)
         {
-          sql_rollback ();
           return 2;
         }
       sql ("UPDATE configs SET scanner = %llu, modification_time = m_now ()"
            " WHERE id = %llu;", scanner, config);
     }
-  sql_commit ();
   return 0;
+}
+
+/**
+ * @brief Check whether a family is "whole-only".
+ *
+ * @param[in]  family         Family name.
+ *
+ * @return 1 if whole-only, else 0.
+ */
+int
+family_whole_only (const gchar *family)
+{
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    if (strcmp (*whole, family) == 0)
+      return 1;
+  return 0;
+}
+
+/**
+ * @brief Get whether a config selects every NVT in a given family.
+ *
+ * @param[in]  config      Config.
+ * @param[in]  family      Family name.
+ *
+ * @return 0 no, 1 yes, -1 error.
+ */
+int
+config_family_entire_and_growing (config_t config, const char* family)
+{
+  char *selector;
+  int ret;
+
+  if (config == 0)
+    return 0;
+
+  selector = config_nvt_selector (config);
+  if (selector == NULL)
+    {
+      /* The config should always have a selector. */
+      return -1;
+    }
+
+  ret = nvt_selector_entire_and_growing (selector,
+                                         family,
+                                         config_families_growing (config));
+  free (selector);
+
+  return ret;
 }
 
 /**
  * @brief Set the NVT's selected for a single family of a config.
  *
- * @param[in]  config_id      Config.
+ * @param[in]  config         Config to modify.
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, 1 config in use, 2 failed to find config, -1 error.
+ * @return 0 success, 1 config in use, 2 whole-only family, -1 error.
  */
 int
-manage_set_config_nvts (const gchar *config_id, const char* family,
+manage_set_config_nvts (config_t config, const char* family,
                         GPtrArray* selected_nvts)
 {
-  config_t config;
   char *selector;
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
 
-  sql_begin_immediate ();
-
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (config == 0)
-    {
-      sql_rollback ();
-      return 2;
-    }
+  if (family_whole_only (family))
+    return 2;
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND hidden = 0;",
                config))
     {
-      sql_rollback ();
       return 1;
     }
 
@@ -4262,8 +4361,6 @@ manage_set_config_nvts (const gchar *config_id, const char* family,
        old_nvt_count,
        MAX (new_nvt_count, 0),
        config);
-
-  sql_commit ();
 
   g_free (quoted_family);
   g_free (quoted_selector);
@@ -4831,5 +4928,53 @@ check_db_configs ()
       g_warning ("%s: There are feed configs/policies in the trash."
                  " These will be excluded from the sync.",
                  __func__);
+    }
+}
+
+/**
+ * @brief Check whole-only families.
+ *
+ * Called after NVT sync.
+ */
+void
+check_whole_only_in_configs ()
+{
+  static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
+
+  for (const gchar **whole = wholes; *whole; whole++)
+    {
+      gchar *quoted_family;
+
+      quoted_family = sql_quote (*whole);
+
+      /* Delete any excluding NVT selectors. */
+
+      sql ("DELETE FROM nvt_selectors"
+           " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           " AND exclude = 1"
+           " AND EXISTS (SELECT * FROM nvts"
+           "             WHERE oid = family_or_nvt"
+           "             AND family = '%s');",
+           quoted_family);
+
+      /* Convert any including NVT selectors to family selectors. */
+
+      sql ("WITH sels AS (DELETE FROM nvt_selectors"
+           "                     WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+           "              AND EXISTS (SELECT * FROM nvts"
+           "                          WHERE oid = family_or_nvt"
+           "                          AND family = '%s')"
+           "              RETURNING name),"
+           "     names AS (SELECT distinct * FROM sels)"
+           " INSERT INTO nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " SELECT names.name, 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
+           "        '%s', '%s'"
+           " FROM names;",
+           quoted_family,
+           quoted_family,
+           quoted_family);
+
+      g_free (quoted_family);
     }
 }

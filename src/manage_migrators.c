@@ -2496,6 +2496,113 @@ migrate_237_to_238 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 238 to version 239.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_238_to_239 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 238. */
+
+  if (manage_db_version () != 238)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table targets(_trash) got a allow_simult_ips_same_host column. */
+
+  sql ("ALTER TABLE targets ADD COLUMN"
+       " allow_simult_ips_same_host integer DEFAULT 1;");
+
+  sql ("ALTER TABLE targets_trash ADD COLUMN"
+       " allow_simult_ips_same_host integer DEFAULT 1;");
+
+  /* Set the database version to 239. */
+
+  set_db_version (239);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 239 to version 240.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_239_to_240 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 239. */
+
+  if (manage_db_version () != 239)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Table results also got a score column, for extended severities. */
+
+  sql ("DROP VIEW IF EXISTS vulns;");
+
+  /* Set the database version to 240. */
+
+  set_db_version (240);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 240 to version 241.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_240_to_241 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 240. */
+
+  if (manage_db_version () != 240)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename allow_simult_ips_same_host column to allow_simultaneous_ips */
+
+  sql ("ALTER TABLE targets RENAME COLUMN"
+       " allow_simult_ips_same_host TO allow_simultaneous_ips;");
+
+  sql ("ALTER TABLE targets_trash RENAME COLUMN"
+       " allow_simult_ips_same_host TO allow_simultaneous_ips;");
+
+  /* Set the database version to 241. */
+
+  set_db_version (241);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2540,6 +2647,9 @@ static migrator_t database_migrators[] = {
   {236, migrate_235_to_236},
   {237, migrate_236_to_237},
   {238, migrate_237_to_238},
+  {239, migrate_238_to_239},
+  {240, migrate_239_to_240},
+  {241, migrate_240_to_241},
   /* End marker. */
   {-1, NULL}};
 

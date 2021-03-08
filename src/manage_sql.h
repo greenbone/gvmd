@@ -1,4 +1,4 @@
-/* Copyright (C) 2010-2018 Greenbone Networks GmbH
+/* Copyright (C) 2010-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -472,5 +472,11 @@ add_role_permission_resource (const gchar *, const gchar *, const gchar *,
 
 void
 create_view_vulns ();
+
+int
+config_family_entire_and_growing (config_t, const char*);
+
+void
+reports_clear_count_cache_dynamic ();
 
 #endif /* not _GVMD_MANAGE_SQL_H */

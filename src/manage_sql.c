@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2020 Greenbone Networks GmbH
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -51,6 +51,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glib/gstdio.h>
+#include <gnutls/x509.h>
 #include <malloc.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -1945,7 +1946,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
 }
 
 /**
- * @brief Get info from a filter for report.
+ * @brief Get info from a result filter for a report.
  *
  * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
  * (by calling manage_max_rows).
@@ -2062,8 +2063,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
           point++;
         }
       if (sort_field && (*sort_field == NULL))
-        // FIX name??
-        *sort_field = g_strdup ("name");
+        *sort_field = g_strdup ("name"); /* NVT name. */
     }
 
   if (search_phrase)
@@ -4795,11 +4795,13 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
 
   with_clause = NULL;
 
-  if (resource)
-    /* Ownership test is done above by find function. */
-    owned_clause = g_strdup (" t ()");
-  else if (assume_permitted)
-    owned_clause = g_strdup (" t ()");
+  if (resource || assume_permitted)
+    /* Ownership test of single resources is done above by find function
+     * but acl_where_owned has to be called to generate WITH clause
+     * in case subqueries depend on it.
+     */
+    owned_clause = acl_where_owned (type, get, 0, owner_filter, resource,
+                                    permissions, &with_clause);
   else
     owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
                                     permissions, &with_clause);
@@ -5258,7 +5260,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
             int index;
             order_column = NULL;
             for (index = 0;
-                 index < data_columns->len && order_column == NULL;
+                 data_columns && index < data_columns->len && order_column == NULL;
                  index++)
               {
                 gchar *column = g_array_index (data_columns, gchar*, index);
@@ -5272,7 +5274,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                       order_column = g_strdup_printf ("max (aggregate_max_%d)",
                                                       index);
                     else if (strcmp (sort_stat, "mean") == 0)
-                      order_column = g_strdup_printf ("sum (aggregate_avg_%d)",
+                      order_column = g_strdup_printf ("sum (aggregate_sum_%d)"
+                                                      " / sum(aggregate_count)",
                                                       index);
                     else
                       order_column = g_strdup_printf ("%s (aggregate_%s_%d)",
@@ -5282,7 +5285,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
               }
 
             for (index = 0;
-                index < text_columns->len && order_column == NULL;
+                text_columns && index < text_columns->len && order_column == NULL;
                 index++)
               {
                 gchar *column = g_array_index (text_columns, gchar*, index);
@@ -5644,6 +5647,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   else
     filter = NULL;
 
+  g_debug ("%s", __func__);
+
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           get->trash && trash_select_columns
                            ? trash_select_columns
@@ -5712,6 +5717,9 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
   g_free (columns);
   g_free (owned_clause);
   g_free (clause);
+
+  g_debug ("%s: done", __func__);
+
   return ret;
 }
 
@@ -6259,10 +6267,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 
 /**
  * @brief Check if any SecInfo alerts are due.
- *
- * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
  */
 void
 check_alerts ()
@@ -6702,7 +6706,7 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
               return 18;
             }
 
-          if (strchr (username, '@') || strchr (username, ':'))
+          if (strchr (username, ':'))
             {
               g_free (username);
               return 18;
@@ -9234,7 +9238,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
 
   script = g_build_filename (script_dir, "alert", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (!gvm_file_is_readable (script))
     {
       g_warning ("%s: Failed to find alert script: %s",
            __func__,
@@ -10025,7 +10029,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   script = g_build_filename (script_dir, "alert", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (!gvm_file_is_readable (script))
     {
       g_free (report_file);
       g_free (pkcs12_file);
@@ -10184,7 +10188,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
                 /* Parent on success.  Wait for child, and check result. */
 
-                g_free (command);
 
                 while (waitpid (pid, &status, 0) < 0)
                   {
@@ -10207,6 +10210,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                       g_warning ("%s: and chdir failed",
                                  __func__);
                     g_free (previous_dir);
+                    g_free (command);
                     return -1;
                   }
                 if (WIFEXITED (status))
@@ -10223,6 +10227,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                         g_warning ("%s: and chdir failed",
                                    __func__);
                       g_free (previous_dir);
+                      g_free (command);
                       return -1;
                     }
                 else
@@ -10234,11 +10239,12 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                       g_warning ("%s: and chdir failed",
                                  __func__);
                     g_free (previous_dir);
+                    g_free (command);
                     return -1;
                   }
 
                 /* Child succeeded, continue to process result. */
-
+                g_free (command);
                 break;
               }
           }
@@ -10345,7 +10351,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
   script = g_build_filename (script_dir, "alert", NULL);
 
-  if (!g_file_test (script, G_FILE_TEST_EXISTS))
+  if (!gvm_file_is_readable (script))
     {
       g_warning ("%s: Failed to find alert script: %s",
            __func__,
@@ -10644,7 +10650,8 @@ buffer_vfire_call_input (gchar *key, gchar *value, GString *buffer)
                        param);                                                \
   else                                                                        \
     {                                                                         \
-      *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");      \
+      if (message)                                                            \
+        *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");    \
       g_warning ("%s: Missing " G_STRINGIFY(param) ".", __func__);        \
       g_string_free (config_xml, TRUE);                                       \
       return -1;                                                              \
@@ -10795,7 +10802,7 @@ send_to_vfire (const char *base_url, const char *client_id,
       g_warning ("%s: Alert script exited with status %d",
                  __func__, exit_status);
       g_message ("%s: stderr: %s",
-                 __func__, *message);
+                 __func__, message ? *message: "");
       ret = -5;
     }
 
@@ -11853,6 +11860,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
             break;
         case 1:        /* Too few rows in result of query. */
         case -1:
+          g_free(alert_filter_get);
           return -1;
           break;
         default:       /* Programming error. */
@@ -11883,6 +11891,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                          __func__, format_uuid,
                          alert_method_name (alert_method (alert)));
               g_free (format_uuid);
+              g_free (alert_filter_get);
               return -2;
             }
           g_free (format_uuid);
@@ -15115,7 +15124,7 @@ init_manage_open_db (const db_conn_info_t *database)
     }
 
   /* Ensure the user session variables always exists. */
-  sql ("SET SESSION \"gvmd.user.uuid\" = '';");
+  sql ("SET SESSION \"gvmd.user.id\" = 0;");
   sql ("SET SESSION \"gvmd.tz_override\" = '';");
 
   /* Attach the SCAP and CERT databases. */
@@ -17009,11 +17018,11 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "vuln") == 0)
     {
-      extra_where = g_strdup (" AND (vuln_results (vulns.uuid,"
-                              "                    cast (null AS integer),"
-                              "                    cast (null AS integer),"
-                              "                    cast (null AS text))"
-                              "      > 0)");
+      extra_where = g_strdup (" AND vuln_results_exist"
+                              "      (vulns.uuid,"
+                              "       cast (null AS integer),"
+                              "       cast (null AS integer),"
+                              "       cast (null AS text))");
     }
   else
     extra_where = NULL;
@@ -19339,8 +19348,8 @@ result_detection_reference (result_t result, report_t report,
 
   quoted_location = NULL;
   *oid = *ref = *product = *location = *name = NULL;
-
   quoted_host = sql_quote (host);
+
 
   if (path && strcmp (path, ""))
     {
@@ -19365,9 +19374,11 @@ result_detection_reference (result_t result, report_t report,
                               "                    WHERE id = %llu);",
                               report, quoted_host, result);
     }
-
   if (*location == NULL)
-    goto detect_cleanup;
+    {
+        goto detect_cleanup;
+    }
+
   quoted_location = sql_quote (*location);
 
   *oid
@@ -19383,7 +19394,6 @@ result_detection_reference (result_t result, report_t report,
                   "                    WHERE id = %llu)"
                   " LIMIT 1",
                   report, quoted_host, quoted_location, result);
-
   if (*oid == NULL)
     {
       *oid
@@ -19402,7 +19412,9 @@ result_detection_reference (result_t result, report_t report,
     }
 
   if (*oid == NULL)
-    goto detect_cleanup;
+    {
+        goto detect_cleanup;
+    }
 
   *product = sql_string ("SELECT name"
                          " FROM report_host_details"
@@ -19708,6 +19720,36 @@ reports_hashtable ()
   reports_add_all (reports_table);
 
   return reports_table;
+}
+
+/**
+ * @brief Clear the report count cache for all reports of a user.
+ *
+ * @param[in]  uuid  UUID of user.
+ */
+static void
+reports_clear_count_cache (const gchar *uuid)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  sql ("DELETE FROM report_counts"
+       " WHERE report_counts.user = (SELECT id FROM users"
+       "                             WHERE uuid = '%s');",
+       quoted_uuid);
+  g_free (quoted_uuid);
+}
+
+/**
+ * @brief Clear all report counts for all dynamic severity users.
+ */
+void
+reports_clear_count_cache_dynamic ()
+{
+  sql ("DELETE FROM report_counts"
+       " WHERE report_counts.user IN (SELECT owner FROM settings"
+       "                              WHERE name = 'Dynamic Severity'"
+       "                              AND value = '1');");
 }
 
 /**
@@ -20316,7 +20358,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_host, *quoted_hostname, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
       gchar *quoted_qod, *quoted_qod_type;
-
       g_debug ("%s: add results: index: %i", __func__, index);
 
       quoted_host = sql_quote (result->host ? result->host : "");
@@ -21106,18 +21147,6 @@ init_report_iterator_task (iterator_t* iterator, task_t task)
                  task);
 }
 
-#if 0
-/**
- * @brief Get the NAME from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The NAME of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-#endif
-
-
 /**
  * @brief Get the UUID from a report iterator.
  *
@@ -21165,105 +21194,55 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   /* Generate SQL for constraints on message type, according to levels. */
 
+  levels_sql = g_string_new ("");
+
   if (levels == NULL || strlen (levels) == 0)
     {
-      levels_sql = g_string_new ("");
       g_string_append_printf (levels_sql,
                               " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
                               new_severity_sql);
       return levels_sql;
     }
 
-  levels_sql = NULL;
   count = 0;
 
-  /* High. */
+  g_string_append_printf (levels_sql, " AND severity_in_levels (%s", new_severity_sql);
+
   if (strchr (levels, 'h'))
     {
-      count = 1;
-      // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new ("");
-      g_string_append_printf (levels_sql,
-                              " AND (((severity_in_level (%s, 'high')",
-                              new_severity_sql);
+      g_string_append (levels_sql, ", 'high'");
+      count++;
     }
-
-  /* Medium. */
   if (strchr (levels, 'm'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'medium')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'medium')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'medium'");
       count++;
     }
-
-  /* Low. */
   if (strchr (levels, 'l'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'low')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'low')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'low'");
       count++;
     }
-
-  /* loG. */
   if (strchr (levels, 'g'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (((severity_in_level (%s, 'log')",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR severity_in_level (%s, 'log')",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'log'");
       count++;
     }
-
-  /* False Positive. */
   if (strchr (levels, 'f'))
     {
-      if (count == 0)
-        {
-          levels_sql = g_string_new ("");
-          g_string_append_printf (levels_sql,
-                                  " AND (%s"
-                                  "      = " G_STRINGIFY
-                                              (SEVERITY_FP) ")",
-                                  new_severity_sql);
-        }
-      else
-        g_string_append_printf (levels_sql,
-                                " OR %s"
-                                "    = " G_STRINGIFY
-                                          (SEVERITY_FP) "))"
-                                " )",
-                                new_severity_sql);
+      g_string_append (levels_sql, ", 'false'");
       count++;
     }
-  else if (count)
-    levels_sql = g_string_append (levels_sql, ")))");
 
-  if (count == 6)
+  if (count == 0)
+    {
+      g_string_free (levels_sql, TRUE);
+      return NULL;
+    }
+
+  g_string_append (levels_sql, ")");
+
+  if (count == 5)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -21476,18 +21455,20 @@ where_qod (int min_qod)
     /* ^ 10 = 0 */                                                            \
     { "port", "location", KEYWORD_TYPE_STRING },                              \
     { "nvt", NULL, KEYWORD_TYPE_STRING },                                     \
-    { "severity_to_type (severity)", "original_type", KEYWORD_TYPE_STRING },  \
+    { "severity_to_type (results.severity)",                                  \
+      "original_type",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
     { "severity_to_type (" new_severity_sql ")",                              \
       "type",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
-    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)",                   \
+    { "nvts.cvss_base",                                                       \
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
-    { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
+    { "results.severity", "original_severity", KEYWORD_TYPE_DOUBLE },         \
     /* ^ 20 = 10 */                                                           \
     { new_severity_sql,                                                       \
       "severity",                                                             \
@@ -21603,25 +21584,7 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define BASE_RESULT_ITERATOR_COLUMNS                                          \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("results.severity")
-
-/**
- * @brief Result iterator columns.
- */
-#define BASE_RESULT_ITERATOR_COLUMNS_D                                        \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("current_severity (results.severity,"      \
-                                   "                  results.nvt)")
-
-/**
- * @brief Result iterator columns.
- */
-#define BASE_RESULT_ITERATOR_COLUMNS_OD                                       \
-  PRE_BASE_RESULT_ITERATOR_COLUMNS("(SELECT new_severity"                     \
-      " FROM result_new_severities"                                           \
-      " WHERE result_new_severities.result = results.id"                      \
-      " AND result_new_severities.user = opts.user_id"                        \
-      " AND result_new_severities.dynamic = opts.dynamic"                     \
-      " LIMIT 1)")
+  PRE_BASE_RESULT_ITERATOR_COLUMNS("lateral_new_severity.new_severity")
 
 /**
  * @brief Result iterator columns.
@@ -21639,71 +21602,11 @@ where_qod (int min_qod)
   }
 
 /**
- * @brief Result iterator columns.
- */
-#define RESULT_ITERATOR_COLUMNS_D                                             \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_D                                            \
-    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns.
- */
-#define RESULT_ITERATOR_COLUMNS_OD                                            \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
-    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
  * @brief Result iterator columns, when CERT db is not loaded.
  */
 #define RESULT_ITERATOR_COLUMNS_NO_CERT                                       \
   {                                                                           \
     BASE_RESULT_ITERATOR_COLUMNS                                              \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns, when CERT db is not loaded.
- */
-#define RESULT_ITERATOR_COLUMNS_D_NO_CERT                                     \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_D                                            \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "0",                                                                    \
-      NULL,                                                                   \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
-  }
-
-/**
- * @brief Result iterator columns, when CERT db is not loaded.
- */
-#define RESULT_ITERATOR_COLUMNS_OD_NO_CERT                                    \
-  {                                                                           \
-    BASE_RESULT_ITERATOR_COLUMNS_OD                                           \
     { "0",                                                                    \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
@@ -21781,15 +21684,24 @@ static gchar*
 new_severity_clause (int apply_overrides, int dynamic_severity)
 {
   if (apply_overrides)
-    /* Overrides, maybe dynamic. */
-    return g_strdup_printf ("(SELECT new_severity FROM result_new_severities"
-                            " WHERE result_new_severities.result = results.id"
-                            " AND result_new_severities.user"
-                            "     = (SELECT id FROM users WHERE uuid = '%s')"
-                            " AND dynamic = %d"
-                            " LIMIT 1)",
-                            current_credentials.uuid,
-                            dynamic_severity);
+    {
+      if (dynamic_severity)
+        /* Overrides, dynamic. */
+        return g_strdup_printf ("(SELECT new_severity FROM result_new_severities_dynamic"
+                                " WHERE result_new_severities_dynamic.result = results.id"
+                                " AND result_new_severities_dynamic.user"
+                                "     = (SELECT id FROM users WHERE uuid = '%s')"
+                                " LIMIT 1)",
+                                current_credentials.uuid);
+
+      /* Overrides, no dynamic. */
+      return g_strdup_printf ("(SELECT new_severity FROM result_new_severities_static"
+                              " WHERE result_new_severities_static.result = results.id"
+                              " AND result_new_severities_static.user"
+                              "     = (SELECT id FROM users WHERE uuid = '%s')"
+                              " LIMIT 1)",
+                              current_credentials.uuid);
+    }
 
   if (dynamic_severity)
     /* Dynamic, no overrides. */
@@ -21809,13 +21721,14 @@ new_severity_clause (int apply_overrides, int dynamic_severity)
  * @param[in]  apply_overrides  Whether to apply overrides.
  * @param[in]  dynamic_severity Whether to use dynamic severity.
  * @param[in]  filter           Filter string.
+ * @param[in]  given_new_severity_sql  SQL for new severity, or NULL.
  *
  * @return     Newly allocated extra_where string.
  */
 static gchar*
 results_extra_where (int trash, report_t report, const gchar* host,
                      int apply_overrides, int dynamic_severity,
-                     const gchar *filter)
+                     const gchar *filter, const gchar *given_new_severity_sql)
 {
   gchar *extra_where;
   int min_qod;
@@ -21832,7 +21745,10 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build clause fragments
 
-  new_severity_sql = new_severity_clause (apply_overrides, dynamic_severity);
+  if (given_new_severity_sql)
+    new_severity_sql = NULL;
+  else
+    new_severity_sql = new_severity_clause (apply_overrides, dynamic_severity);
 
   // Build filter clauses
 
@@ -21851,7 +21767,9 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod_clause = where_qod (min_qod);
 
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
-                                     new_severity_sql);
+                                     given_new_severity_sql
+                                      ? given_new_severity_sql
+                                      : new_severity_sql);
   g_free (levels);
   g_free (new_severity_sql);
 
@@ -21886,7 +21804,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                    report_t report, const char* host,
                                    const gchar *extra_order)
 {
-  column_t columns[3];
+  column_t columns[2];
   static column_t static_filterable_columns[]
     = RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE;
   static column_t static_filterable_columns_no_cert[]
@@ -21896,9 +21814,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   int ret;
   gchar *filter;
   int apply_overrides, dynamic_severity;
-  gchar *extra_tables, *extra_where, *extra_where_single;
-  gchar *owned_clause, *with_clause, *with_clauses;
-  char *user_id;
+  gchar *extra_tables, *extra_where, *extra_where_single, *opts, *with_clause;
+  const gchar *lateral;
 
   assert (report);
 
@@ -21924,14 +21841,19 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
    (filterable_columns,
     "type",
     apply_overrides
-     /* Overrides, maybe dynamic. */
-     ? g_strdup_printf ("severity_to_type"
-                        " ((SELECT new_severity FROM result_new_severities"
-                        "   WHERE result_new_severities.result = results.id"
-                        "   AND result_new_severities.user = opts.user_id"
-                        "   AND result_new_severities.dynamic = %i"
-                        "   LIMIT 1))",
-                        dynamic_severity)
+     ? (dynamic_severity
+        /* Overrides, dynamic. */
+        ? g_strdup_printf ("severity_to_type"
+                           " ((SELECT new_severity FROM result_new_severities_dynamic"
+                           "   WHERE result_new_severities_dynamic.result = results.id"
+                           "   AND result_new_severities_dynamic.user = opts.user_id"
+                           "   LIMIT 1))")
+        /* Overrides, no dynamic. */
+        : g_strdup_printf ("severity_to_type"
+                           " ((SELECT new_severity FROM result_new_severities_static"
+                           "   WHERE result_new_severities_static.result = results.id"
+                           "   AND result_new_severities_static.user = opts.user_id"
+                           "   LIMIT 1))"))
      : (dynamic_severity
          /* Dynamic, no overrides. */
          ? g_strdup ("severity_to_type (current_severity (results.severity,"
@@ -21942,153 +21864,153 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   if (dynamic_severity)
     {
       if (apply_overrides)
-        columns[0].select
-          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                   WHERE valid_overrides.result_nvt"
-            "                         = results.result_nvt"
-            "                   AND (valid_overrides.result = 0"
-            "                        OR valid_overrides.result"
-            "                           = results.id)"
-            "                   AND (valid_overrides.hosts is NULL"
-            "                        OR valid_overrides.hosts = ''"
-            "                        OR hosts_contains"
-            "                            (valid_overrides.hosts,"
-            "                             results.host))"
-            "                   AND (valid_overrides.port is NULL"
-            "                        OR valid_overrides.port = ''"
-            "                        OR valid_overrides.port"
-            "                           = results.port)"
-            "                   AND severity_matches_ov"
-            "                        (coalesce"
-            "                          ((CASE WHEN results.severity"
-            "                                      > " G_STRINGIFY
+        lateral
+          = "coalesce ((SELECT new_severity FROM valid_overrides"
+            "           WHERE valid_overrides.result_nvt"
+            "                 = results.result_nvt"
+            "           AND (valid_overrides.result = 0"
+            "                OR valid_overrides.result"
+            "                   = results.id)"
+            "           AND (valid_overrides.hosts is NULL"
+            "                OR valid_overrides.hosts = ''"
+            "                OR hosts_contains"
+            "                    (valid_overrides.hosts,"
+            "                     results.host))"
+            "           AND (valid_overrides.port is NULL"
+            "                OR valid_overrides.port = ''"
+            "                OR valid_overrides.port"
+            "                   = results.port)"
+            "           AND severity_matches_ov"
+            "                (coalesce"
+            "                  ((CASE WHEN results.severity"
+            "                              > " G_STRINGIFY
                                                              (SEVERITY_LOG)
-            "                            THEN (SELECT"
-            "                                   CAST (cvss_base"
-            "                                         AS double precision)"
-            "                                  FROM nvts"
-            "                                  WHERE nvts.oid"
-            "                                        = results.nvt)"
-            "                            ELSE results.severity"
-            "                            END),"
-            "                           results.severity),"
-            "                         valid_overrides.severity)"
-            "                   LIMIT 1),"
-            "                  coalesce ((CASE WHEN results.severity"
-            "                                       > " G_STRINGIFY
+            "                    THEN CAST (nvts.cvss_base"
+            "                               AS double precision)"
+            "                    ELSE results.severity"
+            "                    END),"
+            "                   results.severity),"
+            "                 valid_overrides.severity)"
+            "           LIMIT 1),"
+            "          coalesce ((CASE WHEN results.severity"
+            "                               > " G_STRINGIFY
                                                               (SEVERITY_LOG)
-            "                             THEN (SELECT"
-            "                                   CAST (cvss_base"
-            "                                         AS double precision)"
-            "                                   FROM nvts"
-            "                                   WHERE nvts.oid"
-            "                                         = results.nvt)"
-            "                             ELSE results.severity"
-            "                             END),"
-            "                            results.severity)))";
+            "                     THEN CAST (nvts.cvss_base"
+            "                                AS double precision)"
+            "                     ELSE results.severity"
+            "                     END),"
+            "                    results.severity))";
       else
-        columns[0].select
-          = "(SELECT coalesce ((CASE WHEN results.severity"
-            "                             > " G_STRINGIFY (SEVERITY_LOG)
-            "                        THEN (SELECT CAST (cvss_base"
-            "                                           AS double precision)"
-            "                              FROM nvts"
-            "                              WHERE nvts.oid = results.nvt)"
-            "                        ELSE results.severity"
-            "                        END),"
-            "                  results.severity))";
+        lateral
+          = "coalesce ((CASE WHEN results.severity"
+            "                     > " G_STRINGIFY (SEVERITY_LOG)
+            "                THEN CAST (nvts.cvss_base"
+            "                           AS double precision)"
+            "                ELSE results.severity"
+            "                END),"
+            "          results.severity)";
     }
   else
     {
       if (apply_overrides)
-        columns[0].select
-          = "(SELECT coalesce ((SELECT new_severity FROM valid_overrides"
-            "                   WHERE valid_overrides.result_nvt"
-            "                         = results.result_nvt"
-            "                   AND (valid_overrides.result = 0"
-            "                        OR valid_overrides.result"
-            "                           = results.id)"
-            "                   AND (valid_overrides.hosts is NULL"
-            "                        OR valid_overrides.hosts = ''"
-            "                        OR hosts_contains"
-            "                            (valid_overrides.hosts,"
-            "                             results.host))"
-            "                   AND (valid_overrides.port is NULL"
-            "                        OR valid_overrides.port = ''"
-            "                        OR valid_overrides.port"
-            "                           = results.port)"
-            "                   AND severity_matches_ov"
-            "                        (results.severity,"
-            "                         valid_overrides.severity)"
-            "                   LIMIT 1),"
-            "                  results.severity))";
+        lateral
+          = "coalesce ((SELECT new_severity FROM valid_overrides"
+            "           WHERE valid_overrides.result_nvt"
+            "                 = results.result_nvt"
+            "           AND (valid_overrides.result = 0"
+            "                OR valid_overrides.result"
+            "                   = results.id)"
+            "           AND (valid_overrides.hosts is NULL"
+            "                OR valid_overrides.hosts = ''"
+            "                OR hosts_contains"
+            "                    (valid_overrides.hosts,"
+            "                     results.host))"
+            "           AND (valid_overrides.port is NULL"
+            "                OR valid_overrides.port = ''"
+            "                OR valid_overrides.port"
+            "                   = results.port)"
+            "           AND severity_matches_ov"
+            "                (results.severity,"
+            "                 valid_overrides.severity)"
+            "           LIMIT 1),"
+            "          results.severity)";
       else
-        columns[0].select
-          = "(SELECT results.severity)";
+        lateral
+          /* coalesce because results.severity gives syntax error. */
+          = "coalesce (results.severity, results.severity)";
     }
 
+  columns[0].select = "lateral_severity";
   columns[0].filter = "severity";
   columns[0].type = KEYWORD_TYPE_DOUBLE;
 
-  columns[1].select = g_strdup_printf ("(%s::float * 10)::integer",
-                                       columns[0].select);
-  columns[1].filter = "score";
-  columns[1].type = KEYWORD_TYPE_INTEGER;
+  columns[1].select = NULL;
+  columns[1].filter = NULL;
+  columns[1].type = KEYWORD_TYPE_UNKNOWN;
 
-  columns[2].select = NULL;
-  columns[2].filter = NULL;
-  columns[2].type = KEYWORD_TYPE_UNKNOWN;
-
-  extra_tables = result_iterator_opts_table (apply_overrides,
-                                             dynamic_severity);
+  opts = result_iterator_opts_table (apply_overrides,
+                                     dynamic_severity);
+  if (dynamic_severity)
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+                                    " ON results.nvt = nvts.oid,"
+                                    " LATERAL %s AS lateral_severity%s",
+                                    lateral, opts);
+  else
+    extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
+                                    lateral, opts);
+  g_free (opts);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+                                     filter ? filter : get->filter,
+                                     "lateral_severity");
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
-                                            "min_qod=0");
+                                            "min_qod=0",
+                                            "lateral_severity");
 
   free (filter);
 
-  user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
-                        current_credentials.uuid);
-  owned_clause = acl_where_owned_for_get ("override", user_id, &with_clause);
-  free (user_id);
-  with_clauses = g_strdup_printf
-                  ("%s%s"
-                   " valid_overrides"
-                   " AS (SELECT result_nvt, hosts, new_severity, port,"
-                   "            severity, result"
-                   "     FROM overrides"
-                   "     WHERE %s"
-                   /*    Only use if override's NVT is in report. */
-                   "     AND EXISTS (SELECT * FROM result_nvt_reports"
-                   "                 WHERE report = %llu"
-                   "                 AND result_nvt"
-                   "                     = overrides.result_nvt)"
-                   "     AND (task = 0"
-                   "          OR task = (SELECT reports.task"
-                   "                     FROM reports"
-                   "                     WHERE reports.id = %llu))"
-                   "     AND ((end_time = 0) OR (end_time >= m_now ()))"
-                   "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
-                   "           creation_time DESC)"
-                   " ",
-                   with_clause
-                    /* Skip the leading "WITH" because init_get..
-                     * below will add it.  A bit of a hack, but
-                     * it's the only place that needs this. */
-                    ? with_clause + 4
-                    : "",
-                   with_clause ? "," : "",
-                   owned_clause,
-                   report,
-                   report);
-  g_free (with_clause);
-  g_free (owned_clause);
+  if (apply_overrides)
+    {
+      gchar *owned_clause;
+      char *user_id;
+
+      user_id = sql_string ("SELECT id FROM users WHERE uuid = '%s';",
+                            current_credentials.uuid);
+      // Do not get ACL with_clause as it will be added by
+      // init_get_iterator2_with.
+      owned_clause = acl_where_owned_for_get ("override", user_id, NULL);
+      free (user_id);
+
+      with_clause = g_strdup_printf
+                      (" valid_overrides"
+                       " AS (SELECT result_nvt, hosts, new_severity, port,"
+                       "            severity, result"
+                       "     FROM overrides"
+                       "     WHERE %s"
+                       /*    Only use if override's NVT is in report. */
+                       "     AND EXISTS (SELECT * FROM result_nvt_reports"
+                       "                 WHERE report = %llu"
+                       "                 AND result_nvt"
+                       "                     = overrides.result_nvt)"
+                       "     AND (task = 0"
+                       "          OR task = (SELECT reports.task"
+                       "                     FROM reports"
+                       "                     WHERE reports.id = %llu))"
+                       "     AND ((end_time = 0) OR (end_time >= m_now ()))"
+                       "     ORDER BY result DESC, task DESC, port DESC, severity ASC,"
+                       "           creation_time DESC)"
+                       " ",
+                       owned_clause,
+                       report,
+                       report);
+      g_free (owned_clause);
+    }
+  else
+    with_clause = NULL;
 
   table_order_if_sort_not_specified = 1;
   ret = init_get_iterator2_with (iterator,
@@ -22108,16 +22030,64 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  TRUE,
                                  report ? TRUE : FALSE,
                                  extra_order,
-                                 with_clauses,
+                                 with_clause,
                                  1);
-  g_free (columns[1].select);
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
-  g_free (with_clauses);
+  g_free (with_clause);
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
   return ret;
+}
+
+/**
+ * @brief SQL for getting current severity.
+ */
+#define CURRENT_SEVERITY_SQL                                            \
+  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
+  "           THEN CAST (nvts.cvss_base AS double precision)"           \
+  "           ELSE results.severity"                                    \
+  "           END),"                                                    \
+  "          results.severity)"
+
+/**
+ * @brief Get LATERAL clause for result iterator.
+ *
+ * @param[in]  apply_overrides   Whether to apply overrides.
+ * @param[in]  dynamic_severity  Whether to use dynamic severity.
+ *
+ * @return SQL clause for FROM.
+ */
+static const gchar *
+result_iterator_lateral (int apply_overrides, int dynamic_severity)
+{
+  if (apply_overrides && dynamic_severity)
+    /* Overrides, dynamic. */
+    return "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
+           " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+           "                   WHERE result = results.id"
+           "                   AND result_overrides.user = opts.user_id"
+           "                   AND severity_matches_ov"
+           "                        ((SELECT curr_severity FROM curr LIMIT 1),"
+           "                         ov_old_severity)"
+           "                   LIMIT 1),"
+           "                  (SELECT curr_severity FROM curr LIMIT 1))"
+           " AS new_severity)";
+  if (apply_overrides)
+    /* Overrides, no dynamic. */
+    return "(SELECT new_severity"
+           " FROM result_new_severities_static"
+           " WHERE result_new_severities_static.result = results.id"
+           " AND result_new_severities_static.user = opts.user_id"
+           " LIMIT 1)";
+  if (dynamic_severity)
+    /* No overrides, dynamic. */
+    return "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
+  /* No overrides, no dynamic.
+   *
+   * SELECT because results.severity gives syntax error. */
+  return "(SELECT results.severity AS new_severity)";
 }
 
 /**
@@ -22139,15 +22109,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
-  static column_t columns_dynamic[] = RESULT_ITERATOR_COLUMNS_D;
-  static column_t columns_overrides_dynamic[] = RESULT_ITERATOR_COLUMNS_OD;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
-  static column_t columns_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_D_NO_CERT;
-  static column_t columns_overrides_dynamic_no_cert[] = RESULT_ITERATOR_COLUMNS_OD_NO_CERT;
   int ret;
   gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
+
+  g_debug ("%s", __func__);
 
   if (report == -1)
     {
@@ -22169,50 +22137,29 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   dynamic_severity = setting_dynamic_severity_int ();
 
   if (manage_cert_loaded ())
-    {
-      if (apply_overrides)
-        /* Overrides, maybe dynamic. */
-        actual_columns = columns_overrides_dynamic;
-      else
-        {
-          if (dynamic_severity)
-            /* Dynamic, no overrides. */
-            actual_columns = columns_dynamic;
-          else
-            /* No dynamic, no overrides. */
-            actual_columns = columns;
-        }
-    }
+    actual_columns = columns;
   else
-    {
-      if (apply_overrides)
-        /* Overrides, maybe dynamic. */
-        actual_columns = columns_overrides_dynamic_no_cert;
-      else
-        {
-          if (dynamic_severity)
-            /* Dynamic, no overrides. */
-            actual_columns = columns_dynamic_no_cert;
-          else
-            /* No dynamic, no overrides. */
-            actual_columns = columns_no_cert;
-        }
-    }
+    actual_columns = columns_no_cert;
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s",
-                                  opts_tables);
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  result_iterator_lateral (apply_overrides,
+                                                           dynamic_severity));
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+                                     filter ? filter : get->filter,
+                                     NULL);
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
-                                            "min_qod=0");
+                                            "min_qod=0",
+                                            NULL);
 
   free (filter);
 
@@ -22236,6 +22183,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
+
+  g_debug ("%s: done", __func__);
+
   return ret;
 }
 
@@ -22276,13 +22226,17 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s",
-                                  opts_tables);
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  result_iterator_lateral (apply_overrides,
+                                                           dynamic_severity));
   g_free (opts_tables);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
-                                     filter ? filter : get->filter);
+                                     filter ? filter : get->filter,
+                                     NULL);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -23827,17 +23781,14 @@ report_counts (const char* report_id, int* holes, int* infos,
 static int
 report_counts_cache_exists (report_t report, int override, int min_qod)
 {
-  if (setting_dynamic_severity_int ())
-    return 0;
-  else
-    return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
-                    " WHERE report = %llu"
-                    "   AND override = %d"
-                    "   AND \"user\" = (SELECT id FROM users"
-                    "                   WHERE users.uuid = '%s')"
-                    "   AND min_qod = %d"
-                    "   AND (end_time = 0 OR end_time >= m_now ()));",
-                    report, override, current_credentials.uuid, min_qod);
+  return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
+                  " WHERE report = %llu"
+                  "   AND override = %d"
+                  "   AND \"user\" = (SELECT id FROM users"
+                  "                   WHERE users.uuid = '%s')"
+                  "   AND min_qod = %d"
+                  "   AND (end_time = 0 OR end_time >= m_now ()));",
+                  report, override, current_credentials.uuid, min_qod);
 }
 
 /**
@@ -23888,11 +23839,6 @@ cache_report_counts (report_t report, int override, int min_qod,
   int i, ret;
   double severity;
   int end_time;
-
-  /* Do not cache results when using dynamic severity. */
-
-  if (setting_dynamic_severity_int ())
-    return 0;
 
   /* Try cache results. */
 
@@ -25169,20 +25115,6 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
     }                                                                        \
   while (0)
 
-#if 0
-void
-dump (GArray *ports)
-{
-  int index;
-  for (index = 0; index < ports->len; index++)
-    {
-      char *port = g_array_index (ports, char*, index);
-      char *threat = port + strlen (port) + 1;
-      g_debug ("  == %s %s %s", threat + strlen (threat) + 1, port, threat);
-    }
-}
-#endif
-
 /**
  * @brief Add a port to a port tree.
  *
@@ -25221,6 +25153,10 @@ add_port (GTree *ports, iterator_t *results)
   else if (severity > old_severity)
     {
       *old_severity = *severity;
+      g_free (severity);
+    }
+  else
+    {
       g_free (severity);
     }
 }
@@ -26246,6 +26182,8 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
   ignore_max_rows_per_page = 1;
 
 #if 0
+  /* For debugging. */
+
   iterator_t results2;
 
   res = init_result_get_iterator (results, &delta_get, report, NULL, order);
@@ -27080,6 +27018,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   task_status_t run_status;
 
   /* Init some vars to prevent warnings from older compilers. */
+  max_results = -1;
+  levels = NULL;
+  zone = NULL;
+  delta_states = NULL;
+  min_qod = NULL;
+  search_phrase = NULL;
   total_result_count = filtered_result_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
@@ -29092,7 +29036,6 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   sql_begin_immediate ();
 
-  // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
                             "config, target, schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
@@ -29123,7 +29066,6 @@ copy_task (const char* name, const char* comment, const char *task_id,
        new,
        old);
 
-  // FIX do this for all types, or none
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
        "  resource_location, subject_type, subject, subject_location,"
@@ -30547,6 +30489,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
+ * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -30565,6 +30508,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
+               const char *allow_simultaneous_ips,
                target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
@@ -30701,6 +30645,11 @@ create_target (const char* name, const char* asset_hosts_filter,
     reverse_lookup_unify = "0";
   else
     reverse_lookup_unify = "1";
+  if (allow_simultaneous_ips
+      && strcmp (allow_simultaneous_ips, "0") == 0)
+    allow_simultaneous_ips = "0";
+  else
+    allow_simultaneous_ips = "1";
 
   quoted_name = sql_quote (name ?: "");
 
@@ -30712,14 +30661,17 @@ create_target (const char* name, const char* asset_hosts_filter,
   sql ("INSERT INTO targets"
        " (uuid, name, owner, hosts, exclude_hosts, comment, "
        "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
+       "  allow_simultaneous_ips,"
        "  creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
        " '%s', '%s', '%s', %llu, '%s', '%s', %i,"
+       " %s,"
        " m_now (), m_now ());",
         quoted_name, current_credentials.uuid,
         quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
-        reverse_lookup_only, reverse_lookup_unify, alive_test);
+        reverse_lookup_only, reverse_lookup_unify, alive_test,
+        allow_simultaneous_ips);
 
   new_target = sql_last_insert_id ();
   if (target)
@@ -30823,7 +30775,8 @@ copy_target (const char* name, const char* comment, const char *target_id,
 
   ret = copy_resource ("target", name, comment, target_id,
                        "hosts, exclude_hosts, port_list, reverse_lookup_only,"
-                       " reverse_lookup_unify, alive_test",
+                       " reverse_lookup_unify, alive_test,"
+                       " allow_simultaneous_ips",
                        1, new_target, &old_target);
   if (ret)
     return ret;
@@ -30920,10 +30873,12 @@ delete_target (const char *target_id, int ultimate)
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, port_list_location,"
            "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "  allow_simultaneous_ips,"
            "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
            "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "        allow_simultaneous_ips,"
            "        creation_time, modification_time"
            " FROM targets WHERE id = %llu;",
            target);
@@ -30992,6 +30947,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
+ * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -31012,7 +30968,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests)
+               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *allow_simultaneous_ips)
 {
   target_t target;
 
@@ -31084,6 +31041,22 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            quoted_comment,
            target);
       g_free (quoted_comment);
+    }
+
+  if (allow_simultaneous_ips)
+    {
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      sql ("UPDATE targets SET"
+           " allow_simultaneous_ips = '%i',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           strcmp (allow_simultaneous_ips, "0") ? 1 : 0,
+           target);
     }
 
   if (alive_tests)
@@ -31467,6 +31440,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                  \
      KEYWORD_TYPE_INTEGER },                                \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "allow_simultaneous_ips",                              \
+     NULL,                                                  \
+     KEYWORD_TYPE_INTEGER },                                \
    {                                                        \
      "(SELECT name FROM credentials"                        \
      " WHERE credentials.id"                                \
@@ -31568,6 +31544,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
+     NULL,                                                          \
+     KEYWORD_TYPE_INTEGER },                                        \
+   { "allow_simultaneous_ips",                                      \
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
@@ -31890,6 +31869,16 @@ target_iterator_snmp_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the allow_simultaneous_ips value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return allow_simult_ips_same_host or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_allow_simultaneous_ips,
+            GET_ITERATOR_COLUMN_COUNT + 18);
+
+/**
  * @brief Return the UUID of a tag.
  *
  * @param[in]  tag  Tag.
@@ -32067,6 +32056,20 @@ char*
 target_reverse_lookup_unify (target_t target)
 {
   return sql_string ("SELECT reverse_lookup_unify FROM targets"
+                     " WHERE id = %llu;", target);
+}
+
+/**
+ * @brief Return the allow_simultaneous_ips value of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return The allow_simultaneous_ips value if available, else NULL.
+ */
+char*
+target_allow_simultaneous_ips (target_t target)
+{
+  return sql_string ("SELECT allow_simultaneous_ips FROM targets"
                      " WHERE id = %llu;", target);
 }
 
@@ -32360,7 +32363,7 @@ target_task_iterator_readable (iterator_t* iterator)
 }
 
 
-/* FIX From old NVTs section. */
+/* SecInfo Alerts. */
 
 /**
  * @brief Check for new SCAP SecInfo after an update.
@@ -32519,7 +32522,7 @@ new_nvts_list (event_t event, const void* event_data, alert_t alert,
     buffer = g_string_new (NEW_NVTS_HEADER_OID);
 
   count = 0;
-  // FIX this should use an iterator provided by manage_sql_nvts.c
+  // TODO This should use an iterator provided by manage_sql_nvts.c.
   if (example)
     init_iterator (&rows,
                    "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
@@ -33248,6 +33251,48 @@ check_db_encryption_key ()
   if (secret == NULL)
     return -1;
   g_free (secret);
+  return 0;
+}
+
+/**
+ * @brief Check that a string represents a valid Private Key.
+ *
+ * @param[in]  key_str      Private Key string.
+ * @param[in]  key_phrase   Private Key passphrase.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
+int
+check_private_key (const char *key_str, const char *key_phrase)
+{
+  gnutls_x509_privkey_t key;
+  gnutls_datum_t data;
+  int ret;
+
+  assert (key_str);
+  if (gnutls_x509_privkey_init (&key))
+    return 1;
+  data.size = strlen (key_str);
+  data.data = (void *) g_strdup (key_str);
+  ret = gnutls_x509_privkey_import2 (key, &data, GNUTLS_X509_FMT_PEM,
+                                     key_phrase, 0);
+  if (ret)
+    {
+      gchar *public_key;
+      public_key = gvm_ssh_public_from_private (key_str, key_phrase);
+
+      if (public_key == NULL)
+        {
+          gnutls_x509_privkey_deinit (key);
+          g_free (data.data);
+          g_message ("%s: import failed: %s",
+                     __func__, gnutls_strerror (ret));
+          return 1;
+        }
+      g_free (public_key);
+    }
+  g_free (data.data);
+  gnutls_x509_privkey_deinit (key);
   return 0;
 }
 
@@ -34154,12 +34199,26 @@ modify_credential (const char *credential_id,
         {
           if (key_private_to_use || password)
             {
+              if (check_private_key (key_private_truncated
+                                      ? key_private_to_use
+                                      : credential_iterator_private_key
+                                         (&iterator),
+                                     password
+                                      ? password
+                                      : credential_iterator_password
+                                         (&iterator)))
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 8;
+                }
+
               set_credential_private_key
                 (credential,
                  key_private_truncated
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                password
+                 password
                   ? password
                   : credential_iterator_password (&iterator));
             }
@@ -36976,7 +37035,9 @@ delete_override (const char *override_id, int ultimate)
  *
  * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
  *         3 invalid severity score, 4 failed to find NVT, 5 failed to find
- *         override, 6 failed to find task, 7 failed to find result.
+ *         override, 6 failed to find task, 7 failed to find result,
+ *         8 invalid threat, 9 invalid new_threat, 10 invalid new_severity,
+ *         11 missing new_severity.
  */
 int
 modify_override (const gchar *override_id, const char *active, const char *nvt,
@@ -37036,17 +37097,6 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   if (nvt && !nvt_exists (nvt))
     return 4;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Alarm") && strcmp (threat, ""))
-    return -1;
-
-  if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
-      && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "False Positive")
-      && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
-    return -1;
-
   severity_dbl = 0.0;
   if (severity != NULL && strcmp (severity, ""))
     {
@@ -37069,7 +37119,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       else if (strcmp (threat, "Log") == 0)
         severity_dbl = SEVERITY_LOG;
       else
-        return -1;
+        return 8;
 
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
@@ -37085,7 +37135,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
               && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
-          return 3;
+          return 10;
         }
     }
   else if (new_threat != NULL && strcmp (new_threat, ""))
@@ -37103,19 +37153,19 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
       else
         {
           g_free (quoted_severity);
-          return -1;
+          return 9;
         }
     }
   else
     {
       g_free (quoted_severity);
-      return -1;
+      return 11;
     }
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_nvt = sql_quote (nvt);
+  quoted_nvt = nvt ? sql_quote (nvt) : NULL;
 
   // Tests if a cache rebuild is necessary.
   //  The "active" status is checked separately
@@ -43249,7 +43299,8 @@ delete_permission (const char *permission_id, int ultimate)
     cache_permissions_for_resource (resource_type, resource, NULL);
 
   /* Update Reports cache */
-  if (resource_type && resource && strcmp (resource_type, "override") == 0)
+  if (resource_type && (resource > 0) && strcmp (resource_type, "override")
+      == 0)
     {
       reports = reports_for_override (resource);
     }
@@ -45244,7 +45295,7 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
 
     script = g_build_filename (script_dir, "generate", NULL);
 
-    if (!g_file_test (script, G_FILE_TEST_EXISTS))
+    if (!gvm_file_is_readable (script))
       {
         g_free (script);
         g_free (script_dir);
@@ -46216,10 +46267,12 @@ manage_restore (const char *id)
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, exclude_hosts, comment,"
            "  port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "  alive_test, creation_time, modification_time)"
+           "  alive_test, allow_simultaneous_ips,"
+           "  creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        port_list, reverse_lookup_only, reverse_lookup_unify,"
-           "        alive_test, creation_time, modification_time"
+           "        alive_test, allow_simultaneous_ips,"
+           "        creation_time, modification_time"
            " FROM targets_trash WHERE id = %llu;",
            resource);
 
@@ -49295,6 +49348,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
+          reports_clear_count_cache (current_credentials.uuid);
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
@@ -50887,6 +50941,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   user_t user, inheritor;
   get_data_t get;
   char *current_uuid, *feed_owner_id;
+  gboolean has_rows;
+  iterator_t rows;
+  gchar *deleted_user_id;
 
   assert (user_id_arg || name_arg);
 
@@ -51050,7 +51107,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   if (inheritor)
     {
-      gchar *deleted_user_id, *deleted_user_name;
+      gchar *deleted_user_name;
       gchar *real_inheritor_id, *real_inheritor_name;
 
       /* Transfer ownership of objects to the inheritor. */
@@ -51086,7 +51143,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
              real_inheritor_name, real_inheritor_id,
              deleted_user_name, deleted_user_id);
 
-      g_free (deleted_user_id);
       g_free (deleted_user_name);
       g_free (real_inheritor_id);
       g_free (real_inheritor_name);
@@ -51125,7 +51181,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
            inheritor, user);
 
       inherit_port_lists (user, inheritor);
-      inherit_report_formats (user, inheritor);
 
       sql ("UPDATE reports SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
@@ -51186,6 +51241,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      /* Report Formats. */
+
+      has_rows = inherit_report_formats (user, inheritor, &rows);
+
       /* Delete user. */
 
       sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
@@ -51197,6 +51256,21 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
       sql ("DELETE FROM settings WHERE owner = %llu;", user);
       sql ("DELETE FROM users WHERE id = %llu;", user);
+
+      /* Very last: report formats dirs. */
+
+      if (deleted_user_id == NULL)
+        g_warning ("%s: deleted_user_id NULL, skipping dirs", __func__);
+      else if (has_rows)
+        do
+        {
+          inherit_report_format_dir (iterator_string (&rows, 0),
+                                     deleted_user_id,
+                                     inheritor);
+        } while (next (&rows));
+
+      g_free (deleted_user_id);
+      cleanup_iterator (&rows);
 
       sql_commit ();
 
@@ -51427,7 +51501,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 9;
     }
 
-  /* Report formats (used by alerts). */
+  /* Check report formats (used by alerts). */
   if (user_resources_in_use (user,
                              "report_formats",
                              report_format_in_use,
@@ -51437,7 +51511,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql_rollback ();
       return 9;
     }
-  delete_report_formats_user (user);
 
   /* Delete credentials last because they can be used in various places */
 
@@ -51501,9 +51574,23 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
+  /* Delete report formats. */
+
+  has_rows = delete_report_formats_user (user, &rows);
+
   /* Delete user. */
 
+  deleted_user_id = user_uuid (user);
+
   sql ("DELETE FROM users WHERE id = %llu;", user);
+
+  /* Delete report format dirs. */
+
+  if (deleted_user_id)
+    delete_report_format_dirs_user (deleted_user_id, has_rows ? &rows : NULL);
+  else
+    g_warning ("%s: deleted_user_id NULL, skipping removal of report formats dir",
+               __func__);
 
   sql_commit ();
   return 0;
@@ -51569,7 +51656,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           || (strlen (g_ptr_array_index (allowed_methods, 0)) == 0)))
     allowed_methods = NULL;
 
-  // FIX validate methods  single source, one of "", "ldap", ...
+  // TODO Validate methods: single source, one of "", "ldap", ...
 
   sql_begin_immediate ();
 
@@ -51619,7 +51706,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
       user_name = sql_string ("SELECT name FROM users WHERE id = %llu",
                               user);
       errstr = gvm_validate_password (password, user_name);
-      g_free (user_name);
       if (errstr)
         {
           g_warning ("new password for '%s' rejected: %s", user_name, errstr);
@@ -51628,8 +51714,10 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           else
             g_free (errstr);
           sql_rollback ();
+          g_free (user_name);
           return -1;
         }
+      g_free (user_name);
     }
 
   /* Check hosts. */
@@ -52371,8 +52459,8 @@ user_resources_in_use (user_t user,
  */
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
  {                                                                           \
-   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "qod",       \
-   "oldest", "newest", "type", NULL                                          \
+   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "score",     \
+   "qod", "oldest", "newest", "type", NULL                                   \
  }
 
 /**
@@ -52385,11 +52473,7 @@ user_resources_in_use (user_t user,
      "    AND (opts.host IS NULL OR results.host = opts.host)"               \
      "    AND (results.severity != " G_STRINGIFY (SEVERITY_ERROR) ")"        \
      "    AND (SELECT has_permission FROM permissions_get_tasks"             \
-     "         WHERE \"user\""                                               \
-     "                = (SELECT id FROM users"                               \
-     "                   WHERE uuid"                                         \
-     "                         = (SELECT current_setting"                    \
-     "                                    ('gvmd.user.uuid')))"              \
+     "         WHERE \"user\" = gvmd_user ()"                                \
      "           AND task = results.task)"
 
 /**
@@ -52423,22 +52507,13 @@ user_resources_in_use (user_t user,
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "severity", NULL, KEYWORD_TYPE_DOUBLE                                   \
+     "(score / 10.0)", "severity", KEYWORD_TYPE_DOUBLE                       \
+   },                                                                        \
+   {                                                                         \
+     "score", NULL, KEYWORD_TYPE_DOUBLE                                      \
    },                                                                        \
    {                                                                         \
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT iso_time (min (date)) FROM results"                            \
-     VULN_RESULTS_WHERE ")",                                                 \
-     NULL,                                                                   \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT iso_time (max (date)) FROM results"                            \
-     VULN_RESULTS_WHERE ")",                                                 \
-     NULL,                                                                   \
-     KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
      "type", NULL, KEYWORD_TYPE_INTEGER                                      \
@@ -52652,6 +52727,20 @@ vuln_iterator_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get an iterator column value.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or -1 if iteration is complete.
+ */
+int
+vuln_iterator_score (iterator_t *iterator)
+{
+  if (iterator->done) return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
  * @brief Get the QoD from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -52662,35 +52751,7 @@ int
 vuln_iterator_qod (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-}
-
-/**
- * @brief Get the date of the oldest result from a vuln iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The oldest result date.
- */
-const char*
-vuln_iterator_oldest (iterator_t* iterator)
-{
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-}
-
-/**
- * @brief Get the date of the oldest result from a vuln iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The oldest result date.
- */
-const char*
-vuln_iterator_newest (iterator_t* iterator)
-{
-  if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -52704,7 +52765,35 @@ const char*
 vuln_iterator_type (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+}
+
+/**
+ * @brief Get the date of the oldest result from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The oldest result date.
+ */
+time_t
+vuln_iterator_oldest (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+}
+
+/**
+ * @brief Get the date of the oldest result from a vuln iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The oldest result date.
+ */
+time_t
+vuln_iterator_newest (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -52762,8 +52851,8 @@ vuln_count (const get_data_t *get)
 static gchar*
 vulns_extra_where ()
 {
-  return g_strdup (" AND (vuln_results (uuid, opts.task, opts.report,"
-                   "                    opts.host) > 0)"
+  return g_strdup (" AND vuln_results_exist (uuid, opts.task, opts.report,"
+                   "                         opts.host)"
                    " AND (qod >= opts.min_qod)");
 }
 
@@ -54642,7 +54731,8 @@ type_extra_where (const char *type, int trash, const char *filter,
       extra_where = results_extra_where (trash, report, NULL,
                                          apply_overrides,
                                          setting_dynamic_severity_int (),
-                                         filter);
+                                         filter,
+                                         NULL);
     }
   else if (strcasecmp (type, "VULN") == 0)
     {
@@ -54729,11 +54819,19 @@ type_build_select (const char *type, const char *columns_str,
   if (strcasecmp (type, "RESULT") == 0)
     {
       gchar *original;
+      int overrides, dynamic;
+
+      overrides = filter_term_apply_overrides (filter ? filter : get->filter);
+      dynamic = setting_dynamic_severity_int ();
 
       original = opts_table;
+
       opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                    " ON results.nvt = nvts.oid %s",
-                                    original);
+                                    " ON results.nvt = nvts.oid %s,"
+                                    " LATERAL %s AS lateral_new_severity",
+                                    original,
+                                    result_iterator_lateral (overrides,
+                                                             dynamic));
       g_free (original);
     }
 
@@ -54907,7 +55005,7 @@ cache_permissions_for_resource (const char *type, resource_t resource,
 {
   int free_users;
 
-  if (type == NULL || resource == 0)
+  if (type == NULL || resource == 0 || resource == -1)
     return;
 
   if (cache_users == NULL)

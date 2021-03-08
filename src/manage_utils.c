@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -156,22 +156,37 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
 {
   int count;
   gvm_hosts_t *hosts;
+  gchar *clean_hosts;
+  
+  clean_hosts = clean_hosts_string (given_hosts);
 
-  hosts = gvm_hosts_new_with_max (given_hosts, max_hosts);
+  hosts = gvm_hosts_new_with_max (clean_hosts, max_hosts);
   if (hosts == NULL)
-    return -1;
+    {
+      g_free (clean_hosts);
+      return -1;
+    }
 
   if (exclude_hosts)
     {
+      gchar *clean_exclude_hosts;
+
+      clean_exclude_hosts = clean_hosts_string (exclude_hosts);
       if (gvm_hosts_exclude_with_max (hosts,
-                                      exclude_hosts,
+                                      clean_exclude_hosts,
                                       max_hosts)
           < 0)
-        return -1;
+        {
+          g_free (clean_hosts);
+          g_free (clean_exclude_hosts);
+          return -1;
+        }
+      g_free (clean_exclude_hosts);
     }
 
   count = gvm_hosts_count (hosts);
   gvm_hosts_free (hosts);
+  g_free (clean_hosts);
 
   return count;
 }
@@ -1371,4 +1386,81 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
 
   // Convert to time_t
   return icaltime_as_timet_with_zone (dtstart, tz);
+}
+
+/**
+ * @brief Cleans up a hosts string, removing extra zeroes from IPv4 addresses.
+ *
+ * @param[in]  hosts  The hosts string to clean.
+ *
+ * @return  The newly allocated, cleaned up hosts string.
+ */
+gchar *
+clean_hosts_string (const char *hosts)
+{
+  gchar **hosts_split, **item;
+  GString *new_hosts;
+  GRegex *ipv4_match_regex, *ipv4_replace_regex;
+
+  if (hosts == NULL)
+    return NULL;
+
+  /*
+   * Regular expression for matching candidates for IPv4 addresses
+   * (four groups of digits separated by a dot "."),
+   * with optional extensions for ranges:
+   * - Another IP address candidate, separated with a hyphen "-"
+   *   (e.g. "192.168.123.001-192.168.123.005)"
+   * - A final group of digits, separated with a hyphen "-"
+   *   (short form address range, e.g. "192.168.123.001-005)
+   * - A final group of digits, separated with a slash "-"
+   *   (CIDR notation, e.g. "192.168.123.001/027)
+   */
+  ipv4_match_regex
+    = g_regex_new ("^[0-9]+(?:\\.[0-9]+){3}"
+                   "(?:\\/[0-9]+|-[0-9]+(?:(?:\\.[0-9]+){3})?)?$",
+                   0, 0, NULL);
+  /*
+   * Regular expression matching leading zeroes in groups of digits
+   * separated by dots or other characters.
+   * First line matches zeroes before non-zero numbers, e.g. "000" in "000120"
+   * Second line matches groups of all zeroes except one, e.g. "00" in "000"
+   */
+  ipv4_replace_regex 
+    = g_regex_new ("(?<=\\D|^)(0+)(?=(?:(?:[1-9]\\d*)(?:\\D|$)))"
+                   "|(?<=\\D|^)(0+)(?=0(?:\\D|$))",
+                   0, 0, NULL);
+  new_hosts = g_string_new ("");
+
+  hosts_split = g_strsplit (hosts, ",", -1);
+  item = hosts_split;
+  while (*item)
+    {
+      g_strstrip (*item);
+      if (g_regex_match (ipv4_match_regex, *item, 0, 0))
+        {
+          // IPv4 address, address range or CIDR notation
+          gchar *new_item;
+          /* Remove leading zeroes in each group of digits by replacing them
+           * with empty strings,
+           * e.g. "000.001.002.003-004" becomes "0.1.2.3-4"
+           */
+          new_item = g_regex_replace (ipv4_replace_regex,
+                                      *item, -1, 0, "", 0, NULL);
+          g_string_append (new_hosts, new_item);
+          g_free (new_item);
+        }
+      else
+        g_string_append (new_hosts, *item);
+
+      if (*(item + 1))
+        g_string_append (new_hosts, ", ");
+      item++;
+    }
+  g_strfreev (hosts_split);
+
+  g_regex_unref (ipv4_match_regex);
+  g_regex_unref (ipv4_replace_regex);
+  
+  return g_string_free (new_hosts, FALSE);
 }

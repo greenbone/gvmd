@@ -1,4 +1,4 @@
-/* Copyright (C) 2010-2019 Greenbone Networks GmbH
+/* Copyright (C) 2010-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -88,7 +88,7 @@
    { "0", NULL, KEYWORD_TYPE_INTEGER },                         \
    { "cvss_vector", NULL, KEYWORD_TYPE_STRING },                \
    { "products", NULL, KEYWORD_TYPE_STRING },                   \
-   { "score", NULL, KEYWORD_TYPE_DOUBLE },                      \
+   { "score", NULL, KEYWORD_TYPE_INTEGER },                     \
    { "description", NULL, KEYWORD_TYPE_STRING },                \
    { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },         \
    { "creation_time", "published", KEYWORD_TYPE_INTEGER },      \

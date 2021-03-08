@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 Greenbone Networks GmbH
+/* Copyright (C) 2020-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -239,16 +239,6 @@ verify_signature (const gchar *installer, gsize installer_size,
         *trust = TRUST_NO;
       else
         {
-#if 0
-          g_debug ("%s: failed to run gpgv(%s): %d (WIF %i, WEX %i)",
-                   __func__, get_trustedkeys_name (),
-                   exit_status,
-                   WIFEXITED (exit_status),
-                   WEXITSTATUS (exit_status));
-          g_debug ("%s: stdout: %s", __func__, standard_out);
-          g_debug ("%s: stderr: %s", __func__, standard_err);
-          ret = -1;
-#endif
           /* This can be caused by the contents of the signature file, so
            * always return success. */
           *trust = TRUST_UNKNOWN;
@@ -590,7 +580,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
                           report_id,
                           NULL);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+  if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
     {
       g_warning ("%s: failed to remove dir %s", __func__, dir);
       g_free (dir);
@@ -1293,7 +1283,7 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 
   /* Check that the source directory exists. */
 
-  if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
+  if (!gvm_file_is_readable (source_dir))
     {
       g_warning ("%s: report format directory %s not found",
                  __func__, source_dir);
@@ -1304,7 +1294,7 @@ copy_report_format_dir (const gchar *source_dir, const gchar *copy_parent,
 
   copy_dir = g_build_filename (copy_parent, copy_uuid, NULL);
 
-  if (g_file_test (copy_dir, G_FILE_TEST_EXISTS)
+  if (gvm_file_exists (copy_dir)
       && gvm_file_remove_recurse (copy_dir))
     {
       g_warning ("%s: failed to remove dir %s", __func__, copy_dir);
@@ -1591,7 +1581,7 @@ modify_report_format (const char *report_format_id, const char *name,
 static int
 move_report_format_dir (const char *dir, const char *new_dir)
 {
-  if (g_file_test (dir, G_FILE_TEST_EXISTS)
+  if (gvm_file_is_readable (dir)
       && gvm_file_check_is_dir (dir))
     {
       gchar *new_dir_parent;
@@ -1793,7 +1783,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       report_format_string = g_strdup_printf ("%llu", report_format);
       dir = report_format_trash_dir (report_format_string);
       g_free (report_format_string);
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+      if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
         {
           g_free (dir);
           g_free (base);
@@ -1849,7 +1839,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Remove directory. */
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+      if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
         {
           g_free (dir);
           sql_rollback ();
@@ -3341,8 +3331,7 @@ run_report_format_script (gchar *report_format_id,
 
   script = g_build_filename (script_dir, "generate", NULL);
 
-  if (!g_file_test (script,
-                    G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
+  if (!gvm_file_is_readable (script))
     {
       g_warning ("%s: No generate script found at %s",
                  __func__, script);
@@ -3350,8 +3339,7 @@ run_report_format_script (gchar *report_format_id,
       g_free (script_dir);
       return -1;
     }
-  else if (!g_file_test (script,
-                         G_FILE_TEST_IS_EXECUTABLE))
+  else if (!gvm_file_is_executable (script))
     {
       g_warning ("%s: script %s is not executable",
                  __func__, script);
@@ -3451,9 +3439,8 @@ run_report_format_script (gchar *report_format_id,
                 }
 
               ret = system (command);
-              /* Ignore the shell command exit status, because we've not
-                * specified what it must be in the past. */
-              if (ret == -1)
+              /* Report scripts should return 0 since version 21.04 */
+              if (ret == -1 || WIFEXITED(ret) == 0 || WEXITSTATUS(ret))
                 {
                   g_warning ("%s (child):"
                               " system failed with ret %i, %i, %s",
@@ -3487,7 +3474,6 @@ run_report_format_script (gchar *report_format_id,
 
               /* Parent on success.  Wait for child, and check result. */
 
-              g_free (command);
 
               while (waitpid (pid, &status, 0) < 0)
                 {
@@ -3526,6 +3512,7 @@ run_report_format_script (gchar *report_format_id,
                         g_warning ("%s: and chdir failed",
                                     __func__);
                       g_free (previous_dir);
+                      g_free (command);
                       return -1;
                   }
               else
@@ -3536,9 +3523,11 @@ run_report_format_script (gchar *report_format_id,
                   if (chdir (previous_dir))
                     g_warning ("%s: and chdir failed",
                                 __func__);
+                  g_free (command);
                   g_free (previous_dir);
                   return -1;
                 }
+              g_free (command);
 
               /* Child succeeded, continue to process result. */
 
@@ -3551,9 +3540,8 @@ run_report_format_script (gchar *report_format_id,
       /* Just run the command as the current user. */
 
       ret = system (command);
-      /* Ignore the shell command exit status, because we've not
-        * specified what it must be in the past. */
-      if (ret == -1)
+      /* Report scripts should return 0 since version 21.04 */
+      if (ret == -1 || WIFEXITED(ret) == 0 || WEXITSTATUS(ret))
         {
           g_warning ("%s: system failed with ret %i, %i, %s",
                       __func__,
@@ -3856,13 +3844,15 @@ apply_report_format (gchar *report_format_id,
   while (temp_dirs)
     {
       gvm_file_remove_recurse (temp_dirs->data);
-      g_free (temp_dirs->data);
-      temp_dirs = g_list_remove (temp_dirs, temp_dirs->data);
+      gpointer data = temp_dirs->data;
+      temp_dirs = g_list_remove (temp_dirs, data);
+      g_free (data);
     }
   while (temp_files)
     {
-      g_free (temp_files->data);
-      temp_files = g_list_remove (temp_files, temp_files->data);
+      gpointer data = temp_files->data;
+      temp_files = g_list_remove (temp_files, data);
+      g_free (data);
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
@@ -3935,7 +3925,7 @@ empty_trashcan_report_formats ()
       dir = report_format_trash_dir (name);
       g_free (name);
 
-      if (g_file_test (dir, G_FILE_TEST_EXISTS) && gvm_file_remove_recurse (dir))
+      if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
         {
           g_warning ("%s: failed to remove trash dir %s", __func__, dir);
           g_free (dir);
@@ -3953,24 +3943,17 @@ empty_trashcan_report_formats ()
  * @brief Change ownership of report formats, for user deletion.
  *
  * @param[in]  report_format_id  UUID of report format.
- * @param[in]  user              Current owner.
+ * @param[in]  user_id           UUID of current owner.
  * @param[in]  inheritor         New owner.
  */
-static void
-inherit_report_format_dir (const gchar *report_format_id, user_t user,
+void
+inherit_report_format_dir (const gchar *report_format_id, const gchar *user_id,
                            user_t inheritor)
 {
-  gchar *user_id, *inheritor_id, *old_dir, *new_dir;
+  gchar *inheritor_id, *old_dir, *new_dir;
 
-  g_debug ("%s: %s from %llu to %llu", __func__, report_format_id, user,
+  g_debug ("%s: %s from %s to %llu", __func__, report_format_id, user_id,
            inheritor);
-
-  user_id = user_uuid (user);
-  if (user_id == NULL)
-    {
-      g_warning ("%s: user_id NULL, skipping report format dir", __func__);
-      return;
-    }
 
   inheritor_id = user_uuid (inheritor);
   if (inheritor_id == NULL)
@@ -3991,7 +3974,6 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
                               report_format_id,
                               NULL);
 
-  g_free (user_id);
   g_free (inheritor_id);
 
   if (move_report_format_dir (old_dir, new_dir))
@@ -4008,58 +3990,38 @@ inherit_report_format_dir (const gchar *report_format_id, user_t user,
  *
  * @param[in]  user       Current owner.
  * @param[in]  inheritor  New owner.
+ * @param[in]  rows       Iterator for inherited report formats, with next
+ *                        already called.
+ *
+ * @return TRUE if there is a row available, else FALSE.
  */
-void
-inherit_report_formats (user_t user, user_t inheritor)
+gboolean
+inherit_report_formats (user_t user, user_t inheritor, iterator_t *rows)
 {
-  iterator_t rows;
+  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
+       inheritor, user);
 
-  if (user == inheritor)
-    return;
-
-  init_iterator (&rows,
+  init_iterator (rows,
                  "UPDATE report_formats SET owner = %llu"
                  " WHERE owner = %llu"
                  " RETURNING uuid;",
                  inheritor, user);
-  while (next (&rows))
-    inherit_report_format_dir (iterator_string (&rows, 0), user, inheritor);
-  cleanup_iterator (&rows);
 
-  sql ("UPDATE report_formats_trash SET owner = %llu WHERE owner = %llu;",
-       inheritor, user);
+  /* This executes the SQL. */
+  return next (rows);
 }
 
 /**
  * @brief Delete all report formats owned by a user.
  *
  * @param[in]  user  The user.
+ * @param[in]  rows  Trash report format ids.
+ *
+ * @return TRUE if there are rows in rows, else FALSE.
  */
-void
-delete_report_formats_user (user_t user)
+gboolean
+delete_report_formats_user (user_t user, iterator_t *rows)
 {
-  gchar *dir, *user_id;
-  iterator_t rows;
-
-  /* Remove trash report formats from trash directory. */
-
-  init_iterator (&rows,
-                 "SELECT id FROM report_formats_trash WHERE owner = %llu;",
-                 user);
-  while (next (&rows))
-    {
-      gchar *id;
-
-      id = g_strdup_printf ("%llu", iterator_int64 (&rows, 0));
-      dir = report_format_trash_dir (id);
-      g_free (id);
-      if (gvm_file_remove_recurse (dir))
-        g_warning ("%s: failed to remove dir %s, continuing anyway",
-                   __func__, dir);
-      g_free (dir);
-    }
-  cleanup_iterator (&rows);
-
   /* Remove report formats from db. */
 
   sql ("DELETE FROM report_format_param_options"
@@ -4086,23 +4048,54 @@ delete_report_formats_user (user_t user)
        "                         WHERE owner = %llu);",
        user);
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
-  sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
+  init_iterator (rows,
+                 "DELETE FROM report_formats_trash WHERE owner = %llu"
+                 " RETURNING id;",
+                 user);
+
+  /* This executes the SQL. */
+  return next (rows);
+}
+
+/**
+ * @brief Delete all report formats owned by a user.
+ *
+ * @param[in]  user_id  UUID of user.
+ * @param[in]  rows     Trash report format ids if any, else NULL.  Cleaned up
+ *                      before returning.
+ */
+void
+delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
+{
+  gchar *dir;
+
+  /* Remove trash report formats from trash directory. */
+
+  if (rows)
+    {
+      do
+      {
+        gchar *id;
+
+        id = g_strdup_printf ("%llu", iterator_int64 (rows, 0));
+        dir = report_format_trash_dir (id);
+        g_free (id);
+        if (gvm_file_remove_recurse (dir))
+          g_warning ("%s: failed to remove dir %s, continuing anyway",
+                     __func__, dir);
+        g_free (dir);
+      } while (next (rows));
+      cleanup_iterator (rows);
+    }
 
   /* Remove user's regular report formats directory. */
-
-  user_id = user_uuid (user);
-  if (user_id == NULL)
-    g_warning ("%s: user_id NULL, skipping removal of report formats dir",
-               __func__);
 
   dir = g_build_filename (GVMD_STATE_DIR,
                           "report_formats",
                           user_id,
                           NULL);
-  g_free (user_id);
 
-  if (g_file_test (dir, G_FILE_TEST_EXISTS)
-      && gvm_file_remove_recurse (dir))
+  if (gvm_file_exists (dir) && gvm_file_remove_recurse (dir))
     g_warning ("%s: failed to remove dir %s, continuing anyway",
                __func__, dir);
   g_free (dir);

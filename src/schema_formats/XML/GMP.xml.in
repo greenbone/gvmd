@@ -510,14 +510,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         Whether the certificate is valid, expired or not active yet
       </summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>expired</alt>
-            <alt>inactive</alt>
-            <alt>unknown</alt>
-            <alt>valid</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>expired</alt>
+		  <alt>inactive</alt>
+		  <alt>unknown</alt>
+		  <alt>valid</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -599,51 +597,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>severities</name>
       <summary>Severity information of the NVT</summary>
-      <pattern>
-        <attrib>
-          <name>score</name>
-          <type>integer</type>
-          <required>1</required>
-          <summary>Maximum severity score</summary>
-        </attrib>
-        <any><e>severity</e></any>
-      </pattern>
-      <ele>
-        <name>severity</name>
-        <summary>A single severity rating</summary>
-        <pattern>
-          <attrib>
-            <name>type</name>
-            <type>text</type>
-            <required>1</required>
-            <summary>Type of severity rating, e.g. cvss_base_v2</summary>
-          </attrib>
-          <e>origin</e>
-          <e>date</e>
-          <e>score</e>
-          <e>value</e>
-        </pattern>
-        <ele>
-          <name>origin</name>
-          <summary>Origin of severity rating</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>date</name>
-          <summary>Date the severity was defined</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>score</name>
-          <summary>Numeric score ranging from 0 to 100</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>value</name>
-          <summary>Detailed rating value, e.g. a CVSS vector</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
+      <type>severities</type>
     </ele>
     <ele>
       <name>qod</name>
@@ -973,6 +927,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>name</e>
           <e>type</e>
           <e>cvss_base</e>
+          <e>severities</e>
           <o><e>cve</e></o>
           <o><e>bid</e></o>
         </pattern>
@@ -988,6 +943,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severities</name>
+          <summary>Severity info of the NVT</summary>
+          <type>severities</type>
         </ele>
         <ele>
           <name>cve</name>
@@ -1323,6 +1283,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>name</e>
           <e>type</e>
           <e>cvss_base</e>
+          <e>severities</e>
           <o><e>cve</e></o>
           <o><e>bid</e></o>
         </pattern>
@@ -1338,6 +1299,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cvss_base</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severities</name>
+          <summary>Severity score information of the NVT</summary>
+          <type>severities</type>
         </ele>
         <ele>
           <name>cve</name>
@@ -1584,6 +1550,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>type</e>
         <e>family</e>
         <e>cvss_base</e>
+        <e>severities</e>
         <e>cpe</e>
         <e>tags</e>
         <e>refs</e>
@@ -1607,6 +1574,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>cvss_base</name>
         <summary>CVSS base value associated with the NVT</summary>
         <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>severities</name>
+        <summary>Severity score information of the NVT</summary>
+        <type>severities</type>
       </ele>
       <ele>
         <name>cpe</name>
@@ -2089,12 +2061,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>order</name>
             <summary>Sort order of field</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -2137,21 +2107,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>notes</name>
           <summary>Whether notes are included</summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
           <name>overrides</name>
           <summary>Whether overrides are included</summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
           <name>apply_overrides</name>
           <summary>Whether overrides are applied</summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
@@ -2160,7 +2130,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             Whether only those hosts that have results are included
           </summary>
           <pattern>
-            <t><alts><alt>0</alt><alt>1</alt></alts></t>
+            <alts><alt>0</alt><alt>1</alt></alts>
           </pattern>
         </ele>
         <ele>
@@ -2174,14 +2144,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filter</name>
           <summary>Level filter</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>High</alt>
-                <alt>Medium</alt>
-                <alt>Low</alt>
-                <alt>Log</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>High</alt>
+			  <alt>Medium</alt>
+			  <alt>Low</alt>
+			  <alt>Log</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -3003,6 +2971,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
     </ele>
   </element>
+  <element>
+    <name>severities</name>
+    <summary>A collection of severity scoring info</summary>
+    <pattern>
+      <attrib>
+        <name>score</name>
+        <required>1</required>
+        <summary>The maximum severity score</summary>
+        <type>score</type>
+      </attrib>
+      <any><e>severity</e></any>
+    </pattern>
+    <ele>
+      <name>severity</name>
+      <summary>Individual severity ratings and info</summary>
+      <pattern>
+        <attrib>
+          <name>type</name>
+          <type>text</type>
+          <required>1</required>
+          <summary>Type of severity rating, e.g. cvss_base_v2</summary>
+        </attrib>
+        <e>origin</e>
+        <e>date</e>
+        <e>score</e>
+        <e>value</e>
+      </pattern>
+      <ele>
+        <name>origin</name>
+        <summary>Origin of severity rating</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>date</name>
+        <summary>Date the severity was defined</summary>
+        <pattern><t>iso_time</t></pattern>
+      </ele>
+      <ele>
+        <name>score</name>
+        <summary>Numeric score ranging from 0 to 100</summary>
+        <pattern><t>score</t></pattern>
+      </ele>
+      <ele>
+        <name>value</name>
+        <summary>Detailed rating value, e.g. a CVSS vector</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+  </element>
 
   <!-- Commands. -->
 
@@ -3530,12 +3547,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>usage_type</name>
       <summary>Usage type (scan or policy) for the config. Can overwrite the one in get_configs_response</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>scan</alt>
-            <alt>policy</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>scan</alt>
+		  <alt>policy</alt>
+		</alts>
       </pattern>
     </ele>
     <response>
@@ -3723,12 +3738,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>md5</alt>
-            <alt>sha1</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>md5</alt>
+		  <alt>sha1</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -3741,12 +3754,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-          <t>
-            <alts>
-              <alt>aes</alt>
-              <alt>des</alt>
-            </alts>
-          </t>
+		  <alts>
+			<alt>aes</alt>
+			<alt>des</alt>
+		  </alts>
         </pattern>
       </ele>
       <ele>
@@ -3761,17 +3772,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>type</name>
       <summary>The type of credential to create</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>cc</alt>
-            <alt>pgp</alt>
-            <alt>pw</alt>
-            <alt>smime</alt>
-            <alt>snmp</alt>
-            <alt>up</alt>
-            <alt>usk</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>cc</alt>
+		  <alt>pgp</alt>
+		  <alt>pw</alt>
+		  <alt>smime</alt>
+		  <alt>snmp</alt>
+		  <alt>up</alt>
+		  <alt>usk</alt>
+		</alts>
       </pattern>
     </ele>
     <response>
@@ -5191,6 +5200,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
       <o><e>alive_tests</e></o>
+      <o><e>allow_simultaneous_ips</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
       <or>
@@ -5342,6 +5352,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </pattern>
     </ele>
     <ele>
+      <name>allow_simultaneous_ips</name>
+      <summary>
+        Whether to scan multiple IPs of the same host simultaneously
+      </summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
       <name>reverse_lookup_only</name>
       <summary>Whether to scan only hosts that have names</summary>
       <pattern><t>boolean</t></pattern>
@@ -5474,12 +5491,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>usage_type</name>
       <summary>Usage type for the task (scan or audit), defaulting to scan</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>scan</alt>
-            <alt>audit</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>scan</alt>
+		  <alt>audit</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -7405,24 +7420,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>type</name>
           <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>0</alt>
+			  <alt>1</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
           <name>usage_type</name>
           <summary>The usage type of the config (scan or policy)</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>scan</alt>
-                <alt>policy</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>scan</alt>
+			  <alt>policy</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -7801,12 +7812,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -8043,13 +8052,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>Optional tuples of sort criteria</summary>
       <pattern>
         <attrib>
-          <name>sort_field</name>
+          <name>field</name>
           <summary>The column to sort the aggregated rows by.
-          With a subgroup column, groups will be sorted by the group_column first.</summary>
+          With a subgroup column, groups will be sorted by the group_column first</summary>
           <type>text</type>
         </attrib>
         <attrib>
-          <name>sort_order</name>
+          <name>order</name>
           <summary>The order to sort by</summary>
           <type>
             <alts>
@@ -8059,7 +8068,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </type>
         </attrib>
         <attrib>
-          <name>sort_stat</name>
+          <name>stat</name>
           <summary>The statistic to sort the aggregated rows by</summary>
           <type>
             <alts>
@@ -8994,12 +9003,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -9712,12 +9719,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10098,17 +10103,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>type</name>
           <summary>The type of the credential</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>cc</alt>
-                <alt>pgp</alt>
-                <alt>pw</alt>
-                <alt>smime</alt>
-                <alt>snmp</alt>
-                <alt>up</alt>
-                <alt>usk</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>cc</alt>
+			  <alt>pgp</alt>
+			  <alt>pw</alt>
+			  <alt>smime</alt>
+			  <alt>snmp</alt>
+			  <alt>up</alt>
+			  <alt>usk</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -10128,15 +10131,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>format</name>
             <summary>Format as used in the command</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>key</alt>
-                  <alt>rpm</alt>
-                  <alt>deb</alt>
-                  <alt>exe</alt>
-                  <alt>pem</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>key</alt>
+				<alt>rpm</alt>
+				<alt>deb</alt>
+				<alt>exe</alt>
+				<alt>pem</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10144,12 +10145,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>auth_algorithm</name>
           <summary>The SNMP authentication algorithm</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>md5</alt>
-                <alt>sha1</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>md5</alt>
+			  <alt>sha1</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -10161,12 +10160,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>algorithm</name>
             <summary>The SNMP privacy algorithm</summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>aes</alt>
-                  <alt>des</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>aes</alt>
+				<alt>des</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10335,12 +10332,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>ascending</alt>
+				<alt>descending</alt>
+			  </alts>
             </pattern>
           </ele>
         </ele>
@@ -10944,12 +10939,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -11325,12 +11318,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -11476,9 +11467,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Name of the owner</summary>
           </column>
           <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Severity score of the SecInfo</summary>
+          </column>
+          <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the SecInfo</summary>
+            <summary>CVSS-based severity of the SecInfo</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -11852,7 +11848,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>summary</e>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <o><e>raw_data</e></o>
           </pattern>
@@ -11872,9 +11868,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>Highest CVSS score of CVEs referenced by the advisory</summary>
-            <pattern>text</pattern>
+            <name>score</name>
+            <summary>Highest 0-100 severity score of CVEs referenced by the advisory</summary>
+            <pattern>
+              <t>score</t>
+            </pattern>
           </ele>
           <ele>
             <name>cve_refs</name>
@@ -11896,7 +11894,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>nvd_id</e>
             <o><e>title</e></o>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <e>status</e>
             <o><e>cves</e></o>
@@ -11918,10 +11916,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>The highest CVSS recorder for this CPE</summary>
+            <name>score</name>
+            <summary>The highest 0-100 severity score recorded for this CPE</summary>
             <pattern>
-              <t>integer</t>
+              <t>score</t>
             </pattern>
           </ele>
           <ele>
@@ -11970,13 +11968,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cve</name>
           <pattern>
-            <e>cvss</e>
-            <e>vector</e>
-            <e>complexity</e>
-            <e>authentication</e>
-            <e>confidentiality_impact</e>
-            <e>integrity_impact</e>
-            <e>availability_impact</e>
+            <e>score</e>
+            <e>cvss_vector</e>
             <e>description</e>
             <e>products</e>
             <o><e>nvts</e></o>
@@ -11985,50 +11978,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </pattern>
           <summary>A CVE info element</summary>
           <ele>
-            <name>cvss</name>
-            <summary>CVSS Base Score</summary>
+            <name>score</name>
+            <summary>Severity score (10 * CVSS Base Score) of the CVE</summary>
             <pattern>
-              text
+              <t>integer</t>
             </pattern>
           </ele>
           <ele>
-            <name>vector</name>
-            <summary>CVSS Access Vector metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>complexity</name>
-            <summary>CVSS Attack Complexity metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>authentication</name>
-            <summary>CVSS Authentication metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>confidentiality_impact</name>
-            <summary>CVSS Confidentiality impact metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>integrity_impact</name>
-            <summary>CVSS Integrity impact metric</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>availability_impact</name>
-            <summary>CVSS Availability impact metric</summary>
+            <name>cvss_vector</name>
+            <summary>CVSS base vector string</summary>
             <pattern>
               text
             </pattern>
@@ -12127,7 +12085,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>summary</e>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <o><e>raw_data</e></o>
           </pattern>
@@ -12147,9 +12105,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>Highest CVSS score of CVEs referenced by the advisory</summary>
-            <pattern>text</pattern>
+            <name>score</name>
+            <summary>Highest 0-100 severity score of CVEs referenced by the advisory</summary>
+            <pattern>
+              <t>score</t>
+            </pattern>
           </ele>
           <ele>
             <name>cve_refs</name>
@@ -12174,7 +12134,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>status</e>
             <e>class</e>
             <e>title</e>
-            <e>max_cvss</e>
+            <e>score</e>
             <e>cve_refs</e>
             <e>file</e>
             <o><e>description</e></o>
@@ -12217,9 +12177,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>max_cvss</name>
-            <summary>Highest CVSS score of CVEs referenced by the definition</summary>
-            <pattern>text</pattern>
+            <name>score</name>
+            <summary>Highest 0-100 severity score of CVEs referenced by the definition</summary>
+            <pattern>
+              <t>score</t>
+            </pattern>
           </ele>
           <ele>
             <name>cve_refs</name>
@@ -12323,12 +12285,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -12373,7 +12333,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cpe>
               <title>GNU Gzip 1.3.3</title>
-              <max_cvss>10.0</max_cvss>
+              <score>100</score>
               <cve_refs>5</cve_refs>
               <status>DRAFT</status>
               <cves>
@@ -12498,18 +12458,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>CVE-2011-0018</name>
             <comment/>
             <creation_time>2011-01-28T16:00:02Z</creation_time>
-            <modification_time>2011-02-05T07:01:22Z</modification_time>
+            <modification_time>2018-10-10T20:09:00Z</modification_time>
+            <update_time>2020-11-13T02:30:00.000+0000</update_time>
             <writable>0</writable>
             <in_use>0</in_use>
             <update_time>2012-10-26T13:18:00.000+0000</update_time>
             <cve>
-              <cvss>9.0</cvss>
-              <vector>NETWORK</vector>
-              <complexity>LOW</complexity>
-              <authentication>SINGLE_INSTANCE</authentication>
-              <confidentiality_impact>COMPLETE</confidentiality_impact>
-              <integrity_impact>COMPLETE</integrity_impact>
-              <availability_impact>COMPLETE</availability_impact>
+              <score>90</score>
+              <cvss_vector>AV:N/AC:L/Au:S/C:C/I:C/A:C</cvss_vector>
               <description>The email function in manage_sql.c in ...(truncated for example)</description>
               <products>cpe:/a:openvas:openvas_manager:1.0.1 ...(truncated for example)</products>
             </cve>
@@ -12739,12 +12695,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -12841,7 +12795,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <port>general/tcp</port>
               <nvt oid="1.3.6.1.4.1.25623.1.0.77">
                 <name>Test NVT: control chars in report result</name>
-                <cvss_base></cvss_base>
+                <cvss_base>5</cvss_base>
+                <severities score="50"/>
                 <cve></cve>
                 <bid></bid>
               </nvt>
@@ -13072,51 +13027,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>severities</name>
           <summary>Severity information of the NVT</summary>
-          <pattern>
-            <attrib>
-              <name>score</name>
-              <type>integer</type>
-              <required>1</required>
-              <summary>Maximum severity score</summary>
-            </attrib>
-            <any><e>severity</e></any>
-          </pattern>
-          <ele>
-            <name>severity</name>
-            <summary>A single severity rating</summary>
-            <pattern>
-              <attrib>
-                <name>type</name>
-                <type>text</type>
-                <required>1</required>
-                <summary>Type of severity rating, e.g. cvss_base_v2</summary>
-              </attrib>
-              <e>origin</e>
-              <e>date</e>
-              <e>score</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>origin</name>
-              <summary>Origin of severity rating</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>date</name>
-              <summary>Date the severity was defined</summary>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>score</name>
-              <summary>Numeric score ranging from 0 to 100</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Detailed rating value, e.g. a CVSS vector</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
+          <type>severities</type>
         </ele>
         <ele>
           <name>qod</name>
@@ -13307,6 +13218,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
+            <severities score="0"/>
             <refs/>
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
@@ -13653,12 +13565,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -14153,12 +14063,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -14653,12 +14561,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -15386,14 +15292,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filter</name>
           <summary>A severity level that is included in the report</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>High</alt>
-                <alt>Medium</alt>
-                <alt>Low</alt>
-                <alt>Log</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>High</alt>
+			  <alt>Medium</alt>
+			  <alt>Low</alt>
+			  <alt>Log</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -15490,12 +15394,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -15665,6 +15567,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   <nvt oid="1.3.6.1.4.1.25623.1.0.74">
                     <name>Test NVT: fields with ISO-8859-1 chars ()</name>
                     <cvss_base>5.0</cvss_base>
+                    <severities score="50">
+                      <severity>
+                        [...]
+                      </severity>
+                    </severities>
                     <tags>NOTAGS</tags>
                     <refs>
                       <ref id="CVE-2013-1406" type="cve"/>
@@ -16024,16 +15931,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <o><e>min</e></o>
               <o><e>max</e></o>
               <o><e>options</e></o>
-              <t>
-                <alts>
-                  <alt>boolean</alt>
-                  <alt>integer</alt>
-                  <alt>selection</alt>
-                  <alt>string</alt>
-                  <alt>text</alt>
-                  <alt>report_format_list</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>boolean</alt>
+				<alt>integer</alt>
+				<alt>selection</alt>
+				<alt>string</alt>
+				<alt>text</alt>
+				<alt>report_format_list</alt>
+			  </alts>
             </pattern>
             <ele>
               <name>min</name>
@@ -16113,13 +16018,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <required>1</required>
             </attrib>
             <e>time</e>
-            <t>
-              <alts>
-                <alt>yes</alt>
-                <alt>no</alt>
-                <alt>unknown</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>yes</alt>
+			  <alt>no</alt>
+			  <alt>unknown</alt>
+			</alts>
           </pattern>
           <ele>
             <name>time</name>
@@ -16212,12 +16115,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -16644,12 +16545,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -16708,6 +16607,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <nvt oid="1.3.6.1.4.1.25623.1.0.74">
               <name>Test NVT: fields with ISO-8859-1 chars</name>
               <cvss_base>5.0</cvss_base>
+              <severities score="50">
+                <severity>
+                  [...]
+                </severity>
+              </severities>
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
@@ -16766,6 +16670,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <nvt oid="1.3.6.1.4.1.25623.1.0.75">
               <name>Test NVT: long lines</name>
               <cvss_base>9</cvss_base>
+              <severities score="90">
+                <severity>
+                  [...]
+                </severity>
+              </severities>
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
@@ -17101,12 +17010,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -17635,12 +17542,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -18077,12 +17982,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -18779,12 +18682,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -19004,6 +18905,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>alive_tests</e>
           <e>reverse_lookup_only</e>
           <e>reverse_lookup_unify</e>
+          <e>allow_simultaneous_ips</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -19318,6 +19220,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
+          <name>allow_simultaneous_ips</name>
+          <summary>
+            Whether to scan multiple IPs of the same host simultaneously
+          </summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
           <name>tasks</name>
           <summary>All tasks using the target</summary>
           <pattern>
@@ -19421,12 +19330,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -19805,7 +19712,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <ele>
         <name>apply_overrides</name>
         <pattern>
-          <t><alts><alt>0</alt><alt>1</alt></alts></t>
+          <alts><alt>0</alt><alt>1</alt></alts>
         </pattern>
       </ele>
       <ele>
@@ -19983,12 +19890,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>usage_type</name>
           <summary>The usage type of the task (scan or audit)</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>scan</alt>
-                <alt>audit</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>scan</alt>
+			  <alt>audit</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -20415,12 +20320,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -21225,12 +21128,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -21668,7 +21569,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>sources</name>
           <summary>Sources allowed for authentication for this user</summary>
-          <type>sources</type>
+          <pattern>
+            <any><e>source</e></any>
+          </pattern>
+          <ele>
+            <name>source</name>
+            <summary>Authentication source</summary>
+            <pattern>
+			  <alts>
+				<alt>file</alt>
+				<alt>ldap_connect</alt>
+				<alt>radius_connect</alt>
+			  </alts>
+            </pattern>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -21745,12 +21659,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -21893,14 +21805,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               Whether the certificate is valid, expired or not active yet
             </summary>
             <pattern>
-              <t>
-                <alts>
-                  <alt>expired</alt>
-                  <alt>inactive</alt>
-                  <alt>unknown</alt>
-                  <alt>valid</alt>
-                </alts>
-              </t>
+			  <alts>
+				<alt>expired</alt>
+				<alt>inactive</alt>
+				<alt>unknown</alt>
+				<alt>valid</alt>
+			  </alts>
             </pattern>
           </column>
           <column>
@@ -22107,14 +22017,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             Whether the certificate is valid, expired or not active yet
           </summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>expired</alt>
-                <alt>inactive</alt>
-                <alt>unknown</alt>
-                <alt>valid</alt>
-              </alts>
-            </t>
+			<alts>
+			  <alt>expired</alt>
+			  <alt>inactive</alt>
+			  <alt>unknown</alt>
+			  <alt>valid</alt>
+			</alts>
           </pattern>
         </ele>
         <ele>
@@ -22369,12 +22277,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -22573,6 +22479,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the vulnerability</summary>
           </column>
           <column>
+            <name>score</name>
+            <type>score</type>
+            <summary>Score of the vulnerability</summary>
+          </column>
+          <column>
             <name>qod</name>
             <type>integer</type>
             <summary>QoD of the vulnerability</summary>
@@ -22631,6 +22542,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>creation_time</e>
           <e>modification_time</e>
           <e>severity</e>
+          <e>score</e>
           <e>qod</e>
           <e>results</e>
           <e>hosts</e>
@@ -22666,6 +22578,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Severity of the vulnerability</summary>
           <pattern>
             <t>severity</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>score</name>
+          <summary>Score of the vulnerability</summary>
+          <pattern>
+            <t>score</t>
           </pattern>
         </ele>
         <ele>
@@ -22794,12 +22713,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>order</name>
             <pattern>
-              <t>
-                <alts>
-                  <alt>ascending</alt>
-                  <alt>descending</alt>
-                </alts>
-              </t>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -23363,19 +23280,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <summary>Modify an existing config</summary>
     <description>
       <p>
-        This command can take five forms: with a preference, with a family
-        selection, with an NVT selection, or with a name or comment.
+        This command can perform four types of actions: 1) modifying
+        preferences, 2) changing the family selection, 3) changing the
+        NVT selection of families, or 4) modifying basic fields like
+        the name or comment.
       </p>
+
       <p>
-        The first form modifies a preference on the config.
-        If the preference includes an NVT, then the preference is an NVT preference,
+        Since version 21.04 it is possible to perform multiple of these actions
+        at once in the order they appear in the command. Note that the changes
+        can influence each other, so this can change the overall result.
+      </p>
+
+      <p>
+        The first type modifies the preferences on the config.
+        If a preference includes an NVT, then the preference is an NVT preference,
         otherwise the preference is a scanner preference.  If the preference includes
         a value then the manager updates the value of the preference, otherwise the
         manager removes the preference.  The value must be base64 encoded.
       </p>
 
       <p>
-        The second form, with a family selection, lets the client modify the
+        The second type, with a family selection, lets the client modify the
         NVTs selected by the config at a family level.  The idea is that the
         client modifies the entire family selection at once, so a client will
         often need to include many families in a family selection.
@@ -23405,9 +23331,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </p>
 
       <p>
-        The third option, an NVT selection, must include a family and may include any
-        number of NVTs.  The manager updates the given family in the config to
-        include only the given NVTs.
+        The third option, NVT selections, must include a family and may include any
+        number of NVTs.  The manager updates each given family in the config to
+        include only the given NVTs. If the family selection is also changed,
+        this should be done first as it can also change the NVT selection of
+        families.
       </p>
 
       <p>
@@ -23423,14 +23351,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>uuid</type>
         <required>1</required>
       </attrib>
-      <or>
-        <e>name</e>
-        <e>comment</e>
-        <e>scanner</e>
-        <e>preference</e>
-        <e>family_selection</e>
-        <e>nvt_selection</e>
-      </or>
+      <o>><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>scanner</e></o>
+      <any><e>preference</e></any>
+      <o><e>family_selection</e></o>
+      <any><e>nvt_selection</e></any>
     </pattern>
     <ele>
       <name>name</name>
@@ -23744,12 +23670,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>md5</alt>
-            <alt>sha1</alt>
-          </alts>
-        </t>
+		<alts>
+		  <alt>md5</alt>
+		  <alt>sha1</alt>
+		</alts>
       </pattern>
     </ele>
     <ele>
@@ -23762,12 +23686,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-          <t>
-            <alts>
-              <alt>aes</alt>
-              <alt>des</alt>
-            </alts>
-          </t>
+		  <alts>
+			<alt>aes</alt>
+			<alt>des</alt>
+		  </alts>
         </pattern>
       </ele>
       <ele>
@@ -24765,6 +24687,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
+      <o><e>allow_simultaneous_ips</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -24897,6 +24820,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>reverse_lookup_unify</name>
       <summary>
         Whether to scan only one IP when multiple IPs have the same name
+      </summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>allow_simultaneous_ips</name>
+      <summary>
+        Whether to scan multiple IPs of the same host simultaneously
       </summary>
       <pattern><t>boolean</t></pattern>
     </ele>
@@ -25462,7 +25392,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>password</name>
       <summary>The password for the user</summary>
-      <pattern>text</pattern>
+      <pattern>
+        <attrib>
+          <name>modify</name>
+          <summary>If 0 then password is left alone, otherwise password is modified</summary>
+          <type>boolean</type>
+        </attrib>
+	    text
+ 	  </pattern>
     </ele>
     <ele>
       <name>role</name>
@@ -25478,7 +25415,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>sources</name>
       <summary>List of authentication sources for this user (if omitted, no changes)</summary>
-      <type>sources</type>
+	  <pattern>
+		<any><e>source</e></any>
+	  </pattern>
+	  <ele>
+		<name>source</name>
+		<summary>Authentication source</summary>
+		<pattern>
+		  <alts>
+			<alt>file</alt>
+			<alt>ldap_connect</alt>
+			<alt>radius_connect</alt>
+		  </alts>
+		</pattern>
+	  </ele>
     </ele>
     <response>
       <pattern>
@@ -26020,6 +25970,41 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_INFO</command>
+    <summary>Replaced CVSS score elements by integer score</summary>
+    <description>
+      <p>
+        The elements CVSS and MAX_CVSS of CPEs, CVEs, OVAL definitions and
+        CERT advisories are replaced by the SCORE element that contains an
+        integer score in the range 0-100, which is generally the ten times
+        the CVSS base score.
+      </p>
+      <p>
+        NVTs still contain the CVSS_BASE element in addition to the new
+        SCORE for backward compatibility of reports. However, the use of
+        the CVSS_BASE element is deprecated.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
+  <change>
+    <command>GET_INFO</command>
+    <summary>Replaced CVSS vector components of CVEs with vector string</summary>
+    <description>
+      <p>
+        The elements VECTOR, COMPLEXITY, AUTHENTICATION,
+        CONFIDENTIALITY_IMPACT, INTEGRITY_IMPACT and AVAILABILITY_IMPACT
+        are replaced by the CVSS_VECTOR element that contains the CVSS base
+        vector in a shorter string representation.
+      </p>
+      <p>
+        This vector string can also use newer CVSS versions like 3.1 if
+        available.
+      </p>
+    </description>
+    <version>21.4</version>
+  </change>
   <change>
     <command>GET_REPORTS</command>
     <summary>Removed element SEVERITY_CLASS from element REPORT</summary>

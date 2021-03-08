@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2015-2018 Greenbone Networks GmbH
+# Copyright (C) 2015-2020 Greenbone Networks GmbH
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -360,7 +360,7 @@ create_certificate ()
     fi
     if [ -n "$GVM_CA_CERTIFICATE_SAN" ]
     then
-      add_san_settings GVM_CA_CERTIFICATE_SAN
+      add_san_settings $GVM_CA_CERTIFICATE_SAN
     fi
   else
     if [ -n "$GVM_CERTIFICATE_LIFETIME" ]
@@ -393,7 +393,7 @@ create_certificate ()
     fi
     if [ -n "$GVM_CERTIFICATE_SAN" ]
     then
-      add_san_settings GVM_CERTIFICATE_SAN
+      add_san_settings $GVM_CERTIFICATE_SAN
     fi
   fi
 

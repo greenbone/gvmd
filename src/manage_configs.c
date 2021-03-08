@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Greenbone Networks GmbH
+/* Copyright (C) 2019-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -31,7 +31,7 @@
 
 #include <errno.h>
 #include <glib.h>
-#include <glib/gstdio.h>
+#include <gvm/util/fileutils.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -379,6 +379,11 @@ sync_configs_with_feed ()
   const gchar *config_path;
   gchar *nvt_feed_version;
 
+  /* Test if base feed directory exists */
+
+  if (configs_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Only sync if NVTs are up to date. */
 
   nvt_feed_version = nvts_feed_version ();
@@ -441,6 +446,17 @@ sync_configs_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the configs feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+configs_feed_dir_exists ()
+{
+  return gvm_file_is_readable (feed_dir_configs ());
 }
 
 /**

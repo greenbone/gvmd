@@ -1,4 +1,4 @@
-/* Copyright (C) 2013-2018 Greenbone Networks GmbH
+/* Copyright (C) 2013-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1011,50 +1011,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
   guint index;
 
   if (with)
-    *with = NULL;
-
-  if (owned == 0)
-   return g_strdup (" t ()");
-
-  permission_or = g_string_new ("");
-  index = 0;
-  if (permissions == NULL || permissions->len == 0)
     {
-      /* Treat filters with no permissions keyword as "any". */
-      permission_or = g_string_new ("t ()");
-      index = 1;
-    }
-  else if (permissions)
-    for (; index < permissions->len; index++)
-      {
-        gchar *permission, *quoted;
-        permission = (gchar*) g_ptr_array_index (permissions, index);
-        if (strcasecmp (permission, "any") == 0)
-          {
-            g_string_free (permission_or, TRUE);
-            permission_or = g_string_new ("t ()");
-            index = 1;
-            break;
-          }
-        quoted = sql_quote (permission);
-        if (index == 0)
-          g_string_append_printf (permission_or, "name = '%s'", quoted);
-        else
-          g_string_append_printf (permission_or, " OR name = '%s'",
-                                  quoted);
-        g_free (quoted);
-      }
-
-  table_trash = get->trash && strcasecmp (type, "task");
-  if (resource || (user_id == NULL))
-    owned_clause
-     = g_strdup (" (t ())");
-  else if (with)
-    {
-      gchar *permission_clause;
-
-      /* Caller supports WITH clause. */
-
       *with = g_strdup_printf
                ("WITH permissions_subject"
                 "     AS (SELECT * FROM permissions"
@@ -1098,6 +1055,49 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                 user_sql,
                 user_sql,
                 user_sql);
+    }
+
+  if (owned == 0)
+   return g_strdup (" t ()");
+
+  permission_or = g_string_new ("");
+  index = 0;
+  if (permissions == NULL || permissions->len == 0)
+    {
+      /* Treat filters with no permissions keyword as "any". */
+      permission_or = g_string_new ("t ()");
+      index = 1;
+    }
+  else if (permissions)
+    for (; index < permissions->len; index++)
+      {
+        gchar *permission, *quoted;
+        permission = (gchar*) g_ptr_array_index (permissions, index);
+        if (strcasecmp (permission, "any") == 0)
+          {
+            g_string_free (permission_or, TRUE);
+            permission_or = g_string_new ("t ()");
+            index = 1;
+            break;
+          }
+        quoted = sql_quote (permission);
+        if (index == 0)
+          g_string_append_printf (permission_or, "name = '%s'", quoted);
+        else
+          g_string_append_printf (permission_or, " OR name = '%s'",
+                                  quoted);
+        g_free (quoted);
+      }
+
+  table_trash = get->trash && strcasecmp (type, "task");
+  if (resource || (user_id == NULL))
+    owned_clause
+     = g_strdup (" (t ())");
+  else if (with)
+    {
+      gchar *permission_clause;
+
+      /* Caller supports WITH clause. */
 
       permission_clause = NULL;
       if (user_id && index)

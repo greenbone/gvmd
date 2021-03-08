@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Greenbone Networks GmbH
+/* Copyright (C) 2019-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -99,5 +99,8 @@ update_config (config_t, const gchar *, const gchar *, const gchar *,
 
 void
 check_db_configs ();
+
+void
+check_whole_only_in_configs ();
 
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */

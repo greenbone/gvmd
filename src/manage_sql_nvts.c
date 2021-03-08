@@ -40,6 +40,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_preferences.h"
 #include "manage_sql.h"
+#include "manage_sql_configs.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -328,16 +329,18 @@ insert_nvt (const nvti_t *nvti)
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
       vtref_t *ref;
-      gchar *quoted_id, *quoted_text;
+      gchar *quoted_type, *quoted_id, *quoted_text;
 
       ref = nvti_vtref (nvti, i);
+      quoted_type = sql_quote (vtref_type (ref));
       quoted_id = sql_quote (vtref_id (ref));
       quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
       sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
            " VALUES ('%s', '%s', '%s', '%s');",
-           nvti_oid (nvti), vtref_type (ref), quoted_id, quoted_text);
+           nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
 
+      g_free (quoted_type);
       g_free (quoted_id);
       g_free (quoted_text);
     }
@@ -409,7 +412,6 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 
   if (get->id)
     {
-      // FIX what for anyway?
       gchar *quoted = sql_quote (get->id);
       clause = g_strdup_printf (" AND uuid = '%s'", quoted);
       g_free (quoted);
@@ -629,7 +631,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         quoted_family,
                         quoted_selector,
                         quoted_family,
-                        // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                        /* This works around "ERROR: missing FROM-clause" from
+                         * Postgres when using nvts.name. */
                         sort_field && strcmp (sort_field, "nvts.name")
                          ? sort_field : "3", /* 3 is nvts.name. */
                         ascending ? "ASC" : "DESC");
@@ -673,7 +676,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     quoted_family,
                     quoted_selector,
                     quoted_family,
-                    // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                    /* This works around "ERROR: missing FROM-clause" from
+                     * Postgres when using nvts.name. */
                     sort_field && strcmp (sort_field, "nvts.name")
                      ? sort_field : "3", /* 3 is nvts.name. */
                     ascending ? "ASC" : "DESC");
@@ -1374,16 +1378,29 @@ nvti_from_vt (entity_t vt)
             }
           else
             {
+              entity_t origin, severity_date;
               double cvss_base_dbl;
               gchar * cvss_base;
+              time_t parsed_severity_date;
 
               cvss_base_dbl
                 = get_cvss_score_from_base_metrics (entity_text (value));
 
+              origin
+                = entity_child (severity, "origin");
+              severity_date
+                = entity_child (severity, "date");
+              
+              if (severity_date)
+                parsed_severity_date = strtol (entity_text (severity_date),
+                                               NULL, 10);
+              else
+                parsed_severity_date = nvti_creation_time (nvti);
+
               nvti_add_vtseverity (nvti,
                 vtseverity_new (severity_type,
-                                NULL /* origin */,
-                                nvti_modification_time (nvti),
+                                origin ? entity_text (origin) : NULL,
+                                parsed_severity_date,
                                 round (cvss_base_dbl * 10.0),
                                 entity_text (value)));
 
@@ -1848,7 +1865,6 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   g_free (get_vts_opts.filter);
 
   osp_connection_close (connection);
-
   ret = update_nvts_from_vts (&vts, scanner_feed_version);
   free_entity (vts);
   if (ret)
@@ -1913,6 +1929,10 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
       g_string_free (prefs_sql, TRUE);
     }
 
+  /* Update the cache of report counts. */
+
+  reports_clear_count_cache_dynamic ();
+
   /* Tell the main process to update its NVTi cache. */
   sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
        sql_schema ());
@@ -1940,6 +1960,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 
   check_preference_names (0, old_nvts_last_modified);
   check_preference_names (1, old_nvts_last_modified);
+
+  check_whole_only_in_configs ();
 
   return 0;
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2014-2018 Greenbone Networks GmbH
+/* Copyright (C) 2014-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -414,7 +414,6 @@ sql_close ()
 void
 sql_close_fork ()
 {
-  // FIX PQfinish?
   conn = NULL;
 }
 
@@ -486,8 +485,6 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
 
   if (stmt->executed == 0)
     {
-      // FIX retry?
-
       result = PQexecParams (conn,
                              stmt->sql,
                              stmt->param_values->len,
@@ -535,11 +532,6 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                          PQresultStatus (result));
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
-#if 0
-          // FIX ?
-          PQclear (result);
-          PQfinish (conn);
-#endif
           return -1;
         }
 

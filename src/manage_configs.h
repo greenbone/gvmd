@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Greenbone Networks GmbH
+/* Copyright (C) 2019-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -136,8 +136,16 @@ int
 config_nvts_growing (config_t);
 
 int
-manage_set_config_preference (const gchar *, const char*, const char*,
-                              const char*);
+manage_modify_config_start (const char *, config_t *);
+
+void
+manage_modify_config_cancel ();
+
+void
+manage_modify_config_commit ();
+
+int
+manage_set_config_preference (config_t, const char*, const char*, const char*);
 
 void
 init_config_preference_iterator (iterator_t *, config_t);
@@ -158,14 +166,13 @@ const char*
 config_preference_iterator_hr_name (iterator_t *);
 
 int
-manage_set_config (const gchar *, const char*, const char *, const char *);
+manage_set_config (config_t, const char*, const char *, const char *);
 
 int
-manage_set_config_nvts (const gchar *, const char*, GPtrArray*);
+manage_set_config_nvts (config_t, const char*, GPtrArray*);
 
 int
-manage_set_config_families (const gchar *, GPtrArray*, GPtrArray*, GPtrArray*,
-                            int);
+manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*, int);
 
 void
 init_config_timeout_iterator (iterator_t*, config_t);
@@ -182,6 +189,9 @@ config_timeout_iterator_value (iterator_t *);
 void
 update_config_preference (const char *, const char *, const char *,
                           const char *, gboolean);
+
+gboolean
+configs_feed_dir_exists ();
 
 void
 manage_sync_configs ();

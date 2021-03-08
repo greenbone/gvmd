@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 Greenbone Networks GmbH
+/* Copyright (C) 2020-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <glib.h>
+#include <gvm/util/fileutils.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
@@ -672,6 +673,11 @@ sync_report_formats_with_feed ()
   GDir *dir;
   const gchar *report_format_path;
 
+  /* Test if base feed directory exists */
+
+  if (report_formats_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Setup owner. */
 
   setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
@@ -725,6 +731,17 @@ sync_report_formats_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the report formats feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+report_formats_feed_dir_exists ()
+{
+  return gvm_file_is_readable (feed_dir_report_formats ());
 }
 
 /**

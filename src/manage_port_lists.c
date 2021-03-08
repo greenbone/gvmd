@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 Greenbone Networks GmbH
+/* Copyright (C) 2020-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -29,6 +29,7 @@
 #include "manage_sql_port_lists.h"
 #include "utils.h"
 
+#include <gvm/util/fileutils.h>
 #include <string.h>
 
 #undef G_LOG_DOMAIN
@@ -312,6 +313,11 @@ sync_port_lists_with_feed ()
   GDir *dir;
   const gchar *port_list_path;
 
+  /* Test if base feed directory exists */
+
+  if (port_lists_feed_dir_exists () == FALSE)
+    return 0;
+
   /* Setup owner. */
 
   setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
@@ -364,6 +370,17 @@ sync_port_lists_with_feed ()
   current_credentials.username = NULL;
 
   return 0;
+}
+
+/**
+ * @brief Tests if the port lists feed directory exists.
+ * 
+ * @return TRUE if the directory exists.
+ */
+gboolean
+port_lists_feed_dir_exists ()
+{
+  return gvm_file_is_readable (feed_dir_port_lists ());
 }
 
 /**

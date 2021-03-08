@@ -1,4 +1,4 @@
-/* Copyright (C) 2018 Greenbone Networks GmbH
+/* Copyright (C) 2018-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -43,8 +43,6 @@
  * @param[in]  type              Resource type.
  * @param[in]  attribute_names   XML attribute names.
  * @param[in]  attribute_values  XML attribute values.
- *
- * @param[in]  data  Command data.
  */
 void
 get_data_parse_attributes (get_data_t *data, const gchar *type,

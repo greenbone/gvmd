@@ -1085,6 +1085,7 @@ user_has_super (const char *, user_t);
   " 'HP-UX Local Security Checks',"                \
   " 'Huawei EulerOS Local Security Checks',"       \
   " 'JunOS Local Security Checks',"                \
+  " 'Local Security Checks: EulerOS',"             \
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
@@ -1097,6 +1098,20 @@ user_has_super (const char *, user_t);
   " 'VMware Local Security Checks',"               \
   " 'Ubuntu Local Security Checks',"               \
   " 'Windows : Microsoft Bulletins'"
+
+/**
+ * @brief Whole only families.
+ */
+#define FAMILIES_WHOLE_ONLY                        \
+  { "CentOS Local Security Checks",                \
+    "Debian Local Security Checks",                \
+    "Fedora Local Security Checks",                \
+    "Huawei EulerOS Local Security Checks",        \
+    "Oracle Linux Local Security Checks",          \
+    "Red Hat Local Security Checks",               \
+    "SuSE Local Security Checks",                  \
+    "Ubuntu Local Security Checks",                \
+    NULL }
 
 gboolean
 find_result_with_permission (const char*, result_t*, const char *);
@@ -1128,9 +1143,6 @@ result_detection_reference (result_t, report_t, const char *, const char *,
  * @brief Default min quality of detection percentage for filters.
  */
 #define MIN_QOD_DEFAULT 70
-
-void
-reports_clear_count_cache (int);
 
 void
 reports_clear_count_cache_for_override (override_t, int);
@@ -1200,6 +1212,18 @@ typedef struct
   char *source_type;  ///< Source type.
   char *value;        ///< Detail value.
 } host_detail_t;
+
+
+/**
+ * @brief A detection detail for create_report.
+ */
+typedef struct
+{
+  char *product; ///< product of detection in result.
+  char *source_name; ///< source_name of detection in result.
+  char *source_oid; ///< source_oid of detection in result.
+  char *location; ///< location of detection in result.
+} detection_detail_t;
 
 void
 host_detail_free (host_detail_t *);
@@ -1570,7 +1594,7 @@ int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, const char*,
                credential_t, credential_t, credential_t, const char *,
-               const char *, const char *, target_t*);
+               const char *, const char *, const char *, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -1578,7 +1602,8 @@ copy_target (const char*, const char*, const char *, target_t*);
 int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*, const char *, const char*, const char*);
+               const char*, const char*, const char*, const char*,
+               const char*);
 
 int
 delete_target (const char*, int);
@@ -1638,6 +1663,9 @@ int
 target_iterator_snmp_trash (iterator_t*);
 
 const char*
+target_iterator_allow_simultaneous_ips (iterator_t*);
+
+const char*
 target_iterator_port_list_uuid (iterator_t*);
 
 const char*
@@ -1675,6 +1703,9 @@ target_reverse_lookup_only (target_t);
 
 char*
 target_reverse_lookup_unify (target_t);
+
+char*
+target_allow_simultaneous_ips (target_t);
 
 char*
 target_port_range (target_t);
@@ -1983,6 +2014,9 @@ typedef enum
   CREDENTIAL_FORMAT_PEM = 5,    /// Certificate PEM
   CREDENTIAL_FORMAT_ERROR = -1  /// Error / Invalid format
 } credential_format_t;
+
+int
+check_private_key (const char *, const char *);
 
 gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
@@ -2670,7 +2704,7 @@ void
 set_scheduled_user_uuid (const gchar* uuid);
 
 void
-manage_sync (sigset_t *, int (*fork_update_nvt_cache) ());
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
 
 int
 manage_schedule (manage_connection_forker_t,
@@ -3454,10 +3488,10 @@ init_vuln_iterator (iterator_t*, const get_data_t*);
 int
 vuln_iterator_results (iterator_t*);
 
-const char*
+time_t
 vuln_iterator_oldest (iterator_t*);
 
-const char*
+time_t
 vuln_iterator_newest (iterator_t*);
 
 const char*
@@ -3468,6 +3502,9 @@ vuln_iterator_hosts (iterator_t*);
 
 double
 vuln_iterator_severity (iterator_t*);
+
+int
+vuln_iterator_score (iterator_t*);
 
 int
 vuln_iterator_qod (iterator_t*);
@@ -3632,6 +3669,12 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 #define GVMD_DATA_FEED 4
+
+gboolean
+manage_gvmd_data_feed_dir_exists (const char *);
+
+gboolean
+manage_gvmd_data_feed_dirs_exist ();
 
 const gchar *
 get_feed_lock_path ();

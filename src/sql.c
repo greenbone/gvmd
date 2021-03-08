@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2020 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -498,7 +498,7 @@ sql_int64 (long long int* ret, char* sql, ...)
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
- * @return 0 success, 1 too few rows, -1 error.
+ * @return Column value.  0 if no row.
  */
 long long int
 sql_int64_0 (char* sql, ...)

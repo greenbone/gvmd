@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2018 Greenbone Networks GmbH
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -95,6 +95,7 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/proctitle.h>
+#include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 
 #include "manage.h"
@@ -1212,6 +1213,9 @@ fork_feed_sync ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
+  gboolean gvmd_data_feed_dirs_exist;
+  
+  static gboolean disable_gvmd_data_feed_warning = FALSE;
 
   if (feed_version_check_in_progress)
     {
@@ -1235,6 +1239,22 @@ fork_feed_sync ()
       return -1;
     }
 
+  gvmd_data_feed_dirs_exist = manage_gvmd_data_feed_dirs_exist ();
+
+  if (disable_gvmd_data_feed_warning && gvmd_data_feed_dirs_exist)
+    {
+      disable_gvmd_data_feed_warning = FALSE;
+      g_message ("Previously missing gvmd data feed directory found.");
+    }
+  else if (gvmd_data_feed_dirs_exist == FALSE
+           && disable_gvmd_data_feed_warning == FALSE)
+    {
+      disable_gvmd_data_feed_warning = TRUE;
+      g_warning ("The gvmd data feed directory %s or one of its subdirectories"
+                 " does not exist.",
+                 GVMD_FEED_DIR);
+    }
+
   pid = fork_with_handlers ();
   switch (pid)
     {
@@ -1256,7 +1276,8 @@ fork_feed_sync ()
 
         /* Check the feed version. */
 
-        manage_sync (sigmask_normal, fork_update_nvt_cache);
+        manage_sync (sigmask_normal, fork_update_nvt_cache,
+                     gvmd_data_feed_dirs_exist);
 
         /* Exit. */
 
@@ -2031,7 +2052,7 @@ gvmd (int argc, char** argv)
       printf ("GIT revision %s\n", GVMD_GIT_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
-      printf ("Copyright (C) 2010-2020 Greenbone Networks GmbH\n");
+      printf ("Copyright (C) 2009-2021 Greenbone Networks GmbH\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
@@ -2120,7 +2141,7 @@ gvmd (int argc, char** argv)
   rc_name = g_build_filename (GVM_SYSCONF_DIR,
                               "gvmd_log.conf",
                               NULL);
-  if (g_file_test (rc_name, G_FILE_TEST_EXISTS))
+  if (gvm_file_is_readable (rc_name))
     log_config = load_log_configuration (rc_name);
   g_free (rc_name);
   setup_log_handlers (log_config);
@@ -2139,9 +2160,11 @@ gvmd (int argc, char** argv)
     {
       if (strcmp (relay_mapper, ""))
         {
-          if (g_file_test (relay_mapper, G_FILE_TEST_EXISTS) == 0)
+          if (gvm_file_exists (relay_mapper) == 0)
             g_warning ("Relay mapper '%s' not found.", relay_mapper);
-          else if (g_file_test (relay_mapper, G_FILE_TEST_IS_EXECUTABLE) == 0)
+          else if (gvm_file_is_readable (relay_mapper) == 0)
+            g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
+          else if (gvm_file_is_executable (relay_mapper) == 0)
             g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
           else
             {
@@ -2321,8 +2344,12 @@ gvmd (int argc, char** argv)
       password_policy = g_build_filename (GVM_SYSCONF_DIR,
                                           "pwpolicy.conf",
                                           NULL);
-      if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
+      if (gvm_file_exists (password_policy) == FALSE)
         g_warning ("%s: password policy missing: %s",
+                   __func__,
+                   password_policy);
+      else if (gvm_file_is_readable (password_policy) == FALSE)
+        g_warning ("%s: password policy not readable: %s",
                    __func__,
                    password_policy);
       g_free (password_policy);

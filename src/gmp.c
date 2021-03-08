@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2020 Greenbone Networks GmbH
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -268,48 +268,6 @@ check_certificate (const char *cert_str, const char *credential_type)
 }
 
 /**
- * @brief Check that a string represents a valid Private Key.
- *
- * @param[in]  key_str      Private Key string.
- * @param[in]  key_phrase   Private Key passphrase.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_private_key (const char *key_str, const char *key_phrase)
-{
-  gnutls_x509_privkey_t key;
-  gnutls_datum_t data;
-  int ret;
-
-  assert (key_str);
-  if (gnutls_x509_privkey_init (&key))
-    return 1;
-  data.size = strlen (key_str);
-  data.data = (void *) g_strdup (key_str);
-  ret = gnutls_x509_privkey_import2 (key, &data, GNUTLS_X509_FMT_PEM,
-                                     key_phrase, 0);
-  if (ret)
-    {
-      gchar *public_key;
-      public_key = gvm_ssh_public_from_private (key_str, key_phrase);
-
-      if (public_key == NULL)
-        {
-          gnutls_x509_privkey_deinit (key);
-          g_free (data.data);
-          g_message ("%s: import failed: %s",
-                     __func__, gnutls_strerror (ret));
-          return 1;
-        }
-      g_free (public_key);
-    }
-  g_free (data.data);
-  gnutls_x509_privkey_deinit (key);
-  return 0;
-}
-
-/**
  * @brief Check that a string represents a valid Public Key.
  *
  * @param[in]  key_str  Public Key string.
@@ -362,8 +320,6 @@ gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
  * @brief Free a GMP parser.
  *
  * @param[in]  gmp_parser  GMP parser.
- *
- * @return A GMP parser.
  */
 static void
 gmp_parser_free (gmp_parser_t *gmp_parser)
@@ -757,6 +713,12 @@ typedef struct
   char *result_scan_nvt_version;  ///< Version of NVT used in scan.
   char *result_severity;          ///< Severity score for current result.
   char *result_threat;            ///< Message type for current result.
+  char *result_detection_name;    ///< Name of detection in result.
+  char *result_detection_product; ///< product of detection in result.
+  char *result_detection_source_name; ///< source_name of detection in result.
+  char *result_detection_source_oid; ///< source_oid of detection in result.
+  char *result_detection_location; ///< location of detection in result.
+  array_t *result_detection;      ///< Detections for current result
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
   char *scan_start;               ///< Start time for a scan.
@@ -957,6 +919,7 @@ create_schedule_data_reset (create_schedule_data_t *data)
 typedef struct
 {
   char *alive_tests;             ///< Alive tests.
+  char *allow_simultaneous_ips;  ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *asset_hosts_filter;      ///< Asset hosts.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
@@ -987,6 +950,7 @@ static void
 create_target_data_reset (create_target_data_t *data)
 {
   free (data->alive_tests);
+  free (data->allow_simultaneous_ips);
   free (data->asset_hosts_filter);
   free (data->comment);
   free (data->exclude_hosts);
@@ -2492,36 +2456,6 @@ modify_auth_data_reset (modify_auth_data_t * data)
 }
 
 /**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_config_data_reset (modify_config_data_t *data)
-{
-  free (data->comment);
-  free (data->config_id);
-  array_free (data->families_growing_empty);
-  array_free (data->families_growing_all);
-  array_free (data->families_static_all);
-  free (data->family_selection_family_all_text);
-  free (data->family_selection_family_growing_text);
-  free (data->family_selection_family_name);
-  free (data->family_selection_growing_text);
-  free (data->name);
-  free (data->scanner_id);
-  array_free (data->nvt_selection);
-  free (data->nvt_selection_family);
-  free (data->nvt_selection_nvt_oid);
-  free (data->preference_id);
-  free (data->preference_name);
-  free (data->preference_nvt_oid);
-  free (data->preference_value);
-
-  memset (data, 0, sizeof (modify_config_data_t));
-}
-
-/**
  * @brief Command data for the modify_credential command.
  */
 typedef struct
@@ -2874,6 +2808,7 @@ modify_setting_data_reset (modify_setting_data_t *data)
 typedef struct
 {
   char *alive_tests;             ///< Alive tests.
+  char *allow_simultaneous_ips;  ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
   char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
@@ -2902,6 +2837,7 @@ static void
 modify_target_data_reset (modify_target_data_t *data)
 {
   free (data->alive_tests);
+  free (data->allow_simultaneous_ips);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
   free (data->reverse_lookup_unify);
@@ -3876,12 +3812,6 @@ static help_data_t *help_data
  = &(command_data.help);
 
 /**
- * @brief Parser callback data for MODIFY_CONFIG.
- */
-static modify_config_data_t *modify_config_data
- = &(command_data.modify_config);
-
-/**
  * @brief Parser callback data for MODIFY_ALERT.
  */
 static modify_alert_data_t *modify_alert_data
@@ -4237,7 +4167,15 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
+  
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_NAME,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_VALUE,
+
+
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_ASSET,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST_HOSTNAME,
@@ -4304,6 +4242,7 @@ typedef enum
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
+  CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_CREATE_TARGET_ASSET_HOSTS,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY,
@@ -4439,23 +4378,6 @@ typedef enum
   CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_KEY,
   CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING_VALUE,
   CLIENT_MODIFY_CONFIG,
-  CLIENT_MODIFY_CONFIG_COMMENT,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
-  CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
-  CLIENT_MODIFY_CONFIG_NAME,
-  CLIENT_MODIFY_CONFIG_SCANNER,
-  CLIENT_MODIFY_CONFIG_NVT_SELECTION,
-  CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
-  CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT,
-  CLIENT_MODIFY_CONFIG_PREFERENCE,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_ID,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_NVT,
-  CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
   CLIENT_MODIFY_CREDENTIAL,
   CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
   CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
@@ -4550,6 +4472,7 @@ typedef enum
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
+  CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_ESXI_CREDENTIAL,
   CLIENT_MODIFY_TARGET_ESXI_LSC_CREDENTIAL,
@@ -5827,8 +5750,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_AUTH);
         else if (strcasecmp ("MODIFY_CONFIG", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values, "config_id",
-                              &modify_config_data->config_id);
+            modify_config_start (gmp_parser, attribute_names,
+                                 attribute_values);
             set_client_state (CLIENT_MODIFY_CONFIG);
           }
         else if (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0)
@@ -6225,91 +6148,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_CONFIG:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_config_data->comment);
-            gvm_append_string (&modify_config_data->comment, "");
-            set_client_state (CLIENT_MODIFY_CONFIG_COMMENT);
-          }
-        else if (strcasecmp ("SCANNER", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_config_data->scanner_id);
-            gvm_append_string (&modify_config_data->scanner_id, "");
-            set_client_state (CLIENT_MODIFY_CONFIG_SCANNER);
-          }
-        else if (strcasecmp ("FAMILY_SELECTION", element_name) == 0)
-          {
-            modify_config_data->families_growing_all = make_array ();
-            modify_config_data->families_static_all = make_array ();
-            modify_config_data->families_growing_empty = make_array ();
-            /* For GROWING entity, in case missing. */
-            modify_config_data->family_selection_growing = 0;
-            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_NAME);
-        else if (strcasecmp ("NVT_SELECTION", element_name) == 0)
-          {
-            modify_config_data->nvt_selection = make_array ();
-            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
-          }
-        else if (strcasecmp ("PREFERENCE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_config_data->preference_id);
-            gvm_free_string_var (&modify_config_data->preference_name);
-            gvm_free_string_var (&modify_config_data->preference_nvt_oid);
-            gvm_free_string_var (&modify_config_data->preference_value);
-            set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        if (strcasecmp ("FAMILY", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY);
-        else if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &modify_config_data->nvt_selection_nvt_oid);
-            set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        if (strcasecmp ("FAMILY", element_name) == 0)
-          {
-            /* For ALL entity, in case missing. */
-            modify_config_data->family_selection_family_all = 0;
-            /* For GROWING entity, in case missing. */
-            modify_config_data->family_selection_family_growing = 0;
-            set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-          }
-        else if (strcasecmp ("GROWING", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        if (strcasecmp ("ALL", element_name) == 0)
-          set_client_state
-           (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL);
-        else if (strcasecmp ("GROWING", element_name) == 0)
-          set_client_state
-           (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME);
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CONFIG_PREFERENCE:
-        if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME);
-        else if (strcasecmp ("NVT", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "oid",
-                              &modify_config_data->preference_nvt_oid);
-            set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_NVT);
-          }
-        else if (strcasecmp ("VALUE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE);
-        ELSE_READ_OVER;
+        modify_config_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
 
       case CLIENT_MODIFY_CREDENTIAL:
         if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
@@ -6632,6 +6474,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY);
         else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
+        else if (strcasecmp ("ALLOW_SIMULTANEOUS_IPS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             gvm_append_string (&modify_target_data->comment, "");
@@ -7237,6 +7081,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                 create_report_data->host_ends = make_array ();
                 create_report_data->host_starts = make_array ();
                 create_report_data->results = make_array ();
+                create_report_data->result_detection = make_array ();
                 set_client_state (CLIENT_CREATE_REPORT_RR);
               }
           }
@@ -7255,6 +7100,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_report_data->host_ends = make_array ();
             create_report_data->host_starts = make_array ();
             create_report_data->results = make_array ();
+            create_report_data->result_detection = make_array ();
             set_client_state (CLIENT_CREATE_REPORT_RR);
           }
         ELSE_READ_OVER;
@@ -7398,8 +7244,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         if (strcasecmp ("DESCRIPTION", element_name) == 0)
-          set_client_state
-           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
         else if (strcasecmp ("HOST", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
@@ -7411,22 +7256,57 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
           }
         else if (strcasecmp ("ORIGINAL_SEVERITY", element_name) == 0)
-          set_client_state
-           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_SEVERITY);
+          set_client_state (
+            CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_SEVERITY);
         else if (strcasecmp ("ORIGINAL_THREAT", element_name) == 0)
-          set_client_state
-           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
+          set_client_state (
+            CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
         else if (strcasecmp ("QOD", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD);
         else if (strcasecmp ("SCAN_NVT_VERSION", element_name) == 0)
-          set_client_state
-           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION);
+          set_client_state (
+            CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION);
         else if (strcasecmp ("SEVERITY", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT);
+        else if (strcasecmp ("DETECTION", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION);
+        ELSE_READ_OVER;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION:
+        if (strcasecmp ("RESULT", element_name) == 0)
+          {
+            set_client_state (
+              CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT);
+          }
+       ELSE_READ_OVER; 
+     case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT:
+        if (strcasecmp ("DETAILS", element_name) == 0)
+          {
+            set_client_state (
+              CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS);
+          }
+        ELSE_READ_OVER;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS:
+        if (strcasecmp ("DETAIL", element_name) == 0)
+          {
+            set_client_state (
+              CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL);
+          }
+        ELSE_READ_OVER;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL:
+        if (strcasecmp ("NAME", element_name) == 0)
+          {
+            set_client_state (
+              CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_NAME);
+          }
+        else if (strcasecmp ("VALUE", element_name) == 0)
+          {
+            set_client_state (
+              CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_VALUE);
+          }
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST:
@@ -7599,6 +7479,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY);
         else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS);
+        else if (strcasecmp ("ALLOW_SIMULTANEOUS_IPS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
@@ -9944,8 +9826,6 @@ buffer_word_counts_tree (gpointer key, gpointer value, gpointer data)
  *
  * @param[in]  value  The value
  * @param      buffer The buffer object
- *
- * @return TRUE if strings are equal, FALSE otherwise
  */
 static void
 buffer_word_counts_seq (gpointer value, gpointer buffer)
@@ -10554,21 +10434,23 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       iso_time (&mean));
             }
           else
-            g_string_append_printf (xml,
-                                    "<stats column=\"%s\">"
-                                    "<min>%g</min>"
-                                    "<max>%g</max>"
-                                    "<mean>%g</mean>"
-                                    "<sum>%g</sum>"
-                                    "<c_sum>%g</c_sum>"
-                                    "</stats>",
-                                    data_column,
-                                    aggregate_iterator_min (aggregate, index),
-                                    aggregate_iterator_max (aggregate, index),
-                                    aggregate_iterator_mean (aggregate, index),
-                                    aggregate_iterator_sum (aggregate, index),
-                                    subgroup_column
-                                      ? *subgroup_c_sum : c_sum);
+            {
+              g_string_append_printf (xml,
+                                      "<stats column=\"%s\">"
+                                      "<min>%g</min>"
+                                      "<max>%g</max>"
+                                      "<mean>%g</mean>"
+                                      "<sum>%g</sum>"
+                                      "<c_sum>%g</c_sum>"
+                                      "</stats>",
+                                      data_column,
+                                      aggregate_iterator_min (aggregate, index),
+                                      aggregate_iterator_max (aggregate, index),
+                                      aggregate_iterator_mean (aggregate, index),
+                                      aggregate_iterator_sum (aggregate, index),
+                                      subgroup_column && subgroup_c_sum
+                                        ? *subgroup_c_sum : c_sum);
+          }
         }
 
       for (index = 0; index < text_columns->len; index++)
@@ -11204,7 +11086,7 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_alerts", "alert", get_alerts_data->get.filt_id,
+                  ("get_alerts", "filter", get_alerts_data->get.filt_id,
                    gmp_parser))
               {
                 error_send_to_client (error);
@@ -11768,7 +11650,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                 ("get_configs", "config", get_configs_data->get.filt_id,
+                 ("get_configs", "filter", get_configs_data->get.filt_id,
                   gmp_parser))
               {
                 error_send_to_client (error);
@@ -12138,7 +12020,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client ("get_credentials",
-                                           "credential",
+                                           "filter",
                                            get_credentials_data->get.filt_id,
                                            gmp_parser))
               {
@@ -12927,7 +12809,7 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_groups", "group", get_groups_data->get.filt_id,
+                  ("get_groups", "filter", get_groups_data->get.filt_id,
                    gmp_parser))
               {
                 error_send_to_client (error);
@@ -13101,53 +12983,11 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       info_count = cve_info_count;
       get_info_data->get.subtype = g_strdup ("cve");
     }
-  else if ((g_strcmp0 ("nvt", get_info_data->type) == 0)
-            && (get_info_data->name == NULL)
-            && (get_info_data->get.id == NULL))
+  else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
     {
       init_info_iterator = init_nvt_info_iterator;
       info_count = nvt_info_count;
       get_info_data->get.subtype = g_strdup ("nvt");
-    }
-  else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
-    {
-      gchar *result;
-
-      get_info_data->get.subtype = g_strdup ("nvt");
-
-      manage_read_info (get_info_data->type, get_info_data->get.id,
-                        get_info_data->name, &result);
-      if (result)
-        {
-          SEND_GET_START ("info");
-          SEND_TO_CLIENT_OR_FAIL ("<info>");
-          SEND_TO_CLIENT_OR_FAIL (result);
-          SEND_TO_CLIENT_OR_FAIL ("</info>");
-          SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
-          SEND_GET_END ("info", &get_info_data->get, 1, 1);
-          g_free (result);
-          get_info_data_reset (get_info_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
-      else
-        {
-          if (send_find_error_to_client ("get_info",
-                                         get_info_data->name
-                                          ? "name"
-                                          : "ID",
-                                         get_info_data->name
-                                          ? get_info_data->name
-                                          : get_info_data->get.id,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
-          get_info_data_reset (get_info_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          return;
-        }
     }
   else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
     {
@@ -13183,8 +13023,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       switch (ret)
         {
         case 1:
-          if (send_find_error_to_client ("get_info", "type",
-                                         get_info_data->type,
+          if (send_find_error_to_client ("get_info",
+                                         get_info_data->name
+                                          ? "name"
+                                          : "ID",
+                                         get_info_data->name
+                                          ? get_info_data->name
+                                          : get_info_data->get.id,
                                          gmp_parser))
             {
               error_send_to_client (error);
@@ -13249,11 +13094,14 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              "<score>%d</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info),
+                             cpe_info_iterator_nvd_id (&info)
+                              ? cpe_info_iterator_nvd_id (&info)
+                              : "",
                              cpe_info_iterator_score (&info),
                              cpe_info_iterator_cve_refs (&info),
-                             cpe_info_iterator_status (&info) ?
-                             cpe_info_iterator_status (&info) : "");
+                             cpe_info_iterator_status (&info)
+                              ? cpe_info_iterator_status (&info)
+                              : "");
 
           if (get_info_data->details == 1)
             {
@@ -14086,7 +13934,7 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_port_lists", "port_list",
+                  ("get_port_lists", "filter",
                    get_port_lists_data->get.filt_id, gmp_parser))
               {
                 error_send_to_client (error);
@@ -15418,7 +15266,7 @@ handle_get_roles (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_roles", "role", get_roles_data->get.filt_id,
+                  ("get_roles", "filter", get_roles_data->get.filt_id,
                   gmp_parser))
               {
                 error_send_to_client (error);
@@ -16565,7 +16413,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
-          const char *reverse_lookup_unify;
+          const char *reverse_lookup_unify, *allow_simultaneous_ips;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
           int port_list_trash, max_hosts, port_list_available;
@@ -16728,6 +16576,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                   (&targets);
           reverse_lookup_unify = target_iterator_reverse_lookup_unify
                                   (&targets);
+          allow_simultaneous_ips
+            = target_iterator_allow_simultaneous_ips (&targets);
 
           SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                    "<exclude_hosts>%s</exclude_hosts>"
@@ -16802,10 +16652,14 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                    "<reverse_lookup_unify>"
                                    "%s"
                                    "</reverse_lookup_unify>"
-                                   "<alive_tests>%s</alive_tests>",
+                                   "<alive_tests>%s</alive_tests>"
+                                   "<allow_simultaneous_ips>"
+                                   "%s"
+                                   "</allow_simultaneous_ips>",
                                    reverse_lookup_only,
                                    reverse_lookup_unify,
-                                   target_iterator_alive_tests (&targets));
+                                   target_iterator_alive_tests (&targets),
+                                   allow_simultaneous_ips);
 
           if (get_targets_data->get.details)
             SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
@@ -16998,7 +16852,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_tasks", "task", get_tasks_data->get.filt_id,
+                  ("get_tasks", "filter", get_tasks_data->get.filt_id,
                   gmp_parser))
               {
                 error_send_to_client (error);
@@ -17058,9 +16912,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
-      int holes = 0, infos = 0, logs, warnings = 0;
+      int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-      int false_positives, task_scanner_type;
+      int false_positives = 0, task_scanner_type;
       int target_available, config_available;
       int scanner_available;
       double severity = 0, severity_2 = 0;
@@ -17711,7 +17565,7 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
             break;
           case 2:
             if (send_find_error_to_client
-                  ("get_users", "user", get_users_data->get.filt_id,
+                  ("get_users", "filter", get_users_data->get.filt_id,
                    gmp_parser))
               {
                 error_send_to_client (error);
@@ -17889,6 +17743,8 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
 
   while (next (&vulns))
     {
+      time_t oldest, newest;
+
       count ++;
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
                                "<name>%s</name>"
@@ -17896,6 +17752,7 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                "<creation_time>%s</creation_time>"
                                "<modification_time>%s</modification_time>"
                                "<severity>%1.1f</severity>"
+                               "<score>%i</score>"
                                "<qod>%d</qod>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
@@ -17903,16 +17760,20 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                get_iterator_creation_time (&vulns),
                                get_iterator_modification_time (&vulns),
                                vuln_iterator_severity (&vulns),
+                               vuln_iterator_score (&vulns),
                                vuln_iterator_qod (&vulns));
 
       // results for the vulnerability
+      oldest = vuln_iterator_oldest (&vulns);
       SENDF_TO_CLIENT_OR_FAIL ("<results>"
                                "<count>%d</count>"
-                               "<oldest>%s</oldest>"
-                               "<newest>%s</newest>",
+                               "<oldest>%s</oldest>",
                                vuln_iterator_results (&vulns),
-                               vuln_iterator_oldest (&vulns),
-                               vuln_iterator_newest (&vulns));
+                               iso_time (&oldest));
+
+      newest = vuln_iterator_newest (&vulns);
+      SENDF_TO_CLIENT_OR_FAIL ("<newest>%s</newest>",
+                               iso_time (&newest));
 
       SEND_TO_CLIENT_OR_FAIL ("</results>");
 
@@ -18307,230 +18168,151 @@ modify_scanner_leave:
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+extern char client_address[];
+
 /**
- * @brief Handle end of MODIFY_CONFIG element.
+ * @brief Handle create_report_data->results_* for gmp_xml_handle_end_element
  *
- * @param[in]  gmp_parser   GMP parser.
- * @param[in]  error        Error parameter.
+ * Uses data:
+ * create_report_data->result_description
+ * create_report_data->result_host
+ * create_report_data->result_hostname
+ * create_report_data->result_nvt_oid
+ * create_report_data->result_port
+ * create_report_data->result_qod
+ * create_report_data->result_qod_type
+ * create_report_data->result_scan_nvt_version
+ * create_report_data->result_severity
+ * create_report_data->result_threat
+ * create_report_data->result_detection_name
+ * create_report_data->result_detection_product
+ * create_report_data->result_detection_source_name
+ * create_report_data->result_detection_source_oid
+ * create_report_data->result_detection_location
+ * create_report_data->result_detection
+ *
+ * to create a create_report_data->result and add it into
+ * create_report_data->results
+ *
  */
 static void
-handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
+gmp_xml_handle_result ()
 {
-  if (acl_user_may ("modify_config") == 0)
-    {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
-                                                "Permission denied"));
-      set_client_state (CLIENT_AUTHENTIC);
-      goto modify_config_leave;
-    }
+  create_report_result_t *result;
 
-  if (modify_config_data->config_id == NULL
-      || strlen (modify_config_data->config_id) == 0)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "A config_id attribute is required"));
-  else if (config_predefined_uuid (modify_config_data->config_id))
-    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
-                                              "Permission denied"));
-  else if ((modify_config_data->nvt_selection_family
-            /* This array implies FAMILY_SELECTION. */
-            && modify_config_data->families_static_all)
-           || ((modify_config_data->nvt_selection_family
-                || modify_config_data->families_static_all)
-               && (modify_config_data->preference_name
-                   || modify_config_data->preference_value
-                   || modify_config_data->preference_nvt_oid)))
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "Either a PREFERENCE or an NVT_SELECTION"
-                        " or a FAMILY_SELECTION is required"));
-  else if (modify_config_data->nvt_selection_family)
+  assert (create_report_data->results);
+
+  if (create_report_data->result_scan_nvt_version == NULL)
+    create_report_data->result_scan_nvt_version = strdup ("");
+
+  if (create_report_data->result_severity == NULL)
     {
-      switch (manage_set_config_nvts
-               (modify_config_data->config_id,
-                modify_config_data->nvt_selection_family,
-                modify_config_data->nvt_selection))
+      if (create_report_data->result_threat == NULL)
         {
-          case 0:
-            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-            log_event ("config", "Scan config",
-                       modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 2:
-            if (send_find_error_to_client ("modify_config",
-                                           "config",
-                                           modify_config_data->config_id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case -1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "PREFERENCE requires at"
-                                " least one of the VALUE and NVT elements"));
-            goto modify_config_leave;
-
-          default:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_config"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
+          create_report_data->result_severity = strdup ("");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
+        {
+          create_report_data->result_severity = strdup ("10.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "Medium") == 0)
+        {
+          create_report_data->result_severity = strdup ("5.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "Low") == 0)
+        {
+          create_report_data->result_severity = strdup ("2.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "Log") == 0)
+        {
+          create_report_data->result_severity = strdup ("0.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "False Positive")
+               == 0)
+        {
+          create_report_data->result_severity = strdup ("-1.0");
+        }
+      else
+        {
+          create_report_data->result_severity = strdup ("");
         }
     }
-  else if (modify_config_data->families_static_all)
+
+  result = g_malloc (sizeof (create_report_result_t));
+  result->description = create_report_data->result_description;
+  // sometimes host has newlines in it, so we 0 terminate first newline
+  // According to
+  // https://www.freebsd.org/cgi/man.cgi?query=strcspn&sektion=3
+  // strcspn returns the number of chars spanned so it should be safe
+  // without double checking.
+  create_report_data
+    ->result_host[strcspn (create_report_data->result_host, "\n")] = 0;
+  result->host = create_report_data->result_host;
+  result->hostname = create_report_data->result_hostname;
+  result->nvt_oid = create_report_data->result_nvt_oid;
+  result->scan_nvt_version = create_report_data->result_scan_nvt_version;
+  result->port = create_report_data->result_port;
+  result->qod = create_report_data->result_qod;
+  result->qod_type = create_report_data->result_qod_type;
+  result->severity = create_report_data->result_severity;
+  result->threat = create_report_data->result_threat;
+  if (result->host)
     {
-      /* There was a FAMILY_SELECTION. */
-
-      switch (manage_set_config_families
-               (modify_config_data->config_id,
-                modify_config_data->families_growing_all,
-                modify_config_data->families_static_all,
-                modify_config_data->families_growing_empty,
-                modify_config_data->family_selection_growing))
+      for (unsigned int i = 0; i < create_report_data->result_detection->len;
+           i++)
         {
-          case 0:
-            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-            log_event ("config", "Scan config",
-                       modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case 1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
+          host_detail_t *detail;
+          // prepare detection to be found within
+          // result_detection_reference
+          detection_detail_t *detection =
+            (detection_detail_t *) g_ptr_array_index (
+              create_report_data->result_detection, i);
 
-          case 2:
-            if (send_find_error_to_client ("modify_config",
-                                           "config",
-                                           modify_config_data->config_id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
-          case -1:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_config",
-                                "PREFERENCE requires at"
-                                " least one of the VALUE and NVT elements"));
-            goto modify_config_leave;
-
-          default:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_config"));
-            log_event_fail ("config", "Scan Config",
-                            modify_config_data->config_id, "modified");
-            goto modify_config_leave;
+          // used to find location within report_host_details via
+          // - oid as source_name
+          // - detected_at as name
+          detail = g_malloc (sizeof (host_detail_t));
+          detail->ip = g_strdup (result->host);
+          detail->name = g_strdup ("detected_at");
+          detail->source_desc = g_strdup ("create_report_import");
+          detail->source_name = g_strdup (
+            detection->source_oid); // verify when detected_at || detected_by
+          detail->source_type = g_strdup ("create_report_import");
+          detail->value = g_strdup (detection->location);
+          array_add (create_report_data->details, detail);
+          // used to find oid within report_host_details via
+          // - oid as source_name
+          // - detected_by as name
+          detail = g_malloc (sizeof (host_detail_t));
+          detail->ip = g_strdup (result->host);
+          detail->name = g_strconcat ("detected_by@", detection->location, NULL);
+          detail->source_desc = g_strdup ("create_report_import");
+          detail->source_name = g_strdup (detection->source_oid);
+          detail->source_type = g_strdup ("create_report_import");
+          detail->value = g_strdup (detection->source_oid);
+          array_add (create_report_data->details, detail);
+          g_free (detection->location);
+          g_free (detection->product);
+          g_free (detection->source_name);
+          g_free (detection->source_oid);
+          g_free (detection);
         }
     }
-  else if (modify_config_data->name || modify_config_data->comment
-           || modify_config_data->scanner_id)
-    switch (manage_set_config
-             (modify_config_data->config_id, modify_config_data->name,
-              modify_config_data->comment, modify_config_data->scanner_id))
-      {
-        case 0:
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-          goto modify_config_leave;
-        case 1:
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "Name must be unique"));
-          goto modify_config_leave;
-        case 2:
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("modify_config",
-                              "Scanner not found"));
-          goto modify_config_leave;
-        case 3:
-          SEND_TO_CLIENT_OR_FAIL
-            (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-          log_event_fail ("config", "Scan Config",
-                          modify_config_data->config_id, "modified");
-          goto modify_config_leave;
-        case 4:
-          if (send_find_error_to_client ("modify_config",
-                                         "config",
-                                         modify_config_data->config_id,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
-          log_event_fail ("config", "Scan Config",
-                          modify_config_data->config_id, "modified");
-          goto modify_config_leave;
-        case -1:
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-          goto modify_config_leave;
-        default:
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-          goto modify_config_leave;
-      }
-  else if (modify_config_data->preference_name == NULL
-           || strlen (modify_config_data->preference_name) == 0)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "PREFERENCE requires a NAME element"));
-  else switch (manage_set_config_preference
-                (modify_config_data->config_id,
-                 modify_config_data->preference_nvt_oid,
-                 modify_config_data->preference_name,
-                 modify_config_data->preference_value))
-    {
-      case 0:
-        SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
-        goto modify_config_leave;
-      case 1:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-        goto modify_config_leave;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("modify_config", "Empty radio value"));
-        goto modify_config_leave;
-      case 3:
-        if (send_find_error_to_client ("modify_config",
-                                       "config",
-                                       modify_config_data->config_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        log_event_fail ("config", "Scan Config",
-                        modify_config_data->config_id, "modified");
-        goto modify_config_leave;
-      case -1:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-        goto modify_config_leave;
-      default:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_config"));
-        goto modify_config_leave;
-    }
+  array_add (create_report_data->results, result);
 
-modify_config_leave:
-  modify_config_data_reset (modify_config_data);
-  set_client_state (CLIENT_AUTHENTIC);
+  create_report_data->result_description = NULL;
+  create_report_data->result_host = NULL;
+  create_report_data->result_hostname = NULL;
+  create_report_data->result_nvt_oid = NULL;
+  create_report_data->result_port = NULL;
+  create_report_data->result_qod = NULL;
+  create_report_data->result_qod_type = NULL;
+  create_report_data->result_scan_nvt_version = NULL;
+  create_report_data->result_severity = NULL;
+  create_report_data->result_threat = NULL;
+  create_report_data->result_detection = NULL;
+  create_report_data->result_detection = make_array ();
 }
-
-extern char client_address[];
 
 /**
  * @brief Handle the end of a GMP XML element.
@@ -21109,49 +20891,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR, ERRORS);
       case CLIENT_CREATE_REPORT_RR_ERRORS_ERROR:
         {
-          create_report_result_t *result;
-
-          assert (create_report_data->results);
-
-          if (create_report_data->result_scan_nvt_version == NULL)
-            create_report_data->result_scan_nvt_version = strdup ("");
-
           if (create_report_data->result_severity == NULL)
             {
               create_report_data->result_severity = strdup ("-3.0");
             }
-
           if (create_report_data->result_threat == NULL)
             {
               create_report_data->result_threat = strdup ("Error");
             }
-
-          result = g_malloc (sizeof (create_report_result_t));
-          result->description = create_report_data->result_description;
-          result->host = create_report_data->result_host;
-          result->hostname = create_report_data->result_hostname;
-          result->nvt_oid = create_report_data->result_nvt_oid;
-          result->scan_nvt_version
-            = create_report_data->result_scan_nvt_version;
-          result->port = create_report_data->result_port;
-          result->qod = NULL;
-          result->qod_type = NULL;
-          result->severity = create_report_data->result_severity;
-          result->threat = create_report_data->result_threat;
-
-          array_add (create_report_data->results, result);
-
-          create_report_data->result_description = NULL;
-          create_report_data->result_host = NULL;
-          create_report_data->result_hostname = NULL;
-          create_report_data->result_nvt_oid = NULL;
-          create_report_data->result_port = NULL;
-          create_report_data->result_qod = NULL;
-          create_report_data->result_qod_type = NULL;
-          create_report_data->result_scan_nvt_version = NULL;
-          create_report_data->result_severity = NULL;
-          create_report_data->result_threat = NULL;
-
+          gmp_xml_handle_result();
           set_client_state (CLIENT_CREATE_REPORT_RR_ERRORS);
           break;
         }
@@ -21297,66 +21045,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
         {
-          create_report_result_t *result;
-
-          assert (create_report_data->results);
-
-          if (create_report_data->result_scan_nvt_version == NULL)
-            create_report_data->result_scan_nvt_version = strdup ("");
-
-          if (create_report_data->result_severity == NULL)
-            {
-              if (create_report_data->result_threat == NULL)
-                create_report_data->result_severity = strdup ("");
-              else if (strcasecmp (create_report_data->result_threat,
-                              "High") == 0)
-                create_report_data->result_severity = strdup ("10.0");
-              else if (strcasecmp (create_report_data->result_threat,
-                                   "Medium") == 0)
-                create_report_data->result_severity = strdup ("5.0");
-              else if (strcasecmp (create_report_data->result_threat,
-                                   "Low")  == 0)
-                create_report_data->result_severity = strdup ("2.0");
-              else if (strcasecmp (create_report_data->result_threat,
-                                   "Log")  == 0)
-                create_report_data->result_severity = strdup ("0.0");
-              else if (strcasecmp (create_report_data->result_threat,
-                                   "False Positive")  == 0)
-                create_report_data->result_severity = strdup ("-1.0");
-              else
-                create_report_data->result_severity = strdup ("");
-            }
-
-          result = g_malloc (sizeof (create_report_result_t));
-          result->description = create_report_data->result_description;
-          result->host = create_report_data->result_host;
-          result->hostname = create_report_data->result_hostname;
-          result->nvt_oid = create_report_data->result_nvt_oid;
-          result->scan_nvt_version
-            = create_report_data->result_scan_nvt_version;
-          result->port = create_report_data->result_port;
-          result->qod = create_report_data->result_qod;
-          result->qod_type = create_report_data->result_qod_type;
-          result->severity = create_report_data->result_severity;
-          result->threat = create_report_data->result_threat;
-
-          array_add (create_report_data->results, result);
-
-          create_report_data->result_description = NULL;
-          create_report_data->result_host = NULL;
-          create_report_data->result_hostname = NULL;
-          create_report_data->result_nvt_oid = NULL;
-          create_report_data->result_port = NULL;
-          create_report_data->result_qod = NULL;
-          create_report_data->result_qod_type = NULL;
-          create_report_data->result_scan_nvt_version = NULL;
-          create_report_data->result_severity = NULL;
-          create_report_data->result_threat = NULL;
-
+          gmp_xml_handle_result();
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
           break;
         }
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DETECTION);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION, RESULT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT, DETAILS);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS, DETAIL);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL, NAME);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL, VALUE);
+
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST, ASSET);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST, HOSTNAME);
@@ -21886,6 +21586,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
+                         create_target_data->allow_simultaneous_ips,
                          &new_target))
             {
               case 1:
@@ -22003,6 +21704,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_CREATE_TARGET, ALIVE_TESTS);
+      CLOSE (CLIENT_CREATE_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
@@ -22284,12 +21986,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           if (create_task_data->groups->len)
             {
-              int fail;
               gchar *fail_group_id;
 
-              switch ((fail = set_task_groups (create_task_data->task,
+              switch (set_task_groups (create_task_data->task,
                                                create_task_data->groups,
-                                               &fail_group_id)))
+                                               &fail_group_id))
                 {
                   case 0:
                     break;
@@ -23241,108 +22942,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_AUTH_GROUP_AUTH_CONF_SETTING, VALUE);
 
       case CLIENT_MODIFY_CONFIG:
-        handle_modify_config (gmp_parser, error);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, COMMENT);
-      CLOSE (CLIENT_MODIFY_CONFIG, SCANNER);
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION:
-        assert (modify_config_data->families_growing_all);
-        assert (modify_config_data->families_static_all);
-        assert (modify_config_data->families_growing_empty);
-        array_terminate (modify_config_data->families_growing_all);
-        array_terminate (modify_config_data->families_static_all);
-        array_terminate (modify_config_data->families_growing_empty);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, NAME);
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION:
-        assert (modify_config_data->nvt_selection);
-        array_terminate (modify_config_data->nvt_selection);
-        set_client_state (CLIENT_MODIFY_CONFIG);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG, PREFERENCE);
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY:
-        if (modify_config_data->family_selection_family_name)
-          {
-            if (modify_config_data->family_selection_family_growing)
-              {
-                if (modify_config_data->family_selection_family_all)
-                  /* Growing 1 and select all 1. */
-                  array_add (modify_config_data->families_growing_all,
-                             modify_config_data->family_selection_family_name);
-                else
-                  /* Growing 1 and select all 0. */
-                  array_add (modify_config_data->families_growing_empty,
-                             modify_config_data->family_selection_family_name);
-              }
-            else
-              {
-                if (modify_config_data->family_selection_family_all)
-                  /* Growing 0 and select all 1. */
-                  array_add (modify_config_data->families_static_all,
-                             modify_config_data->family_selection_family_name);
-                /* Else growing 0 and select all 0. */
-              }
-          }
-        modify_config_data->family_selection_family_name = NULL;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-        break;
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING:
-        if (modify_config_data->family_selection_growing_text)
-          {
-            modify_config_data->family_selection_growing
-             = atoi (modify_config_data->family_selection_growing_text);
-            gvm_free_string_var
-             (&modify_config_data->family_selection_growing_text);
-          }
-        else
-          modify_config_data->family_selection_growing = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION);
-        break;
-
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL:
-        if (modify_config_data->family_selection_family_all_text)
-          {
-            modify_config_data->family_selection_family_all
-             = atoi (modify_config_data->family_selection_family_all_text);
-            gvm_free_string_var
-             (&modify_config_data->family_selection_family_all_text);
-          }
-        else
-          modify_config_data->family_selection_family_all = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
-      CLOSE (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY, NAME);
-      case CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING:
-        if (modify_config_data->family_selection_family_growing_text)
-          {
-            modify_config_data->family_selection_family_growing
-             = atoi (modify_config_data->family_selection_family_growing_text);
-            gvm_free_string_var
-             (&modify_config_data->family_selection_family_growing_text);
-          }
-        else
-          modify_config_data->family_selection_family_growing = 0;
-        set_client_state (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY);
-        break;
-
-      CLOSE (CLIENT_MODIFY_CONFIG_NVT_SELECTION, FAMILY);
-      case CLIENT_MODIFY_CONFIG_NVT_SELECTION_NVT:
-        if (modify_config_data->nvt_selection_nvt_oid)
-          array_add (modify_config_data->nvt_selection,
-                     modify_config_data->nvt_selection_nvt_oid);
-        modify_config_data->nvt_selection_nvt_oid = NULL;
-        set_client_state (CLIENT_MODIFY_CONFIG_NVT_SELECTION);
-        break;
-
-      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NAME);
-      CLOSE (CLIENT_MODIFY_CONFIG_PREFERENCE, NVT);
-      case CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE:
-        /* Init, so it's the empty string when the value is empty. */
-        gvm_append_string (&modify_config_data->preference_value, "");
-        set_client_state (CLIENT_MODIFY_CONFIG_PREFERENCE);
+        if (modify_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_MODIFY_CREDENTIAL:
@@ -23884,6 +23485,38 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in threat specification"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in new_threat specification"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in new_severity specification"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "new_severity is required"));
                 log_event_fail ("override", "Override",
                                 modify_override_data->override_id,
                                 "modified");
@@ -24503,7 +24136,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_target_data->snmp_credential_id,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
-                         modify_target_data->alive_tests))
+                         modify_target_data->alive_tests,
+                         modify_target_data->allow_simultaneous_ips))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -24746,6 +24380,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_MODIFY_TARGET, ALIVE_TESTS);
+      CLOSE (CLIENT_MODIFY_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
@@ -26047,20 +25682,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
-      APPEND (CLIENT_MODIFY_CONFIG_NVT_SELECTION_FAMILY,
-              &modify_config_data->nvt_selection_family);
 
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_ALL,
-              &modify_config_data->family_selection_family_all_text);
-
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_GROWING,
-              &modify_config_data->family_selection_family_growing_text);
-
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_FAMILY_NAME,
-              &modify_config_data->family_selection_family_name);
-
-      APPEND (CLIENT_MODIFY_CONFIG_FAMILY_SELECTION_GROWING,
-              &modify_config_data->family_selection_growing_text);
+      case CLIENT_MODIFY_CONFIG:
+        modify_config_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
@@ -26102,24 +25727,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
               &modify_credential_data->privacy_password);
 
-
-      APPEND (CLIENT_MODIFY_CONFIG_COMMENT,
-              &modify_config_data->comment);
-
-      APPEND (CLIENT_MODIFY_CONFIG_SCANNER,
-              &modify_config_data->scanner_id);
-
-      APPEND (CLIENT_MODIFY_CONFIG_NAME,
-              &modify_config_data->name);
-
-      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_NAME,
-              &modify_config_data->preference_name);
-
-      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_ID,
-              &modify_config_data->preference_id);
-
-      APPEND (CLIENT_MODIFY_CONFIG_PREFERENCE_VALUE,
-              &modify_config_data->preference_value);
 
 
       APPEND (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
@@ -26479,7 +26086,58 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
               &create_report_data->result_threat);
 
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_NAME:
+        gvm_append_text (&create_report_data->result_detection_name, text, text_len);
+        break;
+      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS_DETAIL_VALUE:
+        if (create_report_data->result_detection_name != NULL)
+          {
+            if (strcmp("product", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_product, text, text_len);
+              }
+            else if (strcmp("location", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_location, text, text_len);
+              }
+            else if (strcmp("source_oid", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_source_oid, text, text_len);
+              }
+            else if (strcmp("source_name", create_report_data->result_detection_name) == 0)
+              {
+                gvm_append_text (&create_report_data->result_detection_source_name, text, text_len);
+              }
+            free(create_report_data->result_detection_name);
+            create_report_data->result_detection_name = NULL;
 
+            if (create_report_data->result_detection_product &&
+                    create_report_data->result_detection_location &&
+                    create_report_data->result_detection_source_oid &&
+                    create_report_data->result_detection_source_name)
+              {
+
+                detection_detail_t *detail = 
+                    (detection_detail_t*) g_malloc (sizeof (detection_detail_t));
+                if (detail)
+                  {
+                    detail->product = create_report_data->result_detection_product;
+                    create_report_data->result_detection_product = NULL;
+                    detail->location = create_report_data->result_detection_location;
+                    create_report_data->result_detection_location = NULL;
+                    detail->source_oid = create_report_data->result_detection_source_oid;
+                    create_report_data->result_detection_source_oid = NULL;
+                    detail->source_name = create_report_data->result_detection_source_name; 
+                    create_report_data->result_detection_source_name = NULL;
+                    array_add(create_report_data->result_detection, detail);
+                  }
+            }
+
+ 
+
+        }
+        break;
+    
       APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME,
               &create_report_data->detail_name);
 
@@ -26590,6 +26248,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS,
               &create_target_data->alive_tests);
+
+      APPEND (CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
+              &create_target_data->allow_simultaneous_ips);
 
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);
@@ -26903,6 +26564,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS,
               &modify_target_data->alive_tests);
 
+      APPEND (CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
+              &modify_target_data->allow_simultaneous_ips);
+
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);
 
@@ -27140,6 +26804,10 @@ process_gmp_write (const char* msg, void* buffer)
  * the client in \ref to_client (using \ref send_to_client).
  *
  * \endif
+ *
+ * @param[in]  parser    Parser.
+ * @param[in]  command   Command.
+ * @param[in]  response  Response.
  *
  * @return 0 success,
  *         -4 XML syntax error.

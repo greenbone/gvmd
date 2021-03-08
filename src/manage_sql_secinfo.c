@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2019 Greenbone Networks GmbH
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -285,10 +285,10 @@ split_xml_file (gchar *path, const gchar *size, const gchar *tail)
                  WIFEXITED (ret) ? WEXITSTATUS (ret) : 0,
                  command);
       g_free (command);
-      g_free (previous_dir);
 
       if (chdir (previous_dir))
         g_warning ("%s: and failed to chdir back", __func__);
+      g_free (previous_dir);
 
       return NULL;
     }
@@ -327,8 +327,6 @@ typedef struct
  * @param[in]  max_chunk_size  Max chunk size.
  * @param[in]  open_sql        SQL to to start each statement.
  * @param[in]  close_sql       SQL to append to the end of each statement.
- *
- * @return Whether this is the first value in the statement.
  */
 static void
 inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *open_sql,
@@ -628,13 +626,13 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
   assert (cve);
   quoted_cpe = sql_quote (cve);
   init_iterator (iterator,
-                 "SELECT id, name, cvss FROM cves WHERE id IN"
+                 "SELECT id, name, score FROM cves WHERE id IN"
                  " (SELECT cve FROM affected_products"
                  "  WHERE cpe ="
                  "  (SELECT id FROM cpes WHERE name = '%s'))"
                  " ORDER BY %s %s;",
                  quoted_cpe,
-                 sort_field ? sort_field : "cvss DESC, name",
+                 sort_field ? sort_field : "score DESC, name",
                  ascending ? "ASC" : "DESC");
   g_free (quoted_cpe);
 }
@@ -3790,7 +3788,7 @@ oval_files_free ()
   int index;
 
   index = 0;
-  while (index < oval_files->len)
+  while (oval_files && index < oval_files->len)
     {
       gchar **pair;
 
@@ -3925,7 +3923,6 @@ update_scap_ovaldefs (int private)
           if (g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
             {
               g_warning ("No user data directory '%s' found.", oval_dir);
-              g_free (oval_dir);
               g_error_free (error);
             }
           else
@@ -4397,6 +4394,7 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
 static int
 sync_cert ()
 {
+  int scap_db_version;
   int last_feed_update, last_cert_update, updated_dfn_cert;
   int updated_cert_bund;
 
@@ -4458,7 +4456,19 @@ sync_cert ()
 
   g_debug ("%s: update cvss", __func__);
 
-  if (manage_scap_loaded ())
+  /* Update CERT data that depends on SCAP. */
+  scap_db_version = manage_scap_db_version();
+
+  if (scap_db_version == -1)
+    g_info ("SCAP database does not exist (yet),"
+            " skipping CERT severity score update");
+  else if (scap_db_version < GVMD_SCAP_DATABASE_VERSION)
+    g_info ("SCAP database has to be migrated,"
+            " skipping CERT severity score update");
+  else if (scap_db_version > GVMD_SCAP_DATABASE_VERSION)
+    g_warning ("SCAP database is newer than supported version,"
+               " skipping CERT severity score update");
+  else
     {
       int last_scap_update;
 
@@ -4644,6 +4654,8 @@ update_scap_placeholders ()
 static int
 update_scap_end ()
 {
+  int cert_db_version;
+
   g_debug ("%s: update timestamp", __func__);
 
   if (update_scap_timestamp ())
@@ -4666,8 +4678,18 @@ update_scap_end ()
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
 
   /* Update CERT data that depends on SCAP. */
+  cert_db_version = manage_cert_db_version();
 
-  if (manage_cert_loaded ())
+  if (cert_db_version == -1)
+    g_info ("CERT database does not exist (yet),"
+            " skipping CERT severity score update");
+  else if (cert_db_version < GVMD_CERT_DATABASE_VERSION)
+    g_info ("CERT database has to be migrated,"
+            " skipping CERT severity score update");
+  else if (cert_db_version > GVMD_CERT_DATABASE_VERSION)
+    g_warning ("CERT database is newer than supported version,"
+               " skipping CERT severity score update");
+  else
     {
       int last_cert_update, last_scap_update;
 
@@ -4729,12 +4751,12 @@ try_load_csv ()
                                              "table-affected-ovaldefs.csv",
                                              NULL);
 
-  if (g_file_test (file_cves, G_FILE_TEST_EXISTS)
-      && g_file_test (file_cpes, G_FILE_TEST_EXISTS)
-      && g_file_test (file_affected_products, G_FILE_TEST_EXISTS)
-      && g_file_test (file_ovaldefs, G_FILE_TEST_EXISTS)
-      && g_file_test (file_ovalfiles, G_FILE_TEST_EXISTS)
-      && g_file_test (file_affected_ovaldefs, G_FILE_TEST_EXISTS))
+  if (gvm_file_is_readable (file_cves)
+      && gvm_file_is_readable (file_cpes)
+      && gvm_file_is_readable (file_affected_products)
+      && gvm_file_is_readable (file_ovaldefs)
+      && gvm_file_is_readable (file_ovalfiles)
+      && gvm_file_is_readable (file_affected_ovaldefs))
     {
       /* Create a new schema, "scap2". */
 

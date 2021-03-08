@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2020 Greenbone Networks GmbH
+/* Copyright (C) 2009-2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -1590,6 +1590,7 @@ task_scanner_options (task_t task, target_t target)
   GHashTable *table;
   config_t config;
   iterator_t prefs;
+  char *allow_simultaneous_ips;
 
   config = task_config (task);
   init_config_preference_iterator (&prefs, config);
@@ -1668,6 +1669,19 @@ task_scanner_options (task_t task, target_t target)
       g_hash_table_insert (table, name, value);
     }
   cleanup_iterator (&prefs);
+
+  // Target options sent as scanner preferences
+  allow_simultaneous_ips = target_allow_simultaneous_ips (target);
+  if (allow_simultaneous_ips)
+    {
+      g_hash_table_replace (table,
+                            g_strdup ("allow_simultaneous_ips"),
+                            g_strdup (strcmp (allow_simultaneous_ips, "0")
+                                        ? "yes" 
+                                        : "no"));
+    }
+  free (allow_simultaneous_ips);
+
   return table;
 }
 
@@ -1810,7 +1824,6 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
   while (1)
     {
-      char *report_xml = NULL;
       int run_status, progress;
       osp_scan_status_t osp_scan_status;
 
@@ -1823,7 +1836,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
         }
 
       progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                      key_priv, 0, 0, &report_xml);
+                                      key_priv, 0, 0, NULL);
       if (progress < 0 || progress > 100)
         {
           result_t result = make_osp_result
@@ -1840,10 +1853,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       else
         {
           /* Get the full OSP report. */
+          char *report_xml = NULL;
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
                                           key_priv, 1, 1, &report_xml);
           if (progress < 0 || progress > 100)
             {
+              g_free (report_xml);
               result_t result = make_osp_result
                                  (task, "", "", "",
                                   threat_message_type ("Error"),
@@ -2393,9 +2408,10 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
+  gchar *clean_hosts, *clean_exclude_hosts;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
   osp_target_t *osp_target;
-  GSList *osp_targets, *vts;
+  GSList *osp_targets, *vts, *vt_groups;
   GHashTable *vts_hash_table;
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
   osp_credential_t *snmp_credential;
@@ -2431,6 +2447,9 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   hosts_str = target_hosts (target);
   ports_str = target_port_range (target);
   exclude_hosts_str = target_exclude_hosts (target);
+  
+  clean_hosts = clean_hosts_string (hosts_str);
+  clean_exclude_hosts = clean_hosts_string (exclude_hosts_str);
 
   if (target_alive_tests (target) > 0)
    alive_test = target_alive_tests (target);
@@ -2452,7 +2471,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       exclude_hosts_str = new_exclude_hosts;
     }
 
-  osp_target = osp_target_new (hosts_str, ports_str, exclude_hosts_str,
+  osp_target = osp_target_new (clean_hosts, ports_str, clean_exclude_hosts,
                                alive_test, reverse_lookup_unify,
                                reverse_lookup_only);
   if (finished_hosts_str)
@@ -2462,6 +2481,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   free (ports_str);
   free (exclude_hosts_str);
   free (finished_hosts_str);
+  g_free (clean_hosts);
+  g_free (clean_exclude_hosts);
   osp_targets = g_slist_append (NULL, osp_target);
 
   ssh_credential = target_osp_ssh_credential (target);
@@ -2531,6 +2552,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /* Setup vulnerability tests (without preferences) */
   vts = NULL;
+  vt_groups = NULL;
   vts_hash_table
     = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
                              /* Value is freed in vts list. */
@@ -2540,7 +2562,18 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   while (next (&families))
     {
       const char *family = family_iterator_name (&families);
-      if (family)
+      if (family && config_family_entire_and_growing (config, family))
+        {
+          gchar *filter;
+          osp_vt_group_t *vt_group;
+
+          filter = g_strdup_printf ("family=%s", family);
+          vt_group = osp_vt_group_new (filter);
+          g_free (filter);
+
+          vt_groups = g_slist_prepend (vt_groups, vt_group);
+        }
+      else if (family)
         {
           iterator_t nvts;
           init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
@@ -2618,12 +2651,13 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
       // Credentials are freed with target
       g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+      g_slist_free_full (vt_groups, (GDestroyNotify) osp_vt_group_free);
       g_hash_table_destroy (scanner_options);
       return -1;
     }
 
   start_scan_opts.targets = osp_targets;
-  start_scan_opts.vt_groups = NULL;
+  start_scan_opts.vt_groups = vt_groups;
   start_scan_opts.vts = vts;
   start_scan_opts.scanner_params = scanner_options;
   start_scan_opts.scan_id = scan_id;
@@ -2636,6 +2670,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
   // Credentials are freed with target
   g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+  g_slist_free_full (vt_groups, (GDestroyNotify) osp_vt_group_free);
   g_hash_table_destroy (scanner_options);
   return ret;
 }
@@ -4807,6 +4842,8 @@ feed_sync_required ()
   return FALSE;
 }
 
+
+
 /**
  * @brief Perform any syncing that is due.
  *
@@ -4815,10 +4852,12 @@ feed_sync_required ()
  * @param[in]  sigmask_current  Sigmask to restore in child.
  * @param[in]  fork_update_nvt_cache  Function that forks a child that syncs
  *                                    the NVTS.  Child does not return.
+ * @param[in]  try_gvmd_data_sync  Whether to try to sync gvmd data objects.
  */
 void
 manage_sync (sigset_t *sigmask_current,
-             int (*fork_update_nvt_cache) ())
+             int (*fork_update_nvt_cache) (),
+             gboolean try_gvmd_data_sync)
 {
   lockfile_t lockfile;
 
@@ -4837,9 +4876,12 @@ manage_sync (sigset_t *sigmask_current,
         }
     }
 
-  manage_sync_configs ();
-  manage_sync_port_lists ();
-  manage_sync_report_formats ();
+  if (try_gvmd_data_sync)
+    {
+      manage_sync_configs ();
+      manage_sync_port_lists ();
+      manage_sync_report_formats ();
+    }
 }
 
 /**
@@ -5772,6 +5814,20 @@ sort_data_free (sort_data_t *sort_data)
 /* Feeds. */
 
 /**
+ * @brief Tests if the gvmd data feed directory and its subdirectories exist.
+ *
+ * @return TRUE if the directory exists.
+ */
+gboolean
+manage_gvmd_data_feed_dirs_exist ()
+{
+  return gvm_file_is_readable (GVMD_FEED_DIR)
+         && configs_feed_dir_exists ()
+         && port_lists_feed_dir_exists ()
+         && report_formats_feed_dir_exists ();
+}
+
+/**
  * @brief Get the feed lock file path.
  *
  * @return The current path to the lock file.
@@ -6445,10 +6501,13 @@ manage_run_wizard (const gchar *wizard_name,
 
                       if (g_regex_match_simple (regex, pair->value, 0, 0) == 0)
                         {
-                          *command_error
-                            = g_strdup_printf ("Value '%s' is not valid for"
-                                              " parameter '%s'.",
-                                              pair->value, name);
+                          if (command_error)
+                            {
+                              *command_error
+                                = g_strdup_printf ("Value '%s' is not valid for"
+                                                  " parameter '%s'.",
+                                                  pair->value, name);
+                            }
                           free_entity (entity);
                           g_string_free (params_xml, TRUE);
                           return 6;
@@ -6459,9 +6518,12 @@ manage_run_wizard (const gchar *wizard_name,
 
           if (optional == 0 && param_found == 0)
             {
-              *command_error = g_strdup_printf ("Mandatory wizard param '%s'"
-                                                " missing",
-                                                name);
+              if (command_error)
+                {
+                  *command_error = g_strdup_printf ("Mandatory wizard param '%s'"
+                                                    " missing",
+                                                    name);
+                }
               free_entity (entity);
               return 6;
             }
