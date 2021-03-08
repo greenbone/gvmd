@@ -23804,6 +23804,38 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_override_data->override_id,
                                 "modified");
                 break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in threat specification"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in new_threat specification"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in new_severity specification"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "new_severity is required"));
+                log_event_fail ("override", "Override",
+                                modify_override_data->override_id,
+                                "modified");
+                break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_override"));
