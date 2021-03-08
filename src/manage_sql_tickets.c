@@ -555,7 +555,7 @@ init_result_ticket_iterator (iterator_t *iterator, result_t result)
     return -1;
 
   memset (&get, 0, sizeof (get));
-  owned_clause = acl_where_owned ("ticket", &get, 1, "any", 0, NULL,
+  owned_clause = acl_where_owned ("ticket", &get, 1, "any", 0, NULL, 0,
                                   &with_clause);
 
   init_iterator (iterator,
