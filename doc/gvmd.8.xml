@@ -186,6 +186,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--ldap-debug</opt></p>
+      <optdesc>
+        <p>Enable debugging of LDAP authentication.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--listen2=<arg>ADDRESS</arg></opt></p>
       <optdesc>
         <p>Listen also on ADDRESS.</p>
