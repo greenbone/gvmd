@@ -4405,7 +4405,7 @@ init_config_task_iterator (iterator_t* iterator, config_t config,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions,
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions, 0,
                                &with_clause);
   array_free (permissions);
 

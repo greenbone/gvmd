@@ -172,10 +172,10 @@ acl_user_has_access_uuid (const char *, const char *, const char *, int);
 
 gchar *
 acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,
-                 array_t *, gchar **);
+                 array_t *, int, gchar **);
 
 gchar *
-acl_where_owned_for_get (const char *, const char *, gchar **);
+acl_where_owned_for_get (const char *, const char *, const char *, gchar **);
 
 gchar *
 acl_users_with_access_sql (const char *, const char *, const char *);
