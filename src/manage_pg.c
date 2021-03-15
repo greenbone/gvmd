@@ -3036,6 +3036,51 @@ check_db_sequences ()
   cleanup_iterator (&sequence_tables);
 }
 
+/**
+ * @brief Check if an extension is installed.
+ * 
+ * @param[in]  extname  Name of the extension to check.
+ *
+ * @return TRUE extension is installed, FALSE otherwise.
+ */
+static gboolean
+db_extension_installed (const char *extname)
+{
+  if (sql_int ("SELECT count(*) FROM pg_extension WHERE extname = '%s'",
+               extname))
+    {
+      g_debug ("%s: Extension '%s' is installed.",
+                 __func__, extname);
+      return TRUE;
+    }
+  else
+    {
+      g_message ("%s: Extension '%s' is not installed.",
+                 __func__, extname);
+      return FALSE;
+    }
+}
+
+/**
+ * @brief Check if all extensions are installed.
+ *
+ * @return 0 success, 1 extension missing.
+ */
+int
+check_db_extensions ()
+{
+  if (db_extension_installed ("uuid-ossp")
+      && db_extension_installed ("pgcrypto"))
+    {
+      g_debug ("%s: All required extensions are installed.", __func__);
+      return 0;
+    }
+  else
+    {
+      g_warning ("%s: A required extension is not installed.", __func__);
+      return 1;
+    }
+}
 
 /* SecInfo. */
 
