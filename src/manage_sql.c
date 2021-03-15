@@ -133,6 +133,9 @@ create_tables ();
 void
 check_db_sequences ();
 
+int
+check_db_extensions ();
+
 static int
 check_db_encryption_key ();
 
@@ -16155,6 +16158,8 @@ check_db (int check_encryption_key)
    * process accessing the db.  Nothing else should be accessing the db, access
    * should always go through Manager. */
   sql_begin_immediate ();
+  if (check_db_extensions ())
+    goto fail;
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
