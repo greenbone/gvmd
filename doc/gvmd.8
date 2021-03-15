@@ -28,6 +28,12 @@ Create admin user USERNAME and exit.
 \fB-d, --database=\fINAME\fB\f1
 Use NAME as database for PostgreSQL.
 .TP
+\fB--db-host=\fIHOST\fB\f1
+Use HOST as database host or socket directory for PostgreSQL.
+.TP
+\fB--db-port=\fIPORT\fB\f1
+Use PORT as database port or socket extension for PostgreSQL.
+.TP
 \fB--delete-scanner=\fISCANNER-UUID\fB\f1
 Delete scanner SCANNER-UUID and exit.
 .TP
@@ -72,6 +78,9 @@ Have USERNAME inherit from deleted user.
 .TP
 \fB-a, --listen=\fIADDRESS\fB\f1
 Listen on ADDRESS.
+.TP
+\fB--ldap-debug\f1
+Enable debugging of LDAP authentication.
 .TP
 \fB--listen2=\fIADDRESS\fB\f1
 Listen also on ADDRESS.
@@ -169,9 +178,6 @@ Time out tasks that are more than TIME minutes overdue. -1 to disable, 0 for min
 .TP
 \fB--secinfo-commit-size=\fINUMBER\fB\f1
 During CERT and SCAP sync, commit updates to the database every NUMBER items, 0 for unlimited.
-.TP
-\fB--slave-commit-size=\fINUMBER\fB\f1
-During slave updates, commit after every NUMBER updated results and hosts, 0 for unlimited.
 .TP
 \fB-c, --unix-socket=\fIFILENAME\fB\f1
 Listen on UNIX socket at FILENAME.
