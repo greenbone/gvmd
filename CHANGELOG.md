@@ -71,11 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Also create owner WITH clause for single resources [#1406](https://github.com/greenbone/gvmd/pull/1406)
 - Fix SQL escaping when adding VT references [#1429](https://github.com/greenbone/gvmd/pull/1429)
-<<<<<<< HEAD
+- Update report run status more consistently [#1434](https://github.com/greenbone/gvmd/pull/1434)
 - Improve modify_override errors, fix no NVT case [#1435](https://github.com/greenbone/gvmd/pull/1435)
-=======
-- Update report run status more consistently [#1434](https://github.com/greenbone/gvmd/pull/1434) 
->>>>>>> dc54e17f4... Add report status fix to CHANGELOG
 
 ### Removed
 
