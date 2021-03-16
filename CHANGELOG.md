@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix SQL escaping when adding VT references [#1429](https://github.com/greenbone/gvmd/pull/1429)
 - Update report run status more consistently [#1434](https://github.com/greenbone/gvmd/pull/1434) 
 - Improve modify_override errors, fix no NVT case [#1435](https://github.com/greenbone/gvmd/pull/1435)
+- Fix size calculation in `--optimize vacuum` [#1447](https://github.com/greenbone/gvmd/pull/1447)
 
 ### Removed
 
