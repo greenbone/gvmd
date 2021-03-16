@@ -55250,9 +55250,6 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       gchar *quoted_db_name;
       unsigned long long int old_size, new_size;
 
-      old_size = 0LL;
-      new_size = 0LL;
-
       quoted_db_name = sql_quote (sql_database ());
 
       old_size = sql_int64_0 ("SELECT pg_database_size ('%s')",
