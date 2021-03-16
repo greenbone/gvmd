@@ -55247,50 +55247,40 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
   ret = 0;
   if (strcasecmp (name, "vacuum") == 0)
     {
-      struct stat state;
-      long long int old_size, new_size;
+      gchar *quoted_db_name;
+      unsigned long long int old_size, new_size;
 
       old_size = 0LL;
       new_size = 0LL;
-      ret = stat (database->name, &state);
-      if (ret)
-        switch (errno)
-          {
-            case ENOENT:
-              break;
-            default:
-              g_warning ("%s: failed to stat database: %s",
-                          __func__,
-                          strerror (errno));
-          }
-      else
-        old_size = state.st_size;
+
+      quoted_db_name = sql_quote (sql_database ());
+
+      old_size = sql_int64_0 ("SELECT pg_database_size ('%s')",
+                              quoted_db_name);
 
       sql ("VACUUM;");
 
-      ret = stat (database->name, &state);
-      if (ret)
-        switch (errno)
-          {
-            case ENOENT:
-              break;
-            default:
-              g_warning ("%s: failed to stat database: %s",
-                          __func__,
-                          strerror (errno));
-          }
-      else
-        new_size = state.st_size;
+      new_size = sql_int64_0 ("SELECT pg_database_size ('%s')",
+                              quoted_db_name);
 
-      if (old_size && new_size)
+      g_free (quoted_db_name);
+
+      if (old_size <= 0 || new_size <= 0)
+        success_text = g_strdup_printf ("Optimized: vacuum.");
+      else if (new_size <= old_size)
         success_text = g_strdup_printf ("Optimized: vacuum."
                                         " Database file size reduced by"
-                                        " %lld MiB (%0.1f %%).\n",
+                                        " %llu MiB (%0.1f %%).\n",
                                         (old_size - new_size) / (1024 * 1024),
                                         (old_size - new_size)
                                           * 100.0 / old_size);
       else
-        success_text = g_strdup_printf ("Optimized: vacuum.");
+        success_text = g_strdup_printf ("Optimized: vacuum."
+                                        " Database file size *increased* by"
+                                        " %llu MiB (%0.1f %%).\n",
+                                        (new_size - old_size) / (1024 * 1024),
+                                        (new_size - old_size)
+                                          * 100.0 / old_size);
     }
   else if (strcasecmp (name, "analyze") == 0)
     {
