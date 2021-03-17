@@ -185,6 +185,11 @@ static int relay_migrate_sensors = 0;
  */
 static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
 
+/**
+ * @brief Default for max auto retry on connection to scanner lost.
+ */
+static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
+
 
 /* Certificate and key management. */
 
@@ -2941,6 +2946,29 @@ run_osp_task (task_t task, int from, char **report_id)
       return -1;
     }
   return 0;
+}
+
+/**
+ * @brief Get the number of retry on a scanner connection lost.
+ *
+ * @return The number of retry on a scanner connection lost.
+ */
+int
+get_scanner_connection_retry ()
+{
+  return scanner_connection_retry;
+}
+
+/**
+ * @brief Set the number of retry on a scanner connection lost.
+ *
+ * @param new_retry The number of retry on a scanner connection lost.
+ */
+void
+set_scanner_connection_retry (int new_retry)
+{
+  if (new_retry > 1)
+    scanner_connection_retry = new_retry;
 }
 
 

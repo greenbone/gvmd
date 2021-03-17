@@ -2647,6 +2647,12 @@ osp_connection_t *
 osp_scanner_connect (scanner_t);
 
 int
+get_scanner_connection_retry ();
+
+void
+set_scanner_connection_retry (int);
+
+int
 verify_scanner (const char *, char **);
 
 const char *
