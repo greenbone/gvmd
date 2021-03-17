@@ -2466,6 +2466,19 @@ manage_system_report (const char *, const char *, const char *, const char *,
 
 /* Scanners. */
 
+<<<<<<< HEAD
+=======
+/**
+ * @brief Default for slave update commit size.
+ */
+#define SLAVE_COMMIT_SIZE_DEFAULT 0
+
+/**
+ * @brief Default for max auto retry on connection to scanner lost.
+ */
+#define SCANNER_CONNECTION_RETRY_DEFAULT 3
+
+>>>>>>> 3428320cf... Add gvmd option 'scanner-connection-retry'
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
