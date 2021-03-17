@@ -3567,7 +3567,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   int rc, port;
   scanner_t scanner;
   gboolean started, queued_status_updated;
-  int retry;
+  int retry, connection_retry;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -3577,8 +3577,9 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   key_priv = scanner_key_priv (scanner);
   started = FALSE;
   queued_status_updated = FALSE;
+  connection_retry = get_scanner_connection_retry ();
 
-  retry = 3;
+  retry = connection_retry;
   while (1 && retry >= 0)
     {
       int run_status, progress;
@@ -3718,7 +3719,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
             }
         }
 
-      retry = 3;
+      retry = connection_retry;
       gvm_sleep (5);
     }
 
