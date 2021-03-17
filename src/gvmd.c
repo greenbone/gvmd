@@ -1723,6 +1723,7 @@ gvmd (int argc, char** argv)
   static gchar *scanner_credential = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
+  static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
   static int slave_commit_size = SLAVE_COMMIT_SIZE_DEFAULT;
@@ -1958,6 +1959,11 @@ gvmd (int argc, char** argv)
           &scanner_ca_pub,
           "Scanner CA Certificate path for --[create|modify]-scanner.",
           "<scanner-ca-pub>" },
+        { "scanner-connection-retry", '\0', 0, G_OPTION_ARG_INT,
+          &scanner_connection_retry,
+          "During a running task, number of auto retry on lost connection,"
+          " default: "G_STRINGIFY (SCANNER_CONNECTION_RETRY),
+          "<number>" },
         { "scanner-credential", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_credential,
           "Scanner credential for --create-scanner and --modify-scanner."

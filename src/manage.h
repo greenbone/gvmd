@@ -2432,6 +2432,11 @@ manage_system_report (const char *, const char *, const char *, const char *,
  */
 #define SLAVE_COMMIT_SIZE_DEFAULT 0
 
+/**
+ * @brief Default for max auto retry on connection to scanner lost.
+ */
+#define SCANNER_CONNECTION_RETRY_DEFAULT 3
+
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
