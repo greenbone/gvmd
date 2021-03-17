@@ -2088,6 +2088,9 @@ gvmd (int argc, char** argv)
 
   set_schedule_timeout (schedule_timeout);
 
+  /* Set the connection auto retry */
+  set_scanner_connection_retry (scanner_connection_retry);
+
   /* Set slave commit size */
   set_slave_commit_size (slave_commit_size);
 
