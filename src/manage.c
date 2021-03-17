@@ -4704,7 +4704,7 @@ get_scanner_connection_retry ()
 void
 set_scanner_connection_retry (int new_retry)
 {
-  if (new_retry > 1)
+  if (new_retry >= 0)
     scanner_connection_retry = new_retry;
 }
 
