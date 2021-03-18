@@ -3580,7 +3580,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   connection_retry = get_scanner_connection_retry ();
 
   retry = connection_retry;
-  while (1 && retry >= 0)
+  rc = -1;
+  while (retry >= 0)
     {
       int run_status, progress;
       osp_scan_status_t osp_scan_status;
