@@ -385,8 +385,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--scanner-connection-retry=<arg>NUMBER</arg></opt></p>
       <optdesc>
-        <p>During a running task, number of auto retry on scanner connection
-           lost, default 3.</p>
+        <p>Number of auto retries if scanner connection is lost
+           in a running task.</p>
       </optdesc>
     </option>    
     <option>
