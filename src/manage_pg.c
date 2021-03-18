@@ -2917,7 +2917,8 @@ int
 check_db_extensions ()
 {
   if (db_extension_installed ("uuid-ossp")
-      && db_extension_installed ("pgcrypto"))
+      && db_extension_installed ("pgcrypto")
+      && db_extension_installed ("pg-gvm"))
     {
       g_debug ("%s: All required extensions are installed.", __func__);
       return 0;
