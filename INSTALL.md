@@ -125,9 +125,14 @@ Certificates`.
     apt install postgresql postgresql-contrib postgresql-server-dev-all
     ```
 
-2.  Run cmake and build gvmd as usual.
+2.  Install the pg-gvm extension.
 
-3.  Setup Postgres User and DB (`/usr/share/doc/postgresql-common/README.Debian.gz`)
+    Install the pg-gvm extension library (https://github.com/greenbone/pg-gvm).
+    For instructions on how to do this, see the README file there.
+
+3.  Run cmake and build gvmd as usual.
+
+4.  Setup Postgres User and DB (`/usr/share/doc/postgresql-common/README.Debian.gz`)
 
     ```sh
     sudo -u postgres bash
@@ -135,31 +140,32 @@ Certificates`.
     createdb -O mattm gvmd
     ```
 
-4.  Setup permissions.
-
-    ```sh
-    sudo -u postgres bash  # if you logged out after step 3
-    psql gvmd
-    create role dba with superuser noinherit;
-    grant dba to mattm;    # mattm is the user created in step 3
-    ```
-
-5.  Create DB extensions (also necessary when the database got dropped).
+5.  Setup permissions.
 
     ```sh
     sudo -u postgres bash  # if you logged out after step 4
     psql gvmd
-    create extension "uuid-ossp";
-    create extension "pgcrypto";
+    create role dba with superuser noinherit;
+    grant dba to mattm;    # mattm is the user created in step 4
     ```
 
-6.  Make Postgres aware of the gvm libraries if not installed
+6.  Create DB extensions (also necessary when the database got dropped).
+
+    ```sh
+    sudo -u postgres bash  # if you logged out after step 5
+    psql gvmd
+    create extension "uuid-ossp";
+    create extension "pgcrypto";
+    create extension "pg-gvm"; # if it is not installed in step 2.
+    ```
+
+7.  Make Postgres aware of the gvm libraries if not installed
     in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
     with appropriate path and then run `ldconfig`.
 
-7.  Run Manager as usual.
+8.  Run Manager as usual.
 
-8. To run SQL on the database.
+9.  To run SQL on the database.
 
     ```sh
     psql gvmd
