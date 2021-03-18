@@ -97,6 +97,7 @@
 #include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
+#include <gvm/util/ldaputils.h>
 
 #include "manage.h"
 #include "manage_sql_nvts.h"
@@ -1728,6 +1729,7 @@ gvmd (int argc, char** argv)
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
   static gchar *dh_params = NULL;
+  static gboolean ldap_debug = FALSE;
   static gchar *listen_owner = NULL;
   static gchar *listen_group = NULL;
   static gchar *listen_mode = NULL;
@@ -1854,6 +1856,10 @@ gvmd (int argc, char** argv)
           &inheritor,
           "Have <username> inherit from deleted user.",
           "<username>" },
+        { "ldap-debug", '\0', 0, G_OPTION_ARG_NONE,
+          &ldap_debug,
+          "Enable debugging of LDAP authentication",
+          NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING,
           &manager_address_string,
           "Listen on <address>.",
@@ -2185,6 +2191,17 @@ gvmd (int argc, char** argv)
         }
       else
         g_debug ("No default relay mapper found.");
+    }
+
+  /**
+   * LDAP debugging
+   */
+  if (ldap_debug)
+    {
+      if (ldap_enable_debug () == 0)
+        g_message ("LDAP debugging enabled");
+      else
+        g_warning ("Could not enable LDAP debugging");
     }
 
 #ifdef GVMD_GIT_REVISION

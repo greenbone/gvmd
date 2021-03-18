@@ -2772,6 +2772,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   if (run_osp_scan_get_report (task, from, &report_id))
     return -1;
 
+  current_scanner_task = task;
   set_task_run_status (task, TASK_STATUS_REQUESTED);
 
   switch (fork ())
@@ -2790,11 +2791,13 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
         set_report_scan_run_status (global_current_report,
                                     TASK_STATUS_INTERRUPTED);
         global_current_report = (report_t) 0;
+        current_scanner_task = 0;
         g_free (report_id);
         return -9;
       default:
         /* Parent, successfully forked. */
         global_current_report = 0;
+        current_scanner_task = 0;
         if (report_id_return)
           *report_id_return = report_id;
         else
@@ -3579,6 +3582,11 @@ stop_osp_task (task_t task)
   int ret = -1;
   report_t scan_report;
   char *scan_id;
+  task_t previous_task;
+  report_t previous_report;
+
+  previous_task = current_scanner_task;
+  previous_report = global_current_report;
 
   scan_report = task_running_report (task);
   scan_id = report_uuid (scan_report);
@@ -3587,6 +3595,9 @@ stop_osp_task (task_t task)
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
     goto end_stop_osp;
+
+  current_scanner_task = task;
+  global_current_report = task_running_report (task);
   set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
   ret = osp_stop_scan (connection, scan_id, NULL);
   osp_connection_close (connection);
@@ -3611,6 +3622,8 @@ end_stop_osp:
       set_scan_end_time_epoch (scan_report, time (NULL));
       set_report_scan_run_status (scan_report, TASK_STATUS_STOPPED);
     }
+  current_scanner_task = previous_task;
+  global_current_report = previous_report;
   if (ret)
     return -1;
   return 0;
@@ -3627,13 +3640,22 @@ int
 stop_task_internal (task_t task)
 {
   task_status_t run_status;
+  task_t previous_task;
+  report_t previous_report;
+
+  previous_task = current_scanner_task;
+  previous_report = global_current_report;
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
       || run_status == TASK_STATUS_QUEUED)
     {
+      current_scanner_task = task;
+      global_current_report = task_running_report (task);
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+      current_scanner_task = previous_task;
+      global_current_report = previous_report;
       return 1;
     }
 
