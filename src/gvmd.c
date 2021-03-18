@@ -1964,8 +1964,8 @@ gvmd (int argc, char** argv)
           "<scanner-ca-pub>" },
         { "scanner-connection-retry", '\0', 0, G_OPTION_ARG_INT,
           &scanner_connection_retry,
-          "During a running task, number of auto retry on lost connection,"
-          " default: "G_STRINGIFY (SCANNER_CONNECTION_RETRY),
+          "Number of auto retries if scanner connection is lost in a running task,"
+          " default: "G_STRINGIFY (SCANNER_CONNECTION_RETRY_DEFAULT),
           "<number>" },
         { "scanner-credential", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_credential,
