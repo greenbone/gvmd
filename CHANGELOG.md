@@ -7,8 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.10] (unreleased)
 
 ### Added
+
 ### Changed
+- Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
+
 ### Fixed
+
 ### Removed
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master

@@ -194,22 +194,23 @@ manage_create_sql_functions ()
       return -1;
     }
 
-  /* Functions in C. */
+  /* Functions in C have been moved to the "pg-gvm" extension. */
+  
+  /* Operators */
 
   sql ("SET role dba;");
 
-  sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
-       " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_hosts_contains'"
-       " LANGUAGE C"
-       " IMMUTABLE;",
-       GVM_LIB_INSTALL_DIR);
+  if (sql_int ("SELECT count(*) FROM pg_operator"
+               " WHERE oprname = '?~#';")
+      == 0)
+    {
+      sql ("CREATE OPERATOR ?~#"
+          " (PROCEDURE = regexp, LEFTARG = text, RIGHTARG = text);");
+    }
 
-  sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
-       " RETURNS integer"
-       " AS '%s/libgvm-pg-server', 'sql_max_hosts'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
+  sql ("RESET role;");
+
+  /* Functions in pl/pgsql. */
 
   /*
    * This database function is a duplicate of 'level_max_severity' from manage_utils.c
@@ -275,18 +276,6 @@ manage_create_sql_functions ()
        "END;"
        "$$ LANGUAGE plpgsql;");
 
-  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text)"
-       " RETURNS integer"
-       " AS '%s/libgvm-pg-server', 'sql_next_time_ical'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
-  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text, integer)"
-       " RETURNS integer"
-       " AS '%s/libgvm-pg-server', 'sql_next_time_ical'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
   sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (a double precision,"
        "                                                b double precision)"
        "RETURNS BOOLEAN AS $$"
@@ -299,24 +288,6 @@ manage_create_sql_functions ()
        " END;"
        "END;"
        "$$ LANGUAGE plpgsql IMMUTABLE;");
-
-  sql ("CREATE OR REPLACE FUNCTION regexp (text, text)"
-       " RETURNS boolean"
-       " AS '%s/libgvm-pg-server', 'sql_regexp'"
-       " LANGUAGE C;",
-       GVM_LIB_INSTALL_DIR);
-
-  if (sql_int ("SELECT count(*) FROM pg_operator"
-               " WHERE oprname = '?~#';")
-      == 0)
-    {
-      sql ("CREATE OPERATOR ?~#"
-          " (PROCEDURE = regexp, LEFTARG = text, RIGHTARG = text);");
-    }
-
-  sql ("RESET role;");
-
-  /* Functions in pl/pgsql. */
 
   /* Helper function for quoting the individual parts of multi-part
    *  identifiers like "scap", "cpes" and "id" in "scap.cpes.id" where
@@ -2946,7 +2917,8 @@ int
 check_db_extensions ()
 {
   if (db_extension_installed ("uuid-ossp")
-      && db_extension_installed ("pgcrypto"))
+      && db_extension_installed ("pgcrypto")
+      && db_extension_installed ("pg-gvm"))
     {
       g_debug ("%s: All required extensions are installed.", __func__);
       return 0;
