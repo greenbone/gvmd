@@ -9003,12 +9003,14 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<type>ovaldef</type>"
                                     "<name>%s</name>"
                                     "<family/>"
-                                    "<severities score=\"%i\">"
+                                    "<severities score=\"%s\">"
                                     "</severities>"
                                     "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
-                                    ovaldef_info_iterator_score (&iterator),
+                                    ovaldef_info_iterator_score (&iterator)
+                                      ? ovaldef_info_iterator_score (&iterator)
+                                      : "",
                                     ovaldef_info_iterator_description (&iterator));
           g_free (get.id);
           cleanup_iterator (&iterator);
@@ -13091,13 +13093,15 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
                              "<nvd_id>%s</nvd_id>"
-                             "<score>%d</score>"
+                             "<score>%s</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<status>%s</status>",
                              cpe_info_iterator_nvd_id (&info)
                               ? cpe_info_iterator_nvd_id (&info)
                               : "",
-                             cpe_info_iterator_score (&info),
+                             cpe_info_iterator_score (&info)
+                              ? cpe_info_iterator_score (&info)
+                              : "",
                              cpe_info_iterator_cve_refs (&info),
                              cpe_info_iterator_status (&info)
                               ? cpe_info_iterator_status (&info)
@@ -13122,13 +13126,15 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                    " id=\"%s\">"
                                    "<vuln:cvss>"
                                    "<cvss:base_metrics>"
-                                   "<cvss:score>%0.1lf</cvss:score>"
+                                   "<cvss:score>%s</cvss:score>"
                                    "</cvss:base_metrics>"
                                    "</vuln:cvss>"
                                    "</entry>"
                                    "</cve>",
                                    cve_iterator_name (&cves),
-                                   cve_iterator_score (&cves) / 10.0);
+                                   cve_iterator_cvss_score (&cves)
+                                    ? cve_iterator_cvss_score (&cves)
+                                    : "");
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
             }
@@ -13137,11 +13143,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         {
           xml_string_append (result,
                              "<cve>"
-                             "<score>%d</score>"
+                             "<score>%s</score>"
                              "<cvss_vector>%s</cvss_vector>"
                              "<description>%s</description>"
                              "<products>%s</products>",
-                             cve_info_iterator_score (&info),
+                             cve_info_iterator_score (&info)
+                              ? cve_info_iterator_score (&info)
+                              : "",
                              cve_info_iterator_vector (&info),
                              cve_info_iterator_description (&info),
                              cve_info_iterator_products (&info));
@@ -13216,7 +13224,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              "<status>%s</status>"
                              "<class>%s</class>"
                              "<title>%s</title>"
-                             "<score>%d</score>"
+                             "<score>%s</score>"
                              "<cve_refs>%s</cve_refs>"
                              "<file>%s</file>",
                              ovaldef_info_iterator_version (&info),
@@ -13224,7 +13232,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              ovaldef_info_iterator_status (&info),
                              ovaldef_info_iterator_class (&info),
                              ovaldef_info_iterator_title (&info),
-                             ovaldef_info_iterator_score (&info),
+                             ovaldef_info_iterator_score (&info)
+                              ? ovaldef_info_iterator_score (&info)
+                              : "",
                              ovaldef_info_iterator_cve_refs (&info),
                              ovaldef_info_iterator_file (&info));
           description = ovaldef_info_iterator_description (&info);
@@ -13238,22 +13248,26 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            "<cert_bund_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<score>%d</score>"
+                           "<score>%s</score>"
                            "<cve_refs>%s</cve_refs>",
                            cert_bund_adv_info_iterator_title (&info),
                            cert_bund_adv_info_iterator_summary (&info),
-                           cert_bund_adv_info_iterator_score(&info),
+                           cert_bund_adv_info_iterator_score(&info)
+                            ? cert_bund_adv_info_iterator_score(&info)
+                            : "",
                            cert_bund_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
         xml_string_append (result,
                            "<dfn_cert_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<score>%d</score>"
+                           "<score>%s</score>"
                            "<cve_refs>%s</cve_refs>",
                            dfn_cert_adv_info_iterator_title (&info),
                            dfn_cert_adv_info_iterator_summary (&info),
-                           dfn_cert_adv_info_iterator_score(&info),
+                           dfn_cert_adv_info_iterator_score(&info)
+                            ? dfn_cert_adv_info_iterator_score(&info)
+                            : "",
                            dfn_cert_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
