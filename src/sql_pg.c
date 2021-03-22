@@ -523,7 +523,15 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
               return -4;
             }
-
+            else if (sqlstate && (strcmp (sqlstate, "40P01") == 0))
+              {
+                /* deadlock_detected */
+                g_warning ("%s: deadlock: %s",
+                         __func__,
+                         PQresultErrorMessage (result));
+                g_warning ("%s: SQL: %s", __func__, stmt->sql);
+                return -5;
+              }
           if (log_errors)
             {
               g_warning ("%s: PQexec failed: %s (%i)",
