@@ -2466,6 +2466,11 @@ manage_system_report (const char *, const char *, const char *, const char *,
 
 /* Scanners. */
 
+/**
+ * @brief Default for max auto retry on connection to scanner lost.
+ */
+#define SCANNER_CONNECTION_RETRY_DEFAULT 3
+
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
@@ -2632,6 +2637,12 @@ osp_connect_with_data (const char *,
 
 osp_connection_t *
 osp_scanner_connect (scanner_t);
+
+int
+get_scanner_connection_retry ();
+
+void
+set_scanner_connection_retry (int);
 
 int
 verify_scanner (const char *, char **);

@@ -185,6 +185,12 @@ static int relay_migrate_sensors = 0;
  */
 static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
 
+/**
+ * @brief Default number of auto retries if scanner connection is
+ *        lost in a running task.
+ */
+static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
+
 
 /* Certificate and key management. */
 
@@ -1812,6 +1818,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   int rc, port;
   scanner_t scanner;
   gboolean started, queued_status_updated;
+  int retry, connection_retry;
 
   scanner = task_scanner (task);
   host = scanner_host (scanner);
@@ -1821,8 +1828,11 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   key_priv = scanner_key_priv (scanner);
   started = FALSE;
   queued_status_updated = FALSE;
+  connection_retry = get_scanner_connection_retry ();
 
-  while (1)
+  retry = connection_retry;
+  rc = -1;
+  while (retry >= 0)
     {
       int run_status, progress;
       osp_scan_status_t osp_scan_status;
@@ -1835,10 +1845,20 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           break;
         }
 
+      /* Get only the progress, without results and details. */
       progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
                                       key_priv, 0, 0, NULL);
+
       if (progress < 0 || progress > 100)
         {
+          if (retry > 0)
+            {
+              retry--;
+              g_warning ("Connection lost with the scanner at %s. "
+                         "Trying again in 1 second.", host);
+              gvm_sleep (1);
+              continue;
+            }
           result_t result = make_osp_result
                              (task, "", "", "",
                               threat_message_type ("Error"),
@@ -1858,6 +1878,15 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                           key_priv, 1, 1, &report_xml);
           if (progress < 0 || progress > 100)
             {
+              if (retry > 0)
+                {
+                  retry--;
+                  g_warning ("Connection lost with the scanner at %s. "
+                             "Trying again in 1 second.", host);
+                  gvm_sleep (1);
+                  continue;
+                }
+
               g_free (report_xml);
               result_t result = make_osp_result
                                  (task, "", "", "",
@@ -1903,6 +1932,15 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               else if (progress >= 0 && progress < 100
                   && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
                 {
+                  if (retry > 0)
+                    {
+                      retry--;
+                      g_warning ("Connection lost with the scanner at %s. "
+                                 "Trying again in 1 second.", host);
+                      gvm_sleep (1);
+                      continue;
+                    }
+
                   result_t result = make_osp_result
                     (task, "", "", "",
                      threat_message_type ("Error"),
@@ -1933,6 +1971,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
             }
         }
 
+      retry = connection_retry;
       gvm_sleep (5);
     }
 
@@ -2910,6 +2949,29 @@ run_osp_task (task_t task, int from, char **report_id)
       return -1;
     }
   return 0;
+}
+
+/**
+ * @brief Get the number of retries on a scanner connection lost.
+ *
+ * @return The number of retries on a scanner connection lost.
+ */
+int
+get_scanner_connection_retry ()
+{
+  return scanner_connection_retry;
+}
+
+/**
+ * @brief Set the number of retries on a scanner connection lost.
+ *
+ * @param new_retry The number of retries on a scanner connection lost.
+ */
+void
+set_scanner_connection_retry (int new_retry)
+{
+  if (new_retry >= 0)
+    scanner_connection_retry = new_retry;
 }
 
 
