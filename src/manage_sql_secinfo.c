@@ -554,14 +554,9 @@ DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
  * @param[in]  iterator  Iterator.
  *
  * @return The highest severity score (10 * CVSS score) of the CPE,
- *         or -1 if iteration is complete. Freed by cleanup_iterator.
+ *         or NULL if iteration is complete. Freed by cleanup_iterator.
  */
-int
-cpe_info_iterator_score (iterator_t *iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-}
+DEF_ACCESS (cpe_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
@@ -626,7 +621,8 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
   assert (cve);
   quoted_cpe = sql_quote (cve);
   init_iterator (iterator,
-                 "SELECT id, name, score FROM cves WHERE id IN"
+                 "SELECT id, name, round(score / 10.0, 1) FROM cves"
+                 " WHERE id IN"
                  " (SELECT cve FROM affected_products"
                  "  WHERE cpe ="
                  "  (SELECT id FROM cpes WHERE name = '%s'))"
@@ -652,15 +648,10 @@ DEF_ACCESS (cve_iterator_name, 1);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The severity score (10 * CVSS score) of the CVE,
- *         or -1 if iteration is complete.  Freed by cleanup_iterator.
+ * @return The CVSS score of the CVE,
+ *         or NULL if iteration is complete.  Freed by cleanup_iterator.
  */
-int
-cve_iterator_score (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, 2);
-}
+DEF_ACCESS (cve_iterator_cvss_score, 2);
 
 /**
  * @brief Get the CVSS score for a CVE.
@@ -801,14 +792,9 @@ DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 1);
  * @param[in]  iterator  Iterator.
  *
  * @return The severity score  (10 * CVSS score) of this CVE,
- *         or -1 if iteration is complete. Freed by cleanup_iterator.
+ *         or NULL if iteration is complete. Freed by cleanup_iterator.
  */
-int
-cve_info_iterator_score (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 2);
-}
+DEF_ACCESS (cve_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the Summary for this CVE.
@@ -996,15 +982,10 @@ DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
  * @param[in]  iterator  Iterator.
  *
  * @return The maximum severity score  (10 * CVSS score) of the OVAL
- *         definition, or -1 if iteration is complete.
+ *         definition, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-int
-ovaldef_info_iterator_score (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 7);
-}
+DEF_ACCESS (ovaldef_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get number of referenced CVEs from an OVALDEF iterator.
@@ -1271,15 +1252,10 @@ DEF_ACCESS (cert_bund_adv_info_iterator_cve_refs,
  * @param[in]  iterator  Iterator.
  *
  * @return The maximum severity score (10 * CVSS score) of the CVEs referenced
- *         in the CERT-Bund advisory, or -1 if iteration is complete.
+ *         in the CERT-Bund advisory, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-int
-cert_bund_adv_info_iterator_score (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 3);
-}
+DEF_ACCESS (cert_bund_adv_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a CERT-Bund advisory.
@@ -1480,15 +1456,10 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
  * @param[in]  iterator  Iterator.
  *
  * @return The maximum score (10 * CVSS score) of the CVEs referenced
- *         in the DFN-CERT advisory, or -1 if iteration is complete.
+ *         in the DFN-CERT advisory, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-int
-dfn_cert_adv_info_iterator_score (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 3);
-}
+DEF_ACCESS (dfn_cert_adv_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a DFN-CERT advisory.
