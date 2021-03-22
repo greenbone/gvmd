@@ -383,6 +383,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--scanner-connection-retry=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Number of auto retries if scanner connection is lost
+           in a running task.</p>
+      </optdesc>
+    </option>    
+    <option>
       <p><opt>--schedule-timeout=<arg>TIME</arg></opt></p>
       <optdesc>
         <p>Time out tasks that are more than TIME minutes overdue.
