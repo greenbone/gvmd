@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Limit "whole-only" config families to "growing" and "every nvt" [#1386](https://github.com/greenbone/gvmd/pull/1386)
 - Access current user with an SQL function [#1399](https://github.com/greenbone/gvmd/pull/1399)
 - Refactor modify_config, allowing multiple simultaneous changes [#1404](https://github.com/greenbone/gvmd/pull/1404)
+- Add retry on a deadlock within sql#sql [#1460](https://github.com/greenbone/gvmd/pull/1460)
 
 ### Fixed
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
