@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
-
+- Add retry on a deadlock within sql#sql [#1459](https://github.com/greenbone/gvmd/pull/1459)
 ### Fixed
 
 ### Removed

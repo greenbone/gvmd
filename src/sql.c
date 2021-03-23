@@ -39,6 +39,15 @@
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
+/**
+ * @brief amount of ms sql should wait before retrying when a deadlock occured
+ */
+#define DEADLOCK_SLEEP 1000
+
+/**
+ * @brief defines the amount of retries after a deadlock is considered a warning 
+ */
+#define DEADLOCK_THRESHOLD 25
 
 
 /* Headers of internal symbols defined in backend files. */
@@ -206,6 +215,8 @@ sqlv (int retry, char* sql, va_list args)
         return -1;
       if (ret == -4)
         return 3;
+      if (ret == -5)
+        return 4;
       assert (ret == -1 || ret == 0);
       return ret;
     }
@@ -220,6 +231,7 @@ sqlv (int retry, char* sql, va_list args)
 void
 sql (char* sql, ...)
 {
+  unsigned int deadlock_amount =  0;
   while (1)
     {
       va_list args;
@@ -231,6 +243,15 @@ sql (char* sql, ...)
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
+      else if (ret == 4)
+        {
+            if (deadlock_amount++ > DEADLOCK_THRESHOLD)
+              {
+                  g_warning("%s: %d deadlocks detected, wating and retrying %s", __func__, deadlock_amount, sql);
+              } 
+            gvm_usleep (DEADLOCK_SLEEP);
+            continue;
+         }
       else if (ret)
         abort();
       break;
