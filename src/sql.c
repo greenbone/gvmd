@@ -40,8 +40,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-#define DEADLOCK_SLEEP 1000
-
 
 /* Headers of internal symbols defined in backend files. */
 
@@ -208,8 +206,6 @@ sqlv (int retry, char* sql, va_list args)
         return -1;
       if (ret == -4)
         return 3;
-      if (ret == -5)
-        return 4;
       assert (ret == -1 || ret == 0);
       return ret;
     }
@@ -235,12 +231,6 @@ sql (char* sql, ...)
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
-	  else if (ret == 4)
-        {
-            g_warning ("%s: deadlock detected, wating and retrying", __func__);
-            gvm_usleep (DEADLOCK_SLEEP);
-            continue;
-         }
       else if (ret)
         abort();
       break;
