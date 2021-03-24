@@ -173,7 +173,7 @@ SPEC_FILE="${SPEC_DIR}/${PACKAGE_NAME_VERSION}.spec"
 #
 
 # Build package
-cd "$TEMP_DIR"
+cd "$TEMP_DIR" || echo "'cd' somehow failed to access temporary dir."
 fakeroot -- rpmbuild --bb "${SPEC_FILE}" --buildroot "${BUILD_ROOT_DIR}"
 
 # Move package to new destination

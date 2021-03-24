@@ -134,7 +134,7 @@ cp "${PUBKEY_FILE}" "${AUTH_KEYS_FILE}"
 mkdir -p "${DOC_DATA_DIR}"
 
 # Create Changelog
-cd "${DOC_DATA_DIR}"
+cd "${DOC_DATA_DIR}" || echo "'cd' somehow failed to access changelog dir."
 CHANGELOG_FILE="${DOC_DATA_DIR}/changelog.Debian"
 {
   echo "${PACKAGE_NAME} (${PACKAGE_VERSION}) experimental; urgency=low"
@@ -160,7 +160,7 @@ COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
 } > "${COPYRIGHT_FILE}"
 
 # Create data archive
-cd "${DATA_DIR}"
+cd "${DATA_DIR}" || echo "'cd' somehow failed to access data dir."
 tar -C "${DATA_DIR}" -acf "../data.tar.xz" "${HOME_SUBDIR}" "${DOC_SUBDIR}"
 
 
@@ -226,7 +226,7 @@ chmod "0755" "${POSTRM_FILE}"
 
 # Calculate md5 checksums
 MD5SUMS_FILE="${CONTROL_DIR}/md5sums"
-cd "${DATA_DIR}"
+cd "${DATA_DIR}" || echo "'cd' somehow failed to access data dir."
 {
   md5sum "${HOME_SUBDIR}/.ssh/authorized_keys"
   md5sum "${DOC_SUBDIR}/changelog.Debian.gz"
@@ -238,5 +238,5 @@ cd "${DATA_DIR}"
 #
 
 # Combine into .deb file
-cd "${TEMP_DIR}"
+cd "${TEMP_DIR}" || echo "'cd' somehow failed ti access temporary dir."
 fakeroot -- dpkg --build "${PACKAGE_NAME_VERSION}" "${OUTPUT_PATH}"
