@@ -126,7 +126,7 @@ else
 
 fi
 
-RSYNC=`command -v rsync`
+RSYNC=$(command -v rsync)
 
 # Current supported feed types (for --type parameter)
 FEED_TYPES_SUPPORTED="CERT, SCAP or GVMD_DATA"
@@ -250,7 +250,7 @@ init_feed_type () {
 write_feed_xml () {
   if [ -r $TIMESTAMP ]
   then
-    FEED_VERSION=`cat $TIMESTAMP`
+    FEED_VERSION=$(cat $TIMESTAMP)
   else
     FEED_VERSION=0
   fi
@@ -271,7 +271,7 @@ write_feed_xml () {
 }
 
 create_tmp_key () {
-  KEYTEMPDIR=`mktemp -d`
+  KEYTEMPDIR=$(mktemp -d)
   cp "$ACCESSKEY" "$KEYTEMPDIR"
   TMPACCESSKEY="$KEYTEMPDIR/gsf-access-key"
   chmod 400 "$TMPACCESSKEY"
@@ -325,7 +325,7 @@ get_value ()
 is_feed_current () {
   if [ -r $TIMESTAMP ]
   then
-    FEED_VERSION=`cat $TIMESTAMP`
+    FEED_VERSION=$(cat $TIMESTAMP)
   fi
 
   if [ -z "$FEED_VERSION" ]
@@ -335,12 +335,12 @@ is_feed_current () {
     return $FEED_CURRENT
   fi
 
-  FEED_INFO_TEMP_DIR=`mktemp -d`
+  FEED_INFO_TEMP_DIR=$(mktemp -d)
 
   if [ -e $ACCESSKEY ]
   then
     read feeduser < $ACCESSKEY
-    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    custid_at_host=$(head -1 $ACCESSKEY | cut -d : -f 1)
 
     if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
     then
@@ -390,7 +390,7 @@ is_feed_current () {
     fi
   fi
 
-  FEED_VERSION_SERVER=`cat "$FEED_INFO_TEMP_DIR/timestamp"`
+  FEED_VERSION_SERVER=$(cat "$FEED_INFO_TEMP_DIR/timestamp")
 
   if [ -z "$FEED_VERSION_SERVER" ]
   then
@@ -470,7 +470,7 @@ sync_feed_data(){
 
     mkdir -p "$FEED_DIR"
     read feeduser < $ACCESSKEY
-    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    custid_at_host=$(head -1 $ACCESSKEY | cut -d : -f 1)
 
     if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
     then

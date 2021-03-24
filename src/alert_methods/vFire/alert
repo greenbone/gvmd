@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ALERT_CONFIG="$1"
-CONNECTOR=`which greenbone_vfire_connector`
+CONNECTOR=$(which greenbone_vfire_connector)
 
 if [ -z "$ALERT_CONFIG" ]
 then

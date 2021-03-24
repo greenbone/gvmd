@@ -45,15 +45,15 @@ sql () {
 echo "<config id=\"${UUID}\">"
 
 echo -n "  <name>"
-echo -n `sql "SELECT name FROM configs WHERE uuid = '$UUID'"`
+echo -n $(sql "SELECT name FROM configs WHERE uuid = '$UUID'")
 echo "</name>"
 
 echo -n "  <comment>"
-echo -n `sql "SELECT comment FROM configs WHERE uuid = '$UUID'"`
+echo -n $(sql "SELECT comment FROM configs WHERE uuid = '$UUID'")
 echo "</comment>"
 
 echo -n "  <type>"
-echo -n `sql "SELECT type FROM configs WHERE uuid = '$UUID'"`
+echo -n $(sql "SELECT type FROM configs WHERE uuid = '$UUID'")
 echo "</type>"
 
 echo "  <usage_type>scan</usage_type>"
@@ -68,7 +68,7 @@ echo "  </preferences>"
 
 echo "  <nvt_selectors>"
 
-SELECTOR=`sql "SELECT nvt_selector FROM configs WHERE uuid='${UUID}';"`
+SELECTOR=$(sql "SELECT nvt_selector FROM configs WHERE uuid='${UUID}';")
 if [ "$SELECTOR" = "54b45713-d4f4-4435-b20d-304c175ed8c5" ]; then
   echo "    <all_selector/>"
 else

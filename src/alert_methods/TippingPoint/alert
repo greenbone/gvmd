@@ -32,7 +32,7 @@ urlencode () {
 }
 
 # Create temp file for converted report
-REPORT_DATE=$(xmlstarlet sel -t -v "report/timestamp" < $REPORT_PATH)
+REPORT_DATE=$(xmlstarlet sel -t -v "report/timestamp" < "$REPORT_PATH")
 EXIT_CODE=$?
 if [ 0 -ne $EXIT_CODE ]
 then
@@ -41,7 +41,7 @@ fi
 
 REPORT_DATE=$(date -d "$REPORT_DATE" +%Y%m%d%H%M%S)
 
-CONVERTED_PATH=$(mktemp "$(dirname ${REPORT_PATH})/report-${REPORT_DATE}-XXXXXX.csv")
+CONVERTED_PATH=$(mktemp "$(dirname "${REPORT_PATH}")/report-${REPORT_DATE}-XXXXXX.csv")
 EXIT_CODE=$?
 if [ 0 -ne $EXIT_CODE ]
 then
@@ -58,7 +58,7 @@ then
 fi
 
 # Get and reformat scan run times
-START_TIME=$(xmlstarlet sel -t -v "report/scan_start" < $REPORT_PATH)
+START_TIME=$(xmlstarlet sel -t -v "report/scan_start" < "$REPORT_PATH")
 EXIT_CODE=$?
 if [ 0 -ne $EXIT_CODE ]
 then
@@ -66,7 +66,7 @@ then
 fi
 START_TIME=$(TZ=UTC date -d "$START_TIME" +%Y-%m-%dT%H:%M:%S.000Z)
 
-END_TIME=$(xmlstarlet sel -t -v "report/scan_end" < $REPORT_PATH)
+END_TIME=$(xmlstarlet sel -t -v "report/scan_end" < "$REPORT_PATH")
 EXIT_CODE=$?
 if [ 0 -ne $EXIT_CODE ]
 then
@@ -81,7 +81,7 @@ PRODUCT=$(urlencode "Greenbone Vulnerability Manager")
 FORMAT_VERSION=$(urlencode "1.0.0")
 CN_REPLACEMENT="Tippingpoint"
 
-if [ "1" = $CERT_WORKAROUND ]
+if [ "1" = "$CERT_WORKAROUND" ]
 then
   HTTP_CODE=$(curl -s -w ' - Status code %{http_code}' -F "file=@$CONVERTED_PATH" --netrc-file "$AUTH_PATH" "https://$CN_REPLACEMENT/vulnscanner/import?vendor=$VENDOR&product=$PRODUCT&version=$FORMAT_VERSION&runtime=$RUNTIME" --cacert "$CERT_PATH" --resolve "$CN_REPLACEMENT:443:$SMS_ADDRESS")
   CURL_EXIT="$?"

@@ -196,7 +196,7 @@ set_up ()
   if [ -z "$GVM_CERT_DIR" ]
   then
     USE_TEMP_DIR=1
-    GVM_CERT_DIR=`mktemp -d`
+    GVM_CERT_DIR=$(mktemp -d)
     log_verbose "Using $GVM_CERT_DIR to temporarily store files."
   else
     USE_TEMP_DIR=0

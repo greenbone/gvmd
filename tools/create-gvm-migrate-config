@@ -67,7 +67,7 @@ cat > gvm-migrate-config << 'OUTER'
 
 # Make a temp dir.
 
-TMP=`mktemp -d` || exit 1
+TMP=$(mktemp -d) || exit 1
 
 # Output a temporary XSL file to do the config conversion.
 
