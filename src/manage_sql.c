@@ -25953,7 +25953,7 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      "      AND task_preferences.task = tasks.id"
                      "      AND task_preferences.name = 'in_assets')"
                      "     = 'yes'"
-                     " AND report_hosts.end_time IS NOT NULL"
+                     " AND report_hosts.end_time > 0"
                      " AND NOT EXISTS (SELECT * FROM report_host_details"
                      "                 WHERE report_host = report_hosts.id"
                      "                 AND name = 'CVE Scan')"
