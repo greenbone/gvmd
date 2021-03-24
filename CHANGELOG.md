@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve GMP docs around users [#1363](https://github.com/greenbone/gvmd/pull/1363)
 - Cache report counts when Dynamic Severity is enabled [#1389](https://github.com/greenbone/gvmd/pull/1389)
 - Detection entry detection while importing reports [#1405](https://github.com/greenbone/gvmd/pull/1405)
+- Improve report format sync handling [#1465](https://github.com/greenbone/gvmd/pull/1465)
 
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
