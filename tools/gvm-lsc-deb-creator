@@ -92,19 +92,19 @@ CONTROL_DIR="${PACKAGE_BASE_DIR}/DEBIAN"
 #
 # Test dependencies
 #
-if [ -z "$(which dpkg)" ]
+if [ -z "$(command -v dpkg)" ]
 then
   echo "dpkg not found" >&2
   exit 1
 fi
 
-if [ -z "$(which fakeroot)" ]
+if [ -z "$(command -v fakeroot)" ]
 then
   echo "fakeroot not found" >&2
   exit 1
 fi
 
-if [ -z "$(which md5sum)" ]
+if [ -z "$(command -v md5sum)" ]
 then
   echo "md5sum not found" >&2
   exit 1
