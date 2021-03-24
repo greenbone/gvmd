@@ -704,14 +704,15 @@ sync_report_formats_with_feed ()
   dir = g_dir_open (feed_dir_report_formats (), 0, &error);
   if (dir == NULL)
     {
-      g_warning ("%s: Failed to open directory '%s': %s",
+      g_message ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_report_formats (), error->message);
       g_error_free (error);
       g_free (current_credentials.uuid);
       g_free (current_credentials.username);
       current_credentials.uuid = NULL;
       current_credentials.username = NULL;
-      return -1;
+      /* No directory, nothing to complain about */
+      return 0;
     }
 
   /* Sync each file in the directory. */
