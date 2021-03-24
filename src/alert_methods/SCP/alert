@@ -27,7 +27,7 @@ PASSWORD_FILE=$6
 REPORT_FILE=$7
 
 KNOWN_HOSTS_FILE=$(mktemp) || exit 1
-echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
+echo "$KNOWN_HOSTS" > "$KNOWN_HOSTS_FILE"
 
 ERROR_FILE=$(mktemp) || exit 1
 
@@ -55,9 +55,9 @@ DEST_ESC=$(shell_esc "$DEST")
 
 if [ -z "$PRIVATE_KEY_FILE" ]
 then
-  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
+  timeout "$TIMEOUT" sshpass -f "${PASSWORD_FILE}" scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>"$ERROR_FILE"
 else
-  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>"$ERROR_FILE"
+  timeout "$TIMEOUT" sshpass -f "${PASSWORD_FILE}" -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>"$ERROR_FILE"
 fi
 
 EXIT_CODE=$?
@@ -93,8 +93,8 @@ then
   log_error "sshpass failed with exit code ${EXIT_CODE}: $ERROR_SHORT"
 fi
 
-rm $KNOWN_HOSTS_FILE
-rm $PASSWORD_FILE
-rm $ERROR_FILE
+rm "$KNOWN_HOSTS_FILE"
+rm "$PASSWORD_FILE"
+rm "$ERROR_FILE"
 
 exit $EXIT_CODE

@@ -21,4 +21,4 @@
 # This schema generator creates a brief XML description of the protocol.
 # Basically just the command list.
 
-xsltproc ./GMP.xsl $1
+xsltproc ./GMP.xsl "$1"

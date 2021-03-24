@@ -18,6 +18,6 @@
 
 # Escalator method script: Send.
 
-cat $3 | socat -t 0 - TCP:$1:$2
+socat -t 0 - TCP:"$1":"$2" < "$3"
 EXIT_CODE=$?
 exit $EXIT_CODE

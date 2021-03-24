@@ -18,6 +18,6 @@
 
 # Escalator method script: verinice connector.
 
-greenbone_verinice_connector $1 $2 $3 $4
+greenbone_verinice_connector "$1" "$2" "$3" "$4"
 EXIT_CODE=$?
 exit $EXIT_CODE

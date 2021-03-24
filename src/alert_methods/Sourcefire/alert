@@ -18,6 +18,6 @@
 
 # Escalator method script: Sourcefire connector.
 
-greenbone_sourcefire_connector -server=$1 -port=$2 -pkcs12=$3 -password="$5" $4
+greenbone_sourcefire_connector -server="$1" -port="$2" -pkcs12="$3" -password="$5" "$4"
 EXIT_CODE=$?
 exit $EXIT_CODE

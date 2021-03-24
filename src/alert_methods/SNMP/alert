@@ -22,12 +22,12 @@ COMMUNITY=$1
 AGENT=$2  # Host.
 MESSAGE=$3
 
-OUTPUT=$(snmptrap -v 2c -c $COMMUNITY $AGENT '' .1.3.6.1.6.3 0 s "$MESSAGE" 2>&1)
+OUTPUT=$(snmptrap -v 2c -c "$COMMUNITY" "$AGENT" '' .1.3.6.1.6.3 0 s "$MESSAGE" 2>&1)
 
 EXIT_CODE=$?
 
 if [ "0" -ne "$EXIT_CODE" ]
 then
-  echo "snmptrap failed with code $EXIT_CODE:\n$OUTPUT" >&2
+  printf 'snmptrap failed with code %s:\n%s\n' "$EXIT_CODE" "$OUTPUT">&2
   exit $EXIT_CODE
 fi

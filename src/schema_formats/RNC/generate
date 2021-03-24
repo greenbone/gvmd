@@ -21,4 +21,4 @@
 # This schema generator creates a single RNC file from the XML schema using
 # an XSL transformation via the tool xsltproc.
 
-xsltproc ./RNC.xsl $1
+xsltproc ./RNC.xsl "$1"
