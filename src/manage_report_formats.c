@@ -669,7 +669,7 @@ sync_report_format_with_feed (const gchar *path)
 int
 sync_report_formats_with_feed ()
 {
-  GError *error;
+  GError *error = NULL;
   GDir *dir;
   const gchar *report_format_path;
 
