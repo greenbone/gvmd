@@ -14568,6 +14568,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->lean,
                                 /* Special case the XML report, bah. */
                                 (!no_report_format)
+                                && get_reports_data->format_id
                                 && strcmp
                                     (get_reports_data->format_id,
                                      "a994b278-1f62-11e1-96ac-406186ea4fc5")
