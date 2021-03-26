@@ -14168,6 +14168,7 @@ static void
 handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
 {
   report_t request_report = 0, delta_report = 0, report;
+  char no_report_format;
   report_format_t report_format;
   iterator_t reports;
   int count, filtered, ret, first;
@@ -14232,13 +14233,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((get_reports_data->format_id == NULL) || (strcmp(get_reports_data->format_id, "") == 0))
-    get_reports_data->format_id
-      = g_strdup ("a994b278-1f62-11e1-96ac-406186ea4fc5");
+  no_report_format = (get_reports_data->format_id == NULL) || (strcmp(get_reports_data->format_id, "") == 0);
 
-  if (find_report_format_with_permission (get_reports_data->format_id,
-                                          &report_format,
-                                          "get_report_formats"))
+  if ((!no_report_format)
+      && find_report_format_with_permission (get_reports_data->format_id,
+                                             &report_format,
+                                             "get_report_formats"))
     {
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -14246,7 +14246,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if (report_format == 0)
+  if ((!no_report_format) && (report_format == 0))
     {
       if (send_find_error_to_client ("get_reports", "report format",
                                      get_reports_data->format_id,
@@ -14321,7 +14321,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if (report_format_active (report_format) == 0)
+  if ((!no_report_format) && (report_format_active (report_format) == 0))
     {
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
@@ -14331,8 +14331,9 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((report_format_predefined (report_format) == 0)
-      && (report_format_trust (report_format) > 1))
+  if ((!no_report_format) &&
+      ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) > 1)))
     {
       get_reports_data_reset (get_reports_data);
       SEND_TO_CLIENT_OR_FAIL
@@ -14450,8 +14451,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       GString *prefix;
 
       prefix = g_string_new ("");
-      content_type = report_format_content_type (report_format);
-      extension = report_format_extension (report_format);
+      content_type = no_report_format ? g_strdup("application/xml") : report_format_content_type (report_format);
+      extension = no_report_format ? g_strdup("") : report_format_extension (report_format);
 
       if (get_reports_data->alert_id == NULL)
         g_string_append_printf (prefix,
@@ -14461,7 +14462,9 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 " extension=\"%s\""
                                 " content_type=\"%s\">",
                                 report_iterator_uuid (&reports),
-                                get_reports_data->format_id,
+                                no_report_format
+                                  ? ""
+                                  : get_reports_data->format_id,
                                 extension,
                                 content_type);
 
@@ -14511,8 +14514,9 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                         report_task_uuid);
 
               /* Skip task name for Anonymous XML report format. */
-              if (strcmp (get_reports_data->format_id,
-                          "5057e5cc-b825-11e4-9d0e-28d24461215b"))
+              if (get_reports_data->format_id == NULL
+                  || strcmp (get_reports_data->format_id,
+                             "5057e5cc-b825-11e4-9d0e-28d24461215b"))
                 {
                   gchar *report_task_name;
                   report_task_name = task_name (task);
@@ -14555,7 +14559,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
 
       ret = manage_send_report (report,
                                 delta_report,
-                                report_format,
+                                no_report_format ? -1 : report_format,
                                 &get_reports_data->get,
                                 get_reports_data->notes_details,
                                 get_reports_data->overrides_details,
@@ -14563,7 +14567,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 get_reports_data->ignore_pagination,
                                 get_reports_data->lean,
                                 /* Special case the XML report, bah. */
-                                get_reports_data->format_id
+                                (!no_report_format)
                                 && strcmp
                                     (get_reports_data->format_id,
                                      "a994b278-1f62-11e1-96ac-406186ea4fc5")
