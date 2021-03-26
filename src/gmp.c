@@ -14233,7 +14233,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  no_report_format = (get_reports_data->format_id == NULL) || (strcmp(get_reports_data->format_id, "") == 0);
+  no_report_format = (get_reports_data->format_id == NULL)
+                      || (strcmp(get_reports_data->format_id, "") == 0);
 
   if ((!no_report_format)
       && find_report_format_with_permission (get_reports_data->format_id,
@@ -14451,8 +14452,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       GString *prefix;
 
       prefix = g_string_new ("");
-      content_type = no_report_format ? g_strdup("application/xml") : report_format_content_type (report_format);
-      extension = no_report_format ? g_strdup("") : report_format_extension (report_format);
+      content_type = no_report_format
+                        ? g_strdup("application/xml")
+                        : report_format_content_type (report_format);
+      extension = no_report_format
+                    ? g_strdup("")
+                    : report_format_extension (report_format);
 
       if (get_reports_data->alert_id == NULL)
         g_string_append_printf (prefix,
