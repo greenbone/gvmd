@@ -28228,7 +28228,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
                gchar **host_summary)
 {
   task_t task;
-  gchar *report_format_id, *xml_start, *xml_file, *output_file;
+  gchar *xml_start, *xml_file, *output_file;
   char xml_dir[] = "/tmp/gvmd_XXXXXX";
   int ret;
   GList *used_rfps;
@@ -28269,12 +28269,21 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
 
-  /* Apply report format(s) */
-  report_format_id = report_format_uuid (report_format);
+  if (report_format > 0)
+    {
+      /* Apply report format(s) */
+      gchar* report_format_id = report_format_uuid (report_format);
 
-  output_file = apply_report_format (report_format_id,
-                                     xml_start, xml_file, xml_dir,
-                                     &used_rfps);
+      output_file = apply_report_format (report_format_id,
+                                         xml_start, xml_file, xml_dir,
+                                         &used_rfps);
+      g_free (report_format_id);
+    }
+  else
+    {
+      print_report_xml_end(xml_start, xml_file, -1);
+      output_file = g_strdup(xml_file);
+    }
 
   if (output_file == NULL)
     {
@@ -28286,7 +28295,6 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
   /* Read the script output from file. */
   if (output_file == NULL)
     {
-      g_free (report_format_id);
       gvm_file_remove_recurse (xml_dir);
       return NULL;
     }
@@ -28299,7 +28307,6 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
   g_free (output_file);
   if (get_error)
     {
-      g_free (report_format_id);
       g_warning ("%s: Failed to get output: %s",
                   __func__,
                   get_error->message);
@@ -28316,18 +28323,18 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
 
   /* Set convenience return parameters. */
 
-  if (extension || content_type)
+  if ((report_format > 0) && (extension || content_type))
     {
       iterator_t formats;
       get_data_t report_format_get;
 
       memset (&report_format_get, '\0', sizeof (report_format_get));
-      report_format_get.id = report_format_id;
+      report_format_get.id = report_format_uuid(report_format);
 
       init_report_format_iterator (&formats, &report_format_get);
       if (next (&formats) == FALSE)
         {
-          g_free (report_format_id);
+          g_free (report_format_get.id);
           cleanup_iterator (&formats);
           return NULL;
         }
@@ -28340,9 +28347,9 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
         *content_type = g_strdup (report_format_iterator_content_type (&formats));
 
       cleanup_iterator (&formats);
+      g_free (report_format_get.id);
     }
 
-  g_free (report_format_id);
 
   /* Return the output. */
 
@@ -28403,7 +28410,7 @@ manage_send_report (report_t report, report_t delta_report,
   char xml_dir[] = "/tmp/gvmd_XXXXXX";
   int ret;
   GList *used_rfps;
-  gchar *output_file, *report_format_id;
+  gchar *output_file;
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
   FILE *stream;
 
@@ -28443,7 +28450,8 @@ manage_send_report (report_t report, report_t delta_report,
 
   /* Print the report as XML to a file. */
 
-  if ((report_format_predefined (report_format) == 0)
+  if ((report_format > 0)
+      && (report_format_predefined (report_format) == 0)
       && (report_format_trust (report_format) != TRUST_YES))
     return -1;
 
@@ -28468,18 +28476,26 @@ manage_send_report (report_t report, report_t delta_report,
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
 
-  /* Apply report format(s). */
-  report_format_id = report_format_uuid (report_format);
+  if (report_format > 0)
+    {
+      /* Apply report format(s). */
+      gchar* report_format_id = report_format_uuid (report_format);
 
-  output_file = apply_report_format (report_format_id,
-                                     xml_start, xml_file, xml_dir,
-                                     &used_rfps);
+      output_file = apply_report_format (report_format_id,
+                                         xml_start, xml_file, xml_dir,
+                                         &used_rfps);
+      g_free (report_format_id);
+    }
+  else
+    {
+      print_report_xml_end(xml_start, xml_file, -1);
+      output_file = g_strdup(xml_file);
+    }
 
   if (output_file == NULL)
     {
       g_warning ("%s: No file returned for report format", __func__);
     }
-  g_free (report_format_id);
 
   /* Send the report. */
 
