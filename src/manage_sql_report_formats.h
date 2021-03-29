@@ -85,4 +85,7 @@ check_db_report_formats ();
 int
 check_db_report_formats_trash ();
 
+int
+print_report_xml_end (gchar *, gchar *, report_format_t);
+
 #endif /* not _GVMD_MANAGE_SQL_REPORT_FORMATS_H */

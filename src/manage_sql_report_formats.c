@@ -3583,12 +3583,11 @@ run_report_format_script (gchar *report_format_id,
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 print_report_xml_end (gchar *xml_start, gchar *xml_full,
                       report_format_t report_format)
 {
   FILE *out;
-  iterator_t params;
 
   if (gvm_file_copy (xml_start, xml_full) == FALSE)
     {
@@ -3607,16 +3606,20 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
 
   /* A bit messy having report XML here, but simplest for now. */
 
-  PRINT (out, "<report_format>");
-  init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
-  while (next (&params))
-    PRINT (out,
-           "<param><name>%s</name><value>%s</value></param>",
-           report_format_param_iterator_name (&params),
-           report_format_param_iterator_value (&params));
-  cleanup_iterator (&params);
+  if (report_format > 0)
+    {
+      iterator_t params;
+      PRINT (out, "<report_format>");
+      init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
+      while (next (&params))
+        PRINT (out,
+               "<param><name>%s</name><value>%s</value></param>",
+               report_format_param_iterator_name (&params),
+               report_format_param_iterator_value (&params));
+      cleanup_iterator (&params);
 
-  PRINT (out, "</report_format>");
+      PRINT (out, "</report_format>");
+    }
 
   PRINT (out, "</report>");
 
