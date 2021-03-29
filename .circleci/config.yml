@@ -135,6 +135,16 @@ jobs:
           command: |
             . venv/bin/activate
             codecov -F documentation -X gcov -f lcov.info
+  gen_gmp_doc:
+    docker:
+      - image: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    steps:
+      - checkout
+      - run:
+          name: Generate GMP documentation (HTML)
+          command: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-gmp
+      - store_artifacts:
+          path: build/doc/gmp.html
 workflows:
   version: 2
   build:
@@ -147,6 +157,7 @@ workflows:
       - scan_build_postgresql_debug
       - build_doc
       - gen_xml_doc
+      - gen_gmp_doc
       - doc_coverage:
           requires:
             - gen_xml_doc
