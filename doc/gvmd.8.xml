@@ -150,6 +150,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--feed-lock-timeout=<arg>TIMEOUT</arg></opt></p>
+      <optdesc>
+        <p>
+          Sets the number of seconds to retry for if the feed is locked
+          in contexts (like migration or rebuilds) that do not retry
+          on their own (like automatic syncs). Defaults to 0.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>-f, --foreground</opt></p>
       <optdesc>
         <p>Run in foreground.</p>
