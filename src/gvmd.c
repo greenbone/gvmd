@@ -1753,6 +1753,7 @@ gvmd (int argc, char** argv)
   static gchar *disable = NULL;
   static gchar *value = NULL;
   static gchar *feed_lock_path = NULL;
+  static int feed_lock_timeout = 0;
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
@@ -1833,6 +1834,12 @@ gvmd (int argc, char** argv)
           &feed_lock_path,
           "Sets the path to the feed lock file.",
           "<path>" },
+        { "feed-lock-timeout", '\0', 0, G_OPTION_ARG_INT,
+          &feed_lock_timeout,
+          "Sets the number of seconds to retry for if the feed is locked"
+          " in contexts (like migration or rebuilds) that do not retry"
+          " on their own (like automatic syncs). Defaults to 0.",
+          "<timeout>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE,
           &foreground,
           "Run in foreground.",
@@ -2081,6 +2088,9 @@ gvmd (int argc, char** argv)
 
   /* Set feed lock path */
   set_feed_lock_path (feed_lock_path);
+  
+  /* Set feed lock timeout */
+  set_feed_lock_timeout (feed_lock_timeout);
 
   /* Set schedule_timeout */
 
