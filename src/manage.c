@@ -6035,7 +6035,7 @@ feed_lockfile_lock (lockfile_t *lockfile)
 int
 feed_lockfile_lock_timeout (lockfile_t *lockfile)
 {
-  int ret;
+  int lock_status;
   gboolean log_timeout;
   time_t timeout_end;
 
@@ -6045,8 +6045,9 @@ feed_lockfile_lock_timeout (lockfile_t *lockfile)
   timeout_end = time (NULL) + feed_lock_timeout;
   do
     {
-      ret = lockfile_lock_path_nb (lockfile, get_feed_lock_path ());
-      if (ret == 1 && timeout_end > time (NULL))
+      lock_status = feed_lockfile_lock (lockfile);
+      if (lock_status == 1 /* already locked, but no error */
+          && timeout_end > time (NULL))
         {
           if (log_timeout)
             {
@@ -6057,14 +6058,11 @@ feed_lockfile_lock_timeout (lockfile_t *lockfile)
             }
           gvm_sleep (1);
         }
-      else if (ret)
+      else if (lock_status) /* error */
         {
-          return ret;
+          return lock_status;
         }
-    } while (ret);
-
-  /* Write the file contents (timestamp) */
-  write_sync_start (lockfile->fd);
+    } while (lock_status); /* lock is acquired when lock_status is 0 */
 
   return 0;
 }
