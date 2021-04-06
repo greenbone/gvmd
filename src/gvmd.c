@@ -1835,7 +1835,7 @@ gvmd (int argc, char** argv)
           &feed_lock_timeout,
           "Sets the number of seconds to retry for if the feed is locked"
           " in contexts (like migration or rebuilds) that do not retry"
-          " on their own (like automatic syncs). Defaults to 0.",
+          " on their own (like automatic syncs). Defaults to 0 (no retry).",
           "<timeout>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE,
           &foreground,
