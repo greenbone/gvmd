@@ -43,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Refactor modify_config, allowing multiple simultaneous changes [#1404](https://github.com/greenbone/gvmd/pull/1404)
 - Add retry on a deadlock within sql#sql [#1460](https://github.com/greenbone/gvmd/pull/1460)
 - Don't require report format plugin for XML report [#1466](https://github.com/greenbone/gvmd/pull/1466)
+- Wording of `Rebuilding NVTs because integrity check failed` [1475](https://github.com/greenbone/gvmd/pull/1475)
 
 ### Fixed
 - Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)

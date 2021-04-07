@@ -1103,7 +1103,7 @@ update_nvt_cache_retry ()
               ret = update_nvt_cache_osp (osp_update_socket);
               if (ret == 1)
                 {
-                  g_message ("Rebuilding NVTs because integrity check failed");
+                  g_message ("Rebuilding all NVTs because of a hash value mismatch");
                   ret = update_or_rebuild_nvts (0);
                   if (ret)
                     g_warning ("%s: rebuild failed", __func__);
