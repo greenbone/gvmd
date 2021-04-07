@@ -3693,11 +3693,20 @@ get_feed_lock_path ();
 void
 set_feed_lock_path (const char *);
 
+int
+get_feed_lock_timeout ();
+
+void
+set_feed_lock_timeout (int);
+
 void
 write_sync_start (int);
 
 int
 feed_lockfile_lock (lockfile_t *);
+
+int
+feed_lockfile_lock_timeout (lockfile_t*);
 
 int
 feed_lockfile_unlock (lockfile_t *);
