@@ -1599,6 +1599,8 @@ manage_create_result_indexes ()
 void
 create_view_vulns ()
 {
+  sql ("DROP VIEW IF EXISTS vulns;");
+
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'scap'"
@@ -1610,17 +1612,17 @@ create_view_vulns ()
          " AS (SELECT DISTINCT nvt FROM results"
          "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
-         "        score, qod, 'nvt' AS type"
+         "        score / 10.0 AS severity, qod, 'nvt' AS type"
          " FROM nvts"
          " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       score, "
+         "       severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
          " FROM cves"
          " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       score, "
+         "       severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'ovaldef' AS type"
          " FROM ovaldefs"
@@ -1631,7 +1633,7 @@ create_view_vulns ()
          " AS (SELECT DISTINCT nvt FROM results"
          "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
-         "        score, qod, 'nvt' AS type"
+         "        score / 10.0 AS severity, qod, 'nvt' AS type"
          " FROM nvts"
          " WHERE uuid in (SELECT * FROM used_nvts)");
 }
@@ -3001,7 +3003,7 @@ manage_db_init (const gchar *name)
            "  title TEXT,"
            "  summary TEXT,"
            "  cve_refs INTEGER,"
-           "  score INTEGER);");
+           "  severity DOUBLE PRECISION);");
       sql ("CREATE UNIQUE INDEX cert_bund_advs_idx"
            " ON cert.cert_bund_advs (name);");
       sql ("CREATE INDEX cert_bund_advs_by_creation_time"
@@ -3025,7 +3027,7 @@ manage_db_init (const gchar *name)
            "  title TEXT,"
            "  summary TEXT,"
            "  cve_refs INTEGER,"
-           "  score INTEGER);");
+           "  severity DOUBLE PRECISION);");
       sql ("CREATE UNIQUE INDEX dfn_cert_advs_idx"
            " ON cert.dfn_cert_advs (name);");
       sql ("CREATE INDEX dfn_cert_advs_by_creation_time"
@@ -3068,7 +3070,8 @@ manage_db_init (const gchar *name)
       /* Init tables. */
 
       sql ("INSERT INTO cert.meta (name, value)"
-           " VALUES ('database_version', '7');");
+           " VALUES ('database_version', '%i');",
+           GVMD_CERT_DATABASE_VERSION);
       sql ("INSERT INTO cert.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
@@ -3110,7 +3113,7 @@ manage_db_init (const gchar *name)
            "  modification_time integer,"
            "  cvss_vector text,"
            "  products text,"
-           "  score integer DEFAULT 0);");
+           "  severity DOUBLE PRECISION DEFAULT 0);");
 
       sql ("CREATE TABLE scap2.cpes"
            " (id SERIAL PRIMARY KEY,"
@@ -3122,7 +3125,7 @@ manage_db_init (const gchar *name)
            "  title text,"
            "  status text,"
            "  deprecated_by_id INTEGER,"
-           "  score integer DEFAULT 0,"
+           "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
 
@@ -3144,7 +3147,7 @@ manage_db_init (const gchar *name)
            "  description TEXT,"
            "  xml_file TEXT,"
            "  status TEXT,"
-           "  score integer DEFAULT 0,"
+           "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0);");
 
       sql ("CREATE TABLE scap2.ovalfiles"
@@ -3158,7 +3161,8 @@ manage_db_init (const gchar *name)
       /* Init tables. */
 
       sql ("INSERT INTO scap2.meta (name, value)"
-           " VALUES ('database_version', '17');");
+           " VALUES ('database_version', '%i');",
+           GVMD_SCAP_DATABASE_VERSION);
       sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
@@ -3235,8 +3239,8 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.cves (creation_time);");
       sql ("CREATE INDEX cves_by_modification_time_idx"
            " ON scap2.cves (modification_time);");
-      sql ("CREATE INDEX cves_by_score"
-           " ON scap2.cves (score);");
+      sql ("CREATE INDEX cves_by_severity"
+           " ON scap2.cves (severity);");
 
       sql ("CREATE UNIQUE INDEX cpe_idx"
            " ON scap2.cpes (name);");
@@ -3244,8 +3248,8 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.cpes (creation_time);");
       sql ("CREATE INDEX cpes_by_modification_time_idx"
            " ON scap2.cpes (modification_time);");
-      sql ("CREATE INDEX cpes_by_score"
-           " ON scap2.cpes (score);");
+      sql ("CREATE INDEX cpes_by_severity"
+           " ON scap2.cpes (severity);");
       sql ("CREATE INDEX cpes_by_uuid"
            " ON scap2.cpes (uuid);");
 

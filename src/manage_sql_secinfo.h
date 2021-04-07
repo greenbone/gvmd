@@ -76,7 +76,7 @@
  */
 #define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
  { GET_ITERATOR_FILTER_COLUMNS, "cvss_vector", "products",       \
-   "score", "description", "published", "severity", NULL }
+   "description", "published", "severity", NULL }
 
 /**
  * @brief CVE iterator columns.
@@ -88,9 +88,8 @@
    { "0", NULL, KEYWORD_TYPE_INTEGER },                         \
    { "cvss_vector", NULL, KEYWORD_TYPE_STRING },                \
    { "products", NULL, KEYWORD_TYPE_STRING },                   \
-   { "score", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                   \
    { "description", NULL, KEYWORD_TYPE_STRING },                \
-   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },         \
    { "creation_time", "published", KEYWORD_TYPE_INTEGER },      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                         \
  }
@@ -100,8 +99,8 @@
  */
 #define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
-   "deprecated_by_id", "score", "cves", "nvd_id",           \
-   "severity", "score", NULL }
+   "deprecated_by_id", "severity", "cves", "nvd_id",        \
+   NULL }
 
 /**
  * @brief CPE iterator columns.
@@ -114,10 +113,9 @@
    { "title", NULL, KEYWORD_TYPE_STRING },                      \
    { "status", NULL, KEYWORD_TYPE_STRING },                     \
    { "deprecated_by_id", NULL, KEYWORD_TYPE_INTEGER },          \
-   { "score", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                   \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                \
    { "nvd_id", NULL, KEYWORD_TYPE_INTEGER },                    \
-   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                         \
  }
 
@@ -127,7 +125,7 @@
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
    "class", "title", "description", "file",                 \
-   "status", "cves", "score", "severity",                   \
+   "status", "cves", "severity",                            \
    NULL }
 
 /**
@@ -145,9 +143,8 @@
    { "description", NULL, KEYWORD_TYPE_STRING },                 \
    { "xml_file", "file", KEYWORD_TYPE_STRING },                  \
    { "status", NULL, KEYWORD_TYPE_STRING },                      \
-   { "score", NULL, KEYWORD_TYPE_INTEGER },                      \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                    \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
-   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },          \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
@@ -156,7 +153,7 @@
  */
 #define CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",          \
-   "cves", "score", "severity", NULL }
+   "cves", "severity", NULL }
 
 /**
  * @brief CERT_BUND_ADV iterator columns.
@@ -169,8 +166,7 @@
    { "title", NULL, KEYWORD_TYPE_STRING },                       \
    { "summary", NULL, KEYWORD_TYPE_STRING },                     \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
-   { "score", NULL, KEYWORD_TYPE_INTEGER },                      \
-   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },          \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
@@ -179,7 +175,7 @@
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
-   "cves", "score", "severity", NULL }
+   "cves", "severity", NULL }
 
 /**
  * @brief DFN_CERT_ADV iterator columns.
@@ -192,8 +188,7 @@
    { "title", NULL, KEYWORD_TYPE_STRING },                       \
    { "summary", NULL, KEYWORD_TYPE_STRING },                     \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                 \
-   { "score", NULL, KEYWORD_TYPE_INTEGER },                      \
-   { "score / 10.0", "severity", KEYWORD_TYPE_DOUBLE },          \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
  }
 
