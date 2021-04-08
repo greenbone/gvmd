@@ -270,7 +270,8 @@ insert_nvt (const nvti_t *nvti)
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
-  int qod, i, highest;
+  int qod, i;
+  double highest;
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -360,8 +361,9 @@ insert_nvt (const nvti_t *nvti)
       quoted_value = sql_quote (vtseverity_value (severity) ?
                                  vtseverity_value (severity) : "");
 
-      sql ("INSERT into vt_severities (vt_oid, type, origin, date, score, value)"
-           " VALUES ('%s', '%s', '%s', %i, %i, '%s');",
+      sql ("INSERT into vt_severities (vt_oid, type, origin, date, score,"
+           "                           value)"
+           " VALUES ('%s', '%s', '%s', %i, %0.1f, '%s');",
            nvti_oid (nvti), vtseverity_type (severity),
            quoted_origin, vtseverity_date (severity),
            vtseverity_score (severity), quoted_value);
@@ -372,7 +374,7 @@ insert_nvt (const nvti_t *nvti)
       g_free (quoted_value);
     }
 
-  sql ("UPDATE nvts SET score = %i WHERE oid = '%s';",
+  sql ("UPDATE nvts SET cvss_base = %0.1f WHERE oid = '%s';",
        highest,
        nvti_oid (nvti));
 
@@ -1008,22 +1010,6 @@ DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
 DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
 
 /**
- * @brief Get the score from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Score, or -1 if iteration is complete.
- */
-int
-nvt_iterator_score (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
-  return ret;
-}
-
-/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
@@ -1401,7 +1387,7 @@ nvti_from_vt (entity_t vt)
                 vtseverity_new (severity_type,
                                 origin ? entity_text (origin) : NULL,
                                 parsed_severity_date,
-                                round (cvss_base_dbl * 10.0),
+                                cvss_base_dbl,
                                 entity_text (value)));
 
               nvti_add_tag (nvti, "cvss_base_vector", entity_text (value));
@@ -1800,10 +1786,10 @@ DEF_ACCESS (nvt_severity_iterator_date, 2);
  * 
  * @return The score of the severity.
  */
-int
+double
 nvt_severity_iterator_score (iterator_t *iterator)
 {
-  return iterator_int (iterator, 3);
+  return iterator_double (iterator, 3);
 }
 
 /**

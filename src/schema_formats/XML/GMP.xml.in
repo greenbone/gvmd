@@ -132,15 +132,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }</pattern>
   </type>
   <type>
-    <name>score</name>
-    <summary>A severity score</summary>
-    <description>
-      A severity score is an integer between 0 and 100 (inclusive),
-      or a special negative value (-1, -2 or -3).
-    </description>
-    <pattern>xsd:token { pattern = "-[1-3]|[1-9]?[0-9]|100" }</pattern>
-  </type>
-  <type>
     <name>sort_order</name>
     <summary>A string describing an order for sorting</summary>
     <description>
@@ -1376,7 +1367,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>scan_nvt_version</e>
       <e>threat</e>
       <e>severity</e>
-      <e>score</e>
       <e>qod</e>
       <o><e>original_threat</e></o>
       <o><e>original_severity</e></o>
@@ -1627,10 +1617,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>severity</name>
       <pattern><t>severity</t></pattern>
-    </ele>
-    <ele>
-      <name>score</name>
-      <pattern><t>score</t></pattern>
     </ele>
     <ele>
       <name>qod</name>
@@ -2979,7 +2965,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>score</name>
         <required>1</required>
         <summary>The maximum severity score</summary>
-        <type>score</type>
+        <type>severity</type>
       </attrib>
       <any><e>severity</e></any>
     </pattern>
@@ -3010,8 +2996,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>score</name>
-        <summary>Numeric score ranging from 0 to 100</summary>
-        <pattern><t>score</t></pattern>
+        <summary>Numeric score ranging from 0.0 to 10.0</summary>
+        <pattern><t>severity</t></pattern>
       </ele>
       <ele>
         <name>value</name>
@@ -14984,11 +14970,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the result with overrides</summary>
           </column>
           <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Score of the result with overrides</summary>
-          </column>
-          <column>
             <name>original_severity</name>
             <type>severity</type>
             <summary>Original severity of the result</summary>
@@ -16360,11 +16341,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>severity</name>
             <type>severity</type>
             <summary>Severity of the result with overrides</summary>
-          </column>
-          <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Score of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -22474,11 +22450,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the vulnerability</summary>
           </column>
           <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Score of the vulnerability</summary>
-          </column>
-          <column>
             <name>qod</name>
             <type>integer</type>
             <summary>QoD of the vulnerability</summary>
@@ -22537,7 +22508,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>creation_time</e>
           <e>modification_time</e>
           <e>severity</e>
-          <e>score</e>
           <e>qod</e>
           <e>results</e>
           <e>hosts</e>
@@ -22573,13 +22543,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Severity of the vulnerability</summary>
           <pattern>
             <t>severity</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>score</name>
-          <summary>Score of the vulnerability</summary>
-          <pattern>
-            <t>score</t>
           </pattern>
         </ele>
         <ele>

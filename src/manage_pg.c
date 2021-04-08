@@ -1612,7 +1612,7 @@ create_view_vulns ()
          " AS (SELECT DISTINCT nvt FROM results"
          "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
-         "        score / 10.0 AS severity, qod, 'nvt' AS type"
+         "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
          " FROM nvts"
          " WHERE uuid in (SELECT * FROM used_nvts)"
          " UNION SELECT id, uuid, name, creation_time, modification_time,"
@@ -1633,7 +1633,7 @@ create_view_vulns ()
          " AS (SELECT DISTINCT nvt FROM results"
          "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
          " SELECT id, uuid, name, creation_time, modification_time,"
-         "        score / 10.0 AS severity, qod, 'nvt' AS type"
+         "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
          " FROM nvts"
          " WHERE uuid in (SELECT * FROM used_nvts)");
 }
@@ -2329,7 +2329,6 @@ create_tables ()
        "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
        "  nvt_version text,"
        "  severity real,"
-       "  score integer,"
        "  qod integer,"
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
@@ -2350,7 +2349,6 @@ create_tables ()
        "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
        "  nvt_version text,"
        "  severity real,"
-       "  score integer,"
        "  qod integer,"
        "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
@@ -2481,7 +2479,7 @@ create_tables ()
        "  type text NOT NULL,"
        "  origin text,"
        "  date integer,"
-       "  score integer,"
+       "  score double precision,"
        "  value text);");
 
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
@@ -2504,7 +2502,6 @@ create_tables ()
        "  category text,"
        "  family text,"
        "  cvss_base text,"
-       "  score integer,"
        "  creation_time integer,"
        "  modification_time integer,"
        "  solution text,"

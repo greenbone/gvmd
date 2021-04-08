@@ -5570,7 +5570,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               "<category>%d</category>"
                               "<family>%s</family>"
                               "<cvss_base>%s</cvss_base>"
-                              "<severities score=\"%i\">",
+                              "<severities score=\"%s\">",
                               oid,
                               name_text,
                               get_iterator_creation_time (nvts)
@@ -5585,7 +5585,9 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               nvt_iterator_cvss_base (nvts)
                                ? nvt_iterator_cvss_base (nvts)
                                : "",
-                              nvt_iterator_score (nvts));
+                              nvt_iterator_cvss_base (nvts)
+                               ? nvt_iterator_cvss_base (nvts)
+                               : "");
 
       init_nvt_severity_iterator (&severities, oid);
       while (next (&severities))
@@ -5595,7 +5597,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                "<severity type=\"%s\">"
                "<origin>%s</origin>"
                "<date>%s</date>"
-               "<score>%i</score>"
+               "<score>%0.1f</score>"
                "<value>%s</value>"
                "</severity>",
                nvt_severity_iterator_type (&severities),
