@@ -19296,10 +19296,9 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
        "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f',"
-       " (%1.1f::float * 10)::integer, '%s',"
-       "  '%s', make_uuid (), %i, '', '',"
+       "  '%s', '%s', make_uuid (), %i, '', '',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-       task, host ?: "", nvt, cvss, cvss, severity_to_type (cvss),
+       task, host ?: "", nvt, cvss, severity_to_type (cvss),
        quoted_descr, QOD_DEFAULT, nvt);
 
   g_free (quoted_descr);
@@ -19540,7 +19539,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
-                 "       max(CAST (cves.cvss AS NUMERIC)) AS severity,"
+                 "       max(cves.severity) AS severity,"
                  "       max(cves.description) AS description,"
                  "       cpes.name AS location,"
                  "       (SELECT host FROM report_hosts"
