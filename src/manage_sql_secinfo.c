@@ -1033,7 +1033,7 @@ ovaldef_severity (const char *id)
 
   assert (id);
   quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT score / 10.0 FROM ovaldefs WHERE uuid = '%s';",
+  ret = sql_string ("SELECT severity FROM ovaldefs WHERE uuid = '%s';",
                     quoted_id);
   g_free (quoted_id);
   return ret;
