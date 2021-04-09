@@ -61,6 +61,9 @@ Disable task scheduling.
 \fB--feed-lock-path=\fIPATH\fB\f1
 Sets the path to the feed lock file.
 .TP
+\fB--feed-lock-timeout=\fITIMEOUT\fB\f1
+Sets the number of seconds to retry for if the feed is locked in contexts (like migration or rebuilds) that do not retry on their own (like automatic syncs). Defaults to 0 (no retry).
+.TP
 \fB-f, --foreground\f1
 Run in foreground.
 .TP
@@ -181,9 +184,6 @@ Time out tasks that are more than TIME minutes overdue. -1 to disable, 0 for min
 .TP
 \fB--secinfo-commit-size=\fINUMBER\fB\f1
 During CERT and SCAP sync, commit updates to the database every NUMBER items, 0 for unlimited.
-.TP
-\fB--slave-commit-size=\fINUMBER\fB\f1
-During slave updates, commit after every NUMBER updated results and hosts, 0 for unlimited.
 .TP
 \fB-c, --unix-socket=\fIFILENAME\fB\f1
 Listen on UNIX socket at FILENAME.
