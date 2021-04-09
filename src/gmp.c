@@ -8958,28 +8958,26 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
     {
       if (g_str_has_prefix (oid, "CVE-"))
         {
-          int score;
-          gchar *cvss_base;
+          gchar *severity;
 
-          cvss_base = cve_cvss_base (oid);
-          score = cve_score (oid);
+          severity = cve_cvss_base (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>cve</type>"
                                     "<name>%s</name>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<severities score=\"%i\">"
+                                    "<severities score=\"%s\">"
                                     "</severities>"
                                     "<cpe id='%s'/>"
                                     "<cve>%s</cve>"
                                     "</nvt>",
                                     oid,
                                     oid,
-                                    cvss_base,
-                                    score,
+                                    severity ? severity : "",
+                                    severity ? severity : "",
                                     result_iterator_port (results),
                                     oid);
-          g_free (cvss_base);
+          g_free (severity);
           return;
         }
 
@@ -8990,6 +8988,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           gchar **split, **item;
           get_data_t get;
           iterator_t iterator;
+          const char *severity;
 
           memset (&get, '\0', sizeof (get));
           get.id = g_strdup (oid);
@@ -8998,19 +8997,19 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             assert (0);
           if (!next (&iterator))
             abort ();
+          severity = ovaldef_info_iterator_severity (&iterator);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
                                     "<type>ovaldef</type>"
                                     "<name>%s</name>"
-                                    "<family/>"
+                                    "<cvss_base>%s</cvss_base>"
                                     "<severities score=\"%s\">"
                                     "</severities>"
                                     "<tags>summary=%s</tags>",
                                     oid,
                                     ovaldef_info_iterator_title (&iterator),
-                                    ovaldef_info_iterator_score (&iterator)
-                                      ? ovaldef_info_iterator_score (&iterator)
-                                      : "",
+                                    severity ? severity : "",
+                                    severity ? severity : "",
                                     ovaldef_info_iterator_description (&iterator));
           g_free (get.id);
           cleanup_iterator (&iterator);
@@ -9133,12 +9132,12 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<severities score=\"%i\">",
+                                    "<severities score=\"%s\">",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_score (results));
+                                    cvss_base ?: "");
 
           init_nvt_severity_iterator (&severities, oid);
           while (next (&severities))
@@ -9148,7 +9147,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                    "<severity type=\"%s\">"
                    "<origin>%s</origin>"
                    "<date>%s</date>"
-                   "<score>%i</score>"
+                   "<score>%0.1f</score>"
                    "<value>%s</value>"
                    "</severity>",
                    nvt_severity_iterator_type (&severities),
@@ -9440,10 +9439,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf
    (buffer,
     "<severity>%.1f</severity>"
-    "<score>%i</score>"
     "<qod><value>%s</value>",
     result_iterator_severity_double (results),
-    result_iterator_score (results),
     qod ? qod : "");
 
   if (qod_type && strlen (qod_type))
@@ -13093,14 +13090,14 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
                              "<nvd_id>%s</nvd_id>"
-                             "<score>%s</score>"
+                             "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
                              "<status>%s</status>",
                              cpe_info_iterator_nvd_id (&info)
                               ? cpe_info_iterator_nvd_id (&info)
                               : "",
-                             cpe_info_iterator_score (&info)
-                              ? cpe_info_iterator_score (&info)
+                             cpe_info_iterator_severity (&info)
+                              ? cpe_info_iterator_severity (&info)
                               : "",
                              cpe_info_iterator_cve_refs (&info),
                              cpe_info_iterator_status (&info)
@@ -13143,12 +13140,12 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         {
           xml_string_append (result,
                              "<cve>"
-                             "<score>%s</score>"
+                             "<severity>%s</severity>"
                              "<cvss_vector>%s</cvss_vector>"
                              "<description>%s</description>"
                              "<products>%s</products>",
-                             cve_info_iterator_score (&info)
-                              ? cve_info_iterator_score (&info)
+                             cve_info_iterator_severity (&info)
+                              ? cve_info_iterator_severity (&info)
                               : "",
                              cve_info_iterator_vector (&info),
                              cve_info_iterator_description (&info),
@@ -13224,7 +13221,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              "<status>%s</status>"
                              "<class>%s</class>"
                              "<title>%s</title>"
-                             "<score>%s</score>"
+                             "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
                              "<file>%s</file>",
                              ovaldef_info_iterator_version (&info),
@@ -13232,8 +13229,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              ovaldef_info_iterator_status (&info),
                              ovaldef_info_iterator_class (&info),
                              ovaldef_info_iterator_title (&info),
-                             ovaldef_info_iterator_score (&info)
-                              ? ovaldef_info_iterator_score (&info)
+                             ovaldef_info_iterator_severity (&info)
+                              ? ovaldef_info_iterator_severity (&info)
                               : "",
                              ovaldef_info_iterator_cve_refs (&info),
                              ovaldef_info_iterator_file (&info));
@@ -13248,12 +13245,12 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            "<cert_bund_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<score>%s</score>"
+                           "<severity>%s</severity>"
                            "<cve_refs>%s</cve_refs>",
                            cert_bund_adv_info_iterator_title (&info),
                            cert_bund_adv_info_iterator_summary (&info),
-                           cert_bund_adv_info_iterator_score(&info)
-                            ? cert_bund_adv_info_iterator_score(&info)
+                           cert_bund_adv_info_iterator_severity(&info)
+                            ? cert_bund_adv_info_iterator_severity(&info)
                             : "",
                            cert_bund_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
@@ -13261,12 +13258,12 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            "<dfn_cert_adv>"
                            "<title>%s</title>"
                            "<summary>%s</summary>"
-                           "<score>%s</score>"
+                           "<severity>%s</severity>"
                            "<cve_refs>%s</cve_refs>",
                            dfn_cert_adv_info_iterator_title (&info),
                            dfn_cert_adv_info_iterator_summary (&info),
-                           dfn_cert_adv_info_iterator_score(&info)
-                            ? dfn_cert_adv_info_iterator_score(&info)
+                           dfn_cert_adv_info_iterator_severity(&info)
+                            ? dfn_cert_adv_info_iterator_severity(&info)
                             : "",
                            dfn_cert_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
@@ -17776,7 +17773,6 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                "<creation_time>%s</creation_time>"
                                "<modification_time>%s</modification_time>"
                                "<severity>%1.1f</severity>"
-                               "<score>%i</score>"
                                "<qod>%d</qod>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
@@ -17784,7 +17780,6 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                get_iterator_creation_time (&vulns),
                                get_iterator_modification_time (&vulns),
                                vuln_iterator_severity (&vulns),
-                               vuln_iterator_score (&vulns),
                                vuln_iterator_qod (&vulns));
 
       // results for the vulnerability

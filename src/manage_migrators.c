@@ -2445,10 +2445,7 @@ migrate_236_to_237 ()
 
   /* Update the database. */
 
-  /* NVT scores were introduced, for handling extended severities. */
-
-  sql ("ALTER TABLE nvts ADD column score integer;");
-  sql ("UPDATE nvts SET score = (cvss_base::float * 10)::integer;");
+  /* This previously added a "score" column to the nvts table */
 
   /* Set the database version to 237. */
 
@@ -2479,13 +2476,8 @@ migrate_237_to_238 ()
 
   /* Update the database. */
 
-  /* Table results also got a score column, for extended severities. */
-
-  sql ("ALTER TABLE results ADD column score integer;");
-  sql ("UPDATE results SET score = (severity::float * 10)::integer;");
-
-  sql ("ALTER TABLE results_trash ADD column score integer;");
-  sql ("UPDATE results_trash SET score = (severity::float * 10)::integer;");
+  /* This previously added a "score" column to the results and results_trash
+   * tables. */
 
   /* Set the database version to 238. */
 
@@ -2603,6 +2595,52 @@ migrate_240_to_241 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 241 to version 242.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_241_to_242 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 241. */
+
+  if (manage_db_version () != 241)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove score columns from results and nvts if they were added in
+   *  migrations to previous versions.
+   */
+
+  sql ("DROP VIEW IF EXISTS vulns;");
+
+  sql ("ALTER TABLE nvts DROP COLUMN IF EXISTS score;");
+
+  sql ("ALTER TABLE results DROP COLUMN IF EXISTS score;");
+
+  sql ("ALTER TABLE results_trash DROP COLUMN IF EXISTS score;");
+
+  /* Change the vt_severities table to a CVSS score */
+  sql ("ALTER TABLE vt_severities ALTER COLUMN score"
+       " SET DATA TYPE double precision;");
+  sql ("UPDATE vt_severities SET score = round(score / 10.0, 1);");
+
+  /* Set the database version to 242. */
+
+  set_db_version (242);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2650,6 +2688,7 @@ static migrator_t database_migrators[] = {
   {239, migrate_238_to_239},
   {240, migrate_239_to_240},
   {241, migrate_240_to_241},
+  {242, migrate_241_to_242},
   /* End marker. */
   {-1, NULL}};
 

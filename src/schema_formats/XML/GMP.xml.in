@@ -132,15 +132,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }</pattern>
   </type>
   <type>
-    <name>score</name>
-    <summary>A severity score</summary>
-    <description>
-      A severity score is an integer between 0 and 100 (inclusive),
-      or a special negative value (-1, -2 or -3).
-    </description>
-    <pattern>xsd:token { pattern = "-[1-3]|[1-9]?[0-9]|100" }</pattern>
-  </type>
-  <type>
     <name>sort_order</name>
     <summary>A string describing an order for sorting</summary>
     <description>
@@ -1376,7 +1367,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>scan_nvt_version</e>
       <e>threat</e>
       <e>severity</e>
-      <e>score</e>
       <e>qod</e>
       <o><e>original_threat</e></o>
       <o><e>original_severity</e></o>
@@ -1627,10 +1617,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>severity</name>
       <pattern><t>severity</t></pattern>
-    </ele>
-    <ele>
-      <name>score</name>
-      <pattern><t>score</t></pattern>
     </ele>
     <ele>
       <name>qod</name>
@@ -2979,7 +2965,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>score</name>
         <required>1</required>
         <summary>The maximum severity score</summary>
-        <type>score</type>
+        <type>severity</type>
       </attrib>
       <any><e>severity</e></any>
     </pattern>
@@ -3010,8 +2996,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>score</name>
-        <summary>Numeric score ranging from 0 to 100</summary>
-        <pattern><t>score</t></pattern>
+        <summary>Numeric score ranging from 0.0 to 10.0</summary>
+        <pattern><t>severity</t></pattern>
       </ele>
       <ele>
         <name>value</name>
@@ -11467,14 +11453,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Name of the owner</summary>
           </column>
           <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Severity score of the SecInfo</summary>
-          </column>
-          <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>CVSS-based severity of the SecInfo</summary>
+            <summary>CVSS severity score of the SecInfo</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -11848,7 +11829,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>summary</e>
-            <e>score</e>
+            <e>severity</e>
             <e>cve_refs</e>
             <o><e>raw_data</e></o>
           </pattern>
@@ -11868,10 +11849,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>score</name>
-            <summary>Highest 0-100 severity score of CVEs referenced by the advisory</summary>
+            <name>severity</name>
+            <summary>Highest CVSS severity score of CVEs referenced by the advisory</summary>
             <pattern>
-              <t>score</t>
+              <t>severity</t>
             </pattern>
           </ele>
           <ele>
@@ -11894,7 +11875,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>nvd_id</e>
             <o><e>title</e></o>
-            <e>score</e>
+            <e>severity</e>
             <e>cve_refs</e>
             <e>status</e>
             <o><e>cves</e></o>
@@ -11916,10 +11897,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>score</name>
-            <summary>The highest 0-100 severity score recorded for this CPE</summary>
+            <name>severity</name>
+            <summary>The highest CVSS severity score recorded for this CPE</summary>
             <pattern>
-              <t>score</t>
+              <t>severity</t>
             </pattern>
           </ele>
           <ele>
@@ -11968,7 +11949,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>cve</name>
           <pattern>
-            <e>score</e>
+            <e>severity</e>
             <e>cvss_vector</e>
             <e>description</e>
             <e>products</e>
@@ -11978,10 +11959,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </pattern>
           <summary>A CVE info element</summary>
           <ele>
-            <name>score</name>
-            <summary>Severity score (10 * CVSS Base Score) of the CVE</summary>
+            <name>severity</name>
+            <summary>CVSS severity score of the CVE</summary>
             <pattern>
-              <t>integer</t>
+              <t>severity</t>
             </pattern>
           </ele>
           <ele>
@@ -12085,7 +12066,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>summary</e>
-            <e>score</e>
+            <e>severity</e>
             <e>cve_refs</e>
             <o><e>raw_data</e></o>
           </pattern>
@@ -12105,10 +12086,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>score</name>
-            <summary>Highest 0-100 severity score of CVEs referenced by the advisory</summary>
+            <name>severity</name>
+            <summary>Highest CVSS severity score of CVEs referenced by the advisory</summary>
             <pattern>
-              <t>score</t>
+              <t>severity</t>
             </pattern>
           </ele>
           <ele>
@@ -12134,7 +12115,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>status</e>
             <e>class</e>
             <e>title</e>
-            <e>score</e>
+            <e>severity</e>
             <e>cve_refs</e>
             <e>file</e>
             <o><e>description</e></o>
@@ -12177,10 +12158,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </pattern>
           </ele>
           <ele>
-            <name>score</name>
-            <summary>Highest 0-100 severity score of CVEs referenced by the definition</summary>
+            <name>severity</name>
+            <summary>Highest CVSS severity score of CVEs referenced by the definition</summary>
             <pattern>
-              <t>score</t>
+              <t>severity</t>
             </pattern>
           </ele>
           <ele>
@@ -14989,11 +14970,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the result with overrides</summary>
           </column>
           <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Score of the result with overrides</summary>
-          </column>
-          <column>
             <name>original_severity</name>
             <type>severity</type>
             <summary>Original severity of the result</summary>
@@ -16365,11 +16341,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>severity</name>
             <type>severity</type>
             <summary>Severity of the result with overrides</summary>
-          </column>
-          <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Score of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -22479,11 +22450,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity of the vulnerability</summary>
           </column>
           <column>
-            <name>score</name>
-            <type>score</type>
-            <summary>Score of the vulnerability</summary>
-          </column>
-          <column>
             <name>qod</name>
             <type>integer</type>
             <summary>QoD of the vulnerability</summary>
@@ -22542,7 +22508,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>creation_time</e>
           <e>modification_time</e>
           <e>severity</e>
-          <e>score</e>
           <e>qod</e>
           <e>results</e>
           <e>hosts</e>
@@ -22578,13 +22543,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Severity of the vulnerability</summary>
           <pattern>
             <t>severity</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>score</name>
-          <summary>Score of the vulnerability</summary>
-          <pattern>
-            <t>score</t>
           </pattern>
         </ele>
         <ele>
@@ -25976,14 +25934,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <description>
       <p>
         The elements CVSS and MAX_CVSS of CPEs, CVEs, OVAL definitions and
-        CERT advisories are replaced by the SCORE element that contains an
-        integer score in the range 0-100, which is generally the ten times
-        the CVSS base score.
+        CERT advisories are replaced by the SEVERITY element.
       </p>
       <p>
-        NVTs still contain the CVSS_BASE element in addition to the new
-        SCORE for backward compatibility of reports. However, the use of
-        the CVSS_BASE element is deprecated.
+        NVTs still contain the CVSS_BASE element for backward compatibility
+        of reports. However, the use of the CVSS_BASE element is deprecated
+        and the score attribute of the new SEVERITIES element should be used
+        instead.
       </p>
     </description>
     <version>21.4</version>

@@ -1409,9 +1409,6 @@ result_iterator_nvt_cvss_base (iterator_t *);
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
-int
-result_iterator_nvt_score (iterator_t *);
-
 const char*
 result_iterator_descr (iterator_t*);
 
@@ -1432,9 +1429,6 @@ result_iterator_severity (iterator_t *);
 
 double
 result_iterator_severity_double (iterator_t *);
-
-int
-result_iterator_score (iterator_t *);
 
 const char*
 result_iterator_original_level (iterator_t*);
@@ -1851,9 +1845,6 @@ nvt_iterator_solution_type (iterator_t*);
 const char*
 nvt_iterator_solution_method (iterator_t*);
 
-int
-nvt_iterator_score (iterator_t *);
-
 char*
 nvt_default_timeout (const char *);
 
@@ -1992,7 +1983,7 @@ nvt_severity_iterator_origin (iterator_t *);
 const char *
 nvt_severity_iterator_date (iterator_t *);
 
-int
+double
 nvt_severity_iterator_score (iterator_t *);
 
 const char *
@@ -3150,7 +3141,7 @@ const char*
 cpe_info_iterator_status (iterator_t*);
 
 const char *
-cpe_info_iterator_score (iterator_t*);
+cpe_info_iterator_severity (iterator_t*);
 
 const char*
 cpe_info_iterator_deprecated_by_id (iterator_t*);
@@ -3170,7 +3161,7 @@ const char*
 cve_iterator_cvss_score (iterator_t*);
 
 const char*
-cve_info_iterator_score (iterator_t*);
+cve_info_iterator_severity (iterator_t*);
 
 const char*
 cve_info_iterator_vector (iterator_t*);
@@ -3189,9 +3180,6 @@ cve_info_count (const get_data_t *get);
 
 gchar *
 cve_cvss_base (const gchar *);
-
-int
-cve_score (const gchar *);
 
 /* OVAL definitions */
 int
@@ -3222,7 +3210,7 @@ const char*
 ovaldef_info_iterator_status (iterator_t*);
 
 const char*
-ovaldef_info_iterator_score (iterator_t*);
+ovaldef_info_iterator_severity (iterator_t*);
 
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
@@ -3261,7 +3249,7 @@ const char*
 cert_bund_adv_info_iterator_cve_refs (iterator_t*);
 
 const char*
-cert_bund_adv_info_iterator_score (iterator_t*);
+cert_bund_adv_info_iterator_severity (iterator_t*);
 
 void
 init_cve_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
@@ -3290,7 +3278,7 @@ const char*
 dfn_cert_adv_info_iterator_cve_refs (iterator_t*);
 
 const char*
-dfn_cert_adv_info_iterator_score (iterator_t*);
+dfn_cert_adv_info_iterator_severity (iterator_t*);
 
 void
 init_cve_dfn_cert_adv_iterator (iterator_t*, const char*, int, const char*);
@@ -3513,9 +3501,6 @@ vuln_iterator_hosts (iterator_t*);
 
 double
 vuln_iterator_severity (iterator_t*);
-
-int
-vuln_iterator_score (iterator_t*);
 
 int
 vuln_iterator_qod (iterator_t*);

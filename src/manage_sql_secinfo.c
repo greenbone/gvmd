@@ -553,10 +553,10 @@ DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The highest severity score (10 * CVSS score) of the CPE,
+ * @return The highest severity score of the CPE,
  *         or NULL if iteration is complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (cpe_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
@@ -621,14 +621,14 @@ init_cpe_cve_iterator (iterator_t *iterator, const char *cve, int ascending,
   assert (cve);
   quoted_cpe = sql_quote (cve);
   init_iterator (iterator,
-                 "SELECT id, name, round(score / 10.0, 1) FROM cves"
+                 "SELECT id, name, severity FROM cves"
                  " WHERE id IN"
                  " (SELECT cve FROM affected_products"
                  "  WHERE cpe ="
                  "  (SELECT id FROM cpes WHERE name = '%s'))"
                  " ORDER BY %s %s;",
                  quoted_cpe,
-                 sort_field ? sort_field : "score DESC, name",
+                 sort_field ? sort_field : "severity DESC, name",
                  ascending ? "ASC" : "DESC");
   g_free (quoted_cpe);
 }
@@ -665,28 +665,8 @@ cve_cvss_base (const gchar *cve)
 {
   gchar *quoted_cve, *ret;
   quoted_cve = sql_quote (cve);
-  ret = sql_string ("SELECT score / 10.0 FROM cves WHERE name = '%s'",
+  ret = sql_string ("SELECT severity FROM cves WHERE name = '%s'",
                     quoted_cve);
-  g_free (quoted_cve);
-  return ret;
-}
-
-/**
- * @brief Get the severity score from a CVE.
- *
- * @param[in]  cve  CVE-ID of the CVE to get the score of.
- *
- * @return Severity score (10 * CVSS score) of CVE.
- */
-int
-cve_score (const gchar *cve)
-{
-  gchar *quoted_cve;
-  int ret;
-
-  quoted_cve = sql_quote (cve);
-  ret = sql_int ("SELECT score FROM cves WHERE name = '%s'",
-                 quoted_cve);
   g_free (quoted_cve);
   return ret;
 }
@@ -791,10 +771,10 @@ DEF_ACCESS (cve_info_iterator_products, GET_ITERATOR_COLUMN_COUNT + 1);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The severity score  (10 * CVSS score) of this CVE,
- *         or NULL if iteration is complete. Freed by cleanup_iterator.
+ * @return The severity score of this CVE, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (cve_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (cve_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the Summary for this CVE.
@@ -981,18 +961,18 @@ DEF_ACCESS (ovaldef_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 6);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum severity score  (10 * CVSS score) of the OVAL
- *         definition, or NULL if iteration is complete.
+ * @return The maximum severity score of the OVAL definition,
+ *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (ovaldef_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 7);
+DEF_ACCESS (ovaldef_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get number of referenced CVEs from an OVALDEF iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum CVSS score of the OVAL definition,
+ * @return The number of CVEs referenced CVEs of the OVAL definition,
  *         or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
@@ -1053,7 +1033,7 @@ ovaldef_severity (const char *id)
 
   assert (id);
   quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT score / 10.0 FROM ovaldefs WHERE uuid = '%s';",
+  ret = sql_string ("SELECT severity FROM ovaldefs WHERE uuid = '%s';",
                     quoted_id);
   g_free (quoted_id);
   return ret;
@@ -1251,11 +1231,12 @@ DEF_ACCESS (cert_bund_adv_info_iterator_cve_refs,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum severity score (10 * CVSS score) of the CVEs referenced
+ * @return The maximum severity score of the CVEs referenced
  *         in the CERT-Bund advisory, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (cert_bund_adv_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (cert_bund_adv_info_iterator_severity,
+            GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a CERT-Bund advisory.
@@ -1455,11 +1436,11 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 2);
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The maximum score (10 * CVSS score) of the CVEs referenced
+ * @return The maximum score of the CVEs referenced
  *         in the DFN-CERT advisory, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (dfn_cert_adv_info_iterator_score, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (dfn_cert_adv_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Initialise CVE iterator, for CVEs referenced by a DFN-CERT advisory.
@@ -2712,7 +2693,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
 {
   gboolean cvss_is_v3;
   element_t published, summary, cvss, score, base_metrics, cvss_vector, list;
-  int score_int;
+  double severity_dbl;
   gchar *quoted_id, *quoted_summary, *quoted_cvss_vector;
   gchar *quoted_software, *id;
   GString *software;
@@ -2781,9 +2762,9 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
 
   if (score == NULL)
-    score_int = 0;
+    severity_dbl = 0;
   else
-    score_int = round (atof (element_text (score)) * 10);
+    severity_dbl = atof (element_text (score));
 
   summary = element_child (entry, "vuln:summary");
   if (summary == NULL)
@@ -2829,15 +2810,15 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   cve = sql_int64_0
          ("INSERT INTO scap2.cves"
           " (uuid, name, creation_time, modification_time,"
-          "  score, description, cvss_vector, products)"
+          "  severity, description, cvss_vector, products)"
           " VALUES"
           " ('%s', '%s', %i, %i,"
-          "  %i, '%s', '%s', '%s')"
+          "  %0.1f, '%s', '%s', '%s')"
           " ON CONFLICT (uuid) DO UPDATE"
           " SET name = EXCLUDED.name,"
           "     creation_time = EXCLUDED.creation_time,"
           "     modification_time = EXCLUDED.modification_time,"
-          "     score = EXCLUDED.score,"
+          "     severity = EXCLUDED.severity,"
           "     description = EXCLUDED.description,"
           "     cvss_vector = EXCLUDED.cvss_vector,"
           "     products = EXCLUDED.products"
@@ -2846,7 +2827,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           quoted_id,
           time_published,
           time_modified,
-          score_int,
+          severity_dbl,
           quoted_summary,
           quoted_cvss_vector,
           quoted_software);
@@ -3474,7 +3455,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                    " (uuid, name, comment, creation_time,"
                    "  modification_time, version, deprecated, def_class,"
                    "  title, description, xml_file, status,"
-                   "  score, cve_refs)"
+                   "  severity, cve_refs)"
                    " VALUES ('%s', '%s', '', %i, %i, %s, %i, '%s', '%s',"
                    "         '%s', '%s', '%s', 0, %i)"
                    " ON CONFLICT (uuid) DO UPDATE"
@@ -3489,7 +3470,7 @@ update_ovaldef_xml (gchar **file_and_date, int private)
                    "     description = EXCLUDED.description,"
                    "     xml_file = EXCLUDED.xml_file,"
                    "     status = EXCLUDED.status,"
-                   "     score = 0,"
+                   "     severity = 0,"
                    "     cve_refs = EXCLUDED.cve_refs;",
                    quoted_id,
                    quoted_oval_id,
@@ -4312,13 +4293,13 @@ update_cvss_dfn_cert (int updated_dfn_cert, int last_cert_update,
     {
       g_info ("Updating Max CVSS for DFN-CERT");
       sql ("UPDATE cert.dfn_cert_advs"
-           " SET score = (SELECT max (score)"
+           " SET severity = (SELECT max (severity)"
            "                  FROM scap.cves"
            "                  WHERE name"
            "                  IN (SELECT cve_name"
            "                      FROM cert.dfn_cert_cves"
            "                      WHERE adv_id = dfn_cert_advs.id)"
-           "                  AND score != 0);");
+           "                  AND severity != 0);");
 
       g_info ("Updating DFN-CERT CVSS max succeeded.");
     }
@@ -4343,13 +4324,13 @@ update_cvss_cert_bund (int updated_cert_bund, int last_cert_update,
     {
       g_info ("Updating Max CVSS for CERT-Bund");
       sql ("UPDATE cert.cert_bund_advs"
-           " SET score = (SELECT max (score)"
-           "               FROM scap.cves"
-           "               WHERE name"
+           " SET severity = (SELECT max (severity)"
+           "                  FROM scap.cves"
+           "                  WHERE name"
            "                     IN (SELECT cve_name"
            "                         FROM cert.cert_bund_cves"
            "                         WHERE adv_id = cert_bund_advs.id)"
-           "               AND score != 0);");
+           "                  AND severity != 0);");
 
       g_info ("Updating CERT-Bund CVSS max succeeded.");
     }
@@ -4576,22 +4557,22 @@ update_scap_cvss ()
 
   g_info ("Updating CVSS scores and CVE counts for CPEs");
   sql ("UPDATE scap2.cpes"
-       " SET (score, cve_refs)"
-       "     = (WITH affected_cves"
-       "        AS (SELECT cve FROM scap2.affected_products"
-       "            WHERE cpe=cpes.id)"
-       "        SELECT (SELECT max (score) FROM scap2.cves"
-       "                WHERE id IN (SELECT cve FROM affected_cves)),"
-       "               (SELECT count (*) FROM affected_cves));");
+       " SET (severity, cve_refs)"
+       "       = (WITH affected_cves"
+       "          AS (SELECT cve FROM scap2.affected_products"
+       "              WHERE cpe=cpes.id)"
+       "          SELECT (SELECT max (severity) FROM scap2.cves"
+       "                  WHERE id IN (SELECT cve FROM affected_cves)),"
+       "                 (SELECT count (*) FROM affected_cves));");
 
   g_info ("Updating CVSS scores for OVAL definitions");
   sql ("UPDATE scap2.ovaldefs"
-       " SET score = (SELECT max (score)"
-       "               FROM scap2.cves"
-       "               WHERE id IN (SELECT cve"
-       "                            FROM scap2.affected_ovaldefs"
-       "                            WHERE ovaldef=ovaldefs.id)"
-       "               AND score != 0);");
+       " SET severity = (SELECT max (severity)"
+       "                 FROM scap2.cves"
+       "                 WHERE id IN (SELECT cve"
+       "                              FROM scap2.affected_ovaldefs"
+       "                              WHERE ovaldef=ovaldefs.id)"
+       "                 AND severity != 0);");
 }
 
 /**
