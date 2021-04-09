@@ -18915,14 +18915,14 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   result_nvt_notice (quoted_nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port, nvt,"
-       "  nvt_version, severity, score, type, qod, qod_type, description,"
+       "  nvt_version, severity, type, qod, qod_type, description,"
        "  path, uuid, result_nvt)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
-       "         '%s', '%s', (%s::float * 10)::integer, '%s', %d, '', '%s',"
+       "         '%s', '%s', '%s', %d, '', '%s',"
        "         '%s', make_uuid (),"
        "         (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
-       nvt_revision ?: "", result_severity ?: "0", result_severity ?: "0",
+       nvt_revision ?: "", result_severity ?: "0",
        type, qod, quoted_desc, quoted_path, quoted_nvt);
   g_free (result_severity);
   g_free (nvt_revision);
@@ -19251,15 +19251,15 @@ make_result (task_t task, const char* host, const char *hostname,
   result_nvt_notice (nvt);
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port,"
-       "  nvt, nvt_version, severity, score, type,"
+       "  nvt, nvt_version, severity, type,"
        "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s',"
-       "  '%s', '%s', '%s', (%s::float * 10)::integer, '%s',"
+       "  '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid (), %s, %s, '%s',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, port ?: "",
-       nvt ?: "", nvt_revision, severity, severity, type,
+       nvt ?: "", nvt_revision, severity, type,
        quoted_descr, qod, qod_type, quoted_path, nvt ? nvt : "");
 
   g_free (quoted_hostname);
@@ -19296,10 +19296,9 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
        "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f',"
-       " (%1.1f::float * 10)::integer, '%s',"
-       "  '%s', make_uuid (), %i, '', '',"
+       "  '%s', '%s', make_uuid (), %i, '', '',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-       task, host ?: "", nvt, cvss, cvss, severity_to_type (cvss),
+       task, host ?: "", nvt, cvss, severity_to_type (cvss),
        quoted_descr, QOD_DEFAULT, nvt);
 
   g_free (quoted_descr);
@@ -19540,7 +19539,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
 {
   init_iterator (iterator,
                  "SELECT cves.name AS vulnerability,"
-                 "       max(CAST (cves.cvss AS NUMERIC)) AS severity,"
+                 "       max(cves.severity) AS severity,"
                  "       max(cves.description) AS description,"
                  "       cpes.name AS location,"
                  "       (SELECT host FROM report_hosts"
@@ -20393,7 +20392,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                          "INSERT INTO results"
                          " (uuid, owner, date, task, host, hostname, port,"
                          "  nvt, type, description,"
-                         "  nvt_version, severity, score, qod, qod_type,"
+                         "  nvt_version, severity, qod, qod_type,"
                          "  result_nvt, report)"
                          " VALUES");
       else
@@ -20402,7 +20401,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_string_append_printf (insert,
                               " (make_uuid (), %llu, m_now (), %llu, '%s',"
                               "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-                              "  (%s::float * 10)::integer, '%s', '%s',"
+                              "  '%s', '%s',"
                               "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
                               "  %llu)",
                               owner,
@@ -20416,7 +20415,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                                : "Log Message",
                               quoted_description,
                               quoted_scan_nvt_version,
-                              quoted_severity,
                               quoted_severity,
                               quoted_qod,
                               quoted_qod_type,
@@ -20880,7 +20878,7 @@ report_add_result (report_t report, result_t result)
    "task", "severity", "false_positive", "log", "low", "medium", "high",       \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
    "medium_per_host", "high_per_host", "duration", "duration_per_host",        \
-   "score", NULL }
+   NULL }
 
 /**
  * @brief Report iterator columns.
@@ -21014,12 +21012,6 @@ report_add_result (report_t report, result_t result)
      " ELSE (end_time - start_time)"                                         \
      "        / report_result_host_count (id, opts.min_qod) END)",           \
      "duration_per_host",                                                    \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(report_severity (id, opts.override, opts.min_qod)::float * 10)"       \
-     "::integer",                                                            \
-     "score",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -21298,7 +21290,7 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", "score", NULL }
+    "path", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -21582,13 +21574,6 @@ where_qod (int min_qod)
     { "nvts.tag",                                                             \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.score",                                                           \
-      "score",                                                                \
-      KEYWORD_TYPE_INTEGER },                                                 \
-    { "(SELECT (" new_severity_sql "::float * 10)::integer)",                 \
-      "score",                                                                \
-      KEYWORD_TYPE_INTEGER },
-    /* ^ 45 = 35 */
 
 /**
  * @brief Result iterator columns.
@@ -22707,34 +22692,6 @@ DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
 DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
- * @brief Get an iterator column value.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or -1 if iteration is complete.
- */
-int
-result_iterator_nvt_score (iterator_t *iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
-}
-
-/**
- * @brief Get an iterator column value.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or -1 if iteration is complete.
- */
-int
-result_iterator_score (iterator_t *iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
-}
-
-/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -22745,7 +22702,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
 }
 
 /**
@@ -22759,7 +22716,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -29438,10 +29395,10 @@ delete_task (task_t task, int ultimate)
 
       sql ("INSERT INTO results_trash"
            " (uuid, task, host, port, nvt, result_nvt, type, description,"
-           "  report, nvt_version, severity, score, qod, qod_type, owner, date,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
            "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
-           "        description, report, nvt_version, severity, score, qod,"
+           "        description, report, nvt_version, severity, qod,"
            "         qod_type, owner, date, hostname, path"
            " FROM results"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
@@ -46397,10 +46354,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO results"
            " (uuid, task, host, port, nvt, result_nvt, type, description,"
-           "  report, nvt_version, severity, score, qod, qod_type, owner, date,"
+           "  report, nvt_version, severity, qod, qod_type, owner, date,"
            "  hostname, path)"
            " SELECT uuid, task, host, port, nvt, result_nvt, type,"
-           "        description, report, nvt_version, severity, score, qod,"
+           "        description, report, nvt_version, severity, qod,"
            "         qod_type, owner, date, hostname, path"
            " FROM results_trash"
            " WHERE report IN (SELECT id FROM reports WHERE task = %llu);",
@@ -52492,7 +52449,7 @@ user_resources_in_use (user_t user,
  */
 #define VULN_ITERATOR_FILTER_COLUMNS                                         \
  {                                                                           \
-   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity", "score",     \
+   GET_ITERATOR_FILTER_COLUMNS, "results", "hosts", "severity",              \
    "qod", "oldest", "newest", "type", NULL                                   \
  }
 
@@ -52540,10 +52497,7 @@ user_resources_in_use (user_t user,
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(score / 10.0)", "severity", KEYWORD_TYPE_DOUBLE                       \
-   },                                                                        \
-   {                                                                         \
-     "score", NULL, KEYWORD_TYPE_DOUBLE                                      \
+     "severity", NULL, KEYWORD_TYPE_DOUBLE                                   \
    },                                                                        \
    {                                                                         \
      "qod", NULL, KEYWORD_TYPE_INTEGER                                       \
@@ -52760,20 +52714,6 @@ vuln_iterator_severity (iterator_t* iterator)
 }
 
 /**
- * @brief Get an iterator column value.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or -1 if iteration is complete.
- */
-int
-vuln_iterator_score (iterator_t *iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-}
-
-/**
  * @brief Get the QoD from a vuln iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -52784,7 +52724,7 @@ int
 vuln_iterator_qod (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -52798,7 +52738,7 @@ const char*
 vuln_iterator_type (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -52812,7 +52752,7 @@ time_t
 vuln_iterator_oldest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -52826,7 +52766,7 @@ time_t
 vuln_iterator_newest (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**

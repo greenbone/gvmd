@@ -1409,9 +1409,6 @@ result_iterator_nvt_cvss_base (iterator_t *);
 const char*
 result_iterator_nvt_tag (iterator_t *);
 
-int
-result_iterator_nvt_score (iterator_t *);
-
 const char*
 result_iterator_descr (iterator_t*);
 
@@ -1432,9 +1429,6 @@ result_iterator_severity (iterator_t *);
 
 double
 result_iterator_severity_double (iterator_t *);
-
-int
-result_iterator_score (iterator_t *);
 
 const char*
 result_iterator_original_level (iterator_t*);
@@ -1851,9 +1845,6 @@ nvt_iterator_solution_type (iterator_t*);
 const char*
 nvt_iterator_solution_method (iterator_t*);
 
-int
-nvt_iterator_score (iterator_t *);
-
 char*
 nvt_default_timeout (const char *);
 
@@ -1992,7 +1983,7 @@ nvt_severity_iterator_origin (iterator_t *);
 const char *
 nvt_severity_iterator_date (iterator_t *);
 
-int
+double
 nvt_severity_iterator_score (iterator_t *);
 
 const char *
@@ -3510,9 +3501,6 @@ vuln_iterator_hosts (iterator_t*);
 
 double
 vuln_iterator_severity (iterator_t*);
-
-int
-vuln_iterator_score (iterator_t*);
 
 int
 vuln_iterator_qod (iterator_t*);

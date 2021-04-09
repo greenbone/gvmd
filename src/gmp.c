@@ -9132,12 +9132,12 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<name>%s</name>"
                                     "<family>%s</family>"
                                     "<cvss_base>%s</cvss_base>"
-                                    "<severities score=\"%i\">",
+                                    "<severities score=\"%s\">",
                                     oid,
                                     result_iterator_nvt_name (results) ?: oid,
                                     result_iterator_nvt_family (results) ?: "",
                                     cvss_base ?: "",
-                                    result_iterator_nvt_score (results));
+                                    cvss_base ?: "");
 
           init_nvt_severity_iterator (&severities, oid);
           while (next (&severities))
@@ -9147,7 +9147,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                    "<severity type=\"%s\">"
                    "<origin>%s</origin>"
                    "<date>%s</date>"
-                   "<score>%i</score>"
+                   "<score>%0.1f</score>"
                    "<value>%s</value>"
                    "</severity>",
                    nvt_severity_iterator_type (&severities),
@@ -9439,10 +9439,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf
    (buffer,
     "<severity>%.1f</severity>"
-    "<score>%i</score>"
     "<qod><value>%s</value>",
     result_iterator_severity_double (results),
-    result_iterator_score (results),
     qod ? qod : "");
 
   if (qod_type && strlen (qod_type))
@@ -17775,7 +17773,6 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                "<creation_time>%s</creation_time>"
                                "<modification_time>%s</modification_time>"
                                "<severity>%1.1f</severity>"
-                               "<score>%i</score>"
                                "<qod>%d</qod>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
@@ -17783,7 +17780,6 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                get_iterator_creation_time (&vulns),
                                get_iterator_modification_time (&vulns),
                                vuln_iterator_severity (&vulns),
-                               vuln_iterator_score (&vulns),
                                vuln_iterator_qod (&vulns));
 
       // results for the vulnerability
