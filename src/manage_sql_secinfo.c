@@ -4925,7 +4925,7 @@ rebuild_scap ()
   int ret = -1;
   lockfile_t lockfile;
 
-  ret = feed_lockfile_lock (&lockfile);
+  ret = feed_lockfile_lock_timeout (&lockfile);
   if (ret == 1)
     return 2;
   else if (ret)
