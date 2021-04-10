@@ -16,7 +16,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve GMP docs around users [#1363](https://github.com/greenbone/gvmd/pull/1363)
 - Cache report counts when Dynamic Severity is enabled [#1389](https://github.com/greenbone/gvmd/pull/1389)
 - Detection entry detection while importing reports [#1405](https://github.com/greenbone/gvmd/pull/1405)
-- Add --feed-lock-timeout option [#1472](https://github.com/greenbone/gvmd/pull/1472)
 
 ### Changed
 - Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
@@ -61,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --ldap-debug option [#1439](https://github.com/greenbone/gvmd/pull/1439)
 - Add check if PostgreSQL extensions are installed [#1444](https://github.com/greenbone/gvmd/pull/1444)
 - Add auto retry on scanner connection lost during a running task [#1452](https://github.com/greenbone/gvmd/pull/1452)
+- Add --feed-lock-timeout option [#1472](https://github.com/greenbone/gvmd/pull/1472)
 
 ### Changed
 - Improve report counts performance [#1438](https://github.com/greenbone/gvmd/pull/1438)
