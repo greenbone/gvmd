@@ -38,6 +38,11 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Database superuser role
+ */
+#define DB_SUPERUSER_ROLE "dba"
+
 
 /* Headers */
 int
@@ -196,7 +201,7 @@ manage_create_sql_functions ()
 
   /* Functions in C. */
 
-  sql ("SET role dba;");
+  sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
 
   sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
        " RETURNS boolean"
@@ -2951,7 +2956,7 @@ check_db_extensions ()
       g_debug ("%s: All required extensions are available.", __func__);
 
       // Switch to superuser role and try to install extensions.
-      sql ("SET ROLE dba;");
+      sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
       
       sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
