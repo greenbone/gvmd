@@ -3732,20 +3732,30 @@ filter_clause (const char* type, const char* filter,
 
                 if (keyword_applies_to_column (keyword, filter_column)
                     && select_column && column_type_matches)
-                  g_string_append_printf (clause,
-                                          "%s"
-                                          "(%s IS NULL"
-                                          " OR CAST (%s AS TEXT)"
-                                          "    NOT %s '%s%s%s')",
-                                          (index ? " AND " : ""),
-                                          select_column,
-                                          select_column,
-                                          last_was_re
-                                           ? sql_regexp_op ()
-                                           : sql_ilike_op (),
-                                          last_was_re ? "" : "%%",
-                                          quoted_keyword,
-                                          last_was_re ? "" : "%%");
+                  {
+                    if (last_was_re)
+                      g_string_append_printf (clause,
+                                              "%s"
+                                              "(%s IS NULL"
+                                              " OR NOT (CAST (%s AS TEXT)"
+                                              "         %s '%s'))",
+                                              (index ? " AND " : ""),
+                                              select_column,
+                                              select_column,
+                                              sql_regexp_op (),
+                                              quoted_keyword);
+                    else
+                      g_string_append_printf (clause,
+                                              "%s"
+                                              "(%s IS NULL"
+                                              " OR CAST (%s AS TEXT)"
+                                              "    NOT %s '%%%s%%')",
+                                              (index ? " AND " : ""),
+                                              select_column,
+                                              select_column,
+                                              sql_ilike_op (),
+                                              quoted_keyword);
+                  }
                 else
                   g_string_append_printf (clause,
                                           "%s t ()",
