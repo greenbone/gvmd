@@ -149,6 +149,7 @@ Certificates`.
     grant dba to mattm;    # mattm is the user created in step 4
     ```
 
+<<<<<<< HEAD
 6.  Create DB extensions (also necessary when the database got dropped).
 
     ```sh
@@ -166,6 +167,15 @@ Certificates`.
 8.  Run Manager as usual.
 
 9.  To run SQL on the database.
+=======
+5.  Make Postgres aware of the gvm libraries if not installed
+    in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
+    with appropriate path and then run `ldconfig`.
+
+6.  Run Manager as usual.
+
+7. To run SQL on the database.
+>>>>>>> 14614dcde... Remove creation of DB extensions from INSTALL.md
 
     ```sh
     psql gvmd
