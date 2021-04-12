@@ -39,6 +39,11 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Headers */
+int
+check_db_extensions ();
+
+
 /* Session. */
 
 /**
@@ -186,13 +191,8 @@ manage_create_sql_functions ()
   if (created)
     return 0;
 
-  if (sql_int ("SELECT count (*) FROM pg_available_extensions"
-               " WHERE name = 'uuid-ossp' AND installed_version IS NOT NULL;")
-      == 0)
-    {
-      g_warning ("%s: PostgreSQL extension uuid-ossp required", __func__);
-      return -1;
-    }
+  if (check_db_extensions ())
+    return -1;
 
   /* Functions in C have been moved to the "pg-gvm" extension. */
   
