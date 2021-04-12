@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve modify_override errors, fix no NVT case [#1435](https://github.com/greenbone/gvmd/pull/1435)
 - Fix size calculation in `--optimize vacuum` [#1447](https://github.com/greenbone/gvmd/pull/1447)
 - Fix report host end time check in CVE scans [#1462](https://github.com/greenbone/gvmd/pull/1462)
+- Fix "not regexp ..." filters [#1482](https://github.com/greenbone/gvmd/pull/1482)
 
 ### Removed
 
