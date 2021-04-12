@@ -2912,47 +2912,56 @@ check_db_sequences ()
 }
 
 /**
- * @brief Check if an extension is installed.
+ * @brief Check if an extension is available and can be installed.
  * 
- * @param[in]  extname  Name of the extension to check.
+ * @param[in]  name  Name of the extension to check.
  *
- * @return TRUE extension is installed, FALSE otherwise.
+ * @return TRUE extension is available, FALSE otherwise.
  */
 static gboolean
-db_extension_installed (const char *extname)
+db_extension_available (const char *name)
 {
-  if (sql_int ("SELECT count(*) FROM pg_extension WHERE extname = '%s'",
-               extname))
+  if (sql_int ("SELECT count(*) FROM pg_available_extensions"
+               " WHERE name = '%s'",
+               name))
     {
-      g_debug ("%s: Extension '%s' is installed.",
-                 __func__, extname);
+      g_debug ("%s: Extension '%s' is available.",
+                 __func__, name);
       return TRUE;
     }
   else
     {
-      g_message ("%s: Extension '%s' is not installed.",
-                 __func__, extname);
+      g_message ("%s: Extension '%s' is not available.",
+                 __func__, name);
       return FALSE;
     }
 }
 
 /**
- * @brief Check if all extensions are installed.
+ * @brief Ensure all extensions are installed.
  *
  * @return 0 success, 1 extension missing.
  */
 int
 check_db_extensions ()
 {
-  if (db_extension_installed ("uuid-ossp")
-      && db_extension_installed ("pgcrypto"))
+  if (db_extension_available ("uuid-ossp")
+      && db_extension_available ("pgcrypto"))
     {
-      g_debug ("%s: All required extensions are installed.", __func__);
+      g_debug ("%s: All required extensions are available.", __func__);
+
+      // Switch to superuser role and try to install extensions.
+      sql ("SET ROLE dba;");
+      
+      sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+      sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
+
+      sql ("RESET ROLE;");
       return 0;
     }
   else
     {
-      g_warning ("%s: A required extension is not installed.", __func__);
+      g_warning ("%s: A required extension is not available.", __func__);
       return 1;
     }
 }
