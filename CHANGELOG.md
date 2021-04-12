@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add standard info elem fields for NVTs in get_info [#1426](https://github.com/greenbone/gvmd/pull/1426)
 - Add --ldap-debug option [#1439](https://github.com/greenbone/gvmd/pull/1439)
-- Add check if PostgreSQL extensions are installed [#1444](https://github.com/greenbone/gvmd/pull/1444)
+- Try to install PostgreSQL extensions automatically [#1444](https://github.com/greenbone/gvmd/pull/1444) [#1483](https://github.com/greenbone/gvmd/pull/1483)
 - Add auto retry on scanner connection lost during a running task [#1452](https://github.com/greenbone/gvmd/pull/1452)
 
 ### Changed
