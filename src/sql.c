@@ -150,6 +150,43 @@ sql_quote (const char* string)
 }
 
 /**
+ * @brief Quotes a string for use in SQL statements, also ASCII escaping it
+ *         if it is not valid UTF-8.
+ *
+ * @param[in]  string  String to quote, has to be \\0 terminated.
+ *
+ * @return Freshly allocated, quoted string. Free with g_free.
+ */
+gchar*
+sql_ascii_escape_and_quote (const char* string)
+{
+  gchar *quoted_string;
+
+  assert (string);
+
+  if (string == NULL)
+    {
+      return NULL;
+    }
+  else if (g_utf8_validate (string, -1, NULL))
+    {
+      // Quote valid UTF-8 without ASCII escaping
+      quoted_string = sql_quote (string);
+    }
+  else
+    {
+      // Assume invalid UTF-8 uses a different, unknown encoding and
+      //  ASCII-escape it.
+      gchar *escaped_string;
+      escaped_string = g_strescape (string, "");
+      quoted_string = sql_quote (escaped_string);
+      g_free (escaped_string);
+    }
+
+  return quoted_string;
+}
+
+/**
  * @brief Get the SQL insert expression for a string.
  *
  * @param[in]  string  The string, which may be NULL.
