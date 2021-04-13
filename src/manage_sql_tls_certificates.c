@@ -585,9 +585,9 @@ make_tls_certificate (const char *name,
   quoted_sha256_fingerprint
     = sql_quote (sha256_fingerprint ? sha256_fingerprint : "");
   quoted_subject_dn
-    = sql_quote (subject_dn ? subject_dn : "");
+    = sql_ascii_escape_and_quote (subject_dn ? subject_dn : "");
   quoted_issuer_dn
-    = sql_quote (issuer_dn ? issuer_dn : "");
+    = sql_ascii_escape_and_quote (issuer_dn ? issuer_dn : "");
   quoted_serial
     = sql_quote (serial ? serial : "");
 
