@@ -2028,7 +2028,7 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Rebuilding NVTs.");
 
-  switch (feed_lockfile_lock (&lockfile))
+  switch (feed_lockfile_lock_timeout (&lockfile))
     {
       case 1:
         printf ("A feed sync is already running.\n");

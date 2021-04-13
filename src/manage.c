@@ -171,6 +171,11 @@
 static gchar *feed_lock_path = NULL;
 
 /**
+ * @brief Number of seconds to wait for the feed lock to be released.
+ */
+static int feed_lock_timeout = 0;
+
+/**
  * @brief Path to the relay mapper executable, NULL to disable relays.
  */
 static gchar *relay_mapper_path = NULL;
@@ -8550,6 +8555,31 @@ set_feed_lock_path (const char *new_path)
 }
 
 /**
+ * @brief Get the feed lock timeout.
+ *
+ * @return The current timeout in seconds.
+ */
+int
+get_feed_lock_timeout ()
+{
+  return feed_lock_timeout;
+}
+
+/**
+ * @brief Set the feed lock timeout.
+ *
+ * @param new_timeout The new timeout in seconds.
+ */
+void
+set_feed_lock_timeout (int new_timeout)
+{
+  if (new_timeout < 0)
+    feed_lock_timeout = 0;
+  else
+    feed_lock_timeout = new_timeout;
+}
+
+/**
  * @brief Write start time to sync lock file.
  *
  * @param[in]  lockfile_fd  File descriptor of the lock file.
@@ -8603,6 +8633,48 @@ feed_lockfile_lock (lockfile_t *lockfile)
 
   /* Write the file contents (timestamp) */
   write_sync_start (lockfile->fd);
+
+  return 0;
+}
+
+/**
+ * @brief Acquires the feed lock and writes the current time to the lockfile.
+ *
+ * @param[out] lockfile   Lockfile data struct.
+ *
+ * @return 0 success, 1 already locked, -1 error
+ */
+int
+feed_lockfile_lock_timeout (lockfile_t *lockfile)
+{
+  int lock_status;
+  gboolean log_timeout;
+  time_t timeout_end;
+
+  /* Try to lock the file */
+
+  log_timeout = TRUE;
+  timeout_end = time (NULL) + feed_lock_timeout;
+  do
+    {
+      lock_status = feed_lockfile_lock (lockfile);
+      if (lock_status == 1 /* already locked, but no error */
+          && timeout_end > time (NULL))
+        {
+          if (log_timeout)
+            {
+              log_timeout = FALSE;
+              g_message ("%s: Feed is currently locked by another process,"
+                         " will retry until %s.",
+                         __func__, iso_time (&timeout_end));
+            }
+          gvm_sleep (1);
+        }
+      else if (lock_status) /* error */
+        {
+          return lock_status;
+        }
+    } while (lock_status); /* lock is acquired when lock_status is 0 */
 
   return 0;
 }
@@ -8957,7 +9029,7 @@ gvm_migrate_secinfo (int feed_type)
       return -1;
     }
 
-  ret = feed_lockfile_lock (&lockfile);
+  ret = feed_lockfile_lock_timeout (&lockfile);
   if (ret == 1)
     return 1;
   else if (ret)
