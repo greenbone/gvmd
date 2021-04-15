@@ -1085,7 +1085,6 @@ user_has_super (const char *, user_t);
   " 'HP-UX Local Security Checks',"                \
   " 'Huawei EulerOS Local Security Checks',"       \
   " 'JunOS Local Security Checks',"                \
-  " 'Local Security Checks: EulerOS',"             \
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
