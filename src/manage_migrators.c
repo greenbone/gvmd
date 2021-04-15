@@ -2630,7 +2630,7 @@ migrate_241_to_242 ()
   /* Change the vt_severities table to a CVSS score */
   sql ("ALTER TABLE vt_severities ALTER COLUMN score"
        " SET DATA TYPE double precision;");
-  sql ("UPDATE vt_severities SET score = round(score / 10.0, 1);");
+  sql ("UPDATE vt_severities SET score = round((score / 10.0)::numeric, 1);");
 
   /* Set the database version to 242. */
 
