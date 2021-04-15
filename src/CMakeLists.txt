@@ -26,10 +26,10 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=21.04)
-pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=21.04)
-pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=21.04)
-pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=21.04)
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=21.04.0)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=21.04.0)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=21.04.0)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=21.04.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
