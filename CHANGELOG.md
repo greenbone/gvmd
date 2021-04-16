@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [21.4.0] (2021-04-15)
+## [21.4.0] (2021-04-16)
 
 ### Added
 - Extend GMP for extended severities [#1326](https://github.com/greenbone/gvmd/pull/1326) [#1329](https://github.com/greenbone/gvmd/pull/1329) [#1359](https://github.com/greenbone/gvmd/pull/1359) [#1371](https://github.com/greenbone/gvmd/pull/1371) [#1477](https://github.com/greenbone/gvmd/pull/1477) [#1488](https://github.com/greenbone/gvmd/pull/1488)
