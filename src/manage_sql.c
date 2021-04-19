@@ -19215,7 +19215,7 @@ make_result (task_t task, const char* host, const char *hostname,
 {
   result_t result;
   gchar *nvt_revision, *severity, *qod, *qod_type;
-  gchar *quoted_hostname, *quoted_descr, *quoted_path;
+  gchar *quoted_nvt, *quoted_hostname, *quoted_descr, *quoted_path;
   nvt_t nvt_id = 0;
 
   if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
@@ -19231,17 +19231,28 @@ make_result (task_t task, const char* host, const char *hostname,
       return 0;
     }
 
+  quoted_nvt = NULL;
   if (nvt && strcmp (nvt, ""))
     {
+      quoted_nvt = sql_quote (nvt);
+
       qod = g_strdup_printf ("(SELECT qod FROM nvts WHERE id = %llu)",
                              nvt_id);
       qod_type = g_strdup_printf ("(SELECT qod_type FROM nvts WHERE id = %llu)",
                                   nvt_id);
 
-      nvt_revision = sql_string ("SELECT iso_time (modification_time)"
-                                 " FROM nvts"
-                                 " WHERE uuid = '%s';",
-                                 nvt);
+      if (g_str_has_prefix (nvt, "1.3.6.1.4.1.25623."))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM nvts WHERE oid='%s'",
+                                   quoted_nvt);
+      else if (g_str_has_prefix (nvt, "oval:"))
+        nvt_revision = ovaldef_version (nvt);
+      else if (g_str_has_prefix (nvt, "CVE-"))
+        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
+                                   " FROM scap.cves WHERE uuid='%s'",
+                                   quoted_nvt);
+      else
+        nvt_revision = strdup ("");
     }
   else
     {
@@ -19269,9 +19280,10 @@ make_result (task_t task, const char* host, const char *hostname,
        "  '%s', make_uuid (), %s, %s, '%s',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
        task, host ?: "", quoted_hostname, port ?: "",
-       nvt ?: "", nvt_revision, severity, type,
-       quoted_descr, qod, qod_type, quoted_path, nvt ? nvt : "");
+       quoted_nvt ?: "", nvt_revision, severity, type,
+       quoted_descr, qod, qod_type, quoted_path, quoted_nvt ? quoted_nvt : "");
 
+  g_free (quoted_nvt);
   g_free (quoted_hostname);
   g_free (quoted_descr);
   g_free (qod);
@@ -19305,10 +19317,12 @@ make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod, qod_type, path, result_nvt)"
        " VALUES"
-       " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f',"
-       "  '%s', '%s', make_uuid (), %i, '', '',"
+       " (NULL, m_now (), %llu, '%s', '', '%s',"
+       "  (SELECT iso_time (modification_time)"
+       "     FROM scap.cves WHERE uuid='%s'),"
+       "  '%1.1f', '%s', '%s', make_uuid (), %i, '', '',"
        "  (SELECT id FROM result_nvts WHERE nvt = '%s'));",
-       task, host ?: "", nvt, cvss, severity_to_type (cvss),
+       task, host ?: "", nvt, nvt, cvss, severity_to_type (cvss),
        quoted_descr, QOD_DEFAULT, nvt);
 
   g_free (quoted_descr);
