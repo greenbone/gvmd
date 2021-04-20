@@ -22,7 +22,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
-## [21.4] (unreleased)
+## [21.4.1] (unreleased)
+
+### Fixed
+- Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
+
+[21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
+
+## [21.4.0] (2021-04-16)
 
 ### Added
 - Extend GMP for extended severities [#1326](https://github.com/greenbone/gvmd/pull/1326) [#1329](https://github.com/greenbone/gvmd/pull/1329) [#1359](https://github.com/greenbone/gvmd/pull/1359) [#1371](https://github.com/greenbone/gvmd/pull/1371) [#1477](https://github.com/greenbone/gvmd/pull/1477) [#1488](https://github.com/greenbone/gvmd/pull/1488)
@@ -68,7 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove severity type "debug" [#1316](https://github.com/greenbone/gvmd/pull/1316)
 - Remove element "threat" of element "notes" [#1324](https://github.com/greenbone/gvmd/pull/1324)
 
-[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...gvmd-21.04
+[21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
 
 ## [20.8.2] (unreleased)
 
