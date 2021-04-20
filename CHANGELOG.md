@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [21.4.1] (unreleased)
 
+### Changed
+- Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
+
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
 - Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
