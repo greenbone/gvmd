@@ -38,6 +38,69 @@ prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${GVM_LOG_DIR}/gvmd.log
 level=127
 
+[base networking]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[base plcy]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[lib  auth]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[lib  ldap]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[lib  nvti]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[lib  osp]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[lib  serv]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[lib   xml]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
+[util gpgme]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVM_LOG_DIR}/gvmd.log
+level=127
+
 [event syslog]
 prepend=%t %s %p
 separator=:
