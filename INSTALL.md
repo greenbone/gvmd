@@ -149,33 +149,13 @@ Certificates`.
     grant dba to mattm;    # mattm is the user created in step 4
     ```
 
-<<<<<<< HEAD
-6.  Create DB extensions (also necessary when the database got dropped).
-
-    ```sh
-    sudo -u postgres bash  # if you logged out after step 5
-    psql gvmd
-    create extension "uuid-ossp";
-    create extension "pgcrypto";
-    create extension "pg-gvm"; # if it is not installed in step 2.
-    ```
-
-7.  Make Postgres aware of the gvm libraries if not installed
+6.  Make Postgres aware of the gvm libraries if not installed
     in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
     with appropriate path and then run `ldconfig`.
 
-8.  Run Manager as usual.
+7.  Run Manager as usual.
 
-9.  To run SQL on the database.
-=======
-5.  Make Postgres aware of the gvm libraries if not installed
-    in a ld-aware directory. For example create file `/etc/ld.so.conf.d/gvm.conf`
-    with appropriate path and then run `ldconfig`.
-
-6.  Run Manager as usual.
-
-7. To run SQL on the database.
->>>>>>> 14614dcde... Remove creation of DB extensions from INSTALL.md
+8.  To run SQL on the database.
 
     ```sh
     psql gvmd

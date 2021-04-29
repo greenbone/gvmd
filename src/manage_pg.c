@@ -2921,14 +2921,9 @@ db_extension_available (const char *name)
 int
 check_db_extensions ()
 {
-<<<<<<< HEAD
-  if (db_extension_installed ("uuid-ossp")
-      && db_extension_installed ("pgcrypto")
-      && db_extension_installed ("pg-gvm"))
-=======
   if (db_extension_available ("uuid-ossp")
-      && db_extension_available ("pgcrypto"))
->>>>>>> 7ff40fb85... Try to install PostgreSQL extensions automatically
+      && db_extension_available ("pgcrypto")
+      && db_extension_available ("pg-gvm"))
     {
       g_debug ("%s: All required extensions are available.", __func__);
 
@@ -2937,6 +2932,7 @@ check_db_extensions ()
       
       sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
+      sql ("CREATE EXTENSION IF NOT EXISTS \"pg-gvm\"");
 
       sql ("RESET ROLE;");
       return 0;
