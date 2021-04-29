@@ -3025,8 +3025,10 @@ filter_clause (const char* type, const char* filter,
                                                   keyword->string);
                   g_string_append_printf (order,
                                           " ORDER BY CASE CAST (%s AS text)"
-                                          " WHEN '' THEN NULL"
-                                          " ELSE CAST (%s AS REAL) END ASC",
+                                          " WHEN '' THEN '-Infinity'::real"
+                                          " ELSE coalesce(%s::real,"
+                                          "               '-Infinity'::real)"
+                                          " END ASC",
                                           column,
                                           column);
                 }
@@ -3215,8 +3217,10 @@ filter_clause (const char* type, const char* filter,
                                                   keyword->string);
                   g_string_append_printf (order,
                                           " ORDER BY CASE CAST (%s AS text)"
-                                          " WHEN '' THEN NULL"
-                                          " ELSE CAST (%s AS REAL) END DESC",
+                                          " WHEN '' THEN '-Infinity'::real"
+                                          " ELSE coalesce(%s::real,"
+                                          "               '-Infinity'::real)"
+                                          " END DESC",
                                           column,
                                           column);
                 }
