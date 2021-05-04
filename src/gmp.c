@@ -16941,7 +16941,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       double severity = 0, severity_2 = 0;
       gchar *response;
       iterator_t alerts, groups, roles;
-      gchar *in_assets, *max_checks, *max_hosts, *source_iface;
+      gchar *in_assets, *max_checks, *max_hosts;
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
       gchar *assets_min_qod;
 
@@ -17462,7 +17462,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           assets_min_qod = task_preference_value (index, "assets_min_qod");
           max_checks = task_preference_value (index, "max_checks");
           max_hosts = task_preference_value (index, "max_hosts");
-          source_iface = task_preference_value (index, "source_iface");
           auto_delete = task_preference_value (index, "auto_delete");
           auto_delete_data = task_preference_value (index, "auto_delete_data");
 
@@ -17480,13 +17479,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             "Maximum concurrently scanned hosts"
             "</name>"
             "<scanner_name>max_hosts</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Network Source Interface"
-            "</name>"
-            "<scanner_name>source_iface</scanner_name>"
             "<value>%s</value>"
             "</preference>"
             "<preference>"
@@ -17528,7 +17520,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             "</task>",
             max_checks ? max_checks : "4",
             max_hosts ? max_hosts : "20",
-            source_iface ? source_iface : "",
             in_assets ? in_assets : "yes",
             assets_apply_overrides ? assets_apply_overrides : "yes",
             assets_min_qod
@@ -17540,7 +17531,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (in_assets);
           g_free (max_checks);
           g_free (max_hosts);
-          g_free (source_iface);
         }
 
       count++;

@@ -1930,7 +1930,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>result_count</e>
             <e>severity</e>
             <e>task</e>
-            <e>scan</e>
             <e>ports</e>
             <e>results</e>
             <e>hosts</e>
@@ -2481,48 +2480,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <name>comment</name>
               <summary>Comment for the tag</summary>
               <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>scan</name>
-        <summary>Info from scan time</summary>
-        <pattern>
-          <e>task</e>
-        </pattern>
-        <ele>
-          <name>task</name>
-          <pattern>
-            <e>preferences</e>
-          </pattern>
-          <ele>
-            <name>preferences</name>
-            <summary>Currently only "source_iface"</summary>
-            <pattern>
-              <any><e>preference</e></any>
-            </pattern>
-            <ele>
-              <name>preference</name>
-              <pattern>
-                <e>name</e>
-                <e>scanner_name</e>
-                <e>value</e>
-              </pattern>
-              <ele>
-                <name>name</name>
-                <summary>Full name of preference, suitable for end users</summary>
-                <pattern>text</pattern>
-              </ele>
-              <ele>
-                <name>scanner_name</name>
-                <summary>Compact name of preference, from scanner</summary>
-                <pattern>text</pattern>
-              </ele>
-              <ele>
-                <name>value</name>
-                <pattern>text</pattern>
-              </ele>
             </ele>
           </ele>
         </ele>

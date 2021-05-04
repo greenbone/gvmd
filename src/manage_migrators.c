@@ -2651,6 +2651,39 @@ migrate_241_to_242 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 242 to version 243.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_242_to_243 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 242. */
+
+  if (manage_db_version () != 242)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE reports DROP COLUMN source_iface;");
+
+  /* Set the database version to 243. */
+
+  set_db_version (243);
+
+  sql_commit ();
+
+  return 0;
+}
+
+
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2699,6 +2732,7 @@ static migrator_t database_migrators[] = {
   {240, migrate_239_to_240},
   {241, migrate_240_to_241},
   {242, migrate_241_to_242},
+  {243, migrate_242_to_243},
   /* End marker. */
   {-1, NULL}};
 

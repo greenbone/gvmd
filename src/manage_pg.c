@@ -2308,7 +2308,6 @@ create_tables ()
        "  comment text,"
        "  scan_run_status integer,"
        "  slave_progress integer,"
-       "  source_iface text,"
        "  flags integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
