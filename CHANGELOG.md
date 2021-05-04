@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
 
 ### Removed
+- Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 

@@ -20723,20 +20723,6 @@ report_compliance_by_uuid (const char *report_id,
 }
 
 /**
- * @brief Return the source interface of a report.
- *
- * @param[in]  report  Report.
- *
- * @return Source interface.
- */
-static char*
-report_source_iface (report_t report)
-{
-  return sql_string ("SELECT source_iface FROM reports WHERE id = %llu;",
-                     report);
-}
-
-/**
  * @brief Add a result to a report.
  *
  * @param[in]  report  The report.
@@ -27558,36 +27544,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       PRINT (out,
              "</task>");
 
-      {
-        char *source_iface;
-
-        /* Info about the situation at the time of scan. */
-
-        PRINT (out,
-               "<scan>"
-               "<task>");
-
-        source_iface = report_source_iface (report);
-
-        if (source_iface)
-          /* VALUE "" means preference was not set.  Missing PREFERENCE means
-           * we don't know. */
-          PRINT (out,
-                 "<preferences>"
-                 "<preference>"
-                 "<name>Network Source Interface</name>"
-                 "<scanner_name>source_iface</scanner_name>"
-                 "<value>%s</value>"
-                 "</preference>"
-                 "</preferences>",
-                 source_iface);
-
-        free (source_iface);
-
-        PRINT (out,
-               "</task>"
-               "</scan>");
-      }
     }
 
   uuid = report_uuid (report);
