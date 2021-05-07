@@ -15103,6 +15103,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>integer</type>
             <summary>Number of high severity results per host with results</summary>
           </column>
+          <column>
+	    <name>start_time</name>
+            <type>iso_time</type>
+            <summary>Scan start time</summary>
+          </column>
+          <column>
+	    <name>end_time</name>
+            <type>iso_time</type>
+            <summary>Scan end time</summary>
+          </column>
+          <column>
+	    <name>scan_start</name>
+            <type>iso_time</type>
+            <summary>Scan start time</summary>
+          </column>
+          <column>
+	    <name>scan_end</name>
+            <type>iso_time</type>
+            <summary>Scan end time</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>

@@ -20892,6 +20892,7 @@ report_add_result (report_t report, result_t result)
    "task", "severity", "false_positive", "log", "low", "medium", "high",       \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
    "medium_per_host", "high_per_host", "duration", "duration_per_host",        \
+   "start_time", "end_time", "scan_start", "scan_end",                         \
    NULL }
 
 /**
@@ -20901,16 +20902,18 @@ report_add_result (report_t report, result_t result)
  {                                                                           \
    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "iso_time (start_time)", "name", KEYWORD_TYPE_STRING },                 \
+   { "iso_time (date)", "name", KEYWORD_TYPE_STRING },                       \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "iso_time (start_time)", NULL, KEYWORD_TYPE_STRING },                   \
+   { "iso_time (date)", NULL, KEYWORD_TYPE_STRING },                         \
    { "iso_time (end_time)", NULL, KEYWORD_TYPE_STRING },                     \
-   { "start_time", "created", KEYWORD_TYPE_INTEGER },                        \
+   { "date", "created", KEYWORD_TYPE_INTEGER },                              \
    { "end_time", "modified", KEYWORD_TYPE_INTEGER },                         \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner",                                                               \
      KEYWORD_TYPE_STRING },                                                  \
    { "owner", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { "start_time", "scan_start", KEYWORD_TYPE_INTEGER },                     \
+   { "end_time", "scan_end", KEYWORD_TYPE_INTEGER },                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
