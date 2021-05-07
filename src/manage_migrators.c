@@ -2682,6 +2682,37 @@ migrate_242_to_243 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 243 to version 244.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_243_to_244 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 243. */
+
+  if (manage_db_version () != 243)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE reports ADD COLUMN modification_time integer;");
+  sql ("UPDATE reports SET modification_time = end_time;");
+
+  /* Set the database version to 244. */
+
+  set_db_version (244);
+
+  sql_commit ();
+
+  return 0;
+}
 
 
 #undef UPDATE_DASHBOARD_SETTINGS
@@ -2733,6 +2764,7 @@ static migrator_t database_migrators[] = {
   {241, migrate_240_to_241},
   {242, migrate_241_to_242},
   {243, migrate_242_to_243},
+  {244, migrate_243_to_244},
   /* End marker. */
   {-1, NULL}};
 

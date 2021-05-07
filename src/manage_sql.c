@@ -20905,9 +20905,9 @@ report_add_result (report_t report, result_t result)
    { "iso_time (date)", "name", KEYWORD_TYPE_STRING },                       \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
    { "iso_time (date)", NULL, KEYWORD_TYPE_STRING },                         \
-   { "iso_time (end_time)", NULL, KEYWORD_TYPE_STRING },                     \
+   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
    { "date", "created", KEYWORD_TYPE_INTEGER },                              \
-   { "end_time", "modified", KEYWORD_TYPE_INTEGER },                         \
+   { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner",                                                               \
      KEYWORD_TYPE_STRING },                                                  \
