@@ -1,1 +1,6 @@
 build/
+<<<<<<< HEAD
+=======
+tags
+.ccls
+>>>>>>> ef9d161f3...  Use pba authentication instead of authutils
