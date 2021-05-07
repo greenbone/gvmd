@@ -102,6 +102,7 @@
 #include "manage.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
+#include "manage_authentication.h"
 #include "gmpd.h"
 #include "utils.h"
 
@@ -1675,6 +1676,53 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
 }
 
 /**
+ * @brief parse_authentication_goption_arg is used to parse authentication 
+ * parameter.
+ *
+ * @param[in] opt the parameter (e.g. --pepper).
+ * @param[in] arg the value of the parameter.
+ * @param[in] data the pointer of the data to set (unused).
+ * @param[in] err used to set error string on failure. 
+ *
+ * @return TRUE success, FALSE on failure.
+ **/
+static gboolean
+parse_authentication_goption_arg (const gchar *opt, const gchar *arg,
+                                  gpointer data, GError **err)
+{
+  if (strcmp (opt, "--pepper") == 0)
+    {
+      if (manage_authentication_setup(arg, strlen(arg), 0, NULL) != GMA_SUCCESS)
+        {
+          g_set_error (
+            err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
+            "Unable to set given pepper (%s)",
+            arg);
+          return FALSE;
+        }
+    }
+  else if (strcmp (opt, "--hashcount") == 0)
+    {
+      if (manage_authentication_setup(NULL, 0, strtol(arg, NULL, 0), NULL) != GMA_SUCCESS)
+        {
+          g_set_error (
+            err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
+            "Unable to set hash_count (%s)",
+            arg);
+          return FALSE;
+        }
+    }
+  else
+    {
+      g_set_error (err, G_OPTION_ERROR, G_OPTION_ERROR_UNKNOWN_OPTION,
+                   "Unknown authentication option: %s.", opt);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+/**
  * @brief Entry point to the manager.
  *
  * \if STATIC
@@ -2042,6 +2090,14 @@ gvmd (int argc, char** argv)
           &verify_scanner,
           "Verify scanner <scanner-uuid> and exit.",
           "<scanner-uuid>" },
+        { "pepper", '\0', 0, G_OPTION_ARG_CALLBACK,
+           parse_authentication_goption_arg,
+          "Use <pepper> to statically enhance salt of password hashes (maximal 4 character).",
+          "<pepper>" },
+        { "hashcount", '\0', 0, G_OPTION_ARG_CALLBACK,
+           parse_authentication_goption_arg,
+          "Use <hashcount> to enhance the computational cost of creating a password hash.",
+          "<hashcount>" },
         { "version", '\0', 0, G_OPTION_ARG_NONE,
           &print_version,
           "Print version and exit.",
