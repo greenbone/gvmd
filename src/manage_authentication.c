@@ -42,7 +42,7 @@ manage_authentication_setup (const char *pepper, unsigned int pepper_size,
 
   if (tmp == NULL)
     goto exit;
-  // ovly override pepper when pepper is initially set otherwise keep
+  // only override pepper when pepper is initially set otherwise keep
   // previous pepper
   for (i = 0; pepper != NULL && i < MAX_PEPPER_SIZE; i++)
     settings.pepper[i] = tmp->pepper[i];
@@ -59,7 +59,7 @@ exit:
  * @brief creates a hash based on the settings set by
  * manage_authentication_setup and the password.
  *
- * @param[in] passwod - the password to be hashed
+ * @param[in] password - the password to be hashed
  * @return the hash or a NULL pointer on a failure.
  * */
 char *
@@ -103,4 +103,3 @@ manage_authentication_verify (const char *hash, const char *password)
 
     return rc;
 }
-
