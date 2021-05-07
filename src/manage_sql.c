@@ -38,6 +38,7 @@
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
+#include "manage_authentication.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "utils.h"
@@ -16829,7 +16830,22 @@ auth_cache_find (const char *username, const char *password, int method)
   if (!hash)
     return -1;
 
-  ret = gvm_authenticate_classic (username, password, hash);
+  // verify for VALID or OUTDATED but don't update
+  ret = manage_authentication_verify(hash, password);
+  switch(ret){
+      case GMA_HASH_INVALID:
+          ret = 1;
+          break;
+       case GMA_HASH_VALID_BUT_DATED:
+          ret = 0;
+          break;
+        case GMA_SUCCESS:
+          ret = 0;
+          break;
+        default:
+          ret = -1;
+          break;
+  }
   g_free (hash);
   return ret;
 }
@@ -16848,7 +16864,7 @@ auth_cache_insert (const char *username, const char *password, int method)
   char *hash, *quoted_username;
 
   quoted_username = sql_quote (username);
-  hash = get_password_hashes (password);
+  hash = manage_authentication_hash(password);
   sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
        " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
   /* Cleanup cache */
@@ -16917,7 +16933,27 @@ authenticate_any_method (const gchar *username, const gchar *password,
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
   hash = manage_user_hash (username);
-  ret = gvm_authenticate_classic (username, password, hash);
+  ret = manage_authentication_verify(hash, password);
+  switch(ret){
+      case GMA_HASH_INVALID:
+          ret = 1;
+          break;
+       case GMA_HASH_VALID_BUT_DATED:
+          g_free(hash);
+          hash = manage_authentication_hash(password);
+          sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
+               hash, username);
+          ret = 0;
+          break;
+        case GMA_SUCCESS:
+          ret = 0;
+          break;
+        default:
+          ret = -1;
+          break;
+  }
+
+
   g_free (hash);
   return ret;
 }
@@ -50425,7 +50461,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
         g_free (errstr);
       return -1;
     }
-  hash = get_password_hashes (password);
+  hash = manage_authentication_hash (password);
   sql ("UPDATE users SET password = '%s', modification_time = m_now ()"
        " WHERE uuid = '%s';",
        hash,
@@ -50674,7 +50710,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
 
   /* Get the password hashes. */
 
-  hash = get_password_hashes (password);
+  hash = manage_authentication_hash (password);
 
   /* Get the quoted comment */
 
@@ -51779,7 +51815,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   /* Get the password hashes. */
 
   if (password)
-    hash = get_password_hashes (password);
+    hash = manage_authentication_hash (password);
   else
     hash = NULL;
 
