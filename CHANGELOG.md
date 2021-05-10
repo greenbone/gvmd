@@ -93,6 +93,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve report counts performance [#1438](https://github.com/greenbone/gvmd/pull/1438)
 - Clean up log config, add gvm-libs log domains [#1502](https://github.com/greenbone/gvmd/pull/1502)
 - Sort missing severity as lowest value in GMP get [#1508](https://github.com/greenbone/gvmd/pull/1508)
+- Use passwordbasedauthentication of gvm-libs instead of auth_utils [#1505](https://github.com/greenbone/gvmd/pull/1505)
 
 ### Fixed
 - Also create owner WITH clause for single resources [#1406](https://github.com/greenbone/gvmd/pull/1406)
