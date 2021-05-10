@@ -23636,6 +23636,22 @@ set_report_scan_run_status (report_t report, task_status_t status)
 }
 
 /**
+ * @brief Update modification_time of a report to current time.
+ *
+ * @param[in]   report  Report.
+ *
+ * @return 0.
+ */
+int
+update_report_modification_time (report_t report)
+{
+  sql("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
+      report);
+
+  return 0;
+}
+
+/**
  * @brief Get the result severity counts for a report.
  *
  * @param[in]  report     Report.
