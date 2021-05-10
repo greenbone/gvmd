@@ -23626,7 +23626,8 @@ report_scan_run_status (report_t report, task_status_t* status)
 int
 set_report_scan_run_status (report_t report, task_status_t status)
 {
-  sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
+  sql ("UPDATE reports SET scan_run_status = %u,"
+       " modification_time = m_now() WHERE id = %llu;",
        status,
        report);
   if (setting_auto_cache_rebuild_int ())
@@ -28604,6 +28605,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   const char *str;
   char *defs_file = NULL;
   time_t start_time, end_time;
+  gboolean has_results = FALSE;
 
   assert (task);
   assert (report);
@@ -28641,6 +28643,9 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       goto end_parse_osp_report;
     }
   results = child->entities;
+  if (results)
+    has_results = TRUE;
+
   defs_file = task_definitions_file (task);
   while (results)
     {
@@ -28747,6 +28752,10 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       g_free (severity_str);
       results = next_entities (results);
     }
+
+  if (has_results)
+    sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
+	 report);
 
  end_parse_osp_report:
   sql_commit ();
