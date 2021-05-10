@@ -12021,13 +12021,13 @@ generate_report_filename (report_t report, report_format_t report_format,
   report_id = report_uuid (report);
 
   creation_time
-    = sql_string ("SELECT iso_time (start_time)"
+    = sql_string ("SELECT iso_time (date)"
                   " FROM reports"
                   " WHERE id = %llu",
                   report);
 
   modification_time
-    = sql_string ("SELECT iso_time (end_time)"
+    = sql_string ("SELECT iso_time (modification_time)"
                   " FROM reports"
                   " WHERE id = %llu",
                   report);
