@@ -3113,6 +3113,7 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
               report_host_set_end_time (prognosis_report_host, time (NULL));
               insert_report_host_detail (report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
+              update_report_modification_time (report);
             }
         }
       cleanup_iterator (&report_hosts);

@@ -12022,13 +12022,13 @@ generate_report_filename (report_t report, report_format_t report_format,
   report_id = report_uuid (report);
 
   creation_time
-    = sql_string ("SELECT iso_time (start_time)"
+    = sql_string ("SELECT iso_time (date)"
                   " FROM reports"
                   " WHERE id = %llu",
                   report);
 
   modification_time
-    = sql_string ("SELECT iso_time (end_time)"
+    = sql_string ("SELECT iso_time (modification_time)"
                   " FROM reports"
                   " WHERE id = %llu",
                   report);
@@ -20941,9 +20941,9 @@ report_add_result (report_t report, result_t result)
    { "iso_time (date)", "name", KEYWORD_TYPE_STRING },                       \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
    { "iso_time (date)", NULL, KEYWORD_TYPE_STRING },                         \
-   { "iso_time (end_time)", NULL, KEYWORD_TYPE_STRING },                     \
+   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
    { "date", "created", KEYWORD_TYPE_INTEGER },                              \
-   { "end_time", "modified", KEYWORD_TYPE_INTEGER },                         \
+   { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner",                                                               \
      KEYWORD_TYPE_STRING },                                                  \
@@ -23662,11 +23662,28 @@ report_scan_run_status (report_t report, task_status_t* status)
 int
 set_report_scan_run_status (report_t report, task_status_t status)
 {
-  sql ("UPDATE reports SET scan_run_status = %u WHERE id = %llu;",
+  sql ("UPDATE reports SET scan_run_status = %u,"
+       " modification_time = m_now() WHERE id = %llu;",
        status,
        report);
   if (setting_auto_cache_rebuild_int ())
     report_cache_counts (report, 0, 0, NULL);
+  return 0;
+}
+
+/**
+ * @brief Update modification_time of a report to current time.
+ *
+ * @param[in]   report  Report.
+ *
+ * @return 0.
+ */
+int
+update_report_modification_time (report_t report)
+{
+  sql("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
+      report);
+
   return 0;
 }
 
@@ -28640,6 +28657,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   const char *str;
   char *defs_file = NULL;
   time_t start_time, end_time;
+  gboolean has_results = FALSE;
 
   assert (task);
   assert (report);
@@ -28677,6 +28695,9 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       goto end_parse_osp_report;
     }
   results = child->entities;
+  if (results)
+    has_results = TRUE;
+
   defs_file = task_definitions_file (task);
   while (results)
     {
@@ -28783,6 +28804,10 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       g_free (severity_str);
       results = next_entities (results);
     }
+
+  if (has_results)
+    sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
+	 report);
 
  end_parse_osp_report:
   sql_commit ();

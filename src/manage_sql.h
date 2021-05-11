@@ -296,6 +296,8 @@ int delete_report_internal (report_t);
 
 int set_report_scan_run_status (report_t, task_status_t);
 
+int update_report_modification_time (report_t);
+
 int set_report_slave_progress (report_t, int);
 
 void init_task_file_iterator (iterator_t *, task_t, const char *);
