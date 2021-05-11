@@ -1238,16 +1238,45 @@ parse_keyword (keyword_t* keyword)
                                                atoi (keyword->string) * 12);
           keyword->type = KEYWORD_TYPE_INTEGER;
         }
+      // Add cases for t%H:%M although it is incorrect sometimes it is easier
+      // to call filter.lower on the frontend then it can happen that the
+      // T indicator is lowered as well.
+      else if (strptime (keyword->string, "%Y-%m-%dt%H:%M", &date))
+        {
+          keyword->integer_value = mktime (&date);
+          keyword->type = KEYWORD_TYPE_INTEGER;
+          g_debug ("Parsed Y-m-dtH:M %s to timestamp %d.",
+                   keyword->string, keyword->integer_value);
+        }
+      else if (strptime (keyword->string, "%Y-%m-%dt%Hh%M", &date))
+        {
+          keyword->integer_value = mktime (&date);
+          keyword->type = KEYWORD_TYPE_INTEGER;
+          g_debug ("Parsed Y-m-dtHhM %s to timestamp %d.",
+                   keyword->string, keyword->integer_value);
+        }
       else if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
         {
           keyword->integer_value = mktime (&date);
           keyword->type = KEYWORD_TYPE_INTEGER;
+          g_debug ("Parsed Y-m-dTH:M %s to timestamp %d.",
+                   keyword->string, keyword->integer_value);
+        }
+      // Add T%Hh%M for downwards compatible filter
+      else if (strptime (keyword->string, "%Y-%m-%dT%Hh%M", &date))
+        {
+          keyword->integer_value = mktime (&date);
+          keyword->type = KEYWORD_TYPE_INTEGER;
+          g_debug ("Parsed Y-m-dTHhM %s to timestamp %d.",
+                   keyword->string, keyword->integer_value);
         }
       else if (memset (&date, 0, sizeof (date)),
                strptime (keyword->string, "%Y-%m-%d", &date))
         {
           keyword->integer_value = mktime (&date);
           keyword->type = KEYWORD_TYPE_INTEGER;
+          g_debug ("Parsed Y-m-d %s to timestamp %d.",
+                   keyword->string, keyword->integer_value);
         }
       else if (sscanf (keyword->string, "%d%1s", &parsed_integer, dummy) == 1)
         {
@@ -2045,6 +2074,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     return;
 
   split = split_filter (filter);
+  
   point = (keyword_t**) split->pdata;
   if (first)
     {
@@ -3874,7 +3904,6 @@ filter_clause (const char* type, const char* filter,
           last_was_re = 0;
         }
       g_free (quoted_keyword);
-
       point++;
     }
   filter_free (split);
@@ -3896,7 +3925,6 @@ filter_clause (const char* type, const char* filter,
 
   if (strlen (clause->str))
     return g_string_free (clause, FALSE);
-
   g_string_free (clause, TRUE);
   return NULL;
 }

@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Try to install PostgreSQL extensions automatically [#1444](https://github.com/greenbone/gvmd/pull/1444) [#1483](https://github.com/greenbone/gvmd/pull/1483)
 - Add auto retry on scanner connection lost during a running task [#1452](https://github.com/greenbone/gvmd/pull/1452)
 - Add --feed-lock-timeout option [#1472](https://github.com/greenbone/gvmd/pull/1472)
+- datetime parser for `%Y-%m-%dT%Hh%M` for keywords [1518](https://github.com/greenbone/gvmd/pull/1518)
 
 ### Changed
 - Improve report counts performance [#1438](https://github.com/greenbone/gvmd/pull/1438)
