@@ -2308,7 +2308,8 @@ create_tables ()
        "  comment text,"
        "  scan_run_status integer,"
        "  slave_progress integer,"
-       "  flags integer);");
+       "  flags integer,"
+       "  modification_time);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id SERIAL PRIMARY KEY,"
