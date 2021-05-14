@@ -2714,6 +2714,73 @@ migrate_243_to_244 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 244 to version 245.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_244_to_245 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 244. */
+
+  if (manage_db_version () != 244)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE reports RENAME COLUMN date TO creation_time;");
+
+
+  sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
+       " RETURNS integer AS $$"
+       /* Get the report from the most recently completed invocation of task. */
+       "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+       "  ORDER BY creation_time DESC LIMIT 1;"
+       "$$ LANGUAGE SQL;",
+       TASK_STATUS_DONE);
+
+  sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
+       " RETURNS integer AS $$"
+       /* Get report from second most recently completed invocation of task. */
+       "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+       "  ORDER BY creation_time DESC LIMIT 1 OFFSET 1;"
+       "$$ LANGUAGE SQL;",
+       TASK_STATUS_DONE);
+
+  sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
+       "                                          integer,"  // overrides
+       "                                          integer)"  // min_qod
+       " RETURNS double precision AS $$"
+       /* Calculate the severity of a task. */
+       "  SELECT CASE"
+       "         WHEN (SELECT target = 0"
+       "               FROM tasks WHERE id = $1)"
+       "         THEN CAST (NULL AS double precision)"
+       "         ELSE"
+       "         (SELECT report_severity ((SELECT id FROM reports"
+       "                                   WHERE task = $1"
+       "                                   AND scan_run_status = %u"
+       "                                   ORDER BY creation_time DESC"
+       "                                   LIMIT 1 OFFSET 0), $2, $3))"
+       "         END;"
+       "$$ LANGUAGE SQL;",
+       TASK_STATUS_DONE);
+
+  /* Set the database version to 245. */
+
+  set_db_version (245);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2765,6 +2832,7 @@ static migrator_t database_migrators[] = {
   {242, migrate_241_to_242},
   {243, migrate_242_to_243},
   {244, migrate_243_to_244},
+  {245, migrate_244_to_245},
   /* End marker. */
   {-1, NULL}};
 
