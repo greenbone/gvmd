@@ -904,12 +904,15 @@ modify_config_handle_family_selection (config_t config,
                                        gmp_parser_t *gmp_parser,
                                        GError **error)
 {
+  gchar *rejected_family;
+
   switch (manage_set_config_families
              (config,
               families_growing_all,
               families_static_all,
               families_growing_empty,
-              family_selection_growing))
+              family_selection_growing,
+              &rejected_family))
     {
       case 0:
         return 0;
@@ -919,9 +922,13 @@ modify_config_handle_family_selection (config_t config,
         return -1;
       case 2:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-          (-1, XML_ERROR_SYNTAX ("modify_config",
-                            "Whole-only families must include entire"
-                            " family and be growing"));
+          (-1,
+           XML_ERROR_SYNTAX ("modify_config",
+                             "Family &quot;%s&quot; must be growing and"
+                             " include all VTs or it must be static and"
+                             " empty."),
+           rejected_family);
+        g_free (rejected_family);
         return -1;
       case -1:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN

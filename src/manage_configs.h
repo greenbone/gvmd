@@ -172,7 +172,8 @@ int
 manage_set_config_nvts (config_t, const char*, GPtrArray*);
 
 int
-manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*, int);
+manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*, int,
+                            gchar **);
 
 void
 init_config_timeout_iterator (iterator_t*, config_t);
