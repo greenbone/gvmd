@@ -1031,7 +1031,7 @@ modify_config_handle_nvt_selection (config_t config,
  *
  * @param[in]  config     The config to modify
  * @param[in]  nvt_oid    VT OID of the preference or NULL for scanner pref.
- * @param[in]  name       Name of the prefernce to Changes
+ * @param[in]  name       Name of the preference to Changes
  * @param[in]  value      Value to set for the preference.
  * @param[in]  gmp_parser The GMP parser.
  * @param[out] error      GError output.
