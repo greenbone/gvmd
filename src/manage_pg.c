@@ -426,7 +426,7 @@ manage_create_sql_functions ()
            "        INTO execute_name"
            "        USING $2;"
            "        RETURN execute_name;"
-           "   WHEN $1 NOT IN ('nvt', 'cpe', 'cve', 'ovaldef', 'cert_bund_adv',"
+           "   WHEN $1 NOT IN ('nvt', 'cpe', 'cve', 'cert_bund_adv',"
            "                   'dfn_cert_adv', 'report', 'result', 'user')"
            "   THEN EXECUTE 'SELECT name FROM '"
            "                || quote_ident_split ($1 || 's_trash')"
@@ -743,7 +743,6 @@ manage_create_sql_functions ()
        "   WHEN arg_type = 'nvt'"
        "        OR arg_type = 'cve'"
        "        OR arg_type = 'cpe'"
-       "        OR arg_type = 'ovaldef'"
        "        OR arg_type = 'cert_bund_adv'"
        "        OR arg_type = 'dfn_cert_adv'"
        "   THEN RETURN true;"
@@ -1606,41 +1605,14 @@ create_view_vulns ()
 {
   sql ("DROP VIEW IF EXISTS vulns;");
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = '%s'"
-               "               AND table_schema = 'scap'"
-               "               AND table_name = 'ovaldefs')"
-               " ::integer;",
-               sql_database ()))
-    sql ("CREATE OR REPLACE VIEW vulns AS"
-         " WITH used_nvts"
-         " AS (SELECT DISTINCT nvt FROM results"
-         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
-         " FROM nvts"
-         " WHERE uuid in (SELECT * FROM used_nvts)"
-         " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       severity, "
-         G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'cve' AS type"
-         " FROM cves"
-         " WHERE uuid in (SELECT * FROM used_nvts)"
-         " UNION SELECT id, uuid, name, creation_time, modification_time,"
-         "       severity, "
-         G_STRINGIFY (QOD_DEFAULT) " AS qod,"
-         "       'ovaldef' AS type"
-         " FROM ovaldefs"
-         " WHERE uuid in (SELECT * FROM used_nvts)");
-  else
-    sql ("CREATE OR REPLACE VIEW vulns AS"
-         " WITH used_nvts"
-         " AS (SELECT DISTINCT nvt FROM results"
-         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
-         " SELECT id, uuid, name, creation_time, modification_time,"
-         "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
-         " FROM nvts"
-         " WHERE uuid in (SELECT * FROM used_nvts)");
+  sql ("CREATE OR REPLACE VIEW vulns AS"
+       " WITH used_nvts"
+       " AS (SELECT DISTINCT nvt FROM results"
+       "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
+       " SELECT id, uuid, name, creation_time, modification_time,"
+       "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
+       " FROM nvts"
+       " WHERE uuid in (SELECT * FROM used_nvts)");
 }
 
 #undef VULNS_RESULTS_WHERE
@@ -3145,31 +3117,6 @@ manage_db_init (const gchar *name)
            " (cve INTEGER,"
            "  cpe INTEGER);");
 
-      sql ("CREATE TABLE scap2.ovaldefs"
-           " (id SERIAL PRIMARY KEY,"
-           "  uuid text,"
-           "  name text,"                   /* OVAL identifier. */
-           "  comment text,"
-           "  creation_time integer,"
-           "  modification_time integer,"
-           "  version INTEGER,"
-           "  deprecated INTEGER,"
-           "  def_class TEXT,"              /* Enum. */
-           "  title TEXT,"
-           "  description TEXT,"
-           "  xml_file TEXT,"
-           "  status TEXT,"
-           "  severity DOUBLE PRECISION DEFAULT 0,"
-           "  cve_refs INTEGER DEFAULT 0);");
-
-      sql ("CREATE TABLE scap2.ovalfiles"
-           " (id SERIAL PRIMARY KEY,"
-           "  xml_file TEXT);");
-
-      sql ("CREATE TABLE scap2.affected_ovaldefs"
-           " (cve INTEGER,"
-           "  ovaldef INTEGER);");
-
       /* Init tables. */
 
       sql ("INSERT INTO scap2.meta (name, value)"
@@ -3211,18 +3158,6 @@ manage_db_add_constraints (const gchar *name)
            " ADD UNIQUE (cve, cpe),"
            " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
            " ADD FOREIGN KEY(cpe) REFERENCES cpes(id);");
-
-      sql ("ALTER TABLE scap2.ovaldefs"
-           " ADD UNIQUE (uuid);");
-
-      sql ("ALTER TABLE scap2.ovalfiles"
-           " ADD UNIQUE (xml_file);");
-
-      sql ("ALTER TABLE scap2.affected_ovaldefs"
-           " ALTER cve SET NOT NULL,"
-           " ALTER ovaldef SET NOT NULL,"
-           " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
-           " ADD FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id);");
     }
   else
     {
@@ -3269,19 +3204,6 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.affected_products (cpe);");
       sql ("CREATE INDEX afp_cve_idx"
            " ON scap2.affected_products (cve);");
-
-      sql ("CREATE INDEX ovaldefs_idx"
-           " ON scap2.ovaldefs (name);");
-      sql ("CREATE INDEX ovaldefs_by_creation_time"
-           " ON scap2.ovaldefs (creation_time);");
-
-      sql ("CREATE UNIQUE INDEX ovalfiles_idx"
-           " ON scap2.ovalfiles (xml_file);");
-
-      sql ("CREATE INDEX aff_ovaldefs_def_idx"
-           " ON scap2.affected_ovaldefs (ovaldef);");
-      sql ("CREATE INDEX aff_ovaldefs_cve_idx"
-           " ON scap2.affected_ovaldefs (cve);");
     }
   else
     {

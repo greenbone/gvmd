@@ -104,11 +104,6 @@
 #define CVE_GETBYNAME_XSL GVM_SCAP_RES_DIR "/cve_getbyname.xsl"
 
 /**
- * @brief OVALDEF selection stylesheet location.
- */
-#define OVALDEF_GETBYNAME_XSL GVM_SCAP_RES_DIR "/ovaldef_getbyname.xsl"
-
-/**
  * @brief CERT_BUND_ADV selection stylesheet location.
  */
 #define CERT_BUND_ADV_GETBYNAME_XSL GVM_CERT_RES_DIR "/cert_bund_getbyname.xsl"
@@ -693,8 +688,6 @@ type_name_plural (const char* type)
     return "DFN-CERT Advisories";
   if (strcasecmp (type, "nvt") == 0)
     return "NVTs";
-  if (strcasecmp (type, "ovaldef") == 0)
-    return "OVAL Definitions";
 
   return "ERROR";
 }
@@ -722,8 +715,6 @@ type_name (const char* type)
     return "DFN-CERT Advisory";
   if (strcasecmp (type, "nvt") == 0)
     return "NVT";
-  if (strcasecmp (type, "ovaldef") == 0)
-    return "OVAL Definition";
 
   return "ERROR";
 }
@@ -739,8 +730,7 @@ int
 type_is_scap (const char* type)
 {
   return (strcasecmp (type, "cpe") == 0)
-         || (strcasecmp (type, "cve") == 0)
-         || (strcasecmp (type, "ovaldef") == 0);
+         || (strcasecmp (type, "cve") == 0);
 }
 
 /**
@@ -5223,31 +5213,6 @@ get_cve_filename (char *item_id)
 }
 
 /**
- * @brief Get the filename where a given OVAL definition can be found.
- *
- * @param[in] item_id   Full OVAL identifier with file suffix.
- *
- * @return A dynamically allocated string (to be g_free'd) containing the
- *         path to the desired file or NULL on error.
- */
-static char *
-get_ovaldef_filename (char *item_id)
-{
-  char *result, *short_filename;
-
-  result = NULL;
-  short_filename = get_ovaldef_short_filename (item_id);
-
-  if (*short_filename)
-    {
-      result = g_strdup_printf ("%s/%s", GVM_SCAP_DATA_DIR, short_filename);
-    }
-  free (short_filename);
-
-  return result;
-}
-
-/**
  * @brief Compute the filename where a given CERT-Bund Advisory can be found.
  *
  * @param[in] item_id   CERT-Bund identifier without version ("CB-K??/????").
@@ -5813,19 +5778,6 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
                                    1);   /* Close tag. */
 
           cleanup_iterator (&nvts);
-        }
-    }
-  else if (g_ascii_strcasecmp ("OVALDEF", type) == 0)
-    {
-      fname = get_ovaldef_filename (uid);
-      if (fname)
-        {
-          gchar *ovaldef;
-          ovaldef = xsl_transform (OVALDEF_GETBYNAME_XSL, fname,
-                                   pnames, pvalues);
-          g_free (fname);
-          if (ovaldef)
-            *result = ovaldef;
         }
     }
   else if (g_ascii_strcasecmp ("CERT_BUND_ADV", type) == 0)

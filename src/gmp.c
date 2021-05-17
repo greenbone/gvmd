@@ -8981,220 +8981,151 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
           return;
         }
 
-      if (g_str_has_prefix (oid, "oval:"))
-        {
-          int ret, first;
-          char *cves;
-          gchar **split, **item;
-          get_data_t get;
-          iterator_t iterator;
-          const char *severity;
+      {
+        const char *cvss_base = result_iterator_nvt_cvss_base (results);
+        GString *tags = g_string_new (result_iterator_nvt_tag (results));
+        int first;
+        iterator_t severities;
 
-          memset (&get, '\0', sizeof (get));
-          get.id = g_strdup (oid);
-          ret = init_ovaldef_info_iterator (&iterator, &get, NULL);
-          if (ret)
-            assert (0);
-          if (!next (&iterator))
-            abort ();
-          severity = ovaldef_info_iterator_severity (&iterator);
-          buffer_xml_append_printf (buffer,
-                                    "<nvt oid=\"%s\">"
-                                    "<type>ovaldef</type>"
-                                    "<name>%s</name>"
-                                    "<cvss_base>%s</cvss_base>"
-                                    "<severities score=\"%s\">"
-                                    "</severities>"
-                                    "<tags>summary=%s</tags>",
-                                    oid,
-                                    ovaldef_info_iterator_title (&iterator),
-                                    severity ? severity : "",
-                                    severity ? severity : "",
-                                    ovaldef_info_iterator_description (&iterator));
-          g_free (get.id);
-          cleanup_iterator (&iterator);
+        if (!cvss_base && !strcmp (oid, "0"))
+          cvss_base = "0.0";
 
-          first = 1;
-          cves = ovaldef_cves (oid);
-          split = g_strsplit (cves, ",", 0);
-          item = split;
-          while (*item)
-            {
-              gchar *id;
-
-              id = *item;
-              g_strstrip (id);
-
-              if (strcmp (id, "") == 0)
-                {
-                  item++;
-                  continue;
-                }
-
-              if (first)
-                {
-                  buffer_xml_append_printf (buffer, "<refs>");
-                  first = 0;
-                }
-              buffer_xml_append_printf (buffer, "<ref type=\"cve\" id=\"%s\"/>", id);
-
-              item++;
-            }
-          g_strfreev (split);
-          g_free (cves);
-
-          results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
-
-          if (first == 0)
-            buffer_xml_append_printf (buffer, "</refs>");
-        }
-      else
-        {
-          const char *cvss_base = result_iterator_nvt_cvss_base (results);
-          GString *tags = g_string_new (result_iterator_nvt_tag (results));
-          int first;
-          iterator_t severities;
-
-          if (!cvss_base && !strcmp (oid, "0"))
-            cvss_base = "0.0";
-
-          /* Add the elements that are expected as part of the pipe-separated
-           * tag list via API although internally already explicitly stored.
-           * Once the API is extended to have these elements explicitly, they
-           * do not need to be added to this tag string anymore. */
-          if (result_iterator_nvt_summary (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|summary=%s",
-                                        result_iterator_nvt_summary (results));
-              else
-                g_string_append_printf (tags, "summary=%s",
-                                        result_iterator_nvt_summary (results));
-            }
-          if (result_iterator_nvt_insight (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|insight=%s",
+        /* Add the elements that are expected as part of the pipe-separated
+         * tag list via API although internally already explicitly stored.
+         * Once the API is extended to have these elements explicitly, they
+         * do not need to be added to this tag string anymore. */
+        if (result_iterator_nvt_summary (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|summary=%s",
+                                      result_iterator_nvt_summary (results));
+            else
+              g_string_append_printf (tags, "summary=%s",
+                                      result_iterator_nvt_summary (results));
+          }
+        if (result_iterator_nvt_insight (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|insight=%s",
+                                      result_iterator_nvt_insight (results));
+            else
+              g_string_append_printf (tags, "insight=%s",
                                         result_iterator_nvt_insight (results));
-              else
-                g_string_append_printf (tags, "insight=%s",
-                                        result_iterator_nvt_insight (results));
-            }
-          if (result_iterator_nvt_affected (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|affected=%s",
-                                        result_iterator_nvt_affected (results));
-              else
-                g_string_append_printf (tags, "affected=%s",
-                                        result_iterator_nvt_affected (results));
-            }
-          if (result_iterator_nvt_impact (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|impact=%s",
-                                        result_iterator_nvt_impact (results));
-              else
-                g_string_append_printf (tags, "impact=%s",
-                                        result_iterator_nvt_impact (results));
-            }
-          if (result_iterator_nvt_solution (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|solution=%s",
+          }
+        if (result_iterator_nvt_affected (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|affected=%s",
+                                      result_iterator_nvt_affected (results));
+            else
+              g_string_append_printf (tags, "affected=%s",
+                                      result_iterator_nvt_affected (results));
+          }
+        if (result_iterator_nvt_impact (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|impact=%s",
+                                      result_iterator_nvt_impact (results));
+            else
+              g_string_append_printf (tags, "impact=%s",
+                                      result_iterator_nvt_impact (results));
+          }
+        if (result_iterator_nvt_solution (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|solution=%s",
+                                      result_iterator_nvt_solution (results));
+            else
+              g_string_append_printf (tags, "solution=%s",
+                                      result_iterator_nvt_solution (results));
+          }
+        if (result_iterator_nvt_detection (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|vuldetect=%s",
+                                      result_iterator_nvt_detection (results));
+            else
+              g_string_append_printf (tags, "vuldetect=%s",
+                                      result_iterator_nvt_detection (results));
+          }
+        if (result_iterator_nvt_solution_type (results))
+          {
+            if (tags->str)
+              g_string_append_printf (tags, "|solution_type=%s",
+                                      result_iterator_nvt_solution_type (results));
+            else
+              g_string_append_printf (tags, "solution_type=%s",
+                                      result_iterator_nvt_solution_type (results));
+          }
+
+        buffer_xml_append_printf (buffer,
+                                  "<nvt oid=\"%s\">"
+                                  "<type>nvt</type>"
+                                  "<name>%s</name>"
+                                  "<family>%s</family>"
+                                  "<cvss_base>%s</cvss_base>"
+                                  "<severities score=\"%s\">",
+                                  oid,
+                                  result_iterator_nvt_name (results) ?: oid,
+                                  result_iterator_nvt_family (results) ?: "",
+                                  cvss_base ?: "",
+                                  cvss_base ?: "");
+
+        init_nvt_severity_iterator (&severities, oid);
+        while (next (&severities))
+          {
+            buffer_xml_append_printf
+                (buffer,
+                 "<severity type=\"%s\">"
+                 "<origin>%s</origin>"
+                 "<date>%s</date>"
+                 "<score>%0.1f</score>"
+                 "<value>%s</value>"
+                 "</severity>",
+                 nvt_severity_iterator_type (&severities),
+                 nvt_severity_iterator_origin (&severities),
+                 nvt_severity_iterator_date (&severities),
+                 nvt_severity_iterator_score (&severities),
+                 nvt_severity_iterator_value (&severities));
+          }
+        cleanup_iterator (&severities);
+
+        buffer_xml_append_printf (buffer,
+                                  "</severities>"
+                                  "<tags>%s</tags>",
+                                  tags->str ?: "");
+
+        if (result_iterator_nvt_solution (results)
+            || result_iterator_nvt_solution_type (results)
+            || result_iterator_nvt_solution_method (results))
+          {
+            buffer_xml_append_printf (buffer, "<solution");
+
+            if (result_iterator_nvt_solution_type (results))
+              buffer_xml_append_printf (buffer, " type='%s'",
+                result_iterator_nvt_solution_type (results));
+
+            if (result_iterator_nvt_solution_method (results))
+              buffer_xml_append_printf (buffer, " method='%s'",
+                result_iterator_nvt_solution_method (results));
+
+            if (result_iterator_nvt_solution (results))
+              buffer_xml_append_printf (buffer, ">%s</solution>",
                                         result_iterator_nvt_solution (results));
-              else
-                g_string_append_printf (tags, "solution=%s",
-                                        result_iterator_nvt_solution (results));
-            }
-          if (result_iterator_nvt_detection (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|vuldetect=%s",
-                                        result_iterator_nvt_detection (results));
-              else
-                g_string_append_printf (tags, "vuldetect=%s",
-                                        result_iterator_nvt_detection (results));
-            }
-          if (result_iterator_nvt_solution_type (results))
-            {
-              if (tags->str)
-                g_string_append_printf (tags, "|solution_type=%s",
-                                        result_iterator_nvt_solution_type (results));
-              else
-                g_string_append_printf (tags, "solution_type=%s",
-                                        result_iterator_nvt_solution_type (results));
-            }
+            else
+              buffer_xml_append_printf (buffer, "/>");
+          }
 
-          buffer_xml_append_printf (buffer,
-                                    "<nvt oid=\"%s\">"
-                                    "<type>nvt</type>"
-                                    "<name>%s</name>"
-                                    "<family>%s</family>"
-                                    "<cvss_base>%s</cvss_base>"
-                                    "<severities score=\"%s\">",
-                                    oid,
-                                    result_iterator_nvt_name (results) ?: oid,
-                                    result_iterator_nvt_family (results) ?: "",
-                                    cvss_base ?: "",
-                                    cvss_base ?: "");
+        first = 1;
+        xml_append_nvt_refs (buffer, result_iterator_nvt_oid (results),
+                             &first);
 
-          init_nvt_severity_iterator (&severities, oid);
-          while (next (&severities))
-            {
-              buffer_xml_append_printf
-                  (buffer,
-                   "<severity type=\"%s\">"
-                   "<origin>%s</origin>"
-                   "<date>%s</date>"
-                   "<score>%0.1f</score>"
-                   "<value>%s</value>"
-                   "</severity>",
-                   nvt_severity_iterator_type (&severities),
-                   nvt_severity_iterator_origin (&severities),
-                   nvt_severity_iterator_date (&severities),
-                   nvt_severity_iterator_score (&severities),
-                   nvt_severity_iterator_value (&severities));
-            }
-          cleanup_iterator (&severities);
+        results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
+        if (first == 0)
+          buffer_xml_append_printf (buffer, "</refs>");
 
-          buffer_xml_append_printf (buffer,
-                                    "</severities>"
-                                    "<tags>%s</tags>",
-                                    tags->str ?: "");
-
-          if (result_iterator_nvt_solution (results)
-              || result_iterator_nvt_solution_type (results)
-              || result_iterator_nvt_solution_method (results))
-            {
-              buffer_xml_append_printf (buffer, "<solution");
-
-              if (result_iterator_nvt_solution_type (results))
-                buffer_xml_append_printf (buffer, " type='%s'",
-                  result_iterator_nvt_solution_type (results));
-
-              if (result_iterator_nvt_solution_method (results))
-                buffer_xml_append_printf (buffer, " method='%s'",
-                  result_iterator_nvt_solution_method (results));
-
-              if (result_iterator_nvt_solution (results))
-                buffer_xml_append_printf (buffer, ">%s</solution>",
-                                          result_iterator_nvt_solution (results));
-              else
-                buffer_xml_append_printf (buffer, "/>");
-            }
-
-          first = 1;
-          xml_append_nvt_refs (buffer, result_iterator_nvt_oid (results),
-                               &first);
-
-          results_xml_append_cert (buffer, results, oid, cert_loaded, &first);
-          if (first == 0)
-            buffer_xml_append_printf (buffer, "</refs>");
-
-          g_string_free (tags, TRUE);
-        }
-
+        g_string_free (tags, TRUE);
+      }
     }
 
   buffer_xml_append_printf (buffer, "</nvt>");
@@ -10774,33 +10705,6 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
     break
 
 /**
- * @brief Get list of ovaldi definitions files from the SCAP ovaldefs table.
- *
- * @return String of |-concatenated file names. Free with g_free().
- */
-static char *
-get_ovaldi_files ()
-{
-  iterator_t iterator;
-  char *result = NULL;
-
-  init_ovaldi_file_iterator (&iterator);
-  while (next (&iterator))
-    {
-      char *tmp;
-      const char *fname = ovaldi_file_iterator_name (&iterator);
-
-      if (!fname)
-        continue;
-      tmp = g_strconcat (fname, result ? "|" : "", result, NULL);
-      g_free (result);
-      result = tmp;
-    }
-  cleanup_iterator (&iterator);
-  return result;
-}
-
-/**
  * @brief Handle end of GET_AGGREGATES element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -11813,14 +11717,11 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           while (next (&prefs))
             {
               const char *name, *hr_name, *value, *type, *def;
-              char *ovaldi_files = NULL;
 
               hr_name = config_preference_iterator_hr_name (&prefs);
               name = config_preference_iterator_name (&prefs);
               value = config_preference_iterator_value (&prefs);
               def = config_preference_iterator_default (&prefs);
-              if (!strcmp (name, "definitions_file"))
-                ovaldi_files = get_ovaldi_files ();
               type = config_preference_iterator_type (&prefs);
               SENDF_TO_CLIENT_OR_FAIL
                ("<preference>"
@@ -11832,8 +11733,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                 "<value>%s</value>"
                 "<default>%s</default>"
                 "</preference>",
-                hr_name, name, type, value ?: "", ovaldi_files ?: def);
-              g_free (ovaldi_files);
+                hr_name, name, type, value ?: "", def);
             }
           cleanup_iterator (&prefs);
           SEND_TO_CLIENT_OR_FAIL ("</preferences>");
@@ -12935,8 +12835,6 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         name = g_strdup ("CPE");
       else if (strcmp (get_info_data->type, "cve") == 0)
         name = g_strdup ("CVE");
-      else if (strcmp (get_info_data->type, "ovaldef") == 0)
-        name = g_strdup ("OVAL");
       else if (strcmp (get_info_data->type, "cert_bund_adv") == 0)
         name = g_strdup ("CERT-Bund");
       else if (strcmp (get_info_data->type, "dfn_cert_adv") == 0)
@@ -12987,12 +12885,6 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       init_info_iterator = init_nvt_info_iterator;
       info_count = nvt_info_count;
       get_info_data->get.subtype = g_strdup ("nvt");
-    }
-  else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
-    {
-      init_info_iterator = init_ovaldef_info_iterator;
-      info_count = ovaldef_info_count;
-      get_info_data->get.subtype = g_strdup ("ovaldef");
     }
   else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
     {
@@ -13211,36 +13103,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
               g_string_append (result, "</cert>");
             }
         }
-      else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
-        {
-          const char *description;
-          xml_string_append (result,
-                             "<ovaldef>"
-                             "<version>%s</version>"
-                             "<deprecated>%s</deprecated>"
-                             "<status>%s</status>"
-                             "<class>%s</class>"
-                             "<title>%s</title>"
-                             "<severity>%s</severity>"
-                             "<cve_refs>%s</cve_refs>"
-                             "<file>%s</file>",
-                             ovaldef_info_iterator_version (&info),
-                             ovaldef_info_iterator_deprecated (&info),
-                             ovaldef_info_iterator_status (&info),
-                             ovaldef_info_iterator_class (&info),
-                             ovaldef_info_iterator_title (&info),
-                             ovaldef_info_iterator_severity (&info)
-                              ? ovaldef_info_iterator_severity (&info)
-                              : "",
-                             ovaldef_info_iterator_cve_refs (&info),
-                             ovaldef_info_iterator_file (&info));
-          description = ovaldef_info_iterator_description (&info);
-          if (get_info_data->details == 1)
-            xml_string_append (result,
-                               "<description>%s</description>",
-                               description);
-        }
-      else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
+
+      if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
         xml_string_append (result,
                            "<cert_bund_adv>"
                            "<title>%s</title>"
@@ -13299,6 +13163,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       count++;
       g_string_free (result, TRUE);
     }
+
   cleanup_iterator (&info);
 
   if (get_info_data->details == 1)

@@ -3180,52 +3180,6 @@ cve_info_count (const get_data_t *get);
 gchar *
 cve_cvss_base (const gchar *);
 
-/* OVAL definitions */
-int
-init_ovaldef_info_iterator (iterator_t*, get_data_t*, const char*);
-
-int
-ovaldef_info_count (const get_data_t *get);
-
-const char*
-ovaldef_info_iterator_version (iterator_t*);
-
-const char*
-ovaldef_info_iterator_deprecated (iterator_t*);
-
-const char*
-ovaldef_info_iterator_class (iterator_t*);
-
-const char*
-ovaldef_info_iterator_title (iterator_t*);
-
-const char*
-ovaldef_info_iterator_description (iterator_t*);
-
-const char*
-ovaldef_info_iterator_file (iterator_t*);
-
-const char*
-ovaldef_info_iterator_status (iterator_t*);
-
-const char*
-ovaldef_info_iterator_severity (iterator_t*);
-
-const char*
-ovaldef_info_iterator_cve_refs (iterator_t*);
-
-char *
-ovaldef_severity (const char *);
-
-char *
-ovaldef_version (const char *);
-
-char *
-ovaldef_uuid (const char *, const char *);
-
-char *
-ovaldef_cves (const char *);
-
 /* CERT data */
 int
 manage_cert_loaded ();
@@ -3292,12 +3246,6 @@ nvt_dfn_cert_adv_iterator_name (iterator_t*);
 
 int
 secinfo_count_after (const get_data_t *, const char *, time_t, gboolean);
-
-void
-init_ovaldi_file_iterator (iterator_t*);
-
-const char*
-ovaldi_file_iterator_name (iterator_t*);
 
 
 /* Settings. */
