@@ -1117,25 +1117,25 @@ manage_create_sql_functions ()
       /* column date in table reports was renamed to creation_time in version 245 */
       if (current_db_version >= 245)
         {
-        sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
-             " RETURNS integer AS $$"
-             /* Get the report from the most recently completed invocation of task. */
-             "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
-             "  ORDER BY creation_time DESC LIMIT 1;"
-             "$$ LANGUAGE SQL;",
-             TASK_STATUS_DONE);
+          sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
+               " RETURNS integer AS $$"
+               /* Get the report from the most recently completed invocation of task. */
+               "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+               "  ORDER BY creation_time DESC LIMIT 1;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
         }
 
       /* column date in table reports was renamed to creation_time in version 245 */
       if (current_db_version >= 245)
         {
-        sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
-             " RETURNS integer AS $$"
-             /* Get report from second most recently completed invocation of task. */
-             "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
-             "  ORDER BY creation_time DESC LIMIT 1 OFFSET 1;"
-             "$$ LANGUAGE SQL;",
-             TASK_STATUS_DONE);
+          sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
+               " RETURNS integer AS $$"
+               /* Get report from second most recently completed invocation of task. */
+               "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+               "  ORDER BY creation_time DESC LIMIT 1 OFFSET 1;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
         }
 
       /* result_nvt column (in OVERRIDES_SQL) was added in version 189.           */
@@ -1143,24 +1143,24 @@ manage_create_sql_functions ()
       /* column date in table reports was renamed to creation_time in version 245 */
       if (current_db_version >= 245)
         {
-        sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
-             "                                          integer,"  // overrides
-             "                                          integer)"  // min_qod
-             " RETURNS double precision AS $$"
-             /* Calculate the severity of a task. */
-             "  SELECT CASE"
-             "         WHEN (SELECT target = 0"
-             "               FROM tasks WHERE id = $1)"
-             "         THEN CAST (NULL AS double precision)"
-             "         ELSE"
-             "         (SELECT report_severity ((SELECT id FROM reports"
-             "                                   WHERE task = $1"
-             "                                   AND scan_run_status = %u"
-             "                                   ORDER BY creation_time DESC"
-             "                                   LIMIT 1 OFFSET 0), $2, $3))"
-             "         END;"
-             "$$ LANGUAGE SQL;",
-             TASK_STATUS_DONE);
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
+               "                                          integer,"  // overrides
+               "                                          integer)"  // min_qod
+               " RETURNS double precision AS $$"
+               /* Calculate the severity of a task. */
+               "  SELECT CASE"
+               "         WHEN (SELECT target = 0"
+               "               FROM tasks WHERE id = $1)"
+               "         THEN CAST (NULL AS double precision)"
+               "         ELSE"
+               "         (SELECT report_severity ((SELECT id FROM reports"
+               "                                   WHERE task = $1"
+               "                                   AND scan_run_status = %u"
+               "                                   ORDER BY creation_time DESC"
+               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               "         END;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
         }
 
       sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer, integer)"
