@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.10] (unreleased)
 
 ### Added
-- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513)
+- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
@@ -30,6 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
+- Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
+- Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
 
@@ -89,6 +91,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Try to install PostgreSQL extensions automatically [#1444](https://github.com/greenbone/gvmd/pull/1444) [#1483](https://github.com/greenbone/gvmd/pull/1483)
 - Add auto retry on scanner connection lost during a running task [#1452](https://github.com/greenbone/gvmd/pull/1452)
 - Add --feed-lock-timeout option [#1472](https://github.com/greenbone/gvmd/pull/1472)
+- datetime parser for `%Y-%m-%dT%Hh%M` for keywords [1518](https://github.com/greenbone/gvmd/pull/1518)
 
 ### Changed
 - Improve report counts performance [#1438](https://github.com/greenbone/gvmd/pull/1438)
