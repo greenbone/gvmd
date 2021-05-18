@@ -17811,7 +17811,7 @@ task_report_previous (task_t task, report_t report, report_t *previous)
                      " WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " AND creation_time < (SELECT creation_time FROM reports"
-                     " WHERE id = %llu)"
+                     "                      WHERE id = %llu)"
                      " ORDER BY creation_time DESC LIMIT 1;",
                      task,
                      TASK_STATUS_DONE,
