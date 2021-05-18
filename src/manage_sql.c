@@ -17811,7 +17811,7 @@ task_report_previous (task_t task, report_t report, report_t *previous)
                      " WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " AND creation_time < (SELECT creation_time FROM reports"
-                     "             WHERE id = %llu)"
+                     " WHERE id = %llu)"
                      " ORDER BY creation_time DESC LIMIT 1;",
                      task,
                      TASK_STATUS_DONE,
@@ -20925,8 +20925,8 @@ report_add_result (report_t report, result_t result)
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "creation_time",       \
-   "status", "task", "severity", "false_positive", "log", "low", "medium",     \
-   "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",             \
+   "date", "status", "task", "severity", "false_positive", "log", "low",       \
+   "medium", "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",   \
    "low_per_host", "medium_per_host", "high_per_host", "duration",             \
    "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
    NULL }
@@ -20964,7 +20964,7 @@ report_add_result (report_t report, result_t result)
      "task_id",                                                              \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "creation_time", "date", KEYWORD_TYPE_INTEGER },                        \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
    {                                                                         \
      "report_severity (id, opts.override, opts.min_qod)",                    \

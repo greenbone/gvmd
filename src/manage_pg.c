@@ -1115,7 +1115,8 @@ manage_create_sql_functions ()
              "$$ LANGUAGE SQL;");
 
       /* column date in table reports was renamed to creation_time in version 245 */
-      if (current_db_version >= 245) {
+      if (current_db_version >= 245)
+        {
         sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
              " RETURNS integer AS $$"
              /* Get the report from the most recently completed invocation of task. */
@@ -1123,10 +1124,11 @@ manage_create_sql_functions ()
              "  ORDER BY creation_time DESC LIMIT 1;"
              "$$ LANGUAGE SQL;",
              TASK_STATUS_DONE);
-      }
+        }
 
       /* column date in table reports was renamed to creation_time in version 245 */
-      if (current_db_version >= 245) {
+      if (current_db_version >= 245)
+        {
         sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
              " RETURNS integer AS $$"
              /* Get report from second most recently completed invocation of task. */
@@ -1134,12 +1136,13 @@ manage_create_sql_functions ()
              "  ORDER BY creation_time DESC LIMIT 1 OFFSET 1;"
              "$$ LANGUAGE SQL;",
              TASK_STATUS_DONE);
-      }
+        }
 
       /* result_nvt column (in OVERRIDES_SQL) was added in version 189.           */
       /* if (current_db_version >= 189)                                           */
       /* column date in table reports was renamed to creation_time in version 245 */
-      if (current_db_version >= 245) {
+      if (current_db_version >= 245)
+        {
         sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
              "                                          integer,"  // overrides
              "                                          integer)"  // min_qod
@@ -1158,7 +1161,7 @@ manage_create_sql_functions ()
              "         END;"
              "$$ LANGUAGE SQL;",
              TASK_STATUS_DONE);
-      }
+        }
 
       sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer, integer)"
            " RETURNS text AS $$"
