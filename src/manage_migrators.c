@@ -2714,6 +2714,37 @@ migrate_243_to_244 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 244 to version 245.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_244_to_245 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 244. */
+
+  if (manage_db_version () != 244)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE reports RENAME COLUMN date TO creation_time;");
+
+  /* Set the database version to 245. */
+
+  set_db_version (245);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2765,6 +2796,7 @@ static migrator_t database_migrators[] = {
   {242, migrate_241_to_242},
   {243, migrate_242_to_243},
   {244, migrate_243_to_244},
+  {245, migrate_244_to_245},
   /* End marker. */
   {-1, NULL}};
 

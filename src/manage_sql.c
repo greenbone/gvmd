@@ -2961,7 +2961,7 @@ filter_clause (const char* type, const char* filter,
                   "             FROM (SELECT report_progress (id) AS temp"
                   "                   FROM reports"
                   "                   WHERE task = tasks.id"
-                  "                   ORDER BY date DESC LIMIT 1)"
+                  "                   ORDER BY creation_time DESC LIMIT 1)"
                   "                  AS temp_sub)"
                   "    END)"
                   " ASC");
@@ -3153,7 +3153,7 @@ filter_clause (const char* type, const char* filter,
                   "             FROM (SELECT report_progress (id) AS temp"
                   "                   FROM reports"
                   "                   WHERE task = tasks.id"
-                  "                   ORDER BY date DESC LIMIT 1)"
+                  "                   ORDER BY creation_time DESC LIMIT 1)"
                   "                  AS temp_sub)"
                   "    END)"
                   " DESC");
@@ -12050,7 +12050,7 @@ generate_report_filename (report_t report, report_format_t report_format,
   report_id = report_uuid (report);
 
   creation_time
-    = sql_string ("SELECT iso_time (date)"
+    = sql_string ("SELECT iso_time (creation_time)"
                   " FROM reports"
                   " WHERE id = %llu",
                   report);
@@ -14573,7 +14573,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " AND scan_run_status = 1"                                             \
-     " ORDER BY date ASC LIMIT 1)",                                         \
+     " ORDER BY creation_time ASC LIMIT 1)",                                \
      "first_report",                                                        \
      KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
@@ -14582,7 +14582,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " AND scan_run_status = 1"                                             \
-     " ORDER BY date DESC LIMIT 1)",                                        \
+     " ORDER BY creation_time DESC LIMIT 1)",                               \
      "last_report",                                                         \
      KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
@@ -14635,18 +14635,18 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(SELECT date FROM reports WHERE task = tasks.id"                       \
+     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
      /* TODO 1 == TASK_STATUS_DONE */                                        \
      " AND scan_run_status = 1"                                              \
-     " ORDER BY date ASC LIMIT 1)",                                          \
+     " ORDER BY creation_time ASC LIMIT 1)",                                 \
      "first",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(SELECT date FROM reports WHERE task = tasks.id"                       \
+     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
      /* TODO 1 == TASK_STATUS_DONE */                                        \
      " AND scan_run_status = 1"                                              \
-     " ORDER BY date DESC LIMIT 1)",                                         \
+     " ORDER BY creation_time DESC LIMIT 1)",                                \
      "last",                                                                 \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
@@ -17838,9 +17838,9 @@ task_report_previous (task_t task, report_t report, report_t *previous)
                      "SELECT id FROM reports"
                      " WHERE task = %llu"
                      " AND scan_run_status = %u"
-                     " AND date < (SELECT date FROM reports"
-                     "             WHERE id = %llu)"
-                     " ORDER BY date DESC LIMIT 1;",
+                     " AND creation_time < (SELECT creation_time FROM reports"
+                     "                      WHERE id = %llu)"
+                     " ORDER BY creation_time DESC LIMIT 1;",
                      task,
                      TASK_STATUS_DONE,
                      report))
@@ -17874,7 +17874,7 @@ task_last_report (task_t task, report_t *report)
   switch (sql_int64 (report,
                      "SELECT id FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
-                     " ORDER BY date DESC LIMIT 1;",
+                     " ORDER BY creation_time DESC LIMIT 1;",
                      task,
                      TASK_STATUS_DONE))
     {
@@ -17906,7 +17906,7 @@ task_last_report_any_status (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
                      "SELECT id FROM reports WHERE task = %llu"
-                     " ORDER BY date DESC LIMIT 1;",
+                     " ORDER BY creation_time DESC LIMIT 1;",
                      task))
     {
       case 0:
@@ -17938,7 +17938,7 @@ task_second_last_report (task_t task, report_t *report)
   switch (sql_int64 (report,
                      "SELECT id FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
-                     " ORDER BY date DESC LIMIT 1 OFFSET 1;",
+                     " ORDER BY creation_time DESC LIMIT 1 OFFSET 1;",
                      task,
                      TASK_STATUS_DONE))
     {
@@ -17972,7 +17972,7 @@ task_last_resumable_report (task_t task, report_t *report)
                      "SELECT id FROM reports WHERE task = %llu"
                      " AND (scan_run_status = %u"
                      "      OR scan_run_status = %u)"
-                     " ORDER BY date DESC LIMIT 1;",
+                     " ORDER BY creation_time DESC LIMIT 1;",
                      task,
                      TASK_STATUS_STOPPED,
                      TASK_STATUS_INTERRUPTED))
@@ -18004,7 +18004,7 @@ task_second_last_report_id (task_t task)
 {
   return sql_string ("SELECT uuid FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
-                     " ORDER BY date DESC LIMIT 1 OFFSET 1;",
+                     " ORDER BY creation_time DESC LIMIT 1 OFFSET 1;",
                      task,
                      TASK_STATUS_DONE);
 }
@@ -18470,7 +18470,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
              "SELECT id FROM reports"
              "           WHERE reports.task = %llu"
              "           AND reports.scan_run_status = %u"
-             "           ORDER BY reports.date DESC"
+             "           ORDER BY reports.creation_time DESC"
              "           LIMIT 1 OFFSET %d",
              task, TASK_STATUS_DONE, offset);
 
@@ -20136,7 +20136,7 @@ report_clear_count_cache (report_t report,
 report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
-  sql ("INSERT into reports (uuid, owner, task, date, comment,"
+  sql ("INSERT into reports (uuid, owner, task, creation_time, comment,"
        " scan_run_status, slave_progress)"
        " VALUES ('%s',"
        " (SELECT owner FROM tasks WHERE tasks.id = %llu),"
@@ -20952,11 +20952,11 @@ report_add_result (report_t report, result_t result)
  * @brief Filter columns for report iterator.
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
-   "task", "severity", "false_positive", "log", "low", "medium", "high",       \
-   "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",     \
-   "medium_per_host", "high_per_host", "duration", "duration_per_host",        \
-   "start_time", "end_time", "scan_start", "scan_end",                         \
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "creation_time",       \
+   "date", "status", "task", "severity", "false_positive", "log", "low",       \
+   "medium", "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",   \
+   "low_per_host", "medium_per_host", "high_per_host", "duration",             \
+   "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
    NULL }
 
 /**
@@ -20966,11 +20966,11 @@ report_add_result (report_t report, result_t result)
  {                                                                           \
    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
-   { "iso_time (date)", "name", KEYWORD_TYPE_STRING },                       \
+   { "iso_time (creation_time)", "name", KEYWORD_TYPE_STRING },              \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "iso_time (date)", NULL, KEYWORD_TYPE_STRING },                         \
+   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },                \
    { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
-   { "date", "created", KEYWORD_TYPE_INTEGER },                              \
+   { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner",                                                               \
@@ -20992,7 +20992,7 @@ report_add_result (report_t report, result_t result)
      "task_id",                                                              \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
-   { "date", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "creation_time", "date", KEYWORD_TYPE_INTEGER },                        \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
    {                                                                         \
      "report_severity (id, opts.override, opts.min_qod)",                    \
@@ -23654,7 +23654,7 @@ int
 report_timestamp (const char* report_id, gchar** timestamp)
 {
   const char* stamp;
-  time_t time = sql_int ("SELECT date FROM reports where uuid = '%s';",
+  time_t time = sql_int ("SELECT creation_time FROM reports where uuid = '%s';",
                          report_id);
   stamp = iso_time (&time);
   if (stamp == NULL) return -1;
