@@ -1605,15 +1605,38 @@ create_view_vulns ()
 {
   sql ("DROP VIEW IF EXISTS vulns;");
 
-  sql ("CREATE OR REPLACE VIEW vulns AS"
-       " WITH used_nvts"
-       " AS (SELECT DISTINCT nvt FROM results"
-       "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
-       " SELECT id, uuid, name, creation_time, modification_time,"
-       "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
-       " FROM nvts"
-       " WHERE uuid in (SELECT * FROM used_nvts)");
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'scap'"
+               "               AND table_name = 'cves')"
+               " ::integer;",
+               sql_database ()))
+    sql ("CREATE OR REPLACE VIEW vulns AS"
+         " WITH used_nvts"
+         " AS (SELECT DISTINCT nvt FROM results"
+         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
+         " SELECT id, uuid, name, creation_time, modification_time,"
+         "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
+         " FROM nvts"
+         " WHERE uuid in (SELECT * FROM used_nvts)"
+         " UNION SELECT id, uuid, name, creation_time, modification_time,"
+         "       severity, "
+         G_STRINGIFY (QOD_DEFAULT) " AS qod,"
+         "       'cve' AS type"
+         " FROM cves"
+         " WHERE uuid in (SELECT * FROM used_nvts)");
+  else
+    sql ("CREATE OR REPLACE VIEW vulns AS"
+         " WITH used_nvts"
+         " AS (SELECT DISTINCT nvt FROM results"
+         "     WHERE (results.severity != " G_STRINGIFY (SEVERITY_ERROR) "))"
+         " SELECT id, uuid, name, creation_time, modification_time,"
+         "        cvss_base::double precision AS severity, qod, 'nvt' AS type"
+         " FROM nvts"
+         " WHERE uuid in (SELECT * FROM used_nvts)");
 }
+
+
 
 #undef VULNS_RESULTS_WHERE
 
