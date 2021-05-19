@@ -13103,8 +13103,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
               g_string_append (result, "</cert>");
             }
         }
-
-      if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
+      else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
         xml_string_append (result,
                            "<cert_bund_adv>"
                            "<title>%s</title>"
