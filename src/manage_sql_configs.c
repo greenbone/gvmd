@@ -919,6 +919,7 @@ manage_modify_config_commit ()
  * @param[in]  static_all_families   Static families with all selection.
  * @param[in]  growing_families      The rest of the growing families.
  * @param[in]  grow_families         1 if families should grow, else 0.
+ * @param[out] rejected_family       Return of family if one was rejected.
  *
  * @return 0 success, 1 config in use, 2 whole-only families must be growing
  *         and include entire family, -1 error.
@@ -928,7 +929,8 @@ manage_set_config_families (config_t config,
                             GPtrArray* growing_all_families,
                             GPtrArray* static_all_families,
                             GPtrArray* growing_families,
-                            int grow_families)
+                            int grow_families,
+                            gchar **rejected_family)
 {
   static const gchar *wholes[] = FAMILIES_WHOLE_ONLY;
   iterator_t families;
@@ -938,10 +940,26 @@ manage_set_config_families (config_t config,
 
   /* Ensure that whole-only families include all NVTs and are growing. */
 
+  if (rejected_family)
+    *rejected_family = NULL;
+
   for (const gchar **whole = wholes; *whole; whole++)
-    if (member (growing_all_families, *whole)
-        || member (static_all_families, *whole))
-      return 2;
+    {
+      if (member (static_all_families, *whole)
+          || member (growing_families, *whole))
+        {
+          if (member (static_all_families, *whole))
+            g_debug ("%s rejected static/all whole-only family %s",
+                     __func__, *whole);
+          else if (member (growing_families, *whole))
+            g_debug ("%s rejected growing/empty whole-only family %s",
+                     __func__, *whole);
+
+          if (rejected_family)
+            *rejected_family = g_strdup (*whole);
+          return 2;
+        }
+    }
 
   /* Check the args. */
 
