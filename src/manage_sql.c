@@ -11972,11 +11972,20 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
             break;
         case 1:        /* Too few rows in result of query. */
         case -1:
-          g_free(alert_filter_get);
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           return -1;
           break;
         default:       /* Programming error. */
           assert (0);
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           return -1;
       }
 
@@ -12003,7 +12012,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                          __func__, format_uuid,
                          alert_method_name (alert_method (alert)));
               g_free (format_uuid);
-              g_free (alert_filter_get);
+              if (alert_filter_get)
+                {
+                  get_data_reset (alert_filter_get);
+                  g_free (alert_filter_get);
+                }
               return -2;
             }
           g_free (format_uuid);
@@ -12018,6 +12031,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           g_warning ("%s: Could not find report format '%s' for %s",
                      __func__, report_format_lookup,
                      alert_method_name (alert_method (alert)));
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           return -2;
         }
     }
@@ -12029,6 +12047,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           g_warning ("%s: No fallback report format for %s",
                      __func__,
                      alert_method_name (alert_method (alert)));
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           return -1;
         }
 
@@ -12041,6 +12064,11 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           g_warning ("%s: Could not find fallback RFP '%s' for %s",
                       __func__, fallback_format_id,
                      alert_method_name (alert_method (alert)));
+          if (alert_filter_get)
+            {
+              get_data_reset (alert_filter_get);
+              g_free (alert_filter_get);
+            }
           return -2;
         }
     }
