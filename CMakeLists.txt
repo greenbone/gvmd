@@ -98,7 +98,7 @@ include (CPack)
 
 set (GVMD_DATABASE_VERSION 245)
 
-set (GVMD_SCAP_DATABASE_VERSION 18)
+set (GVMD_SCAP_DATABASE_VERSION 19)
 
 set (GVMD_CERT_DATABASE_VERSION 8)
 
@@ -383,7 +383,6 @@ install (FILES src/wizards/quick_first_scan.xml
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
-         tools/ovaldef_getbyname.xsl
          DESTINATION ${GVM_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 

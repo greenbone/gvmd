@@ -3997,7 +3997,6 @@ type_is_info_subtype (const char *type)
   return (strcasecmp (type, "nvt")
           && strcasecmp (type, "cve")
           && strcasecmp (type, "cpe")
-          && strcasecmp (type, "ovaldef")
           && strcasecmp (type, "cert_bund_adv")
           && strcasecmp (type, "dfn_cert_adv"))
          == 0;
@@ -5157,8 +5156,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   if ((manage_scap_loaded () == FALSE
        && (strcmp (type, "cve") == 0
-           || strcmp (type, "cpe") == 0
-           || strcmp (type, "ovaldef") == 0))
+           || strcmp (type, "cpe") == 0))
       || (manage_cert_loaded () == FALSE
           && (strcmp (type, "cert_bund_adv") == 0
               || strcmp (type, "dfn_cert_adv") == 0)))
@@ -6330,10 +6328,8 @@ check_alerts ()
        = sql_int ("SELECT %s"
                   "        ((SELECT max (modification_time) FROM scap.cves),"
                   "         (SELECT max (modification_time) FROM scap.cpes),"
-                  "         (SELECT max (modification_time) FROM scap.ovaldefs),"
                   "         (SELECT max (creation_time) FROM scap.cves),"
-                  "         (SELECT max (creation_time) FROM scap.cpes),"
-                  "         (SELECT max (creation_time) FROM scap.ovaldefs));",
+                  "         (SELECT max (creation_time) FROM scap.cpes));",
                   sql_greatest ());
 
       if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
@@ -6653,8 +6649,7 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
           && strcasecmp (data, "cve")
           && strcasecmp (data, "cpe")
           && strcasecmp (data, "cert_bund_adv")
-          && strcasecmp (data, "dfn_cert_adv")
-          && strcasecmp (data, "ovaldef"))
+          && strcasecmp (data, "dfn_cert_adv"))
         return 2;
     }
   return 0;
@@ -13842,14 +13837,6 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
   "------------------------------------------------------------------------------------------\n"
 
 /**
- * @brief Header for "New CERT-Bund Advisories" alert message.
- */
-#define NEW_OVAL_DEFS_HEADER                                                   \
-/* oval:org.mitre.oval:def:100116  libtiff Malloc Error Denial of Service */   \
-  "OVAL ID                         Title\n"                                    \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
  * @brief Test an alert.
  *
  * @param[in]  alert_id    Alert UUID.
@@ -18941,8 +18928,7 @@ result_nvt_notice (const gchar *nvt)
  * @param[in]  task         The task associated with the result.
  * @param[in]  host         Target host of result.
  * @param[in]  hostname     Hostname of the result.
- * @param[in]  nvt          The uuid of oval definition that produced the
- *                          result, a title for the result otherwise.
+ * @param[in]  nvt          A title for the result.
  * @param[in]  type         Type of result.  "Alarm", etc.
  * @param[in]  description  Description of the result.
  * @param[in]  port         Result port.
@@ -18976,8 +18962,6 @@ make_osp_result (task_t task, const char *host, const char *hostname,
         nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                    " FROM nvts WHERE oid='%s'",
                                    quoted_nvt);
-      else if (g_str_has_prefix (nvt, "oval:"))
-        nvt_revision = ovaldef_version (nvt);
       else if (g_str_has_prefix (nvt, "CVE-"))
         nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                    " FROM scap.cves WHERE uuid='%s'",
@@ -19341,8 +19325,6 @@ make_result (task_t task, const char* host, const char *hostname,
         nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                    " FROM nvts WHERE oid='%s'",
                                    quoted_nvt);
-      else if (g_str_has_prefix (nvt, "oval:"))
-        nvt_revision = ovaldef_version (nvt);
       else if (g_str_has_prefix (nvt, "CVE-"))
         nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                    " FROM scap.cves WHERE uuid='%s'",
@@ -28807,11 +28789,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           severity_str = nvt_severity (test_id, type);
           desc = g_strdup (entity_text (r_entity));
         }
-      else if (g_str_has_prefix (test_id, "oval:"))
-        {
-          nvt_id = ovaldef_uuid (test_id, defs_file);
-          severity_str = ovaldef_severity (nvt_id);
-        }
       else
         {
           nvt_id = g_strdup (name);
@@ -32485,16 +32462,6 @@ check_for_new_scap ()
                    "                          AS INTEGER),"
                    "                    0));"))
         event (EVENT_NEW_SECINFO, "cpe", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.ovaldefs"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "ovaldef", 0, 0);
     }
 }
 
@@ -33024,93 +32991,6 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
 }
 
 /**
- * @brief Create list for "New OVAL Definitions" event.
- *
- * @param[in]  event         Event.
- * @param[in]  event_data    Event type specific details.
- * @param[in]  alert         Alert.
- * @param[in]  example       Whether the message is an example only.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated list.
- */
-static gchar *
-new_oval_defs_list (event_t event, const void* event_data, alert_t alert,
-                    int example, int *count_return)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_OVAL_DEFS_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM ovaldefs"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM ovaldefs"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM ovaldefs"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'scap_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-30s  %-s%s%s%s",
-                              name,
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  if (count_return)
-    *count_return = count;
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
  * @brief Create message for New NVTs event.
  *
  * @param[in]  event       Event.
@@ -33150,11 +33030,6 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert,
     return new_dfn_certs_list (event, "dfn_cert_adv", alert, 1, count_return);
   if (strcasecmp (event_data, "dfn_cert_adv") == 0)
     return new_dfn_certs_list (event, "dfn_cert_adv", alert, 0, count_return);
-
-  if (strcasecmp (event_data, "ovaldef_example") == 0)
-    return new_oval_defs_list (event, "ovaldef", alert, 1, count_return);
-  if (strcasecmp (event_data, "ovaldef") == 0)
-    return new_oval_defs_list (event, "ovaldef", alert, 0, count_return);
 
   if (count_return)
     {
@@ -33257,22 +33132,6 @@ check_for_updated_scap ()
                    "                         AS INTEGER),"
                    "                   0));"))
         event (EVENT_UPDATED_SECINFO, "cpe", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.ovaldefs"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "ovaldef", 0, 0);
     }
 }
 
@@ -36741,9 +36600,6 @@ note_iterator_nvt_type (iterator_t *iterator)
   if (g_str_has_prefix (oid, "CVE-"))
     return "cve";
 
-  if (g_str_has_prefix (oid, "oval:"))
-    return "ovaldef";
-
   return "nvt";
 }
 
@@ -38032,9 +37888,6 @@ override_iterator_nvt_type (iterator_t *iterator)
 
   if (g_str_has_prefix (oid, "CVE-"))
     return "cve";
-
-  if (g_str_has_prefix (oid, "oval:"))
-    return "ovaldef";
 
   return "nvt";
 }
@@ -49648,8 +49501,6 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("CVE Filter");
       else if (strcmp (uuid, "bef08b33-075c-4f8c-84f5-51f6137e40a3") == 0)
         setting_name = g_strdup ("NVT Filter");
-      else if (strcmp (uuid, "adb6ffc8-e50e-4aab-9c31-13c741eb8a16") == 0)
-        setting_name = g_strdup ("OVAL Filter");
       else if (strcmp (uuid, "e4cf514a-17e2-4ab9-9c90-336f15e24750") == 0)
         setting_name = g_strdup ("CERT-Bund Filter");
       else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
@@ -49769,10 +49620,6 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* CPEs dashboard settings */
       else if (strcmp (uuid, "9cff9b4d-b164-43ce-8687-f2360afc7500") == 0)
         setting_name = g_strdup ("CPEs Top Dashboard Configuration");
-
-      /* OVAL Definitions dashboard settings */
-      else if (strcmp (uuid, "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4") == 0)
-        setting_name = g_strdup ("OVAL Definitions Top Dashboard Configuration");
 
       /* CERT-Bund Advisories dashboard settings */
       else if (strcmp (uuid, "a6946f44-480f-4f37-8a73-28a4cd5310c4") == 0)
@@ -54390,7 +54237,6 @@ type_select_columns (const char *type)
   static column_t note_columns[] = NOTE_ITERATOR_COLUMNS;
   static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
   static column_t os_columns[] = OS_ITERATOR_COLUMNS;
-  static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
   static column_t override_columns[] = OVERRIDE_ITERATOR_COLUMNS;
   static column_t permission_columns[] = PERMISSION_ITERATOR_COLUMNS;
   static column_t report_columns[] = REPORT_ITERATOR_COLUMNS;
@@ -54433,8 +54279,6 @@ type_select_columns (const char *type)
     return nvt_columns;
   if (strcasecmp (type, "OS") == 0)
     return os_columns;
-  if (strcasecmp (type, "OVALDEF") == 0)
-    return ovaldef_columns;
   if (strcasecmp (type, "OVERRIDE") == 0)
     return override_columns;
   if (strcasecmp (type, "PERMISSION") == 0)
@@ -54577,11 +54421,6 @@ type_filter_columns (const char *type)
   if (strcasecmp (type, "OS") == 0)
     {
       static const char *ret[] = OS_ITERATOR_FILTER_COLUMNS;
-      return ret;
-    }
-  if (strcasecmp (type, "OVALDEF") == 0)
-    {
-      static const char *ret[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   if (strcasecmp (type, "OVERRIDE") == 0)

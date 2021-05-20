@@ -357,8 +357,6 @@ int manage_report_host_details (report_t, const char *, entity_t);
 
 const char *run_status_name_internal (task_status_t);
 
-gchar *get_ovaldef_short_filename (char*);
-
 void update_config_cache_init (const char *);
 
 alive_test_t target_alive_tests (target_t);
