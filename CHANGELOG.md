@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
 - Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
 - Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
+- Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
 
