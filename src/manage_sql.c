@@ -30574,6 +30574,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
                const char* port_range, credential_t ssh_credential,
+	       credential_t ssh_elevate_credential,
                const char* ssh_port, credential_t smb_credential,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
@@ -30627,7 +30628,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   else if (port_range == NULL)
     {
       sql_rollback ();
-      return 12;
+      return 13;
     }
   else
     {
@@ -30770,13 +30771,29 @@ create_target (const char* name, const char* asset_hosts_filter,
     }
   g_free (quoted_ssh_port);
 
+  if (ssh_elevate_credential)
+    {
+      gchar *type = credential_type (ssh_elevate_credential);
+      if (strcmp (type, "up"))
+        {
+          sql_rollback ();
+          return 9;
+        }
+      g_free (type);
+
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'elevate', %llu, %s);",
+           new_target, ssh_elevate_credential, "0");
+    }
+
   if (smb_credential)
     {
       gchar *type = credential_type (smb_credential);
       if (strcmp (type, "up"))
         {
           sql_rollback ();
-          return 9;
+          return 10;
         }
       g_free (type);
 
@@ -30792,7 +30809,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (strcmp (type, "up"))
         {
           sql_rollback ();
-          return 10;
+          return 11;
         }
       g_free (type);
 
@@ -30808,7 +30825,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (strcmp (type, "snmp"))
         {
           sql_rollback ();
-          return 11;
+          return 12;
         }
       g_free (type);
 
@@ -31035,6 +31052,7 @@ int
 modify_target (const char *target_id, const char *name, const char *hosts,
                const char *exclude_hosts, const char *comment,
                const char *port_list_id, const char *ssh_credential_id,
+	       const char *ssh_elevate_credential_id,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
@@ -31233,6 +31251,48 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
       else
         set_target_login_data (target, "ssh", 0, 0);
+    }
+
+  if (ssh_elevate_credential_id)
+    {
+      credential_t ssh_elevate_credential;
+
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      ssh_elevate_credential = 0;
+      if (strcmp (ssh_elevate_credential_id, "0"))
+        {
+          gchar *type;
+          if (find_credential_with_permission (ssh_elevate_credential_id,
+                                               &ssh_elevate_credential,
+                                               "get_credentials"))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          if (ssh_elevate_credential == 0)
+            {
+              sql_rollback ();
+              return 22;
+            }
+
+          type = credential_type (ssh_elevate_credential);
+          if (strcmp (type, "up"))
+            {
+              sql_rollback ();
+              return 23;
+            }
+          g_free (type);
+
+          set_target_login_data (target, "elevate", ssh_elevate_credential, 0);
+        }
+      else
+        set_target_login_data (target, "elevate", 0, 0);
     }
 
   if (smb_credential_id)
