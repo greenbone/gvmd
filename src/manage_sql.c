@@ -30552,6 +30552,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   port_range      Port range of target.
  * @param[in]   ssh_credential  SSH credential.
+ * @param[in]   ssh_elevate_credential  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
  * @param[in]   smb_credential  SMB credential.
  * @param[in]   esxi_credential ESXi credential.
@@ -31027,6 +31028,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   ssh_credential_id  SSH credential.
+ * @param[in]   ssh_elevate_credential_id  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
  * @param[in]   smb_credential_id  SMB credential.
  * @param[in]   esxi_credential_id  ESXi credential.
