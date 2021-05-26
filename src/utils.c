@@ -49,6 +49,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <gvm/base/gvm_sentry.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -801,6 +803,7 @@ setup_signal_handler (int signal, void (*handler) (int), int block)
     {
       g_critical ("%s: failed to register %s handler",
                   __func__, strsignal (signal));
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 }
@@ -832,6 +835,7 @@ setup_signal_handler_info (int signal,
     {
       g_critical ("%s: failed to register %s handler",
                   __func__, strsignal (signal));
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 }

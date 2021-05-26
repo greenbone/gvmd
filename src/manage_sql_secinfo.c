@@ -28,6 +28,7 @@
  */
 #define _GNU_SOURCE
 
+#include "debug_utils.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "sql.h"
@@ -47,6 +48,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <gvm/base/gvm_sentry.h>
 #include <gvm/base/proctitle.h>
 #include <gvm/util/fileutils.h>
 
@@ -2702,6 +2704,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
       case 0:
         /* Child.  Carry on to sync the db, reopen the database (required
          * after fork). */
+        init_sentry ();
 
         /* Restore the sigmask that was blanked for pselect in the parent. */
         pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
@@ -2735,6 +2738,7 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
       check_alerts ();
     }
 
+  gvm_close_sentry ();
   exit (EXIT_SUCCESS);
 }
 

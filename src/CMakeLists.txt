@@ -99,6 +99,7 @@ add_executable (manage-utils-test
                 EXCLUDE_FROM_ALL
                 manage_utils_tests.c
 
+                debug_utils.c
                 gvmd.c gmpd.c
                 manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
@@ -123,6 +124,7 @@ add_executable (manage-test
                 EXCLUDE_FROM_ALL
                 manage_tests.c
 
+                debug_utils.c
                 gvmd.c gmpd.c
                 manage_utils.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
@@ -147,6 +149,7 @@ add_executable (manage-sql-test
                 EXCLUDE_FROM_ALL
                 manage_sql_tests.c
 
+                debug_utils.c
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
@@ -171,6 +174,7 @@ add_executable (gmp-tickets-test
                 EXCLUDE_FROM_ALL
                 gmp_tickets_tests.c
 
+                debug_utils.c
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
@@ -194,6 +198,7 @@ add_executable (utils-test
                 EXCLUDE_FROM_ALL
                 utils_tests.c
 
+                debug_utils.c
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
@@ -219,7 +224,9 @@ add_custom_target (tests
                    gmp-tickets-test manage-test manage-sql-test manage-utils-test utils-test)
 
 add_executable (gvmd
-                main.c gvmd.c gmpd.c
+                main.c gvmd.c
+                debug_utils.c
+                gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_port_lists.c manage_preferences.c

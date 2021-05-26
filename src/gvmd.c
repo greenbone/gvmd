@@ -95,10 +95,12 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
 #include <gvm/base/proctitle.h>
+#include <gvm/base/gvm_sentry.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/ldaputils.h>
 
+#include "debug_utils.h"
 #include "manage.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
@@ -453,6 +455,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
           g_critical ("%s: failed to set SO_KEEPALIVE on scanner socket: %s",
                       __func__,
                       strerror (errno));
+          gvm_close_sentry ();
           exit (EXIT_FAILURE);
         }
     }
@@ -559,6 +562,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
       g_critical ("%s: failed to accept client connection: %s",
                   __func__,
                   strerror (errno));
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
   sockaddr_as_str (&addr, client_address);
@@ -580,6 +584,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           struct sigaction action;
           gvm_connection_t client_connection;
 
+          init_sentry ();
           is_parent = 0;
 
           proctitle_set ("gvmd: Serving client");
@@ -597,6 +602,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
                           strerror (errno));
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
 
@@ -610,6 +616,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
                           strerror (errno));
               shutdown (client_socket, SHUT_RDWR);
               close (client_socket);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
           /* Reopen the database (required after fork). */
@@ -620,6 +627,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           client_connection.session = client_session;
           client_connection.credentials = client_credentials;
           ret = serve_client (server_socket, &client_connection);
+          gvm_close_sentry ();
           exit (ret);
         }
       case -1:
@@ -666,6 +674,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
     {
       case 0:
         /* Child. */
+        init_sentry ();
         cleanup_manage_process (FALSE);
         break;
 
@@ -695,6 +704,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
   if (socketpair (AF_UNIX, SOCK_STREAM, 0, sockets))
     {
       g_warning ("%s: socketpair: %s", __func__, strerror (errno));
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -712,6 +722,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
       case 0:
         /* Child.  Serve the scheduler GMP, then exit. */
 
+        init_sentry ();
         proctitle_set ("gvmd: Serving GMP internally");
 
         parent_client_socket = sockets[0];
@@ -726,6 +737,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
                         strerror (errno));
             shutdown (parent_client_socket, SHUT_RDWR);
             close (parent_client_socket);
+            gvm_close_sentry ();
             exit (EXIT_FAILURE);
           }
 
@@ -739,6 +751,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
                         strerror (errno));
             shutdown (parent_client_socket, SHUT_RDWR);
             close (parent_client_socket);
+            gvm_close_sentry ();
             exit (EXIT_FAILURE);
           }
 
@@ -770,6 +783,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
               {
                 g_critical ("%s: client server initialisation failed",
                             __func__);
+                gvm_close_sentry ();
                 exit (EXIT_FAILURE);
               }
             set_gnutls_priority (&client_session, priorities_option);
@@ -790,6 +804,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         client_connection->credentials = client_credentials;
         ret = serve_client (manager_socket, client_connection);
 
+        gvm_close_sentry ();
         exit (ret);
         break;
 
@@ -797,6 +812,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         /* Parent when error. */
 
         g_warning ("%s: fork: %s", __func__, strerror (errno));
+        gvm_close_sentry ();
         exit (EXIT_FAILURE);
         break;
 
@@ -837,11 +853,17 @@ fork_connection_internal (gvm_connection_t *client_connection,
                                 CLIENTKEY,
                                 &client_connection->session,
                                 &client_connection->credentials))
-              exit (EXIT_FAILURE);
+              {
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
+              }
 
             if (gvm_server_attach (client_connection->socket,
                                    &client_connection->session))
-              exit (EXIT_FAILURE);
+              {
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
+              }
           }
 
         g_debug ("%s: all set to request GMP on socket %i",
@@ -851,6 +873,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         break;
     }
 
+  gvm_close_sentry ();
   exit (EXIT_FAILURE);
   return -1;
 }
@@ -1043,6 +1066,7 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
 static void
 handle_sigabrt_simple (int signal)
 {
+  gvm_close_sentry ();
   exit (EXIT_FAILURE);
 }
 
@@ -1096,6 +1120,8 @@ update_nvt_cache_retry ()
       else if (child_pid == 0)
         {
           const char *osp_update_socket;
+
+          init_sentry ();
           osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
             {
@@ -1112,11 +1138,13 @@ update_nvt_cache_retry ()
                     g_message ("%s: rebuild successful", __func__);
                 }
 
+              gvm_close_sentry ();
               exit (ret);
             }
           else
             {
               g_warning ("%s: No OSP VT update socket set", __func__);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
         }
@@ -1162,6 +1190,7 @@ fork_update_nvt_cache ()
       case 0:
         /* Child.   */
 
+        init_sentry ();
         proctitle_set ("gvmd: Updating NVT cache");
 
         /* Clean up the process. */
@@ -1182,6 +1211,7 @@ fork_update_nvt_cache ()
         /* Exit. */
 
         cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
         exit (EXIT_SUCCESS);
 
         break;
@@ -1263,6 +1293,7 @@ fork_feed_sync ()
       case 0:
         /* Child.   */
 
+        init_sentry ();
         proctitle_set ("gvmd: Synchronizing feed data");
 
         /* Clean up the process. */
@@ -1284,6 +1315,7 @@ fork_feed_sync ()
         /* Exit. */
 
         cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
         exit (EXIT_SUCCESS);
 
         break;
@@ -1327,11 +1359,13 @@ serve_and_schedule ()
   if (sigfillset (&sigmask_all))
     {
       g_critical ("%s: Error filling signal set", __func__);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
   sigmask_normal = &sigmask_current;
@@ -1378,6 +1412,7 @@ serve_and_schedule ()
             case 1:
               break;
             default:
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
           }
 
@@ -1400,6 +1435,7 @@ serve_and_schedule ()
           g_critical ("%s: select failed: %s",
                       __func__,
                       strerror (errno));
+          gvm_close_sentry ();
           exit (EXIT_FAILURE);
         }
 
@@ -1409,11 +1445,13 @@ serve_and_schedule ()
           if (FD_ISSET (manager_socket, &exceptfds))
             {
               g_critical ("%s: exception in select", __func__);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
           if ((manager_socket_2 > -1) && FD_ISSET (manager_socket_2, &exceptfds))
             {
               g_critical ("%s: exception in select (2)", __func__);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
           if (FD_ISSET (manager_socket, &readfds))
@@ -1434,6 +1472,7 @@ serve_and_schedule ()
             case 1:
               break;
             default:
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
           }
 
@@ -1802,6 +1841,8 @@ gvmd (int argc, char** argv)
   static gchar *value = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+
+  int sentry_initialized;
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
@@ -2120,6 +2161,7 @@ gvmd (int argc, char** argv)
     }
   g_option_context_free (option_context);
 
+  sentry_initialized = init_sentry ();
   if (print_version)
     {
       printf ("Greenbone Vulnerability Manager %s\n", GVMD_VERSION);
@@ -2127,11 +2169,24 @@ gvmd (int argc, char** argv)
       printf ("GIT revision %s\n", GVMD_GIT_REVISION);
 #endif
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
+      if (gvm_has_sentry_support ())
+        {
+          const char *sentry_dsn;
+          sentry_dsn = g_getenv ("SENTRY_DSN_GVMD");
+
+          if (sentry_initialized)
+            printf ("Sentry support enabled with DSN %s\n", sentry_dsn);
+          else if (sentry_dsn == NULL)
+            printf ("Sentry support disabled: no DSN set\n");
+          else
+            printf ("Sentry support disabled\n");
+        }
       printf ("Copyright (C) 2009-2021 Greenbone Networks GmbH\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
          "There is NO WARRANTY, to the extent permitted by law.\n\n");
+      gvm_close_sentry ();
       exit (EXIT_SUCCESS);
     }
 
@@ -2209,6 +2264,7 @@ gvmd (int argc, char** argv)
   else if (setenv ("TZ", "utc 0", 1) == -1)
     {
       g_critical ("%s: failed to set timezone", __func__);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
   tzset ();
@@ -2226,6 +2282,18 @@ gvmd (int argc, char** argv)
     log_config = load_log_configuration (rc_name);
   g_free (rc_name);
   setup_log_handlers (log_config);
+
+  /* Log whether sentry support is enabled */
+  if (sentry_initialized)
+    {
+      g_message ("Sentry support enabled with DSN %s",
+                 g_getenv ("SENTRY_DSN_GVMD"));
+    }
+  else
+    {
+      g_debug ("Sentry support disabled");
+    }
+
   /* Enable GNUTLS debugging if requested via env variable.  */
   {
     const char *s;
@@ -2828,6 +2896,7 @@ gvmd (int argc, char** argv)
         {
           case 0:
             /* Child. */
+            init_sentry ();
             break;
           case -1:
             /* Parent when error. */
@@ -2835,11 +2904,13 @@ gvmd (int argc, char** argv)
                         __func__,
                         strerror (errno));
             log_config_free ();
+            gvm_close_sentry ();
             exit (EXIT_FAILURE);
             break;
           default:
             /* Parent. */
             log_config_free ();
+            gvm_close_sentry ();
             exit (EXIT_SUCCESS);
             break;
         }
@@ -2857,6 +2928,7 @@ gvmd (int argc, char** argv)
       case -2:
         g_critical ("%s: database is wrong version", __func__);
         log_config_free ();
+        gvm_close_sentry ();
         exit (EXIT_FAILURE);
         break;
       case -4:
@@ -2866,12 +2938,14 @@ gvmd (int argc, char** argv)
                     MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
                     max_ips_per_target);
         log_config_free ();
+        gvm_close_sentry ();
         exit (EXIT_FAILURE);
         break;
       case -1:
       default:
         g_critical ("%s: failed to initialise GMP daemon", __func__);
         log_config_free ();
+        gvm_close_sentry ();
         exit (EXIT_FAILURE);
     }
 
@@ -2880,6 +2954,7 @@ gvmd (int argc, char** argv)
   if (lockfile_unlock (&lockfile_checking))
     {
       g_critical ("%s: Error releasing checking lock", __func__);
+      gvm_close_sentry ();
       return EXIT_FAILURE;
     }
 
@@ -2890,12 +2965,17 @@ gvmd (int argc, char** argv)
       g_critical ("%s: failed to register `atexit' cleanup function",
                   __func__);
       log_config_free ();
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
   /* Set our pidfile. */
 
-  if (pidfile_create ("gvmd")) exit (EXIT_FAILURE);
+  if (pidfile_create ("gvmd"))
+    {
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
 
   /* Setup global variables. */
 
@@ -2916,6 +2996,7 @@ gvmd (int argc, char** argv)
       g_critical ("%s: failed to create log directory: %s",
                   __func__,
                   strerror (errno));
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -2925,6 +3006,7 @@ gvmd (int argc, char** argv)
       g_critical ("%s: failed to open log file: %s",
                   __func__,
                   strerror (errno));
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 #endif
@@ -2952,6 +3034,7 @@ gvmd (int argc, char** argv)
         {
           g_critical ("%s: client server initialisation failed",
                       __func__);
+          gvm_close_sentry ();
           exit (EXIT_FAILURE);
         }
       priorities_option = priorities;
@@ -2995,7 +3078,10 @@ gvmd (int argc, char** argv)
 
   // TODO Should be part of manage init.
   if (gvm_auth_init ())
-    exit (EXIT_FAILURE);
+    {
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
 
   if (check_osp_vt_update_socket ())
     {
@@ -3003,6 +3089,7 @@ gvmd (int argc, char** argv)
                   " Use --osp-vt-update or change the 'OpenVAS Default'"
                   " scanner to use the main ospd-openvas socket.",
                   __func__);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -3011,5 +3098,6 @@ gvmd (int argc, char** argv)
   proctitle_set ("gvmd: Waiting for incoming connections");
   serve_and_schedule ();
 
+  gvm_close_sentry ();
   return EXIT_SUCCESS;
 }
