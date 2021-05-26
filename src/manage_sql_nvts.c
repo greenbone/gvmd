@@ -1244,7 +1244,7 @@ nvti_from_vt (entity_t vt)
   const char *id;
   entity_t name, summary, insight, affected, impact, detection, solution;
   entity_t creation_time, modification_time;
-  entity_t refs, ref, custom, family, category;
+  entity_t refs, ref, custom, family, category, deprecated;
   entity_t severities, severity;
 
   entities_t children;
@@ -1467,6 +1467,12 @@ nvti_from_vt (entity_t vt)
       return NULL;
     }
   nvti_set_category (nvti, atoi (entity_text (category)));
+
+  deprecated = entity_child (custom, "deprecated");
+  if (deprecated)
+    {
+      nvti_add_tag (nvti, "deprecated", entity_text (deprecated));
+    }
 
   return nvti;
 }
