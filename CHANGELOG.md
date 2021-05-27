@@ -7,7 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.4.1] (unreleased)
 
 ### Added
+<<<<<<< HEAD
 - Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+=======
+- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
+- Extend GMP for new privilege escalation credential[#1535](https://github.com/greenbone/gvmd/pull/1535)
+
+### Changed
+- Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
+>>>>>>> 605b24c58 (Add CANGELOG-entry for Extend GMP for new privilege escalation credential)
 
 ### Changed
 - Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
