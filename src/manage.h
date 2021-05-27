@@ -1644,6 +1644,9 @@ int
 target_iterator_snmp_credential (iterator_t*);
 
 int
+target_iterator_ssh_elevate_credential (iterator_t*);
+
+int
 target_iterator_ssh_trash (iterator_t*);
 
 int
@@ -1654,6 +1657,9 @@ target_iterator_esxi_trash (iterator_t*);
 
 int
 target_iterator_snmp_trash (iterator_t*);
+
+int
+target_iterator_ssh_elevate_trash (iterator_t*);
 
 const char*
 target_iterator_allow_simultaneous_ips (iterator_t*);

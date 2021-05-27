@@ -918,28 +918,28 @@ create_schedule_data_reset (create_schedule_data_t *data)
  */
 typedef struct
 {
-  char *alive_tests;             ///< Alive tests.
-  char *allow_simultaneous_ips;  ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
-  char *asset_hosts_filter;      ///< Asset hosts.
-  char *comment;                 ///< Comment.
-  char *exclude_hosts;           ///< Hosts to exclude from set.
-  char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
-  char *reverse_lookup_unify;    ///< Boolean. Whether to unify based on reverse lookup.
-  char *copy;                    ///< UUID of resource to copy.
-  char *hosts;                   ///< Hosts for new target.
-  char *port_list_id;            ///< Port list for new target.
-  char *port_range;              ///< Port range for new target.
-  char *ssh_credential_id;       ///< SSH credential for new target.
-  char *ssh_lsc_credential_id;   ///< SSH credential (deprecated).
-  char *ssh_elevate_credential_id ;  ///< SSH elevation credential.
-  char *ssh_port;                ///< Port for SSH.
-  char *ssh_lsc_port;            ///< Port for SSH (deprecated).
-  char *smb_credential_id;       ///< SMB credential for new target.
-  char *smb_lsc_credential_id;   ///< SMB credential (deprecated).
-  char *esxi_credential_id;      ///< ESXi credential for new target.
-  char *esxi_lsc_credential_id;  ///< ESXi credential (deprecated).
-  char *snmp_credential_id;      ///< SNMP credential for new target.
-  char *name;                    ///< Name of new target.
+  char *alive_tests;                ///< Alive tests.
+  char *allow_simultaneous_ips;     ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
+  char *asset_hosts_filter;         ///< Asset hosts.
+  char *comment;                    ///< Comment.
+  char *exclude_hosts;              ///< Hosts to exclude from set.
+  char *reverse_lookup_only;        ///< Boolean. Whether to consider only hosts that reverse lookup.
+  char *reverse_lookup_unify;       ///< Boolean. Whether to unify based on reverse lookup.
+  char *copy;                       ///< UUID of resource to copy.
+  char *hosts;                      ///< Hosts for new target.
+  char *port_list_id;               ///< Port list for new target.
+  char *port_range;                 ///< Port range for new target.
+  char *ssh_credential_id;          ///< SSH credential for new target.
+  char *ssh_lsc_credential_id;      ///< SSH credential (deprecated).
+  char *ssh_elevate_credential_id;  ///< SSH elevation credential.
+  char *ssh_port;                   ///< Port for SSH.
+  char *ssh_lsc_port;               ///< Port for SSH (deprecated).
+  char *smb_credential_id;          ///< SMB credential for new target.
+  char *smb_lsc_credential_id;      ///< SMB credential (deprecated).
+  char *esxi_credential_id;         ///< ESXi credential for new target.
+  char *esxi_lsc_credential_id;     ///< ESXi credential (deprecated).
+  char *snmp_credential_id;         ///< SNMP credential for new target.
+  char *name;                       ///< Name of new target.
 } create_target_data_t;
 
 /**
@@ -16450,16 +16450,19 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
         {
           char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
+          char *ssh_elevate_name, *ssh_elevate_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
           const char *reverse_lookup_unify, *allow_simultaneous_ips;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
+          credential_t ssh_elevate_credential;
           int port_list_trash, max_hosts, port_list_available;
           int ssh_credential_available;
           int smb_credential_available;
           int esxi_credential_available;
           int snmp_credential_available;
+          int ssh_elevate_credential_available;
 
           ret = get_next (&targets, &get_targets_data->get, &first,
                           &count, init_target_iterator);
@@ -16475,6 +16478,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           smb_credential = target_iterator_smb_credential (&targets);
           esxi_credential = target_iterator_esxi_credential (&targets);
           snmp_credential = target_iterator_snmp_credential (&targets);
+          ssh_elevate_credential = target_iterator_ssh_elevate_credential (&targets);
           ssh_credential_available = 1;
           if (get_targets_data->get.trash
               && target_iterator_ssh_trash (&targets))
@@ -16587,6 +16591,35 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
               snmp_name = NULL;
               snmp_uuid = NULL;
             }
+          ssh_elevate_credential_available = 1;
+          if (get_targets_data->get.trash
+              && target_iterator_ssh_elevate_trash (&targets))
+            {
+              ssh_elevate_name
+                = trash_credential_name (ssh_elevate_credential);
+              ssh_elevate_uuid
+                = trash_credential_uuid (ssh_elevate_credential);
+              ssh_elevate_credential_available
+                = trash_credential_readable (ssh_elevate_credential);
+            }
+          else if (ssh_elevate_credential)
+            {
+              credential_t found;
+
+              ssh_elevate_name = credential_name (ssh_elevate_credential);
+              ssh_elevate_uuid = credential_uuid (ssh_elevate_credential);
+              if (find_credential_with_permission
+                    (ssh_elevate_uuid,
+                     &found,
+                     "get_credentials"))
+                abort ();
+              ssh_elevate_credential_available = (found > 0);
+            }
+          else
+            {
+              ssh_elevate_name = NULL;
+              ssh_elevate_uuid = NULL;
+            }
           port_list_uuid = target_iterator_port_list_uuid (&targets);
           port_list_name = target_iterator_port_list_name (&targets);
           port_list_trash = target_iterator_port_list_trash (&targets);
@@ -16685,6 +16718,18 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
             SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
 
           SENDF_TO_CLIENT_OR_FAIL ("</snmp_credential>"
+                                   "<ssh_elevate_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   ssh_elevate_uuid ? ssh_elevate_uuid : "",
+                                   ssh_elevate_name ? ssh_elevate_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_ssh_elevate_trash (&targets)));
+
+          if (ssh_elevate_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</ssh_elevate_credential>"
                                    "<reverse_lookup_only>"
                                    "%s"
                                    "</reverse_lookup_only>"
@@ -16740,6 +16785,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           free (smb_uuid);
           free (esxi_name);
           free (esxi_uuid);
+          free (ssh_elevate_name);
+          free (ssh_elevate_uuid);
         }
       cleanup_iterator (&targets);
       filtered = get_targets_data->get.id
