@@ -21334,7 +21334,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_TARGET:
         {
-          credential_t ssh_credential = 0, ssh_elevate_credential = 0, smb_credential = 0;
+          credential_t ssh_credential = 0, ssh_elevate_credential = 0;
+          credential_t smb_credential = 0;
           credential_t esxi_credential = 0, snmp_credential = 0;
           target_t new_target;
 
