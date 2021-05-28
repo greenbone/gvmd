@@ -30641,6 +30641,9 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (alive_test <= -1)
     return 7;
 
+  if (ssh_elevate_credential && (!ssh_credential))
+    return 14;
+
   sql_begin_immediate ();
 
   if (acl_user_may ("create_target") == 0)
@@ -31118,6 +31121,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       sql_rollback ();
       return 13;
+    }
+
+  if (ssh_elevate_credential_id && (!ssh_credential_id))
+    {
+      sql_rollback ();
+      return 24;
     }
 
   target = 0;
