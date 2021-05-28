@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [21.4.1] (unreleased)
 
+### Added
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+
 ### Changed
 - Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
 
