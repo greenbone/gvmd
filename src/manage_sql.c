@@ -30614,7 +30614,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
                const char* port_range, credential_t ssh_credential,
-	       credential_t ssh_elevate_credential,
+               credential_t ssh_elevate_credential,
                const char* ssh_port, credential_t smb_credential,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
@@ -31093,7 +31093,7 @@ int
 modify_target (const char *target_id, const char *name, const char *hosts,
                const char *exclude_hosts, const char *comment,
                const char *port_list_id, const char *ssh_credential_id,
-	       const char *ssh_elevate_credential_id,
+               const char *ssh_elevate_credential_id,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
@@ -31655,7 +31655,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      " WHERE credentials.id"                                   \
      "       = target_credential (targets.id, 0,"              \
      "                            CAST ('elevate' AS text)))", \
-     "ssh_elevate_credential",                                     \
+     "ssh_elevate_credential",                                 \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
