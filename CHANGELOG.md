@@ -6,29 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [21.4.1] (unreleased)
 
+### Added
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+
 ### Changed
 - Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
 
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
 - Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
-<<<<<<< HEAD
-=======
-
-### Removed
-- Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
-- Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
-
-[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
-
-## [21.4.1] (unreleased)
-
-### Added
-- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
-
-### Fixed
-- Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
->>>>>>> 6b8d2e6c2 (Add CHANGELOG entry for NVT tag "deprecated")
 - Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
 - Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
 - Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
