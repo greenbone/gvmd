@@ -24225,7 +24225,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_target_data->ssh_credential_id
                           ? modify_target_data->ssh_credential_id
                           : modify_target_data->ssh_lsc_credential_id,
-			 modify_target_data->ssh_elevate_credential_id,
+                         modify_target_data->ssh_elevate_credential_id,
                          modify_target_data->ssh_credential_id
                           ? modify_target_data->ssh_port
                           : modify_target_data->ssh_lsc_port,
