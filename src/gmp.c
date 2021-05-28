@@ -16478,7 +16478,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           smb_credential = target_iterator_smb_credential (&targets);
           esxi_credential = target_iterator_esxi_credential (&targets);
           snmp_credential = target_iterator_snmp_credential (&targets);
-          ssh_elevate_credential = target_iterator_ssh_elevate_credential (&targets);
+          ssh_elevate_credential
+            = target_iterator_ssh_elevate_credential (&targets);
           ssh_credential_available = 1;
           if (get_targets_data->get.trash
               && target_iterator_ssh_trash (&targets))
