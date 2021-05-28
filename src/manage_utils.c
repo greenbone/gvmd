@@ -690,7 +690,7 @@ icalcomponent *
 icalendar_from_string (const char *ical_string, icaltimezone *zone,
                        gchar **error)
 {
-  icalcomponent *ical_new, *ical_parsed;
+  icalcomponent *ical_new, *ical_parsed, *timezone_component;
   icalproperty *error_prop;
   GString *warnings_buffer;
   int vevent_count = 0;
@@ -727,7 +727,9 @@ icalendar_from_string (const char *ical_string, icaltimezone *zone,
   icalcomponent_add_property (ical_new,
                               icalproperty_new_prodid (GVM_PRODID));
 
-  icalcomponent_add_component (ical_new, icaltimezone_get_component (zone));
+  timezone_component
+    = icalcomponent_new_clone (icaltimezone_get_component (zone));
+  icalcomponent_add_component (ical_new, timezone_component);
 
   switch (icalcomponent_isa (ical_parsed))
     {

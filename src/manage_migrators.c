@@ -2342,9 +2342,9 @@ migrate_233_to_234 ()
        " DROP column slave_host,"
        " DROP column slave_port;");
 
-  /* Convert existing GMP Scanners to OSP Scanners. */
-  sql ("UPDATE scanners SET type = 2 WHERE type = 4;");
-  sql ("UPDATE scanners_trash SET type = 2 WHERE type = 4;");
+  /* Convert existing GMP Scanners to OSP Sensors. */
+  sql ("UPDATE scanners SET type = 5 WHERE type = 4;");
+  sql ("UPDATE scanners_trash SET type = 5 WHERE type = 4;");
 
   /* Set the database version to 234. */
 

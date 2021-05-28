@@ -40,7 +40,7 @@
  */
 #define G_LOG_DOMAIN "md manage"
 /**
- * @brief amount of ms sql should wait before retrying when a deadlock occured
+ * @brief amount of ms sql should wait before retrying when a deadlock occurred
  */
 #define DEADLOCK_SLEEP 1000
 
@@ -284,7 +284,7 @@ sql (char* sql, ...)
         {
             if (deadlock_amount++ > DEADLOCK_THRESHOLD)
               {
-                  g_warning("%s: %d deadlocks detected, wating and retrying %s", __func__, deadlock_amount, sql);
+                  g_warning("%s: %d deadlocks detected, waiting and retrying %s", __func__, deadlock_amount, sql);
               } 
             gvm_usleep (DEADLOCK_SLEEP);
             continue;

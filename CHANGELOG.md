@@ -30,10 +30,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [21.4.1] (unreleased)
 
+### Added
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
 - Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
 - Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
+- Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
 
@@ -111,6 +115,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix "not regexp ..." filters [#1482](https://github.com/greenbone/gvmd/pull/1482)
 - Escape TLS certificate DNs that are invalid UTF-8 [#1486](https://github.com/greenbone/gvmd/pull/1486)
 - Free alert get data in report_content_for_alert [#1526](https://github.com/greenbone/gvmd/pull/1526) 
+- Fix erroneous freeing of ical timezone component [#1530](https://github.com/greenbone/gvmd/pull/1530)
 
 ### Removed
 
