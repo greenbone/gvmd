@@ -30566,9 +30566,11 @@ target_login_port (target_t target, const char* type)
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 error in alive tests,
- *         8 invalid SSH credential type, 9 invalid SMB credential type,
- *         10 invalid ESXi credential type, 11 invalid SNMP credential type,
- *         12 port range or port list required, 99 permission denied, -1 error.
+ *         8 invalid SSH credential type, 9 invalid SSH elevate credential type,
+ *         10 invalid SMB credential type, 11 invalid ESXi credential type,
+ *         12 invalid SNMP credential type, 13 port range or port list required,
+ *         14 SSH elevate credential without an SSH credential,
+ *         99 permission denied, -1 error.
  */
 int
 create_target (const char* name, const char* asset_hosts_filter,
@@ -31051,7 +31053,8 @@ delete_target (const char *target_id, int ultimate)
  *         16 failed to find ESXi cred, 17 failed to find SNMP cred,
  *         18 invalid SSH credential type, 19 invalid SMB credential type,
  *         20 invalid ESXi credential type, 21 invalid SNMP credential type,
- *         99 permission denied, -1 error.
+ *         22 failed to find SSH elevate cred, 23 invalid SSH elevate
+ *         credential type, 99 permission denied, -1 error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
