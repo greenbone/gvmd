@@ -2125,7 +2125,7 @@ target_osp_ssh_credential (target_t target)
           g_free (base64);
         }
 
-      if(ssh_elevate_credential && !strcmp (type, "up"))
+      if(ssh_elevate_credential)
         {
           const char *elevate_type;
 
