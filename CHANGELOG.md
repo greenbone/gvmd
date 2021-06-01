@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
-- Extend GMP for new privilege escalation credential[#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
