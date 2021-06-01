@@ -7,8 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.4.1] (unreleased)
 
 ### Added
+<<<<<<< HEAD
 - Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
 - Extend GMP for new privilege escalation credential[#1535](https://github.com/greenbone/gvmd/pull/1535)
+=======
+- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
+- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
+>>>>>>> 58b6cac6f (Added CHANGELOG-entry for new ssh elevate credential data in OSP)
 
 ### Changed
 - Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
