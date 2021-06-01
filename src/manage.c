@@ -2135,7 +2135,7 @@ target_osp_ssh_credential (target_t target)
             {
               g_warning ("%s: SSH Elevate Credential not found.", __func__);
               cleanup_iterator (&ssh_elevate_iter);
-              free(osp_credential);
+              osp_credential_free(osp_credential);
               return NULL;
             }
           elevate_type = credential_iterator_type (&ssh_elevate_iter);
@@ -2143,7 +2143,7 @@ target_osp_ssh_credential (target_t target)
             {
               g_warning ("%s: SSH Elevate Credential not of type up", __func__);
               cleanup_iterator (&ssh_elevate_iter);
-              free(osp_credential);
+              osp_credential_free(osp_credential);
               return NULL;
             }
           osp_credential_set_auth_data (osp_credential,
