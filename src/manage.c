@@ -2087,16 +2087,19 @@ launch_osp_task (task_t task, target_t target, const char *scan_id,
 static osp_credential_t *
 target_osp_ssh_credential (target_t target)
 {
-  credential_t credential;
+  credential_t credential, ssh_elevate_credential;
   credential = target_ssh_credential (target);
+  ssh_elevate_credential = target_ssh_elevate_credential (target);
+
   if (credential)
     {
-      iterator_t iter;
+      iterator_t iter, ssh_elevate_iter;
       const char *type;
       char *ssh_port;
       osp_credential_t *osp_credential;
 
       init_credential_iterator_one (&iter, credential);
+
       if (!next (&iter))
         {
           g_warning ("%s: SSH Credential not found.", __func__);
@@ -2121,6 +2124,7 @@ target_osp_ssh_credential (target_t target)
       osp_credential_set_auth_data (osp_credential,
                                     "password",
                                     credential_iterator_password (&iter));
+
       if (strcmp (type, "usk") == 0)
         {
           const char *private_key = credential_iterator_private_key (&iter);
@@ -2129,8 +2133,40 @@ target_osp_ssh_credential (target_t target)
           osp_credential_set_auth_data (osp_credential,
                                         "private", base64);
           g_free (base64);
-
         }
+
+      if(ssh_elevate_credential)
+        {
+          const char *elevate_type;
+
+          init_credential_iterator_one (&ssh_elevate_iter,
+                                        ssh_elevate_credential);
+          if (!next (&ssh_elevate_iter))
+            {
+              g_warning ("%s: SSH Elevate Credential not found.", __func__);
+              cleanup_iterator (&ssh_elevate_iter);
+              osp_credential_free(osp_credential);
+              return NULL;
+            }
+          elevate_type = credential_iterator_type (&ssh_elevate_iter);
+          if (strcmp (elevate_type, "up"))
+            {
+              g_warning ("%s: SSH Elevate Credential not of type up", __func__);
+              cleanup_iterator (&ssh_elevate_iter);
+              osp_credential_free(osp_credential);
+              return NULL;
+            }
+          osp_credential_set_auth_data (osp_credential,
+                                        "priv_username",
+                                        credential_iterator_login
+                                          (&ssh_elevate_iter));
+          osp_credential_set_auth_data (osp_credential,
+                                        "priv_password",
+                                        credential_iterator_password
+                                          (&ssh_elevate_iter));
+          cleanup_iterator (&ssh_elevate_iter);
+        }
+
       cleanup_iterator (&iter);
       return osp_credential;
     }
