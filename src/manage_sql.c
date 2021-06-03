@@ -30580,6 +30580,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   port_range      Port range of target.
  * @param[in]   ssh_credential  SSH credential.
+ * @param[in]   ssh_elevate_credential  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
  * @param[in]   smb_credential  SMB credential.
  * @param[in]   esxi_credential ESXi credential.
@@ -30593,15 +30594,18 @@ target_login_port (target_t target, const char* type)
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 error in alive tests,
- *         8 invalid SSH credential type, 9 invalid SMB credential type,
- *         10 invalid ESXi credential type, 11 invalid SNMP credential type,
- *         12 port range or port list required, 99 permission denied, -1 error.
+ *         8 invalid SSH credential type, 9 invalid SSH elevate credential type,
+ *         10 invalid SMB credential type, 11 invalid ESXi credential type,
+ *         12 invalid SNMP credential type, 13 port range or port list required,
+ *         14 SSH elevate credential without an SSH credential,
+ *         99 permission denied, -1 error.
  */
 int
 create_target (const char* name, const char* asset_hosts_filter,
                const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
                const char* port_range, credential_t ssh_credential,
+               credential_t ssh_elevate_credential,
                const char* ssh_port, credential_t smb_credential,
                credential_t esxi_credential, credential_t snmp_credential,
                const char *reverse_lookup_only,
@@ -30627,6 +30631,9 @@ create_target (const char* name, const char* asset_hosts_filter,
   alive_test = alive_test_from_string (alive_tests);
   if (alive_test <= -1)
     return 7;
+
+  if (ssh_elevate_credential && (!ssh_credential))
+    return 14;
 
   sql_begin_immediate ();
 
@@ -30655,7 +30662,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   else if (port_range == NULL)
     {
       sql_rollback ();
-      return 12;
+      return 13;
     }
   else
     {
@@ -30798,13 +30805,29 @@ create_target (const char* name, const char* asset_hosts_filter,
     }
   g_free (quoted_ssh_port);
 
+  if (ssh_elevate_credential)
+    {
+      gchar *type = credential_type (ssh_elevate_credential);
+      if (strcmp (type, "up"))
+        {
+          sql_rollback ();
+          return 9;
+        }
+      g_free (type);
+
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'elevate', %llu, %s);",
+           new_target, ssh_elevate_credential, "0");
+    }
+
   if (smb_credential)
     {
       gchar *type = credential_type (smb_credential);
       if (strcmp (type, "up"))
         {
           sql_rollback ();
-          return 9;
+          return 10;
         }
       g_free (type);
 
@@ -30820,7 +30843,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (strcmp (type, "up"))
         {
           sql_rollback ();
-          return 10;
+          return 11;
         }
       g_free (type);
 
@@ -30836,7 +30859,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (strcmp (type, "snmp"))
         {
           sql_rollback ();
-          return 11;
+          return 12;
         }
       g_free (type);
 
@@ -31038,6 +31061,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   ssh_credential_id  SSH credential.
+ * @param[in]   ssh_elevate_credential_id  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
  * @param[in]   smb_credential_id  SMB credential.
  * @param[in]   esxi_credential_id  ESXi credential.
@@ -31057,12 +31081,14 @@ delete_target (const char *target_id, int ultimate)
  *         16 failed to find ESXi cred, 17 failed to find SNMP cred,
  *         18 invalid SSH credential type, 19 invalid SMB credential type,
  *         20 invalid ESXi credential type, 21 invalid SNMP credential type,
- *         99 permission denied, -1 error.
+ *         22 failed to find SSH elevate cred, 23 invalid SSH elevate
+ *         credential type, 99 permission denied, -1 error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
                const char *exclude_hosts, const char *comment,
                const char *port_list_id, const char *ssh_credential_id,
+               const char *ssh_elevate_credential_id,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *reverse_lookup_only,
@@ -31087,6 +31113,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       sql_rollback ();
       return 13;
+    }
+
+  if (ssh_elevate_credential_id && (!ssh_credential_id))
+    {
+      sql_rollback ();
+      return 24;
     }
 
   target = 0;
@@ -31261,6 +31293,48 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
       else
         set_target_login_data (target, "ssh", 0, 0);
+    }
+
+  if (ssh_elevate_credential_id)
+    {
+      credential_t ssh_elevate_credential;
+
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      ssh_elevate_credential = 0;
+      if (strcmp (ssh_elevate_credential_id, "0"))
+        {
+          gchar *type;
+          if (find_credential_with_permission (ssh_elevate_credential_id,
+                                               &ssh_elevate_credential,
+                                               "get_credentials"))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          if (ssh_elevate_credential == 0)
+            {
+              sql_rollback ();
+              return 22;
+            }
+
+          type = credential_type (ssh_elevate_credential);
+          if (strcmp (type, "up"))
+            {
+              sql_rollback ();
+              return 23;
+            }
+          g_free (type);
+
+          set_target_login_data (target, "elevate", ssh_elevate_credential, 0);
+        }
+      else
+        set_target_login_data (target, "elevate", 0, 0);
     }
 
   if (smb_credential_id)
@@ -31492,92 +31566,104 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 #define TARGET_ITERATOR_FILTER_COLUMNS                                         \
  { GET_ITERATOR_FILTER_COLUMNS, "hosts", "exclude_hosts", "ips", "port_list",  \
    "ssh_credential", "smb_credential", "esxi_credential", "snmp_credential",   \
-   NULL }
+   "ssh_elevate_credential", NULL }
 
 /**
  * @brief Target iterator columns.
  */
-#define TARGET_ITERATOR_COLUMNS                             \
- {                                                          \
-   GET_ITERATOR_COLUMNS (targets),                          \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                  \
-   { "target_credential (id, 0, CAST ('ssh' AS text))",     \
-     NULL,                                                  \
-     KEYWORD_TYPE_INTEGER },                                \
-   { "target_login_port (id, 0, CAST ('ssh' AS text))",     \
-     "ssh_port",                                            \
-     KEYWORD_TYPE_INTEGER },                                \
-   { "target_credential (id, 0, CAST ('smb' AS text))",     \
-     NULL,                                                  \
-     KEYWORD_TYPE_INTEGER },                                \
-   { "port_list", NULL, KEYWORD_TYPE_INTEGER },             \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
-   {                                                        \
-     "(SELECT uuid FROM port_lists"                         \
-     " WHERE port_lists.id = port_list)",                   \
-     NULL,                                                  \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT name FROM port_lists"                         \
-     " WHERE port_lists.id = port_list)",                   \
-     "port_list",                                           \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },          \
-   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },   \
-   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },  \
-   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },            \
-   { "target_credential (id, 0, CAST ('esxi' AS text))",    \
-     NULL,                                                  \
-     KEYWORD_TYPE_INTEGER },                                \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "target_credential (id, 0, CAST ('snmp' AS text))",    \
-     NULL,                                                  \
-     KEYWORD_TYPE_INTEGER },                                \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "allow_simultaneous_ips",                              \
-     NULL,                                                  \
-     KEYWORD_TYPE_INTEGER },                                \
-   {                                                        \
-     "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id"                                \
-     "       = target_credential (targets.id, 0,"           \
-     "                            CAST ('ssh' AS text)))",  \
-     "ssh_credential",                                      \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id"                                \
-     "       = target_credential (targets.id, 0,"           \
-     "                            CAST ('smb' AS text)))",  \
-     "smb_credential",                                      \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id"                                \
-     "       = target_credential (targets.id, 0,"           \
-     "                            CAST ('esxi' AS text)))", \
-     "esxi_credential",                                     \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   {                                                        \
-     "(SELECT name FROM credentials"                        \
-     " WHERE credentials.id"                                \
-     "       = target_credential (targets.id, 0,"           \
-     "                            CAST ('snmp' AS text)))", \
-     "snmp_credential",                                     \
-     KEYWORD_TYPE_STRING                                    \
-   },                                                       \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                  \
-   { "max_hosts (hosts, exclude_hosts)",                    \
-     "ips",                                                 \
-     KEYWORD_TYPE_INTEGER },                                \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                     \
+#define TARGET_ITERATOR_COLUMNS                                \
+ {                                                             \
+   GET_ITERATOR_COLUMNS (targets),                             \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
+   { "target_credential (id, 0, CAST ('ssh' AS text))",        \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "target_login_port (id, 0, CAST ('ssh' AS text))",        \
+     "ssh_port",                                               \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "target_credential (id, 0, CAST ('smb' AS text))",        \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "port_list", NULL, KEYWORD_TYPE_INTEGER },                \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   {                                                           \
+     "(SELECT uuid FROM port_lists"                            \
+     " WHERE port_lists.id = port_list)",                      \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM port_lists"                            \
+     " WHERE port_lists.id = port_list)",                      \
+     "port_list",                                              \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },             \
+   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },      \
+   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },     \
+   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },               \
+   { "target_credential (id, 0, CAST ('esxi' AS text))",       \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "target_credential (id, 0, CAST ('snmp' AS text))",       \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "target_credential (id, 0, CAST ('elevate' AS text))",    \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "allow_simultaneous_ips",                                 \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = target_credential (targets.id, 0,"              \
+     "                            CAST ('ssh' AS text)))",     \
+     "ssh_credential",                                         \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = target_credential (targets.id, 0,"              \
+     "                            CAST ('smb' AS text)))",     \
+     "smb_credential",                                         \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = target_credential (targets.id, 0,"              \
+     "                            CAST ('esxi' AS text)))",    \
+     "esxi_credential",                                        \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = target_credential (targets.id, 0,"              \
+     "                            CAST ('snmp' AS text)))",    \
+     "snmp_credential",                                        \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = target_credential (targets.id, 0,"              \
+     "                            CAST ('elevate' AS text)))", \
+     "ssh_elevate_credential",                                 \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
+   { "max_hosts (hosts, exclude_hosts)",                       \
+     "ips",                                                    \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                        \
  }
 
 /**
@@ -31967,6 +32053,38 @@ target_iterator_snmp_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the ELEVATE LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ELEVATE LSC credential.
+ */
+int
+target_iterator_ssh_elevate_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
+  return ret;
+}
+
+/**
+ * @brief Get the ELEVATE LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ELEVATE LSC credential.
+ */
+int
+target_iterator_ssh_elevate_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 19);
+  return ret;
+}
+
+/**
  * @brief Get the allow_simultaneous_ips value from a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -31974,7 +32092,7 @@ target_iterator_snmp_trash (iterator_t* iterator)
  * @return allow_simult_ips_same_host or NULL if iteration is complete.
  */
 DEF_ACCESS (target_iterator_allow_simultaneous_ips,
-            GET_ITERATOR_COLUMN_COUNT + 18);
+            GET_ITERATOR_COLUMN_COUNT + 20);
 
 /**
  * @brief Return the UUID of a tag.
@@ -32222,6 +32340,19 @@ credential_t
 target_esxi_credential (target_t target)
 {
   return target_credential (target, "esxi");
+}
+
+/**
+ * @brief Return the ELEVATE credential associated with a target, if any.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return ELEVATE credential if any, else 0.
+ */
+credential_t
+target_ssh_elevate_credential (target_t target)
+{
+  return target_credential (target, "elevate");
 }
 
 /**

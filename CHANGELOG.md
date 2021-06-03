@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
 - Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
+- Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
 
 ### Removed
 - Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
@@ -28,6 +29,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
 ## [21.4.1] (unreleased)
+
+### Added
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
 
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)

@@ -79,7 +79,11 @@ set_defaults () {
   # (Organization unit)
   GVM_CERTIFICATE_ORG_UNIT=${GVM_CERTIFICATE_ORG_UNIT:-""}
   # Subject Alternative Name(s)
-  GVM_CERTIFICATE_SAN=${GVM_CERTIFICATE_SAN:-""}
+  GVM_CERTIFICATE_SAN_DNS=${GVM_CERTIFICATE_SAN_DNS:-""}
+  GVM_CERTIFICATE_SAN_URI=${GVM_CERTIFICATE_SAN_URI:-""}
+  GVM_CERTIFICATE_SAN_EMAIL=${GVM_CERTIFICATE_SAN_EMAIL:-""}
+  GVM_CERTIFICATE_SAN_IP_ADDRESS=${GVM_CERTIFICATE_SAN_IP_ADDRESS:-""}
+  GVM_CERTIFICATE_SAN_OTHER_NAME_UTF8=${GVM_CERTIFICATE_SAN_OTHER_NAME_UTF8:-""}
 
   # Hostname
   if [ -z "$GVM_CERTIFICATE_HOSTNAME" ]
@@ -104,8 +108,12 @@ set_defaults () {
   GVM_CA_CERTIFICATE_ORG=${GVM_CA_CERTIFICATE_ORG:-"$GVM_CERTIFICATE_ORG"}
   # (Organization unit)
   GVM_CA_CERTIFICATE_ORG_UNIT=${GVM_CA_CERTIFICATE_ORG_UNIT:-"Certificate Authority for $GVM_CERTIFICATE_HOSTNAME"}
-  # The array with all the SANs
-  GVM_CA_CERTIFICATE_SAN=${GVM_CA_CERTIFICATE_SAN:-"$GVM_CERTIFICATE_SAN"}
+  # Subject Alternative Name(s)
+  GVM_CA_CERTIFICATE_SAN_DNS=${GVM_CA_CERTIFICATE_SAN_DNS:-"$GVM_CERTIFICATE_SAN_DNS"}
+  GVM_CA_CERTIFICATE_SAN_URI=${GVM_CA_CERTIFICATE_SAN_URI:-"$GVM_CERTIFICATE_SAN_URI"}
+  GVM_CA_CERTIFICATE_SAN_EMAIL=${GVM_CA_CERTIFICATE_SAN_EMAIL:-"$GVM_CERTIFICATE_SAN_EMAIL"}
+  GVM_CA_CERTIFICATE_SAN_IP_ADDRESS=${GVM_CA_CERTIFICATE_SAN_IP_ADDRESS:-"$GVM_CERTIFICATE_SAN_IP_ADDRESS"}
+  GVM_CA_CERTIFICATE_SAN_OTHER_NAME_UTF8=${GVM_CA_CERTIFICATE_SAN_OTHER_NAME_UTF8:-"$GVM_CERTIFICATE_SAN_OTHER_NAME_UTF8"}
   # Key size
   if [ -z "$GVM_CERTIFICATE_KEYSIZE" ]
   then
@@ -293,29 +301,26 @@ create_private_key ()
   log_write "Generated private key in $1."
 }
 
-# Add SAN settings
-add_san_settings ()
+# Split SAN settings by ';'
+split_san_value ()
 {
-  for i in $1
+  TEMPLATE_VARIABLE=$1
+  ENVIRONMENT_VALUE=$2
+  log_debug "Split SAN environment: '$ENVIRONMENT_VALUE'."
+
+  OIFS=$IFS
+  IFS=';'
+
+  read -r VALUES <<EOF
+$ENVIRONMENT_VALUE
+EOF
+
+  for VALUE in $VALUES
   do
-    case "$i" in
-    *.*.*.*)
-      echo "ip_address = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-    ;;
-    http*)
-      echo "uri = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-    ;;
-    *.*)
-      echo "dns_name = \"$i\"" >> $GVM_CERT_TEMPLATE_FILENAME
-    ;;
-    localhost )
-      echo "dns_name = \"localhost\"" >> $GVM_CERT_TEMPLATE_FILENAME
-    ;;
-    *)
-      log_verbose "Invalid formatting for SAN: $i"
-    ;;
-    esac
+    echo "$TEMPLATE_VARIABLE = \"$VALUE\"" >> "$GVM_CERT_TEMPLATE_FILENAME"
   done
+
+  IFS=$OIFS
 }
 
 # Create a certificate
@@ -358,9 +363,25 @@ create_certificate ()
     then
       echo "cn = \"$GVM_CA_CERTIFICATE_HOSTNAME\"" >> $GVM_CERT_TEMPLATE_FILENAME
     fi
-    if [ -n "$GVM_CA_CERTIFICATE_SAN" ]
+    if [ -n "$GVM_CA_CERTIFICATE_SAN_DNS" ]
     then
-      add_san_settings $GVM_CA_CERTIFICATE_SAN
+      split_san_value "dns_name" "$GVM_CA_CERTIFICATE_SAN_DNS"
+    fi
+    if [ -n "$GVM_CA_CERTIFICATE_SAN_URI" ]
+    then
+      split_san_value "uri" "$GVM_CA_CERTIFICATE_SAN_URI"
+    fi
+    if [ -n "$GVM_CA_CERTIFICATE_SAN_EMAIL" ]
+    then
+      split_san_value "email" "$GVM_CA_CERTIFICATE_SAN_EMAIL"
+    fi
+    if [ -n "$GVM_CA_CERTIFICATE_SAN_IP_ADDRESS" ]
+    then
+      split_san_value "ip_address" "$GVM_CA_CERTIFICATE_SAN_IP_ADDRESS"
+    fi
+    if [ -n "$GVM_CA_CERTIFICATE_SAN_OTHER_NAME_UTF8" ]
+    then
+      split_san_value "other_name_utf8" "$GVM_CA_CERTIFICATE_SAN_OTHER_NAME_UTF8"
     fi
   else
     if [ -n "$GVM_CERTIFICATE_LIFETIME" ]
@@ -391,9 +412,25 @@ create_certificate ()
     then
       echo "cn = \"$GVM_CERTIFICATE_HOSTNAME\"" >> $GVM_CERT_TEMPLATE_FILENAME
     fi
-    if [ -n "$GVM_CERTIFICATE_SAN" ]
+    if [ -n "$GVM_CERTIFICATE_SAN_DNS" ]
     then
-      add_san_settings $GVM_CERTIFICATE_SAN
+      split_san_value "dns_name" "$GVM_CERTIFICATE_SAN_DNS"
+    fi
+    if [ -n "$GVM_CERTIFICATE_SAN_URI" ]
+    then
+      split_san_value "uri" "$GVM_CERTIFICATE_SAN_URI"
+    fi
+    if [ -n "$GVM_CERTIFICATE_SAN_EMAIL" ]
+    then
+      split_san_value "email" "$GVM_CERTIFICATE_SAN_EMAIL"
+    fi
+    if [ -n "$GVM_CERTIFICATE_SAN_IP_ADDRESS" ]
+    then
+      split_san_value "ip_address" "$GVM_CERTIFICATE_SAN_IP_ADDRESS"
+    fi
+    if [ -n "$GVM_CERTIFICATE_SAN_OTHER_NAME_UTF8" ]
+    then
+      split_san_value "other_name_utf8" "$GVM_CERTIFICATE_SAN_OTHER_NAME_UTF8"
     fi
   fi
 
