@@ -78,7 +78,7 @@ ticket_status_integer (const char *status)
 #define TICKET_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "host", "location",               \
    "solution_type", "status", "opened", "fixed", "closed", "orphan",          \
-   "result_id", NULL }
+   "result_id", "username", NULL }
 
 /**
  * @brief Ticket iterator columns.
@@ -154,7 +154,7 @@ ticket_status_integer (const char *status)
    { "nvt", NULL, KEYWORD_TYPE_STRING },                                      \
    {                                                                          \
      "(SELECT name FROM users WHERE id = assigned_to)",                       \
-     NULL,                                                                    \
+     "username",                                                              \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
    {                                                                          \
