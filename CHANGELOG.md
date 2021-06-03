@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
 - Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
 - Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
+- Resolved remediation ticket sorting issue [#1546](https://github.com/greenbone/gvmd/pull/1546)
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
 
