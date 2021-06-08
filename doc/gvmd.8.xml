@@ -315,11 +315,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
-      <p><opt>--rebuild-scap=<arg>TYPE</arg></opt></p>
+      <p><opt>--rebuild-scap</opt></p>
       <optdesc>
         <p>
-          Rebuild SCAP data of type <arg>TYPE</arg>
-          (currently only supports 'ovaldefs').
+          Rebuild all SCAP data.
         </p>
       </optdesc>
     </option>
