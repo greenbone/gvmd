@@ -62,7 +62,7 @@ Disable task scheduling.
 Sets the path to the feed lock file.
 .TP
 \fB--feed-lock-timeout=\fITIMEOUT\fB\f1
-Sets the number of seconds to retry for if the feed is locked in contexts (like migration or rebuilds) that do not retry on their own (like automatic syncs). Defaults to 0 (no retry).
+Sets the number of seconds to retry for if the feed is locked in contexts (like migration or rebuilds) that do not retry on their own (like automatic syncs). Defaults to 0 (no retry). 
 .TP
 \fB-f, --foreground\f1
 Run in foreground.
@@ -139,8 +139,8 @@ Use port number NUMBER.
 \fB--port2=\fINUMBER\fB\f1
 Use port number NUMBER for address 2.
 .TP
-\fB--rebuild-scap=\fITYPE\fB\f1
-Rebuild SCAP data of type \fITYPE\f1 (currently only supports 'ovaldefs'). 
+\fB--rebuild-scap\f1
+Rebuild all SCAP data. 
 .TP
 \fB--relay-mapper=\fIFILE\fB\f1
 Executable for mapping scanner hosts to relays. Use an empty string to explicitly disable. If the option is not given, $PATH is checked for gvm-relay-mapper. 
