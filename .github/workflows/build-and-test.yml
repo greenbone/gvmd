@@ -1,0 +1,108 @@
+on: push
+name: 'Build and Test'
+jobs:
+  check-format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    container: greenbone/build-env-gvm-libs-master-debian-buster-clang-core
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Check Source Format
+        run: clang-format -i -style=file src/gmp.h src/gmp_base.h src/gmp_delete.h src/gmp_get.h src/gmp_tickets.h src/gmpd.h src/iterator.h src/manage_utils.h src/sql.h src/types.h src/utils.h && git diff --exit-code
+
+  build_doc:
+    name: Build standard documentation
+    runs-on: ubuntu-latest
+    container: greenbone/code-metrics-doxygen-debian-stretch
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Build standard documentation, failing if there are warnings
+        run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
+
+  gen_xml_doc:
+    name: Build XML documentation
+    runs-on: ubuntu-latest
+    container: greenbone/code-metrics-doxygen-debian-stretch
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Generate documentation (XML)
+        run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-xml 2> ~/doxygen-stderr.txt
+      - name: Upload doxygen error output as artifact
+        if: ${{ ! env.ACT }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: doxygen-stderr.txt
+          path: ~/doxygen-stderr.txt
+      - name: Upload XML documentation as artifact
+        if: !(env.ACT)
+        uses: actions/upload-artifact@v2
+        with:
+          name: xml-doc
+          path: build/doc/generated/xml/
+
+  build_gmp_doc:
+    name: Build GMP documentation
+    runs-on: ubuntu-latest
+    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Generate GMP documentation (HTML)
+        run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-gmp
+      - name: Upload GMP documentation artifact
+        if: !(env.ACT)
+        uses: actions/upload-artifact@v2
+        with:
+          name: gmp.html
+          path: build/doc/gmp.html
+
+  build:
+    name: Build various configs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type:
+          - Debug
+          - Release
+        docker_base:
+          - greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+          - greenbone/build-env-gvm-master-debian-buster-gcc-postgresql
+    container: ${{ matrix.docker_base }}
+    env:
+      BUILD_TYPE: ${{ matrix.build_type }}
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Select gvm-libs branch
+        run: echo "GVM_LIBS_BRANCH="$(cat "$GITHUB_WORKSPACE/gvm-libs-branch" || "master") >> $GITHUB_ENV;
+      - name: Check out gvm-libs
+        run: git clone -b "$GVM_LIBS_BRANCH" --depth 1 https://github.com/greenbone/gvm-libs.git
+      - name: Configure and compile gvm-libs (Debug)
+        run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
+      - name: Configure and compile gvmd
+        run: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && make install
+
+  scan-build:
+    name: Scan-build (clang static analyzer)
+    runs-on: ubuntu-latest
+    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Select gvm-libs branch
+        run: echo "GVM_LIBS_BRANCH="$(cat "$GITHUB_WORKSPACE/gvm-libs-branch" || "master") >> $GITHUB_ENV;
+      - name: Check out gvm-libs
+        run: git clone -b "$GVM_LIBS_BRANCH" --depth 1 https://github.com/greenbone/gvm-libs.git
+      - name: Configure and compile gvm-libs (Debug)
+        run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
+      - name: Configure and Scan Build (Debug, PostgreSQL)
+        run: mkdir build && cd build/ && scan-build cmake -DCMAKE_BUILD_TYPE=Debug .. && scan-build -o ~/scan-build-report make && [ -z "$(ls -A ~/scan-build-report/)" ]
+      - name: Upload scan-build report
+        if: failure() && !(env.ACT)
+        uses: actions/upload-artifact@v2
+        with:
+          name: scan-build-report
+          path: ~/scan-build-report/
