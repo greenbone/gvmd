@@ -9,7 +9,11 @@ jobs:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Check Source Format
-        run: clang-format -i -style=file src/gmp.h src/gmp_base.h src/gmp_delete.h src/gmp_get.h src/gmp_tickets.h src/gmpd.h src/iterator.h src/manage_utils.h src/sql.h src/types.h src/utils.h && git diff --exit-code
+        run: |
+          clang-format -i -style=file src/gmp.h src/gmp_base.h src/gmp_delete.h \
+          src/gmp_get.h src/gmp_tickets.h src/gmpd.h src/iterator.h \
+          src/manage_utils.h src/sql.h src/types.h src/utils.h && \
+          git diff --exit-code
 
   build_doc:
     name: Build standard documentation
@@ -19,7 +23,9 @@ jobs:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Build standard documentation, failing if there are warnings
-        run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
+        run: |
+          mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && \
+          make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
 
   gen_xml_doc:
     name: Build XML documentation
@@ -99,7 +105,11 @@ jobs:
       - name: Configure and compile gvm-libs (Debug)
         run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
       - name: Configure and Scan Build (Debug, PostgreSQL)
-        run: mkdir build && cd build/ && scan-build cmake -DCMAKE_BUILD_TYPE=Debug .. && scan-build -o ~/scan-build-report make && [ -z "$(ls -A ~/scan-build-report/)" ]
+        run: |
+          mkdir build && cd build/ && scan-build cmake \
+          -DCMAKE_BUILD_TYPE=Debug .. && \
+          scan-build -o ~/scan-build-report make && \
+          [ -z "$(ls -A ~/scan-build-report/)" ]
       - name: Upload scan-build report
         if: failure() && !(env.ACT)
         uses: actions/upload-artifact@v2
