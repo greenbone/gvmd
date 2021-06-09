@@ -29149,7 +29149,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " hosts_ordering, usage_type",
+                            " hosts_ordering, usage_type, alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -29157,9 +29157,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
       return ret;
     }
 
-  sql ("UPDATE tasks SET alterable = %i, hidden = 0 WHERE id = %llu;",
-       alterable,
-       new);
+  if (alterable >= 0)
+    sql ("UPDATE tasks SET alterable = %i, hidden = 0 WHERE id = %llu;",
+         alterable,
+         new);
+  else
+    sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;",
+         new);
 
   set_task_run_status (new, TASK_STATUS_NEW);
   sql ("INSERT INTO task_preferences (task, name, value)"
