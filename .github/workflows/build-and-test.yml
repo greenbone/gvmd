@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
+      - name: Check Base Branch name
+        run: echo $GITHUB_BASE_REF
       - name: Generate documentation (XML)
         run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-xml 2> ~/doxygen-stderr.txt
       - name: Upload doxygen error output as artifact
