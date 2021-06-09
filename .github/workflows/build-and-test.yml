@@ -42,13 +42,11 @@ jobs:
       - name: Generate documentation (XML)
         run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-xml 2> ~/doxygen-stderr.txt
       - name: Upload doxygen error output as artifact
-        if: ${{ ! env.ACT }}
         uses: actions/upload-artifact@v2
         with:
           name: doxygen-stderr.txt
           path: ~/doxygen-stderr.txt
       - name: Upload XML documentation as artifact
-        if: !(env.ACT)
         uses: actions/upload-artifact@v2
         with:
           name: xml-doc
@@ -64,7 +62,6 @@ jobs:
       - name: Generate GMP documentation (HTML)
         run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-gmp
       - name: Upload GMP documentation artifact
-        if: !(env.ACT)
         uses: actions/upload-artifact@v2
         with:
           name: gmp.html
