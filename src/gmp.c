@@ -21962,17 +21962,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               int ret;
               gchar *name, *comment;
               task_t new_task;
+              int alterable;
 
               name = task_name (create_task_data->task);
               comment = task_comment (create_task_data->task);
+
+              if(create_task_data->alterable)
+                alterable = strcmp (create_task_data->alterable, "0") ? 1 : 0;
+              else
+                alterable = -1;
+
               ret = copy_task (name,
                                comment,
                                create_task_data->copy,
-                               (create_task_data->alterable
-                                && strcmp (create_task_data->alterable, "0"))
-                                ? 1
-                                : 0,
+                               alterable,
                                &new_task);
+
               g_free (name);
               g_free (comment);
               /* Remove the task that was created while parsing elements. */
