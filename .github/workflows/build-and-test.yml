@@ -52,6 +52,37 @@ jobs:
           name: xml-doc
           path: build/doc/generated/xml/
 
+  doc-coverage:
+    name: Upload doc coverage to Codecov
+    needs: gen_xml_doc
+    runs-on: ubuntu-latest
+    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Install coverxygen and codecov
+        run: |
+            apt-get update && apt-get --assume-yes install python3-venv curl
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install setuptools --upgrade
+            pip install 'coverxygen>=1.3.1' codecov
+      - name: Download XML documentation artifact
+        id: xml-doc-download
+        uses: actions/download-artifact@v2
+        with:
+          name: xml-doc
+          path: /tmp/xml-doc
+      - name: Establish documentation coverage
+        run: |
+            . venv/bin/activate
+            python -m coverxygen --src-dir ${{ github.workspace }} \
+            --xml-dir ${{steps.xml-doc-download.outputs.download-path}} \
+            --output lcov.info
+      - uses: codecov/codecov-action@v1
+        with:
+          files: lcov.info
+
   build_gmp_doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
