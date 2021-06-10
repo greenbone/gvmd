@@ -1,9 +1,9 @@
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, gvmd-21.04, gvmd-20.08 ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, gvmd-21.04, gvmd-20.08 ]
 name: 'Build and Test'
 jobs:
   check-format:
@@ -115,7 +115,7 @@ jobs:
           scan-build -o ~/scan-build-report make && \
           [ -z "$(ls -A ~/scan-build-report/)" ]
       - name: Upload scan-build report
-        if: failure() && !(env.ACT)
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: scan-build-report
