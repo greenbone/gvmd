@@ -152,3 +152,36 @@ jobs:
         with:
           name: scan-build-report
           path: ~/scan-build-report/
+
+  test-units:
+    name: Build and run unit tests
+    runs-on: ubuntu-latest
+    container: greenbone/build-env-gvm-master-debian-buster-gcc-postgresql
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Find gvmd reference branch
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ];                          \
+          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
+          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
+          fi
+      - name: Select gvm-libs branch
+        run: |
+          if [ $GVMD_REF = "master" ];                           \
+            then GVM_LIBS_REF="master";                          \
+            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
+                                | sed 's/refs\/.*\///g'          \
+                                | sed 's/gvmd-/gvm-libs-/g' -);  \
+            fi;                                                  \
+          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
+      - name: Check out gvm-libs
+        uses: actions/checkout@v2
+        with:
+          repository: greenbone/gvm-libs
+          ref: ${{ env.GVM_LIBS_REF }}
+          path: gvm-libs
+      - name: Configure and compile gvm-libs (Debug)
+        run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
+      - name: Configure and run unit tests
+        run: mkdir build && cd build/ && cmake -DBACKEND=POSTGRESQL -DCMAKE_BUILD_TYPE=Release -DENABLE_COVERAGE=1 .. && make && make tests && CTEST_OUTPUT_ON_FAILURE=1 make test && lcov --directory . --capture --output-file coverage.info && genhtml -o coverage coverage.info
