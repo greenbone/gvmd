@@ -136,8 +136,8 @@ jobs:
           repository: greenbone/gvm-libs
           ref: ${{ env.GVM_LIBS_REF }}
           path: gvm-libs
-      - name: Configure and compile gvm-libs (Debug)
-        run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
+      - name: Configure and compile gvm-libs (${{ env.BUILD_TYPE }})
+        run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && make install && popd"
       - name: Configure and compile gvmd
         run: mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && make install
 
