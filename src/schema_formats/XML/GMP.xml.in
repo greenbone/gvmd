@@ -735,7 +735,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>type</name>
-        <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+        <summary>The type of the NVT: nvt, cve, ...</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -928,7 +928,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ele>
         <ele>
           <name>type</name>
-          <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+          <summary>The type of the NVT: nvt, cve, ...</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -1068,7 +1068,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>type</name>
-        <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+        <summary>The type of the NVT: nvt, cve, ...</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -1284,7 +1284,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ele>
         <ele>
           <name>type</name>
-          <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+          <summary>The type of the NVT: nvt, cve, ...</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -1552,7 +1552,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>type</name>
-        <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+        <summary>The type of the NVT: nvt, cve, ...</summary>
         <pattern>text</pattern>
       </ele>
       <ele>
@@ -2891,7 +2891,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </ele>
             <ele>
               <name>type</name>
-              <summary>The type of the NVT: nvt, cve, ovaldef, ...</summary>
+              <summary>The type of the NVT: nvt, cve, ...</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
@@ -11360,7 +11360,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type must be either CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, OVALDEF or NVT</summary>
+        <summary>Type must be either CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV or NVT</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -11555,54 +11555,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </column>
         </filter_keywords>
         <filter_keywords>
-          <condition>type is "ovaldef"</condition>
-          <column>
-            <name>version</name>
-            <type>integer</type>
-            <summary>Version number of the OVAL Definition</summary>
-          </column>
-          <column>
-            <name>deprecated</name>
-            <type>boolean</type>
-            <summary>Whether the OVAL Definition is deprecated</summary>
-          </column>
-          <column>
-            <name>class</name>
-            <type>text</type>
-            <summary>Class of the OVAL Definition</summary>
-          </column>
-          <column>
-            <name>title</name>
-            <type>text</type>
-            <summary>Title of the OVAL Definition</summary>
-          </column>
-          <column>
-            <name>description</name>
-            <type>text</type>
-            <summary>Longer description of the OVAL Definition</summary>
-          </column>
-          <column>
-            <name>file</name>
-            <type>text</type>
-            <summary>Name of the file containing the OVAL Definition</summary>
-          </column>
-          <column>
-            <name>status</name>
-            <type>text</type>
-            <summary>Status of the OVAL Definition</summary>
-          </column>
-          <column>
-            <name>max_cvss</name>
-            <type>severity</type>
-            <summary>Alias for severity</summary>
-          </column>
-          <column>
-            <name>cves</name>
-            <type>integer</type>
-            <summary>Number of CVEs referencing this CPE</summary>
-          </column>
-        </filter_keywords>
-        <filter_keywords>
           <condition>type is either "cert_bund_adv" or "dfn_cert_adv"</condition>
           <column>
             <name>title</name>
@@ -11676,7 +11628,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>cpe</e>
             <e>cve</e>
             <e>dfn_cert_adv</e>
-            <e>ovaldef</e>
             <e>nvt</e>
           </or>
         </pattern>
@@ -12054,90 +12005,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Number of CVEs referenced by this advisory</summary>
             <pattern>
               <t>integer</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>raw_data</name>
-            <summary>Source representation of the information. Only when details were requested</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>ovaldef</name>
-          <pattern>
-            <e>version</e>
-            <e>deprecated</e>
-            <e>status</e>
-            <e>class</e>
-            <e>title</e>
-            <e>severity</e>
-            <e>cve_refs</e>
-            <e>file</e>
-            <o><e>description</e></o>
-            <o><e>raw_data</e></o>
-          </pattern>
-          <summary>An OVAL definition info element</summary>
-          <ele>
-            <name>version</name>
-            <summary>Version number of the OVAL definition</summary>
-            <pattern>
-              <t>integer</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>deprecated</name>
-            <summary>Whether the definition is deprecated</summary>
-            <pattern>
-              <t>boolean</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>status</name>
-            <summary>Lifecycle status text of the definition</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>class</name>
-            <summary>Definition class of the definition</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>title</name>
-            <summary>Title of the definition</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>severity</name>
-            <summary>Highest CVSS severity score of CVEs referenced by the definition</summary>
-            <pattern>
-              <t>severity</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>cve_refs</name>
-            <summary>Number of CVEs referenced by the definition</summary>
-            <pattern>integer</pattern>
-          </ele>
-          <ele>
-            <name>file</name>
-            <summary>Path to the source xml file, relative to the SCAP data directory</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>description</name>
-            <summary>Longer description of the definition. Only when details were requested</summary>
-            <pattern>
-              text
             </pattern>
           </ele>
           <ele>
@@ -22501,7 +22368,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <alts>
               <alt>nvt</alt>
               <alt>cve</alt>
-              <alt>ovaldef</alt>
             </alts>
           </pattern>
         </ele>
@@ -25905,6 +25771,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>GET_INFO</command>
+    <summary>Removed the Secinfo-type OVALDEF from the GET_INFO command
+    </summary>
+    <description>
+      <p>
+        The type OVALDEF is removed from the list of possible types for
+        the GET_INFO command.
+      </p>
+      <p>
+        OVAL Definitions are no longer supported.
+      </p>
+    </description>
+    <version>21.10</version>
+  </change>
   <change>
     <command>GET_INFO</command>
     <summary>Replaced CVSS score elements by integer score</summary>
