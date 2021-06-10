@@ -84,11 +84,18 @@ jobs:
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
+      - name: Find gvmd reference branch
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ];                          \
+          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
+          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
+          fi
       - name: Select gvm-libs branch
         run: |
-          if [ $GITHUB_BASE_REF = "master" ];                    \
+          if [ $GVMD_REF = "master" ];                           \
             then GVM_LIBS_REF="master";                          \
-            else GVM_LIBS_REF=$(echo "$GITHUB_BASE_REF"          \
+            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
+                                | sed 's/refs\/.*\///g'          \
                                 | sed 's/gvmd-/gvm-libs-/g' -);  \
             fi;                                                  \
           echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
@@ -110,11 +117,18 @@ jobs:
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
+      - name: Find gvmd reference branch
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ];                          \
+          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
+          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
+          fi
       - name: Select gvm-libs branch
         run: |
-          if [ $GITHUB_BASE_REF = "master" ];                    \
+          if [ $GVMD_REF = "master" ];                           \
             then GVM_LIBS_REF="master";                          \
-            else GVM_LIBS_REF=$(echo "$GITHUB_BASE_REF"          \
+            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
+                                | sed 's/refs\/.*\///g'          \
                                 | sed 's/gvmd-/gvm-libs-/g' -);  \
             fi;                                                  \
           echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
