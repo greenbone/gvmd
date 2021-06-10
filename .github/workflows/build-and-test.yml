@@ -39,8 +39,6 @@ jobs:
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Check Base Branch name
-        run: echo $GITHUB_BASE_REF
       - name: Generate documentation (XML)
         run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-xml 2> ~/doxygen-stderr.txt
       - name: Upload doxygen error output as artifact
@@ -87,9 +85,19 @@ jobs:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Select gvm-libs branch
-        run: echo "GVM_LIBS_BRANCH="$(cat "$GITHUB_WORKSPACE/gvm-libs-branch" || "master") >> $GITHUB_ENV;
+        run: |
+          if [ $GITHUB_BASE_REF = "master" ];                    \
+            then GVM_LIBS_REF="master";                          \
+            else GVM_LIBS_REF=$(echo "$GITHUB_BASE_REF"          \
+                                | sed 's/gvmd-/gvm-libs-/g' -);  \
+            fi;                                                  \
+          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
       - name: Check out gvm-libs
-        run: git clone -b "$GVM_LIBS_BRANCH" --depth 1 https://github.com/greenbone/gvm-libs.git
+        uses: actions/checkout@v2
+        with:
+          repository: greenbone/gvm-libs
+          ref: ${{ env.GVM_LIBS_REF }}
+          path: gvm-libs
       - name: Configure and compile gvm-libs (Debug)
         run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
       - name: Configure and compile gvmd
@@ -103,9 +111,19 @@ jobs:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Select gvm-libs branch
-        run: echo "GVM_LIBS_BRANCH="$(cat "$GITHUB_WORKSPACE/gvm-libs-branch" || "master") >> $GITHUB_ENV;
+        run: |
+          if [ $GITHUB_BASE_REF = "master" ];                    \
+            then GVM_LIBS_REF="master";                          \
+            else GVM_LIBS_REF=$(echo "$GITHUB_BASE_REF"          \
+                                | sed 's/gvmd-/gvm-libs-/g' -);  \
+            fi;                                                  \
+          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
       - name: Check out gvm-libs
-        run: git clone -b "$GVM_LIBS_BRANCH" --depth 1 https://github.com/greenbone/gvm-libs.git
+        uses: actions/checkout@v2
+        with:
+          repository: greenbone/gvm-libs
+          ref: ${{ env.GVM_LIBS_REF }}
+          path: gvm-libs
       - name: Configure and compile gvm-libs (Debug)
         run: bash -c "pushd gvm-libs && mkdir build && cd build/ && cmake -DCMAKE_BUILD_TYPE=Debug .. && make install && popd"
       - name: Configure and Scan Build (Debug, PostgreSQL)
