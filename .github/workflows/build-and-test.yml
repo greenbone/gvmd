@@ -140,10 +140,11 @@ jobs:
           ref: ${{ env.GVM_LIBS_REF }}
           path: gvm-libs
       - name: Configure and compile gvm-libs (${{ env.BUILD_TYPE }})
+        working-directory: gvm-libs
         run: |
-          bash -c "pushd gvm-libs && mkdir build && cd build/ && \
-                   cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. &&    \
-                   make install && popd"
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
       - name: Configure and compile gvmd
         run: |
           mkdir build && cd build/ &&                \
@@ -179,10 +180,11 @@ jobs:
           ref: ${{ env.GVM_LIBS_REF }}
           path: gvm-libs
       - name: Configure and compile gvm-libs (Debug)
+        working-directory: gvm-libs
         run: |
-          bash -c "pushd gvm-libs && mkdir build && cd build/ && \
-                   cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. &&    \
-                   make install && popd"
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
       - name: Configure and Scan Build (Debug, PostgreSQL)
         run: |
           mkdir build && cd build/ && scan-build cmake \
@@ -225,10 +227,11 @@ jobs:
           ref: ${{ env.GVM_LIBS_REF }}
           path: gvm-libs
       - name: Configure and compile gvm-libs (Debug)
+        working-directory: gvm-libs
         run: |
-          bash -c "pushd gvm-libs && mkdir build && cd build/ && \
-                   cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. &&    \
-                   make install && popd"
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
       - name: Configure and run unit tests
         run: |
           mkdir build && cd build/ &&                                  \
