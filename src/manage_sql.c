@@ -29124,7 +29124,8 @@ set_task_comment (task_t task, const char *comment)
  * @param[in]  name        Name of new task.  NULL to copy from existing.
  * @param[in]  comment     Comment on new task.  NULL to copy from existing.
  * @param[in]  task_id     UUID of existing task.
- * @param[in]  alterable   Whether the new task will be alterable.
+ * @param[in]  alterable   Whether the new task will be alterable. < 0 to
+ *                         to copy from existing.
  * @param[out] new_task    New task.
  *
  * @return 0 success, 2 failed to find existing task, 99 permission denied,
