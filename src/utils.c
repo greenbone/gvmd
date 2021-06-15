@@ -416,19 +416,18 @@ parse_iso_time_tz (const char *text_time, const char *fallback_tz)
 static char *
 iso_time_internal (time_t *epoch_time, const char **abbrev)
 {
-  struct tm *tm;
+  struct tm tm;
   static char time_string[100];
 
-  tm = localtime (epoch_time);
-  if (tm == NULL)
+  if (localtime_r (epoch_time, &tm) == NULL)
     return NULL;
 #ifdef __FreeBSD__
-  if (tm->tm_gmtoff == 0)
+  if (tm.tm_gmtoff == 0)
 #else
   if (timezone == 0)
 #endif
     {
-      if (strftime (time_string, 98, "%FT%TZ", tm) == 0)
+      if (strftime (time_string, 98, "%FT%TZ", &tm) == 0)
         return NULL;
 
       if (abbrev)
@@ -438,7 +437,7 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
     {
       int len;
 
-      if (strftime (time_string, 98, "%FT%T%z", tm) == 0)
+      if (strftime (time_string, 98, "%FT%T%z", &tm) == 0)
         return NULL;
 
       /* Insert the ISO 8601 colon by hand. */
@@ -451,7 +450,7 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
       if (abbrev)
         {
           static char abbrev_string[100];
-          if (strftime (abbrev_string, 98, "%Z", tm) == 0)
+          if (strftime (abbrev_string, 98, "%Z", &tm) == 0)
             return NULL;
           *abbrev = abbrev_string;
         }
