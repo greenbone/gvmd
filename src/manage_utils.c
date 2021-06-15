@@ -63,7 +63,7 @@ current_offset (const char *zone)
   gchar *tz;
   long offset;
   time_t now;
-  struct tm *now_broken;
+  struct tm now_broken;
 
   if (zone == NULL)
     return 0;
@@ -83,8 +83,7 @@ current_offset (const char *zone)
   tzset ();
 
   time (&now);
-  now_broken = localtime (&now);
-  if (now_broken == NULL)
+  if (localtime_r (&now, &now_broken) == NULL)
     {
       g_warning ("%s: localtime failed", __func__);
       if (tz != NULL)
@@ -101,7 +100,7 @@ current_offset (const char *zone)
       return 0;
     }
   tzset ();
-  offset = - (now - mktime (now_broken));
+  offset = - (now - mktime (&now_broken));
 
   /* Revert to stored TZ. */
   if (tz)
@@ -131,14 +130,15 @@ current_offset (const char *zone)
 time_t
 add_months (time_t time, int months)
 {
-  struct tm *broken = localtime (&time);
-  if (broken == NULL)
+  struct tm broken;
+  
+  if (localtime_r (&time, &broken) == NULL)
     {
       g_warning ("%s: localtime failed", __func__);
       return 0;
     }
-  broken->tm_mon += months;
-  return mktime (broken);
+  broken.tm_mon += months;
+  return mktime (&broken);
 }
 
 /**
