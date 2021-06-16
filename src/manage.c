@@ -5962,10 +5962,10 @@ void
 write_sync_start (int lockfile_fd)
 {
   time_t now;
-  char *now_string;
+  char now_string[26];
 
   now = time (NULL);
-  now_string = ctime (&now);
+  ctime (&now, &now_string);
   while (*now_string)
     {
       ssize_t count;
