@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
 - Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
+- Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
 
 [21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
@@ -120,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Free alert get data in report_content_for_alert [#1526](https://github.com/greenbone/gvmd/pull/1526) 
 - Fix erroneous freeing of ical timezone component [#1530](https://github.com/greenbone/gvmd/pull/1530)
 - Fixed the sorting / filter by username functionality for remediation tickets [#1546](https://github.com/greenbone/gvmd/pull/1546)
+- The alterable indicator is now copied when cloning a task [#1553](https://github.com/greenbone/gvmd/pull/1553)
 
 ### Removed
 
