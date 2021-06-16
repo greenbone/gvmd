@@ -6015,10 +6015,11 @@ write_sync_start (int lockfile_fd)
 {
   time_t now;
   char now_string[26];
+  char *now_string_ptr = now_string;
 
   now = time (NULL);
-  ctime (&now, &now_string);
-  while (*now_string)
+  ctime_r (&now, now_string);
+  while (*now_string_ptr)
     {
       ssize_t count;
       count = write (lockfile_fd,
@@ -6034,7 +6035,7 @@ write_sync_start (int lockfile_fd)
                      strerror (errno));
           break;
         }
-      now_string += count;
+      now_string_ptr += count;
     }
 }
 
