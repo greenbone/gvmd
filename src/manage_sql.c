@@ -11048,7 +11048,7 @@ alert_subject_print (const gchar *subject, event_t event,
                 {
                   char time_string[100];
                   time_t date;
-                  struct tm *tm;
+                  struct tm tm;
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
@@ -11056,14 +11056,14 @@ alert_subject_print (const gchar *subject, event_t event,
                     date = scap_check_time ();
                   else
                     date = cert_check_time ();
-                  tm = localtime (&date);
-                  if (tm == NULL)
+
+                  if (localtime_r (&date, &tm) == NULL)
                     {
                       g_warning ("%s: localtime failed, aborting",
                                  __func__);
                       abort ();
                     }
-                  if (strftime (time_string, 98, "%F", tm) == 0)
+                  if (strftime (time_string, 98, "%F", &tm) == 0)
                     break;
                   g_string_append (new_subject, time_string);
                 }
@@ -11219,7 +11219,7 @@ alert_message_print (const gchar *message, event_t event,
                 {
                   char time_string[100];
                   time_t date;
-                  struct tm *tm;
+                  struct tm tm;
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
@@ -11227,14 +11227,14 @@ alert_message_print (const gchar *message, event_t event,
                     date = scap_check_time ();
                   else
                     date = cert_check_time ();
-                  tm = localtime (&date);
-                  if (tm == NULL)
+
+                  if (localtime_r (&date, &tm) == NULL)
                     {
                       g_warning ("%s: localtime failed, aborting",
                                  __func__);
                       abort ();
                     }
-                  if (strftime (time_string, 98, "%F", tm) == 0)
+                  if (strftime (time_string, 98, "%F", &tm) == 0)
                     break;
                   g_string_append (new_message, time_string);
                 }
@@ -11437,7 +11437,7 @@ scp_alert_path_print (const gchar *message, task_t task)
               {
                 char time_string[9];
                 time_t current_time;
-                struct tm *tm;
+                struct tm tm;
                 const gchar *format_str;
 
                 if (*point == 'T')
@@ -11447,14 +11447,14 @@ scp_alert_path_print (const gchar *message, task_t task)
 
                 memset(&time_string, 0, 9);
                 current_time = time (NULL);
-                tm = localtime (&current_time);
-                if (tm == NULL)
+                
+                if (localtime_r (&current_time, &tm) == NULL)
                   {
                     g_warning ("%s: localtime failed, aborting",
                                 __func__);
                     abort ();
                   }
-                if (strftime (time_string, 9, format_str, tm))
+                if (strftime (time_string, 9, format_str, &tm))
                   g_string_append (new_message, time_string);
                 break;
               }
