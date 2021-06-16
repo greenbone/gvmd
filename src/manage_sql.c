@@ -13931,7 +13931,7 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   result_t result;
   char *task_id, *report_id;
   time_t now;
-  const char *now_string;
+  const char now_string[26];
   gchar *clean;
 
   if (acl_user_may ("test_alert") == 0)
@@ -13979,8 +13979,7 @@ manage_test_alert (const char *alert_id, gchar **script_message)
                         "A telnet server seems to be running on this port.",
                         NULL);
   now = time (NULL);
-  now_string = ctime (&now);
-  if (strlen (now_string) == 0)
+  if (strlen (ctime_r (&now, &now_string)) == 0)
     {
       ret = -1;
       goto exit;
