@@ -19085,7 +19085,7 @@ host_identify (const char *host_name, const char *identifier_name,
                const char *identifier_value, const char *source_type,
                const char *source)
 {
-  host_t host;
+  host_t host = 0;
   gchar *quoted_host_name, *quoted_identifier_name, *quoted_identifier_value;
 
   quoted_host_name = sql_quote (host_name);
@@ -19093,28 +19093,20 @@ host_identify (const char *host_name, const char *identifier_name,
   quoted_identifier_value = sql_quote (identifier_value);
 
   switch (sql_int64 (&host,
-                     "SELECT id FROM hosts"
-                     " WHERE name = '%s'"
-                     " AND owner = (SELECT id FROM users"
-                     "              WHERE uuid = '%s')"
-                     " AND (EXISTS (SELECT * FROM host_identifiers"
-                     "              WHERE host = hosts.id"
-                     "              AND owner = (SELECT id FROM users"
-                     "                           WHERE uuid = '%s')"
-                     "              AND name = '%s'"
-                     "              AND value = '%s')"
-                     "      OR NOT EXISTS (SELECT * FROM host_identifiers"
-                     "                     WHERE host = hosts.id"
-                     "                     AND owner = (SELECT id FROM users"
-                     "                                  WHERE uuid = '%s')"
-                     "                     AND name = '%s'));",
+                     "SELECT hosts.id FROM hosts, host_identifiers"
+                     " WHERE hosts.name = '%s'"
+                     " AND hosts.owner = (SELECT id FROM users"
+                     "                    WHERE uuid = '%s')"
+                     " AND host = hosts.id"
+                     " AND host_identifiers.owner = (SELECT id FROM users"
+                     "                               WHERE uuid = '%s')"
+                     " AND host_identifiers.name = '%s'"
+                     " AND value = '%s';",
                      quoted_host_name,
                      current_credentials.uuid,
                      current_credentials.uuid,
                      quoted_identifier_name,
-                     quoted_identifier_value,
-                     current_credentials.uuid,
-                     quoted_identifier_name))
+                     quoted_identifier_value))
     {
       case 0:
         break;
@@ -19128,6 +19120,33 @@ host_identify (const char *host_name, const char *identifier_name,
         break;
     }
 
+  if (host == 0)
+    switch (sql_int64 (&host,
+                       "SELECT id FROM hosts"
+                       " WHERE name = '%s'"
+                       " AND owner = (SELECT id FROM users"
+                       "              WHERE uuid = '%s')"
+                       " AND NOT EXISTS (SELECT * FROM host_identifiers"
+                       "                 WHERE host = hosts.id"
+                       "                 AND owner = (SELECT id FROM users"
+                       "                              WHERE uuid = '%s')"
+                       "                 AND name = '%s');",
+                       quoted_host_name,
+                       current_credentials.uuid,
+                       current_credentials.uuid,
+                       quoted_identifier_name))
+      {
+        case 0:
+          break;
+        case 1:        /* Too few rows in result of query. */
+          host = 0;
+          break;
+        default:       /* Programming error. */
+          assert (0);
+        case -1:
+          host = 0;
+          break;
+      }
 
   g_free (quoted_host_name);
   g_free (quoted_identifier_name);
