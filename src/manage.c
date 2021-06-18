@@ -46,6 +46,7 @@
  */
 #define _GNU_SOURCE
 
+#include "debug_utils.h"
 #include "gmp_base.h"
 #include "manage.h"
 #include "manage_acl.h"
@@ -79,6 +80,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <gvm/base/gvm_sentry.h>
 #include <gvm/base/hosts.h>
 #include <gvm/base/proctitle.h>
 #include <gvm/osp/osp.h>
@@ -2843,6 +2845,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   switch (fork ())
     {
       case 0:
+        init_sentry ();
         break;
       case -1:
         /* Parent, failed to fork. */
@@ -2903,6 +2906,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
 
       g_free (error);
       g_free (report_id);
+      gvm_close_sentry ();
       exit (-1);
     }
 
@@ -2934,6 +2938,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   set_scan_end_time_epoch (global_current_report, time (NULL));
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  gvm_close_sentry ();
   exit (rc);
 }
 
@@ -3182,6 +3187,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   switch (pid)
     {
       case 0:
+        init_sentry ();
         break;
       case -1:
         /* Parent, failed to fork. */
@@ -3223,6 +3229,7 @@ fork_cve_scan_handler (task_t task, target_t target)
                             "Error in target host list."
                             "  Interrupting scan.");
       set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
+      gvm_close_sentry ();
       exit (1);
     }
 
@@ -3242,6 +3249,7 @@ fork_cve_scan_handler (task_t task, target_t target)
                               "  Interrupting scan.");
         set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
         gvm_hosts_free (gvm_hosts);
+        gvm_close_sentry ();
         exit (1);
       }
   gvm_hosts_free (gvm_hosts);
@@ -3254,6 +3262,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  gvm_close_sentry ();
   exit (0);
 }
 
@@ -4651,6 +4660,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
         /* Restore the sigmask that was blanked for pselect. */
         pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
 
+        init_sentry ();
         reinit_manage_process ();
         manage_session_init (current_credentials.uuid);
         break;
@@ -4680,6 +4690,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
         g_warning ("%s: fork_connection failed", __func__);
         reschedule_task (scheduled_task->task_uuid);
         scheduled_task_free (scheduled_task);
+        gvm_close_sentry ();
         exit (EXIT_FAILURE);
         break;
 
@@ -4708,6 +4719,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                              __func__,
                              scheduled_task->task_uuid);
                   scheduled_task_free (scheduled_task);
+                  gvm_close_sentry ();
                   exit (EXIT_FAILURE);
                 }
               if (errno == EINTR)
@@ -4720,6 +4732,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                          __func__,
                          scheduled_task->task_uuid);
               scheduled_task_free (scheduled_task);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
           if (WIFEXITED (status))
@@ -4771,6 +4784,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                       }
                   }
                   scheduled_task_free (scheduled_task);
+                  gvm_close_sentry ();
                   exit (EXIT_SUCCESS);
 
                 case EXIT_FAILURE:
@@ -4783,6 +4797,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
           g_warning ("%s: child failed", __func__);
           reschedule_task (scheduled_task->task_uuid);
           scheduled_task_free (scheduled_task);
+          gvm_close_sentry ();
           exit (EXIT_FAILURE);
         }
     }
@@ -4801,6 +4816,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
       g_warning ("%s: gmp_authenticate failed", __func__);
       scheduled_task_free (scheduled_task);
       gvm_connection_free (&connection);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -4822,6 +4838,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
             g_warning ("%s: user denied permission to start task", __func__);
             scheduled_task_free (scheduled_task);
             gvm_connection_free (&connection);
+            gvm_close_sentry ();
             /* Return success, so that parent stops trying to start the task. */
             exit (EXIT_SUCCESS);
 
@@ -4829,12 +4846,14 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
             g_warning ("%s: gmp_start_task and gmp_resume_task failed", __func__);
             scheduled_task_free (scheduled_task);
             gvm_connection_free (&connection);
+            gvm_close_sentry ();
             exit (EXIT_FAILURE);
         }
     }
 
   scheduled_task_free (scheduled_task);
   gvm_connection_free (&connection);
+  gvm_close_sentry ();
   exit (EXIT_SUCCESS);
 }
 
@@ -4891,6 +4910,7 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
     {
       scheduled_task_free (scheduled_task);
       gvm_connection_free (&connection);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -4898,11 +4918,13 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
     {
       scheduled_task_free (scheduled_task);
       gvm_connection_free (&connection);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
   scheduled_task_free (scheduled_task);
   gvm_connection_free (&connection);
+  gvm_close_sentry ();
   exit (EXIT_SUCCESS);
 }
 

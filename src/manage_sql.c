@@ -26,6 +26,7 @@
  */
 #define _GNU_SOURCE
 
+#include "debug_utils.h"
 #include "manage_sql.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
@@ -66,6 +67,7 @@
 #include <grp.h>
 #include <gpgme.h>
 
+#include <gvm/base/gvm_sentry.h>
 #include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
@@ -9376,7 +9378,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
             case 0:
               {
                 /* Child.  Drop privileges, run command, exit. */
-
+                init_sentry ();
                 cleanup_manage_process (FALSE);
 
                 proctitle_set ("gvmd: Running alert script");
@@ -9385,6 +9387,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                   {
                     g_warning ("%s (child): setgroups: %s",
                                __func__, strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 if (setgid (nobody->pw_gid))
@@ -9392,6 +9395,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                     g_warning ("%s (child): setgid: %s",
                                __func__,
                                strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 if (setuid (nobody->pw_uid))
@@ -9399,6 +9403,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                     g_warning ("%s (child): setuid: %s",
                                __func__,
                                strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
 
@@ -9414,6 +9419,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                                ret,
                                WEXITSTATUS (ret),
                                command);
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 else if (ret != 0)
@@ -9428,6 +9434,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                         g_error_free (error);
                         if (message)
                           g_free (*message);
+                        gvm_close_sentry ();
                         exit (EXIT_FAILURE);
                       }
 
@@ -9449,11 +9456,13 @@ alert_script_exec (const char *alert_id, const char *command_args,
                                         __func__, error->message);
                             g_error_free (error);
                             g_free (*message);
+                            gvm_close_sentry ();
                             exit (EXIT_FAILURE);
                           }
                       }
 
                     g_free (*message);
+                    gvm_close_sentry ();
                     exit (2);
                   }
 
@@ -10172,6 +10181,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
           case 0:
               {
                 /* Child.  Drop privileges, run command, exit. */
+                init_sentry ();
                 cleanup_manage_process (FALSE);
 
                 proctitle_set ("gvmd: Sending to Sourcefire");
@@ -10180,6 +10190,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                   {
                     g_warning ("%s (child): setgroups: %s",
                                __func__, strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 if (setgid (nobody->pw_gid))
@@ -10187,6 +10198,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                     g_warning ("%s (child): setgid: %s",
                                __func__,
                                strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 if (setuid (nobody->pw_uid))
@@ -10194,6 +10206,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                     g_warning ("%s (child): setuid: %s",
                                __func__,
                                strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
 
@@ -10208,9 +10221,11 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                                ret,
                                WEXITSTATUS (ret),
                                command);
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
 
+                gvm_close_sentry ();
                 exit (EXIT_SUCCESS);
               }
 
@@ -10497,7 +10512,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
           case 0:
               {
                 /* Child.  Drop privileges, run command, exit. */
-
+                init_sentry ();
                 proctitle_set ("gvmd: Sending to Verinice");
 
                 cleanup_manage_process (FALSE);
@@ -10506,6 +10521,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                   {
                     g_warning ("%s (child): setgroups: %s",
                                __func__, strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 if (setgid (nobody->pw_gid))
@@ -10513,6 +10529,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                     g_warning ("%s (child): setgid: %s",
                                __func__,
                                strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
                 if (setuid (nobody->pw_uid))
@@ -10520,6 +10537,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
                     g_warning ("%s (child): setuid: %s",
                                __func__,
                                strerror (errno));
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
 
@@ -10534,9 +10552,11 @@ send_to_verinice (const char *url, const char *username, const char *password,
                                ret,
                                WEXITSTATUS (ret),
                                log_command);
+                    gvm_close_sentry ();
                     exit (EXIT_FAILURE);
                   }
 
+                gvm_close_sentry ();
                 exit (EXIT_SUCCESS);
               }
 
@@ -13667,6 +13687,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (owner_id);
               free (owner_name);
               gvm_connection_free (&connection);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
           if (gmp_start_task_report_c (&connection, task_id, &report_id))
@@ -13675,6 +13696,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (owner_id);
               free (owner_name);
               gvm_connection_free (&connection);
+              gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
 
@@ -13683,6 +13705,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           free (owner_id);
           free (owner_name);
           gvm_connection_free (&connection);
+          gvm_close_sentry ();
           exit (EXIT_SUCCESS);
         }
       case ALERT_METHOD_ERROR:
@@ -20376,6 +20399,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
            *
            * Fork again so the parent can wait on the child, to prevent
            * zombies. */
+          init_sentry ();
           cleanup_manage_process (FALSE);
           pid = fork ();
           switch (pid)
@@ -20383,16 +20407,19 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
               case 0:
                 /* Grandchild.  Reopen the database (required after fork) and carry on
                  * to import the reports, . */
+                init_sentry ();
                 reinit_manage_process ();
                 break;
               case -1:
                 /* Grandchild's parent when error. */
                 g_warning ("%s: fork: %s", __func__, strerror (errno));
+                gvm_close_sentry ();
                 exit (EXIT_FAILURE);
                 break;
               default:
                 /* Grandchild's parent.  Exit, to close parent's wait. */
                 g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+                gvm_close_sentry ();
                 exit (EXIT_SUCCESS);
                 break;
             }
@@ -20698,6 +20725,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       create_asset_report (*report_id, "");
     }
 
+  gvm_close_sentry ();
   exit (EXIT_SUCCESS);
   return 0;
 }
