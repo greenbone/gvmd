@@ -2545,10 +2545,10 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       gchar *new_exclude_hosts;
 
       new_exclude_hosts = g_strdup_printf ("%s,%s",
-                                           exclude_hosts_str,
+                                           clean_exclude_hosts,
                                            finished_hosts_str);
-      free (exclude_hosts_str);
-      exclude_hosts_str = new_exclude_hosts;
+      free (clean_exclude_hosts);
+      clean_exclude_hosts = new_exclude_hosts;
     }
 
   osp_target = osp_target_new (clean_hosts, ports_str, clean_exclude_hosts,
