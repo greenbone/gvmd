@@ -51,6 +51,9 @@ RSYNC_SSH_OPTS="-o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=n
 # RSYNC_COMPRESS specifies the compression level to use for the rsync connection.
 RSYNC_COMPRESS="--compress-level=9"
 
+# RSYNC_CHMOD specifies the permissions to chmod the files to.
+RSYNC_CHMOD="--perms --chmod=Fugo+r,Fug+w,Dugo-s,Dugo+rx,Dug+w"
+
 # PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
 # not used, this should be "24". For some application layer firewalls or gates
 # the value 22 (Standard SSH) is useful. Only change if you know what you are
@@ -367,7 +370,7 @@ is_feed_current () {
       fi
     fi
     create_tmp_key
-    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/timestamp "$FEED_INFO_TEMP_DIR"
+    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/timestamp "$FEED_INFO_TEMP_DIR"
     if [ $? -ne 0 ]
     then
       log_err "rsync failed, aborting synchronization."
@@ -381,7 +384,7 @@ is_feed_current () {
     # IP blocking due to network equipment in between keeping the previous connection too long open.
     sleep 5
     log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
-    eval "$RSYNC -ltvrP \"$COMMUNITY_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
+    eval "$RSYNC -ltvrP $RSYNC_CHMOD \"$COMMUNITY_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
     if [ $? -ne 0 ]
     then
       log_err "rsync failed, aborting synchronization."
@@ -443,7 +446,7 @@ do_rsync_community_feed () {
     log_notice "Using rsync: $RSYNC"
     log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
     mkdir -p "$FEED_DIR"
-    eval "$RSYNC -ltvrP $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
+    eval "$RSYNC -ltvrP $RSYNC_CHMOD $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
     if [ $? -ne 0 ]; then
       log_err "rsync failed. Your $FEED_TYPE_LONG might be broken now."
       exit 1
@@ -499,7 +502,7 @@ sync_feed_data(){
         fi
       fi
       create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
       if [ 0 -ne "$?" ]; then
         log_err "rsync failed, aborting synchronization."
         remove_tmp_key
