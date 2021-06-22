@@ -2480,7 +2480,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
-  gchar *clean_hosts, *clean_exclude_hosts;
+  gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
   osp_target_t *osp_target;
   GSList *osp_targets, *vts, *vt_groups;
@@ -2511,9 +2511,13 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       else if (ret == -1)
         return -1;
       finished_hosts_str = report_finished_hosts_str (global_current_report);
+      clean_finished_hosts_str = clean_hosts_string (finished_hosts_str);
     }
   else
-    finished_hosts_str = NULL;
+    {
+      finished_hosts_str = NULL;
+      clean_finished_hosts_str = NULL;
+    }
 
   /* Set up target(s) */
   hosts_str = target_hosts (target);
@@ -2538,7 +2542,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
       new_exclude_hosts = g_strdup_printf ("%s,%s",
                                            clean_exclude_hosts,
-                                           finished_hosts_str);
+                                           clean_finished_hosts_str);
       free (clean_exclude_hosts);
       clean_exclude_hosts = new_exclude_hosts;
     }
@@ -2555,6 +2559,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   free (finished_hosts_str);
   g_free (clean_hosts);
   g_free (clean_exclude_hosts);
+  g_free (clean_finished_hosts_str);
   osp_targets = g_slist_append (NULL, osp_target);
 
   ssh_credential = target_osp_ssh_credential (target);
