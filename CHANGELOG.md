@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Free alert get data in report_content_for_alert [#1526](https://github.com/greenbone/gvmd/pull/1526) 
 - Fix erroneous freeing of ical timezone component [#1530](https://github.com/greenbone/gvmd/pull/1530)
 - Fixed the sorting / filter by username functionality for remediation tickets [#1546](https://github.com/greenbone/gvmd/pull/1546)
+- Fix stop resume feature. [#1568](https://github.com/greenbone/gvmd/pull/1568)
 
 ### Removed
 
