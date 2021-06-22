@@ -29709,7 +29709,8 @@ set_task_comment (task_t task, const char *comment)
  * @param[in]  name        Name of new task.  NULL to copy from existing.
  * @param[in]  comment     Comment on new task.  NULL to copy from existing.
  * @param[in]  task_id     UUID of existing task.
- * @param[in]  alterable   Whether the new task will be alterable.
+ * @param[in]  alterable   Whether the new task will be alterable. < 0 to
+ *                         to copy from existing.
  * @param[out] new_task    New task.
  *
  * @return 0 success, 2 failed to find existing task, 99 permission denied,
@@ -29735,7 +29736,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " hosts_ordering, usage_type",
+                            " hosts_ordering, usage_type, alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -29743,9 +29744,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
       return ret;
     }
 
-  sql ("UPDATE tasks SET alterable = %i, hidden = 0 WHERE id = %llu;",
-       alterable,
-       new);
+  if (alterable >= 0)
+    sql ("UPDATE tasks SET alterable = %i, hidden = 0 WHERE id = %llu;",
+         alterable,
+         new);
+  else
+    sql ("UPDATE tasks SET hidden = 0 WHERE id = %llu;",
+         new);
 
   set_task_run_status (new, TASK_STATUS_NEW);
   sql ("INSERT INTO task_preferences (task, name, value)"
