@@ -12,7 +12,7 @@ jobs:
       GITHUB_MAIL: ${{ secrets.GREENBONE_BOT_MAIL }}
       GITHUB_TOKEN: ${{ secrets.GREENBONE_BOT_TOKEN }}
     name: Release patch with pontos
-    # If the label 'make release' is set. If PR is closed because of an merge
+    # If the label 'make patch release' is set. If PR is closed because of an merge
     if: contains( github.event.pull_request.labels.*.name, 'make patch release') && github.event.pull_request.merged == true
     runs-on: 'ubuntu-latest'
     steps:
@@ -41,7 +41,9 @@ jobs:
       run: echo "Current Branch is $GITHUB_BASE_REF"
     - name: Prepare patch release with pontos
       run: |
-        python pontos-release prepare --patch
+        . venv/bin/activate
+        pontos-release prepare --patch
     - name: Release with pontos
       run: |
-        python pontos-release release
+        . venv/bin/activate
+        pontos-release release
