@@ -1,4 +1,4 @@
-name: Release Python package with pontos
+name: Release patch version with pontos
 
 on:
   pull_request:
