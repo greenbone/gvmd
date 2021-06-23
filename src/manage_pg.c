@@ -868,7 +868,8 @@ manage_create_sql_functions ()
        "            AND (is_get OR name = arg_permission)) > 0;"
        "  RETURN ret;"
        " END;"
-       "$$ LANGUAGE plpgsql;");
+       "$$ LANGUAGE plpgsql"
+       " STABLE COST 1000;");
 
   /* Functions in SQL. */
 
