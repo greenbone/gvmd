@@ -939,7 +939,7 @@ manage_create_sql_functions ()
        "  RETURN ret;"
        " END;"
        "$$ LANGUAGE plpgsql"
-       " IMMUTABLE COST 1000;");
+       " STABLE COST 1000;");
 
   /* Functions in SQL. */
 
