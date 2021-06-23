@@ -7,11 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.10] (unreleased)
 
 ### Added
+<<<<<<< HEAD
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
 - Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
+=======
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
+- Add test if the ssh elevate credential is different from the ssh credential [#1582](https://github.com/greenbone/gvmd/pull/1582)
+>>>>>>> 211a9aa48 (CHANGELOG entry: Test ssh_elevate_credential differs ssh_credential)
 
 ### Changed
 - Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
