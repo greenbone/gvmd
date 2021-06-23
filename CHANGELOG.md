@@ -4,7 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+<<<<<<< HEAD
 ## [20.8.3] (Unreleased)
+=======
+## [21.4.1] (unreleased)
+
+### Added
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
+
+### Changed
+- Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
+
+### Fixed
+- Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
+- Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
+- Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
+- Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
+- Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
+- Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
+
+[21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
+
+## [21.4.0] (2021-04-16)
+
+>>>>>>> fb7e6971b (Added CHANGELOG Entry for the filtering results by tags issue)
 ### Added
 ### Changed
 - Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
