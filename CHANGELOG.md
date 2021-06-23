@@ -7,21 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.10] (unreleased)
 
 ### Added
-<<<<<<< HEAD
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
 - Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
-=======
-- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
-- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
-- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
-- Add test if the ssh elevate credential is different from the ssh credential [#1582](https://github.com/greenbone/gvmd/pull/1582)
->>>>>>> 211a9aa48 (CHANGELOG entry: Test ssh_elevate_credential differs ssh_credential)
-
-### Changed
-- Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
 - Change report timestamp filter and iterator columns [#1512](https://github.com/greenbone/gvmd/pull/1512)
 - Rename the date column of reports to creation_time [#1520](https://github.com/greenbone/gvmd/pull/1520)
 
@@ -35,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
 - Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
 
-[21.4]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
+[21.10]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
 ## [21.4.1] (unreleased)
 
@@ -43,6 +33,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
 - Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
 - Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
+- Add test if the ssh elevate credential is different from the ssh credential [#1582](https://github.com/greenbone/gvmd/pull/1582)
+
+### Changed
+- Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
 
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
