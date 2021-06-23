@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
+- Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
@@ -108,6 +109,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Clean up log config, add gvm-libs log domains [#1502](https://github.com/greenbone/gvmd/pull/1502)
 - Sort missing severity as lowest value in GMP get [#1508](https://github.com/greenbone/gvmd/pull/1508)
 - Use passwordbasedauthentication of gvm-libs instead of auth_utils [#1505](https://github.com/greenbone/gvmd/pull/1505)
+- Set file permissions in greenbone-feed-sync [#1575](https://github.com/greenbone/gvmd/pull/1575)
 
 ### Fixed
 - Also create owner WITH clause for single resources [#1406](https://github.com/greenbone/gvmd/pull/1406)
@@ -122,6 +124,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix erroneous freeing of ical timezone component [#1530](https://github.com/greenbone/gvmd/pull/1530)
 - Fixed the sorting / filter by username functionality for remediation tickets [#1546](https://github.com/greenbone/gvmd/pull/1546)
 - The alterable indicator is now copied when cloning a task [#1553](https://github.com/greenbone/gvmd/pull/1553)
+- Fix stop resume feature. [#1568](https://github.com/greenbone/gvmd/pull/1568)
 
 ### Removed
 

@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include <gvm/base/gvm_sentry.h>
 #include <gvm/util/gpgmeutils.h>
 
 #include "lsc_crypt.h"
@@ -269,6 +270,7 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
       if (!ctx->encctx)
         {
           g_critical ("%s: can't continue w/o a gpgme context", G_STRFUNC);
+          gvm_close_sentry ();
           exit (EXIT_FAILURE);
         }
     }
@@ -370,6 +372,7 @@ do_encrypt (lsc_crypt_ctx_t ctx, const void *plaintext, size_t plaintextlen)
   if (!ciphertext)
     {
       g_critical ("%s: error snatching memory", G_STRFUNC);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -461,6 +464,7 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
   if (!result)
     {
       g_critical ("%s: error snatching memory", G_STRFUNC);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
@@ -489,6 +493,7 @@ lsc_crypt_new ()
   if (!ctx->encctx)
     {
       g_critical ("%s: can't continue w/o a gpgme context", G_STRFUNC);
+      gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
 
