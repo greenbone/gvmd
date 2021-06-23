@@ -22,7 +22,7 @@ message ("-- Configuring Greenbone Vulnerability Manager...")
 # VERSION: Set patch version for stable releases, e.g. "9.0.0",
 #          unset patch version for prereleases, e.g. "9.0"
 project (gvm
-         VERSION 20.8.1
+         VERSION 20.8.2
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -52,6 +52,19 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
     endif (GIT_FOUND)
   endif (EXISTS "${CMAKE_SOURCE_DIR}/.git/")
 endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
+
+# Set dev version if this is a development version and not a full release,
+# unset (put value 0 or delete line) before a full release and reset after.
+set (PROJECT_DEV_VERSION 1)
+
+# If PROJECT_DEV_VERSION is set, the version string will be set to:
+#   "major.minor.patch~dev${PROJECT_DEV_VERSION}${GIT_REVISION}"
+# If PROJECT_DEV_VERSION is NOT set, the version string will be set to:
+#   "major.minor.patch${GIT_REVISION}"
+# For CMAKE_BUILD_TYPE "Release" the git revision will be empty.
+if (PROJECT_DEV_VERSION)
+  set (PROJECT_VERSION_SUFFIX "~dev${PROJECT_DEV_VERSION}")
+endif (PROJECT_DEV_VERSION)
 
 # Add padding zero for minor version
 string(LENGTH ${PROJECT_VERSION_MINOR} PROJECT_VERSION_MINOR_LENGTH)
