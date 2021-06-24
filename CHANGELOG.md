@@ -33,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
 - Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
 - Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
-- Add test if the ssh elevate credential is different from the ssh credential [#1582](https://github.com/greenbone/gvmd/pull/1582)
+- Add test if the ssh elevate credential is different from the ssh credential [#1582](https://github.com/greenbone/gvmd/pull/1582) [#1586](https://github.com/greenbone/gvmd/pull/1586)
 
 ### Changed
 - Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
