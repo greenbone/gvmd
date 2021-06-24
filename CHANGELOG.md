@@ -4,14 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [21.4.2] (Unreleased)
 ### Added
 ### Changed
 ### Deprecated
 ### Removed
 ### Fixed
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.1...HEAD
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.1...gvmd-21.04
 
 
 ## [21.4.1] - 2021-06-23
@@ -35,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 - Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
 
-[21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
+[21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
 
 ## [21.4.0] (2021-04-16)
 
