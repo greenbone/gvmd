@@ -34,7 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Solved a peformance problem for tasks after scanning lots of hosts [#1567](https://github.com/greenbone/gvmd/pull/1567)
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 
-[21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
+[21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
 
 ## [21.4.0] (2021-04-16)
 
