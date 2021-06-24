@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.1...gvmd-21.04
 
@@ -33,7 +34,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
 - Solved a peformance problem for tasks after scanning lots of hosts [#1567](https://github.com/greenbone/gvmd/pull/1567)
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
-- Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
 
 [21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
 
