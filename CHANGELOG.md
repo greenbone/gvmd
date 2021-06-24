@@ -16,9 +16,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rename the date column of reports to creation_time [#1520](https://github.com/greenbone/gvmd/pull/1520)
 
 ### Fixed
+<<<<<<< HEAD
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
 - Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
 - Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
+=======
+- Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
+>>>>>>> 7110683e1 (Changed CHANGELOG entry: Amendment ssh_elevate_credential / ssh_credential Test.)
 
 ### Removed
 - Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
@@ -45,7 +49,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
 - Solved a peformance problem for tasks after scanning lots of hosts [#1567](https://github.com/greenbone/gvmd/pull/1567)
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
-- Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/v21.4.0...gvmd-21.04
 
