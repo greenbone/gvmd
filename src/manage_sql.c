@@ -30669,7 +30669,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_elevate_credential && (!ssh_credential))
     return 14;
 
-  if (ssh_elevate_credential == ssh_credential)
+  if (ssh_credential && (ssh_elevate_credential == ssh_credential))
     return 15;
 
   sql_begin_immediate ();
@@ -31158,7 +31158,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 24;
     }
 
-  if (ssh_elevate_credential_id == ssh_credential_id)
+  if (ssh_credential_id && (ssh_elevate_credential_id == ssh_credential_id))
     {
       sql_rollback ();
       return 25;
