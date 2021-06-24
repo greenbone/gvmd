@@ -31158,12 +31158,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 24;
     }
 
-  if (ssh_credential_id && (ssh_elevate_credential_id == ssh_credential_id))
-    {
-      sql_rollback ();
-      return 25;
-    }
-
   target = 0;
   if (find_target_with_permission (target_id, &target, "modify_target"))
     {
@@ -31341,6 +31335,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   if (ssh_elevate_credential_id)
     {
       credential_t ssh_elevate_credential;
+      credential_t ssh_credential;
 
       if (target_in_use (target))
         {
@@ -31373,6 +31368,24 @@ modify_target (const char *target_id, const char *name, const char *hosts,
               return 23;
             }
           g_free (type);
+
+          ssh_credential = 0;
+          if (ssh_credential_id)
+            if (strcmp (ssh_credential_id, "0"))
+              {
+                if (find_credential_with_permission (ssh_credential_id,
+                                                     &ssh_credential,
+                                                     "get_credentials"))
+                  {
+                    sql_rollback ();
+                    return -1;
+                  }
+                if (ssh_elevate_credential == ssh_credential)
+                  {
+                    sql_rollback ();
+                    return 25;
+                  }
+              }
 
           set_target_login_data (target, "elevate", ssh_elevate_credential, 0);
         }
