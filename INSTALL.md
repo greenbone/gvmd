@@ -11,7 +11,7 @@ Prerequisites:
 * cmake >= 3.0 (Debian package: cmake)
 * glib-2.0 >= 2.42 (Debian package: libglib2.0-dev)
 * gnutls >= 3.2.15 (Debian package: libgnutls28-dev)
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.4.1 ([gvm-libs](https://github.com/greenbone/gvm-libs/tree/gvm-libs-20.08) component)
+* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 21.4.1 ([gvm-libs](https://github.com/greenbone/gvm-libs/tree/gvm-libs-21.04) component)
 * PostgreSQL database >= 9.6 (Debian packages: libpq-dev postgresql-server-dev-11)
 * pkg-config (Debian package: pkg-config)
 * libical >= 1.0.0 (Debian package: libical-dev)
