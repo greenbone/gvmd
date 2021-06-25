@@ -20187,12 +20187,12 @@ report_clear_count_cache (report_t report,
 report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
-  sql ("INSERT into reports (uuid, owner, task, creation_time, comment,"
-       " scan_run_status, slave_progress)"
+  sql ("INSERT into reports (uuid, owner, task, creation_time,"
+       " modification_time, comment, scan_run_status, slave_progress)"
        " VALUES ('%s',"
        " (SELECT owner FROM tasks WHERE tasks.id = %llu),"
-       " %llu, %i, '', %u, 0);",
-       uuid, task, task, time (NULL), status);
+       " %llu, %i, %i, '', %u, 0);",
+       uuid, task, task, time (NULL), time (NULL), status);
   return sql_last_insert_id ();
 }
 
