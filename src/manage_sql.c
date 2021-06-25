@@ -30669,7 +30669,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_elevate_credential && (!ssh_credential))
     return 14;
 
-  if (ssh_elevate_credential == ssh_credential)
+  if (ssh_credential && (ssh_elevate_credential == ssh_credential))
     return 15;
 
   sql_begin_immediate ();
@@ -31119,7 +31119,9 @@ delete_target (const char *target_id, int ultimate)
  *         18 invalid SSH credential type, 19 invalid SMB credential type,
  *         20 invalid ESXi credential type, 21 invalid SNMP credential type,
  *         22 failed to find SSH elevate cred, 23 invalid SSH elevate
- *         credential type, 99 permission denied, -1 error.
+ *         credential type, 24 SSH elevate credential without SSH credential,
+ *         25 SSH elevate credential equals SSH credential,
+ *         99 permission denied, -1 error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
@@ -31133,6 +31135,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *allow_simultaneous_ips)
 {
   target_t target;
+  credential_t ssh_credential = 0;
+  credential_t ssh_elevate_credential = 0;
 
   assert (target_id);
 
@@ -31150,18 +31154,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       sql_rollback ();
       return 13;
-    }
-
-  if (ssh_elevate_credential_id && (!ssh_credential_id))
-    {
-      sql_rollback ();
-      return 24;
-    }
-
-  if (ssh_elevate_credential_id == ssh_credential_id)
-    {
-      sql_rollback ();
-      return 25;
     }
 
   target = 0;
@@ -31284,8 +31276,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (ssh_credential_id)
     {
-      credential_t ssh_credential;
-
       if (target_in_use (target))
         {
           sql_rollback ();
@@ -31340,8 +31330,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (ssh_elevate_credential_id)
     {
-      credential_t ssh_elevate_credential;
-
       if (target_in_use (target))
         {
           sql_rollback ();
@@ -31504,6 +31492,25 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
       else
         set_target_login_data (target, "snmp", 0, 0);
+    }
+
+  if (ssh_credential_id || ssh_elevate_credential_id)
+    {
+      if (!ssh_credential_id)
+        ssh_credential = target_ssh_credential (target);
+      if (!ssh_elevate_credential_id)
+        ssh_elevate_credential = target_ssh_elevate_credential (target);
+
+      if (ssh_elevate_credential && !ssh_credential)
+        {
+          sql_rollback ();
+          return 24;
+        }
+      if (ssh_credential && (ssh_credential == ssh_elevate_credential))
+        {
+          sql_rollback ();
+          return 25;
+        }
     }
 
   if (exclude_hosts)
