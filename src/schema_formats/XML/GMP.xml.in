@@ -5125,6 +5125,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         If the list of hosts is empty, the command must also include a
         target locator.
       </p>
+      <p>
+        If the SSH elevate credential is set, the SSH credential must
+        also be set. The SSH elevate credential and the SSH credential
+        must differ.
+      </p>
     </description>
     <pattern>
       <e>name</e>
@@ -24475,6 +24480,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <description>
       <p>
         The client uses the modify_target command to change an existing target.
+      </p>
+      <p>
+        If the SSH elevate credential is set, the SSH credential must also be
+        set. The SSH elevate credential and the SSH credential must differ.
       </p>
     </description>
     <pattern>
