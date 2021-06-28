@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...HEAD
+
+
 ## [21.4.2] - 2021-06-28
 ### Fixed
 - Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
