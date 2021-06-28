@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 - Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
+- Added the missing GMP documentation for the ssh elevate credential [#1591](https://github.com/greenbone/gvmd/pull/1591)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.1...gvmd-21.04
 
