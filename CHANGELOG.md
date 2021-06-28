@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
 - Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
 
+[Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
+
 ## [21.4.2] (Unreleased)
 ### Added
 ### Changed
