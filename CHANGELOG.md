@@ -14,7 +14,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.1...gvmd-21.04
 
-
 ## [21.4.1] - 2021-06-23
 
 ### Added
@@ -85,7 +84,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
 
-## [20.8.2] (unreleased)
+## [20.8.3] (Unreleased)
+### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
+
+## [20.8.2] - 2021-06-23
 
 ### Added
 - Add standard info elem fields for NVTs in get_info [#1426](https://github.com/greenbone/gvmd/pull/1426)
@@ -121,7 +129,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [20.8.2]: https://github.com/greenbone/gvmd/compare/v20.8.1...gvmd-20.08
 
-
 ## [20.8.1] (2021-02-02)
 
 ### Added
@@ -137,6 +144,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Extended the output of invalid / missing --feed parameter given to greenbone-feed-sync [#1255](https://github.com/greenbone/gvmd/pull/1255)
 - The xsltproc binary is now marked as mandatory [#1259](https://github.com/greenbone/gvmd/pull/1259)
 - Check feed status without acquiring lock [#1266](https://github.com/greenbone/gvmd/pull/1266)
+- Use timestamp in automatic sensor task names [#1390](https://github.com/greenbone/gvmd/pull/1390)
 - Replace g_file_test with gvm-libs file tests [#1391](https://github.com/greenbone/gvmd/pull/1391)
 
 ### Fixed
@@ -180,7 +188,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Remove DROP from vulns creation [#1281](http://github.com/greenbone/gvmd/pull/1281)
 
-[20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.08
+[20.8.1]: https://github.com/greenbone/gvmd/compare/v20.8.0...gvmd-20.8.1
 
 ## [20.8.0] (2020-08-11)
 
