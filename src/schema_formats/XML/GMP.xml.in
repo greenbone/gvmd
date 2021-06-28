@@ -5179,6 +5179,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </or>
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
+      <o><e>ssh_elevate_credential</e></o>
       <o><e>smb_credential</e></o>
       <o><e>esxi_credential</e></o>
       <o><e>snmp_credential</e></o>
@@ -5257,6 +5258,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>The port the LSCs will use</summary>
         <pattern>text</pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>ssh_elevate_credential</name>
+      <summary>SSH elevate credentials for target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
     </ele>
     <ele>
       <name>smb_credential</name>
@@ -24635,6 +24647,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>hosts_ordering</e></o>
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
+      <o><e>ssh_elevate_credential</e></o>
       <o><e>smb_credential</e></o>
       <o><e>esxi_credential</e></o>
       <o><e>snmp_credential</e></o>
@@ -24677,6 +24690,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>ssh_credential</name>
       <summary>SSH credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>ssh_elevate_credential</name>
+      <summary>SSH elevate credential to use on target</summary>
       <pattern>
         <attrib>
           <name>id</name>
