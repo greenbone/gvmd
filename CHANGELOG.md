@@ -4,15 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [20.8.3] (Unreleased)
 ### Added
 ### Changed
 ### Deprecated
 ### Removed
 ### Fixed
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...HEAD
-
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
 ## [20.8.2] - 2021-06-23
 
@@ -34,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Also create owner WITH clause for single resources [#1406](https://github.com/greenbone/gvmd/pull/1406)
 - Fix SQL escaping when adding VT references [#1429](https://github.com/greenbone/gvmd/pull/1429)
-- Update report run status more consistently [#1434](https://github.com/greenbone/gvmd/pull/1434) 
+- Update report run status more consistently [#1434](https://github.com/greenbone/gvmd/pull/1434)
 - Improve modify_override errors, fix no NVT case [#1435](https://github.com/greenbone/gvmd/pull/1435)
 - Fix size calculation in `--optimize vacuum` [#1447](https://github.com/greenbone/gvmd/pull/1447)
 - Fix report host end time check in CVE scans [#1462](https://github.com/greenbone/gvmd/pull/1462)
@@ -48,7 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-[20.8.2]: https://github.com/greenbone/gvmd/compare/v20.8.1...gvmd-20.08
+[20.8.2]: https://github.com/greenbone/gvmd/compare/v20.8.1...v20.8.2
 
 ## [20.8.1] (2021-02-02)
 
@@ -89,12 +88,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Switch result filter column 'task' from task ID to name task name [#1317](https://github.com/greenbone/gvmd/pull/1317)
 - Correct check of get_certificate_info return [#1318](https://github.com/greenbone/gvmd/pull/1318)
 - Fix GMP doc text of `active` elem for notes and overrides [#1323](https://github.com/greenbone/gvmd/pull/1323)
-- Account for -1 of orphans when deleting permission [#1345](https://github.com/greenbone/gvmd/pull/1345)
 - Move feed object in trash checks to startup [#1325](https://github.com/greenbone/gvmd/pull/1325)
-- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
 - Do not inherit settings from deleted users [#1328](https://github.com/greenbone/gvmd/pull/1328)
 - Delete TLS certificate sources when deleting users [#1334](https://github.com/greenbone/gvmd/pull/1334)
 - Fix SQL errors in SCAP and CERT update [#1343](https://github.com/greenbone/gvmd/pull/1343)
+- Always check for 'All' when deleting selectors [#1342](https://github.com/greenbone/gvmd/pull/1342)
+- Account for -1 of orphans when deleting permission [#1345](https://github.com/greenbone/gvmd/pull/1345)
+- Allow config to sync even if NVT family is not available [#1347](https://github.com/greenbone/gvmd/pull/1347)
 - Check private key when modifying credential [#1351](https://github.com/greenbone/gvmd/pull/1351)
 - Clean up hosts strings before using them [#1352](https://github.com/greenbone/gvmd/pull/1352)
 - Improve SCP username and destination path handling [#1350](https://github.com/greenbone/gvmd/pull/1350)
