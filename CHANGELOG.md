@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.10] (unreleased)
 
 ### Added
-- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519)
+- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519), [#1590](https://github.com/greenbone/gvmd/pull/1590)
 - Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
 
 ### Changed
