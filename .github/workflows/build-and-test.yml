@@ -9,7 +9,7 @@ jobs:
   check-format:
     name: Check formatting
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-libs-master-debian-buster-clang-core
+    container: greenbone/gvmd-gvmd-21.04-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -122,7 +122,7 @@ jobs:
     name: Upload doc coverage to Codecov
     needs: gen_xml_doc
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    container: greenbone/gvmd-gvmd-21.04-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -152,7 +152,7 @@ jobs:
   build_gmp_doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    container: greenbone/gvmd-gvmd-21.04-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -163,3 +163,150 @@ jobs:
         with:
           name: gmp.html
           path: build/doc/gmp.html
+<<<<<<< HEAD
+=======
+
+  build:
+    name: Build various configs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type:
+          - Debug
+          - Release
+        docker_base:
+          - greenbone/gvmd-gvmd-21.04-debian-buster-clang-test
+          - greenbone/gvmd-gvmd-21.04-debian-buster-gcc-test
+    container: ${{ matrix.docker_base }}
+    env:
+      BUILD_TYPE: ${{ matrix.build_type }}
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Find gvmd reference branch
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ];                          \
+          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
+          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
+          fi
+      - name: Select gvm-libs branch
+        run: |
+          if [ $GVMD_REF = "master" ];                           \
+            then GVM_LIBS_REF="master";                          \
+            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
+                                | sed 's/refs\/.*\///g'          \
+                                | sed 's/gvmd-/gvm-libs-/g' -);  \
+            fi;                                                  \
+          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
+      - name: Check out gvm-libs
+        uses: actions/checkout@v2
+        with:
+          repository: greenbone/gvm-libs
+          ref: ${{ env.GVM_LIBS_REF }}
+          path: gvm-libs
+      - name: Configure and compile gvm-libs (${{ env.BUILD_TYPE }})
+        working-directory: gvm-libs
+        run: |
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
+      - name: Configure and compile gvmd
+        run: |
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
+
+  scan-build:
+    name: Scan-build (clang static analyzer)
+    runs-on: ubuntu-latest
+    container: greenbone/gvmd-gvmd-21.04-debian-buster-clang-test
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Find gvmd reference branch
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ];                          \
+          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
+          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
+          fi
+      - name: Select gvm-libs branch
+        run: |
+          if [ $GVMD_REF = "master" ];                           \
+            then GVM_LIBS_REF="master";                          \
+            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
+                                | sed 's/refs\/.*\///g'          \
+                                | sed 's/gvmd-/gvm-libs-/g' -);  \
+            fi;                                                  \
+          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
+      - name: Check out gvm-libs
+        uses: actions/checkout@v2
+        with:
+          repository: greenbone/gvm-libs
+          ref: ${{ env.GVM_LIBS_REF }}
+          path: gvm-libs
+      - name: Configure and compile gvm-libs (Debug)
+        working-directory: gvm-libs
+        run: |
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
+      - name: Configure and Scan Build (Debug, PostgreSQL)
+        run: |
+          mkdir build && cd build/ && scan-build cmake \
+          -DCMAKE_BUILD_TYPE=Debug .. && \
+          scan-build -o ~/scan-build-report make && \
+          [ -z "$(ls -A ~/scan-build-report/)" ]
+      - name: Upload scan-build report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: scan-build-report
+          path: ~/scan-build-report/
+
+  test-units:
+    name: Build and run unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        docker_base:
+          - greenbone/gvmd-gvmd-21.04-debian-buster-clang-test
+          - greenbone/gvmd-gvmd-21.04-debian-buster-gcc-test
+    container: ${{ matrix.docker_base }}
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Find gvmd reference branch
+        run: |
+          if [ -n "$GITHUB_BASE_REF" ];                          \
+          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
+          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
+          fi
+      - name: Select gvm-libs branch
+        run: |
+          if [ $GVMD_REF = "master" ];                           \
+            then GVM_LIBS_REF="master";                          \
+            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
+                                | sed 's/refs\/.*\///g'          \
+                                | sed 's/gvmd-/gvm-libs-/g' -);  \
+            fi;                                                  \
+          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
+      - name: Check out gvm-libs
+        uses: actions/checkout@v2
+        with:
+          repository: greenbone/gvm-libs
+          ref: ${{ env.GVM_LIBS_REF }}
+          path: gvm-libs
+      - name: Configure and compile gvm-libs (Debug)
+        working-directory: gvm-libs
+        run: |
+          mkdir build && cd build/ &&                \
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          make install
+      - name: Configure and run unit tests
+        run: |
+          mkdir build && cd build/ &&                                  \
+          cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_COVERAGE=1 .. &&   \
+          make && make tests && CTEST_OUTPUT_ON_FAILURE=1 make test && \
+          lcov --directory . --capture --output-file coverage.info &&  \
+          genhtml -o coverage coverage.info
+>>>>>>> 112622915... Update images in CI
