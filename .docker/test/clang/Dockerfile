@@ -22,3 +22,12 @@ RUN apt-get update && apt-get install --assume-yes \
     postgresql-server-dev-all \
     xsltproc \
  && rm -rf /var/lib/apt/lists/*
+
+# install cgreen for unit tests
+RUN git clone --depth 1 https://github.com/cgreen-devs/cgreen.git \
+ && cd cgreen \
+ && make \
+ && make test \
+ && make install \
+ && cd .. \
+ && rm -rf cgreen
