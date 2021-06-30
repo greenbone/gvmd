@@ -298,7 +298,7 @@ install (FILES ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
 
 # Schema formats.
 
-install (FILES src/schema_formats/RNC/rnc.xsl
+install (FILES src/schema_formats/rnc.xsl
                src/schema_formats/HTML/HTML.xsl
          DESTINATION ${GVMD_DATA_DIR}/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
@@ -307,7 +307,7 @@ install (FILES src/schema_formats/HTML/generate
          DESTINATION ${GVMD_DATA_DIR}/global_schema_formats/02052818-dab6-11df-9be4-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES src/schema_formats/RNC/rnc.xsl
+install (FILES src/schema_formats/rnc.xsl
                src/schema_formats/RNC/RNC.xsl
          DESTINATION ${GVMD_DATA_DIR}/global_schema_formats/787a4a18-dabc-11df-9486-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)

@@ -92,7 +92,7 @@ else (NOT XSLTPROC_EXECUTABLE)
     ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
     ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
     ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/RNC.xsl
-    ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/rnc.xsl)
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/rnc.xsl)
 
   add_custom_command (OUTPUT gmp.html
     COMMAND sh
@@ -101,7 +101,7 @@ else (NOT XSLTPROC_EXECUTABLE)
     ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
     ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate
     ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/HTML.xsl
-    ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/rnc.xsl)
+    ${CMAKE_SOURCE_DIR}/src/schema_formats/rnc.xsl)
 endif (NOT XSLTPROC_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
