@@ -23,6 +23,18 @@ RUN apt-get update && apt-get install --assume-yes \
     xsltproc \
  && rm -rf /var/lib/apt/lists/*
 
+# Install Debian core dependencies required for testing gvm-libs
+# support and not yet installed as dependencies of gvm-libs-core
+RUN apt-get update && apt-get install --assume-yes \
+    g++ \
+    lcov \
+    libical-dev \
+    libpq-dev \
+    libnet1-dev \
+    postgresql-server-dev-all \
+    xsltproc \
+ && rm -rf /var/lib/apt/lists/*
+
 # install cgreen for unit tests
 RUN git clone --depth 1 https://github.com/cgreen-devs/cgreen.git \
  && cd cgreen \
