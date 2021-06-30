@@ -9,7 +9,7 @@ jobs:
   check-format:
     name: Check formatting
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-libs-master-debian-buster-clang-core
+    container: greenbone/gvmd-master-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -59,7 +59,7 @@ jobs:
     name: Upload doc coverage to Codecov
     needs: gen_xml_doc
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    container: greenbone/gvmd-master-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -89,7 +89,7 @@ jobs:
   build_gmp_doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    container: greenbone/gvmd-master-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -110,8 +110,8 @@ jobs:
           - Debug
           - Release
         docker_base:
-          - greenbone/build-env-gvm-master-debian-buster-clang-postgresql
-          - greenbone/build-env-gvm-master-debian-buster-gcc-postgresql
+          - greenbone/gvmd-master-debian-buster-clang-test
+          - greenbone/gvmd-master-debian-buster-gcc-test
     container: ${{ matrix.docker_base }}
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
@@ -154,7 +154,7 @@ jobs:
   scan-build:
     name: Scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-master-debian-buster-clang-postgresql
+    container: greenbone/gvmd-master-debian-buster-clang-test
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -201,7 +201,12 @@ jobs:
   test-units:
     name: Build and run unit tests
     runs-on: ubuntu-latest
-    container: greenbone/build-env-gvm-master-debian-buster-gcc-postgresql
+    strategy:
+      matrix:
+        docker_base:
+          - greenbone/gvmd-master-debian-buster-clang-test
+          - greenbone/gvmd-master-debian-buster-gcc-test
+    container: ${{ matrix.docker_base }}
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
