@@ -3,10 +3,10 @@ name: Build and upload docker images
 on:
   push:
     branches:
-      - 'master'
+      - 'gvmd-21.04'
 
 jobs:
-  build-master-gcc-test:
+  build-and upload docker images:
     runs-on: ubuntu-latest
     strategy:
       matrix:

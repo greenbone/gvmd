@@ -1,12 +1,12 @@
-# gvmd-master-debian-buster-clang-test
+# gvmd-gvmd-21.04-debian-buster-clang-test
 
 # Base on gvm-libs image as long as we need gvm-libs as well
-FROM greenbone/gvm-libs-master-debian-buster-clang-deploy
+FROM greenbone/gvm-libs-gvmd-21.04-debian-buster-clang-deploy
 
 # Provides a Debian buster image with the core build dependencies for gvm with
 # Postgres support
 LABEL module="gvmd"
-LABEL branch="master"
+LABEL branch="gvmd-21.04"
 LABEL platform="debian-buster"
 LABEL compiler="clang"
 LABEL configuration="test"
