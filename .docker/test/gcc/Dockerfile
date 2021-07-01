@@ -43,3 +43,5 @@ RUN git clone --depth 1 https://github.com/cgreen-devs/cgreen.git \
  && make install \
  && cd .. \
  && rm -rf cgreen
+
+ENV LD_LIBRARY_PATH="/usr/local/lib"

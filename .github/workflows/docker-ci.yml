@@ -9,7 +9,7 @@ on:
       - 'gvmd-20.08'
 
 jobs:
-  build-and upload docker images:
+  build-and-upload-docker-images:
     runs-on: ubuntu-latest
     strategy:
       matrix:
