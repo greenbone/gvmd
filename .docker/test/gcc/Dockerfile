@@ -1,12 +1,12 @@
-# gvmd-gvmd-21.04-debian-buster-gcc-test
+# gvmd-gvmd-20.08-debian-buster-gcc-test
 
 # Base on gvm-libs image as long as we need gvm-libs as well
-FROM greenbone/gvm-libs-gvmd-21.04-debian-buster-gcc-deploy
+FROM greenbone/gvm-libs-gvm-libs-20.08-debian-buster-gcc-deploy
 
 # Provides a Debian buster image with the core build dependencies for gvm with
 # Postgres support
 LABEL module="gvmd"
-LABEL branch="gvmd-21.04"
+LABEL branch="gvmd-20.08"
 LABEL platform="debian-buster"
 LABEL compiler="gcc"
 LABEL configuration="test"

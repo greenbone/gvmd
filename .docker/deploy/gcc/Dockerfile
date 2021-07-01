@@ -1,12 +1,12 @@
-# gvmd-gvmd-21.04-debian-buster-gcc-deploy
+# gvmd-gvmd-20.08-debian-buster-gcc-deploy
 
 # Base on gvm-libs image as long as we need gvm-libs as well
-FROM greenbone/gvm-libs-gvmd-21.04-debian-buster-gcc-deploy
+FROM greenbone/gvm-libs-gvm-libs-20.08-debian-buster-gcc-deploy
 
 # Provides a Debian buster image with the core build dependencies for gvm with
 # Postgres support
 LABEL module="gvmd"
-LABEL branch="gvmd-21.04"
+LABEL branch="gvmd-20.08"
 LABEL platform="debian-buster"
 LABEL compiler="gcc"
 LABEL configuration="deploy"
@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install --assume-yes \
 # clone and install gvmd
  RUN git clone --depth 1 \
      https://github.com/greenbone/gvmd.git \
-     -b gvmd-21.04 && \
+     -b gvmd-20.08 && \
      cd gvmd && \
      mkdir build && \
      cd build && \
