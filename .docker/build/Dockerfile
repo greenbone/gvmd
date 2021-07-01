@@ -10,7 +10,7 @@ FROM greenbone/gvmd-$VERSION-$COMPILER-testing
 # This will make apt-get install without question
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY . /usr/local/src/gvm-libs
+COPY . /usr/local/src/gvmd
 WORKDIR /usr/local/src
 
 # clone and install gvmd
