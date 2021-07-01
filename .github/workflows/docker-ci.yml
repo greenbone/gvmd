@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - 'gvmd-20.08'
+  push:
+    pull_request:
+      - 'gvmd-20.08'
 
 jobs:
   build-and upload docker images:
