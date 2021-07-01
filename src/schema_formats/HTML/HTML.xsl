@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <!-- Greenbone Management Protocol (GMP) single page HTML doc generator. -->
 
   <xsl:variable name="rnc-comments">0</xsl:variable>
-  <xsl:include href="rnc.xsl"/>
+  <xsl:include href="../rnc.xsl"/>
 
   <!-- Helpers. -->
 
