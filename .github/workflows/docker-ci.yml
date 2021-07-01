@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - 'gvmd-20.08'
-  push:
-    pull_request:
+  pull_request:
+    branches:
       - 'gvmd-20.08'
 
 jobs:
