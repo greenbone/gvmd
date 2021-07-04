@@ -9,7 +9,7 @@ jobs:
   check-format:
     name: Check formatting
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-master-debian-buster-clang-test
+    container: greenbone/gvmd-master-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -59,7 +59,7 @@ jobs:
     name: Upload doc coverage to Codecov
     needs: gen_xml_doc
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-master-debian-buster-clang-test
+    container: greenbone/gvmd-master-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -89,7 +89,7 @@ jobs:
   build_gmp_doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-master-debian-buster-clang-test
+    container: greenbone/gvmd-master-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -110,8 +110,8 @@ jobs:
           - Debug
           - Release
         docker_base:
-          - greenbone/gvmd-master-debian-buster-clang-test
-          - greenbone/gvmd-master-debian-buster-gcc-test
+          - greenbone/gvmd-master-clang-testing
+          - greenbone/gvmd-master-gcc-testing
     container: ${{ matrix.docker_base }}
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
@@ -154,7 +154,7 @@ jobs:
   scan-build:
     name: Scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-master-debian-buster-clang-test
+    container: greenbone/gvmd-master-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -204,8 +204,8 @@ jobs:
     strategy:
       matrix:
         docker_base:
-          - greenbone/gvmd-master-debian-buster-clang-test
-          - greenbone/gvmd-master-debian-buster-gcc-test
+          - greenbone/gvmd-master-clang-testing
+          - greenbone/gvmd-master-gcc-testing
     container: ${{ matrix.docker_base }}
     steps:
       - name: Check out gvmd
