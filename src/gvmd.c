@@ -1748,6 +1748,7 @@ gvmd (int argc, char** argv)
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
+  static gboolean dump_vt_verification = FALSE;
   static gboolean get_roles = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
@@ -1873,6 +1874,10 @@ gvmd (int argc, char** argv)
         { "disable-scheduling", '\0', 0, G_OPTION_ARG_NONE,
           &disable_scheduling,
           "Disable task scheduling.",
+          NULL },
+        { "dump-vt-verification", '\0', 0, G_OPTION_ARG_NONE,
+          &dump_vt_verification,
+          "Dump the string the VTs verification hash is calculated from.",
           NULL },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &encrypt_all_credentials,
@@ -2492,6 +2497,25 @@ gvmd (int argc, char** argv)
         return EXIT_FAILURE;
 
       ret = manage_rebuild_scap (log_config, &database);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to rebuild SCAP data.\n");
+          return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+  
+  if (dump_vt_verification)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: --dump-vt-verification");
+  
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_dump_vt_verification (log_config, &database);
       log_config_free ();
       if (ret)
         {
