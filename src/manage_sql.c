@@ -21006,6 +21006,9 @@ report_add_result (report_t report, result_t result)
 
 /**
  * @brief Add results from an array to a report.
+ * 
+ * @param[in]  report   The report to add the results to.
+ * @param[in]  results  GArray containing the row ids of the results to add.
  */
 void
 report_add_results_array (report_t report, GArray *results)
