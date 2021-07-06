@@ -3057,9 +3057,11 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
         {
           iterator_t prognosis;
           int prognosis_report_host, start_time;
+          GArray *results;
 
           /* Add report_host with prognosis results and host details. */
 
+          results = g_array_new (TRUE, TRUE, sizeof (result_t));
           start_time = time (NULL);
           prognosis_report_host = 0;
           init_host_prognosis_iterator (&prognosis, report_host);
@@ -3132,11 +3134,14 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
               result = make_cve_result (task, ip, cve, severity, desc);
               g_free (desc);
 
-              report_add_result (report, result);
+              g_array_append_val (results, result);
 
               g_string_free (locations, TRUE);
             }
           cleanup_iterator (&prognosis);
+
+          report_add_results_array (report, results);
+          g_array_free (results, TRUE);
 
           if (prognosis_report_host)
             {
