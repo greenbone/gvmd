@@ -2483,7 +2483,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
   osp_target_t *osp_target;
-  GSList *osp_targets, *vts, *vt_groups;
+  GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
   osp_credential_t *snmp_credential;
@@ -2624,7 +2624,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /* Setup vulnerability tests (without preferences) */
   vts = NULL;
-  vt_groups = NULL;
   vts_hash_table
     = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
                              /* Value is freed in vts list. */
@@ -2634,18 +2633,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   while (next (&families))
     {
       const char *family = family_iterator_name (&families);
-      if (family && config_family_entire_and_growing (config, family))
-        {
-          gchar *filter;
-          osp_vt_group_t *vt_group;
-
-          filter = g_strdup_printf ("family=%s", family);
-          vt_group = osp_vt_group_new (filter);
-          g_free (filter);
-
-          vt_groups = g_slist_prepend (vt_groups, vt_group);
-        }
-      else if (family)
+      if (family)
         {
           iterator_t nvts;
           init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
@@ -2723,13 +2711,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
       g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
       // Credentials are freed with target
       g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
-      g_slist_free_full (vt_groups, (GDestroyNotify) osp_vt_group_free);
       g_hash_table_destroy (scanner_options);
       return -1;
     }
 
   start_scan_opts.targets = osp_targets;
-  start_scan_opts.vt_groups = vt_groups;
+  start_scan_opts.vt_groups = NULL;
   start_scan_opts.vts = vts;
   start_scan_opts.scanner_params = scanner_options;
   start_scan_opts.scan_id = scan_id;
@@ -2742,7 +2729,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
   // Credentials are freed with target
   g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
-  g_slist_free_full (vt_groups, (GDestroyNotify) osp_vt_group_free);
   g_hash_table_destroy (scanner_options);
   return ret;
 }
