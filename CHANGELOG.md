@@ -14,10 +14,72 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
+<<<<<<< HEAD
 - Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611) [#1629](https://github.com/greenbone/gvmd/pull/1629)
 - Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 - Fix sensor connection for performance reports on failure [#1633](https://github.com/greenbone/gvmd/pull/1633)
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
+=======
+
+[21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
+
+## [21.4.0] (2021-04-16)
+
+### Added
+- Extend GMP for extended severities [#1326](https://github.com/greenbone/gvmd/pull/1326) [#1329](https://github.com/greenbone/gvmd/pull/1329) [#1359](https://github.com/greenbone/gvmd/pull/1359) [#1371](https://github.com/greenbone/gvmd/pull/1371) [#1477](https://github.com/greenbone/gvmd/pull/1477) [#1488](https://github.com/greenbone/gvmd/pull/1488)
+- Parameter `--db-user` to set a database user [#1327](https://github.com/greenbone/gvmd/pull/1327)
+- Add `allow_simultaneous_ips` field for targets [#1346](https://github.com/greenbone/gvmd/pull/1346) [#1396](https://github.com/greenbone/gvmd/pull/1396)
+- Speed up GET_VULNS [#1354](https://github.com/greenbone/gvmd/pull/1354) [#1355](https://github.com/greenbone/gvmd/pull/1354)
+- Speed up result counting iterator [#1358](https://github.com/greenbone/gvmd/pull/1358) [#1361](https://github.com/greenbone/gvmd/pull/1361)
+- Speed up result iterator [#1370](https://github.com/greenbone/gvmd/pull/1358) [#1361](https://github.com/greenbone/gvmd/pull/1370)
+- Improve GMP docs around users [#1363](https://github.com/greenbone/gvmd/pull/1363)
+- Cache report counts when Dynamic Severity is enabled [#1389](https://github.com/greenbone/gvmd/pull/1389)
+- Detection entry detection while importing reports [#1405](https://github.com/greenbone/gvmd/pull/1405)
+
+### Changed
+- Move EXE credential generation to a Python script [#1260](https://github.com/greenbone/gvmd/pull/1260) [#1262](https://github.com/greenbone/gvmd/pull/1262)
+- Clarify documentation for --scan-host parameter [#1277](https://github.com/greenbone/gvmd/pull/1277)
+- In result iterator access severity directly if possible [#1321](https://github.com/greenbone/gvmd/pull/1321)
+- Change SCAP and CERT data to use "severity" consistently [#1333](https://github.com/greenbone/gvmd/pull/1333) [#1357](https://github.com/greenbone/gvmd/pull/1357) [#1365](https://github.com/greenbone/gvmd/pull/1365) [#1457](https://github.com/greenbone/gvmd/pull/1457) [#1476](https://github.com/greenbone/gvmd/pull/1476)
+- Expect report format scripts to exit with code 0 [#1383](https://github.com/greenbone/gvmd/pull/1383)
+- Send entire families to ospd-openvas using VT_GROUP [#1384](https://github.com/greenbone/gvmd/pull/1384)
+- Limit "whole-only" config families to "growing" and "every nvt" [#1386](https://github.com/greenbone/gvmd/pull/1386)
+- Access current user with an SQL function [#1399](https://github.com/greenbone/gvmd/pull/1399)
+- Refactor modify_config, allowing multiple simultaneous changes [#1404](https://github.com/greenbone/gvmd/pull/1404)
+- Add retry on a deadlock within sql#sql [#1460](https://github.com/greenbone/gvmd/pull/1460)
+- Don't require report format plugin for XML report [#1466](https://github.com/greenbone/gvmd/pull/1466)
+- Wording of `Rebuilding NVTs because integrity check failed` [1475](https://github.com/greenbone/gvmd/pull/1475)
+
+### Fixed
+- Use GMP version with leading zero for feed dirs [#1287](https://github.com/greenbone/gvmd/pull/1287)
+- Check db version before creating SQL functions [#1304](https://github.com/greenbone/gvmd/pull/1304)
+- Fix severity_in_level SQL function [#1312](https://github.com/greenbone/gvmd/pull/1312)
+- Fix and simplify SecInfo migration [#1331](https://github.com/greenbone/gvmd/pull/1331)
+- Prevent CPE/NVD_ID from being "(null)" [#1369](https://github.com/greenbone/gvmd/pull/1369)
+- Check DB versions before CERT severity updates [#1376](https://github.com/greenbone/gvmd/pull/1376)
+- Add owner checks to report_count queries [#1397](https://github.com/greenbone/gvmd/pull/1397)
+
+### Removed
+- Remove solution element from VT tags [#886](https://github.com/greenbone/gvmd/pull/886)
+- Drop GMP scanners [#1269](https://github.com/greenbone/gvmd/pull/1269)
+- Reduce Severity Classes [#1285](https://github.com/greenbone/gvmd/pull/1285)
+- Removed Severity Classes [#1288](https://github.com/greenbone/gvmd/pull/1288)
+- Remove remaining use of "Severity Class" in where_levels_auto [#1311](https://github.com/greenbone/gvmd/pull/1311)
+- Remove the functionality "autofp" (Auto False Positives) [#1300](https://github.com/greenbone/gvmd/pull/1300)
+- Remove severity type "debug" [#1316](https://github.com/greenbone/gvmd/pull/1316)
+- Remove element "threat" of element "notes" [#1324](https://github.com/greenbone/gvmd/pull/1324)
+
+[21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
+
+## [20.8.3] (Unreleased)
+### Added
+- Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
+
+### Changed
+### Deprecated
+### Removed
+### Fixed
+>>>>>>> 1e410f56e (Add CHANGELOG entry for feed permission --optimize)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
