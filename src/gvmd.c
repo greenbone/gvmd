@@ -2519,7 +2519,7 @@ gvmd (int argc, char** argv)
       log_config_free ();
       if (ret)
         {
-          printf ("Failed to rebuild SCAP data.\n");
+          printf ("Failed to dump VT verification data.\n");
           return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;
