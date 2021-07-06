@@ -115,6 +115,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [20.8.3] (Unreleased)
 ### Added
+- Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
+
 ### Changed
 ### Deprecated
 ### Removed
