@@ -44746,6 +44746,7 @@ modify_permission (const char *permission_id, const char *name_arg,
       free (new_resource_id);
       free (existing_subject_type);
       free (new_subject_id);
+      g_free (subject_where_old);
       sql_rollback ();
       return ret;
     }
@@ -44798,7 +44799,6 @@ modify_permission (const char *permission_id, const char *name_arg,
           || (resource_id == NULL));
 
   quoted_name = sql_quote (name);
-  g_free (name);
 
   sql ("UPDATE permissions SET"
        " name = '%s',"
@@ -44882,6 +44882,7 @@ modify_permission (const char *permission_id, const char *name_arg,
   free (new_resource_id);
   free (existing_subject_type);
   free (new_subject_id);
+  g_free (name);
   free (old_name);
   free (old_resource_type);
   g_free (subject_where);
