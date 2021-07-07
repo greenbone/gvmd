@@ -30,6 +30,7 @@ jobs:
           if [ $BRANCH = "master" ];                                 \
           then VERSION=master;                                       \
           else VERSION=$(echo "$BRANCH" | sed 's/gvmd-//g' -);       \
+          fi;                                                        \
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -76,6 +77,7 @@ jobs:
           if [ $BRANCH = "master" ];                                 \
           then VERSION=master;                                       \
           else VERSION=$(echo "$BRANCH" | sed 's/gvmd-//g' -);       \
+          fi;                                                        \
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
