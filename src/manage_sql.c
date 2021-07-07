@@ -29374,11 +29374,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   const char *str;
   char *defs_file = NULL;
   time_t start_time, end_time;
-<<<<<<< HEAD
-=======
   gboolean has_results = FALSE;
   GArray *results_array;
->>>>>>> 6d1797a86 (Use less report cache SQL when adding results)
 
   assert (task);
   assert (report);
@@ -29417,6 +29414,9 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       goto end_parse_osp_report;
     }
   results = child->entities;
+  if (results)
+    has_results = TRUE;
+
   defs_file = task_definitions_file (task);
   while (results)
     {
@@ -29524,17 +29524,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       results = next_entities (results);
     }
 
-<<<<<<< HEAD
-=======
   if (has_results)
     {
-      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
-           report);
       report_add_results_array (report, results_array);
     }
   
-
->>>>>>> 6d1797a86 (Use less report cache SQL when adding results)
  end_parse_osp_report:
   sql_commit ();
   g_array_free (results_array, TRUE);
