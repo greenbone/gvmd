@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
 
@@ -96,6 +97,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
