@@ -30,8 +30,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.4.3] (Unreleased)
 ### Added
 ### Changed
-- Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
-
 ### Deprecated
 ### Removed
 ### Fixed
@@ -119,6 +117,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [20.8.3] (Unreleased)
 ### Added
 ### Changed
+- Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
+
 ### Deprecated
 ### Removed
 ### Fixed
