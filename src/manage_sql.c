@@ -21046,7 +21046,6 @@ report_add_results_array (report_t report, GArray *results)
       result_t result;
       result = g_array_index (results, result_t, index);
       
-      // TODO: Use array to insert multiple results at once
       report_add_result_for_buffer (report, result);
     }
 
