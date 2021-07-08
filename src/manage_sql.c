@@ -21277,6 +21277,59 @@ report_add_result (report_t report, result_t result)
 }
 
 /**
+ * @brief Add results from an array to a report.
+ * 
+ * @param[in]  report   The report to add the results to.
+ * @param[in]  results  GArray containing the row ids of the results to add.
+ */
+void
+report_add_results_array (report_t report, GArray *results)
+{
+  GString *array_sql;
+  int index;
+
+  if (report == 0 || results == NULL || results->len == 0)
+    return;
+
+  array_sql = g_string_new ("(");
+  for (index = 0; index < results->len; index++)
+    {
+      result_t result;
+      result = g_array_index (results, result_t, index);
+      
+      if (index)
+        g_string_append (array_sql, ", ");
+      g_string_append_printf (array_sql, "%llu", result);
+    }
+  g_string_append_c (array_sql, ')');
+
+  sql ("UPDATE results SET report = %llu,"
+       "                   owner = (SELECT reports.owner"
+       "                            FROM reports WHERE id = %llu)"
+       " WHERE id IN %s;",
+       report, report, array_sql->str);
+
+  for (index = 0; index < results->len; index++)
+    {
+      result_t result;
+      result = g_array_index (results, result_t, index);
+      
+      report_add_result_for_buffer (report, result);
+    }
+
+  sql ("UPDATE report_counts"
+       " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
+       "                 FROM overrides, results"
+       "                 WHERE overrides.nvt = results.nvt"
+       "                 AND results.report = %llu"
+       "                 AND overrides.end_time >= m_now ())"
+       " WHERE report = %llu AND override = 1;",
+       report, report);
+
+  g_string_free (array_sql, TRUE);
+}
+
+/**
  * @brief Filter columns for report iterator.
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
@@ -29321,6 +29374,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   const char *str;
   char *defs_file = NULL;
   time_t start_time, end_time;
+  gboolean has_results = FALSE;
+  GArray *results_array;
 
   assert (task);
   assert (report);
@@ -29334,6 +29389,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
   sql_begin_immediate ();
   /* Set the report's start and end times. */
+  results_array = g_array_new (TRUE, TRUE, sizeof (result_t));
   start_time = 0;
   str = entity_attribute (entity, "start_time");
   if (str)
@@ -29358,6 +29414,9 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       goto end_parse_osp_report;
     }
   results = child->entities;
+  if (results)
+    has_results = TRUE;
+
   defs_file = task_definitions_file (task);
   while (results)
     {
@@ -29457,7 +29516,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
                                     severity_str ?: severity,
                                     qod_int,
                                     path);
-          report_add_result (report, result);
+          g_array_append_val (results_array, result);
         }
       g_free (nvt_id);
       g_free (desc);
@@ -29465,8 +29524,14 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       results = next_entities (results);
     }
 
+  if (has_results)
+    {
+      report_add_results_array (report, results_array);
+    }
+  
  end_parse_osp_report:
   sql_commit ();
+  g_array_free (results_array, TRUE);
   g_free (defs_file);
   free_entity (entity);
 }
