@@ -12,11 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
-<<<<<<< HEAD
-- Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
-=======
 - Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611)
->>>>>>> 47876b49c (Add CHANGELOG entry for VTs hash fix)
+- Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
