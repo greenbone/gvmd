@@ -1594,35 +1594,10 @@ update_nvts_from_vts (entity_t *get_vts_response,
        * All values are concatenated without a separator.
        */
       db_vts_hash
-        = sql_string ("WITH pref_str AS ("
-                      "  SELECT name,"
-                      "         substring(name, '^(.*?):') AS oid,"
-                      "         substring (name, '^.*?:([^:]+):') AS pref_id,"
-                      "         (substring (name, '^.*?:([^:]+):')"
-                      "          || substring (name,"
-                      "                        '^[^:]*:[^:]*:[^:]*:(.*)')"
-                      "          || value) AS pref"
-                      "  FROM nvt_preferences"
-                      " ),"
-                      " nvt_str AS ("
-                      "  SELECT (SELECT nvts.oid"
-                      "            || max(modification_time)"
-                      "            || coalesce (string_agg(pref_str.pref, ''"
-                      "                                    ORDER BY pref_id),"
-                      "                         ''))"
-                      "         AS vt_string"
-                      "  FROM nvts"
-                      "  LEFT JOIN pref_str ON nvts.oid = pref_str.oid"
-                      "  GROUP BY nvts.oid"
-                      "  ORDER BY nvts.oid ASC"
-                      " )"
-                      " SELECT encode"
-                      "         (digest"
-                      "           (coalesce (string_agg (nvt_str.vt_string, ''),"
-                      "                      ''),"
-                      "            'sha256'),"
-                      "          'hex')"
-                      " FROM nvt_str;");
+        = sql_string ("SELECT encode ("
+                      "  digest (vts_verification_str (), 'SHA256'),"
+                      "  'hex'"
+                      " );");
 
       if (strcmp (osp_vt_hash, db_vts_hash ? db_vts_hash : ""))
         {
@@ -2223,4 +2198,48 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
   manage_option_cleanup ();
 
   return ret;
+}
+
+/**
+ * @brief Dump the string used to calculate the VTs verification hash
+ *  to stdout.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version,
+ *         -3 database needs to be initialised from server, -5 sync active.
+ */
+int
+manage_dump_vt_verification (GSList *log_config,
+                             const db_conn_info_t *database)
+{
+  int ret;
+  static lockfile_t lockfile;
+  char *verification_str;
+
+  switch (feed_lockfile_lock_timeout (&lockfile))
+    {
+      case 1:
+        printf ("A feed sync is already running.\n");
+        return -5;
+      case -1:
+        printf ("Error getting sync lock.\n");
+        return -1;
+    }
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    {
+      feed_lockfile_unlock (&lockfile);
+      return ret;
+    }
+
+  verification_str = sql_string ("SELECT vts_verification_str ();");
+  printf ("%s\n", verification_str);
+
+  feed_lockfile_unlock (&lockfile);
+  manage_option_cleanup ();
+
+  return 0;
 }
