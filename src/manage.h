@@ -1256,6 +1256,9 @@ create_report (array_t*, const char *, const char *, const char *, const char *,
 void
 report_add_result (report_t, result_t);
 
+void
+report_add_results_array (report_t, GArray *);
+
 char*
 report_uuid (report_t);
 
