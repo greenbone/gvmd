@@ -123,7 +123,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
-- Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611)
+- Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611) [#1629](https://github.com/greenbone/gvmd/pull/1629)
 - Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
