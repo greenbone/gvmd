@@ -4017,8 +4017,8 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
 
-  connection_retry = get_scanner_connection_retry();
-  while(connection == NULL && connection_retry > 0)
+  connection_retry = get_scanner_connection_retry ();
+  while (connection == NULL && connection_retry > 0)
     {
       connection = osp_connect_with_data (host, port,
                                           ca_pub, key_pub, key_priv);
@@ -4039,7 +4039,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   opts.titles = g_strdup (titles);
   error = NULL;
 
-  connection_retry = get_scanner_connection_retry();
+  connection_retry = get_scanner_connection_retry ();
   return_value = 1;
   while (return_value > 0 && connection_retry > 0)
     {
