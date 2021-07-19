@@ -6202,12 +6202,13 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   key_priv = scanner_key_priv (scanner);
 
   connection_retry = get_scanner_connection_retry ();
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
   while (connection == NULL && connection_retry > 0)
     {
+      sleep(1);
       connection = osp_connect_with_data (host, port,
                                           ca_pub, key_pub, key_priv);
       connection_retry--;
-      sleep(1);
     }
 
   free (host);
@@ -6224,13 +6225,14 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   error = NULL;
 
   connection_retry = get_scanner_connection_retry ();
-  return_value = 1;
-  while (return_value > 0 && connection_retry > 0)
+  return_value = osp_get_performance_ext (connection, opts,
+                                          performance_str, &error);
+  while (return_value != 0 && connection_retry > 0)
     {
+      sleep(1);
       return_value = osp_get_performance_ext (connection, opts,
                                               performance_str, &error);
       connection_retry--;
-      sleep(1);
     }
 
   if (return_value)
