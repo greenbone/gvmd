@@ -4001,9 +4001,10 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 {
   char *host, *ca_pub, *key_pub, *key_priv;
   int port;
-  osp_connection_t *connection;
+  osp_connection_t *connection = NULL;
   osp_get_performance_opts_t opts;
   gchar *error;
+  int connection_retry, return_value;
 
   host = scanner_host (scanner);
   port = scanner_port (scanner);
@@ -4011,7 +4012,15 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
 
+  connection_retry = get_scanner_connection_retry ();
   connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  while (connection == NULL && connection_retry > 0)
+    {
+      sleep(1);
+      connection = osp_connect_with_data (host, port,
+                                          ca_pub, key_pub, key_priv);
+      connection_retry--;
+    }
 
   free (host);
   free (ca_pub);
@@ -4026,7 +4035,18 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   opts.titles = g_strdup (titles);
   error = NULL;
 
-  if (osp_get_performance_ext (connection, opts, performance_str, &error))
+  connection_retry = get_scanner_connection_retry ();
+  return_value = osp_get_performance_ext (connection, opts,
+                                          performance_str, &error);
+  while (return_value != 0 && connection_retry > 0)
+    {
+      sleep(1);
+      return_value = osp_get_performance_ext (connection, opts,
+                                              performance_str, &error);
+      connection_retry--;
+    }
+
+  if (return_value)
     {
       osp_connection_close (connection);
       g_warning ("Error getting OSP performance report: %s", error);
