@@ -4009,7 +4009,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   osp_connection_t *connection = NULL;
   osp_get_performance_opts_t opts;
   gchar *error;
-  int connection_retry;
+  int connection_retry, return_value;
 
   host = scanner_host (scanner);
   port = scanner_port (scanner);
@@ -4040,7 +4040,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   error = NULL;
 
   connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
-  int return_value = 1;
+  return_value = 1;
   while (return_value > 0 && connection_retry > 0)
     {
       return_value = osp_get_performance_ext (connection, opts,
