@@ -31847,6 +31847,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
+   { "target_credential (id, 1, CAST ('elevate' AS text))",             \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('elevate' AS text))", \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
    { "allow_simultaneous_ips",                                      \
      NULL,                                                          \
      KEYWORD_TYPE_INTEGER },                                        \
