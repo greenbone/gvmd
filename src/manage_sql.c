@@ -3058,7 +3058,8 @@ filter_clause (const char* type, const char* filter,
                                           " ORDER BY CAST (%s AS INTEGER) ASC",
                                           column);
                 }
-              else if (strcmp (keyword->string, "ip") == 0)
+              else if (strcmp (keyword->string, "ip") == 0
+                       || strcmp (keyword->string, "host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3250,7 +3251,8 @@ filter_clause (const char* type, const char* filter,
                                           " ORDER BY CAST (%s AS INTEGER) DESC",
                                           column);
                 }
-              else if (strcmp (keyword->string, "ip") == 0)
+              else if (strcmp (keyword->string, "ip") == 0
+                       || strcmp (keyword->string, "host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
