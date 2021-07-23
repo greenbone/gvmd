@@ -18764,14 +18764,6 @@ auto_delete_reports ()
 
   sql_begin_immediate ();
 
-  /* As in delete_report, this prevents other processes from getting the
-   * report ID. */
-  if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
-    {
-      sql_rollback ();
-      return;
-    }
-
   init_iterator (&tasks,
                  "SELECT id, name,"
                  "       (SELECT value FROM task_preferences"
@@ -18820,6 +18812,15 @@ auto_delete_reports ()
 
           report = iterator_int64 (&reports, 0);
           assert (report);
+
+          /* As in delete_report, this prevents other processes from getting
+           * the report ID. */
+          if (sql_int ("SELECT try_row_lock_by_id('reports', %llu);",
+                       report) == 0)
+            {
+              g_debug ("%s: cannot lock report %llu", __func__, report);
+              continue;
+            }
 
           g_debug ("%s: delete %llu", __func__, report);
           ret = delete_report_internal (report);
@@ -24469,14 +24470,6 @@ delete_report (const char *report_id, int dummy)
 
   sql_begin_immediate ();
 
-  /* This prevents other processes (in particular a RESUME_TASK) from getting
-   * a reference to the report ID, and then using that reference to try access
-   * the deleted report.
-   *
-   * If the report is running already then delete_report_internal will
-   * ROLLBACK. */
-  sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
-
   if (acl_user_may ("delete_report") == 0)
     {
       sql_rollback ();
@@ -24502,6 +24495,18 @@ delete_report (const char *report_id, int dummy)
           sql_rollback ();
           return 2;
         }
+    }
+
+  /* This prevents other processes (in particular a RESUME_TASK) from getting
+   * a reference to the report ID, and then using that reference to try access
+   * the deleted report.
+   *
+   * If the report is running already then delete_report_internal will
+   * ROLLBACK. */
+  if (sql_error ("SELECT * FROM reports WHERE id = %llu FOR UPDATE;", report))
+    {
+      sql_rollback ();
+      return -1;
     }
 
   ret = delete_report_internal (report);
@@ -29307,7 +29312,7 @@ delete_task_lock (task_t task, int ultimate)
    *
    * If the task is already active then delete_report (via delete_task)
    * will fail and rollback. */
-  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+  if (sql_error ("SELECT * FROM reports WHERE task = %llu FOR UPDATE;", task))
     {
       sql_rollback ();
       return -1;
@@ -29471,14 +29476,20 @@ request_delete_task_uuid (const char *task_id, int ultimate)
           int ret;
 
           if (ultimate)
-            /* This prevents other processes (for example a START_TASK) from
-             * getting a reference to a report ID or the task ID, and then using
-             * that reference to try access the deleted report or task.
-             *
-             * If the task is running already then delete_task will lead to
-             * ROLLBACK. */
-            sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
-
+            {
+              /* This prevents other processes (for example a START_TASK) from
+               * getting a reference to a report ID or the task ID, and then
+               * using that reference to try access the deleted report or task.
+               *
+               * If the task is running already then delete_task will lead to
+               * ROLLBACK. */
+              if (sql_error ("SELECT * FROM reports WHERE task = %llu"
+                             " FOR UPDATE;", task))
+                {
+                  sql_rollback ();
+                  return -1;
+                }
+            }
           ret = delete_task (task, ultimate);
           if (ret)
             sql_rollback ();

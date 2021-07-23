@@ -347,6 +347,21 @@ manage_create_sql_functions ()
        " END;"
        "$$ language 'plpgsql';");
 
+  /* Wrapping the "SELECT ... FOR UPDATE NOWAIT" like this will prevent
+   *  error messages in the PostgreSQL log if the lock is not available.
+   */
+  sql ("CREATE OR REPLACE FUNCTION try_row_lock_by_id (regclass, integer)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   EXECUTE 'SELECT * FROM '"
+       "           || quote_ident_split($1::text)"
+       "           || ' WHERE id = ' || $2 || ' FOR UPDATE NOWAIT;';"
+       "   RETURN 1;"
+       " EXCEPTION WHEN lock_not_available THEN"
+       "   RETURN 0;"
+       " END;"
+       "$$ language 'plpgsql';");
+
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
