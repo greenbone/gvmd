@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
+- Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
 
