@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
 - Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
 - Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
+- Removed the Business Process Map from gvmd [1627](https://github.com/greenbone/gvmd/pull/1627)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
@@ -34,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
+- Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
 
@@ -62,7 +64,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
 - Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
 - Solved a peformance problem for tasks after scanning lots of hosts [#1567](https://github.com/greenbone/gvmd/pull/1567)
-- Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 
 [21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
 
@@ -119,10 +120,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
 
 ### Changed
+- Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
+
 ### Deprecated
 ### Removed
 ### Fixed
+- Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
+- Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611) [#1629](https://github.com/greenbone/gvmd/pull/1629)
 - Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
+- Fix sensor connection for performance reports on failure [#1633](https://github.com/greenbone/gvmd/pull/1633)
+- Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 

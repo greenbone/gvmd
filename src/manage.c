@@ -3047,9 +3047,11 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
         {
           iterator_t prognosis;
           int prognosis_report_host, start_time;
+          GArray *results;
 
           /* Add report_host with prognosis results and host details. */
 
+          results = g_array_new (TRUE, TRUE, sizeof (result_t));
           start_time = time (NULL);
           prognosis_report_host = 0;
           init_host_prognosis_iterator (&prognosis, report_host);
@@ -3122,11 +3124,14 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
               result = make_cve_result (task, ip, cve, severity, desc);
               g_free (desc);
 
-              report_add_result (report, result);
+              g_array_append_val (results, result);
 
               g_string_free (locations, TRUE);
             }
           cleanup_iterator (&prognosis);
+
+          report_add_results_array (report, results);
+          g_array_free (results, TRUE);
 
           if (prognosis_report_host)
             {
@@ -3996,9 +4001,10 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 {
   char *host, *ca_pub, *key_pub, *key_priv;
   int port;
-  osp_connection_t *connection;
+  osp_connection_t *connection = NULL;
   osp_get_performance_opts_t opts;
   gchar *error;
+  int connection_retry, return_value;
 
   host = scanner_host (scanner);
   port = scanner_port (scanner);
@@ -4006,7 +4012,15 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
 
+  connection_retry = get_scanner_connection_retry ();
   connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  while (connection == NULL && connection_retry > 0)
+    {
+      sleep(1);
+      connection = osp_connect_with_data (host, port,
+                                          ca_pub, key_pub, key_priv);
+      connection_retry--;
+    }
 
   free (host);
   free (ca_pub);
@@ -4021,7 +4035,18 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   opts.titles = g_strdup (titles);
   error = NULL;
 
-  if (osp_get_performance_ext (connection, opts, performance_str, &error))
+  connection_retry = get_scanner_connection_retry ();
+  return_value = osp_get_performance_ext (connection, opts,
+                                          performance_str, &error);
+  while (return_value != 0 && connection_retry > 0)
+    {
+      sleep(1);
+      return_value = osp_get_performance_ext (connection, opts,
+                                              performance_str, &error);
+      connection_retry--;
+    }
+
+  if (return_value)
     {
       osp_connection_close (connection);
       g_warning ("Error getting OSP performance report: %s", error);

@@ -3060,7 +3060,8 @@ filter_clause (const char* type, const char* filter,
                                           " ORDER BY CAST (%s AS INTEGER) ASC",
                                           column);
                 }
-              else if (strcmp (keyword->string, "ip") == 0)
+              else if (strcmp (keyword->string, "ip") == 0
+                       || strcmp (keyword->string, "host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3252,7 +3253,8 @@ filter_clause (const char* type, const char* filter,
                                           " ORDER BY CAST (%s AS INTEGER) DESC",
                                           column);
                 }
-              else if (strcmp (keyword->string, "ip") == 0)
+              else if (strcmp (keyword->string, "ip") == 0
+                       || strcmp (keyword->string, "host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -21005,6 +21007,59 @@ report_add_result (report_t report, result_t result)
 }
 
 /**
+ * @brief Add results from an array to a report.
+ * 
+ * @param[in]  report   The report to add the results to.
+ * @param[in]  results  GArray containing the row ids of the results to add.
+ */
+void
+report_add_results_array (report_t report, GArray *results)
+{
+  GString *array_sql;
+  int index;
+
+  if (report == 0 || results == NULL || results->len == 0)
+    return;
+
+  array_sql = g_string_new ("(");
+  for (index = 0; index < results->len; index++)
+    {
+      result_t result;
+      result = g_array_index (results, result_t, index);
+      
+      if (index)
+        g_string_append (array_sql, ", ");
+      g_string_append_printf (array_sql, "%llu", result);
+    }
+  g_string_append_c (array_sql, ')');
+
+  sql ("UPDATE results SET report = %llu,"
+       "                   owner = (SELECT reports.owner"
+       "                            FROM reports WHERE id = %llu)"
+       " WHERE id IN %s;",
+       report, report, array_sql->str);
+
+  for (index = 0; index < results->len; index++)
+    {
+      result_t result;
+      result = g_array_index (results, result_t, index);
+      
+      report_add_result_for_buffer (report, result);
+    }
+
+  sql ("UPDATE report_counts"
+       " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
+       "                 FROM overrides, results"
+       "                 WHERE overrides.nvt = results.nvt"
+       "                 AND results.report = %llu"
+       "                 AND overrides.end_time >= m_now ())"
+       " WHERE report = %llu AND override = 1;",
+       report, report);
+
+  g_string_free (array_sql, TRUE);
+}
+
+/**
  * @brief Filter columns for report iterator.
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
@@ -28742,6 +28797,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   char *defs_file = NULL;
   time_t start_time, end_time;
   gboolean has_results = FALSE;
+  GArray *results_array;
 
   assert (task);
   assert (report);
@@ -28755,6 +28811,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
   sql_begin_immediate ();
   /* Set the report's start and end times. */
+  results_array = g_array_new (TRUE, TRUE, sizeof (result_t));
   start_time = 0;
   str = entity_attribute (entity, "start_time");
   if (str)
@@ -28876,7 +28933,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
                                     severity_str ?: severity,
                                     qod_int,
                                     path);
-          report_add_result (report, result);
+          g_array_append_val (results_array, result);
         }
       g_free (nvt_id);
       g_free (desc);
@@ -28885,11 +28942,16 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
     }
 
   if (has_results)
-    sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
-	 report);
+    {
+      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
+           report);
+      report_add_results_array (report, results_array);
+    }
+  
 
  end_parse_osp_report:
   sql_commit ();
+  g_array_free (results_array, TRUE);
   g_free (defs_file);
   free_entity (entity);
 }
@@ -31708,71 +31770,77 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 /**
  * @brief Target iterator columns for trash case.
  */
-#define TARGET_ITERATOR_TRASH_COLUMNS                               \
- {                                                                  \
-   GET_ITERATOR_COLUMNS (targets_trash),                            \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                          \
-   { "target_credential (id, 1, CAST ('ssh' AS text))",             \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "target_login_port (id, 1, CAST ('ssh' AS text))",             \
-     "ssh_port",                                                    \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "target_credential (id, 1, CAST ('smb' AS text))",             \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "port_list", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "trash_target_credential_location (id, CAST ('ssh' AS text))", \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "trash_target_credential_location (id, CAST ('smb' AS text))", \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   {                                                                \
-     "(CASE"                                                        \
-     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
-     " THEN (SELECT uuid FROM port_lists_trash"                     \
-     "       WHERE port_lists_trash.id = port_list)"                \
-     " ELSE (SELECT uuid FROM port_lists"                           \
-     "       WHERE port_lists.id = port_list)"                      \
-     " END)",                                                       \
-     NULL,                                                          \
-     KEYWORD_TYPE_STRING                                            \
-   },                                                               \
-   {                                                                \
-     "(CASE"                                                        \
-     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
-     " THEN (SELECT name FROM port_lists_trash"                     \
-     "       WHERE port_lists_trash.id = port_list)"                \
-     " ELSE (SELECT name FROM port_lists"                           \
-     "       WHERE port_lists.id = port_list)"                      \
-     " END)",                                                       \
-     NULL,                                                          \
-     KEYWORD_TYPE_STRING                                            \
-   },                                                               \
-   { "port_list_location = " G_STRINGIFY (LOCATION_TRASH),          \
-     NULL,                                                          \
-     KEYWORD_TYPE_STRING },                                         \
-   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },                  \
-   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },           \
-   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },          \
-   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },                    \
-   { "target_credential (id, 1, CAST ('esxi' AS text))",            \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "trash_target_credential_location (id, CAST ('esxi' AS text))",\
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "target_credential (id, 1, CAST ('snmp' AS text))",            \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "trash_target_credential_location (id, CAST ('snmp' AS text))",\
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { "allow_simultaneous_ips",                                      \
-     NULL,                                                          \
-     KEYWORD_TYPE_INTEGER },                                        \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
+#define TARGET_ITERATOR_TRASH_COLUMNS                                   \
+ {                                                                      \
+   GET_ITERATOR_COLUMNS (targets_trash),                                \
+   { "hosts", NULL, KEYWORD_TYPE_STRING },                              \
+   { "target_credential (id, 1, CAST ('ssh' AS text))",                 \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "target_login_port (id, 1, CAST ('ssh' AS text))",                 \
+     "ssh_port",                                                        \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "target_credential (id, 1, CAST ('smb' AS text))",                 \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "port_list", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { "trash_target_credential_location (id, CAST ('ssh' AS text))",     \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('smb' AS text))",     \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   {                                                                    \
+     "(CASE"                                                            \
+     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)         \
+     " THEN (SELECT uuid FROM port_lists_trash"                         \
+     "       WHERE port_lists_trash.id = port_list)"                    \
+     " ELSE (SELECT uuid FROM port_lists"                               \
+     "       WHERE port_lists.id = port_list)"                          \
+     " END)",                                                           \
+     NULL,                                                              \
+     KEYWORD_TYPE_STRING                                                \
+   },                                                                   \
+   {                                                                    \
+     "(CASE"                                                            \
+     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)         \
+     " THEN (SELECT name FROM port_lists_trash"                         \
+     "       WHERE port_lists_trash.id = port_list)"                    \
+     " ELSE (SELECT name FROM port_lists"                               \
+     "       WHERE port_lists.id = port_list)"                          \
+     " END)",                                                           \
+     NULL,                                                              \
+     KEYWORD_TYPE_STRING                                                \
+   },                                                                   \
+   { "port_list_location = " G_STRINGIFY (LOCATION_TRASH),              \
+     NULL,                                                              \
+     KEYWORD_TYPE_STRING },                                             \
+   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },                      \
+   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },               \
+   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },              \
+   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "target_credential (id, 1, CAST ('esxi' AS text))",                \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('esxi' AS text))",    \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "target_credential (id, 1, CAST ('snmp' AS text))",                \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('snmp' AS text))",    \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "target_credential (id, 1, CAST ('elevate' AS text))",             \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('elevate' AS text))", \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "allow_simultaneous_ips",                                          \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
 /**
@@ -50059,16 +50127,6 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* Tickets */
       else if (strcmp (uuid, "70b0626f-a835-478e-8194-e09f97887a15") == 0)
         setting_name = g_strdup ("Tickets Top Dashboard Configuration");
-
-      /* Business Process Model (BPM) */
-      else if (strcmp (uuid, "3232d608-e5bb-415e-99aa-019f16eede8d") == 0)
-        setting_name = g_strdup ("BPM Dashboard Configuration");
-
-      /*
-       * Client data for Business Process Modeling (BPM)
-       */
-      else if (strcmp (uuid, "3ce2d136-bb52-448a-93f0-20069566f877") == 0)
-        setting_name = g_strdup ("BPM Data");
     }
 
   if (setting_name)

@@ -1256,6 +1256,9 @@ create_report (array_t*, const char *, const char *, const char *, const char *,
 void
 report_add_result (report_t, result_t);
 
+void
+report_add_results_array (report_t, GArray *);
+
 char*
 report_uuid (report_t);
 
@@ -3670,6 +3673,9 @@ manage_update_nvts_osp (const gchar *);
 
 int
 manage_rebuild (GSList *, const db_conn_info_t *);
+
+int
+manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 
 
 /* Wizards. */
