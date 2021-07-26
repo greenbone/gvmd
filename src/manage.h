@@ -1518,7 +1518,7 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     int (*) (const char *, void*), void *, const char *,
                     const gchar *);
 
-void
+int
 begin_report_transaction (report_t);
 
 void

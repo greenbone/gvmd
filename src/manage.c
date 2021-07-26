@@ -3239,7 +3239,17 @@ fork_cve_scan_handler (task_t task, target_t target)
   free (hosts);
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
     {
-      begin_report_transaction (global_current_report);
+      if (begin_report_transaction (global_current_report))
+        {
+          g_warning ("%s: Report %llu was deleted during scan.",
+                     __func__, global_current_report);
+          global_current_report = 0;
+          set_task_interrupted (task,
+                                NULL /* Report gone, so no message to add*/);
+          gvm_hosts_free (gvm_hosts);
+          gvm_close_sentry ();
+          exit (1);
+        }
       if (cve_scan_host (task, global_current_report, gvm_host))
         {
           set_task_interrupted (task,

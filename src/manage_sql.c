@@ -28962,15 +28962,19 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 }
 
 /**
- * @brief Starts a transaction and acquires the row lock for a report
+ * @brief Starts a transaction and acquires the row lock for a report,
+ *        also testing if the report still exists.
  *
  * @param[in]  report  The report to acquire the row lock for.
+ *
+ * @return 0 if lock was acquired and report exists, 1 if report does not exist
  */
-void
+int
 begin_report_transaction (report_t report)
 {
   sql_begin_immediate ();
-  sql ("SELECT * FROM reports WHERE id = %llu FOR UPDATE", report);
+  return sql_int64_0 ("SELECT id FROM reports WHERE id = %llu FOR UPDATE",
+                      report) ? 0 : 1;
 }
 
 /**
