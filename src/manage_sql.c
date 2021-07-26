@@ -45046,15 +45046,62 @@ add_feed_role_permissions (const char *type,
               permission_name = g_strdup_printf ("get_%ss", type);
 
               current_credentials.uuid = user_uuid (owner);
-              create_permission_internal (0,
-                                          permission_name,
-                                          "Automatically created by"
-                                          " --optimize",
-                                          type,
-                                          permission_resource_id,
-                                          "role",
-                                          *role,
-                                          NULL);
+              switch (create_permission_internal
+                       (0,
+                        permission_name,
+                        "Automatically created by"
+                        " --optimize",
+                        type,
+                        permission_resource_id,
+                        "role",
+                        *role,
+                        NULL))
+                {
+                  case 0:
+                    // success
+                    break;
+                  case 2:
+                    g_warning ("%s: failed to find role %s for permission",
+                               __func__, *role);
+                    break;
+                  case 3:
+                    g_warning ("%s: failed to find %s %s for permission",
+                               __func__, type_cap, permission_resource_id);
+                    break;
+                  case 5:
+                    g_warning ("%s: error in resource when creating permission"
+                               " for %s %s",
+                               __func__, type_cap, permission_resource_id);
+                    break;
+                  case 6:
+                    g_warning ("%s: error in subject (Role %s)",
+                               __func__, *role);
+                    break;
+                  case 7:
+                    g_warning ("%s: error in name %s",
+                               __func__, permission_name);
+                    break;
+                  case 8:
+                    g_warning ("%s: permission on permission", __func__);
+                    break;
+                  case 9:
+                    g_warning ("%s: permission %s does not accept resource",
+                               __func__, permission_name);
+                    break;
+                  case 99:
+                    g_warning ("%s: permission denied to create %s permission"
+                               " for role %s on %s %s",
+                               __func__, permission_name, *role, type_cap,
+                               permission_resource_id);
+                    break;
+                  default:
+                    g_warning ("%s: internal error creating %s permission"
+                               " for role %s on %s %s",
+                               __func__, permission_name, *role, type_cap,
+                               permission_resource_id);
+                    break;
+                }
+
               free (current_credentials.uuid);
               current_credentials.uuid = NULL;
             }
