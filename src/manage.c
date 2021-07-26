@@ -3238,16 +3238,21 @@ fork_cve_scan_handler (task_t task, target_t target)
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
-    if (cve_scan_host (task, global_current_report, gvm_host))
-      {
-        set_task_interrupted (task,
-                              "Failed to get nthlast report."
-                              "  Interrupting scan.");
-        set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
-        gvm_hosts_free (gvm_hosts);
-        gvm_close_sentry ();
-        exit (1);
-      }
+    {
+      begin_report_transaction (global_current_report);
+      if (cve_scan_host (task, global_current_report, gvm_host))
+        {
+          set_task_interrupted (task,
+                                "Failed to get nthlast report."
+                                "  Interrupting scan.");
+          set_report_scan_run_status (global_current_report,
+                                      TASK_STATUS_INTERRUPTED);
+          gvm_hosts_free (gvm_hosts);
+          gvm_close_sentry ();
+          exit (1);
+        }
+      commit_report_transaction ();
+    }
   gvm_hosts_free (gvm_hosts);
 
   /* Set the end states. */

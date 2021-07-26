@@ -28961,6 +28961,29 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   free_entity (entity);
 }
 
+/**
+ * @brief Starts a transaction and acquires the row lock for a report
+ *
+ * @param[in]  report  The report to acquire the row lock for.
+ */
+void
+begin_report_transaction (report_t report)
+{
+  sql_begin_immediate ();
+  sql ("SELECT * FROM reports WHERE id = %llu FOR UPDATE", report);
+}
+
+/**
+ * @brief Commits a transaction, releasing the locks for the reports.
+ */
+void
+commit_report_transaction (report_t report)
+{
+  (void) report;
+  sql_commit ();
+}
+
+
 
 /* More task stuff. */
 
