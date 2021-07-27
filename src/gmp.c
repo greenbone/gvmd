@@ -88,6 +88,7 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
+#include "gmp_license.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_formats.h"
 #include "gmp_tickets.h"
@@ -4336,6 +4337,7 @@ typedef enum
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
   CLIENT_GET_INFO,
+  CLIENT_GET_LICENSE,
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
@@ -4408,6 +4410,7 @@ typedef enum
   CLIENT_MODIFY_GROUP_COMMENT,
   CLIENT_MODIFY_GROUP_NAME,
   CLIENT_MODIFY_GROUP_USERS,
+  CLIENT_MODIFY_LICENSE,
   CLIENT_MODIFY_NOTE,
   CLIENT_MODIFY_NOTE_ACTIVE,
   CLIENT_MODIFY_NOTE_HOSTS,
@@ -5291,6 +5294,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_values);
             set_client_state (CLIENT_GET_GROUPS);
           }
+        else if (strcasecmp ("GET_LICENSE", element_name) == 0)
+          {
+            get_license_start (gmp_parser,
+                               attribute_names,
+                               attribute_values);
+            set_client_state (CLIENT_GET_LICENSE);
+          }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5785,6 +5795,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               "port_list_id",
                               &modify_port_list_data->port_list_id);
             set_client_state (CLIENT_MODIFY_PORT_LIST);
+          }
+        else if (strcasecmp ("MODIFY_LICENSE", element_name) == 0)
+          {
+            modify_license_start (gmp_parser,
+                                  attribute_names,
+                                  attribute_values);
+            set_client_state (CLIENT_MODIFY_LICENSE);
           }
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
@@ -7736,6 +7753,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_USER_SOURCES_SOURCE);
         else
           set_read_over (gmp_parser);
+        break;
+
+      case CLIENT_MODIFY_LICENSE:
+        modify_license_element_start (gmp_parser, element_name,
+                                      attribute_names, attribute_values);
         break;
 
       case CLIENT_MODIFY_NOTE:
@@ -18849,6 +18871,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_info (gmp_parser, error);
         break;
 
+      case CLIENT_GET_LICENSE:
+        {
+          if (get_license_element_end (gmp_parser,
+                                       error,
+                                       element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_NOTES:
         handle_get_notes (gmp_parser, error);
         break;
@@ -23236,6 +23267,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_GROUP, NAME);
       CLOSE (CLIENT_MODIFY_GROUP, USERS);
 
+      case CLIENT_MODIFY_LICENSE:
+        {
+          if (modify_license_element_end (gmp_parser,
+                                          error,
+                                          element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_MODIFY_NOTE:
         {
           if (acl_user_may ("modify_note") == 0)
@@ -26368,6 +26408,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         }
 
 
+      case CLIENT_GET_LICENSE:
+        get_license_element_text (text, text_len);
+        break;
+
+
       APPEND (CLIENT_MODIFY_ALERT_NAME,
               &modify_alert_data->name);
 
@@ -26439,6 +26484,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_GROUP_USERS,
               &modify_group_data->users);
+
+
+      case CLIENT_MODIFY_LICENSE:
+        modify_license_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_MODIFY_NOTE_ACTIVE,
