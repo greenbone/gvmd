@@ -4,7 +4,75 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+<<<<<<< HEAD
 ## [20.8.3] (Unreleased)
+=======
+## [21.10] (unreleased)
+
+### Added
+- Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519), [#1590](https://github.com/greenbone/gvmd/pull/1590)
+- Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
+
+### Changed
+- Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
+- Change report timestamp filter and iterator columns [#1512](https://github.com/greenbone/gvmd/pull/1512)
+- Rename the date column of reports to creation_time [#1520](https://github.com/greenbone/gvmd/pull/1520)
+
+### Fixed
+- Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
+- Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
+- Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
+
+### Removed
+- Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
+- Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
+- Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
+- Removed the Business Process Map from gvmd [1627](https://github.com/greenbone/gvmd/pull/1627)
+
+[Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
+
+## [21.4.3] (Unreleased)
+### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+- Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
+- Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
+- Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
+
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
+
+## [21.4.2] - 2021-06-28
+### Fixed
+- Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
+- Added the missing GMP documentation for the ssh elevate credential [#1591](https://github.com/greenbone/gvmd/pull/1591)
+
+[21.4.2]: https://github.com/greenbone/gvmd/compare/v21.4.1...v21.4.2
+
+## [21.4.1] - 2021-06-23
+
+### Added
+- Add NVT tag "deprecated" [#1536](https://github.com/greenbone/gvmd/pull/1536)
+- Extend GMP for new privilege escalation credential [#1535](https://github.com/greenbone/gvmd/pull/1535)
+- Include new ssh elevate (escalation) credential in OSP request [#1539](https://github.com/greenbone/gvmd/pull/1539)
+- Add test if the ssh elevate credential is different from the ssh credential [#1582](https://github.com/greenbone/gvmd/pull/1582)
+
+### Changed
+- Update default log config [#1501](https://github.com/greenbone/gvmd/pull/1501)
+
+### Fixed
+- Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
+- Fix migration to DB version 242 from gvmd 20.08 [#1498](https://github.com/greenbone/gvmd/pull/1498)
+- Update subject alternative name in certificate generation [#1503](https://github.com/greenbone/gvmd/pull/1503)
+- Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
+- Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
+- Solved a peformance problem for tasks after scanning lots of hosts [#1567](https://github.com/greenbone/gvmd/pull/1567)
+
+[21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
+
+## [21.4.0] (2021-04-16)
+>>>>>>> 30e2c6113 (Fix for parse_iso_time_tz error with musl library)
 
 ### Added
 - Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
@@ -20,6 +88,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 - Fix sensor connection for performance reports on failure [#1633](https://github.com/greenbone/gvmd/pull/1633)
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
+- Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
