@@ -426,6 +426,10 @@ static gboolean in_transaction;
  */
 static struct timeval last_msg;
 
+/**
+ * @brief The VT verification collation override
+ */
+static gchar *vt_verification_collation = NULL;
 
 /* GMP commands. */
 
@@ -43845,6 +43849,271 @@ modify_permission (const char *permission_id, const char *name_arg,
   return 0;
 }
 
+/**
+ * @brief Add role permissions to feed objects according to the
+ *        'Feed Import Roles' setting.
+ *
+ * @param[in]  type             The object type, e.g. report_format.
+ * @param[in]  type_cap         Capitalized type, e.g. "Report Format"
+ * @param[out] permission_count Number of permissions added.
+ * @param[out] object_count     Number of data objects affected.
+ */
+static void
+add_feed_role_permissions (const char *type,
+                           const char *type_cap,
+                           int *permission_count,
+                           int *object_count)
+{
+  char *roles_str;
+  gchar **roles;
+  iterator_t resources;
+
+  roles_str = NULL;
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles_str);
+  
+  if (roles_str == NULL || strlen (roles_str) == 0)
+    {
+      g_message ("%s: No feed import roles defined", __func__);
+      g_free (roles_str);
+      return;
+    }
+
+  roles = g_strsplit (roles_str, ",", 0);
+  free (roles_str);
+
+  init_iterator (&resources,
+                 "SELECT id, uuid, name, owner FROM %ss"
+                 " WHERE predefined = 1",
+                 type);
+  while (next (&resources))
+    {
+      gboolean added_permission = FALSE;
+      resource_t permission_resource = iterator_int64 (&resources, 0);
+      const char *permission_resource_id = iterator_string (&resources, 1);
+      const char *permission_resource_name = iterator_string (&resources, 2);
+      user_t owner = iterator_int64 (&resources, 3);
+      gchar **role = roles;
+
+      while (*role)
+        {
+          char *role_name = NULL;
+          resource_name ("role", *role, LOCATION_TABLE, &role_name);
+
+          if (sql_int ("SELECT count(*) FROM permissions"
+                       " WHERE name = 'get_%ss'"
+                       "   AND subject_type = 'role'"
+                       "   AND subject"
+                       "         = (SELECT id FROM roles WHERE uuid='%s')"
+                       "   AND resource = %llu",
+                       type,
+                       *role,
+                       permission_resource))
+            {
+              g_debug ("Role %s (%s) already has read permission"
+                       " for %s %s (%s).",
+                       role_name,
+                       *role,
+                       type_cap,
+                       permission_resource_name,
+                       permission_resource_id);
+            }
+          else
+            {
+              gchar *permission_name;
+
+              g_info ("Creating read permission for role %s (%s)"
+                      " on %s %s (%s).",
+                      role_name,
+                      *role,
+                      type_cap,
+                      permission_resource_name,
+                      permission_resource_id);
+
+              added_permission = TRUE;
+              if (permission_count)
+                *permission_count = *permission_count + 1;
+
+              permission_name = g_strdup_printf ("get_%ss", type);
+
+              current_credentials.uuid = user_uuid (owner);
+              switch (create_permission_internal
+                       (0,
+                        permission_name,
+                        "Automatically created by"
+                        " --optimize",
+                        type,
+                        permission_resource_id,
+                        "role",
+                        *role,
+                        NULL))
+                {
+                  case 0:
+                    // success
+                    break;
+                  case 2:
+                    g_warning ("%s: failed to find role %s for permission",
+                               __func__, *role);
+                    break;
+                  case 3:
+                    g_warning ("%s: failed to find %s %s for permission",
+                               __func__, type_cap, permission_resource_id);
+                    break;
+                  case 5:
+                    g_warning ("%s: error in resource when creating permission"
+                               " for %s %s",
+                               __func__, type_cap, permission_resource_id);
+                    break;
+                  case 6:
+                    g_warning ("%s: error in subject (Role %s)",
+                               __func__, *role);
+                    break;
+                  case 7:
+                    g_warning ("%s: error in name %s",
+                               __func__, permission_name);
+                    break;
+                  case 8:
+                    g_warning ("%s: permission on permission", __func__);
+                    break;
+                  case 9:
+                    g_warning ("%s: permission %s does not accept resource",
+                               __func__, permission_name);
+                    break;
+                  case 99:
+                    g_warning ("%s: permission denied to create %s permission"
+                               " for role %s on %s %s",
+                               __func__, permission_name, *role, type_cap,
+                               permission_resource_id);
+                    break;
+                  default:
+                    g_warning ("%s: internal error creating %s permission"
+                               " for role %s on %s %s",
+                               __func__, permission_name, *role, type_cap,
+                               permission_resource_id);
+                    break;
+                }
+
+              free (current_credentials.uuid);
+              current_credentials.uuid = NULL;
+            }
+
+          free (role_name);
+          role ++;
+        }
+      if (object_count && added_permission)
+        *object_count = *object_count + 1;
+    }
+
+  cleanup_iterator (&resources);
+  g_strfreev (roles);
+
+  return;
+}
+
+
+/**
+ * @brief Delete permissions to feed objects for roles that are not set
+ *        in the 'Feed Import Roles' setting.
+ *
+ * @param[in]  type  The object type, e.g. report_format.
+ * @param[in]  type_cap         Capitalized type, e.g. "Report Format"
+ * @param[out] permission_count Number of permissions added.
+ * @param[out] object_count     Number of data objects affected.
+ */
+static void
+clean_feed_role_permissions (const char *type,
+                             const char *type_cap,
+                             int *permission_count,
+                             int *object_count)
+{
+  char *roles_str;
+  gchar **roles, **role;
+  GString *sql_roles;
+  iterator_t resources;
+
+  roles_str = NULL;
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles_str);
+
+  if (roles_str == NULL || strlen (roles_str) == 0)
+    {
+      g_message ("%s: No feed import roles defined", __func__);
+      g_free (roles_str);
+      return;
+    }
+
+  sql_roles = g_string_new ("(");
+
+  if (roles_str)
+    {
+      roles = g_strsplit (roles_str, ",", 0);
+      role = roles;
+      while (*role)
+        {
+          gchar *quoted_role = sql_insert (*role);
+          g_string_append (sql_roles, quoted_role);
+
+          role ++;
+          if (*role)
+            g_string_append (sql_roles, ", ");
+        }
+
+    }
+
+  g_string_append (sql_roles, ")");
+  g_debug ("%s: Keeping permissions for roles %s\n", __func__, sql_roles->str);
+
+  init_iterator (&resources,
+                 "SELECT id, uuid, name FROM %ss"
+                 " WHERE predefined = 1",
+                 type);
+
+  while (next (&resources))
+    {
+      gboolean removed_permission = FALSE;
+      resource_t permission_resource = iterator_int64 (&resources, 0);
+      const char *permission_resource_id = iterator_string (&resources, 1);
+      const char *permission_resource_name = iterator_string (&resources, 2);
+      iterator_t permissions;
+
+      init_iterator (&permissions,
+                     "DELETE FROM permissions"
+                     " WHERE name = 'get_%ss'"
+                     "   AND resource = %llu"
+                     "   AND subject_type = 'role'"
+                     "   AND subject NOT IN"
+                     "     (SELECT id FROM roles WHERE uuid IN %s)"
+                     " RETURNING"
+                     "   (SELECT uuid FROM roles WHERE id = subject),"
+                     "   (SELECT name FROM roles WHERE id = subject)",
+                     type,
+                     permission_resource,
+                     sql_roles->str);
+
+      while (next (&permissions)) 
+        {
+          const char *role_id = iterator_string (&permissions, 0);
+          const char *role_name = iterator_string (&permissions, 1);
+          g_info ("Removed permission on %s %s (%s) for role %s (%s)",
+                  type_cap,
+                  permission_resource_name,
+                  permission_resource_id,
+                  role_name,
+                  role_id);
+
+          if (permission_count)
+            *permission_count = *permission_count + 1;
+          removed_permission = TRUE;
+        }
+
+      if (object_count && removed_permission)
+        *object_count = *object_count + 1;
+    }
+
+  cleanup_iterator (&resources);
+  g_strfreev (roles);
+
+  return;
+}
+
 
 /* Roles. */
 
@@ -55435,6 +55704,31 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
                                         (new_size - old_size)
                                           * 100.0 / old_size);
     }
+  else if (strcasecmp (name, "add-feed-permissions") == 0)
+    {
+      int permissions_count, object_count;
+      permissions_count = 0;
+      object_count = 0;
+      sql_begin_immediate ();
+      add_feed_role_permissions ("config",
+                                 "Scan Config / Policy",
+                                 &permissions_count,
+                                 &object_count);
+      add_feed_role_permissions ("port_list",
+                                 "Port List",
+                                 &permissions_count,
+                                 &object_count);
+      add_feed_role_permissions ("report_format",
+                                 "Report Format",
+                                 &permissions_count,
+                                 &object_count);
+      sql_commit ();
+      success_text = g_strdup_printf ("Optimized: add-feed-permissions."
+                                      " Added %d permissions"
+                                      " for %d data objects.",
+                                      permissions_count,
+                                      object_count);
+    }
   else if (strcasecmp (name, "analyze") == 0)
     {
       sql ("ANALYZE;");
@@ -55459,6 +55753,31 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
                                       " Duplicate config preferences removed:"
                                       " %d. Corrected preference values: %d",
                                       removed, fixed_values);
+    }
+  else if (strcasecmp (name, "cleanup-feed-permissions") == 0)
+    {
+      int permissions_count, object_count;
+      permissions_count = 0;
+      object_count = 0;
+      sql_begin_immediate ();
+      clean_feed_role_permissions ("config",
+                                   "Scan Config / Policy",
+                                   &permissions_count,
+                                   &object_count);
+      clean_feed_role_permissions ("port_list",
+                                   "Port List",
+                                   &permissions_count,
+                                   &object_count);
+      clean_feed_role_permissions ("report_format",
+                                   "Report Format",
+                                   &permissions_count,
+                                   &object_count);
+      sql_commit ();
+      success_text = g_strdup_printf ("Optimized: cleanup-feed-permissions."
+                                      " Removed %d permissions"
+                                      " for %d data objects.",
+                                      permissions_count,
+                                      object_count);
     }
   else if (strcasecmp (name, "cleanup-port-names") == 0)
     {
@@ -55717,4 +56036,29 @@ sql_cancel ()
 {
   g_debug ("%s: cancelling current SQL statement", __func__);
   return sql_cancel_internal ();
+}
+
+/**
+ * @brief Get the VT verification collation override.
+ *
+ * @return The collation or NULL for automatic.
+ */
+const char *
+get_vt_verification_collation ()
+{
+  return vt_verification_collation;
+}
+
+/**
+ * @brief Sets the VT verification collation override.
+ *
+ * This must be done before the SQL functions are created to be effective.
+ *
+ * @param[in]  new_collation  The new collation.
+ */
+void
+set_vt_verification_collation (const char *new_collation)
+{
+  g_free (vt_verification_collation);
+  vt_verification_collation = new_collation ? g_strdup(new_collation) : NULL;
 }

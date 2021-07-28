@@ -245,7 +245,8 @@
     
       <p><b>--optimize=<em>NAME</em></b></p>
       
-        <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
+        <p>Run an optimization: vacuum, analyze, add-feed-permissions,
+           cleanup-config-prefs, cleanup-feed-permissions,
            cleanup-port-names, cleanup-report-formats, cleanup-result-nvts,
            cleanup-result-severities, cleanup-schedule-times,
            migrate-relay-sensors, rebuild-report-cache
@@ -410,7 +411,14 @@
         <p>Print version and exit.</p>
       
     
-  
+    
+      <p><b>--vt-verification-collation=<em>COLLATION</em></b></p>
+      
+        <p>          
+          Set collation for VT verification to COLLATION, leave empty
+          to choose automatically. Should be 'ucs_default' if DB uses UTF-8
+          or 'C' for single-byte encodings.
+        </p>
 
   <h2>SIGNALS</h2>
 
