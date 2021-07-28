@@ -283,7 +283,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--optimize=<arg>NAME</arg></opt></p>
       <optdesc>
-        <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
+        <p>Run an optimization: vacuum, add-feed-permissions, analyze,
+           cleanup-config-prefs, cleanup-feed-permissions,
            cleanup-port-names, cleanup-report-formats, cleanup-result-nvts,
            cleanup-result-severities, cleanup-schedule-times,
            migrate-relay-sensors, rebuild-report-cache
