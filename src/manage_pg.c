@@ -979,7 +979,7 @@ manage_create_sql_functions ()
           free (encoding);
         }
 
-      g_message ("Using vt verification collation %s", quoted_collation);
+      g_debug ("Using vt verification collation %s", quoted_collation);
 
       sql ("CREATE OR REPLACE FUNCTION vts_verification_str ()"
            " RETURNS text AS $$"
