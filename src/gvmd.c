@@ -2017,7 +2017,8 @@ gvmd (int argc, char** argv)
           "<password>" },
         { "optimize", '\0', 0, G_OPTION_ARG_STRING,
           &optimize,
-          "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
+          "Run an optimization: vacuum, analyze, add-feed-permissions,"
+          " cleanup-config-prefs, cleanup-feed-permissions,"
           " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
           " cleanup-result-nvts, cleanup-result-severities,"
           " cleanup-schedule-times, migrate-relay-sensors,"
