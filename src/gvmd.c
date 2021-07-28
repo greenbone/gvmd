@@ -1842,6 +1842,7 @@ gvmd (int argc, char** argv)
   static gchar *value = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static gchar *vt_verification_collation = NULL;
 
   int sentry_initialized;
   GError *error = NULL;
@@ -2146,6 +2147,12 @@ gvmd (int argc, char** argv)
           &print_version,
           "Print version and exit.",
           NULL },
+        { "vt-verification-collation", '\0', 0, G_OPTION_ARG_STRING,
+          &vt_verification_collation,
+          "Set collation for VT verification to <collation>, leave empty"
+          " to choose automatically. Should be 'ucs_default' if DB uses UTF-8"
+          " or 'C' for single-byte encodings.",
+          "<collation>" },
         { NULL }
       };
 
@@ -2218,6 +2225,9 @@ gvmd (int argc, char** argv)
   /* Set SecInfo update commit size */
 
   set_secinfo_commit_size (secinfo_commit_size);
+
+  /* Set VT verification collation override */
+  set_vt_verification_collation (vt_verification_collation);
 
   /* Check which type of socket to use. */
 
