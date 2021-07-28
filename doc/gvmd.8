@@ -202,6 +202,9 @@ Verify scanner SCANNER-UUID and exit.
 .TP
 \fB--version\f1
 Print version and exit.
+.TP
+\fB--vt-verification-collation=\fICOLLATION\fB\f1
+Set collation for VT verification to COLLATION, leave empty to choose automatically. Should be 'ucs_default' if DB uses UTF-8 or 'C' for single-byte encodings. 
 .SH SIGNALS
 SIGHUP causes gvmd to rebuild the database with information from the Scanner (openvas).
 .SH EXAMPLES
