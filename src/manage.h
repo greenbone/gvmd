@@ -3763,4 +3763,12 @@ manage_optimize (GSList *, const db_conn_info_t *, const gchar *);
 int
 sql_cancel ();
 
+
+/* General settings */
+const char *
+get_vt_verification_collation ();
+
+void
+set_vt_verification_collation (const char *);
+
 #endif /* not _GVMD_MANAGE_H */
