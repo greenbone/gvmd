@@ -1803,12 +1803,8 @@ gvmd (int argc, char** argv)
   static gchar *value = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
-<<<<<<< HEAD
-=======
   static gchar *vt_verification_collation = NULL;
 
-  int sentry_initialized;
->>>>>>> b353aa71f (Fix collation for VT verification for non-UTF8 DBs)
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
   GOptionContext *option_context;
