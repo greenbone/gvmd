@@ -163,6 +163,8 @@ manage_update_license_file (const char *new_license)
  * @param[out] status       The validation status (e.g. "valid", "expired").
  * @param[out] license_data The content of the license organized in a struct.
  * @param[out] file_content The TOML file content.
+ *
+ * @return 0 success, 1 service unavailable, 99 permission denied.
  */
 int
 manage_get_license (gchar **status,

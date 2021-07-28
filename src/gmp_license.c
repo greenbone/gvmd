@@ -183,6 +183,12 @@ buffer_license_signature_xml (gchar *key, gchar *value, GString *buffer)
 }
 
 
+/**
+ * @brief Writes license data to a GString as XML
+ *
+ * @param[in]  response     The GString buffer to write the license content to.
+ * @param[in]  license_data The license data struct to get the data from.
+ */
 static void
 buffer_license_content_xml (GString *response, license_data_t *license_data)
 {
@@ -441,6 +447,15 @@ modify_license_element_start (gmp_parser_t *gmp_parser,
                             attribute_names, attribute_values);
 }
 
+/**
+ * @brief Handles modifying the license
+ *
+ * @param[in]  file_content The content of the new license file.
+ * @param[in]  allow_empty  Whether to allow an empty file.
+ * 
+ * @return 0 success, 1 service unavailable, 2 empty file not allowed,
+ *         99 permission denied. 
+ */
 static int
 modify_license (gchar *file_content, gboolean allow_empty)
 {
