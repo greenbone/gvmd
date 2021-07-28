@@ -457,6 +457,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <p>Print version and exit.</p>
       </optdesc>
     </option>
+    <option>
+      <p><opt>--vt-verification-collation=<arg>COLLATION</arg></opt></p>
+      <optdesc>
+        <p>
+          Set collation for VT verification to COLLATION, leave empty
+          to choose automatically. Should be 'ucs_default' if DB uses UTF-8
+          or 'C' for single-byte encodings.
+        </p>
+      </optdesc>
+    </option>
   </options>
 
   <section name="SIGNALS">
