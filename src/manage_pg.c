@@ -955,6 +955,32 @@ manage_create_sql_functions ()
                sql_database (),
                sql_database ()))
     {
+      char *quoted_collation;
+      if (get_vt_verification_collation ())
+        {
+          gchar *string_quoted_collation;
+          string_quoted_collation
+            = sql_quote (get_vt_verification_collation ());
+          quoted_collation = sql_string ("SELECT quote_ident('%s')",
+                                         string_quoted_collation);
+          g_free (string_quoted_collation);
+        }
+      else
+        {
+          char *encoding;
+          encoding = sql_string ("SHOW server_encoding;");
+
+          if (g_str_match_string ("UTF-8", encoding, 0)
+              || g_str_match_string ("UTF8", encoding, 0))
+            quoted_collation = strdup ("ucs_basic");
+          else
+            quoted_collation = strdup ("C");
+
+          free (encoding);
+        }
+
+      g_message ("Using vt verification collation %s", quoted_collation);
+
       sql ("CREATE OR REPLACE FUNCTION vts_verification_str ()"
            " RETURNS text AS $$"
            " WITH pref_str AS ("
@@ -973,18 +999,22 @@ manage_create_sql_functions ()
            "             || coalesce (string_agg"
            "                            (pref_str.pref, ''"
            "                             ORDER BY (pref_id"
-           "                                       COLLATE ucs_basic)),"
+           "                                       COLLATE %s)),"
            "                          ''))"
            "          AS vt_string"
            "   FROM nvts"
            "   LEFT JOIN pref_str ON nvts.oid = pref_str.oid"
            "   GROUP BY nvts.oid"
-           "   ORDER BY (nvts.oid COLLATE ucs_basic) ASC"
+           "   ORDER BY (nvts.oid COLLATE %s) ASC"
            "  )"
            " SELECT coalesce (string_agg (nvt_str.vt_string, ''), '')"
            "   FROM nvt_str"
            "$$ LANGUAGE SQL"
-           " STABLE;");
+           " STABLE;",
+           quoted_collation,
+           quoted_collation);
+
+      g_free (quoted_collation);
     }
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
