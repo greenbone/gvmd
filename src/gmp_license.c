@@ -102,7 +102,17 @@ get_license_element_start (gmp_parser_t *gmp_parser,
                             attribute_names, attribute_values);
 }
 
-
+/**
+ * @brief Writes XML for a license feature to a GString buffer.
+ *
+ * This is meant to be used to traverse a GTree with g_tree_foreach.
+ *
+ * @param[in]  key    The key from the tree, i.e. the feature name.
+ * @param[in]  value  The value from the tree, i.e. whether it is enabled.
+ * @param[in]  buffer The GString to buffer the XML element.
+ * 
+ * @return Always FALSE to continue traversing the GTree.
+ */
 static gboolean
 buffer_license_feature_xml (gchar *key, int value, GString *buffer)
 {
@@ -112,6 +122,17 @@ buffer_license_feature_xml (gchar *key, int value, GString *buffer)
   return FALSE;
 }
 
+/**
+ * @brief Writes XML for a license limit to a GString buffer.
+ *
+ * This is meant to be used to traverse a GTree with g_tree_foreach.
+ *
+ * @param[in]  key    The key from the tree, i.e. the limit name.
+ * @param[in]  value  The value from the tree, i.e. the value of the limit.
+ * @param[in]  buffer The GString to buffer the XML element.
+ * 
+ * @return Always FALSE to continue traversing the GTree.
+ */
 static gboolean
 buffer_license_limit_xml (gchar *key, int value, GString *buffer)
 {
@@ -121,6 +142,17 @@ buffer_license_limit_xml (gchar *key, int value, GString *buffer)
   return FALSE;
 }
 
+/**
+ * @brief Writes XML for a license access key to a GString buffer.
+ *
+ * This is meant to be used to traverse a GTree with g_tree_foreach.
+ *
+ * @param[in]  key    The key from the tree, i.e. the access key name.
+ * @param[in]  value  The value from the tree, i.e. the key content.
+ * @param[in]  buffer The GString to buffer the XML element.
+ * 
+ * @return Always FALSE to continue traversing the GTree.
+ */
 static gboolean
 buffer_license_key_xml (gchar *key, gchar *value, GString *buffer)
 {
@@ -130,6 +162,17 @@ buffer_license_key_xml (gchar *key, gchar *value, GString *buffer)
   return FALSE;
 }
 
+/**
+ * @brief Writes XML for a license signature info item to a GString buffer.
+ *
+ * This is meant to be used to traverse a GTree with g_tree_foreach.
+ *
+ * @param[in]  key    The key from the tree, i.e. the info item name.
+ * @param[in]  value  The value from the tree, i.e. the info item content.
+ * @param[in]  buffer The GString to buffer the XML element.
+ * 
+ * @return Always FALSE to continue traversing the GTree.
+ */
 static gboolean
 buffer_license_signature_xml (gchar *key, gchar *value, GString *buffer)
 {
