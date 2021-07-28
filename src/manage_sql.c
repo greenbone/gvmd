@@ -426,6 +426,10 @@ static gboolean in_transaction;
  */
 static struct timeval last_msg;
 
+/**
+ * @brief The VT verification collation override
+ */
+static gchar *vt_verification_collation = NULL;
 
 /* GMP commands. */
 
@@ -56032,4 +56036,29 @@ sql_cancel ()
 {
   g_debug ("%s: cancelling current SQL statement", __func__);
   return sql_cancel_internal ();
+}
+
+/**
+ * @brief Get the VT verification collation override.
+ *
+ * @return The collation or NULL for automatic.
+ */
+const char *
+get_vt_verification_collation ()
+{
+  return vt_verification_collation;
+}
+
+/**
+ * @brief Sets the VT verification collation override.
+ *
+ * This must be done before the SQL functions are created to be effective.
+ *
+ * @param[in]  new_collation  The new collation.
+ */
+void
+set_vt_verification_collation (const char *new_collation)
+{
+  g_free (vt_verification_collation);
+  vt_verification_collation = new_collation ? g_strdup(new_collation) : NULL;
 }
