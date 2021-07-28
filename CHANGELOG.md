@@ -102,12 +102,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
-<<<<<<< HEAD
 - Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611) [#1629](https://github.com/greenbone/gvmd/pull/1629)
-=======
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 - Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611) [#1629](https://github.com/greenbone/gvmd/pull/1629) [#1643](https://github.com/greenbone/gvmd/pull/1643)
->>>>>>> 470a7b6c5 (Amend CHANGELOG entry for collation fix)
 - Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 - Fix sensor connection for performance reports on failure [#1633](https://github.com/greenbone/gvmd/pull/1633)
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
