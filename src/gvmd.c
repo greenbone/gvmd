@@ -2150,9 +2150,9 @@ gvmd (int argc, char** argv)
           NULL },
         { "vt-verification-collation", '\0', 0, G_OPTION_ARG_STRING,
           &vt_verification_collation,
-          "Set collation for VT verification to <collation>, leave empty"
-          " to choose automatically. Should be 'ucs_default' if DB uses UTF-8"
-          " or 'C' for single-byte encodings.",
+          "Set collation for VT verification to <collation>, omit or leave"
+          " empty to choose automatically. Should be 'ucs_default' if DB uses"
+          " UTF-8 or 'C' for single-byte encodings.",
           "<collation>" },
         { NULL }
       };
