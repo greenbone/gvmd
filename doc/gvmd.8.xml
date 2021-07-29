@@ -453,7 +453,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--vt-verification-collation=<arg>COLLATION</arg></opt></p>
       <optdesc>
         <p>
-          Set collation for VT verification to COLLATION, leave empty
+          Set collation for VT verification to COLLATION, omit or leave empty
           to choose automatically. Should be 'ucs_default' if DB uses UTF-8
           or 'C' for single-byte encodings.
         </p>
