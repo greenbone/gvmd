@@ -108,6 +108,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
 - Fix sensor connection for performance reports on failure [#1633](https://github.com/greenbone/gvmd/pull/1633)
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
+- Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 

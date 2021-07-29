@@ -364,20 +364,31 @@ parse_iso_time_tz (const char *text_time, const char *fallback_tz)
                            secs_str && strcmp (secs_str, "")
                             ? secs_str : ":00",
                            offset_str ? offset_str : "");
-
-      if (strptime_with_reset ((char*) cleaned_text_time, "%FT%T%z", &tm))
+      #if !defined(__GLIBC__)
+        if (strptime_with_reset ((char*) cleaned_text_time, "%Y-%m-%dT%T", &tm))
+      #else
+        if (strptime_with_reset ((char*) cleaned_text_time, "%FT%T%z", &tm))
+      #endif
         {
           /* ISO time with numeric offset (e.g. 2020-06-01T01:02:03+04:30) */
           tm.tm_sec = tm.tm_sec - tm.tm_gmtoff;
           tm.tm_gmtoff = 0;
           epoch_time = mktime_with_tz (&tm, "UTC");
         }
-      else if (strptime_with_reset ((char*) cleaned_text_time, "%FT%TZ", &tm))
+      #if !defined(__GLIBC__)
+        else if (strptime_with_reset ((char*) cleaned_text_time, "%Y-%m-%dT%T", &tm))
+      #else
+        else if (strptime_with_reset ((char*) cleaned_text_time, "%FT%TZ", &tm))
+      #endif
         {
           /* ISO time with "Z" for UTC timezone (e.g. 2020-06-01T01:02:03Z) */
           epoch_time = mktime_with_tz (&tm, "UTC");
         }
-      else if (strptime_with_reset ((char*) cleaned_text_time, "%FT%T", &tm))
+      #if !defined(__GLIBC__)
+        else if (strptime_with_reset ((char*) cleaned_text_time, "%Y-%m-%dT%T", &tm))
+      #else
+        else if (strptime_with_reset ((char*) cleaned_text_time, "%FT%T", &tm))
+      #endif
         {
           /* ISO time without timezone suffix (e.g. 2020-06-01T01:02:03) */
           epoch_time = mktime_with_tz (&tm, fallback_tz ? fallback_tz : "UTC");
@@ -427,7 +438,11 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
   if (timezone == 0)
 #endif
     {
-      if (strftime (time_string, 98, "%FT%TZ", &tm) == 0)
+      #if !defined(__GLIBC__)
+        if (strftime (time_string, 98, "%Y-%m-%dT%T", &tm) == 0)
+      #else
+        if (strftime (time_string, 98, "%FT%TZ", &tm) == 0)
+      #endif
         return NULL;
 
       if (abbrev)
@@ -437,7 +452,11 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
     {
       int len;
 
-      if (strftime (time_string, 98, "%FT%T%z", &tm) == 0)
+      #if !defined(__GLIBC__)
+        if (strftime (time_string, 98, "%Y-%m-%dT%T", &tm) == 0)
+      #else
+        if (strftime (time_string, 98, "%FT%T%z", &tm) == 0)
+      #endif
         return NULL;
 
       /* Insert the ISO 8601 colon by hand. */
