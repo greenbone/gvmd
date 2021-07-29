@@ -57294,5 +57294,8 @@ void
 set_vt_verification_collation (const char *new_collation)
 {
   g_free (vt_verification_collation);
-  vt_verification_collation = new_collation ? g_strdup(new_collation) : NULL;
+  if (new_collation && strcmp (new_collation, ""))
+    vt_verification_collation = g_strdup(new_collation);
+  else
+    vt_verification_collation = NULL;
 }
