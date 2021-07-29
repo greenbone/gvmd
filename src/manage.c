@@ -8387,7 +8387,11 @@ manage_scap_update_time ()
   if (strptime (content, "%Y%m%d%H%M", &update_time))
     {
       static char time_string[100];
-      strftime (time_string, 99, "%FT%T.000%z", &update_time);
+      #if !defined(__GLIBC__)
+        strftime (time_string, 99, "%Y-%m-%dT%T.000", &update_time);
+      #else
+        strftime (time_string, 99, "%FT%T.000%z", &update_time);
+      #endif
       return time_string;
     }
   return "";
