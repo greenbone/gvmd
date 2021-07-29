@@ -177,7 +177,7 @@ static gboolean
 buffer_license_signature_xml (gchar *key, gchar *value, GString *buffer)
 {
   xml_string_append (buffer,
-                     "<info_item name=\"%s\">%s</item>",
+                     "<info_item name=\"%s\">%s</info_item>",
                      key, value);
   return FALSE;
 }
@@ -199,7 +199,7 @@ buffer_license_content_xml (GString *response, license_data_t *license_data)
                      "<schema_version>%d</schema_version>"
                      "<title>%s</title>"
                      "<license_type>%s</license_type>"
-                     "<customer_name>%s</customer_name>",
+                     "<customer>%s</customer>",
                      license_data->meta->id,
                      license_data->meta->schema_version,
                      license_data->meta->title,
