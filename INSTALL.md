@@ -355,12 +355,30 @@ supported values for `<name>` are:
   For more information see the documentation for the `ANALYZE` command of the
   database back-end you are using.
 
+- `add-feed-permissions`
+
+  This option adds new read permissions on all feed data objects for the roles
+  defined in the "Feed Import Roles" setting if they do not exist.
+  The new permissions will be owned by the same user as the data objects,
+  usually the feed import owner.
+
+  This does not affect the command permissions, any permissions created for
+  users or groups, or other types of permissions like modify or delete.
+
 - `cleanup-config-prefs`
 
   This option removes duplicate preferences from Scan Configs and corrects
   some broken preference values.  For the latter, the NVT preferences in the
   database must be up to date (if Manager and Scanner are both running, then
   this should happen automatically).
+
+- `cleanup-feed-permissions`
+
+  This option removes permissions on all feed data objects for all roles
+  that are not defined in the "Feed Import Roles" setting.
+
+  This does not affect the command permissions, any permissions created for
+  users or groups, or other types of permissions like modify or delete.
 
 - `cleanup-port-names`
 
