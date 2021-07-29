@@ -26277,7 +26277,11 @@ host_summary_append (GString *host_summary_buffer, const char *host,
           struct tm start_tm;
 
           memset (&start_tm, 0, sizeof (struct tm));
-          if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
+          #if !defined(__GLIBC__)
+            if (strptime (start_iso, "%Y-%m-%dT%H:%M:%S", &start_tm) == NULL)
+          #else
+            if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
+          #endif
             {
               g_warning ("%s: Failed to parse start", __func__);
               return;
@@ -26297,7 +26301,11 @@ host_summary_append (GString *host_summary_buffer, const char *host,
           struct tm end_tm;
 
           memset (&end_tm, 0, sizeof (struct tm));
-          if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
+          #if !defined(__GLIBC__)
+            if (strptime (end_iso, "%Y-%m-%dT%H:%M:%S", &end_tm) == NULL)
+          #else
+            if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
+          #endif
             {
               g_warning ("%s: Failed to parse end", __func__);
               return;
