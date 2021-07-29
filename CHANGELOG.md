@@ -12,7 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
 - Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
-- Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
 
