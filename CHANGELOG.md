@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.8.3] (Unreleased)
+## [20.8.3] - 2021-08-03
 
 ### Added
 - Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
@@ -12,8 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
 
-### Deprecated
-### Removed
 ### Fixed
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 - Fix VTs hash check and add --dump-vt-verification
@@ -27,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
 - Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
+[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
 ## [20.8.2] - 2021-06-23
 
