@@ -51,18 +51,18 @@ jobs:
         . .venv/bin/activate
         pontos-release release
     - name: Import key from secrets
-       run: |
-         echo -e "${{ env.GPG_KEY }}" >> tmp.file
-         gpg                                        \
-           --pinentry-mode loopback                 \
-           --passphrase ${{ env.GPG_PASSPHRASE }}   \
-           --import tmp.file
-         rm tmp.file
-     - name: Sign with pontos-release sign
-       run: |
-         echo "Signing assets for ${{env.VERSION}}"
-         . .venv/bin/activate
-         pontos-release sign                        \
-           --signing-key ${{ env.GPG_FINGERPRINT }} \
-           --passphrase ${{ env.GPG_PASSPHRASE }}   \
-           --release-version ${{ env.VERSION }}
+      run: |
+        echo -e "${{ env.GPG_KEY }}" >> tmp.file
+        gpg                                        \
+          --pinentry-mode loopback                 \
+          --passphrase ${{ env.GPG_PASSPHRASE }}   \
+          --import tmp.file
+        rm tmp.file
+    - name: Sign with pontos-release sign
+      run: |
+        echo "Signing assets for ${{env.VERSION}}"
+        . .venv/bin/activate
+        pontos-release sign                        \
+          --signing-key ${{ env.GPG_FINGERPRINT }} \
+          --passphrase ${{ env.GPG_PASSPHRASE }}   \
+          --release-version ${{ env.VERSION }}
