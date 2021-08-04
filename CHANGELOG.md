@@ -4,13 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [20.8.4] - Unreleased
 ### Added
 ### Changed
+* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662)
+    * SYSCONFDIR is /etc by default now
+    * LOCALSTATEDIR is /var by default now
+    * GVM_RUN_DIR is /run/gvm by default now
+    * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
+    * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
+    * Removed gvmd.default file and adjusted gvmd.service file accordingly
+
 ### Deprecated
 ### Removed
 ### Fixed
 
+<<<<<<< HEAD
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
 
 
@@ -123,6 +132,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
 - Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
 
+=======
+[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
+>>>>>>> 3541c2bdf (Add changelog entry)
 
 
 
