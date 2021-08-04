@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+<<<<<<< HEAD
 ## [21.10] (unreleased)
 
 ### Added
@@ -29,20 +30,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 [Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
 ## [21.4.3] (Unreleased)
+=======
+## [20.8.4] - Unreleased
+>>>>>>> 3541c2bdf (Add changelog entry)
 ### Added
 ### Changed
+* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662)
+    * SYSCONFDIR is /etc by default now
+    * LOCALSTATEDIR is /var by default now
+    * GVM_RUN_DIR is /run/gvm by default now
+    * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
+    * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
+    * Removed gvmd.default file and adjusted gvmd.service file accordingly
+
 ### Deprecated
 ### Removed
 ### Fixed
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
 - Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
 
+<<<<<<< HEAD
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
 
 ## [21.4.2] - 2021-06-28
 ### Fixed
 - Amended Test, if the ssh elevate credential is different from the ssh credential [#1586](https://github.com/greenbone/gvmd/pull/1586)
 - Added the missing GMP documentation for the ssh elevate credential [#1591](https://github.com/greenbone/gvmd/pull/1591)
+=======
+[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
+>>>>>>> 3541c2bdf (Add changelog entry)
 
 [21.4.2]: https://github.com/greenbone/gvmd/compare/v21.4.1...v21.4.2
 
