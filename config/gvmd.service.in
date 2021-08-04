@@ -7,11 +7,13 @@ ConditionKernelCommandLine=!recovery
 
 [Service]
 Type=forking
-User=$GVMD_USER
-Group=$GVMD_GROUP
+User=gvm
+Group=gvm
 PIDFile=${GVM_RUN_DIR}/gvmd.pid
+RuntimeDirectory=gvm
+RuntimeDirectoryMode=2775
 EnvironmentFile=${DEFAULT_CONFIG_DIR}/gvmd
-ExecStart=${SBINDIR}/gvmd --osp-vt-update=$OSP_VT_UPDATE $OPTIONS
+ExecStart=${SBINDIR}/gvmd --osp-vt-update=/run/ospd/ospd-openvas.sock --listen-group=gvm
 Restart=always
 TimeoutStopSec=10
 
