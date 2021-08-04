@@ -98,15 +98,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
 
-## [21.4.3] (unreleased)
-### Added
-### Changed
-### Deprecated
-### Removed
-### Fixed
-
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...gvmd-20.08
-
 ## [20.8.4] - Unreleased
 ### Added
 ### Changed
