@@ -4,14 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [20.8.4] - Unreleased
 ### Added
 ### Changed
+* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662)
+    * SYSCONFDIR is /etc by default now
+    * LOCALSTATEDIR is /var by default now
+    * GVM_RUN_DIR is /run/gvm by default now
+    * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
+    * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
+    * Removed gvmd.default file and adjusted gvmd.service file accordingly
+
 ### Deprecated
 ### Removed
 ### Fixed
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.3...HEAD
+[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
 
 
 ## [20.8.3] - 2021-08-03
