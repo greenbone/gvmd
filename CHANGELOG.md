@@ -4,22 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.8.4] - Unreleased
+## [21.4.4] - Unreleased
 ### Added
 ### Changed
-* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662)
-    * SYSCONFDIR is /etc by default now
-    * LOCALSTATEDIR is /var by default now
-    * GVM_RUN_DIR is /run/gvm by default now
-    * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
-    * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
-    * Removed gvmd.default file and adjusted gvmd.service file accordingly
-
 ### Deprecated
 ### Removed
 ### Fixed
 
-<<<<<<< HEAD
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
 
 
@@ -28,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
 - Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
 
-[21.4.3]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
+[21.4.3]: https://github.com/greenbone/gvmd/compare/v21.4.2...v21.4.3
 
 ## [21.4.2] - 2021-06-28
 ### Fixed
@@ -107,36 +98,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
 
-## [Unreleased]
+## [21.4.3] (unreleased)
 ### Added
 ### Changed
 ### Deprecated
 ### Removed
 ### Fixed
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...gvmd-20.08
 
-
-## [21.4.3] - 2021-08-03
-## [Unreleased]
+## [20.8.4] - Unreleased
 ### Added
 ### Changed
+* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662)
+    * SYSCONFDIR is /etc by default now
+    * LOCALSTATEDIR is /var by default now
+    * GVM_RUN_DIR is /run/gvm by default now
+    * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
+    * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
+    * Removed gvmd.default file and adjusted gvmd.service file accordingly
+
 ### Deprecated
 ### Removed
 ### Fixed
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
-
-
-## [21.4.3] - 2021-08-03### Fixed
-- Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
-- Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
-
-=======
 [20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
->>>>>>> 3541c2bdf (Add changelog entry)
 
 
+## [20.8.3] - 2021-08-03
 
 ### Added
 - Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
@@ -145,7 +134,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
 
 ### Fixed
-- Fix VTs hash check and add --dump-vt-verification [#1611](https://github.com/greenbone/gvmd/pull/1611) [#1629](https://github.com/greenbone/gvmd/pull/1629)
 - Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 - Fix VTs hash check and add --dump-vt-verification
   [#1611](https://github.com/greenbone/gvmd/pull/1611)
@@ -158,9 +146,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
 - Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
-[21.4.3]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
-
-[21.4.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
+[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...v20.8.3
 
 ## [20.8.2] - 2021-06-23
 
@@ -196,7 +182,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-[20.8.2]: https://github.com/greenbone/gvmd/compare/v20.8.1...gvmd-20.08
+[20.8.2]: https://github.com/greenbone/gvmd/compare/v20.8.1...v20.8.2
 
 ## [20.8.1] (2021-02-02)
 
