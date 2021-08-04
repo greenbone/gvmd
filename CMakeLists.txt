@@ -110,7 +110,7 @@ if (SYSCONF_INSTALL_DIR)
 endif (SYSCONF_INSTALL_DIR)
 
 if (NOT SYSCONFDIR)
-  set (SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/etc")
+  set (SYSCONFDIR "/etc")
 endif (NOT SYSCONFDIR)
 
 if (NOT EXEC_PREFIX)
@@ -130,7 +130,7 @@ if (NOT LIBDIR)
 endif (NOT LIBDIR)
 
 if (NOT LOCALSTATEDIR)
-  set (LOCALSTATEDIR "${CMAKE_INSTALL_PREFIX}/var")
+  set (LOCALSTATEDIR "/var")
 endif (NOT LOCALSTATEDIR)
 
 if (NOT DATADIR)
@@ -181,7 +181,7 @@ set (GVM_CLIENT_KEY          "${GVM_STATE_DIR}/private/CA/clientkey.pem")
 set (GVM_CA_CERTIFICATE      "${GVM_STATE_DIR}/CA/cacert.pem")
 
 if (NOT GVM_RUN_DIR)
-  set (GVM_RUN_DIR      "${LOCALSTATEDIR}/run")
+  set (GVM_RUN_DIR      "/run/gvm")
 endif (NOT GVM_RUN_DIR)
 
 if (NOT GVM_FEED_LOCK_PATH)
@@ -190,7 +190,7 @@ endif (NOT GVM_FEED_LOCK_PATH)
 add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
 
 if (NOT OPENVAS_DEFAULT_SOCKET)
-  set (OPENVAS_DEFAULT_SOCKET "/var/run/ospd/ospd.sock")
+  set (OPENVAS_DEFAULT_SOCKET "/run/ospd/ospd-openvas.sock")
 endif (NOT OPENVAS_DEFAULT_SOCKET)
 add_definitions (-DOPENVAS_DEFAULT_SOCKET="${OPENVAS_DEFAULT_SOCKET}")
 

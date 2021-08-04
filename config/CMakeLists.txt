@@ -17,26 +17,18 @@
 
 
 if (NOT SYSTEMD_SERVICE_DIR)
-  set (SYSTEMD_SERVICE_DIR "${CMAKE_INSTALL_PREFIX}/lib/systemd/system")
+  set (SYSTEMD_SERVICE_DIR "/lib/systemd/system")
 endif (NOT SYSTEMD_SERVICE_DIR)
 
-if (NOT DEFAULT_CONFIG_DIR)
-  set (DEFAULT_CONFIG_DIR "${CMAKE_INSTALL_PREFIX}/etc/default")
-endif (NOT DEFAULT_CONFIG_DIR)
-
 if (NOT LOGROTATE_DIR)
-  set (LOGROTATE_DIR "${CMAKE_INSTALL_PREFIX}/etc/logrotate.d")
+  set (LOGROTATE_DIR "${SYSCONFDIR}/logrotate.d")
 endif (NOT LOGROTATE_DIR)
 
 configure_file (gvmd.service.in gvmd.service)
 configure_file (gvmd.logrotate.in gvmd.logrotate)
-configure_file (gvmd.default.in gvmd.default)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.service
          DESTINATION ${SYSTEMD_SERVICE_DIR}/)
-
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.default
-         DESTINATION ${DEFAULT_CONFIG_DIR}/ RENAME gvmd)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.logrotate
          DESTINATION ${LOGROTATE_DIR}/ RENAME gvmd)
