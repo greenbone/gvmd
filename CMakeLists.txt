@@ -200,7 +200,7 @@ if (NOT GVM_RUN_DIR)
 endif (NOT GVM_RUN_DIR)
 
 if (NOT GVM_FEED_LOCK_PATH)
-  set (GVM_FEED_LOCK_PATH "${GVM_RUN_DIR}/feed-update.lock")
+  set (GVM_FEED_LOCK_PATH "${GVM_STATE_DIR}/feed-update.lock")
 endif (NOT GVM_FEED_LOCK_PATH)
 add_definitions (-DGVM_FEED_LOCK_PATH="${GVM_FEED_LOCK_PATH}")
 
