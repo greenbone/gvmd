@@ -7,13 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [20.8.4] - Unreleased
 ### Added
 ### Changed
-* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662)
+* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662) [#1665](https://github.com/greenbone/gvmd/pull/1665)
     * SYSCONFDIR is /etc by default now
     * LOCALSTATEDIR is /var by default now
     * GVM_RUN_DIR is /run/gvm by default now
     * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
     * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
     * Removed gvmd.default file and adjusted gvmd.service file accordingly
+    * GVM_FEED_LOCK_PATH is /var/lib/gvm/feed-update.lock by default now
 
 ### Deprecated
 ### Removed
