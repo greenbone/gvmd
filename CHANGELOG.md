@@ -112,6 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Fixed the lack of the severities in the display of the applications [#1666](https://github.com/greenbone/gvmd/pull/1666)
 
 [20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
 
