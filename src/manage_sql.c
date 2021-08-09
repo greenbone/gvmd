@@ -19745,6 +19745,13 @@ result_detection_reference (result_t result, report_t report,
                      "      OR port LIKE '%%%s%%');",
                      report, quoted_host, *oid, quoted_location,
                      quoted_location);
+  
+  if (*ref == NULL)
+    *ref = sql_string ("SELECT uuid"
+                       " FROM results"
+                       " WHERE id = %llu;",
+                       result);
+
   if (*ref == NULL)
     goto detect_cleanup;
 

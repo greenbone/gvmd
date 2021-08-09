@@ -18312,6 +18312,7 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
                 modify_config_data->families_growing_empty,
                 modify_config_data->family_selection_growing))
         {
+<<<<<<< HEAD
           case 0:
             SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_config"));
             log_event ("config", "Scan config",
@@ -18349,6 +18350,43 @@ handle_modify_config (gmp_parser_t *gmp_parser, GError **error)
             log_event_fail ("config", "Scan Config",
                             modify_config_data->config_id, "modified");
             goto modify_config_leave;
+=======
+          host_detail_t *detail;
+          // prepare detection to be found within
+          // result_detection_reference
+          detection_detail_t *detection =
+            (detection_detail_t *) g_ptr_array_index (
+              create_report_data->result_detection, i);
+
+          // used to find location within report_host_details via
+          // - oid as source_name
+          // - detected_at as name
+          detail = g_malloc (sizeof (host_detail_t));
+          detail->ip = g_strdup (result->host);
+          detail->name = g_strdup ("detected_at");
+          detail->source_desc = g_strdup ("create_report_import");
+          detail->source_name = g_strdup (
+            detection->source_oid); // verify when detected_at || detected_by
+          detail->source_type = g_strdup ("create_report_import");
+          detail->value = g_strdup (detection->location);
+          array_add (create_report_data->details, detail);
+          // used to find oid within report_host_details via
+          // - oid as source_name
+          // - detected_by as name
+          detail = g_malloc (sizeof (host_detail_t));
+          detail->ip = g_strdup (result->host);
+          detail->name = g_strconcat ("detected_by@", detection->location, NULL);
+          detail->source_desc = g_strdup ("create_report_import");
+          detail->source_name = g_strdup (result->nvt_oid);
+          detail->source_type = g_strdup ("create_report_import");
+          detail->value = g_strdup (detection->source_oid);
+          array_add (create_report_data->details, detail);
+          g_free (detection->location);
+          g_free (detection->product);
+          g_free (detection->source_name);
+          g_free (detection->source_oid);
+          g_free (detection);
+>>>>>>> ab2276347 (Adjusted the lack of the severities in the display of applications.)
         }
     }
   else if (modify_config_data->name || modify_config_data->comment
