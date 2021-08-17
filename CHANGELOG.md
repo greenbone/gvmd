@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [middleware]
+### Changed
+Send the script timeout to the scanner as script preferences [#1669](https://github.com/greenbone/gvmd/pull/1669)
+
+[middleware]: https://github.com/greenbone/gvmd/compare/master...middleware
+
 ## [21.10] (unreleased)
 
 ### Added
