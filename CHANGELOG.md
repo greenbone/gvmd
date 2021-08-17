@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
 - Change report timestamp filter and iterator columns [#1512](https://github.com/greenbone/gvmd/pull/1512)
 - Rename the date column of reports to creation_time [#1520](https://github.com/greenbone/gvmd/pull/1520)
+- Send the script timeout to the scanner as script preferences [#1670](https://github.com/greenbone/gvmd/pull/1670)
 
 ### Fixed
 - Improve VT version handling for CVE & OVAL results [#1496](https://github.com/greenbone/gvmd/pull/1496)
