@@ -923,7 +923,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>type</e>
           <e>cvss_base</e>
           <o><e>cve</e></o>
-          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -942,11 +941,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cve</name>
           <summary>CVE value associated with the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bid</name>
-          <summary>BID associated with the NVT</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -1273,7 +1267,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>type</e>
           <e>cvss_base</e>
           <o><e>cve</e></o>
-          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -1292,11 +1285,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cve</name>
           <summary>CVE value associated with the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bid</name>
-          <summary>BID associated with the NVT</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -1583,7 +1571,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </attrib>
             <attrib>
               <name>type</name>
-              <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"
+              <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"
               </summary>
               <type>text</type>
             </attrib>
@@ -12899,7 +12887,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <name>Test NVT: control chars in report result</name>
                 <cvss_base></cvss_base>
                 <cve></cve>
-                <bid></bid>
               </nvt>
               <threat>Medium</threat>
               <description>Warning with control char between fullstops: . .</description>
@@ -13160,7 +13147,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </attrib>
               <attrib>
                 <name>type</name>
-                <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"</summary>
+                <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"</summary>
                 <type>text</type>
               </attrib>
             </pattern>
@@ -15692,7 +15679,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <tags>NOTAGS</tags>
                     <refs>
                       <ref id="CVE-2013-1406" type="cve"/>
-                      <ref id="51702" type="bid"/>
                       <ref id="DFN-CERT-2013-0246" type="dfn-cert"/>
                     </refs>
                   </nvt>
@@ -16747,7 +16733,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
-                 <ref type="bid" id="36254"/>
               </refs>
             </nvt>
             <threat>Medium</threat>
@@ -16805,7 +16790,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
-                 <ref type="bid" id="36254"/>
               </refs>
             </nvt>
             <threat>High</threat>
