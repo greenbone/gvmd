@@ -1084,8 +1084,6 @@ typedef struct
   array_t *groups;        ///< IDs of groups.
   char *hosts;            ///< Hosts.
   int hosts_allow;        ///< Whether hosts are allowed.
-  char *ifaces;           ///< Interfaces.
-  int ifaces_allow;       ///< Whether interfaces are allowed.
   char *name;             ///< User name.
   char *password;         ///< Password.
   char *comment;          ///< Comment.
@@ -1108,7 +1106,6 @@ create_user_data_reset (create_user_data_t * data)
   g_free (data->password);
   g_free (data->comment);
   g_free (data->hosts);
-  g_free (data->ifaces);
   array_free (data->roles);
   if (data->sources)
     {
@@ -3021,8 +3018,6 @@ typedef struct
   array_t *groups;           ///< IDs of groups.
   gchar *hosts;              ///< Hosts.
   int hosts_allow;           ///< Whether hosts are allowed.
-  char *ifaces;              ///< Interfaces.
-  int ifaces_allow;          ///< Whether interfaces are allowed.
   gboolean modify_password;  ///< Whether to modify password.
   gchar *name;               ///< User name.
   gchar *new_name;           ///< New user name.
@@ -3049,7 +3044,6 @@ modify_user_data_reset (modify_user_data_t * data)
   g_free (data->password);
   g_free (data->comment);
   g_free (data->hosts);
-  g_free (data->ifaces);
   array_free (data->roles);
   if (data->sources)
     {
@@ -4294,7 +4288,6 @@ typedef enum
   CLIENT_CREATE_USER_GROUPS,
   CLIENT_CREATE_USER_GROUPS_GROUP,
   CLIENT_CREATE_USER_HOSTS,
-  CLIENT_CREATE_USER_IFACES,
   CLIENT_CREATE_USER_NAME,
   CLIENT_CREATE_USER_PASSWORD,
   CLIENT_CREATE_USER_ROLE,
@@ -4520,7 +4513,6 @@ typedef enum
   CLIENT_MODIFY_USER_GROUPS,
   CLIENT_MODIFY_USER_GROUPS_GROUP,
   CLIENT_MODIFY_USER_HOSTS,
-  CLIENT_MODIFY_USER_IFACES,
   CLIENT_MODIFY_USER_NAME,
   CLIENT_MODIFY_USER_NEW_NAME,
   CLIENT_MODIFY_USER_PASSWORD,
@@ -4826,7 +4818,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->groups = make_array ();
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
-            create_user_data->ifaces_allow = 0;
           }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
@@ -6699,17 +6690,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_user_data->hosts, "");
             set_client_state (CLIENT_MODIFY_USER_HOSTS);
           }
-        else if (strcasecmp ("IFACES", element_name) == 0)
-          {
-            const gchar *attribute;
-            if (find_attribute
-                (attribute_names, attribute_values, "allow", &attribute))
-              modify_user_data->ifaces_allow = strcmp (attribute, "0");
-            else
-              modify_user_data->ifaces_allow = 1;
-            gvm_append_string (&modify_user_data->ifaces, "");
-            set_client_state (CLIENT_MODIFY_USER_IFACES);
-          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_USER_NAME);
         else if (strcasecmp ("NEW_NAME", element_name) == 0)
@@ -7688,16 +7668,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               create_user_data->hosts_allow = 1;
             set_client_state (CLIENT_CREATE_USER_HOSTS);
-          }
-        else if (strcasecmp ("IFACES", element_name) == 0)
-          {
-            const gchar *attribute;
-            if (find_attribute
-                (attribute_names, attribute_values, "allow", &attribute))
-              create_user_data->ifaces_allow = strcmp (attribute, "0");
-            else
-              create_user_data->ifaces_allow = 1;
-            set_client_state (CLIENT_CREATE_USER_IFACES);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_NAME);
@@ -17527,8 +17497,8 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       iterator_t groups, roles;
-      const char *hosts, *ifaces;
-      int hosts_allow, ifaces_allow;
+      const char *hosts;
+      int hosts_allow;
 
       ret = get_next (&users, &get_users_data->get, &first, &count,
                       init_user_iterator);
@@ -17552,13 +17522,6 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
                                user_iterator_method (&users)
                                 ? user_iterator_method (&users)
                                 : "file");
-
-      /* Interfaces Access */
-      ifaces = user_iterator_ifaces (&users);
-      ifaces_allow = user_iterator_ifaces_allow (&users);
-      SENDF_TO_CLIENT_OR_FAIL ("<ifaces allow=\"%i\">%s</ifaces>",
-                               ifaces_allow,
-                               ifaces ? ifaces : "");
 
       /* User Roles */
       init_user_role_iterator (&roles,
@@ -22197,8 +22160,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         ? create_user_data->comment : "",
                       create_user_data->hosts,
                       create_user_data->hosts_allow,
-                      create_user_data->ifaces,
-                      create_user_data->ifaces_allow,
                       create_user_data->sources,
                       create_user_data->groups,
                       &fail_group_id,
@@ -22282,7 +22243,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_USER, GROUPS);
       CLOSE (CLIENT_CREATE_USER_GROUPS, GROUP);
       CLOSE (CLIENT_CREATE_USER, HOSTS);
-      CLOSE (CLIENT_CREATE_USER, IFACES);
       CLOSE (CLIENT_CREATE_USER, NAME);
       CLOSE (CLIENT_CREATE_USER, PASSWORD);
       CLOSE (CLIENT_CREATE_USER, ROLE);
@@ -24760,8 +24720,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                        modify_user_data->comment,
                        modify_user_data->hosts,
                        modify_user_data->hosts_allow,
-                       modify_user_data->ifaces,
-                       modify_user_data->ifaces_allow,
                        modify_user_data->sources,
                        modify_user_data->groups, &fail_group_id,
                        modify_user_data->roles, &fail_role_id,
@@ -24860,7 +24818,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_USER, GROUPS);
       CLOSE (CLIENT_MODIFY_USER_GROUPS, GROUP);
       CLOSE (CLIENT_MODIFY_USER, HOSTS);
-      CLOSE (CLIENT_MODIFY_USER, IFACES);
       CLOSE (CLIENT_MODIFY_USER, NAME);
       CLOSE (CLIENT_MODIFY_USER, NEW_NAME);
       CLOSE (CLIENT_MODIFY_USER, PASSWORD);
@@ -25799,9 +25756,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_USER_HOSTS,
               &modify_user_data->hosts);
 
-      APPEND (CLIENT_MODIFY_USER_IFACES,
-              &modify_user_data->ifaces);
-
       APPEND (CLIENT_MODIFY_USER_NAME,
               &modify_user_data->name);
 
@@ -26335,9 +26289,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_USER_HOSTS,
               &create_user_data->hosts);
-
-      APPEND (CLIENT_CREATE_USER_IFACES,
-              &create_user_data->ifaces);
 
       APPEND (CLIENT_CREATE_USER_NAME,
               &create_user_data->name);

@@ -1753,8 +1753,6 @@ create_tables ()
        "  timezone text,"
        "  hosts text,"
        "  hosts_allow integer,"
-       "  ifaces text,"
-       "  ifaces_allow integer,"
        "  method text,"
        "  creation_time integer,"
        "  modification_time integer);");

@@ -16783,11 +16783,11 @@ user_ensure_in_db (const gchar *name, const gchar *method)
 
   sql ("INSERT INTO users"
        " (uuid, owner, name, comment, password, timezone, method, hosts,"
-       "  hosts_allow, ifaces, ifaces_allow, creation_time, modification_time)"
+       "  hosts_allow, creation_time, modification_time)"
        " VALUES"
        " (make_uuid (),"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '', NULL, NULL, '%s', '', 2, '', 2, m_now (), m_now ());",
+       "  '%s', '', NULL, NULL, '%s', '', 2, m_now (), m_now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_method);
@@ -50694,7 +50694,7 @@ manage_create_user (GSList *log_config, const db_conn_info_t *database,
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
 
-  ret = create_user (name, password ? password : uuid, "", NULL, 0, NULL, 0,
+  ret = create_user (name, password ? password : uuid, "", NULL, 0,
                      NULL, NULL, NULL, roles, NULL, &rejection_msg, NULL, 0);
 
   switch (ret)
@@ -51024,8 +51024,6 @@ find_user_by_name (const char* name, user_t *user)
  * @param[in]  comment      Comment for the new user or NULL.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
- * @param[in]  ifaces       Interfaces the user is allowed/forbidden to scan.
- * @param[in]  ifaces_allow     Whether ifaces is allow or forbid.
  * @param[in]  allowed_methods  Allowed login methods.
  * @param[in]  groups       Groups.
  * @param[out] group_id_return  ID of group on "failed to find" error.
@@ -51044,13 +51042,12 @@ find_user_by_name (const char* name, user_t *user)
 int
 create_user (const gchar * name, const gchar * password, const gchar *comment,
              const gchar * hosts, int hosts_allow,
-             const gchar *ifaces, int ifaces_allow,
              const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc, user_t *new_user, int forbid_super_admin)
 {
   char *errstr, *uuid;
-  gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
+  gchar *quoted_hosts, *quoted_method, *quoted_name, *hash;
   gchar *quoted_comment, *clean, *generated;
   int index, max, ret;
   user_t user;
@@ -51144,7 +51141,6 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
 
   clean = clean_hosts (hosts ? hosts : "", &max);
   quoted_hosts = sql_quote (clean);
-  quoted_ifaces = sql_quote (ifaces ? ifaces : "");
   g_free (clean);
   quoted_method = sql_quote (allowed_methods
                               ? g_ptr_array_index (allowed_methods, 0)
@@ -51153,28 +51149,23 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   ret
     = sql_error ("INSERT INTO users"
                  " (uuid, owner, name, password, comment, hosts, hosts_allow,"
-                 "  ifaces, ifaces_allow, method, creation_time,"
-                 "  modification_time)"
+                 "  method, creation_time, modification_time)"
                  " VALUES"
                  " (make_uuid (),"
                  "  (SELECT id FROM users WHERE uuid = '%s'),"
                  "  '%s', '%s', '%s', '%s', %i,"
-                 "  '%s', %i, '%s', m_now (),"
-                 "  m_now ());",
+                 "  '%s', m_now (), m_now ());",
                  current_credentials.uuid,
                  quoted_name,
                  hash,
                  quoted_comment,
                  quoted_hosts,
                  hosts_allow,
-                 quoted_ifaces,
-                 ifaces_allow,
                  quoted_method);
   g_free (generated);
   g_free (hash);
   g_free (quoted_comment);
   g_free (quoted_hosts);
-  g_free (quoted_ifaces);
   g_free (quoted_method);
   g_free (quoted_name);
 
@@ -51329,8 +51320,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   sql_begin_immediate ();
 
   ret = copy_resource_lock ("user", name, comment, user_id,
-                            "password, timezone, hosts, hosts_allow,"
-                            " ifaces, ifaces_allow, method",
+                            "password, timezone, hosts, hosts_allow, method",
                             1, &user, NULL);
   if (ret)
     {
@@ -52083,8 +52073,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  *                          NULL to leave as is.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
- * @param[in]  ifaces       Interfaces the user is allowed/forbidden to scan.
- * @param[in]  ifaces_allow     Whether ifaces is allow or forbid.
  * @param[in]  allowed_methods  Allowed login methods.
  * @param[in]  groups           Groups.
  * @param[out] group_id_return  ID of group on "failed to find" error.
@@ -52104,13 +52092,12 @@ int
 modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
              const gchar * password, const gchar * comment,
              const gchar * hosts, int hosts_allow,
-             const gchar *ifaces, int ifaces_allow,
              const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc)
 {
   char *errstr;
-  gchar *hash, *quoted_hosts, *quoted_ifaces, *quoted_method, *clean, *uuid;
+  gchar *hash, *quoted_hosts, *quoted_method, *clean, *uuid;
   gchar *quoted_new_name, *quoted_comment;
   user_t user;
   int max, was_admin, is_admin;
@@ -52256,7 +52243,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   if ((hosts_allow == 0) && (max == 0))
     /* Convert "Deny none" to "Allow All". */
     hosts_allow = 2;
-  quoted_ifaces = sql_quote (ifaces ? ifaces : "");
   quoted_hosts = sql_quote (clean);
   g_free (clean);
   quoted_method = sql_quote (allowed_methods
@@ -52267,8 +52253,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
        "     comment = %s%s%s,"
        "     hosts = '%s',"
        "     hosts_allow = '%i',"
-       "     ifaces = '%s',"
-       "     ifaces_allow = %i,"
        "     method = %s%s%s,"
        "     modification_time = m_now ()"
        " WHERE id = %llu;",
@@ -52280,15 +52264,12 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
        quoted_comment ? "'" : "",
        quoted_hosts,
        hosts_allow,
-       quoted_ifaces,
-       ifaces_allow,
        allowed_methods ? "'" : "",
        allowed_methods ? quoted_method : "method",
        allowed_methods ? "'" : "",
        user);
   g_free (quoted_new_name);
   g_free (quoted_hosts);
-  g_free (quoted_ifaces);
   g_free (quoted_method);
   if (hash)
     sql ("UPDATE users"
@@ -52511,45 +52492,6 @@ trash_user_writable (user_t user)
 }
 
 /**
- * @brief Return the ifaces of a user.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return Newly allocated ifaces value if available, else NULL.
- */
-gchar*
-user_ifaces (const char *uuid)
-{
-  gchar *name, *quoted_uuid;
-
-  quoted_uuid = sql_quote (uuid);
-  name = sql_string ("SELECT ifaces FROM users WHERE uuid = '%s';",
-                     quoted_uuid);
-  g_free (quoted_uuid);
-  return name;
-}
-
-/**
- * @brief Return whether ifaces value of a user denotes allowed.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return 1 if allow, else 0.
- */
-int
-user_ifaces_allow (const char *uuid)
-{
-  gchar *quoted_uuid;
-  int allow;
-
-  quoted_uuid = sql_quote (uuid);
-  allow = sql_int ("SELECT ifaces_allow FROM users WHERE uuid = '%s';",
-                   quoted_uuid);
-  g_free (quoted_uuid);
-  return allow;
-}
-
-/**
  * @brief Return the hosts of a user.
  *
  * @param[in]  uuid  UUID of user.
@@ -52593,7 +52535,7 @@ user_hosts_allow (const char *uuid)
  */
 #define USER_ITERATOR_FILTER_COLUMNS                                  \
  { GET_ITERATOR_FILTER_COLUMNS, "method", "roles", "groups", "hosts", \
-   "ifaces", NULL }
+   NULL }
 
 /**
  * @brief User iterator columns.
@@ -52627,8 +52569,6 @@ user_hosts_allow (const char *uuid)
      "groups",                                                             \
      KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
-   { "ifaces", NULL, KEYWORD_TYPE_STRING },                                \
-   { "ifaces_allow", NULL, KEYWORD_TYPE_INTEGER },                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
@@ -52641,8 +52581,6 @@ user_hosts_allow (const char *uuid)
    { "method", NULL, KEYWORD_TYPE_STRING },                                \
    { "hosts", NULL, KEYWORD_TYPE_STRING },                                 \
    { "hosts_allow", NULL, KEYWORD_TYPE_INTEGER },                          \
-   { "ifaces", NULL, KEYWORD_TYPE_STRING },                                \
-   { "ifaces_allow", NULL, KEYWORD_TYPE_INTEGER },                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
@@ -52720,29 +52658,6 @@ user_iterator_hosts_allow (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
-}
-
-/**
- * @brief Get the ifaces from a user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Interfaces or NULL if iteration is complete.
- */
-DEF_ACCESS (user_iterator_ifaces, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the ifaces allow value from a user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Interfaces allow.
- */
-int
-user_iterator_ifaces_allow (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**

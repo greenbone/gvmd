@@ -2783,6 +2783,39 @@ migrate_245_to_246 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 246 to version 247.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_246_to_247 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 246. */
+
+  if (manage_db_version () != 246)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Per-user limitations on network interfaces have been removed */
+  sql ("ALTER TABLE users DROP COLUMN ifaces;");
+  sql ("ALTER TABLE users DROP COLUMN ifaces_allow;");
+
+  /* Set the database version to 247. */
+
+  set_db_version (247);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2836,6 +2869,7 @@ static migrator_t database_migrators[] = {
   {244, migrate_243_to_244},
   {245, migrate_244_to_245},
   {246, migrate_245_to_246},
+  {247, migrate_246_to_247},
   /* End marker. */
   {-1, NULL}};
 
