@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
 - Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
 - Removed the Business Process Map from gvmd [1627](https://github.com/greenbone/gvmd/pull/1627)
+- Removed ifaces element from users [#1676](https://github.com/greenbone/gvmd/pull/1676)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
