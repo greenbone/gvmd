@@ -3361,12 +3361,6 @@ user_iterator_hosts (iterator_t*);
 int
 user_iterator_hosts_allow (iterator_t*);
 
-const char*
-user_iterator_ifaces (iterator_t*);
-
-int
-user_iterator_ifaces_allow (iterator_t*);
-
 void
 init_user_group_iterator (iterator_t *, user_t);
 
@@ -3393,7 +3387,7 @@ user_role_iterator_readable (iterator_t*);
 
 int
 create_user (const gchar *, const gchar *, const gchar *, const gchar *,
-             int, const gchar *, int, const array_t *, array_t *, gchar **,
+             int, const array_t *, array_t *, gchar **,
              array_t *, gchar **, gchar **, user_t *, int);
 
 int
@@ -3401,7 +3395,7 @@ delete_user (const char *, const char *, int, int, const char*, const char*);
 
 int
 modify_user (const gchar *, gchar **, const gchar *, const gchar *,
-             const gchar*, const gchar *, int, const gchar *, int,
+             const gchar*, const gchar *, int,
              const array_t *, array_t *, gchar **, array_t *, gchar **,
              gchar **);
 
@@ -3425,12 +3419,6 @@ user_name (const char *);
 
 char*
 user_uuid (user_t);
-
-gchar*
-user_ifaces (const char *);
-
-int
-user_ifaces_allow (const char *);
 
 gchar*
 user_hosts (const char *);

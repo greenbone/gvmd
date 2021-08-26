@@ -920,7 +920,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>cvss_base</e>
           <e>severities</e>
           <o><e>cve</e></o>
-          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -944,11 +943,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cve</name>
           <summary>CVE value associated with the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bid</name>
-          <summary>BID associated with the NVT</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -1276,7 +1270,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>cvss_base</e>
           <e>severities</e>
           <o><e>cve</e></o>
-          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -1300,11 +1293,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cve</name>
           <summary>CVE value associated with the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bid</name>
-          <summary>BID associated with the NVT</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -1597,7 +1585,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </attrib>
             <attrib>
               <name>type</name>
-              <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"
+              <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"
               </summary>
               <type>text</type>
             </attrib>
@@ -5815,7 +5803,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>copy</e></o>
       <o><e>comment</e></o>
       <o><e>hosts</e></o>
-      <o><e>ifaces</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
     </pattern>
@@ -5839,18 +5826,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>hosts</name>
       <summary>User access rules: a comma-separated list of hosts</summary>
-      <pattern>
-        <attrib>
-          <name>allow</name>
-          <summary>If 1, allow only listed, otherwise forbid listed</summary>
-          <type>boolean</type>
-        </attrib>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>ifaces</name>
-      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -12620,7 +12595,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <cvss_base>5</cvss_base>
                 <severities score="50"/>
                 <cve></cve>
-                <bid></bid>
               </nvt>
               <threat>Medium</threat>
               <description>Warning with control char between fullstops: . .</description>
@@ -13099,7 +13073,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </attrib>
               <attrib>
                 <name>type</name>
-                <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"</summary>
+                <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"</summary>
                 <type>text</type>
               </attrib>
             </pattern>
@@ -15624,7 +15598,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <tags>NOTAGS</tags>
                     <refs>
                       <ref id="CVE-2013-1406" type="cve"/>
-                      <ref id="51702" type="bid"/>
                       <ref id="DFN-CERT-2013-0246" type="dfn-cert"/>
                     </refs>
                   </nvt>
@@ -16659,7 +16632,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
-                 <ref type="bid" id="36254"/>
               </refs>
             </nvt>
             <threat>Medium</threat>
@@ -16722,7 +16694,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
-                 <ref type="bid" id="36254"/>
               </refs>
             </nvt>
             <threat>High</threat>
@@ -21355,11 +21326,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>text</type>
             <summary>List of host that are either allowed of forbidden</summary>
           </column>
-          <column>
-            <name>ifaces</name>
-            <type>text</type>
-            <summary>List of ifaces that are either allowed of forbidden</summary>
-          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -21405,7 +21371,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <any><e>role</e></any>
           <e>groups</e>
           <e>hosts</e>
-          <e>ifaces</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
           <e>sources</e>
@@ -21507,26 +21472,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>hosts</name>
           <summary>Host access rule for the user</summary>
-          <pattern>
-            <attrib>
-              <name>allow</name>
-              <summary>0 forbidden, 1 allowed, 2 all allowed, 3 custom</summary>
-              <type>
-                <alts>
-                  <alt>0</alt>
-                  <alt>1</alt>
-                  <alt>2</alt>
-                  <alt>3</alt>
-                </alts>
-              </type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>ifaces</name>
-          <summary>Iface access rule for the user</summary>
           <pattern>
             <attrib>
               <name>allow</name>
@@ -25443,7 +25388,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>password</e></o>
       <any><e>role</e></any>
       <o><e>hosts</e></o>
-      <o><e>ifaces</e></o>
       <o><e>sources</e></o>
     </pattern>
     <ele>
@@ -25467,18 +25411,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <description>
         User is allowed to access any host if this element is missing.
       </description>
-      <pattern>
-        <attrib>
-          <name>allow</name>
-          <summary>If 1, allow only listed, otherwise forbid listed</summary>
-          <type>boolean</type>
-        </attrib>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>ifaces</name>
-      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -26069,6 +26001,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_TASK, CREATE_USER, GET_TASKS, GET_USERS, MODIFY_TASK, MODIFY_USER</command>
+    <summary>Removed network interface (iface) options</summary>
+    <description>
+      <p>
+        The option to choose the source interface in the form of the task
+        preference &quot;source_iface&quot; has been removed as well as
+        the &quot;ifaces&quot; element of users to limit the allowed network
+        interfaces.
+      </p>
+    </description>
+    <version>21.10</version>
+  </change>
   <change>
     <command>GET_INFO</command>
     <summary>Removed the Secinfo-type OVALDEF from the GET_INFO command

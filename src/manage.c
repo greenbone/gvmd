@@ -2413,15 +2413,15 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
 }
 
 /**
- * @brief Add OSP preferences for limiting ifaces and hosts for users.
+ * @brief Add OSP preferences for limiting hosts for users.
  *
  * @param[in]  scanner_options  The scanner preferences table to add to.
  */
 static void
 add_user_scan_preferences (GHashTable *scanner_options)
 {
-  gchar *hosts, *ifaces, *name;
-  int hosts_allow, ifaces_allow;
+  gchar *hosts, *name;
+  int hosts_allow;
 
   // Limit access to hosts
   hosts = user_hosts (current_credentials.uuid);
@@ -2441,25 +2441,6 @@ add_user_scan_preferences (GHashTable *scanner_options)
                           hosts ? hosts : g_strdup (""));
   else
     g_free (hosts);
-
-  // Limit access to ifaces
-  ifaces = user_ifaces (current_credentials.uuid);
-  ifaces_allow = user_ifaces_allow (current_credentials.uuid);
-
-  if (ifaces_allow == 1)
-    name = g_strdup ("ifaces_allow");
-  else if (ifaces_allow == 0)
-    name = g_strdup ("ifaces_deny");
-  else
-    name = NULL;
-
-  if (name
-      && (ifaces_allow || (ifaces && strlen (ifaces))))
-    g_hash_table_replace (scanner_options,
-                          name,
-                          ifaces ? ifaces : g_strdup (""));
-  else
-    g_free (ifaces);
 }
 
 /**

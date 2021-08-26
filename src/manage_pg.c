@@ -874,7 +874,10 @@ manage_create_sql_functions ()
               || g_str_match_string ("UTF8", encoding, 0))
             quoted_collation = strdup ("ucs_basic");
           else
-            quoted_collation = strdup ("C");
+            // quote C collation because this seems to be required
+            // without quoting it an error is raised
+            // other collations don't need quoting
+            quoted_collation = strdup ("\"C\"");
 
           free (encoding);
         }
@@ -1750,8 +1753,6 @@ create_tables ()
        "  timezone text,"
        "  hosts text,"
        "  hosts_allow integer,"
-       "  ifaces text,"
-       "  ifaces_allow integer,"
        "  method text,"
        "  creation_time integer,"
        "  modification_time integer);");
