@@ -103,46 +103,6 @@ get_license_element_start (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Writes XML for a license feature to a GString buffer.
- *
- * This is meant to be used to traverse a GTree with g_tree_foreach.
- *
- * @param[in]  key    The key from the tree, i.e. the feature name.
- * @param[in]  value  The value from the tree, i.e. whether it is enabled.
- * @param[in]  buffer The GString to buffer the XML element.
- * 
- * @return Always FALSE to continue traversing the GTree.
- */
-static gboolean
-buffer_license_feature_xml (gchar *key, int value, GString *buffer)
-{
-  xml_string_append (buffer,
-                     "<feature name=\"%s\" enabled=\"%d\"/>",
-                     key, value);
-  return FALSE;
-}
-
-/**
- * @brief Writes XML for a license limit to a GString buffer.
- *
- * This is meant to be used to traverse a GTree with g_tree_foreach.
- *
- * @param[in]  key    The key from the tree, i.e. the limit name.
- * @param[in]  value  The value from the tree, i.e. the value of the limit.
- * @param[in]  buffer The GString to buffer the XML element.
- * 
- * @return Always FALSE to continue traversing the GTree.
- */
-static gboolean
-buffer_license_limit_xml (gchar *key, int value, GString *buffer)
-{
-  xml_string_append (buffer,
-                     "<limit name=\"%s\" value=\"%d\"/>",
-                     key, value);
-  return FALSE;
-}
-
-/**
  * @brief Writes XML for a license access key to a GString buffer.
  *
  * This is meant to be used to traverse a GTree with g_tree_foreach.
@@ -177,7 +137,7 @@ static gboolean
 buffer_license_signature_xml (gchar *key, gchar *value, GString *buffer)
 {
   xml_string_append (buffer,
-                     "<info_item name=\"%s\">%s</info_item>",
+                     "<signature name=\"%s\">%s</signature>",
                      key, value);
   return FALSE;
 }
@@ -196,15 +156,15 @@ buffer_license_content_xml (GString *response, license_data_t *license_data)
                      "<content>"
                      "<meta>"
                      "<id>%s</id>"
-                     "<schema_version>%d</schema_version>"
+                     "<version>%s</version>"
                      "<title>%s</title>"
-                     "<license_type>%s</license_type>"
+                     "<type>%s</type>"
                      "<customer>%s</customer>",
                      license_data->meta->id,
-                     license_data->meta->schema_version,
+                     license_data->meta->version,
                      license_data->meta->title,
-                     license_data->meta->license_type,
-                     license_data->meta->customer_name);
+                     license_data->meta->type,
+                     license_data->meta->customer);
 
   xml_string_append (response,
                      "<created>%s</created>",
@@ -218,33 +178,15 @@ buffer_license_content_xml (GString *response, license_data_t *license_data)
 
   xml_string_append (response,
                      "</meta>"
-                     "<hardware>"
+                     "<appliance>"
                      "<model>%s</model>"
                      "<model_type>%s</model_type>"
-                     "<memory>%d</memory>"
-                     "<cpu_cores>%d</cpu_cores>"
-                     "</hardware>"
-                     "<features>",
-                     license_data->hardware->model,
-                     license_data->hardware->model_type,
-                     license_data->hardware->memory,
-                     license_data->hardware->cpu_cores);
-
-  g_tree_foreach (license_data->features,
-                  (GTraverseFunc) buffer_license_feature_xml,
-                  response);
-
-  xml_string_append (response,
-                     "</features>"
-                     "<limits>");
-
-  g_tree_foreach (license_data->limits,
-                  (GTraverseFunc) buffer_license_limit_xml,
-                  response);
-
-  xml_string_append (response,
-                     "</limits>"
-                     "<keys>");
+                     "<sensor>%d</sensor>"
+                     "</appliance>"
+                     "<keys>",
+                     license_data->appliance->model,
+                     license_data->appliance->model_type,
+                     license_data->appliance->sensor);
 
   g_tree_foreach (license_data->keys,
                   (GTraverseFunc) buffer_license_key_xml,
@@ -252,14 +194,14 @@ buffer_license_content_xml (GString *response, license_data_t *license_data)
 
   xml_string_append (response,
                      "</keys>"
-                     "<signature>");
+                     "<signatures>");
 
-  g_tree_foreach (license_data->signature,
+  g_tree_foreach (license_data->signatures,
                   (GTraverseFunc) buffer_license_signature_xml,
                   response);
 
   xml_string_append (response,
-                     "</signature>"
+                     "</signatures>"
                      "</content>");
 }
 
@@ -276,16 +218,14 @@ get_license_run (gmp_parser_t *gmp_parser,
 {
   int ret;
 
-  gchar *license_status, *file_content;
+  gchar *license_status;
   license_data_t *license_data;
 
   license_status = NULL;
   license_data = NULL;
-  file_content = NULL;
 
   ret = manage_get_license (&license_status,
-                            &license_data,
-                            &file_content);
+                            &license_data);
 
   switch (ret)
     {
@@ -307,11 +247,6 @@ get_license_run (gmp_parser_t *gmp_parser,
             {
               buffer_license_content_xml (response, license_data);
             }
-
-          if (file_content)
-            xml_string_append (response,
-                               "<file>%s</file>",
-                               file_content);
 
           xml_string_append (response,
                              "</license>"
@@ -337,7 +272,6 @@ get_license_run (gmp_parser_t *gmp_parser,
 
   g_free (license_status);
   license_data_free (license_data);
-  g_free (file_content);
 
   get_license_reset ();
 }

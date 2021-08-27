@@ -32,10 +32,10 @@
  */
 typedef struct {
   char *id;               ///< Unique Identifier of the license
-  int  schema_version;    ///< Version of the license file schema
+  char *version;          ///< Version of the license file schema
   char *title;            ///< Short title summarizing the license
-  char *license_type;     ///< Type of license, e.g. Trial or Full license
-  char *customer_name;    ///< Name of the customer
+  char *type;             ///< Type of license, e.g. trial or commercial
+  char *customer;         ///< Name of the customer
   time_t created;         ///< Time the license was created
   time_t begins;          ///< Time after which the license becomes valid
   time_t expires;         ///< Time the license expires
@@ -53,26 +53,23 @@ license_meta_free (license_meta_t *);
 typedef struct {
   char *model;        ///< Appliance model, e.g. "GSM ONE"
   char *model_type;   ///< Appliance model type, e.g. "Sensor"
-  int cpu_cores;      ///< Number of CPU cores
-  int memory;         ///< Amount of RAM in MiB
-} license_hardware_t;
+  gboolean sensor;    ///< Whether the license is applied to a sensor or not
+} license_appliance_t;
 
-license_hardware_t *
-license_hardware_new ();
+license_appliance_t *
+license_appliance_new ();
 
 void
-license_hardware_free (license_hardware_t *);
+license_appliance_free (license_appliance_t *);
 
 /**
  * @brief Defines the information contained in a license
  */
 typedef struct {
-  license_meta_t *meta;         ///< License metadata
-  license_hardware_t *hardware; ///< Hardware and appliance information
-  GTree *features;              ///< Map of enabled or disabled features
-  GTree *limits;                ///< Numeric limits, e.g. max. hosts per target
-  GTree *keys;                  ///< Base64 encoded access keys, e.g. feed key
-  GTree *signature;             ///< Signature info of the license
+  license_meta_t *meta;           ///< License metadata
+  license_appliance_t *appliance; ///< Hardware and appliance information
+  GTree *keys;         ///< Base64 encoded access keys, e.g. feed key
+  GTree *signatures;   ///< Signature info of the license
 } license_data_t;
 
 license_data_t *
@@ -88,4 +85,4 @@ int
 manage_update_license_file (const char *);
 
 int
-manage_get_license (char **, license_data_t **, char **);
+manage_get_license (char **, license_data_t **);

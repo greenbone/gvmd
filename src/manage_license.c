@@ -52,31 +52,32 @@ license_meta_free (license_meta_t *data)
     return;
 
   free (data->id);
+  free (data->version);
   free (data->title);
-  free (data->license_type);
-  free (data->customer_name);
+  free (data->type);
+  free (data->customer);
 
   g_free (data);
 }
 
 /**
- * @brief Allocates a new license hardware data struct
+ * @brief Allocates a new license appliance data struct
  *
- * @return Newly allocated license hardware data. Free with license_meta_free.
+ * @return Newly allocated license appliance data. Free with license_meta_free.
  */
-license_hardware_t *
-license_hardware_new ()
+license_appliance_t *
+license_appliance_new ()
 {
-  return g_malloc0 (sizeof (license_hardware_t));
+  return g_malloc0 (sizeof (license_appliance_t));
 }
 
 /**
- * @brief Frees a license hardware data struct and its fields.
+ * @brief Frees a license appliance data struct and its fields.
  *
  * @param[in]  data  The data struct to free.
  */
 void
-license_hardware_free (license_hardware_t *data)
+license_appliance_free (license_appliance_t *data)
 {
   if (data == NULL)
     return;
@@ -98,19 +99,13 @@ license_data_new ()
   license_data_t *data = g_malloc0 (sizeof (license_data_t));
 
   data->meta = license_meta_new ();
-  data->hardware = license_hardware_new ();
-
-  data->features = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
-                                    NULL, g_free, NULL);
-
-  data->limits = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
-                                  NULL, g_free, NULL);
+  data->appliance = license_appliance_new ();
 
   data->keys = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
                                 NULL, g_free, g_free);
 
-  data->signature = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
-                                     NULL, g_free, g_free);
+  data->signatures = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
+                                      NULL, g_free, g_free);
 
   return data;
 }
@@ -127,11 +122,9 @@ license_data_free (license_data_t *data)
     return;
 
   license_meta_free (data->meta);
-  license_hardware_free (data->hardware);
-  g_tree_destroy (data->features);
-  g_tree_destroy (data->limits);
+  license_appliance_free (data->appliance);
   g_tree_destroy (data->keys);
-  g_tree_destroy (data->signature);
+  g_tree_destroy (data->signatures);
 
   g_free (data);
 }
@@ -162,64 +155,47 @@ manage_update_license_file (const char *new_license)
  *
  * @param[out] status       The validation status (e.g. "valid", "expired").
  * @param[out] license_data The content of the license organized in a struct.
- * @param[out] file_content The TOML file content.
  *
  * @return 0 success, 1 service unavailable, 99 permission denied.
  */
 int
 manage_get_license (gchar **status,
-                    license_data_t **license_data,
-                    gchar **file_content)
+                    license_data_t **license_data)
 {
   if (! acl_user_may ("get_license"))
     return 99;
 
   if (status)
-    *status = g_strdup ("valid");
+    *status = g_strdup ("active");
 
   if (license_data)
     {
       *license_data = license_data_new ();
       license_meta_t *license_meta = (*license_data)->meta;
-      license_hardware_t *license_hardware = (*license_data)->hardware;
+      license_appliance_t *license_appliance = (*license_data)->appliance;
 
       // TODO : replace dummy data with data from license service
       license_meta->id = g_strdup ("4711");
-      license_meta->schema_version = 1;
+      license_meta->version = g_strdup_printf("1.0.0");
       license_meta->title = g_strdup ("Test License");
-      license_meta->license_type = g_strdup ("Trial");
-      license_meta->customer_name = g_strdup ("Jane Doe");
+      license_meta->type = g_strdup ("trial");
+      license_meta->customer = g_strdup ("Jane Doe");
       license_meta->created = time (NULL) - 3600;
       license_meta->begins = time (NULL);
       license_meta->expires = time (NULL) + 3600 * 24 * 8;
 
-      license_hardware->model = g_strdup ("GSM XYZ");
-      license_hardware->model_type = g_strdup ("Virtual Appliance");
-      license_hardware->memory = 2048;
-      license_hardware->cpu_cores = 2;
-
-      g_tree_replace ((*license_data)->features,
-                      g_strdup ("GMP_get_reports"),
-                      GINT_TO_POINTER (1));
-      g_tree_replace ((*license_data)->features,
-                      g_strdup ("GMP_get_tasks"),
-                      GINT_TO_POINTER (1));
-
-      g_tree_replace ((*license_data)->limits,
-                      g_strdup ("target_max_hosts"),
-                      GINT_TO_POINTER (4096));
+      license_appliance->model = g_strdup ("trial");
+      license_appliance->model_type = g_strdup ("virtual");
+      license_appliance->sensor = FALSE;
 
       g_tree_replace ((*license_data)->keys,
-                      g_strdup ("GSF"),
+                      g_strdup ("feed"),
                       g_strdup ("*base64 GSF key*"));
 
-      g_tree_replace ((*license_data)->signature,
+      g_tree_replace ((*license_data)->signatures,
                       g_strdup ("license"),
                       g_strdup ("*base64 signature*"));
     }
-
-  if (file_content)
-    *file_content = g_strdup ("dummy license file");
 
   return 0;
 }
