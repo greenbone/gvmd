@@ -12658,7 +12658,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <e>id</e>
               <e>title</e>
               <e>type</e>
-              <e>customer</e>
+              <e>customer_name</e>
               <e>created</e>
               <e>begins</e>
               <e>expires</e>
@@ -12684,7 +12684,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern>text</pattern>
             </ele>
             <ele>
-              <name>customer</name>
+              <name>customer_name</name>
               <summary>Name of the customer the license is issued for</summary>
               <pattern>text</pattern>
             </ele>
@@ -12784,7 +12784,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <version>1.0.0</version>
                 <title>Test License</title>
                 <type>trial</type>
-                <customer>Jane Doe</customer>
+                <customer_name>Jane Doe</customer_name>
                 <created>2021-08-27T06:05:21Z</created>
                 <begins>2021-08-27T07:05:21Z</begins>
                 <expires>2021-09-04T07:05:21Z</expires>

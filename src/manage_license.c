@@ -55,7 +55,7 @@ license_meta_free (license_meta_t *data)
   free (data->version);
   free (data->title);
   free (data->type);
-  free (data->customer);
+  free (data->customer_name);
 
   g_free (data);
 }
@@ -179,7 +179,7 @@ manage_get_license (gchar **status,
       license_meta->version = g_strdup_printf("1.0.0");
       license_meta->title = g_strdup ("Test License");
       license_meta->type = g_strdup ("trial");
-      license_meta->customer = g_strdup ("Jane Doe");
+      license_meta->customer_name = g_strdup ("Jane Doe");
       license_meta->created = time (NULL) - 3600;
       license_meta->begins = time (NULL);
       license_meta->expires = time (NULL) + 3600 * 24 * 8;

@@ -35,7 +35,7 @@ typedef struct {
   char *version;          ///< Version of the license file schema
   char *title;            ///< Short title summarizing the license
   char *type;             ///< Type of license, e.g. trial or commercial
-  char *customer;         ///< Name of the customer
+  char *customer_name;    ///< Name of the customer
   time_t created;         ///< Time the license was created
   time_t begins;          ///< Time after which the license becomes valid
   time_t expires;         ///< Time the license expires

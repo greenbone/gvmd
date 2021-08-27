@@ -159,12 +159,12 @@ buffer_license_content_xml (GString *response, license_data_t *license_data)
                      "<version>%s</version>"
                      "<title>%s</title>"
                      "<type>%s</type>"
-                     "<customer>%s</customer>",
+                     "<customer_name>%s</customer_name>",
                      license_data->meta->id,
                      license_data->meta->version,
                      license_data->meta->title,
                      license_data->meta->type,
-                     license_data->meta->customer);
+                     license_data->meta->customer_name);
 
   xml_string_append (response,
                      "<created>%s</created>",
