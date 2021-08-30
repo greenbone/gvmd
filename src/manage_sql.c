@@ -19601,6 +19601,7 @@ result_detection_reference (result_t result, report_t report,
                      "      OR port LIKE '%%%s%%');",
                      report, quoted_host, *oid, quoted_location,
                      quoted_location);
+  
   if (*ref == NULL)
     goto detect_cleanup;
 
