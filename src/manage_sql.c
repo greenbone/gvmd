@@ -19603,12 +19603,6 @@ result_detection_reference (result_t result, report_t report,
                      quoted_location);
   
   if (*ref == NULL)
-    *ref = sql_string ("SELECT uuid"
-                       " FROM results"
-                       " WHERE id = %llu;",
-                       result);
-
-  if (*ref == NULL)
     goto detect_cleanup;
 
   g_free (quoted_host);
