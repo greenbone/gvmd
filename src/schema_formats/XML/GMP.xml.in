@@ -12606,6 +12606,207 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </example>
   </command>
   <command>
+    <name>get_license</name>
+    <summary>Get the current license</summary>
+    <description>
+      <p>
+        The client uses the get_license command to get the current license.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>license</e>
+      </pattern>
+      <ele>
+        <name>license</name>
+        <summary>The license information</summary>
+        <pattern>
+          <e>status</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>status</name>
+          <summary>Status of the license</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content</name>
+          <summary>The main content of the license file</summary>
+          <pattern>
+            <e>meta</e>
+            <e>appliance</e>
+            <e>keys</e>
+            <e>signatures</e>
+          </pattern>
+          <ele>
+            <name>meta</name>
+            <summary>License metadata</summary>
+            <pattern>
+              <e>version</e>
+              <e>id</e>
+              <e>title</e>
+              <e>type</e>
+              <e>customer_name</e>
+              <e>created</e>
+              <e>begins</e>
+              <e>expires</e>
+            </pattern>
+            <ele>
+              <name>version</name>
+              <summary>Version of the license file schema</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>id</name>
+              <summary>Unique Identifier of the license</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>title</name>
+              <summary>Short title summarizing the license</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>License type, e.g. &quot;trial&quot; or &quot;commercial&quot;</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>customer_name</name>
+              <summary>Name of the customer the license is issued for</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>created</name>
+              <summary>Time the license was created</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>begins</name>
+              <summary>Time after which the license is valid</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>expires</name>
+              <summary>Time the license expires</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>appliance</name>
+            <summary>Hardware and appliance information</summary>
+            <pattern>
+              <e>model</e>
+              <e>model_type</e>
+            </pattern>
+            <ele>
+              <name>model</name>
+              <summary>Appliance model, e.g. "one"</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>model_type</name>
+              <summary>Appliance model type, e.g. "virtual" or "hardware"</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>sensor</name>
+              <summary>Whether the license is applied to a sensor or not</summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>keys</name>
+            <summary>Base64 encoded access keys, e.g. feed keys</summary>
+            <pattern>
+              <any><e>key</e></any>
+            </pattern>
+            <ele>
+              <name>key</name>
+              <summary>A Base64 encoded access key</summary>
+              <pattern>
+                <attrib>
+                  <name>name</name>
+                  <summary>Name of the key</summary>
+                  <type>text</type>
+                </attrib>
+                <t>text</t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>signatures</name>
+            <summary>Signatures of the license</summary>
+            <pattern>
+              <any><e>signature</e></any>
+            </pattern>
+            <ele>
+              <name>signature</name>
+              <summary>A signature info item</summary>
+              <pattern>
+                <attrib>
+                  <name>name</name>
+                  <summary>Name of the signature</summary>
+                  <type>text</type>
+                </attrib>
+                <t>text</t>
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the current license</summary>
+      <request>
+        <get_license>
+        </get_license>
+      </request>
+      <response>
+        <get_license_response status="200" status_text="OK">
+          <license>
+            <status>active</status>
+            <content>
+              <meta>
+                <id>4711</id>
+                <version>1.0.0</version>
+                <title>Test License</title>
+                <type>trial</type>
+                <customer_name>Jane Doe</customer_name>
+                <created>2021-08-27T06:05:21Z</created>
+                <begins>2021-08-27T07:05:21Z</begins>
+                <expires>2021-09-04T07:05:21Z</expires>
+              </meta>
+              <appliance>
+                <model>trial</model>
+                <model_type>virtual</model_type>
+                <sensor>0</sensor>
+              </appliance>
+              <keys>
+                <key name="feed">*base64 GSF key*</key>
+              </keys>
+              <signatures>
+                <signature name="license">*base64 signature*</signature>
+              </signatures>
+            </content>
+          </license>
+        </get_license_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_nvts</name>
     <summary>Get one or many NVTs</summary>
     <description>
@@ -23615,6 +23816,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <response>
         <modify_group_response status="200" status_text="OK">
         </modify_group_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_license</name>
+    <summary>Modify the existing license</summary>
+    <description>
+      <p>
+        The client uses the modify_license command to change the current
+        license.
+      </p>
+      <p>
+        The license has to be provided as a valid license TOML file.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>allow_empty</name>
+        <summary>Whether to allow an empty file</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+      <e>file</e>
+    </pattern>
+    <ele>
+      <name>file</name>
+      <summary>The license TOML file in plain-text form</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Upload an new license file</summary>
+      <request>
+        <modify_license>
+          <file>[...]</file>
+        </modify_license>
+      </request>
+      <response>
+        <modify_note_response status="200" status_text="OK">
+        </modify_note_response>
       </response>
     </example>
   </command>
