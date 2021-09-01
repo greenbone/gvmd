@@ -51,8 +51,8 @@ license_meta_free (license_meta_t *);
  * @brief Defines the hardware and appliance information of a license
  */
 typedef struct {
-  char *model;        ///< Appliance model, e.g. "GSM ONE"
-  char *model_type;   ///< Appliance model type, e.g. "Sensor"
+  char *model;        ///< Appliance model, e.g. "one", "ceno", "450", ...
+  char *model_type;   ///< Appliance model type, e.g. "virtual" or "hardware"
   gboolean sensor;    ///< Whether the license is applied to a sensor or not
 } license_appliance_t;
 

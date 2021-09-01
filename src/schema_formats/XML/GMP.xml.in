@@ -12718,7 +12718,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </ele>
             <ele>
               <name>model_type</name>
-              <summary>Appliance model type, e.g. "Sensor"</summary>
+              <summary>Appliance model type, e.g. "virtual" or "hardware"</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
