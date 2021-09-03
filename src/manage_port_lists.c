@@ -235,20 +235,22 @@ update_port_list_from_file (port_list_t port_list, const gchar *path)
 }
 
 /**
- * @brief Sync a single port_list with the feed.
+ * @brief Gets if a port list must be synced to a file path in the feed.
  *
- * @param[in]  path  Path to port_list XML in feed.
+ * @param[in]  path       Path to port list XML in feed.
+ * @param[out] port_list  Port list row id if it already exists, 0 if new.
+ *
+ * @return 1 if port list should be synced, 0 otherwise
  */
-static void
-sync_port_list_with_feed (const gchar *path)
+static int
+should_sync_port_list_from_path (const char *path, port_list_t *port_list)
 {
   gchar **split, *full_path, *uuid;
-  port_list_t port_list;
 
-  g_debug ("%s: considering %s", __func__, path);
+  *port_list = 0;
 
   split = g_regex_split_simple
-           (/* All-TCP--daba56c8-73ec-11df-a475-002264764cea.xml */
+           (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
             "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
             path, 0, 0);
 
@@ -256,45 +258,71 @@ sync_port_list_with_feed (const gchar *path)
     {
       g_strfreev (split);
       g_warning ("%s: path not in required format: %s", __func__, path);
-      return;
+      return 0;
     }
-
-  full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
 
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
-  if (find_port_list_no_acl (uuid, &port_list) == 0
-      && port_list)
+  if (find_port_list_no_acl (uuid, port_list) == 0
+      && *port_list)
     {
+      full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
+
       g_free (uuid);
 
       g_debug ("%s: considering %s for update", __func__, path);
 
-      if (port_list_updated_in_feed (port_list, full_path))
+      if (port_list_updated_in_feed (*port_list, full_path))
         {
-          g_debug ("%s: updating %s", __func__, path);
-          update_port_list_from_file (port_list, full_path);
+          return 1;
         }
 
       g_free (full_path);
-      return;
+      return 0;
     }
 
-  if (find_trash_port_list_no_acl (uuid, &port_list) == 0
-      && port_list)
+  if (find_trash_port_list_no_acl (uuid, port_list) == 0
+      && *port_list)
     {
       g_free (uuid);
-      return;
+      *port_list = 0;
+      return 0;
     }
 
   g_free (uuid);
+  *port_list = 0;
+  return 1;
+}
 
-  g_debug ("%s: adding %s", __func__, path);
+/**
+ * @brief Sync a single port_list with the feed.
+ *
+ * @param[in]  path  Path to port_list XML in feed.
+ */
+static void
+sync_port_list_with_feed (const gchar *path)
+{
+  port_list_t port_list;
 
-  create_port_list_from_file (full_path);
+  g_debug ("%s: considering %s", __func__, path);
 
-  g_free (full_path);
+  if (should_sync_port_list_from_path (path, &port_list))
+    {
+      gchar *full_path;
+      full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
+      switch (port_list)
+        {
+          case 0:
+            g_debug ("%s: adding %s", __func__, path);
+            create_port_list_from_file (full_path);
+            break;
+          default:
+            g_debug ("%s: updating %s", __func__, path);
+            update_port_list_from_file (port_list, full_path);
+        }
+      g_free (full_path);
+    }
 }
 
 /**

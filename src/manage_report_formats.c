@@ -594,21 +594,23 @@ create_report_format_from_file (const gchar *path)
 }
 
 /**
- * @brief Sync a single report format with the feed.
+ * @brief Gets if a report format must be synced to a file path in the feed.
  *
- * @param[in]  path  Path to report format XML in feed.
+ * @param[in]  path          Path to report format XML in feed.
+ * @param[out] report_format Report format id if it already exists, 0 if new.
+ *
+ * @return 1 if report format should be synced, 0 otherwise
  */
-static void
-sync_report_format_with_feed (const gchar *path)
+static int
+should_sync_report_format_from_path (const char *path,
+                                     report_format_t *report_format)
 {
   gchar **split, *full_path, *uuid;
-  report_format_t report_format;
 
-  g_debug ("%s: considering %s", __func__, path);
+  *report_format = 0;
 
   split = g_regex_split_simple
-           (/* Format is: [AnYtHiNg]uuid.xml
-             * For example: PDF--daba56c8-73ec-11df-a475-002264764cea.xml */
+           (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
             "^.*([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12}).xml$",
             path, 0, 0);
 
@@ -616,45 +618,71 @@ sync_report_format_with_feed (const gchar *path)
     {
       g_strfreev (split);
       g_warning ("%s: path not in required format: %s", __func__, path);
-      return;
+      return 0;
     }
-
-  full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
 
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
-  if (find_report_format_no_acl (uuid, &report_format) == 0
-      && report_format)
+  if (find_report_format_no_acl (uuid, report_format) == 0
+      && *report_format)
     {
+      full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
+
       g_free (uuid);
 
       g_debug ("%s: considering %s for update", __func__, path);
 
-      if (report_format_updated_in_feed (report_format, full_path))
+      if (report_format_updated_in_feed (*report_format, full_path))
         {
-          g_debug ("%s: updating %s", __func__, path);
-          update_report_format_from_file (report_format, full_path);
+          return 1;
         }
 
       g_free (full_path);
-      return;
+      return 0;
     }
 
-  if (find_trash_report_format_no_acl (uuid, &report_format) == 0
-      && report_format)
+  if (find_trash_report_format_no_acl (uuid, report_format) == 0
+      && *report_format)
     {
       g_free (uuid);
-      return;
+      *report_format = 0;
+      return 0;
     }
 
   g_free (uuid);
+  *report_format = 0;
+  return 1;
+}
 
-  g_debug ("%s: adding %s", __func__, path);
+/**
+ * @brief Sync a single report format with the feed.
+ *
+ * @param[in]  path  Path to report format XML in feed.
+ */
+static void
+sync_report_format_with_feed (const gchar *path)
+{
+  report_format_t report_format;
 
-  create_report_format_from_file (full_path);
+  g_debug ("%s: considering %s", __func__, path);
 
-  g_free (full_path);
+  if (should_sync_report_format_from_path (path, &report_format))
+    {
+      gchar *full_path;
+      full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
+      switch (report_format)
+        {
+          case 0:
+            g_debug ("%s: adding %s", __func__, path);
+            create_report_format_from_file (full_path);
+            break;
+          default:
+            g_debug ("%s: updating %s", __func__, path);
+            update_report_format_from_file (report_format, full_path);
+        }
+      g_free (full_path);
+    }
 }
 
 /**
