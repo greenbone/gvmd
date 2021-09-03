@@ -300,17 +300,19 @@ create_config_from_file (const gchar *path)
 }
 
 /**
- * @brief Sync a single config with the feed.
+ * @brief Gets if a config must be synced a file path in the feed.
  *
- * @param[in]  path  Path to config XML in feed.
+ * @param[in]  path     Path to config XML in feed.
+ * @param[out] config   Config row id if it already exists, 0 if config is new.
+ *
+ * @return 1 if config should be synced, 0 otherwise
  */
-static void
-sync_config_with_feed (const gchar *path)
+static int
+should_sync_config_from_path (const char *path, config_t *config)
 {
   gchar **split, *full_path, *uuid;
-  config_t config;
 
-  g_debug ("%s: considering %s", __func__, path);
+  *config = 0;
 
   split = g_regex_split_simple
            (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
@@ -321,45 +323,71 @@ sync_config_with_feed (const gchar *path)
     {
       g_strfreev (split);
       g_warning ("%s: path not in required format: %s", __func__, path);
-      return;
+      return 0;
     }
-
-  full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
-  if (find_config_no_acl (uuid, &config) == 0
-      && config)
+  if (find_config_no_acl (uuid, config) == 0
+      && *config)
     {
+      full_path = g_build_filename (feed_dir_configs (), path, NULL);
+
       g_free (uuid);
 
       g_debug ("%s: considering %s for update", __func__, path);
 
-      if (config_updated_in_feed (config, full_path))
+      if (config_updated_in_feed (*config, full_path))
         {
-          g_debug ("%s: updating %s", __func__, path);
-          update_config_from_file (config, full_path);
+          return 1;
         }
 
       g_free (full_path);
-      return;
+      return 0;
     }
 
-  if (find_trash_config_no_acl (uuid, &config) == 0
-      && config)
+  if (find_trash_config_no_acl (uuid, config) == 0
+      && *config)
     {
       g_free (uuid);
-      return;
+      *config = 0;
+      return 0;
     }
 
   g_free (uuid);
+  *config = 0;
+  return 1;
+}
 
-  g_debug ("%s: adding %s", __func__, path);
+/**
+ * @brief Sync a single config with the feed.
+ *
+ * @param[in]  path  Path to config XML in feed.
+ */
+static void
+sync_config_with_feed (const gchar *path)
+{
+  config_t config;
 
-  create_config_from_file (full_path);
+  g_debug ("%s: considering %s", __func__, path);
 
-  g_free (full_path);
+  if (should_sync_config_from_path (path, &config))
+    {
+      gchar *full_path;
+      full_path = g_build_filename (feed_dir_configs (), path, NULL);
+      switch (config)
+        {
+          case 0:
+            g_debug ("%s: adding %s", __func__, path);
+            create_config_from_file (full_path);
+            break;
+          default:
+            g_debug ("%s: updating %s", __func__, path);
+            update_config_from_file (config, full_path);
+        }
+      g_free (full_path);
+    }
 }
 
 /**
