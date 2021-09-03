@@ -2358,6 +2358,15 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
     }
   status = osp_get_scan_status_ext (connection, status_opts, error);
 
+  /* Reset connection. */
+  osp_connection_close (connection);
+  connection = osp_scanner_connect (task_scanner (task));
+  if (!connection)
+    {
+      *error = g_strdup ("Could not connect to Scanner");
+      return -1;
+    }
+
   if (status == OSP_SCAN_STATUS_ERROR)
     {
       if (g_str_has_prefix (*error, "Failed to find scan"))
@@ -2378,8 +2387,7 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
         }
     }
   else if (status == OSP_SCAN_STATUS_RUNNING
-           || status == OSP_SCAN_STATUS_QUEUED
-           || status == OSP_SCAN_STATUS_FINISHED)
+           || status == OSP_SCAN_STATUS_QUEUED)
     {
       g_debug ("%s: Scan %s queued, running or finished", __func__, scan_id);
       /* It would be possible to simply continue getting the results
@@ -2390,6 +2398,21 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
           osp_connection_close (connection);
           return -1;
         }
+      if (osp_delete_scan (connection, scan_id))
+        {
+          *error = g_strdup ("Failed to delete old report");
+          osp_connection_close (connection);
+          return -1;
+        }
+      osp_connection_close (connection);
+      trim_partial_report (global_current_report);
+      return 1;
+    }
+  else if (status == OSP_SCAN_STATUS_FINISHED)
+    {
+      /* OSP can't stop an already finished/interrupted scan,
+       * but it must be delete to be resumed. */
+      g_debug ("%s: Scan %s finished", __func__, scan_id);
       if (osp_delete_scan (connection, scan_id))
         {
           *error = g_strdup ("Failed to delete old report");
