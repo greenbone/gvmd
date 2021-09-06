@@ -403,7 +403,8 @@ sync_config_with_feed (const gchar *path)
  * NULL otherwise.
  * @param[in]   set_current_user Whether to set current user to feed owner.
  *
- * @return 0 success, 1 no feed directory or owner, 2 NVTs missing, -1 error
+ * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
+ *         -1 error.
  */
 static int
 try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
@@ -425,7 +426,7 @@ try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
   if (nvt_feed_version == NULL)
     {
       g_debug ("%s: no NVTs so not syncing from feed", __func__);
-      return 2;
+      return 3;
     }
   g_free (nvt_feed_version);
 
@@ -438,14 +439,14 @@ try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 1;
+      return 2;
     }
 
   feed_owner_name = user_name (feed_owner_uuid);
   if (feed_owner_name == NULL)
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
-      return 1;
+      return 2;
     }
 
   /* Open feed import directory. */
@@ -485,7 +486,8 @@ try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
  * Update configs in the db that have changed on the feed.
  * Do nothing to configs in db that have been removed from the feed.
  *
- * @return 0 success, 1 no feed directory or owner, 2 NVTs missing, -1 error.
+ * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
+ *         -1 error.
  */
 int
 sync_configs_with_feed ()
