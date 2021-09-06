@@ -303,12 +303,14 @@ create_config_from_file (const gchar *path)
  * @brief Gets if a config must be synced a file path in the feed.
  *
  * @param[in]  path     Path to config XML in feed.
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
  * @param[out] config   Config row id if it already exists, 0 if config is new.
  *
  * @return 1 if config should be synced, 0 otherwise
  */
 static int
-should_sync_config_from_path (const char *path, config_t *config)
+should_sync_config_from_path (const char *path, gboolean rebuild,
+                              config_t *config)
 {
   gchar **split, *full_path, *uuid;
 
@@ -332,6 +334,9 @@ should_sync_config_from_path (const char *path, config_t *config)
   if (find_config_no_acl (uuid, config) == 0
       && *config)
     {
+      if (rebuild)
+        return 1;
+
       full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
       g_free (uuid);
@@ -363,16 +368,17 @@ should_sync_config_from_path (const char *path, config_t *config)
 /**
  * @brief Sync a single config with the feed.
  *
- * @param[in]  path  Path to config XML in feed.
+ * @param[in]  path     Path to config XML in feed.
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
  */
 static void
-sync_config_with_feed (const gchar *path)
+sync_config_with_feed (const gchar *path, gboolean rebuild)
 {
   config_t config;
 
   g_debug ("%s: considering %s", __func__, path);
 
-  if (should_sync_config_from_path (path, &config))
+  if (should_sync_config_from_path (path, rebuild, &config))
     {
       gchar *full_path;
       full_path = g_build_filename (feed_dir_configs (), path, NULL);
@@ -486,11 +492,13 @@ try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
  * Update configs in the db that have changed on the feed.
  * Do nothing to configs in db that have been removed from the feed.
  *
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
+ *
  * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
  *         -1 error.
  */
 int
-sync_configs_with_feed ()
+sync_configs_with_feed (gboolean rebuild)
 {
   int ret;
   GDir *dir;
@@ -512,7 +520,7 @@ sync_configs_with_feed ()
     if (g_str_has_prefix (config_path, ".") == 0
         && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (config_path, ".xml"))
-      sync_config_with_feed (config_path);
+      sync_config_with_feed (config_path, rebuild);
 
   /* Cleanup. */
 
@@ -542,7 +550,7 @@ configs_feed_dir_exists ()
 void
 manage_sync_configs ()
 {
-  sync_configs_with_feed ();
+  sync_configs_with_feed (FALSE);
 }
 
 /**
@@ -562,7 +570,7 @@ should_sync_configs ()
     if (g_str_has_prefix (config_path, ".") == 0
         && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (config_path, ".xml")
-        && should_sync_config_from_path (config_path, &config))
+        && should_sync_config_from_path (config_path, FALSE, &config))
       return TRUE;
 
   return FALSE;

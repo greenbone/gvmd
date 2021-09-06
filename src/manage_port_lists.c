@@ -238,12 +238,14 @@ update_port_list_from_file (port_list_t port_list, const gchar *path)
  * @brief Gets if a port list must be synced to a file path in the feed.
  *
  * @param[in]  path       Path to port list XML in feed.
+ * @param[in]  rebuild    Whether ignore timestamps to force a rebuild.
  * @param[out] port_list  Port list row id if it already exists, 0 if new.
  *
  * @return 1 if port list should be synced, 0 otherwise
  */
 static int
-should_sync_port_list_from_path (const char *path, port_list_t *port_list)
+should_sync_port_list_from_path (const char *path, gboolean rebuild,
+                                 port_list_t *port_list)
 {
   gchar **split, *full_path, *uuid;
 
@@ -267,6 +269,9 @@ should_sync_port_list_from_path (const char *path, port_list_t *port_list)
   if (find_port_list_no_acl (uuid, port_list) == 0
       && *port_list)
     {
+      if (rebuild)
+        return 1;
+
       full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
 
       g_free (uuid);
@@ -298,16 +303,17 @@ should_sync_port_list_from_path (const char *path, port_list_t *port_list)
 /**
  * @brief Sync a single port_list with the feed.
  *
- * @param[in]  path  Path to port_list XML in feed.
+ * @param[in]  path     Path to port_list XML in feed.
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
  */
 static void
-sync_port_list_with_feed (const gchar *path)
+sync_port_list_with_feed (const gchar *path, gboolean rebuild)
 {
   port_list_t port_list;
 
   g_debug ("%s: considering %s", __func__, path);
 
-  if (should_sync_port_list_from_path (path, &port_list))
+  if (should_sync_port_list_from_path (path, rebuild, &port_list))
     {
       gchar *full_path;
       full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
@@ -404,10 +410,12 @@ try_open_port_lists_feed_dir (GDir **dir, gboolean set_current_user)
  * Update port lists in the db that have changed on the feed.
  * Do nothing to db port lists that have been removed from the feed.
  *
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
+ *
  * @return 0 success, 1 no feed directory or owner, -1 error.
  */
 int
-sync_port_lists_with_feed ()
+sync_port_lists_with_feed (gboolean rebuild)
 {
   int ret;
   GDir *dir;
@@ -429,7 +437,7 @@ sync_port_lists_with_feed ()
     if (g_str_has_prefix (port_list_path, ".") == 0
         && strlen (port_list_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (port_list_path, ".xml"))
-      sync_port_list_with_feed (port_list_path);
+      sync_port_list_with_feed (port_list_path, rebuild);
 
   /* Cleanup. */
 
@@ -459,7 +467,7 @@ port_lists_feed_dir_exists ()
 void
 manage_sync_port_lists ()
 {
-  sync_port_lists_with_feed ();
+  sync_port_lists_with_feed (FALSE);
 }
 
 /**
@@ -479,7 +487,7 @@ should_sync_port_lists ()
     if (g_str_has_prefix (port_list_path, ".") == 0
         && strlen (port_list_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (port_list_path, ".xml")
-        && should_sync_port_list_from_path (port_list_path, &port_list))
+        && should_sync_port_list_from_path (port_list_path, FALSE, &port_list))
       return TRUE;
 
   return FALSE;
