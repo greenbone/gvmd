@@ -234,4 +234,7 @@ report_formats_feed_dir_exists ();
 void
 manage_sync_report_formats ();
 
+gboolean
+should_sync_report_formats ();
+
 #endif /* not _GVMD_MANAGE_REPORT_FORMATS_H */

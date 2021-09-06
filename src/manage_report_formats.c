@@ -824,3 +824,27 @@ manage_sync_report_formats ()
 {
   sync_report_formats_with_feed ();
 }
+
+/**
+ * @brief Checks if the report formats should be synced with the feed.
+ */
+gboolean
+should_sync_report_formats ()
+{
+  GDir *dir;
+  const gchar *report_format_path;
+  report_format_t report_format;
+
+  if (try_open_report_formats_feed_dir (&dir, FALSE))
+    return FALSE;
+
+  while ((report_format_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (report_format_path, ".") == 0
+        && strlen (report_format_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (report_format_path, ".xml")
+        && should_sync_report_format_from_path (report_format_path,
+                                                &report_format))
+      return TRUE;
+
+  return FALSE;
+}

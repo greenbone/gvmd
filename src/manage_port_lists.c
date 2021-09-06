@@ -463,3 +463,26 @@ manage_sync_port_lists ()
 {
   sync_port_lists_with_feed ();
 }
+
+/**
+ * @brief Checks if the port lists should be synced with the feed.
+ */
+gboolean
+should_sync_port_lists ()
+{
+  GDir *dir;
+  const gchar *port_list_path;
+  port_list_t port_list;
+
+  if (try_open_port_lists_feed_dir (&dir, FALSE))
+    return FALSE;
+
+  while ((port_list_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (port_list_path, ".") == 0
+        && strlen (port_list_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (port_list_path, ".xml")
+        && should_sync_port_list_from_path (port_list_path, &port_list))
+      return TRUE;
+
+  return FALSE;
+}

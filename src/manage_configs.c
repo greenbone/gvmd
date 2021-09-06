@@ -545,3 +545,26 @@ manage_sync_configs ()
 {
   sync_configs_with_feed ();
 }
+
+/**
+ * @brief Checks if the configs should be synced with the feed.
+ */
+gboolean
+should_sync_configs ()
+{
+  GDir *dir;
+  const gchar *config_path;
+  config_t config;
+
+  if (try_open_configs_feed_dir (&dir, FALSE))
+    return FALSE;
+
+  while ((config_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (config_path, ".") == 0
+        && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (config_path, ".xml")
+        && should_sync_config_from_path (config_path, &config))
+      return TRUE;
+
+  return FALSE;
+}
