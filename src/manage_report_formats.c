@@ -687,19 +687,22 @@ sync_report_format_with_feed (const gchar *path)
 
 /**
  * @brief Open the report formats feed directory if it is available and the
- * feed owner is set. Also set the current user to the feed owner.
+ * feed owner is set.
+ * Optionally set the current user to the feed owner on success.
  * 
  * The sync will be skipped if the feed directory does not exist or
  *  the feed owner is not set. 
  * 
  * @param[out]  dir The directory as GDir if available and feed owner is set,
  * NULL otherwise.
+ * @param[in]   set_current_user Whether to set current user to feed owner.
  *
  * @return 0 success, 1 no feed directory or owner, -1 error
  */
 static int
-try_open_report_formats_feed_dir (GDir **dir)
+try_open_report_formats_feed_dir (GDir **dir, gboolean set_current_user)
 {
+  char *feed_owner_uuid, *feed_owner_name;
   GError *error;
 
   /* Test if base feed directory exists */
@@ -709,18 +712,18 @@ try_open_report_formats_feed_dir (GDir **dir)
 
   /* Setup owner. */
 
-  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
 
-  if (current_credentials.uuid == NULL
-      || strlen (current_credentials.uuid) == 0)
+  if (feed_owner_uuid == NULL
+      || strlen (feed_owner_uuid) == 0)
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
       return 1;
     }
 
-  current_credentials.username = user_name (current_credentials.uuid);
-  if (current_credentials.username == NULL)
+  feed_owner_name = user_name (feed_owner_uuid);
+  if (feed_owner_name == NULL)
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed",
                __func__);
@@ -736,12 +739,22 @@ try_open_report_formats_feed_dir (GDir **dir)
       g_warning ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_report_formats (), error->message);
       g_error_free (error);
-      g_free (current_credentials.uuid);
-      g_free (current_credentials.username);
-      current_credentials.uuid = NULL;
-      current_credentials.username = NULL;
+      free (feed_owner_uuid);
+      free (feed_owner_name);
       return -1;
     }
+
+  if (set_current_user)
+    {
+      current_credentials.uuid = feed_owner_uuid;
+      current_credentials.username = feed_owner_name;
+    }
+  else
+    {
+      free (feed_owner_uuid);
+      free (feed_owner_name);
+    }
+
   return 0;
 }
 
@@ -760,7 +773,7 @@ sync_report_formats_with_feed ()
   GDir *dir;
   const gchar *report_format_path;
 
-  switch (try_open_report_formats_feed_dir (&dir))
+  switch (try_open_report_formats_feed_dir (&dir, TRUE))
     {
       case 0:
         // Successfully opened directory

@@ -392,7 +392,8 @@ sync_config_with_feed (const gchar *path)
 
 /**
  * @brief Open the configs feed directory if it is available and the
- * feed owner is set. Also set the current user to the feed owner.
+ * feed owner is set.
+ * Optionally set the current user to the feed owner on success.
  * 
  * The sync will be skipped if the feed directory does not exist or
  *  the feed owner is not set. 
@@ -400,12 +401,14 @@ sync_config_with_feed (const gchar *path)
  * 
  * @param[out]  dir The directory as GDir if available and feed owner is set,
  * NULL otherwise.
+ * @param[in]   set_current_user Whether to set current user to feed owner.
  *
  * @return 0 success, 1 no feed directory or owner, 2 NVTs missing, -1 error
  */
 static int
-try_open_configs_feed_dir (GDir **dir)
+try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
 {
+  char *feed_owner_uuid, *feed_owner_name;
   GError *error;
   gchar *nvt_feed_version;
   
@@ -428,18 +431,18 @@ try_open_configs_feed_dir (GDir **dir)
 
   /* Setup owner. */
 
-  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
 
-  if (current_credentials.uuid == NULL
-      || strlen (current_credentials.uuid) == 0)
+  if (feed_owner_uuid == NULL
+      || strlen (feed_owner_uuid) == 0)
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
       return 1;
     }
 
-  current_credentials.username = user_name (current_credentials.uuid);
-  if (current_credentials.username == NULL)
+  feed_owner_name = user_name (feed_owner_uuid);
+  if (feed_owner_name == NULL)
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
       return 1;
@@ -460,6 +463,18 @@ try_open_configs_feed_dir (GDir **dir)
       current_credentials.username = NULL;
       return -1;
     }
+
+  if (set_current_user)
+    {
+      current_credentials.uuid = feed_owner_uuid;
+      current_credentials.username = feed_owner_name;
+    }
+  else
+    {
+      free (feed_owner_uuid);
+      free (feed_owner_name);
+    }
+
   return 0;
 }
 
@@ -478,7 +493,7 @@ sync_configs_with_feed ()
   GDir *dir;
   const gchar *config_path;
 
-  switch (try_open_configs_feed_dir (&dir))
+  switch (try_open_configs_feed_dir (&dir, TRUE))
     {
       case 0:
         // Successfully opened directory
