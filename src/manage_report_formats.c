@@ -686,20 +686,21 @@ sync_report_format_with_feed (const gchar *path)
 }
 
 /**
- * @brief Sync all report formats with the feed.
+ * @brief Open the report formats feed directory if it is available and the
+ * feed owner is set. Also set the current user to the feed owner.
+ * 
+ * The sync will be skipped if the feed directory does not exist or
+ *  the feed owner is not set. 
+ * 
+ * @param[out]  dir The directory as GDir if available and feed owner is set,
+ * NULL otherwise.
  *
- * Create report formats that exists in the feed but not in the db.
- * Update report formats in the db that have changed on the feed.
- * Do nothing to report formats in db that have been removed from the feed.
- *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 no feed directory or owner, -1 error
  */
-int
-sync_report_formats_with_feed ()
+static int
+try_open_report_formats_feed_dir (GDir **dir)
 {
   GError *error;
-  GDir *dir;
-  const gchar *report_format_path;
 
   /* Test if base feed directory exists */
 
@@ -715,7 +716,7 @@ sync_report_formats_with_feed ()
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 0;
+      return 1;
     }
 
   current_credentials.username = user_name (current_credentials.uuid);
@@ -723,14 +724,14 @@ sync_report_formats_with_feed ()
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed",
                __func__);
-      return 0;
+      return 1;
     }
 
   /* Open feed import directory. */
 
   error = NULL;
-  dir = g_dir_open (feed_dir_report_formats (), 0, &error);
-  if (dir == NULL)
+  *dir = g_dir_open (feed_dir_report_formats (), 0, &error);
+  if (*dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_report_formats (), error->message);
@@ -740,6 +741,36 @@ sync_report_formats_with_feed ()
       current_credentials.uuid = NULL;
       current_credentials.username = NULL;
       return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Sync all report formats with the feed.
+ *
+ * Create report formats that exists in the feed but not in the db.
+ * Update report formats in the db that have changed on the feed.
+ * Do nothing to report formats in db that have been removed from the feed.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sync_report_formats_with_feed ()
+{
+  GDir *dir;
+  const gchar *report_format_path;
+
+  switch (try_open_report_formats_feed_dir (&dir))
+    {
+      case 0:
+        // Successfully opened directory
+        break;
+      case 1:
+        // No feed directory or feed owner
+        return 0; 
+      default:
+        // Error
+        return -1;
     }
 
   /* Sync each file in the directory. */

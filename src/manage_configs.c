@@ -391,26 +391,30 @@ sync_config_with_feed (const gchar *path)
 }
 
 /**
- * @brief Sync all configs with the feed.
+ * @brief Open the configs feed directory if it is available and the
+ * feed owner is set. Also set the current user to the feed owner.
+ * 
+ * The sync will be skipped if the feed directory does not exist or
+ *  the feed owner is not set. 
+ * For configs the NVTs also have to exist.
+ * 
+ * @param[out]  dir The directory as GDir if available and feed owner is set,
+ * NULL otherwise.
  *
- * Create configs that exists in the feed but not in the db.
- * Update configs in the db that have changed on the feed.
- * Do nothing to configs in db that have been removed from the feed.
- *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 no feed directory or owner, 2 NVTs missing, -1 error
  */
-int
-sync_configs_with_feed ()
+static int
+try_open_configs_feed_dir (GDir **dir)
 {
   GError *error;
-  GDir *dir;
-  const gchar *config_path;
   gchar *nvt_feed_version;
-
+  
+  *dir = NULL;
+  
   /* Test if base feed directory exists */
 
   if (configs_feed_dir_exists () == FALSE)
-    return 0;
+    return 1;
 
   /* Only sync if NVTs are up to date. */
 
@@ -418,7 +422,7 @@ sync_configs_with_feed ()
   if (nvt_feed_version == NULL)
     {
       g_debug ("%s: no NVTs so not syncing from feed", __func__);
-      return 0;
+      return 2;
     }
   g_free (nvt_feed_version);
 
@@ -431,21 +435,21 @@ sync_configs_with_feed ()
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 0;
+      return 1;
     }
 
   current_credentials.username = user_name (current_credentials.uuid);
   if (current_credentials.username == NULL)
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
-      return 0;
+      return 1;
     }
 
   /* Open feed import directory. */
 
   error = NULL;
-  dir = g_dir_open (feed_dir_configs (), 0, &error);
-  if (dir == NULL)
+  *dir = g_dir_open (feed_dir_configs (), 0, &error);
+  if (*dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_configs (), error->message);
@@ -455,6 +459,37 @@ sync_configs_with_feed ()
       current_credentials.uuid = NULL;
       current_credentials.username = NULL;
       return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Sync all configs with the feed.
+ *
+ * Create configs that exists in the feed but not in the db.
+ * Update configs in the db that have changed on the feed.
+ * Do nothing to configs in db that have been removed from the feed.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sync_configs_with_feed ()
+{
+  GDir *dir;
+  const gchar *config_path;
+
+  switch (try_open_configs_feed_dir (&dir))
+    {
+      case 0:
+        // Successfully opened directory
+        break;
+      case 1:
+      case 2:
+        // No feed directory, feed owner, or NVTs
+        return 0; 
+      default:
+        // Error
+        return -1;
     }
 
   /* Sync each file in the directory. */
