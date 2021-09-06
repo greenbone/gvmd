@@ -597,12 +597,14 @@ create_report_format_from_file (const gchar *path)
  * @brief Gets if a report format must be synced to a file path in the feed.
  *
  * @param[in]  path          Path to report format XML in feed.
+ * @param[in]  rebuild       Whether ignore timestamps to force a rebuild.
  * @param[out] report_format Report format id if it already exists, 0 if new.
  *
  * @return 1 if report format should be synced, 0 otherwise
  */
 static int
 should_sync_report_format_from_path (const char *path,
+                                     gboolean rebuild,
                                      report_format_t *report_format)
 {
   gchar **split, *full_path, *uuid;
@@ -627,6 +629,9 @@ should_sync_report_format_from_path (const char *path,
   if (find_report_format_no_acl (uuid, report_format) == 0
       && *report_format)
     {
+      if (rebuild)
+        return 1;
+      
       full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
 
       g_free (uuid);
@@ -658,16 +663,17 @@ should_sync_report_format_from_path (const char *path,
 /**
  * @brief Sync a single report format with the feed.
  *
- * @param[in]  path  Path to report format XML in feed.
+ * @param[in]  path     Path to report format XML in feed.
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
  */
 static void
-sync_report_format_with_feed (const gchar *path)
+sync_report_format_with_feed (const gchar *path, gboolean rebuild)
 {
   report_format_t report_format;
 
   g_debug ("%s: considering %s", __func__, path);
 
-  if (should_sync_report_format_from_path (path, &report_format))
+  if (should_sync_report_format_from_path (path, rebuild, &report_format))
     {
       gchar *full_path;
       full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
@@ -765,10 +771,12 @@ try_open_report_formats_feed_dir (GDir **dir, gboolean set_current_user)
  * Update report formats in the db that have changed on the feed.
  * Do nothing to report formats in db that have been removed from the feed.
  *
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
+ *
  * @return 0 success, 1 no feed directory or owner, -1 error.
  */
 int
-sync_report_formats_with_feed ()
+sync_report_formats_with_feed (gboolean rebuild)
 {
   int ret;
   GDir *dir;
@@ -790,7 +798,7 @@ sync_report_formats_with_feed ()
     if (g_str_has_prefix (report_format_path, ".") == 0
         && strlen (report_format_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (report_format_path, ".xml"))
-      sync_report_format_with_feed (report_format_path);
+      sync_report_format_with_feed (report_format_path, rebuild);
 
   /* Cleanup. */
 
@@ -820,7 +828,7 @@ report_formats_feed_dir_exists ()
 void
 manage_sync_report_formats ()
 {
-  sync_report_formats_with_feed ();
+  sync_report_formats_with_feed (FALSE);
 }
 
 /**
@@ -841,6 +849,7 @@ should_sync_report_formats ()
         && strlen (report_format_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (report_format_path, ".xml")
         && should_sync_report_format_from_path (report_format_path,
+                                                FALSE,
                                                 &report_format))
       return TRUE;
 
