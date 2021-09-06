@@ -485,26 +485,23 @@ try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
  * Update configs in the db that have changed on the feed.
  * Do nothing to configs in db that have been removed from the feed.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 no feed directory or owner, 2 NVTs missing, -1 error.
  */
 int
 sync_configs_with_feed ()
 {
+  int ret;
   GDir *dir;
   const gchar *config_path;
 
-  switch (try_open_configs_feed_dir (&dir, TRUE))
+  ret = try_open_configs_feed_dir (&dir, TRUE);
+  switch (ret)
     {
       case 0:
         // Successfully opened directory
         break;
-      case 1:
-      case 2:
-        // No feed directory, feed owner, or NVTs
-        return 0; 
       default:
-        // Error
-        return -1;
+        return ret;
     }
 
   /* Sync each file in the directory. */
