@@ -5017,11 +5017,19 @@ manage_sync (sigset_t *sigmask_current,
         }
     }
 
-  if (try_gvmd_data_sync)
+  if (try_gvmd_data_sync
+      && (should_sync_configs ()
+          || should_sync_port_lists ()
+          || should_sync_report_formats ()))
     {
-      manage_sync_configs ();
-      manage_sync_port_lists ();
-      manage_sync_report_formats ();
+      if (feed_lockfile_lock (&lockfile) == 0)
+        {
+          manage_sync_configs ();
+          manage_sync_port_lists ();
+          manage_sync_report_formats ();
+
+          lockfile_unlock (&lockfile);
+        }
     }
 }
 

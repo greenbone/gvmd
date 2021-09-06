@@ -197,4 +197,7 @@ configs_feed_dir_exists ();
 void
 manage_sync_configs ();
 
+gboolean
+should_sync_configs ();
+
 #endif /* not _GVMD_MANAGE_CONFIGS_H */
