@@ -337,7 +337,7 @@ sync_port_list_with_feed (const gchar *path)
  * NULL otherwise.
  * @param[in]   set_current_user Whether to set current user to feed owner.
  *
- * @return 0 success, 1 no feed directory or owner, -1 error
+ * @return 0 success, 1 no feed directory, 2 no feed owner, -1 error.
  */
 static int
 try_open_port_lists_feed_dir (GDir **dir, gboolean set_current_user)
@@ -348,7 +348,7 @@ try_open_port_lists_feed_dir (GDir **dir, gboolean set_current_user)
   /* Test if base feed directory exists */
 
   if (port_lists_feed_dir_exists () == FALSE)
-    return 0;
+    return 1;
 
   /* Setup owner. */
 
@@ -359,14 +359,14 @@ try_open_port_lists_feed_dir (GDir **dir, gboolean set_current_user)
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 1;
+      return 2;
     }
 
   feed_owner_name = user_name (feed_owner_uuid);
   if (feed_owner_name == NULL)
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
-      return 1;
+      return 2;
     }
 
   /* Open feed import directory. */
