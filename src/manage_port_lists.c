@@ -404,25 +404,23 @@ try_open_port_lists_feed_dir (GDir **dir, gboolean set_current_user)
  * Update port lists in the db that have changed on the feed.
  * Do nothing to db port lists that have been removed from the feed.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 no feed directory or owner, -1 error.
  */
 int
 sync_port_lists_with_feed ()
 {
+  int ret;
   GDir *dir;
   const gchar *port_list_path;
 
-  switch (try_open_port_lists_feed_dir (&dir, TRUE))
+  ret = try_open_port_lists_feed_dir (&dir, TRUE);
+  switch (ret)
     {
       case 0:
         // Successfully opened directory
         break;
-      case 1:
-        // No feed directory or feed owner
-        return 0; 
       default:
-        // Error
-        return -1;
+        return ret;
     }
 
   /* Sync each file in the directory. */

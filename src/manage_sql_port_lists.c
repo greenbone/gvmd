@@ -2596,7 +2596,7 @@ check_db_port_lists ()
 {
   migrate_predefined_port_lists ();
 
-  if (sync_port_lists_with_feed ())
+  if (sync_port_lists_with_feed () <= -1)
     g_warning ("%s: Failed to sync port lists with feed", __func__);
 
   /*
