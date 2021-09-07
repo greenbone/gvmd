@@ -844,6 +844,8 @@ manage_rebuild_report_formats ()
 
 /**
  * @brief Checks if the report formats should be synced with the feed.
+ *
+ * @return 1 if report formats should be synced, 0 otherwise
  */
 gboolean
 should_sync_report_formats ()

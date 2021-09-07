@@ -483,6 +483,8 @@ manage_rebuild_port_lists ()
 
 /**
  * @brief Checks if the port lists should be synced with the feed.
+ *
+ * @return 1 if port lists should be synced, 0 otherwise
  */
 gboolean
 should_sync_port_lists ()
