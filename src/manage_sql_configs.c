@@ -48,7 +48,7 @@
 /* Static headers for internal non-SQL functions. */
 
 int
-sync_configs_with_feed ();
+sync_configs_with_feed (gboolean);
 
 
 /* Static headers. */
@@ -4936,7 +4936,7 @@ check_db_configs ()
 {
   migrate_predefined_configs ();
 
-  if (sync_configs_with_feed () <= -1)
+  if (sync_configs_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync configs with feed", __func__);
 
   /* Warn about feed resources in the trash. */
