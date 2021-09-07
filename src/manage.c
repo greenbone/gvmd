@@ -5006,13 +5006,176 @@ manage_sync (sigset_t *sigmask_current,
         }
     }
 
-  if (try_gvmd_data_sync)
+  if (try_gvmd_data_sync
+      && (should_sync_configs ()
+          || should_sync_port_lists ()
+          || should_sync_report_formats ()))
     {
-      manage_sync_configs ();
-      manage_sync_port_lists ();
-      manage_sync_report_formats ();
+      if (feed_lockfile_lock (&lockfile) == 0)
+        {
+          manage_sync_configs ();
+          manage_sync_port_lists ();
+          manage_sync_report_formats ();
+
+          lockfile_unlock (&lockfile);
+        }
     }
 }
+
+/**
+ * @brief Adds a switch statement for handling the return value of a
+ *        gvmd data rebuild.
+ * @param type  The type as a description string, e.g. "port lists"
+ */
+#define REBUILD_SWITCH(type) \
+  switch (ret)                                                              \
+    {                                                                       \
+      case 0:                                                               \
+        g_message ("Rebuilt %s from feed.", type);                          \
+        break;                                                              \
+      case 1:                                                               \
+        if (error_msg)                                                      \
+          *error_msg = g_strdup_printf ("No %s feed directory.",            \
+                                        type);                              \
+        return -1;                                                          \
+      case 2:                                                               \
+        if (error_msg)                                                      \
+          *error_msg = g_strdup_printf ("Feed owner not set or invalid"     \
+                                        " while rebuilding %s.",            \
+                                        type);                              \
+        return -1;                                                          \
+      case 3:                                                               \
+        if (error_msg)                                                      \
+          *error_msg = g_strdup_printf ("NVTs must be available"            \
+                                        " while rebuilding %s.",            \
+                                        type);                              \
+        return -1;                                                          \
+      default:                                                              \
+        if (error_msg)                                                      \
+          *error_msg = g_strdup_printf ("Internal error"                    \
+                                        " while rebuilding %s.",            \
+                                        type);                              \
+        return -1;                                                          \
+    }
+
+/**
+ * @brief Rebuild configs, port lists and report formats from feed.
+ * 
+ * @param[in]  types      Comma-separated lists of types to rebuild or "all".
+ * @param[in]  log_config Logging configuration list.
+ * @param[in]  database   Connection info for manage database.
+ * @param[out] error_msg  Error message.
+ * 
+ * @return 0 success, -1 failed.
+ */
+int
+manage_rebuild_gvmd_data_from_feed (const char *types,
+                                    GSList *log_config,
+                                    const db_conn_info_t *database,
+                                    gchar **error_msg)
+{
+  int ret;
+  lockfile_t lockfile;
+  gboolean sync_configs, sync_port_lists, sync_report_formats;
+
+  sync_configs = sync_port_lists = sync_report_formats = FALSE;
+
+  if (strcasecmp (types, "all") == 0)
+    {
+      sync_configs = TRUE;
+      sync_port_lists = TRUE;
+      sync_report_formats = TRUE;
+    }
+  else
+    {
+      gchar **split, **split_iter;
+      split = g_strsplit (types, ",", -1);
+
+      if (*split == NULL)
+        {
+          g_free (split);
+          if (error_msg)
+            *error_msg = g_strdup ("No types given.");
+          return -1;
+        }
+
+      split_iter = split;
+      while (*split_iter)
+        {
+          gchar *type = g_strstrip (*split_iter);
+          
+          if (strcasecmp (type, "configs") == 0)
+            sync_configs = TRUE;
+          else if (strcasecmp (type, "port_lists") == 0)
+            sync_port_lists = TRUE;
+          else if (strcasecmp (type, "report_formats") == 0)
+            sync_report_formats = TRUE;
+          else
+            {
+              if (error_msg)
+                *error_msg = g_strdup_printf ("Invalid type \"%s\""
+                                              " (must be \"configs\","
+                                              " \"port_lists\","
+                                              " \"report_formats\""
+                                              " or \"all\")",
+                                              type);
+              g_strfreev (split);
+              return -1;
+            }
+          split_iter ++;
+        }
+      g_strfreev (split);
+    }
+
+  ret = feed_lockfile_lock_timeout (&lockfile);
+  if (ret == 1)
+    {
+      if (error_msg)
+        *error_msg = g_strdup ("Feed locked.");
+      return -1;
+    }
+  else if (ret)
+    {
+      if (error_msg)
+        *error_msg = g_strdup ("Error acquiring feed lock.");
+      return -1;
+    }
+
+  ret = manage_option_setup (log_config, database);
+  if (ret)
+    {
+      if (error_msg)
+        *error_msg = g_strdup ("Error setting up log config or"
+                               " database connection.");
+      return -1;
+    }
+
+  if (sync_configs)
+    {
+      g_message ("Rebuilding configs from feed...");
+      ret = manage_rebuild_configs ();
+      REBUILD_SWITCH ("configs")
+    }
+
+  if (sync_port_lists)
+    {
+      g_message ("Rebuilding port lists from feed...");
+      ret = manage_rebuild_port_lists ();
+      REBUILD_SWITCH ("port lists")
+    }
+
+  if (sync_report_formats)
+    {
+      g_message ("Rebuilding report formats from feed...");
+      ret = manage_rebuild_report_formats ();
+      REBUILD_SWITCH ("report formats")
+    }
+
+  feed_lockfile_unlock (&lockfile);
+  return 0;
+}
+
+#undef REBUILD_SWITCH
 
 /**
  * @brief Schedule any actions that are due.
