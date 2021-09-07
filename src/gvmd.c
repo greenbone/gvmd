@@ -1836,6 +1836,7 @@ gvmd (int argc, char** argv)
   static gchar *rc_name = NULL;
   static gchar *relay_mapper = NULL;
   static gboolean rebuild = FALSE;
+  static gchar *rebuild_gvmd_data = NULL;
   static gboolean rebuild_scap = FALSE;
   static gchar *role = NULL;
   static gchar *disable = NULL;
@@ -2046,6 +2047,12 @@ gvmd (int argc, char** argv)
           &rebuild,
           "Remove NVT db, and rebuild it from the scanner.",
           NULL },
+        { "rebuild-gvmd-data", '\0', 0, G_OPTION_ARG_STRING,
+          &rebuild_gvmd_data,
+          "Reload all gvmd data objects of a given types from feed."
+          " The types must be \"all\" or a comma-separated of the following:"
+          " \"configs\", \"port_lists\" and \"report_formats\"",
+          "<types>" },
         { "rebuild-scap", '\0', 0, G_OPTION_ARG_NONE,
           &rebuild_scap,
           "Rebuild all SCAP data.",
@@ -2561,6 +2568,32 @@ gvmd (int argc, char** argv)
       if (ret)
         {
           printf ("Failed to rebuild NVT cache.\n");
+          return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+  
+  if (rebuild_gvmd_data)
+    {
+      int ret;
+      gchar *error_msg;
+      
+      error_msg = NULL;
+
+      proctitle_set ("gvmd: --rebuild-gvmd-data");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_rebuild_gvmd_data_from_feed (rebuild_gvmd_data,
+                                                log_config,
+                                                &database,
+                                                &error_msg);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to rebuild gvmd data: %s\n", error_msg);
+          g_free (error_msg);
           return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;

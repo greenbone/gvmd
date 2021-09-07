@@ -773,7 +773,7 @@ try_open_report_formats_feed_dir (GDir **dir, gboolean set_current_user)
  *
  * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
  *
- * @return 0 success, 1 no feed directory or owner, -1 error.
+ * @return 0 success, 1 no feed directory, 2 no feed owner, -1 error.
  */
 int
 sync_report_formats_with_feed (gboolean rebuild)
@@ -829,6 +829,17 @@ void
 manage_sync_report_formats ()
 {
   sync_report_formats_with_feed (FALSE);
+}
+
+/**
+ * @brief Rebuild port lists from the feed.
+ *
+ * @return 0 success, 1 no feed directory, 2 no feed owner, -1 error.
+ */
+int
+manage_rebuild_report_formats ()
+{
+  return sync_report_formats_with_feed (TRUE);
 }
 
 /**

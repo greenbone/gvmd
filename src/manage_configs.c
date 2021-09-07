@@ -554,6 +554,18 @@ manage_sync_configs ()
 }
 
 /**
+ * @brief Rebuild configs from the feed.
+ * 
+ * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
+ *         -1 error.
+ */
+int
+manage_rebuild_configs ()
+{
+  return sync_configs_with_feed (TRUE);
+}
+
+/**
  * @brief Checks if the configs should be synced with the feed.
  */
 gboolean
