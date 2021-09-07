@@ -57,7 +57,7 @@
 /* Non-SQL internals defined in manage_report_formats.c. */
 
 int
-sync_report_formats_with_feed ();
+sync_report_formats_with_feed (gboolean);
 
 
 /* Static headers. */
@@ -4545,7 +4545,7 @@ check_db_report_formats ()
   if (migrate_predefined_report_formats ())
     return -1;
 
-  if (sync_report_formats_with_feed ())
+  if (sync_report_formats_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync report formats with feed", __func__);
 
   if (check_db_trash_report_formats ())

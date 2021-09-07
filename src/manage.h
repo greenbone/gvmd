@@ -2718,6 +2718,12 @@ void
 manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
 
 int
+manage_rebuild_gvmd_data_from_feed (const char *,
+                                    GSList *,
+                                    const db_conn_info_t *,
+                                    gchar **);
+
+int
 manage_schedule (manage_connection_forker_t,
                  gboolean,
                  sigset_t *);

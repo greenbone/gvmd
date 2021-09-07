@@ -316,6 +316,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--rebuild-gvmd-data=<arg>TYPES</arg></opt></p>
+      <optdesc>
+        <p>
+          Reload all gvmd data objects of a given types from feed.
+        </p>
+        <p>
+          The types must be &quot;all&quot; or a comma-separated of the
+          following: &quot;configs&quot;, &quot;port_lists&quot; and
+          &quot;report_formats&quot;.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--rebuild-scap=<arg>TYPE</arg></opt></p>
       <optdesc>
         <p>

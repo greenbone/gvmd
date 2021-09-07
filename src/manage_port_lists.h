@@ -133,4 +133,10 @@ port_lists_feed_dir_exists ();
 void
 manage_sync_port_lists ();
 
+int
+manage_rebuild_port_lists ();
+
+gboolean
+should_sync_port_lists ();
+
 #endif /* not _GVMD_MANAGE_PORT_LISTS_H */

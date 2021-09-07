@@ -300,17 +300,21 @@ create_config_from_file (const gchar *path)
 }
 
 /**
- * @brief Sync a single config with the feed.
+ * @brief Gets if a config must be synced a file path in the feed.
  *
- * @param[in]  path  Path to config XML in feed.
+ * @param[in]  path     Path to config XML in feed.
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
+ * @param[out] config   Config row id if it already exists, 0 if config is new.
+ *
+ * @return 1 if config should be synced, 0 otherwise
  */
-static void
-sync_config_with_feed (const gchar *path)
+static int
+should_sync_config_from_path (const char *path, gboolean rebuild,
+                              config_t *config)
 {
   gchar **split, *full_path, *uuid;
-  config_t config;
 
-  g_debug ("%s: considering %s", __func__, path);
+  *config = 0;
 
   split = g_regex_split_simple
            (/* Full-and-Fast--daba56c8-73ec-11df-a475-002264764cea.xml */
@@ -321,68 +325,106 @@ sync_config_with_feed (const gchar *path)
     {
       g_strfreev (split);
       g_warning ("%s: path not in required format: %s", __func__, path);
-      return;
+      return 0;
     }
-
-  full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
-  if (find_config_no_acl (uuid, &config) == 0
-      && config)
+  if (find_config_no_acl (uuid, config) == 0
+      && *config)
     {
+      if (rebuild)
+        return 1;
+
+      full_path = g_build_filename (feed_dir_configs (), path, NULL);
+
       g_free (uuid);
 
       g_debug ("%s: considering %s for update", __func__, path);
 
-      if (config_updated_in_feed (config, full_path))
+      if (config_updated_in_feed (*config, full_path))
         {
-          g_debug ("%s: updating %s", __func__, path);
-          update_config_from_file (config, full_path);
+          return 1;
         }
 
       g_free (full_path);
-      return;
+      return 0;
     }
 
-  if (find_trash_config_no_acl (uuid, &config) == 0
-      && config)
+  if (find_trash_config_no_acl (uuid, config) == 0
+      && *config)
     {
       g_free (uuid);
-      return;
+      *config = 0;
+      return 0;
     }
 
   g_free (uuid);
-
-  g_debug ("%s: adding %s", __func__, path);
-
-  create_config_from_file (full_path);
-
-  g_free (full_path);
+  *config = 0;
+  return 1;
 }
 
 /**
- * @brief Sync all configs with the feed.
+ * @brief Sync a single config with the feed.
  *
- * Create configs that exists in the feed but not in the db.
- * Update configs in the db that have changed on the feed.
- * Do nothing to configs in db that have been removed from the feed.
- *
- * @return 0 success, -1 error.
+ * @param[in]  path     Path to config XML in feed.
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
  */
-int
-sync_configs_with_feed ()
+static void
+sync_config_with_feed (const gchar *path, gboolean rebuild)
 {
-  GError *error;
-  GDir *dir;
-  const gchar *config_path;
-  gchar *nvt_feed_version;
+  config_t config;
 
+  g_debug ("%s: considering %s", __func__, path);
+
+  if (should_sync_config_from_path (path, rebuild, &config))
+    {
+      gchar *full_path;
+      full_path = g_build_filename (feed_dir_configs (), path, NULL);
+      switch (config)
+        {
+          case 0:
+            g_debug ("%s: adding %s", __func__, path);
+            create_config_from_file (full_path);
+            break;
+          default:
+            g_debug ("%s: updating %s", __func__, path);
+            update_config_from_file (config, full_path);
+        }
+      g_free (full_path);
+    }
+}
+
+/**
+ * @brief Open the configs feed directory if it is available and the
+ * feed owner is set.
+ * Optionally set the current user to the feed owner on success.
+ * 
+ * The sync will be skipped if the feed directory does not exist or
+ *  the feed owner is not set. 
+ * For configs the NVTs also have to exist.
+ * 
+ * @param[out]  dir The directory as GDir if available and feed owner is set,
+ * NULL otherwise.
+ * @param[in]   set_current_user Whether to set current user to feed owner.
+ *
+ * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
+ *         -1 error.
+ */
+static int
+try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
+{
+  char *feed_owner_uuid, *feed_owner_name;
+  GError *error;
+  gchar *nvt_feed_version;
+  
+  *dir = NULL;
+  
   /* Test if base feed directory exists */
 
   if (configs_feed_dir_exists () == FALSE)
-    return 0;
+    return 1;
 
   /* Only sync if NVTs are up to date. */
 
@@ -390,34 +432,34 @@ sync_configs_with_feed ()
   if (nvt_feed_version == NULL)
     {
       g_debug ("%s: no NVTs so not syncing from feed", __func__);
-      return 0;
+      return 3;
     }
   g_free (nvt_feed_version);
 
   /* Setup owner. */
 
-  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &current_credentials.uuid);
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
 
-  if (current_credentials.uuid == NULL
-      || strlen (current_credentials.uuid) == 0)
+  if (feed_owner_uuid == NULL
+      || strlen (feed_owner_uuid) == 0)
     {
       /* Sync is disabled by having no "Feed Import Owner". */
       g_debug ("%s: no Feed Import Owner so not syncing from feed", __func__);
-      return 0;
+      return 2;
     }
 
-  current_credentials.username = user_name (current_credentials.uuid);
-  if (current_credentials.username == NULL)
+  feed_owner_name = user_name (feed_owner_uuid);
+  if (feed_owner_name == NULL)
     {
       g_debug ("%s: unknown Feed Import Owner so not syncing from feed", __func__);
-      return 0;
+      return 2;
     }
 
   /* Open feed import directory. */
 
   error = NULL;
-  dir = g_dir_open (feed_dir_configs (), 0, &error);
-  if (dir == NULL)
+  *dir = g_dir_open (feed_dir_configs (), 0, &error);
+  if (*dir == NULL)
     {
       g_warning ("%s: Failed to open directory '%s': %s",
                  __func__, feed_dir_configs (), error->message);
@@ -429,13 +471,56 @@ sync_configs_with_feed ()
       return -1;
     }
 
+  if (set_current_user)
+    {
+      current_credentials.uuid = feed_owner_uuid;
+      current_credentials.username = feed_owner_name;
+    }
+  else
+    {
+      free (feed_owner_uuid);
+      free (feed_owner_name);
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Sync all configs with the feed.
+ *
+ * Create configs that exists in the feed but not in the db.
+ * Update configs in the db that have changed on the feed.
+ * Do nothing to configs in db that have been removed from the feed.
+ *
+ * @param[in]  rebuild  Whether ignore timestamps to force a rebuild.
+ *
+ * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
+ *         -1 error.
+ */
+int
+sync_configs_with_feed (gboolean rebuild)
+{
+  int ret;
+  GDir *dir;
+  const gchar *config_path;
+
+  ret = try_open_configs_feed_dir (&dir, TRUE);
+  switch (ret)
+    {
+      case 0:
+        // Successfully opened directory
+        break;
+      default:
+        return ret;
+    }
+
   /* Sync each file in the directory. */
 
   while ((config_path = g_dir_read_name (dir)))
     if (g_str_has_prefix (config_path, ".") == 0
         && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (config_path, ".xml"))
-      sync_config_with_feed (config_path);
+      sync_config_with_feed (config_path, rebuild);
 
   /* Cleanup. */
 
@@ -465,5 +550,42 @@ configs_feed_dir_exists ()
 void
 manage_sync_configs ()
 {
-  sync_configs_with_feed ();
+  sync_configs_with_feed (FALSE);
+}
+
+/**
+ * @brief Rebuild configs from the feed.
+ * 
+ * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
+ *         -1 error.
+ */
+int
+manage_rebuild_configs ()
+{
+  return sync_configs_with_feed (TRUE);
+}
+
+/**
+ * @brief Checks if the configs should be synced with the feed.
+ *
+ * @return 1 if configs should be synced, 0 otherwise
+ */
+gboolean
+should_sync_configs ()
+{
+  GDir *dir;
+  const gchar *config_path;
+  config_t config;
+
+  if (try_open_configs_feed_dir (&dir, FALSE))
+    return FALSE;
+
+  while ((config_path = g_dir_read_name (dir)))
+    if (g_str_has_prefix (config_path, ".") == 0
+        && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
+        && g_str_has_suffix (config_path, ".xml")
+        && should_sync_config_from_path (config_path, FALSE, &config))
+      return TRUE;
+
+  return FALSE;
 }

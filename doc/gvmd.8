@@ -62,7 +62,7 @@ Disable task scheduling.
 Sets the path to the feed lock file.
 .TP
 \fB--feed-lock-timeout=\fITIMEOUT\fB\f1
-Sets the number of seconds to retry for if the feed is locked in contexts (like migration or rebuilds) that do not retry on their own (like automatic syncs). Defaults to 0 (no retry).
+Sets the number of seconds to retry for if the feed is locked in contexts (like migration or rebuilds) that do not retry on their own (like automatic syncs). Defaults to 0 (no retry). 
 .TP
 \fB-f, --foreground\f1
 Run in foreground.
@@ -138,6 +138,11 @@ Use port number NUMBER.
 .TP
 \fB--port2=\fINUMBER\fB\f1
 Use port number NUMBER for address 2.
+.TP
+\fB--rebuild-gvmd-data=\fITYPES\fB\f1
+Reload all gvmd data objects of a given types from feed. 
+
+The types must be "all" or a comma-separated of the following: "configs", "port_lists" and "report_formats". 
 .TP
 \fB--rebuild-scap=\fITYPE\fB\f1
 Rebuild SCAP data of type \fITYPE\f1 (currently only supports 'ovaldefs'). 
