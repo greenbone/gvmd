@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [21.4.4] - Unreleased
 ### Added
+- Add --rebuild-gvmd-data command line option [#1680](https://github.com/greenbone/gvmd/pull/1680)
+
 ### Changed
 ### Deprecated
 ### Removed
