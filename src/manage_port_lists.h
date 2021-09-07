@@ -133,6 +133,9 @@ port_lists_feed_dir_exists ();
 void
 manage_sync_port_lists ();
 
+int
+manage_rebuild_port_lists ();
+
 gboolean
 should_sync_port_lists ();
 

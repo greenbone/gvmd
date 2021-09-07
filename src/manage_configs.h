@@ -197,6 +197,9 @@ configs_feed_dir_exists ();
 void
 manage_sync_configs ();
 
+int
+manage_rebuild_configs ();
+
 gboolean
 should_sync_configs ();
 

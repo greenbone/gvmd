@@ -234,6 +234,9 @@ report_formats_feed_dir_exists ();
 void
 manage_sync_report_formats ();
 
+int
+manage_rebuild_report_formats ();
+
 gboolean
 should_sync_report_formats ();
 
