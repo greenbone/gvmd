@@ -5033,6 +5033,11 @@ manage_sync (sigset_t *sigmask_current,
     }
 }
 
+/**
+ * @brief Adds a switch statement for handling the return value of a
+ *        gvmd data rebuild.
+ * @param type  The type as a description string, e.g. "port lists"
+ */
 #define REBUILD_SWITCH(type) \
   switch (ret)                                                              \
     {                                                                       \

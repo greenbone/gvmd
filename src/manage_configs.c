@@ -567,6 +567,8 @@ manage_rebuild_configs ()
 
 /**
  * @brief Checks if the configs should be synced with the feed.
+ *
+ * @return 1 if configs should be synced, 0 otherwise
  */
 gboolean
 should_sync_configs ()
