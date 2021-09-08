@@ -2589,13 +2589,15 @@ gvmd (int argc, char** argv)
                                                 log_config,
                                                 &database,
                                                 &error_msg);
-      log_config_free ();
       if (ret)
         {
+          g_warning ("Failed to rebuild gvmd data: %s\n", error_msg);
           printf ("Failed to rebuild gvmd data: %s\n", error_msg);
           g_free (error_msg);
+          log_config_free ();
           return EXIT_FAILURE;
         }
+      log_config_free ();
       return EXIT_SUCCESS;
     }
 
