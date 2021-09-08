@@ -4040,16 +4040,8 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   opts.titles = g_strdup (titles);
   error = NULL;
 
-  connection_retry = get_scanner_connection_retry ();
   return_value = osp_get_performance_ext (connection, opts,
                                           performance_str, &error);
-  while (return_value != 0 && connection_retry > 0)
-    {
-      sleep(1);
-      return_value = osp_get_performance_ext (connection, opts,
-                                              performance_str, &error);
-      connection_retry--;
-    }
 
   if (return_value)
     {
@@ -4481,56 +4473,22 @@ manage_system_report (const char *name, const char *duration,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      int ret;
-      double load[3];
-      GError *get_error;
-      gchar *output;
-      gsize output_len;
       GString *buffer;
 
+      g_warning ("%s: Failed to create performance graph -- %s", __func__, astderr);
       g_debug ("%s: gvmcg failed with %d", __func__, exit_status);
       g_debug ("%s: stdout: %s", __func__, astdout);
       g_debug ("%s: stderr: %s", __func__, astderr);
+
+      buffer = g_string_new ("");
+
+      g_string_append_printf (buffer,
+                              "Failed to create performance graph: %s", astderr);
+
+      *report = g_string_free (buffer, FALSE);
       g_free (astdout);
       g_free (astderr);
       g_free (command);
-
-      buffer = g_string_new (FALLBACK_SYSTEM_REPORT_HEADER);
-
-      ret = getloadavg (load, 3);
-      if (ret == 3)
-        {
-          g_string_append_printf (buffer,
-                                  "Load average for past minute:     %.1f\n",
-                                  load[0]);
-          g_string_append_printf (buffer,
-                                  "Load average for past 5 minutes:  %.1f\n",
-                                  load[1]);
-          g_string_append_printf (buffer,
-                                  "Load average for past 15 minutes: %.1f\n",
-                                  load[2]);
-        }
-      else
-        g_string_append (buffer, "Error getting load averages.\n");
-
-      get_error = NULL;
-      g_file_get_contents ("/proc/meminfo",
-                           &output,
-                           &output_len,
-                           &get_error);
-      if (get_error)
-        g_error_free (get_error);
-      else
-        {
-          gchar *safe;
-          g_string_append (buffer, "\n/proc/meminfo:\n\n");
-          safe = g_markup_escape_text (output, strlen (output));
-          g_free (output);
-          g_string_append (buffer, safe);
-          g_free (safe);
-        }
-
-      *report = g_string_free (buffer, FALSE);
       return 3;
     }
   g_free (astderr);

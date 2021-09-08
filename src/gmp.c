@@ -16171,6 +16171,7 @@ handle_get_system_reports (gmp_parser_t *gmp_parser, GError **error)
          (&types,
           get_system_reports_data->name,
           get_system_reports_data->slave_id);
+
   switch (ret)
     {
       case 1:
@@ -16264,7 +16265,7 @@ handle_get_system_reports (gmp_parser_t *gmp_parser, GError **error)
                   "</system_report>",
                   report_type_iterator_name (&types),
                   report_type_iterator_title (&types),
-                  (ret == 3 ? "txt" : "png"),
+                  (report_ret == 3 ? "txt" : "png"),
                   get_system_reports_data->start_time
                     ? get_system_reports_data->start_time : "",
                   get_system_reports_data->end_time
