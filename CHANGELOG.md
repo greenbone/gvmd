@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Ensure gvmd sends error messages if gvmcg fails [#1682](https://github.com/greenbone/gvmd/pull/1682)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
 
