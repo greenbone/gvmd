@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 - Fix resume task. [#1679](https://github.com/greenbone/gvmd/pull/1679)
+- Fix import of report results / errors without host [#1687](https://github.com/greenbone/gvmd/pull/1687)
 
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
