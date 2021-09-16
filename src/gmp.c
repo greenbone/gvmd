@@ -18331,8 +18331,9 @@ gmp_xml_handle_result ()
   // https://www.freebsd.org/cgi/man.cgi?query=strcspn&sektion=3
   // strcspn returns the number of chars spanned so it should be safe
   // without double checking.
-  create_report_data
-    ->result_host[strcspn (create_report_data->result_host, "\n")] = 0;
+  if (create_report_data->result_host)
+    create_report_data
+      ->result_host[strcspn (create_report_data->result_host, "\n")] = 0;
   result->host = create_report_data->result_host;
   result->hostname = create_report_data->result_hostname;
   result->nvt_oid = create_report_data->result_nvt_oid;
