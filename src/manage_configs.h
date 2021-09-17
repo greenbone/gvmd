@@ -53,9 +53,6 @@ copy_config (const char*, const char*, const char *, const char *, config_t*);
 int
 delete_config (const char*, int);
 
-int
-sync_config (const char *);
-
 gboolean
 find_config_with_permission (const char*, config_t*, const char *);
 
