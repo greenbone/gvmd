@@ -40216,8 +40216,7 @@ verify_scanner (const char *scanner_id, char **version)
       return 1;
     }
   g_free (get.id);
-  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
-      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
+  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
       || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_SENSOR)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
@@ -40275,9 +40274,6 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 
       switch (scanner_type)
         {
-          case SCANNER_TYPE_OSP:
-            scanner_type_str = "OSP";
-            break;
           case SCANNER_TYPE_OPENVAS:
             scanner_type_str = "OpenVAS";
             break;

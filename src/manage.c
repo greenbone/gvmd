@@ -2755,17 +2755,7 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
   resume_report = 0;
   *report_id = NULL;
 
-  if (from == 1
-      && scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP)
-    {
-      g_warning ("%s: Scanner type does not support resuming scans",
-                 __func__);
-      return -1;
-    }
-
-  if (from
-      && scanner_type (task_scanner (task)) != SCANNER_TYPE_OSP
-      && task_last_resumable_report (task, &resume_report))
+  if (from && task_last_resumable_report (task, &resume_report))
     {
       g_warning ("%s: error getting report to resume", __func__);
       return -1;
@@ -3630,7 +3620,6 @@ run_task (const char *task_id, char **report_id, int from)
     return run_cve_task (task);
 
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVAS
-      || scanner_type (scanner) == SCANNER_TYPE_OSP
       || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
     return run_osp_task (task, from, report_id);
 
@@ -3783,7 +3772,6 @@ stop_task (const char *task_id)
     return 3;
 
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
-      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
 
