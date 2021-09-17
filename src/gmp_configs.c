@@ -398,7 +398,7 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
 void
 create_config_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, get_configs_response, config, name, copy, scanner;
+  entity_t entity, get_configs_response, config, name, copy;
 
   entity = (entity_t) create_config_data.context->first->data;
 
@@ -522,68 +522,6 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       cleanup_import_preferences (import_preferences);
       array_free (import_nvt_selectors);
-
-      create_config_reset ();
-      return;
-    }
-
-  /* Check for creation from scanner. */
-
-  scanner = entity_child (entity, "scanner");
-  if (scanner && strlen (entity_text (scanner)))
-    {
-      char *uuid;
-
-      uuid = NULL;
-
-      switch (create_config_from_scanner
-               (entity_text (scanner),
-                text_or_null (entity_child (entity, "name")),
-                text_or_null (entity_child (entity, "comment")),
-                text_or_null (entity_child (entity, "usage_type")),
-                &uuid))
-        {
-          case 0:
-            SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
-                                      ("create_config"), uuid);
-            log_event ("config", "Scan config", uuid, "created");
-            break;
-          case 1:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Failed to find scanner"));
-            break;
-          case 2:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Scanner not of type OSP"));
-            break;
-          case 3:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Config name exists already"));
-            break;
-          case 4:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Failed to get params from scanner"
-                                " - the scanner may be offline or not"
-                                " configured correctly"));
-            break;
-          case 99:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Permission denied"));
-            log_event_fail ("config", "Scan config", NULL, "created");
-            break;
-          case -1:
-          default:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("create_config"));
-            log_event_fail ("config", "Scan config", NULL, "created");
-            break;
-        }
-      g_free (uuid);
 
       create_config_reset ();
       return;

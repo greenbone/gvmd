@@ -2755,98 +2755,6 @@ configs_extra_where (const char *usage_type)
 }
 
 /**
- * @brief Create a config from an OSP scanner.
- *
- * @param[in]   scanner_id  UUID of scanner to create config from.
- * @param[in]   name        Name for config.
- * @param[in]   comment     Comment for config.
- * @param[in]   usage_type  The usage type ("scan" or "policy")
- * @param[out]  uuid        Config UUID, on success.
- *
- * @return 0 success, 1 couldn't find scanner, 2 scanner not of OSP type,
- *         3 config name exists already, 4 couldn't get params from scanner,
- *         99 permission denied, -1 error.
- */
-int
-create_config_from_scanner (const char *scanner_id, const char *name,
-                            const char *comment, const char *usage_type,
-                            char **uuid)
-{
-  scanner_t scanner;
-  config_t config;
-  GSList *params, *element;
-  char *quoted_name, *quoted_comment;
-  const char *actual_usage_type;
-
-  assert (current_credentials.uuid);
-  assert (scanner_id);
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_config") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-  if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (scanner == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-  if (scanner_type (scanner) != SCANNER_TYPE_OSP)
-    {
-      sql_rollback ();
-      return 2;
-    }
-  if (resource_with_name_exists (name, "config", 0))
-    {
-      sql_rollback ();
-      return 3;
-    }
-
-  params = get_scanner_params (scanner);
-  if (!params)
-    {
-      sql_rollback ();
-      return 4;
-    }
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-  if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    actual_usage_type = "policy";
-  else
-    actual_usage_type = "scan";
-
-  /* Create new OSP config. */
-  sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-       " type, scanner, creation_time, modification_time, usage_type)"
-       " VALUES (make_uuid (), '%s',"
-       " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '', '%s', 1, %llu, m_now (), m_now (), '%s');",
-       quoted_name, current_credentials.uuid, quoted_comment, scanner,
-       actual_usage_type);
-  g_free (quoted_name);
-  g_free (quoted_comment);
-  config = sql_last_insert_id ();
-  *uuid = config_uuid (config);
-
-  element = params;
-  while (element)
-    {
-      insert_osp_parameter (element->data, config);
-      osp_param_free (element->data);
-      element = element->next;
-    }
-  g_slist_free (params);
-  sql_commit ();
-  return 0;
-}
-
-/**
  * @brief Return the UUID of a config.
  *
  * @param[in]   config  Config.
@@ -2978,8 +2886,6 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
     return 1;
   if (ctype == 0 && stype == SCANNER_TYPE_OSP_SENSOR)
     return 1;
-  if (ctype == 1 && stype == SCANNER_TYPE_OSP)
-    return 1;
 
   return 0;
 }
@@ -3042,9 +2948,6 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
             : (config ? 1 : 0);
 
   ctype = config_type (config);
-  /* OSP Scanner with OSP config. */
-  if (stype == SCANNER_TYPE_OSP && ctype == 1)
-    return 0;
 
   /* OpenVAS Scanner with OpenVAS config. */
   if ((stype == SCANNER_TYPE_OPENVAS)
