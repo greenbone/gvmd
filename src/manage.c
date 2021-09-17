@@ -4091,6 +4091,11 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 "produce more powerful reports.  Please contact your system administrator\n" \
 "for more information.\n\n"
 
+/**
+ * @brief Get the fallback report as a string.
+ *
+ * @param[in]  fallback_report  The string for the fallback report.
+ */
 static void
 get_fallback_report_string(GString *fallback_report)
 { 
