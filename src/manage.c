@@ -4019,6 +4019,7 @@ credential_full_type (const char* abbreviation)
  * @param[in]  end              The end time of the performance report.
  * @param[in]  titles           The end titles for the performance report.
  * @param[in]  performance_str  The performance string.
+ * @param[in]  error            The error message text, if any.
  *
  * @return 0 if successful, 6 could not connect to scanner or failed to get
  *         performance report
