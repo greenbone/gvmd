@@ -4544,6 +4544,9 @@ manage_system_report (const char *name, const char *duration,
     {
       if (!g_find_program_in_path ("gvmcg"))
         {
+          buffer = g_string_new ("");
+          get_fallback_report_string(buffer);
+          *report = g_string_free (buffer, FALSE);
           return_code = 7;
         }
       else
@@ -4581,16 +4584,10 @@ manage_system_report (const char *name, const char *duration,
               g_debug ("%s: stderr: %s", __func__, astderr);
             }
           g_free (command);
-	}
+        }
     }
 
-  if (return_code == 7)
-    {
-      buffer = g_string_new ("");
-      get_fallback_report_string(buffer);
-      *report = g_string_free (buffer, FALSE);
-    }
-  else if (return_code == 3 || return_code == 6)
+  if (return_code == 3 || return_code == 6)
     {
       buffer = g_string_new ("");
       g_string_append_printf (buffer,
