@@ -904,7 +904,8 @@ restore_ticket (const char *ticket_id)
  * @param[out]  ticket          Created ticket.
  *
  * @return 0 success, 1 failed to find user, 2 failed to find result,
- *         99 permission denied, -1 error.
+ *         99 permission to create ticket denied, 98 permission to
+ *         create permission denied, -1 error.
  */
 int
 create_ticket (const char *comment, const char *result_id,
@@ -920,6 +921,7 @@ create_ticket (const char *comment, const char *result_id,
   gchar *quoted_location, *quoted_solution, *quoted_uuid, *quoted_open_note;
   char *new_ticket_id, *task_id;
   task_t task;
+  int ret;
 
   assert (current_credentials.uuid);
   assert (result_id);
@@ -1041,32 +1043,32 @@ create_ticket (const char *comment, const char *result_id,
 
   /* Give assigned user permission to access ticket and ticket's task. */
 
-  if (create_permission_internal (1,
-                                  "modify_ticket",
-                                  "Automatically created for ticket",
-                                  NULL,
-                                  new_ticket_id,
-                                  "user",
-                                  user_id,
-                                  &permission))
+  if ((ret = create_permission_internal (1,
+                                         "modify_ticket",
+                                         "Automatically created for ticket",
+                                         NULL,
+                                         new_ticket_id,
+                                         "user",
+                                         user_id,
+                                         &permission)))
     {
       sql_rollback ();
-      return -1;
+      return (ret == 99 ? 98 : -1);
     }
 
   task_uuid (task, &task_id);
-  if (create_permission_internal (1,
-                                  "get_tasks",
-                                  "Automatically created for ticket",
-                                  NULL,
-                                  task_id,
-                                  "user",
-                                  user_id,
-                                  &permission))
+  if ((ret = create_permission_internal (1,
+                                         "get_tasks",
+                                         "Automatically created for ticket",
+                                         NULL,
+                                         task_id,
+                                         "user",
+                                         user_id,
+                                         &permission)))
     {
       free (task_id);
       sql_rollback ();
-      return -1;
+      return (ret == 99 ? 98 : -1);
     }
   free (task_id);
 

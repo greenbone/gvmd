@@ -6,13 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [21.4.4] - Unreleased
 ### Added
-- Add --rebuild-gvmd-data command line option [#1680](https://github.com/greenbone/gvmd/pull/1680)
+- Add --rebuild-gvmd-data command line option [#1680](https://github.com/greenbone/gvmd/pull/1680) [#1683](https://github.com/greenbone/gvmd/pull/1683)
 
 ### Changed
 ### Deprecated
 ### Removed
 ### Fixed
 - Ensure gvmd sends error messages if gvmcg fails [#1682](https://github.com/greenbone/gvmd/pull/1682)
+- Fix resume task. [#1679](https://github.com/greenbone/gvmd/pull/1679)
+- Added a dedicated error message for the create ticket dialogue when the create permission permission is missing [#1686](https://github.com/greenbone/gvmd/pull/1686)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
 
