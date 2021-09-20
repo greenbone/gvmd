@@ -781,7 +781,8 @@ scanner_type_valid (scanner_type_t scanner_type)
 {
   if (scanner_type > SCANNER_TYPE_NONE
       && scanner_type < SCANNER_TYPE_MAX
-      && scanner_type != 4)
+      && scanner_type != 4
+      && scanner_type != 1)
     return 1;
   return 0;
 }
@@ -1580,115 +1581,6 @@ set_task_interrupted (task_t task, const gchar *message)
 /* OSP tasks. */
 
 /**
- * @brief Give a task's OSP scan options in a hash table.
- *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- *
- * @return Hash table with options names and their values.
- */
-static GHashTable *
-task_scanner_options (task_t task, target_t target)
-{
-  GHashTable *table;
-  config_t config;
-  iterator_t prefs;
-  char *allow_simultaneous_ips;
-
-  config = task_config (task);
-  init_config_preference_iterator (&prefs, config);
-  table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  while (next (&prefs))
-    {
-      char *name, *value = NULL;
-      const char *type;
-
-      name = g_strdup (config_preference_iterator_name (&prefs));
-      type = config_preference_iterator_type (&prefs);
-
-      if (g_str_has_prefix (type, "credential_"))
-        {
-          credential_t credential = 0;
-          iterator_t iter;
-          const char *uuid = config_preference_iterator_value (&prefs);
-
-          if (!strcmp (config_preference_iterator_value (&prefs), "0"))
-            credential = target_ssh_credential (target);
-          else if (find_resource ("credential", uuid, &credential))
-            {
-              g_warning ("Error getting credential for osp parameter %s", name);
-              g_free (name);
-              continue;
-            }
-          if (credential == 0)
-            {
-              g_warning ("No credential for osp parameter %s", name);
-              g_free (name);
-              continue;
-            }
-
-          init_credential_iterator_one (&iter, credential);
-          if (!next (&iter))
-            {
-              g_warning ("No credential for credential_id %llu", credential);
-              g_free (name);
-              continue;
-            }
-          if (!strcmp (type, "credential_up")
-              && !strcmp (credential_iterator_type (&iter), "up"))
-            value = g_strdup_printf ("%s:%s", credential_iterator_login (&iter),
-                                     credential_iterator_password (&iter));
-          else if (!strcmp (type, "credential_up"))
-            {
-              g_warning ("OSP Parameter %s requires credentials of type"
-                         " username+password", name);
-              g_free (name);
-              continue;
-            }
-          else
-            abort ();
-          cleanup_iterator (&iter);
-          if (!value)
-            {
-              g_warning ("No adequate %s for parameter %s", type, name);
-              g_free (name);
-              continue;
-            }
-        }
-      else if (!strcmp (name, "definitions_file"))
-        {
-          char *fname;
-
-          if (!config_preference_iterator_value (&prefs))
-            continue;
-          fname = g_strdup_printf ("%s/%s", GVM_SCAP_DATA_DIR "/",
-                                   config_preference_iterator_value (&prefs));
-          value = gvm_file_as_base64 (fname);
-          if (!value)
-            continue;
-        }
-      else
-        value = g_strdup (config_preference_iterator_value (&prefs));
-      g_hash_table_insert (table, name, value);
-    }
-  cleanup_iterator (&prefs);
-
-  // Target options sent as scanner preferences
-  allow_simultaneous_ips = target_allow_simultaneous_ips (target);
-  if (allow_simultaneous_ips)
-    {
-      g_hash_table_replace (table,
-                            g_strdup ("allow_simultaneous_ips"),
-                            g_strdup (strcmp (allow_simultaneous_ips, "0")
-                                        ? "yes" 
-                                        : "no"));
-    }
-  free (allow_simultaneous_ips);
-
-  return table;
-}
-
-/**
  * @brief Delete an OSP scan.
  *
  * @param[in]   report_id   Report ID.
@@ -1977,96 +1869,6 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   g_free (key_pub);
   g_free (key_priv);
   return rc;
-}
-
-/**
- * @brief Get an OSP Task's scan options.
- *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- *
- * @return OSP Task options, NULL if failure.
- */
-static GHashTable *
-get_osp_task_options (task_t task, target_t target)
-{
-  char *ssh_port;
-  const char *user, *pass;
-  iterator_t iter;
-  credential_t cred;
-  GHashTable *options = task_scanner_options (task, target);
-
-  if (!options)
-    return NULL;
-
-  cred = target_ssh_credential (target);
-  if (cred)
-    {
-      ssh_port = target_ssh_port (target);
-      g_hash_table_insert (options, g_strdup ("port"), ssh_port);
-
-      init_credential_iterator_one (&iter, cred);
-      if (!next (&iter))
-        {
-          g_warning ("%s: LSC Credential not found.", __func__);
-          g_hash_table_destroy (options);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      if (credential_iterator_private_key (&iter))
-        {
-          g_warning ("%s: LSC Credential not a user/pass pair.", __func__);
-          g_hash_table_destroy (options);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      user = credential_iterator_login (&iter);
-      pass = credential_iterator_password (&iter);
-      g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
-      g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
-      cleanup_iterator (&iter);
-    }
-  return options;
-}
-
-/**
- * @brief Launch an OSP task.
- *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- * @param[out]  scan_id     The new scan uuid.
- * @param[out]  error       Error return.
- *
- * @return 0 success, -1 if scanner is down.
- */
-static int
-launch_osp_task (task_t task, target_t target, const char *scan_id,
-                 char **error)
-{
-  osp_connection_t *connection;
-  char *target_str, *ports_str;
-  GHashTable *options;
-  int ret;
-
-  options = get_osp_task_options (task, target);
-  if (!options)
-    return -1;
-  connection = osp_scanner_connect (task_scanner (task));
-  if (!connection)
-    {
-      g_hash_table_destroy (options);
-      return -1;
-    }
-  target_str = target_hosts (target);
-  ports_str = target_port_range (target);
-  ret = osp_start_scan (connection, target_str, ports_str, options, scan_id,
-                        error);
-
-  g_hash_table_destroy (options);
-  osp_connection_close (connection);
-  g_free (target_str);
-  g_free (ports_str);
-  return ret;
 }
 
 /**
@@ -2865,15 +2667,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
-      || scanner_type (task_scanner (task) == SCANNER_TYPE_OSP_SENSOR))
-    {
-      rc = launch_osp_openvas_task (task, target, report_id, from, &error);
-    }
-  else
-    {
-      rc = launch_osp_task (task, target, report_id, &error);
-    }
+  rc = launch_osp_openvas_task (task, target, report_id, from, &error);
 
   if (rc)
     {
