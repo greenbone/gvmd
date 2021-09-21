@@ -2816,6 +2816,41 @@ migrate_246_to_247 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 247 to version 248.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_247_to_248 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 247. */
+
+  if (manage_db_version () != 247)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* OSP-scanners are no longer supported. So delete the
+   * the column hr_name, which was only used by OSP-scanners.
+   */
+  sql ("ALTER TABLE config_preferences DROP COLUMN hr_name;");
+  sql ("ALTER TABLE config_preferences_trash DROP COLUMN hr_name;");
+
+  /* Set the database version to 248. */
+
+  set_db_version (248);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2870,6 +2905,7 @@ static migrator_t database_migrators[] = {
   {245, migrate_244_to_245},
   {246, migrate_245_to_246},
   {247, migrate_246_to_247},
+  {248, migrate_247_to_248},
   /* End marker. */
   {-1, NULL}};
 
