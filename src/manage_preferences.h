@@ -39,14 +39,12 @@ typedef struct
   char *nvt_oid;       ///< OID of NVT preference affects.
   array_t *alts;       ///< Array of gchar's.  Alternate values for radio type.
   char *default_value; ///< Default value of preference.
-  char *hr_name;       ///< Extended, more human-readable name used by OSP.
   int free_strings;    ///< Whether string fields are freed by preference_free.
 } preference_t;
 
 gpointer
 preference_new (char *, char *, char *, char *, char *,
-                char *, array_t *, char*,
-                char *, int);
+                char *, array_t *, char*, int);
 
 void
 preference_free (preference_t *);

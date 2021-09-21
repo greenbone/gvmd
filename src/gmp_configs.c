@@ -282,8 +282,8 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
       children = preferences->entities;
       while ((preference = first_entity (children)))
         {
-          entity_t pref_name, pref_nvt_name, hr_name, nvt, alt;
-          char *preference_hr_name, *preference_nvt_oid;
+          entity_t pref_name, pref_nvt_name, nvt, alt;
+          char *preference_nvt_oid;
           array_t *import_alts;
           entities_t alts;
           preference_t *new_preference;
@@ -294,17 +294,6 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
           nvt = entity_child (preference, "nvt");
           if (nvt)
             pref_nvt_name = entity_child (nvt, "name");
-
-          hr_name = entity_child (preference, "hr_name");
-          if (*type == NULL || strcmp (*type, "0") == 0)
-            /* Classic OpenVAS config preference. */
-            preference_hr_name = NULL;
-          else if (hr_name && strlen (entity_text (hr_name)))
-            /* OSP config preference with hr_name given. */
-            preference_hr_name = entity_text (hr_name);
-          else
-            /* Old OSP config without hr_name. */
-            preference_hr_name = text_or_null (pref_name);
 
           import_alts = make_array ();
           alts = preference->entities;
@@ -374,7 +363,6 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                        preference_nvt_oid,
                        import_alts,
                        text_or_null (entity_child (preference, "default")),
-                       preference_hr_name,
                        0 /* do not free strings */);
             }
 

@@ -8543,7 +8543,6 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                             "<preference>"
                             "<nvt oid=\"%s\"><name>%s</name></nvt>"
                             "<id>%s</id>"
-                            "<hr_name>%s</hr_name>"
                             "<name>%s</name>"
                             "<type>%s</type>",
                             oid ? oid : "",
@@ -11726,9 +11725,8 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           init_config_preference_iterator (&prefs, config);
           while (next (&prefs))
             {
-              const char *name, *hr_name, *value, *type, *def;
+              const char *name, *value, *type, *def;
 
-              hr_name = config_preference_iterator_hr_name (&prefs);
               name = config_preference_iterator_name (&prefs);
               value = config_preference_iterator_value (&prefs);
               def = config_preference_iterator_default (&prefs);
@@ -11736,14 +11734,13 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
               SENDF_TO_CLIENT_OR_FAIL
                ("<preference>"
                 "<nvt oid=\"\"><name/></nvt>"
-                "<hr_name>%s</hr_name>"
                 "<id/>"
                 "<name>%s</name>"
                 "<type>osp_%s</type>"
                 "<value>%s</value>"
                 "<default>%s</default>"
                 "</preference>",
-                hr_name, name, type, value ?: "", def);
+                name, type, value ?: "", def);
             }
           cleanup_iterator (&prefs);
           SEND_TO_CLIENT_OR_FAIL ("</preferences>");

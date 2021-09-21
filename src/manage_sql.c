@@ -46010,8 +46010,8 @@ manage_restore (const char *id)
       config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences"
-           " (config, type, name, value, default_value, hr_name)"
-           " SELECT %llu, type, name, value, default_value, hr_name"
+           " (config, type, name, value, default_value)"
+           " SELECT %llu, type, name, value, default_value"
            " FROM config_preferences_trash WHERE config = %llu;",
            config,
            resource);

@@ -2184,11 +2184,11 @@ get_nvt_preference_by_id (const char *nvt_oid,
                           const char *value)
 {
   preference_t *new_pref;
-  char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
+  char *full_name, *id, *name, *type, *nvt_name, *default_value;
   array_t *alts;
   gchar *quoted_oid, *quoted_id;
 
-  full_name = name = type = nvt_name = default_value = hr_name = NULL;
+  full_name = name = type = nvt_name = default_value = NULL;
 
   /* Check parameters */
   if (nvt_oid == NULL)
@@ -2279,7 +2279,6 @@ get_nvt_preference_by_id (const char *nvt_oid,
                              strdup (nvt_oid),
                              alts,
                              default_value,
-                             hr_name,
                              1);
 
   return new_pref;
@@ -2338,7 +2337,7 @@ config_insert_preferences (config_t config,
         else if (preference->type)
           {
             gchar *quoted_type, *quoted_nvt_oid, *quoted_preference_name;
-            gchar *quoted_default, *quoted_preference_hr_name;
+            gchar *quoted_default;
             gchar *quoted_preference_id;
 
             /* Presume NVT or OSP preference. */
@@ -2357,10 +2356,6 @@ config_insert_preferences (config_t config,
             quoted_nvt_oid = sql_quote (preference->nvt_oid ?: "");
             quoted_preference_id = sql_quote (preference->id ?: "");
             quoted_preference_name = sql_quote (preference->name);
-            quoted_preference_hr_name
-              = preference->hr_name
-                  ? sql_quote (preference->hr_name)
-                  : NULL;
             quoted_type
               = g_str_has_prefix (preference->type, "osp_")
                   ? sql_quote (preference->type + strlen ("osp_"))
@@ -2389,22 +2384,19 @@ config_insert_preferences (config_t config,
               {
                 /* OSP preference */
                 sql ("INSERT into config_preferences"
-                     " (config, type, name, value, default_value, hr_name)"
-                     " VALUES (%llu, '%s', '%s', '%s', '%s', '%s');",
+                     " (config, type, name, value, default_value)"
+                     " VALUES (%llu, '%s', '%s', '%s', '%s');",
                      config,
                      quoted_type,
                      quoted_preference_name,
                      quoted_value,
-                     quoted_default,
-                     quoted_preference_hr_name
-                      ? quoted_preference_name : quoted_preference_hr_name);
+                     quoted_default);
               }
             g_free (quoted_nvt_oid);
             g_free (quoted_preference_name);
             g_free (quoted_type);
             g_free (quoted_value);
             g_free (quoted_default);
-            g_free (quoted_preference_hr_name);
             g_free (quoted_preference_id);
           }
         else
@@ -2718,10 +2710,10 @@ insert_osp_parameter (osp_param_t *param, config_t config)
                config, param_id, param_type, param_def) == 0)
     {
       sql ("INSERT INTO config_preferences (config, name, type, value,"
-           " default_value, hr_name)"
-           " VALUES (%llu, '%s', '%s', '%s', '%s', '%s')",
+           " default_value)"
+           " VALUES (%llu, '%s', '%s', '%s', '%s')",
            config , param_id, param_type, param_value ?: param_def,
-           param_def, param_name);
+           param_def);
       ret = 1;
     }
   g_free (param_name);
@@ -3102,8 +3094,8 @@ copy_config (const char* name, const char* comment, const char *config_id,
   sql ("UPDATE configs SET predefined = 0 WHERE id = %llu;", new);
 
   sql ("INSERT INTO config_preferences (config, type, name, value,"
-       "                                default_value, hr_name)"
-       " SELECT %llu, type, name, value, default_value, hr_name"
+       "                                default_value)"
+       " SELECT %llu, type, name, value, default_value"
        " FROM config_preferences"
        " WHERE config = %llu;", new, old);
 
@@ -3280,8 +3272,8 @@ delete_config (const char *config_id, int ultimate)
       trash_config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences_trash"
-           " (config, type, name, value, default_value, hr_name)"
-           " SELECT %llu, type, name, value, default_value, hr_name"
+           " (config, type, name, value, default_value)"
+           " SELECT %llu, type, name, value, default_value"
            " FROM config_preferences WHERE config = %llu;",
            trash_config,
            config);
@@ -3324,7 +3316,7 @@ update_config_params (config_t config, const char *config_id, GSList *params)
 
   /* Remove parameters not used anymore. */
   init_iterator (&iterator,
-                 "SELECT id, name, type, default_value, hr_name"
+                 "SELECT id, name, type, default_value"
                  " FROM config_preferences"
                  " WHERE config = %llu;", config);
   while (next (&iterator))
@@ -3360,19 +3352,6 @@ update_config_params (config_t config, const char *config_id, GSList *params)
                      iterator_string (&iterator, 1), config_id);
           sql ("DELETE FROM config_preferences WHERE id = %llu;",
                iterator_int64 (&iterator, 0));
-        }
-      else if (strcmp (osp_param_name (element->data),
-                       iterator_string (&iterator, 4)))
-        {
-          // Update hr_name (= OSP name)
-          gchar *quoted_name;
-          quoted_name = sql_quote (osp_param_name (element->data));
-          g_message ("Updating name of config preference %s in config '%s'",
-                     iterator_string (&iterator, 1), config_id);
-          sql ("UPDATE config_preferences SET hr_name='%s' WHERE id = %llu;",
-               quoted_name,
-               iterator_int64 (&iterator, 0));
-          g_free (quoted_name);
         }
     }
   cleanup_iterator (&iterator);
@@ -3793,7 +3772,7 @@ init_config_preference_iterator (iterator_t* iterator, config_t config)
 {
   gchar* sql;
 
-  sql = g_strdup_printf ("SELECT name, value, type, default_value, hr_name"
+  sql = g_strdup_printf ("SELECT name, value, type, default_value"
                          " FROM config_preferences"
                          " WHERE config = %llu;",
                          config);
@@ -3842,19 +3821,6 @@ DEF_ACCESS (config_preference_iterator_type, 2);
  *         complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (config_preference_iterator_default, 3);
-
-/**
- * @brief Get the hr_name from a preference iterator.
- *
- * Note: This corresponds to the "name" in OSP and is not defined for classic
- *  OpenVAS config preferences.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The hr_name of the preference iterator, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (config_preference_iterator_hr_name, 4);
 
 /**
  * @brief Initialise a config preference iterator, with defaults.
