@@ -303,7 +303,7 @@ typedef enum
 typedef enum scanner_type
 {
   SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_OSP = 1,
+  /* 1 was removed (SCANNER_TYPE_OSP). */
   SCANNER_TYPE_OPENVAS = 2,
   SCANNER_TYPE_CVE = 3,
   /* 4 was removed (SCANNER_TYPE_GMP). */

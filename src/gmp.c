@@ -3162,27 +3162,6 @@ stop_task_data_reset (stop_task_data_t *data)
 }
 
 /**
- * @brief Command data for the sync_config command.
- */
-typedef struct
-{
-  char *config_id;               ///< Config UUID.
-} sync_config_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-sync_config_data_reset (sync_config_data_t *data)
-{
-  g_free (data->config_id);
-
-  memset (data, 0, sizeof (sync_config_data_t));
-}
-
-/**
  * @brief Command data for the test_alert command.
  */
 typedef struct
@@ -3382,7 +3361,6 @@ typedef union
   resume_task_data_t resume_task;                     ///< resume_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
-  sync_config_data_t sync_config;                     ///< sync_config
   test_alert_data_t test_alert;                       ///< test_alert
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
   verify_scanner_data_t verify_scanner;               ///< verify_scanner
@@ -3951,12 +3929,6 @@ static start_task_data_t *start_task_data
  */
 static stop_task_data_t *stop_task_data
  = (stop_task_data_t*) &(command_data.stop_task);
-
-/**
- * @brief Parser callback data for SYNC_CONFIG.
- */
-static sync_config_data_t *sync_config_data
- = (sync_config_data_t*) &(command_data.sync_config);
 
 /**
  * @brief Parser callback data for TEST_ALERT.
@@ -4534,7 +4506,6 @@ typedef enum
   CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
-  CLIENT_SYNC_CONFIG,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_REPORT_FORMAT,
   CLIENT_VERIFY_SCANNER,
@@ -5923,12 +5894,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &stop_task_data->task_id);
             set_client_state (CLIENT_STOP_TASK);
-          }
-        else if (strcasecmp ("SYNC_CONFIG", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "config_id",
-                              &sync_config_data->config_id);
-            set_client_state (CLIENT_SYNC_CONFIG);
           }
         else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
@@ -15439,8 +15404,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           cleanup_iterator (&tasks);
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
         }
-      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
+      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
           && get_scanners_data->get.details)
         {
           char *s_name = NULL, *s_ver = NULL;
@@ -17719,81 +17683,6 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_END ("vuln", &get_vulns_data->get, count, filtered);
 
   get_vulns_data_reset (get_vulns_data);
-  set_client_state (CLIENT_AUTHENTIC);
-}
-
-/**
- * @brief Handle end of SYNC_CONFIG element.
- *
- * @param[in]  gmp_parser   GMP parser.
- * @param[in]  error        Error parameter.
- */
-static void
-handle_sync_config (gmp_parser_t *gmp_parser, GError **error)
-{
-  assert (current_credentials.username);
-  if (!sync_config_data->config_id)
-    {
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("sync_config",
-                          "SYNC_CONFIG requires a config_id attribute"));
-      sync_config_data_reset (sync_config_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-  switch (sync_config (sync_config_data->config_id))
-    {
-      case 0:
-        log_event ("config", "config", sync_config_data->config_id,
-                   "synchronized");
-        SEND_TO_CLIENT_OR_FAIL (XML_OK ("sync_config"));
-        break;
-      case 1:
-        if (send_find_error_to_client
-             ("sync_config", "config", sync_config_data->config_id, gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                 ("sync_config", "Config not of type OSP"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 3:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                 ("sync_config", "Config has no scanner"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 4:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                 ("sync_config",
-                                  "Couldn't get parameters from scanner"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 99:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("sync_config", "Permission denied"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case -1:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_config"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      default:
-        abort ();
-        break;
-    }
-
-  sync_config_data_reset (sync_config_data);
   set_client_state (CLIENT_AUTHENTIC);
 }
 
@@ -25544,10 +25433,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                               "A task_id attribute is required"));
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_SYNC_CONFIG:
-        handle_sync_config (gmp_parser, error);
         break;
 
       case CLIENT_VERIFY_REPORT_FORMAT:

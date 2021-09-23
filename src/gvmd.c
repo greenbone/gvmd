@@ -2668,8 +2668,6 @@ gvmd (int argc, char** argv)
 
       if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS"))
         type = SCANNER_TYPE_OPENVAS;
-      else if (!strcasecmp (scanner_type, "OSP"))
-        type = SCANNER_TYPE_OSP;
       else if (!strcasecmp (scanner_type, "OSP-Sensor"))
         type = SCANNER_TYPE_OSP_SENSOR;
       else
@@ -2712,8 +2710,6 @@ gvmd (int argc, char** argv)
 
           if (strcasecmp (scanner_type, "OpenVAS") == 0)
             type = SCANNER_TYPE_OPENVAS;
-          else if (strcasecmp (scanner_type, "OSP") == 0)
-            type = SCANNER_TYPE_OSP;
           else if (!strcasecmp (scanner_type, "OSP-Sensor"))
             type = SCANNER_TYPE_OSP_SENSOR;
           else

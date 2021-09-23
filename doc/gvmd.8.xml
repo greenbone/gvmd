@@ -401,7 +401,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--scanner-type=<arg>SCANNER-TYPE</arg></opt></p>
       <optdesc>
         <p>Scanner type for --create-scanner and --modify-scanner.</p>
-        <p>Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor' or a number
+        <p>Either 'OpenVAS', 'GMP', 'OSP-Sensor' or a number
            as used in GMP.</p>
       </optdesc>
     </option>

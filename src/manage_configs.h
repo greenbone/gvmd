@@ -48,17 +48,10 @@ create_config (const char*, const char*, int, const char*, int, const array_t*,
                const array_t*, const char*, const char*, config_t*, char**);
 
 int
-create_config_from_scanner (const char*, const char *, const char *,
-                            const char *, char **);
-
-int
 copy_config (const char*, const char*, const char *, const char *, config_t*);
 
 int
 delete_config (const char*, int);
-
-int
-sync_config (const char *);
 
 gboolean
 find_config_with_permission (const char*, config_t*, const char *);
