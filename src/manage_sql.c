@@ -314,9 +314,6 @@ setting_value_int (const char *, int *);
 static int
 setting_auto_cache_rebuild_int ();
 
-static double
-setting_default_severity_dbl ();
-
 static int
 setting_dynamic_severity_int ();
 
@@ -18990,10 +18987,6 @@ make_osp_result (task_t task, const char *host, const char *hostname,
         nvt_revision = sql_string ("SELECT iso_time (modification_time)"
                                    " FROM nvts WHERE oid='%s'",
                                    quoted_nvt);
-      else if (g_str_has_prefix (nvt, "CVE-"))
-        nvt_revision = sql_string ("SELECT iso_time (modification_time)"
-                                   " FROM scap.cves WHERE uuid='%s'",
-                                   quoted_nvt);
     }
   
   if (!severity || !strcmp (severity, ""))
@@ -19002,30 +18995,14 @@ make_osp_result (task_t task, const char *host, const char *hostname,
         result_severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
       else
         {
-          if (nvt && g_str_has_prefix (nvt, "CVE-"))
-            {
-              result_severity = cve_cvss_base (nvt);
-              if (result_severity == NULL || strcmp (result_severity, "") == 0)
-                {
-                  g_free (result_severity);
-                  result_severity
-                    = g_strdup_printf ("%0.1f",
-                                       setting_default_severity_dbl ());
-                  g_debug ("%s: OSP CVE result without severity for '%s'",
-                           __func__, nvt);
-                }
-            }
-          else
-            {
-              /*
-              result_severity
-                = g_strdup_printf ("%0.1f",
-                                   setting_default_severity_dbl ());
-              */
-              g_warning ("%s: Non-CVE OSP result without severity for test %s",
-                         __func__, nvt ? nvt : "(unknown)");
-              return 0;
-            }
+          /*
+            result_severity
+              = g_strdup_printf ("%0.1f",
+                                 setting_default_severity_dbl ());
+          */
+          g_warning ("%s: Result without severity for test %s",
+                     __func__, nvt ? nvt : "(unknown)");
+          return 0;
         }
     }
   else
@@ -40216,8 +40193,7 @@ verify_scanner (const char *scanner_id, char **version)
       return 1;
     }
   g_free (get.id);
-  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP
-      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
+  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS
       || scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_SENSOR)
     {
       int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
@@ -40275,9 +40251,6 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 
       switch (scanner_type)
         {
-          case SCANNER_TYPE_OSP:
-            scanner_type_str = "OSP";
-            break;
           case SCANNER_TYPE_OPENVAS:
             scanner_type_str = "OpenVAS";
             break;
@@ -49376,17 +49349,6 @@ setting_filter (const char *resource)
                      " ORDER BY coalesce (owner, 0) DESC;",
                      resource,
                      current_credentials.uuid);
-}
-
-/**
- * @brief Return the Default Severity user setting as a double.
- *
- * @return The user's Default Severity.
- */
-static double
-setting_default_severity_dbl ()
-{
-  return current_credentials.default_severity;
 }
 
 /**

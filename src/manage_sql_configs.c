@@ -2654,77 +2654,6 @@ create_config_no_acl (const char *config_id, const char *proposed_name,
 }
 
 /**
- * @brief Get list of OSP Scanner parameters.
- *
- * @param[in]   scanner    Scanner.
- *
- * @return List of scanner parameters, NULL if error.
- */
-static GSList *
-get_scanner_params (scanner_t scanner)
-{
-  GSList *list = NULL;
-  osp_connection_t *connection;
-
-  connection = osp_scanner_connect (scanner);
-  if (!connection)
-    return NULL;
-
-  osp_get_scanner_details (connection, NULL, &list);
-  osp_connection_close (connection);
-  return list;
-}
-
-/**
- * @brief Insert an OSP parameter into a config if not already present.
- *
- * @param[in]   param   OSP parameter to insert.
- * @param[in]   config  Config to insert parameter into.
- *
- * @return 1 if added, 0 otherwise.
- */
-static int
-insert_osp_parameter (osp_param_t *param, config_t config)
-{
-  char *param_id, *param_name, *param_type, *param_def, *param_value = NULL;
-  int ret = 0;
-
-  if (!param)
-    return ret;
-  param_id = sql_quote (osp_param_id (param));
-  param_name = sql_quote (osp_param_name (param));
-  param_type = sql_quote (osp_param_type_str (param));
-  if (!strcmp (param_type, "selection"))
-    {
-      char **strarray = g_strsplit (osp_param_default (param), "|", 2);
-
-      param_value = sql_quote (strarray[0] ?: "");
-      param_def = sql_quote (strarray[1] ?: param_value);
-      g_strfreev (strarray);
-    }
-  else
-    param_def = sql_quote (osp_param_default (param));
-  if (sql_int ("SELECT count(*) FROM config_preferences"
-               " WHERE config = %llu AND name = '%s' AND type = '%s'"
-               " AND default_value = '%s';",
-               config, param_id, param_type, param_def) == 0)
-    {
-      sql ("INSERT INTO config_preferences (config, name, type, value,"
-           " default_value)"
-           " VALUES (%llu, '%s', '%s', '%s', '%s')",
-           config , param_id, param_type, param_value ?: param_def,
-           param_def);
-      ret = 1;
-    }
-  g_free (param_name);
-  g_free (param_id);
-  g_free (param_type);
-  g_free (param_def);
-  g_free (param_value);
-  return ret;
-}
-
-/**
  * @brief  Generate an extra WHERE clause for selecting configs
  *
  * @param[in]  usage_type   The usage type to limit the selection to.
@@ -2744,98 +2673,6 @@ configs_extra_where (const char *usage_type)
       g_free (quoted_usage_type);
     }
   return extra_where;
-}
-
-/**
- * @brief Create a config from an OSP scanner.
- *
- * @param[in]   scanner_id  UUID of scanner to create config from.
- * @param[in]   name        Name for config.
- * @param[in]   comment     Comment for config.
- * @param[in]   usage_type  The usage type ("scan" or "policy")
- * @param[out]  uuid        Config UUID, on success.
- *
- * @return 0 success, 1 couldn't find scanner, 2 scanner not of OSP type,
- *         3 config name exists already, 4 couldn't get params from scanner,
- *         99 permission denied, -1 error.
- */
-int
-create_config_from_scanner (const char *scanner_id, const char *name,
-                            const char *comment, const char *usage_type,
-                            char **uuid)
-{
-  scanner_t scanner;
-  config_t config;
-  GSList *params, *element;
-  char *quoted_name, *quoted_comment;
-  const char *actual_usage_type;
-
-  assert (current_credentials.uuid);
-  assert (scanner_id);
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_config") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-  if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (scanner == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-  if (scanner_type (scanner) != SCANNER_TYPE_OSP)
-    {
-      sql_rollback ();
-      return 2;
-    }
-  if (resource_with_name_exists (name, "config", 0))
-    {
-      sql_rollback ();
-      return 3;
-    }
-
-  params = get_scanner_params (scanner);
-  if (!params)
-    {
-      sql_rollback ();
-      return 4;
-    }
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-  if (usage_type && strcasecmp (usage_type, "policy") == 0)
-    actual_usage_type = "policy";
-  else
-    actual_usage_type = "scan";
-
-  /* Create new OSP config. */
-  sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-       " type, scanner, creation_time, modification_time, usage_type)"
-       " VALUES (make_uuid (), '%s',"
-       " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '', '%s', 1, %llu, m_now (), m_now (), '%s');",
-       quoted_name, current_credentials.uuid, quoted_comment, scanner,
-       actual_usage_type);
-  g_free (quoted_name);
-  g_free (quoted_comment);
-  config = sql_last_insert_id ();
-  *uuid = config_uuid (config);
-
-  element = params;
-  while (element)
-    {
-      insert_osp_parameter (element->data, config);
-      osp_param_free (element->data);
-      element = element->next;
-    }
-  g_slist_free (params);
-  sql_commit ();
-  return 0;
 }
 
 /**
@@ -2869,33 +2706,6 @@ config_type (config_t config)
   type = atoi (str);
   g_free (str);
   return type;
-}
-
-/**
- * @brief Return the scanner associated with a config, if any.
- *
- * @param[in]  config   Config.
- *
- * @return Scanner ID if found, 0 otherwise.
- */
-static scanner_t
-config_scanner (config_t config)
-{
-  scanner_t scanner;
-
-  switch (sql_int64 (&scanner,
-                     "SELECT scanner FROM configs WHERE id = %llu;", config))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        return 0;
-      case -1:
-        return 0;
-      default:       /* Programming error. */
-        assert (0);
-    }
-  return scanner;
 }
 
 /**
@@ -2970,8 +2780,6 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
     return 1;
   if (ctype == 0 && stype == SCANNER_TYPE_OSP_SENSOR)
     return 1;
-  if (ctype == 1 && stype == SCANNER_TYPE_OSP)
-    return 1;
 
   return 0;
 }
@@ -3034,9 +2842,6 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
             : (config ? 1 : 0);
 
   ctype = config_type (config);
-  /* OSP Scanner with OSP config. */
-  if (stype == SCANNER_TYPE_OSP && ctype == 1)
-    return 0;
 
   /* OpenVAS Scanner with OpenVAS config. */
   if ((stype == SCANNER_TYPE_OPENVAS)
@@ -3297,136 +3102,6 @@ delete_config (const char *config_id, int ultimate)
   sql ("DELETE FROM configs WHERE id = %llu;", config);
 
   sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Update a config with a list of parameters.
- *
- * @param[in]  config       Config ID.
- * @param[in]  config_id    Config UUID.
- * @param[in]  params       List of new config parameters.
- *
- */
-static void
-update_config_params (config_t config, const char *config_id, GSList *params)
-{
-  GSList *element;
-  iterator_t iterator;
-
-  /* Remove parameters not used anymore. */
-  init_iterator (&iterator,
-                 "SELECT id, name, type, default_value"
-                 " FROM config_preferences"
-                 " WHERE config = %llu;", config);
-  while (next (&iterator))
-    {
-      int found = 0;
-
-      element = params;
-      while (element)
-        {
-          const char *name, *type, *def;
-
-          name = osp_param_id (element->data);
-          type = osp_param_type_str (element->data);
-          def = osp_param_default (element->data);
-          if (!strcmp (name,  iterator_string (&iterator, 1))
-              && !strcmp (type, iterator_string (&iterator, 2)))
-            {
-              const char *iter_def = iterator_string (&iterator, 3);
-
-              if (!strcmp (type, "selection")
-                  && !strcmp (strchr (def, '|') + 1, iter_def))
-                found = 1;
-              else if (strcmp (type, "selection") && !strcmp (def, iter_def))
-                found = 1;
-              if (found)
-                break;
-            }
-          element = element->next;
-        }
-      if (!found)
-        {
-          g_message ("Removing config preference %s from config '%s'",
-                     iterator_string (&iterator, 1), config_id);
-          sql ("DELETE FROM config_preferences WHERE id = %llu;",
-               iterator_int64 (&iterator, 0));
-        }
-    }
-  cleanup_iterator (&iterator);
-  /* Insert new parameters. */
-  element = params;
-  while (element)
-    {
-      if (insert_osp_parameter (element->data, config))
-        g_message ("Adding config preference %s to config '%s'",
-                   osp_param_id (element->data), config_id);
-      element = element->next;
-    }
-}
-
-/**
- * @brief Synchronize a config.
- *
- * @param[in]  config_id  UUID of config.
- *
- * @return 0 success, 1 failed to find config, 2 config not of OSP type,
- *         3 config has no scanner, 4 couldn't get params from scanner,
- *         99 permission denied, -1 error.
- */
-int
-sync_config (const char *config_id)
-{
-  config_t config = 0;
-  GSList *params;
-  scanner_t scanner;
-
-  assert (config_id);
-  assert (current_credentials.uuid);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("modify_config") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-  if (find_config_with_permission (config_id, &config, "modify_config"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-  if (config == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-  if (config_type (config) != SCANNER_TYPE_OSP)
-    {
-      sql_rollback ();
-      return 2;
-    }
-  scanner = config_scanner (config);
-  if (!scanner)
-    {
-      sql_rollback ();
-      return 3;
-    }
-  params = get_scanner_params (scanner);
-  if (!params)
-    {
-      sql_rollback ();
-      return 4;
-    }
-  update_config_params (config, config_id, params);
-
-  sql_commit ();
-  while (params)
-    {
-      osp_param_free (params->data);
-      params = g_slist_remove_link (params, params);
-    }
   return 0;
 }
 
