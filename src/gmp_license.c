@@ -103,55 +103,21 @@ get_license_element_start (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Writes XML for a license access key to a GString buffer.
- *
- * This is meant to be used to traverse a GTree with g_tree_foreach.
- *
- * @param[in]  key    The key from the tree, i.e. the access key name.
- * @param[in]  value  The value from the tree, i.e. the key content.
- * @param[in]  buffer The GString to buffer the XML element.
- * 
- * @return Always FALSE to continue traversing the GTree.
- */
-static gboolean
-buffer_license_key_xml (gchar *key, gchar *value, GString *buffer)
-{
-  xml_string_append (buffer,
-                     "<key name=\"%s\">%s</key>",
-                     key, value);
-  return FALSE;
-}
-
-/**
- * @brief Writes XML for a license signature info item to a GString buffer.
- *
- * This is meant to be used to traverse a GTree with g_tree_foreach.
- *
- * @param[in]  key    The key from the tree, i.e. the info item name.
- * @param[in]  value  The value from the tree, i.e. the info item content.
- * @param[in]  buffer The GString to buffer the XML element.
- * 
- * @return Always FALSE to continue traversing the GTree.
- */
-static gboolean
-buffer_license_signature_xml (gchar *key, gchar *value, GString *buffer)
-{
-  xml_string_append (buffer,
-                     "<signature name=\"%s\">%s</signature>",
-                     key, value);
-  return FALSE;
-}
-
-
-/**
  * @brief Writes license data to a GString as XML
  *
  * @param[in]  response     The GString buffer to write the license content to.
  * @param[in]  license_data The license data struct to get the data from.
  */
 static void
-buffer_license_content_xml (GString *response, license_data_t *license_data)
+buffer_license_content_xml (GString *response, theia_license_t *license_data)
 {
+#ifdef HAS_LIBTHEIA
+  if (license_data == NULL)
+    {
+      xml_string_append (response, "<content></content>");
+      return;
+    }
+
   xml_string_append (response,
                      "<content>"
                      "<meta>"
@@ -183,26 +149,22 @@ buffer_license_content_xml (GString *response, license_data_t *license_data)
                      "<model_type>%s</model_type>"
                      "<sensor>%d</sensor>"
                      "</appliance>"
-                     "<keys>",
+                     "<keys>"
+                     "<key name=\"feed\">%s</key>"
+                     "</keys>"
+                     "<signatures>"
+                     "<signature name=\"license\">%s</signature>"
+                     "</signatures>"
+                     "</content>",
                      license_data->appliance->model,
                      license_data->appliance->model_type,
-                     license_data->appliance->sensor);
+                     license_data->appliance->sensor,
+                     license_data->keys->feed,
+                     license_data->signatures->license);
 
-  g_tree_foreach (license_data->keys,
-                  (GTraverseFunc) buffer_license_key_xml,
-                  response);
-
-  xml_string_append (response,
-                     "</keys>"
-                     "<signatures>");
-
-  g_tree_foreach (license_data->signatures,
-                  (GTraverseFunc) buffer_license_signature_xml,
-                  response);
-
-  xml_string_append (response,
-                     "</signatures>"
-                     "</content>");
+#else // HAS_LIBTHEIA
+  xml_string_append (response, "<content></content>");
+#endif // HAS_LIBTHEIA
 }
 
 
@@ -219,7 +181,7 @@ get_license_run (gmp_parser_t *gmp_parser,
   int ret;
 
   gchar *license_status;
-  license_data_t *license_data;
+  theia_license_t *license_data;
 
   license_status = NULL;
   license_data = NULL;
@@ -262,6 +224,18 @@ get_license_run (gmp_parser_t *gmp_parser,
           " status_text=\"Licensing service unavailable.\"/>",
           STATUS_SERVICE_DOWN);
         break;
+      case 2:
+        SENDF_TO_CLIENT_OR_FAIL
+         ("<get_license_response status=\"%s\""
+          " status_text=\"Could not send get.license command.\"/>",
+          STATUS_SERVICE_DOWN);
+        break;
+      case 3:
+        SENDF_TO_CLIENT_OR_FAIL
+         ("<get_license_response status=\"%s\""
+          " status_text=\"Could not retrieve got.license response.\"/>",
+          STATUS_SERVICE_DOWN);
+        break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("get_license"));
         break;
@@ -271,7 +245,10 @@ get_license_run (gmp_parser_t *gmp_parser,
     }
 
   g_free (license_status);
-  license_data_free (license_data);
+
+#ifdef HAS_LIBTHEIA
+  theia_license_free (license_data);
+#endif
 
   get_license_reset ();
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2020-2021 Greenbone Networks GmbH
+/* Copyright (C) 2021 Greenbone Networks GmbH
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -17,24 +17,11 @@
  */
 
 /**
- * @file manage_license.c
- * @brief GVM management layer: License information headers.
- *
- * Headers for non-SQL license information code for the GVM management layer.
+ * @file theia_dummy.h
+ * @brief Dummy definitions and headers for libtheia.
  */
 
-#include <glib.h>
-
-#ifdef HAS_LIBTHEIA
-#include <theia/client.h>
-#else
-#include "theia_dummy.h"
-#endif
-
-/* Actions */
-
-int
-manage_update_license_file (const char *);
-
-int
-manage_get_license (char **, theia_license_t **);
+/**
+ * @brief Dummy for license information struct.
+ */
+typedef void theia_license_t;
