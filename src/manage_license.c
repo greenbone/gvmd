@@ -77,13 +77,13 @@ manage_get_license (gchar **status,
 
 #ifdef HAS_LIBTHEIA
   int ret;
-  char *broker_address;
+  const char *broker_address;
   theia_client_t *client;
   theia_get_license_cmd_t *get_license_cmd;
   theia_got_license_info_t *got_license_info;
 
   // TODO: Replace with command line option
-  broker_address = g_strdup ("localhost:9138");
+  broker_address = get_broker_address ();
   if (broker_address == NULL)
     return 1;
 

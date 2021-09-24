@@ -163,6 +163,11 @@
 #define MAX_HOSTS_DEFAULT "20"
 
 /**
+ * @brief Address of the broker used for publish-subscribe messaging (MQTT).
+ */
+static gchar *broker_address = NULL;
+
+/**
  * @brief Path to the feed lock file
  */
 static gchar *feed_lock_path = NULL;
@@ -5916,6 +5921,32 @@ manage_gvmd_data_feed_dirs_exist ()
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();
+}
+
+/**
+ * @brief Get the publish-subscribe messaging (MQTT) broker address.
+ *
+ * @return The current broker address.
+ */
+const gchar *
+get_broker_address ()
+{
+  return broker_address;
+}
+
+/**
+ * @brief Set the publish-subscribe messaging (MQTT) broker address.
+ *
+ * @param new_path The new broker address.
+ */
+void
+set_broker_address (const char *new_address)
+{
+  g_free (broker_address);
+  if (new_address && strcmp (new_address, ""))
+    broker_address = g_strdup (new_address);
+  else
+    broker_address = NULL;
 }
 
 /**
