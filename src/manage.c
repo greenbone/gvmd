@@ -5937,7 +5937,7 @@ get_broker_address ()
 /**
  * @brief Set the publish-subscribe messaging (MQTT) broker address.
  *
- * @param new_path The new broker address.
+ * @param new_address The new broker address.
  */
 void
 set_broker_address (const char *new_address)
