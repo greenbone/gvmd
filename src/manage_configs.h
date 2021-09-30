@@ -45,7 +45,7 @@ typedef struct
 
 int
 create_config (const char*, const char*, int, const char*, int, const array_t*,
-               const array_t*, const char*, const char*, config_t*, char**);
+               const array_t*, const char*, config_t*, char**);
 
 int
 copy_config (const char*, const char*, const char *, const char *, config_t*);
@@ -58,9 +58,6 @@ find_config_with_permission (const char*, config_t*, const char *);
 
 char *
 config_uuid (config_t);
-
-int
-config_type (config_t);
 
 char *
 config_nvt_timeout (config_t, const char *);

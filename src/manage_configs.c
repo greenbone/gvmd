@@ -238,7 +238,6 @@ create_config_from_file (const gchar *path)
                                 all_selector,
                                 nvt_selectors,
                                 preferences,
-                                type,
                                 usage_type,
                                 &new_config,
                                 &created_name))

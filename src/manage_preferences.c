@@ -43,7 +43,7 @@
 gpointer
 preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
                 char *nvt_oid, array_t *alts, char* default_value,
-                int free_strings)
+                char *hr_name, int free_strings)
 {
   preference_t *preference;
 
@@ -56,6 +56,7 @@ preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
   preference->nvt_oid = nvt_oid;
   preference->alts = alts;
   preference->default_value = default_value;
+  preference->hr_name = hr_name;
   preference->free_strings = free_strings;
 
   return preference;

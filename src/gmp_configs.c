@@ -363,6 +363,7 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                        preference_nvt_oid,
                        import_alts,
                        text_or_null (entity_child (preference, "default")),
+                       NULL,
                        0 /* do not free strings */);
             }
 
@@ -443,7 +444,6 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                              all_selector,
                              import_nvt_selectors,
                              import_preferences,
-                             type,
                              usage_type_text,
                              &new_config,
                              &created_name))
