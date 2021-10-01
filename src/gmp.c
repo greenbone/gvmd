@@ -2264,7 +2264,6 @@ typedef struct
   int family_selection_growing;        ///< Whether families in selection grow.
   char *family_selection_growing_text; ///< Text version of above.
   char *name;                          ///< New name for config.
-  char *scanner_id;                    ///< New scanner UUID for config.
   array_t *nvt_selection;              ///< OID array. New NVT set for config.
   char *nvt_selection_family;          ///< Family of NVT selection.
   char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
@@ -15294,31 +15293,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
       count++;
       if (get_scanners_data->get.details)
         {
-          iterator_t configs, tasks;
-
-          SEND_TO_CLIENT_OR_FAIL ("<configs>");
-          init_scanner_config_iterator (&configs,
-                                        get_iterator_resource (&scanners));
-          while (next (&configs))
-            {
-              if (scanner_task_iterator_readable (&configs) == 0)
-                /* Only show configs the user may see. */
-                continue;
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<config id=\"%s\">"
-                "<name>%s</name>",
-                scanner_config_iterator_uuid (&configs),
-                scanner_config_iterator_name (&configs));
-
-              if (scanner_config_iterator_readable (&configs))
-                SEND_TO_CLIENT_OR_FAIL ("</config>");
-              else
-                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                        "</config>");
-            }
-          cleanup_iterator (&configs);
-          SEND_TO_CLIENT_OR_FAIL ("</configs>");
+          iterator_t tasks;
 
           SEND_TO_CLIENT_OR_FAIL ("<tasks>");
           init_scanner_task_iterator (&tasks,
@@ -21841,7 +21816,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              if (!create_task_check_config_scanner (config, scanner))
+              if (!create_task_check_config_scanner (scanner))
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",

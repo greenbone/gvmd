@@ -2716,17 +2716,15 @@ config_nvt_timeout (config_t config, const char *oid)
 /**
  * @brief Check scanner and config values match for a task.
  *
- * @param[in]  config       Scan Config.
  * @param[in]  scanner      Scanner.
  *
  * @return 1 if config and scanner types match, 0 otherwise.
  */
 int
-create_task_check_config_scanner (config_t config, scanner_t scanner)
+create_task_check_config_scanner (scanner_t scanner)
 {
   int stype;
 
-  assert (config);
   assert (scanner);
 
   stype = scanner_type (scanner);
@@ -2840,7 +2838,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   ret = copy_resource_lock ("config", name, comment, config_id,
                             " family_count, nvt_count, families_growing,"
-                            " nvts_growing, type, scanner, usage_type",
+                            " nvts_growing, type, usage_type",
                             1, &new, &old);
   if (ret)
     {
@@ -3005,11 +3003,11 @@ delete_config (const char *config_id, int ultimate)
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
-           "  nvt_count, families_growing, nvts_growing, type, scanner,"
+           "  nvt_count, families_growing, nvts_growing, type,"
            "  predefined, creation_time, modification_time,"
            "  scanner_location, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing, type, scanner,"
+           "        nvt_count, families_growing, nvts_growing, type,"
            "        predefined, creation_time, modification_time,"
            "        " G_STRINGIFY (LOCATION_TABLE) ", usage_type"
            " FROM configs WHERE id = %llu;",
@@ -3237,38 +3235,6 @@ config_iterator_type (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
-  return ret;
-}
-
-/**
- * @brief Get the scanner from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Scanner.
- */
-scanner_t
-config_iterator_scanner (iterator_t* iterator)
-{
-  scanner_t ret = 0;
-  if (iterator->done) return 0;
-  ret = iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-  return ret;
-}
-
-/**
- * @brief Get whether scanner is in trash from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Whether Scanner is in trash.
- */
-int
-config_iterator_scanner_trash (iterator_t* iterator)
-{
-  int ret = 0;
-  if (iterator->done) return 0;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   return ret;
 }
 
@@ -3707,19 +3673,16 @@ manage_set_config_preference (config_t config, const char* nvt,
 }
 
 /**
- * @brief Set the name, comment and scanner of a config.
+ * @brief Set the name and comment of a config.
  *
  * @param[in]  config       Config to modify.
  * @param[in]  name         New name, not updated if NULL.
  * @param[in]  comment      New comment, not updated if NULL.
- * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
- * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
- *         exist, 3 modification not allowed while config is in use, -1 error.
+ * @return 0 success, 1 config with new name exists already.
  */
 int
-manage_set_config (config_t config, const char *name, const char *comment,
-                   const char *scanner_id)
+manage_set_config (config_t config, const char *name, const char *comment)
 {
   assert (current_credentials.uuid);
 
@@ -3742,22 +3705,6 @@ manage_set_config (config_t config, const char *name, const char *comment,
       sql ("UPDATE configs SET comment = '%s', modification_time = m_now ()"
            " WHERE id = %llu;", quoted_comment, config);
       g_free (quoted_comment);
-    }
-  if (scanner_id)
-    {
-      if (config_in_use (config))
-        {
-          return 3;
-        }
-      scanner_t scanner = 0;
-
-      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners")
-          || scanner == 0)
-        {
-          return 2;
-        }
-      sql ("UPDATE configs SET scanner = %llu, modification_time = m_now ()"
-           " WHERE id = %llu;", scanner, config);
     }
   return 0;
 }

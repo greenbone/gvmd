@@ -2851,6 +2851,40 @@ migrate_247_to_248 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 248 to version 249.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_248_to_249 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 248. */
+
+  if (manage_db_version () != 248)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove config data for OSP-Scanners */
+  sql ("DELETE FROM config_preferences WHERE config IN"
+       " (SELECT id FROM configs WHERE usage_type = 'scan' AND type = 1);");
+  sql (" DELETE FROM configs WHERE usage_type = 'scan' AND type = 1;");
+
+  /* Set the database version to 247. */
+
+  set_db_version (249);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 

@@ -39142,12 +39142,7 @@ delete_scanner (const char *scanner_id, int ultimate)
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   scanner)
-          || sql_int ("SELECT count(*) FROM configs_trash"
-                      " WHERE scanner = %llu"
-                      " AND scanner_location"
-                      "      = " G_STRINGIFY (LOCATION_TRASH) ";",
-                      scanner))
+                   scanner))
         {
           sql_rollback ();
           return 1;
@@ -39169,10 +39164,7 @@ delete_scanner (const char *scanner_id, int ultimate)
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
                    " AND hidden = 0;",
-                   scanner)
-          || sql_int ("SELECT count(*) FROM configs"
-                      " WHERE scanner = %llu;",
-                      scanner))
+                   scanner))
         {
           sql_rollback ();
           return 1;
@@ -39188,14 +39180,6 @@ delete_scanner (const char *scanner_id, int ultimate)
            " FROM scanners WHERE id = %llu;", scanner);
 
       trash_scanner = sql_last_insert_id ();
-
-      /* Update the location of the scanner in any trashcan configs & tasks. */
-      sql ("UPDATE configs_trash"
-           " SET scanner = %llu,"
-           "     scanner_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE scanner = %llu;",
-           trash_scanner,
-           scanner);
 
       sql ("UPDATE tasks"
            " SET scanner = %llu,"
@@ -39456,59 +39440,6 @@ scanner_iterator_key_priv (iterator_t* iterator)
 DEF_ACCESS (scanner_iterator_credential_type, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
- * @brief Initialise a scanner config iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  scanner   Scanner.
- */
-void
-init_scanner_config_iterator (iterator_t* iterator, scanner_t scanner)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (scanner);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_configs"));
-  available = acl_where_owned ("config", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT id, uuid, name, %s FROM configs"
-                 " WHERE scanner = %llu"
-                 " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
-                 available,
-                 scanner);
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Get the UUID from a scanner config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (scanner_config_iterator_uuid, 1);
-
-/**
- * @brief Get the name from a scanner config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (scanner_config_iterator_name, 2);
-
-/**
  * @brief Get the read permission status from a GET iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -39600,9 +39531,7 @@ int
 scanner_in_use (scanner_t scanner)
 {
   return !!(sql_int ("SELECT count(*) FROM tasks WHERE scanner = %llu"
-                     " AND hidden = 0;", scanner)
-            || sql_int ("SELECT count(*) FROM configs WHERE scanner = %llu",
-                        scanner));
+                     " AND hidden = 0;", scanner));
 }
 
 /**
@@ -39618,10 +39547,6 @@ trash_scanner_in_use (scanner_t scanner)
   return !!(sql_int ("SELECT count(*) FROM tasks"
                      " WHERE scanner = %llu"
                      " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH),
-                     scanner)
-            || sql_int ("SELECT count(*) FROM configs_trash"
-                        " WHERE scanner = %llu"
-                        " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH),
                      scanner));
 }
 
@@ -45972,10 +45897,10 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO configs"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
-           "  nvt_count, families_growing, nvts_growing, type, scanner,"
+           "  nvt_count, families_growing, nvts_growing, type,"
            "  predefined, creation_time, modification_time, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing, type, scanner,"
+           "        nvt_count, families_growing, nvts_growing, type,"
            "        predefined, creation_time, modification_time, usage_type"
            " FROM configs_trash WHERE id = %llu;",
            resource);
@@ -46573,13 +46498,6 @@ manage_restore (const char *id)
 
       /* Update the scanner in any trashcan configs and tasks. */
       scanner = sql_last_insert_id ();
-
-      sql ("UPDATE configs_trash"
-           " SET scanner = %llu,"
-           "     scanner_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE scanner = %llu"
-           " AND scanner_location = " G_STRINGIFY (LOCATION_TRASH),
-           scanner, resource);
 
       sql ("UPDATE tasks"
            " SET scanner = %llu,"

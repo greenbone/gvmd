@@ -89,9 +89,6 @@ config_iterator_type (iterator_t*);
 int
 config_iterator_families_growing (iterator_t*);
 
-int
-config_iterator_scanner_trash (iterator_t*);
-
 const char*
 config_iterator_usage_type (iterator_t*);
 
@@ -153,7 +150,7 @@ const char*
 config_preference_iterator_default (iterator_t *);
 
 int
-manage_set_config (config_t, const char*, const char *, const char *);
+manage_set_config (config_t, const char*, const char *);
 
 int
 manage_set_config_nvts (config_t, const char*, GPtrArray*);

@@ -41,7 +41,6 @@
    { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
    { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
    { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
-   { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                                       \
    { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                              \
@@ -60,7 +59,6 @@
    { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
    { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
    { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
-   { "scanner", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "scanner_location", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                              \

@@ -701,7 +701,6 @@ modify_config_element_start (gmp_parser_t *gmp_parser, const gchar *name,
  * @param[in]  config       The config to modify.
  * @param[in]  name         The name to set or NULL to keep old value.
  * @param[in]  comment      The comment to set or NULL to keep old value.
- * @param[in]  scanner_id   The scanner ID to set or NULL to keep old value.
  * @param[in]  gmp_parser   GMP parser.
  * @param[out] error        GError output.
  * 
@@ -711,31 +710,16 @@ static int
 modify_config_handle_basic_fields (config_t config,
                                    const char *name,
                                    const char *comment,
-                                   const char *scanner_id,
                                    gmp_parser_t *gmp_parser,
                                    GError **error)
 {
-  switch (manage_set_config (config, name, comment, scanner_id))
+  switch (manage_set_config (config, name, comment))
     {
       case 0:
         return 0;
       case 1:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
           (-1, XML_ERROR_SYNTAX ("modify_config", "Name must be unique"));
-        return -1;
-      case 2:
-        if (send_find_error_to_client ("modify_config",
-                                       "scanner",
-                                       scanner_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return -1;
-          }
-        return -1;
-      case 3:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
         return -1;
       case -1:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
@@ -1072,7 +1056,6 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
          (config,
           text_or_null (entity_child (entity, "name")),
           text_or_null (entity_child (entity, "comment")),
-          text_or_null (entity_child (entity, "scanner")),
           gmp_parser,
           error))
     {
