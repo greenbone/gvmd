@@ -178,7 +178,6 @@ attr_or_null (entity_t entity, const gchar *name)
  * @param[out] config_id             Address for config ID, or NULL.
  * @param[out] name                  Address for name.
  * @param[out] comment               Address for comment.
- * @param[out] type                  Address for type.
  * @param[out] usage_type            Address for usage type.
  * @param[out] all_selector          True if ALL_SELECTOR was present.
  * @param[out] import_nvt_selectors  Address for selectors.
@@ -188,14 +187,14 @@ attr_or_null (entity_t entity, const gchar *name)
  */
 int
 parse_config_entity (entity_t config, const char **config_id, char **name,
-                     char **comment, char **type, char **usage_type,
+                     char **comment, char **usage_type,
                      int *all_selector,
                      array_t **import_nvt_selectors,
                      array_t **import_preferences)
 {
   entity_t entity, preferences, nvt_selectors;
 
-  *name = *comment = *type = NULL;
+  *name = *comment = NULL;
   *all_selector = 0;
 
   if (config_id)
@@ -208,10 +207,6 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
   entity = entity_child (config, "comment");
   if (entity)
     *comment = entity_text (entity);
-
-  entity = entity_child (config, "type");
-  if (entity)
-    *type = entity_text (entity);
 
   if (usage_type)
     {
@@ -307,8 +302,7 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
 
           preference_nvt_oid = attr_or_null (nvt, "oid");
 
-          if ((*type == NULL || strcmp (*type, "0") == 0)
-              && preference_nvt_oid
+          if ( preference_nvt_oid
               && strcmp (preference_nvt_oid, ""))
             {
               /* Preference in an OpenVAS config:
@@ -400,7 +394,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
     {
       config_t new_config;
       const char *usage_type_text;
-      char *created_name, *comment, *type, *import_name;
+      char *created_name, *comment, *import_name;
       entity_t usage_type;
       array_t *import_nvt_selectors, *import_preferences;
       int all_selector;
@@ -420,7 +414,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Get the config data from the XML. */
 
-      if (parse_config_entity (config, NULL, &import_name, &comment, &type,
+      if (parse_config_entity (config, NULL, &import_name, &comment,
                                NULL, &all_selector, &import_nvt_selectors,
                                &import_preferences))
         {

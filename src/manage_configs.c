@@ -142,7 +142,7 @@ update_config_from_file (config_t config, const gchar *path)
 {
   entity_t entity;
   array_t *nvt_selectors, *preferences;
-  char *comment, *name, *type, *usage_type;
+  char *comment, *name, *usage_type;
   const char *config_id;
   int all_selector;
 
@@ -155,7 +155,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  switch (parse_config_entity (entity, &config_id, &name, &comment, &type,
+  switch (parse_config_entity (entity, &config_id, &name, &comment,
                                &usage_type, &all_selector, &nvt_selectors,
                                &preferences))
     {
@@ -174,7 +174,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   /* Update the config. */
 
-  update_config (config, type, name, comment, usage_type, all_selector,
+  update_config (config, name, comment, usage_type, all_selector,
                  nvt_selectors, preferences);
 
   /* Cleanup. */
@@ -198,7 +198,7 @@ create_config_from_file (const gchar *path)
 {
   entity_t config;
   array_t *nvt_selectors, *preferences;
-  char *created_name, *comment, *name, *type, *usage_type;
+  char *created_name, *comment, *name, *usage_type;
   const char *config_id;
   config_t new_config;
   int all_selector;
@@ -212,7 +212,7 @@ create_config_from_file (const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  switch (parse_config_entity (config, &config_id, &name, &comment, &type,
+  switch (parse_config_entity (config, &config_id, &name, &comment,
                                &usage_type, &all_selector, &nvt_selectors,
                                &preferences))
     {

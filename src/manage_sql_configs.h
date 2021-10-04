@@ -26,7 +26,7 @@
  */
 #define CONFIG_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "nvt_selector", "families_total",             \
-   "nvts_total", "families_trend", "nvts_trend", "type", "usage_type",        \
+   "nvts_total", "families_trend", "nvts_trend", "usage_type",                \
    "predefined", NULL }
 
 /**
@@ -40,7 +40,6 @@
    { "nvt_count", "nvts_total", KEYWORD_TYPE_INTEGER},                        \
    { "families_growing", "families_trend", KEYWORD_TYPE_INTEGER},             \
    { "nvts_growing", "nvts_trend", KEYWORD_TYPE_INTEGER },                    \
-   { "type", NULL, KEYWORD_TYPE_INTEGER },                                    \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                                       \
    { "usage_type", NULL, KEYWORD_TYPE_STRING },                               \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                              \
@@ -93,7 +92,7 @@ config_updated_in_feed (config_t, const gchar *);
 
 void
 update_config (config_t, const gchar *, const gchar *, const gchar *,
-               const gchar *, int, const array_t*, const array_t*);
+               int, const array_t*, const array_t*);
 
 void
 check_db_configs ();

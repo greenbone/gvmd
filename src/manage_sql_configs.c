@@ -1646,7 +1646,7 @@ update_nvt_family (const char *oid, const char *old_family,
   iterator_t rows;
 
   ret = 0;
-  init_iterator (&rows, "SELECT id FROM configs WHERE type = 0;");
+  init_iterator (&rows, "SELECT id FROM configs;");
   while (next (&rows))
     if (config_update_nvt_family (iterator_int64 (&rows, 0), oid, old_family,
                                   new_family))
@@ -2435,7 +2435,6 @@ create_config_internal (int check_access, const char *config_id,
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  gchar *quoted_type;
   const char *actual_usage_type;
   char *selector_uuid;
   unsigned int num = 1;
@@ -2470,7 +2469,6 @@ create_config_internal (int check_access, const char *config_id,
 
   candidate_name = g_strdup (proposed_name);
   quoted_candidate_name = sql_quote (candidate_name);
-  quoted_type = g_strdup ("0");
   if (usage_type && strcasecmp (usage_type, "policy") == 0)
     actual_usage_type = "policy";
   else
@@ -2490,7 +2488,7 @@ create_config_internal (int check_access, const char *config_id,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " type, creation_time, modification_time, usage_type, predefined)"
+           " creation_time, modification_time, usage_type, predefined)"
            " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', '%s', m_now (), m_now (), '%s', %i);",
@@ -2501,14 +2499,13 @@ create_config_internal (int check_access, const char *config_id,
            current_credentials.uuid,
            selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
            quoted_comment,
-           quoted_type,
            actual_usage_type,
            predefined);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " type, creation_time, modification_time, usage_type, predefined)"
+         " creation_time, modification_time, usage_type, predefined)"
          " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
          " '%s', '', '%s', m_now (), m_now (), '%s', %i);",
@@ -2518,11 +2515,9 @@ create_config_internal (int check_access, const char *config_id,
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
-         quoted_type,
          actual_usage_type,
          predefined);
   g_free (quoted_candidate_name);
-  g_free (quoted_type);
 
   /* Insert the selectors into the nvt_selectors table. */
 
@@ -2838,7 +2833,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   ret = copy_resource_lock ("config", name, comment, config_id,
                             " family_count, nvt_count, families_growing,"
-                            " nvts_growing, type, usage_type",
+                            " nvts_growing, usage_type",
                             1, &new, &old);
   if (ret)
     {
@@ -3003,11 +2998,11 @@ delete_config (const char *config_id, int ultimate)
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
-           "  nvt_count, families_growing, nvts_growing, type,"
+           "  nvt_count, families_growing, nvts_growing,"
            "  predefined, creation_time, modification_time,"
            "  scanner_location, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing, type,"
+           "        nvt_count, families_growing, nvts_growing,"
            "        predefined, creation_time, modification_time,"
            "        " G_STRINGIFY (LOCATION_TABLE) ", usage_type"
            " FROM configs WHERE id = %llu;",
@@ -3219,22 +3214,6 @@ config_iterator_nvts_growing (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-  return ret;
-}
-
-/**
- * @brief Get the type from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Config type.
- */
-int
-config_iterator_type (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -4215,9 +4194,6 @@ update_config_cache (iterator_t *configs)
   gchar *quoted_selector, *quoted_name;
   int families_growing;
 
-  if (config_iterator_type (configs) > 0)
-    return;
-
   quoted_name = sql_quote (get_iterator_name (configs));
   selector = config_iterator_nvt_selector (configs);
   families_growing = nvt_selector_families_growing (selector);
@@ -4357,7 +4333,6 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @brief Update a config from an XML file.
  *
  * @param[in]  config       Existing config.
- * @param[in]  type         New config type.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
  * @param[in]  usage_type   New usage type.
@@ -4366,13 +4341,13 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  preferences   New preferences.
  */
 void
-update_config (config_t config, const gchar *type, const gchar *name,
+update_config (config_t config, const gchar *name,
                const gchar *comment, const gchar *usage_type,
                int all_selector,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_type, *actual_usage_type;
+  gchar *quoted_name, *quoted_comment, *actual_usage_type;
 
   sql_begin_immediate ();
 
@@ -4383,59 +4358,53 @@ update_config (config_t config, const gchar *type, const gchar *name,
 
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment ? comment : "");
-  quoted_type = sql_quote (type);
   sql ("UPDATE configs"
-       " SET name = '%s', comment = '%s', type = '%s', usage_type = '%s',"
+       " SET name = '%s', comment = '%s', usage_type = '%s',"
        " predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
-       quoted_type,
        actual_usage_type,
        config);
   g_free (quoted_name);
   g_free (quoted_comment);
-  g_free (quoted_type);
 
   /* Replace the NVT selectors. */
 
-  if (type == NULL || strcmp (type, "0") == 0)
+  char *selector_uuid;
+
+  if (all_selector)
+    selector_uuid = NULL;
+  else
     {
-      char *selector_uuid;
-
-      if (all_selector)
-        selector_uuid = NULL;
-      else
+      selector_uuid = gvm_uuid_make ();
+      if (selector_uuid == NULL)
         {
-          selector_uuid = gvm_uuid_make ();
-          if (selector_uuid == NULL)
-            {
-              g_warning ("%s: failed to allocate UUID", __func__);
-              sql_rollback ();
-              return;
-            }
-        }
-
-      sql ("DELETE FROM nvt_selectors"
-           " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
-           " AND name = (SELECT nvt_selector FROM configs"
-           "             WHERE id = %llu);",
-           config);
-
-      sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
-           selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
-           config);
-
-      if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors, 0))
-        {
-          g_warning ("%s: Error in feed config NVT selector", __func__);
-          free (selector_uuid);
+          g_warning ("%s: failed to allocate UUID", __func__);
           sql_rollback ();
           return;
         }
-
-      free (selector_uuid);
     }
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " AND name = (SELECT nvt_selector FROM configs"
+       "             WHERE id = %llu);",
+       config);
+
+  sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
+       selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
+       config);
+
+  if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors, 0))
+    {
+      g_warning ("%s: Error in feed config NVT selector", __func__);
+      free (selector_uuid);
+      sql_rollback ();
+      return;
+    }
+
+  free (selector_uuid);
 
   /* Replace the preferences. */
 
