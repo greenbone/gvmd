@@ -1755,7 +1755,7 @@ target_login_port (target_t, const char*);
  * These are here because they need definitions that are still in manage.h. */
 
 int
-create_task_check_config_scanner_type (scanner_t);
+create_task_check_scanner_type (scanner_t);
 
 int
 modify_task_check_config_scanner (task_t, const char *, const char *);

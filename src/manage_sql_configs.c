@@ -2716,7 +2716,7 @@ config_nvt_timeout (config_t config, const char *oid)
  * @return 1 if scanner type is valid, 0 otherwise.
  */
 int
-create_task_check_config_scanner_type (scanner_t scanner)
+create_task_check_scanner_type (scanner_t scanner)
 {
   int stype;
 

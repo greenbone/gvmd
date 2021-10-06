@@ -21816,7 +21816,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              if (!create_task_check_config_scanner_type (scanner))
+              if (!create_task_check_scanner_type (scanner))
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
