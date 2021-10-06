@@ -2264,7 +2264,6 @@ typedef struct
   int family_selection_growing;        ///< Whether families in selection grow.
   char *family_selection_growing_text; ///< Text version of above.
   char *name;                          ///< New name for config.
-  char *scanner_id;                    ///< New scanner UUID for config.
   array_t *nvt_selection;              ///< OID array. New NVT set for config.
   char *nvt_selection_family;          ///< Family of NVT selection.
   char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
@@ -8508,6 +8507,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                             "<preference>"
                             "<nvt oid=\"%s\"><name>%s</name></nvt>"
                             "<id>%s</id>"
+                            "<hr_name>%s</hr_name>"
                             "<name>%s</name>"
                             "<type>%s</type>",
                             oid ? oid : "",
@@ -11546,7 +11546,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START ("config");
   while (1)
     {
-      int config_nvts_growing, config_families_growing, config_type;
+      int config_nvts_growing, config_families_growing;
       const char *selector, *usage_type;
       config_t config;
 
@@ -11565,7 +11565,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
       selector = config_iterator_nvt_selector (&configs);
       config = get_iterator_resource (&configs);
       config_nvts_growing = config_iterator_nvts_growing (&configs);
-      config_type = config_iterator_type (&configs);
       usage_type = config_iterator_usage_type (&configs);
       config_families_growing = config_iterator_families_growing
                                  (&configs);
@@ -11578,19 +11577,17 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "<nvt_count>"
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
-                               "<type>%i</type>"
+                               "<type>0</type>"
                                "<usage_type>%s</usage_type>"
                                "<predefined>%i</predefined>",
                                config_iterator_family_count (&configs),
                                config_families_growing,
                                config_iterator_nvt_count (&configs),
                                config_nvts_growing,
-                               config_type,
                                usage_type,
                                config_iterator_predefined (&configs));
 
-      if (config_type == 0 && (get_configs_data->families
-                               || get_configs_data->get.details))
+      if (get_configs_data->families || get_configs_data->get.details)
         {
           iterator_t families;
           int max_nvt_count = 0, known_nvt_count = 0;
@@ -11656,62 +11653,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
             known_nvt_count);
         }
 
-      if (config_type > 0)
-        {
-          iterator_t prefs;
-          scanner_t scanner;
-          char *s_uuid, *s_name;
-
-          assert (config);
-          scanner = config_iterator_scanner (&configs);
-
-          if (config_iterator_scanner_trash (&configs))
-            {
-              s_uuid = trash_scanner_uuid (scanner);
-              s_name = trash_scanner_name (scanner);
-            }
-          else
-            {
-              s_uuid = scanner_uuid (scanner);
-              s_name = scanner_name (scanner);
-            }
-
-          SENDF_TO_CLIENT_OR_FAIL ("<scanner id='%s'>"
-                                   "%s"
-                                   "<trash>%d</trash>"
-                                   "</scanner>",
-                                   s_uuid, s_name,
-                                   config_iterator_scanner_trash (&configs));
-
-          g_free (s_uuid);
-          g_free (s_name);
-          SEND_TO_CLIENT_OR_FAIL ("<preferences>");
-
-          init_config_preference_iterator (&prefs, config);
-          while (next (&prefs))
-            {
-              const char *name, *value, *type, *def;
-
-              name = config_preference_iterator_name (&prefs);
-              value = config_preference_iterator_value (&prefs);
-              def = config_preference_iterator_default (&prefs);
-              type = config_preference_iterator_type (&prefs);
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<preference>"
-                "<nvt oid=\"\"><name/></nvt>"
-                "<id/>"
-                "<name>%s</name>"
-                "<type>osp_%s</type>"
-                "<value>%s</value>"
-                "<default>%s</default>"
-                "</preference>",
-                name, type, value ?: "", def);
-            }
-          cleanup_iterator (&prefs);
-          SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-        }
-      else if (get_configs_data->preferences
-               || get_configs_data->get.details)
+      if (get_configs_data->preferences || get_configs_data->get.details)
         {
           iterator_t prefs;
 
@@ -11758,7 +11700,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</preferences>");
         }
 
-      if (config_type == 0 && get_configs_data->get.details)
+      if (get_configs_data->get.details)
         {
           iterator_t selectors;
 
@@ -15351,31 +15293,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
       count++;
       if (get_scanners_data->get.details)
         {
-          iterator_t configs, tasks;
-
-          SEND_TO_CLIENT_OR_FAIL ("<configs>");
-          init_scanner_config_iterator (&configs,
-                                        get_iterator_resource (&scanners));
-          while (next (&configs))
-            {
-              if (scanner_task_iterator_readable (&configs) == 0)
-                /* Only show configs the user may see. */
-                continue;
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<config id=\"%s\">"
-                "<name>%s</name>",
-                scanner_config_iterator_uuid (&configs),
-                scanner_config_iterator_name (&configs));
-
-              if (scanner_config_iterator_readable (&configs))
-                SEND_TO_CLIENT_OR_FAIL ("</config>");
-              else
-                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                        "</config>");
-            }
-          cleanup_iterator (&configs);
-          SEND_TO_CLIENT_OR_FAIL ("</configs>");
+          iterator_t tasks;
 
           SEND_TO_CLIENT_OR_FAIL ("<tasks>");
           init_scanner_task_iterator (&tasks,
@@ -17181,7 +17099,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "<usage_type>%s</usage_type>"
                        "<config id=\"%s\">"
                        "<name>%s</name>"
-                       "<type>%i</type>"
                        "<trash>%i</trash>"
                        "%s"
                        "</config>"
@@ -17211,7 +17128,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        task_iterator_usage_type (&tasks),
                        config_uuid ?: "",
                        config_name_escaped ?: "",
-                       config_type (task_config (index)),
                        task_config_in_trash (index),
                        config_available ? "" : "<permissions/>",
                        task_target_uuid ?: "",
@@ -21900,7 +21816,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              if (!create_task_check_config_scanner (config, scanner))
+              if (!create_task_check_scanner_type (scanner))
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",

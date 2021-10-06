@@ -36,6 +36,7 @@
  * @param[in]  nvt_oid   OID of NVT of preference.
  * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
  * @param[in]  default_value   Default value of preference.
+ * @param[in]  hr_name   The hr_name of the nvt_preference.
  * @param[in]  free_strings Whether string fields are freed by preference_free.
  *
  * @return Newly allocated preference.
@@ -43,7 +44,7 @@
 gpointer
 preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
                 char *nvt_oid, array_t *alts, char* default_value,
-                int free_strings)
+                char *hr_name, int free_strings)
 {
   preference_t *preference;
 
@@ -56,6 +57,7 @@ preference_new (char *id, char *name, char *type, char *value, char *nvt_name,
   preference->nvt_oid = nvt_oid;
   preference->alts = alts;
   preference->default_value = default_value;
+  preference->hr_name = hr_name;
   preference->free_strings = free_strings;
 
   return preference;

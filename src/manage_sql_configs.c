@@ -970,10 +970,6 @@ manage_set_config_families (config_t config,
       return 1;
     }
 
-  if (config_type (config) > 0)
-    {
-      return 0;
-    }
   constraining = config_families_growing (config);
 
   if (constraining + grow_families == 1)
@@ -1650,7 +1646,7 @@ update_nvt_family (const char *oid, const char *old_family,
   iterator_t rows;
 
   ret = 0;
-  init_iterator (&rows, "SELECT id FROM configs WHERE type = 0;");
+  init_iterator (&rows, "SELECT id FROM configs;");
   while (next (&rows))
     if (config_update_nvt_family (iterator_int64 (&rows, 0), oid, old_family,
                                   new_family))
@@ -2184,11 +2180,11 @@ get_nvt_preference_by_id (const char *nvt_oid,
                           const char *value)
 {
   preference_t *new_pref;
-  char *full_name, *id, *name, *type, *nvt_name, *default_value;
+  char *full_name, *id, *name, *type, *nvt_name, *default_value, *hr_name;
   array_t *alts;
   gchar *quoted_oid, *quoted_id;
 
-  full_name = name = type = nvt_name = default_value = NULL;
+  full_name = name = type = nvt_name = default_value = hr_name = NULL;
 
   /* Check parameters */
   if (nvt_oid == NULL)
@@ -2279,6 +2275,7 @@ get_nvt_preference_by_id (const char *nvt_oid,
                              strdup (nvt_oid),
                              alts,
                              default_value,
+                             hr_name,
                              1);
 
   return new_pref;
@@ -2289,14 +2286,12 @@ get_nvt_preference_by_id (const char *nvt_oid,
  *
  * @param[in]  config       Config.
  * @param[in]  preferences  Preferences.
- * @param[in]  config_type  Config type.
  *
  * @return 0 success, -1 error, -4 input error.
  */
 static int
 config_insert_preferences (config_t config,
-                           const array_t* preferences /* preference_t. */,
-                           const char* config_type)
+                           const array_t* preferences /* preference_t. */)
 {
   int index = 0;
   const preference_t *preference;
@@ -2318,8 +2313,7 @@ config_insert_preferences (config_t config,
 
             /* Special Timeout preference. */
 
-            if (preference->nvt_oid == NULL
-                && (config_type == NULL || strcmp (config_type, "0") == 0))
+            if (preference->nvt_oid == NULL)
               return -4;
 
             quoted_nvt_oid = sql_quote (preference->nvt_oid);
@@ -2342,8 +2336,7 @@ config_insert_preferences (config_t config,
 
             /* Presume NVT or OSP preference. */
 
-            if (preference->nvt_oid == NULL
-                && (config_type == NULL || strcmp (config_type, "0") == 0))
+            if (preference->nvt_oid == NULL)
               return -4;
 
             value = g_string_new (preference->value);
@@ -2366,32 +2359,18 @@ config_insert_preferences (config_t config,
                               ? sql_quote (preference->default_value)
                               : NULL;
 
-            if (config_type == NULL || strcmp (config_type, "0") == 0)
-              {
-                /* NVT preference */
-                /* OID:PrefID:PrefType:PrefName value */
-                sql ("INSERT INTO config_preferences"
-                     " (config, type, name, value)"
-                     " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s');",
-                     config,
-                     quoted_nvt_oid,
-                     quoted_preference_id,
-                     quoted_type,
-                     quoted_preference_name,
-                     quoted_value);
-              }
-            else
-              {
-                /* OSP preference */
-                sql ("INSERT into config_preferences"
-                     " (config, type, name, value, default_value)"
-                     " VALUES (%llu, '%s', '%s', '%s', '%s');",
-                     config,
-                     quoted_type,
-                     quoted_preference_name,
-                     quoted_value,
-                     quoted_default);
-              }
+            /* NVT preference */
+            /* OID:PrefID:PrefType:PrefName value */
+            sql ("INSERT INTO config_preferences"
+                 " (config, type, name, value)"
+                 " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s');",
+                 config,
+                 quoted_nvt_oid,
+                 quoted_preference_id,
+                 quoted_type,
+                 quoted_preference_name,
+                 quoted_value);
+
             g_free (quoted_nvt_oid);
             g_free (quoted_preference_name);
             g_free (quoted_type);
@@ -2433,7 +2412,6 @@ config_insert_preferences (config_t config,
  * @param[in]   all_selector   Whether to use "all" selector instead of selectors.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
- * @param[in]   config_type    Config type.
  * @param[in]   usage_type     The usage type ("scan" or "policy")
  * @param[in]   allow_errors   Whether certain errors are allowed.
  * @param[in]   predefined     Whether config is predefined.
@@ -2451,13 +2429,12 @@ create_config_internal (int check_access, const char *config_id,
                         int all_selector,
                         const array_t *selectors /* nvt_selector_t. */,
                         const array_t *preferences /* preference_t. */,
-                        const char *config_type, const char *usage_type,
+                        const char *usage_type,
                         int allow_errors, int predefined, config_t *config,
                         char **name)
 {
   int ret;
   gchar *quoted_comment, *candidate_name, *quoted_candidate_name;
-  gchar *quoted_type;
   const char *actual_usage_type;
   char *selector_uuid;
   unsigned int num = 1;
@@ -2492,7 +2469,6 @@ create_config_internal (int check_access, const char *config_id,
 
   candidate_name = g_strdup (proposed_name);
   quoted_candidate_name = sql_quote (candidate_name);
-  quoted_type = config_type ? sql_quote (config_type) : g_strdup ("0");
   if (usage_type && strcasecmp (usage_type, "policy") == 0)
     actual_usage_type = "policy";
   else
@@ -2512,7 +2488,7 @@ create_config_internal (int check_access, const char *config_id,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " type, creation_time, modification_time, usage_type, predefined)"
+           " creation_time, modification_time, usage_type, predefined)"
            " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
            " '%s', '%s', '%s', m_now (), m_now (), '%s', %i);",
@@ -2523,14 +2499,13 @@ create_config_internal (int check_access, const char *config_id,
            current_credentials.uuid,
            selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
            quoted_comment,
-           quoted_type,
            actual_usage_type,
            predefined);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " type, creation_time, modification_time, usage_type, predefined)"
+         " creation_time, modification_time, usage_type, predefined)"
          " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
          " '%s', '', '%s', m_now (), m_now (), '%s', %i);",
@@ -2540,17 +2515,15 @@ create_config_internal (int check_access, const char *config_id,
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
-         quoted_type,
          actual_usage_type,
          predefined);
   g_free (quoted_candidate_name);
-  g_free (quoted_type);
 
   /* Insert the selectors into the nvt_selectors table. */
 
   *config = sql_last_insert_id ();
 
-  if (selector_uuid && (config_type == NULL || strcmp (config_type, "0") == 0))
+  if (selector_uuid)
     {
       if ((ret = insert_nvt_selectors (selector_uuid, selectors, allow_errors)))
         {
@@ -2558,12 +2531,12 @@ create_config_internal (int check_access, const char *config_id,
           free (selector_uuid);
           return ret;
         }
+      free (selector_uuid);
     }
-  free (selector_uuid);
 
   /* Insert the preferences into the config_preferences table. */
 
-  if ((ret = config_insert_preferences (*config, preferences, config_type)))
+  if ((ret = config_insert_preferences (*config, preferences)))
     {
       sql_rollback ();
       return ret;
@@ -2591,7 +2564,6 @@ create_config_internal (int check_access, const char *config_id,
  * @param[in]   all_selector   Whether to use "all" selector instead of selectors.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
- * @param[in]   config_type    Config type.
  * @param[in]   usage_type     The usage type ("scan" or "policy")
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
@@ -2605,12 +2577,12 @@ create_config (const char *config_id, const char *proposed_name,
                int make_name_unique, const char *comment, int all_selector,
                const array_t *selectors /* nvt_selector_t. */,
                const array_t *preferences /* preference_t. */,
-               const char *config_type, const char *usage_type,
+               const char *usage_type,
                config_t *config, char **name)
 {
   return create_config_internal (1, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, 1,
+                                 usage_type, 1,
                                  0, /* Predefined. */
                                  config, name);
 }
@@ -2628,7 +2600,6 @@ create_config (const char *config_id, const char *proposed_name,
  * @param[in]   all_selector   Whether to use "all" selector instead of selectors.
  * @param[in]   selectors      NVT selectors.
  * @param[in]   preferences    Preferences.
- * @param[in]   config_type    Config type.
  * @param[in]   usage_type     The usage type ("scan" or "policy")
  * @param[out]  config         On success the config.
  * @param[out]  name           On success the name of the config.
@@ -2643,12 +2614,12 @@ create_config_no_acl (const char *config_id, const char *proposed_name,
                       int all_selector,
                       const array_t *selectors /* nvt_selector_t. */,
                       const array_t *preferences /* preference_t. */,
-                      const char *config_type, const char *usage_type,
+                      const char *usage_type,
                       config_t *config, char **name)
 {
   return create_config_internal (0, config_id, proposed_name, make_name_unique,
                                  comment, all_selector, selectors, preferences,
-                                 config_type, usage_type, 0,
+                                 usage_type, 0,
                                  1, /* Predefined. */
                                  config, name);
 }
@@ -2686,26 +2657,6 @@ char *
 config_uuid (config_t config)
 {
   return sql_string ("SELECT uuid FROM configs WHERE id = %llu;", config);
-}
-
-/**
- * @brief Return the type of a config.
- *
- * @param[in]  config  Config.
- *
- * @return Config type, -1 if not found.
- */
-int
-config_type (config_t config)
-{
-  int type;
-  char *str;
-  str = sql_string ("SELECT type FROM configs WHERE id = %llu;", config);
-  if (!str)
-    return -1;
-  type = atoi (str);
-  g_free (str);
-  return type;
 }
 
 /**
@@ -2758,27 +2709,24 @@ config_nvt_timeout (config_t config, const char *oid)
 }
 
 /**
- * @brief Check scanner and config values match for a task.
+ * @brief Check if the scanner type is valid for a task.
  *
- * @param[in]  config       Scan Config.
  * @param[in]  scanner      Scanner.
  *
- * @return 1 if config and scanner types match, 0 otherwise.
+ * @return 1 if scanner type is valid, 0 otherwise.
  */
 int
-create_task_check_config_scanner (config_t config, scanner_t scanner)
+create_task_check_scanner_type (scanner_t scanner)
 {
-  int ctype, stype;
+  int stype;
 
-  assert (config);
   assert (scanner);
 
-  ctype = config_type (config);
   stype = scanner_type (scanner);
 
-  if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
+  if (stype == SCANNER_TYPE_OPENVAS)
     return 1;
-  if (ctype == 0 && stype == SCANNER_TYPE_OSP_SENSOR)
+  if (stype == SCANNER_TYPE_OSP_SENSOR)
     return 1;
 
   return 0;
@@ -2800,7 +2748,7 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 {
   config_t config = 0;
   scanner_t scanner = 0;
-  int ctype, stype;
+  int stype;
 
   if (config_id == NULL)
     config_id = "0";
@@ -2841,19 +2789,16 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
              * leave the config alone. */
             : (config ? 1 : 0);
 
-  ctype = config_type (config);
-
   /* OpenVAS Scanner with OpenVAS config. */
-  if ((stype == SCANNER_TYPE_OPENVAS)
-      && ctype == 0)
+  if (stype == SCANNER_TYPE_OPENVAS)
     return 0;
 
   /* OSP Sensor with OpenVAS config. */
-  if (stype == SCANNER_TYPE_OSP_SENSOR && ctype == 0)
+  if (stype == SCANNER_TYPE_OSP_SENSOR)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
-  if (scanner == 0 && ctype == 0)
+  if (scanner == 0)
     return 0;
 
   return 1;
@@ -2875,7 +2820,7 @@ int
 copy_config (const char* name, const char* comment, const char *config_id,
              const char* usage_type, config_t* new_config)
 {
-  int ret, type;
+  int ret;
   char *config_selector;
   gchar *quoted_config_selector;
   config_t new, old;
@@ -2888,7 +2833,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   ret = copy_resource_lock ("config", name, comment, config_id,
                             " family_count, nvt_count, families_growing,"
-                            " nvts_growing, type, scanner, usage_type",
+                            " nvts_growing, usage_type",
                             1, &new, &old);
   if (ret)
     {
@@ -2903,17 +2848,6 @@ copy_config (const char* name, const char* comment, const char *config_id,
        " SELECT %llu, type, name, value, default_value"
        " FROM config_preferences"
        " WHERE config = %llu;", new, old);
-
-  type = config_type (new);
-  if (type > 0)
-    {
-      /* Don't create nvt_selector etc,. for non-standard configs
-       * (eg. OSP config.) Only config preferences are copied.
-       */
-      sql_commit ();
-      if (new_config) *new_config = new;
-      return 0;
-    }
 
   sql ("UPDATE configs SET nvt_selector = make_uuid () WHERE id = %llu;",
        new);
@@ -3064,11 +2998,11 @@ delete_config (const char *config_id, int ultimate)
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count,"
-           "  nvt_count, families_growing, nvts_growing, type, scanner,"
+           "  nvt_count, families_growing, nvts_growing,"
            "  predefined, creation_time, modification_time,"
            "  scanner_location, usage_type)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
-           "        nvt_count, families_growing, nvts_growing, type, scanner,"
+           "        nvt_count, families_growing, nvts_growing,"
            "        predefined, creation_time, modification_time,"
            "        " G_STRINGIFY (LOCATION_TABLE) ", usage_type"
            " FROM configs WHERE id = %llu;",
@@ -3280,54 +3214,6 @@ config_iterator_nvts_growing (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-  return ret;
-}
-
-/**
- * @brief Get the type from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Config type.
- */
-int
-config_iterator_type (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
-  return ret;
-}
-
-/**
- * @brief Get the scanner from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Scanner.
- */
-scanner_t
-config_iterator_scanner (iterator_t* iterator)
-{
-  scanner_t ret = 0;
-  if (iterator->done) return 0;
-  ret = iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-  return ret;
-}
-
-/**
- * @brief Get whether scanner is in trash from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Whether Scanner is in trash.
- */
-int
-config_iterator_scanner_trash (iterator_t* iterator)
-{
-  int ret = 0;
-  if (iterator->done) return 0;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
   return ret;
 }
 
@@ -3683,23 +3569,16 @@ modify_config_preference (config_t config, const char* nvt,
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
 
-  if (config_type (config) > 0)
-    sql ("UPDATE config_preferences SET value = '%s'"
-         " WHERE config = %llu AND name = '%s';",
-         quoted_value, config, quoted_name);
-  else
-    {
-      /* nvt prefs are not present on first modification. */
-      sql ("DELETE FROM config_preferences"
-           " WHERE config = %llu AND type %s AND name = '%s'",
-           config,
-           nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
-           quoted_name);
-      sql ("INSERT INTO config_preferences"
-           " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
-           config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
-           quoted_value);
-    }
+  /* nvt prefs are not present on first modification. */
+  sql ("DELETE FROM config_preferences"
+       " WHERE config = %llu AND type %s AND name = '%s'",
+       config,
+       nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
+       quoted_name);
+  sql ("INSERT INTO config_preferences"
+       " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
+       config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
+       quoted_value);
 
   return 0;
 }
@@ -3773,19 +3652,16 @@ manage_set_config_preference (config_t config, const char* nvt,
 }
 
 /**
- * @brief Set the name, comment and scanner of a config.
+ * @brief Set the name and comment of a config.
  *
  * @param[in]  config       Config to modify.
  * @param[in]  name         New name, not updated if NULL.
  * @param[in]  comment      New comment, not updated if NULL.
- * @param[in]  scanner_id   UUID of new scanner, not updated if NULL.
  *
- * @return 0 success, 1 config with new name exists already, 2 scanner doesn't
- *         exist, 3 modification not allowed while config is in use, -1 error.
+ * @return 0 success, 1 config with new name exists already.
  */
 int
-manage_set_config (config_t config, const char *name, const char *comment,
-                   const char *scanner_id)
+manage_set_config (config_t config, const char *name, const char *comment)
 {
   assert (current_credentials.uuid);
 
@@ -3808,22 +3684,6 @@ manage_set_config (config_t config, const char *name, const char *comment,
       sql ("UPDATE configs SET comment = '%s', modification_time = m_now ()"
            " WHERE id = %llu;", quoted_comment, config);
       g_free (quoted_comment);
-    }
-  if (scanner_id)
-    {
-      if (config_in_use (config))
-        {
-          return 3;
-        }
-      scanner_t scanner = 0;
-
-      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners")
-          || scanner == 0)
-        {
-          return 2;
-        }
-      sql ("UPDATE configs SET scanner = %llu, modification_time = m_now ()"
-           " WHERE id = %llu;", scanner, config);
     }
   return 0;
 }
@@ -4334,9 +4194,6 @@ update_config_cache (iterator_t *configs)
   gchar *quoted_selector, *quoted_name;
   int families_growing;
 
-  if (config_iterator_type (configs) > 0)
-    return;
-
   quoted_name = sql_quote (get_iterator_name (configs));
   selector = config_iterator_nvt_selector (configs);
   families_growing = nvt_selector_families_growing (selector);
@@ -4476,7 +4333,6 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @brief Update a config from an XML file.
  *
  * @param[in]  config       Existing config.
- * @param[in]  type         New config type.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
  * @param[in]  usage_type   New usage type.
@@ -4485,13 +4341,13 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  preferences   New preferences.
  */
 void
-update_config (config_t config, const gchar *type, const gchar *name,
+update_config (config_t config, const gchar *name,
                const gchar *comment, const gchar *usage_type,
                int all_selector,
                const array_t* selectors /* nvt_selector_t. */,
                const array_t* preferences /* preference_t. */)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_type, *actual_usage_type;
+  gchar *quoted_name, *quoted_comment, *actual_usage_type;
 
   sql_begin_immediate ();
 
@@ -4502,64 +4358,58 @@ update_config (config_t config, const gchar *type, const gchar *name,
 
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment ? comment : "");
-  quoted_type = sql_quote (type);
   sql ("UPDATE configs"
-       " SET name = '%s', comment = '%s', type = '%s', usage_type = '%s',"
+       " SET name = '%s', comment = '%s', usage_type = '%s',"
        " predefined = 1, modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
-       quoted_type,
        actual_usage_type,
        config);
   g_free (quoted_name);
   g_free (quoted_comment);
-  g_free (quoted_type);
 
   /* Replace the NVT selectors. */
 
-  if (type == NULL || strcmp (type, "0") == 0)
+  char *selector_uuid;
+
+  if (all_selector)
+    selector_uuid = NULL;
+  else
     {
-      char *selector_uuid;
-
-      if (all_selector)
-        selector_uuid = NULL;
-      else
+      selector_uuid = gvm_uuid_make ();
+      if (selector_uuid == NULL)
         {
-          selector_uuid = gvm_uuid_make ();
-          if (selector_uuid == NULL)
-            {
-              g_warning ("%s: failed to allocate UUID", __func__);
-              sql_rollback ();
-              return;
-            }
-        }
-
-      sql ("DELETE FROM nvt_selectors"
-           " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
-           " AND name = (SELECT nvt_selector FROM configs"
-           "             WHERE id = %llu);",
-           config);
-
-      sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
-           selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
-           config);
-
-      if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors, 0))
-        {
-          g_warning ("%s: Error in feed config NVT selector", __func__);
-          free (selector_uuid);
+          g_warning ("%s: failed to allocate UUID", __func__);
           sql_rollback ();
           return;
         }
-
-      free (selector_uuid);
     }
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+       " AND name = (SELECT nvt_selector FROM configs"
+       "             WHERE id = %llu);",
+       config);
+
+  sql ("UPDATE configs SET nvt_selector = '%s' WHERE id = %llu;",
+       selector_uuid ? selector_uuid : MANAGE_NVT_SELECTOR_UUID_ALL,
+       config);
+
+  if (selector_uuid && insert_nvt_selectors (selector_uuid, selectors, 0))
+    {
+      g_warning ("%s: Error in feed config NVT selector", __func__);
+      free (selector_uuid);
+      sql_rollback ();
+      return;
+    }
+
+  free (selector_uuid);
 
   /* Replace the preferences. */
 
   sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
-  if (config_insert_preferences (config, preferences, type))
+  if (config_insert_preferences (config, preferences))
     {
       g_warning ("%s: Error in feed config preference", __func__);
       sql_rollback ();

@@ -45,7 +45,7 @@ typedef struct
 
 int
 create_config (const char*, const char*, int, const char*, int, const array_t*,
-               const array_t*, const char*, const char*, config_t*, char**);
+               const array_t*, const char*, config_t*, char**);
 
 int
 copy_config (const char*, const char*, const char *, const char *, config_t*);
@@ -58,9 +58,6 @@ find_config_with_permission (const char*, config_t*, const char *);
 
 char *
 config_uuid (config_t);
-
-int
-config_type (config_t);
 
 char *
 config_nvt_timeout (config_t, const char *);
@@ -87,13 +84,7 @@ int
 config_iterator_nvts_growing (iterator_t*);
 
 int
-config_iterator_type (iterator_t*);
-
-int
 config_iterator_families_growing (iterator_t*);
-
-int
-config_iterator_scanner_trash (iterator_t*);
 
 const char*
 config_iterator_usage_type (iterator_t*);
@@ -156,7 +147,7 @@ const char*
 config_preference_iterator_default (iterator_t *);
 
 int
-manage_set_config (config_t, const char*, const char *, const char *);
+manage_set_config (config_t, const char*, const char *);
 
 int
 manage_set_config_nvts (config_t, const char*, GPtrArray*);

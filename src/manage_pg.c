@@ -2238,8 +2238,6 @@ create_tables ()
        "  nvt_count integer,"
        "  families_growing integer,"
        "  nvts_growing integer,"
-       "  type integer,"
-       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer,"
@@ -2256,8 +2254,6 @@ create_tables ()
        "  nvt_count integer,"
        "  families_growing integer,"
        "  nvts_growing integer,"
-       "  type integer,"
-       "  scanner integer," /* REFERENCES scanners (id) */
        "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer,"
