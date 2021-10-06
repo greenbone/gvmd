@@ -8507,7 +8507,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
                             "<preference>"
                             "<nvt oid=\"%s\"><name>%s</name></nvt>"
                             "<id>%s</id>"
-			    "<hr_name>%s</hr_name>"
+                            "<hr_name>%s</hr_name>"
                             "<name>%s</name>"
                             "<type>%s</type>",
                             oid ? oid : "",
@@ -11577,7 +11577,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "<nvt_count>"
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
-			       "<type>0</type>"
+                               "<type>0</type>"
                                "<usage_type>%s</usage_type>"
                                "<predefined>%i</predefined>",
                                config_iterator_family_count (&configs),
@@ -21816,7 +21816,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              if (!create_task_check_config_scanner (scanner))
+              if (!create_task_check_config_scanner_type (scanner))
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",

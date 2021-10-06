@@ -2709,14 +2709,14 @@ config_nvt_timeout (config_t config, const char *oid)
 }
 
 /**
- * @brief Check scanner and config values match for a task.
+ * @brief Check if the scanner type is valid for a task.
  *
  * @param[in]  scanner      Scanner.
  *
- * @return 1 if config and scanner types match, 0 otherwise.
+ * @return 1 if scanner type is valid, 0 otherwise.
  */
 int
-create_task_check_config_scanner (scanner_t scanner)
+create_task_check_config_scanner_type (scanner_t scanner)
 {
   int stype;
 

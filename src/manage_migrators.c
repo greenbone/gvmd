@@ -2873,14 +2873,14 @@ migrate_248_to_249 ()
 
   /* Remove config data for OSP-Scanners */
   sql ("DELETE FROM config_preferences_trash WHERE config IN"
-       " (SELECT id FROM configs_trash WHERE usage_type = 'scan' AND type = 1);");
-  sql ("DELETE FROM configs_trash WHERE usage_type = 'scan' AND type = 1;");
+       " (SELECT id FROM configs_trash WHERE type = 1);");
+  sql ("DELETE FROM configs_trash WHERE type = 1;");
   sql ("ALTER TABLE configs_trash DROP COLUMN scanner;");
   sql ("ALTER TABLE configs_trash DROP COLUMN type;");
 
   sql ("DELETE FROM config_preferences WHERE config IN"
-       " (SELECT id FROM configs WHERE usage_type = 'scan' AND type = 1);");
-  sql ("DELETE FROM configs WHERE usage_type = 'scan' AND type = 1;");
+       " (SELECT id FROM configs WHERE type = 1);");
+  sql ("DELETE FROM configs WHERE type = 1;");
   sql ("ALTER TABLE configs DROP COLUMN scanner;");
   sql ("ALTER TABLE configs DROP COLUMN type;");
 
