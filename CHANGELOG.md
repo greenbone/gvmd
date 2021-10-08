@@ -39,7 +39,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+<<<<<<< HEAD
 - Fix resume task. [#1679](https://github.com/greenbone/gvmd/pull/1679)
+=======
+- Ensure gvmd sends error messages if gvmcg fails [#1682](https://github.com/greenbone/gvmd/pull/1682)
+- Fix resume task.
+  [#1679](https://github.com/greenbone/gvmd/pull/1679)
+  [#1695](https://github.com/greenbone/gvmd/pull/1695)
+>>>>>>> fec8a6563 (Consider interrupted status when resumming a task.)
 - Added a dedicated error message for the create ticket dialogue when the create permission permission is missing [#1686](https://github.com/greenbone/gvmd/pull/1686)
 - Fix import of report results / errors without host [#1687](https://github.com/greenbone/gvmd/pull/1687)
 
