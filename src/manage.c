@@ -2423,9 +2423,11 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
       trim_partial_report (global_current_report);
       return 1;
     }
-  else if (status == OSP_SCAN_STATUS_STOPPED)
+  else if (status == OSP_SCAN_STATUS_STOPPED
+           || status == OSP_SCAN_STATUS_INTERRUPTED)
     {
-      g_debug ("%s: Scan %s stopped", __func__, scan_id);
+      g_debug ("%s: Scan %s stopped or interrupted",
+               __func__, scan_id);
       if (osp_delete_scan (connection, scan_id))
         {
           *error = g_strdup ("Failed to delete old report");
