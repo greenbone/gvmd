@@ -45,7 +45,7 @@
 /* Static headers for internal non-SQL functions. */
 
 int
-sync_port_lists_with_feed ();
+sync_port_lists_with_feed (gboolean);
 
 
 /* Port list functions. */
@@ -2596,7 +2596,7 @@ check_db_port_lists ()
 {
   migrate_predefined_port_lists ();
 
-  if (sync_port_lists_with_feed ())
+  if (sync_port_lists_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync port lists with feed", __func__);
 
   /*

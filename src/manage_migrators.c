@@ -2745,6 +2745,154 @@ migrate_244_to_245 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 245 to version 246.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_245_to_246 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 245. */
+
+  if (manage_db_version () != 245)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The support of Business Process Maps has been discontinued. Therefore
+   * any entry in the settings table where "Business Process Map" data are
+   * stored can be deleted
+   */
+
+  /* Delete any setting for "Business Process Maps" . */
+  sql ("DELETE FROM settings WHERE uuid = '3232d608-e5bb-415e-99aa-019f16eede8d';");
+  sql ("DELETE FROM settings WHERE uuid = '3ce2d136-bb52-448a-93f0-20069566f877';");
+
+  /* Set the database version to 246. */
+
+  set_db_version (246);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 246 to version 247.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_246_to_247 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 246. */
+
+  if (manage_db_version () != 246)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Per-user limitations on network interfaces have been removed */
+  sql ("ALTER TABLE users DROP COLUMN ifaces;");
+  sql ("ALTER TABLE users DROP COLUMN ifaces_allow;");
+
+  /* Set the database version to 247. */
+
+  set_db_version (247);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 247 to version 248.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_247_to_248 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 247. */
+
+  if (manage_db_version () != 247)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* OSP-scanners are no longer supported. So delete the
+   * the column hr_name, which was only used by OSP-scanners.
+   */
+  sql ("ALTER TABLE config_preferences DROP COLUMN hr_name;");
+  sql ("ALTER TABLE config_preferences_trash DROP COLUMN hr_name;");
+
+  /* Set the database version to 248. */
+
+  set_db_version (248);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 248 to version 249.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_248_to_249 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 248. */
+
+  if (manage_db_version () != 248)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove config data for OSP-Scanners */
+  sql ("DELETE FROM config_preferences_trash WHERE config IN"
+       " (SELECT id FROM configs_trash WHERE type = 1);");
+  sql ("DELETE FROM configs_trash WHERE type = 1;");
+  sql ("ALTER TABLE configs_trash DROP COLUMN scanner;");
+  sql ("ALTER TABLE configs_trash DROP COLUMN type;");
+
+  sql ("DELETE FROM config_preferences WHERE config IN"
+       " (SELECT id FROM configs WHERE type = 1);");
+  sql ("DELETE FROM configs WHERE type = 1;");
+  sql ("ALTER TABLE configs DROP COLUMN scanner;");
+  sql ("ALTER TABLE configs DROP COLUMN type;");
+
+  /* Set the database version to 249. */
+
+  set_db_version (249);
+
+  sql_commit ();
+
+  return 0;
+}
+
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2797,6 +2945,10 @@ static migrator_t database_migrators[] = {
   {243, migrate_242_to_243},
   {244, migrate_243_to_244},
   {245, migrate_244_to_245},
+  {246, migrate_245_to_246},
+  {247, migrate_246_to_247},
+  {248, migrate_247_to_248},
+  {249, migrate_248_to_249},
   /* End marker. */
   {-1, NULL}};
 

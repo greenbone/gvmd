@@ -88,6 +88,7 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
+#include "gmp_license.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_formats.h"
 #include "gmp_tickets.h"
@@ -1084,8 +1085,6 @@ typedef struct
   array_t *groups;        ///< IDs of groups.
   char *hosts;            ///< Hosts.
   int hosts_allow;        ///< Whether hosts are allowed.
-  char *ifaces;           ///< Interfaces.
-  int ifaces_allow;       ///< Whether interfaces are allowed.
   char *name;             ///< User name.
   char *password;         ///< Password.
   char *comment;          ///< Comment.
@@ -1108,7 +1107,6 @@ create_user_data_reset (create_user_data_t * data)
   g_free (data->password);
   g_free (data->comment);
   g_free (data->hosts);
-  g_free (data->ifaces);
   array_free (data->roles);
   if (data->sources)
     {
@@ -2266,7 +2264,6 @@ typedef struct
   int family_selection_growing;        ///< Whether families in selection grow.
   char *family_selection_growing_text; ///< Text version of above.
   char *name;                          ///< New name for config.
-  char *scanner_id;                    ///< New scanner UUID for config.
   array_t *nvt_selection;              ///< OID array. New NVT set for config.
   char *nvt_selection_family;          ///< Family of NVT selection.
   char *nvt_selection_nvt_oid;         ///< OID during NVT_selection/NVT.
@@ -3021,8 +3018,6 @@ typedef struct
   array_t *groups;           ///< IDs of groups.
   gchar *hosts;              ///< Hosts.
   int hosts_allow;           ///< Whether hosts are allowed.
-  char *ifaces;              ///< Interfaces.
-  int ifaces_allow;          ///< Whether interfaces are allowed.
   gboolean modify_password;  ///< Whether to modify password.
   gchar *name;               ///< User name.
   gchar *new_name;           ///< New user name.
@@ -3049,7 +3044,6 @@ modify_user_data_reset (modify_user_data_t * data)
   g_free (data->password);
   g_free (data->comment);
   g_free (data->hosts);
-  g_free (data->ifaces);
   array_free (data->roles);
   if (data->sources)
     {
@@ -3164,27 +3158,6 @@ stop_task_data_reset (stop_task_data_t *data)
   free (data->task_id);
 
   memset (data, 0, sizeof (stop_task_data_t));
-}
-
-/**
- * @brief Command data for the sync_config command.
- */
-typedef struct
-{
-  char *config_id;               ///< Config UUID.
-} sync_config_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-sync_config_data_reset (sync_config_data_t *data)
-{
-  g_free (data->config_id);
-
-  memset (data, 0, sizeof (sync_config_data_t));
 }
 
 /**
@@ -3387,7 +3360,6 @@ typedef union
   resume_task_data_t resume_task;                     ///< resume_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
-  sync_config_data_t sync_config;                     ///< sync_config
   test_alert_data_t test_alert;                       ///< test_alert
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
   verify_scanner_data_t verify_scanner;               ///< verify_scanner
@@ -3958,12 +3930,6 @@ static stop_task_data_t *stop_task_data
  = (stop_task_data_t*) &(command_data.stop_task);
 
 /**
- * @brief Parser callback data for SYNC_CONFIG.
- */
-static sync_config_data_t *sync_config_data
- = (sync_config_data_t*) &(command_data.sync_config);
-
-/**
  * @brief Parser callback data for TEST_ALERT.
  */
 static test_alert_data_t *test_alert_data
@@ -4294,7 +4260,6 @@ typedef enum
   CLIENT_CREATE_USER_GROUPS,
   CLIENT_CREATE_USER_GROUPS_GROUP,
   CLIENT_CREATE_USER_HOSTS,
-  CLIENT_CREATE_USER_IFACES,
   CLIENT_CREATE_USER_NAME,
   CLIENT_CREATE_USER_PASSWORD,
   CLIENT_CREATE_USER_ROLE,
@@ -4336,6 +4301,7 @@ typedef enum
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
   CLIENT_GET_INFO,
+  CLIENT_GET_LICENSE,
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
@@ -4408,6 +4374,7 @@ typedef enum
   CLIENT_MODIFY_GROUP_COMMENT,
   CLIENT_MODIFY_GROUP_NAME,
   CLIENT_MODIFY_GROUP_USERS,
+  CLIENT_MODIFY_LICENSE,
   CLIENT_MODIFY_NOTE,
   CLIENT_MODIFY_NOTE_ACTIVE,
   CLIENT_MODIFY_NOTE_HOSTS,
@@ -4520,7 +4487,6 @@ typedef enum
   CLIENT_MODIFY_USER_GROUPS,
   CLIENT_MODIFY_USER_GROUPS_GROUP,
   CLIENT_MODIFY_USER_HOSTS,
-  CLIENT_MODIFY_USER_IFACES,
   CLIENT_MODIFY_USER_NAME,
   CLIENT_MODIFY_USER_NEW_NAME,
   CLIENT_MODIFY_USER_PASSWORD,
@@ -4539,7 +4505,6 @@ typedef enum
   CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
-  CLIENT_SYNC_CONFIG,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_REPORT_FORMAT,
   CLIENT_VERIFY_SCANNER,
@@ -4826,7 +4791,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->groups = make_array ();
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
-            create_user_data->ifaces_allow = 0;
           }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
@@ -5290,6 +5254,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
             set_client_state (CLIENT_GET_GROUPS);
+          }
+        else if (strcasecmp ("GET_LICENSE", element_name) == 0)
+          {
+            get_license_start (gmp_parser,
+                               attribute_names,
+                               attribute_values);
+            set_client_state (CLIENT_GET_LICENSE);
           }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
@@ -5786,6 +5757,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_port_list_data->port_list_id);
             set_client_state (CLIENT_MODIFY_PORT_LIST);
           }
+        else if (strcasecmp ("MODIFY_LICENSE", element_name) == 0)
+          {
+            modify_license_start (gmp_parser,
+                                  attribute_names,
+                                  attribute_values);
+            set_client_state (CLIENT_MODIFY_LICENSE);
+          }
         else if (strcasecmp ("MODIFY_NOTE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "note_id",
@@ -5915,12 +5893,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &stop_task_data->task_id);
             set_client_state (CLIENT_STOP_TASK);
-          }
-        else if (strcasecmp ("SYNC_CONFIG", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "config_id",
-                              &sync_config_data->config_id);
-            set_client_state (CLIENT_SYNC_CONFIG);
           }
         else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
@@ -6698,17 +6670,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             /* Init, so that modify_user clears hosts if HOSTS is empty. */
             gvm_append_string (&modify_user_data->hosts, "");
             set_client_state (CLIENT_MODIFY_USER_HOSTS);
-          }
-        else if (strcasecmp ("IFACES", element_name) == 0)
-          {
-            const gchar *attribute;
-            if (find_attribute
-                (attribute_names, attribute_values, "allow", &attribute))
-              modify_user_data->ifaces_allow = strcmp (attribute, "0");
-            else
-              modify_user_data->ifaces_allow = 1;
-            gvm_append_string (&modify_user_data->ifaces, "");
-            set_client_state (CLIENT_MODIFY_USER_IFACES);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_USER_NAME);
@@ -7689,16 +7650,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               create_user_data->hosts_allow = 1;
             set_client_state (CLIENT_CREATE_USER_HOSTS);
           }
-        else if (strcasecmp ("IFACES", element_name) == 0)
-          {
-            const gchar *attribute;
-            if (find_attribute
-                (attribute_names, attribute_values, "allow", &attribute))
-              create_user_data->ifaces_allow = strcmp (attribute, "0");
-            else
-              create_user_data->ifaces_allow = 1;
-            set_client_state (CLIENT_CREATE_USER_IFACES);
-          }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_USER_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
@@ -7736,6 +7687,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_USER_SOURCES_SOURCE);
         else
           set_read_over (gmp_parser);
+        break;
+
+      case CLIENT_MODIFY_LICENSE:
+        modify_license_element_start (gmp_parser, element_name,
+                                      attribute_names, attribute_values);
         break;
 
       case CLIENT_MODIFY_NOTE:
@@ -11590,7 +11546,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START ("config");
   while (1)
     {
-      int config_nvts_growing, config_families_growing, config_type;
+      int config_nvts_growing, config_families_growing;
       const char *selector, *usage_type;
       config_t config;
 
@@ -11609,7 +11565,6 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
       selector = config_iterator_nvt_selector (&configs);
       config = get_iterator_resource (&configs);
       config_nvts_growing = config_iterator_nvts_growing (&configs);
-      config_type = config_iterator_type (&configs);
       usage_type = config_iterator_usage_type (&configs);
       config_families_growing = config_iterator_families_growing
                                  (&configs);
@@ -11622,19 +11577,17 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
                                "<nvt_count>"
                                "%i<growing>%i</growing>"
                                "</nvt_count>"
-                               "<type>%i</type>"
+                               "<type>0</type>"
                                "<usage_type>%s</usage_type>"
                                "<predefined>%i</predefined>",
                                config_iterator_family_count (&configs),
                                config_families_growing,
                                config_iterator_nvt_count (&configs),
                                config_nvts_growing,
-                               config_type,
                                usage_type,
                                config_iterator_predefined (&configs));
 
-      if (config_type == 0 && (get_configs_data->families
-                               || get_configs_data->get.details))
+      if (get_configs_data->families || get_configs_data->get.details)
         {
           iterator_t families;
           int max_nvt_count = 0, known_nvt_count = 0;
@@ -11700,64 +11653,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
             known_nvt_count);
         }
 
-      if (config_type > 0)
-        {
-          iterator_t prefs;
-          scanner_t scanner;
-          char *s_uuid, *s_name;
-
-          assert (config);
-          scanner = config_iterator_scanner (&configs);
-
-          if (config_iterator_scanner_trash (&configs))
-            {
-              s_uuid = trash_scanner_uuid (scanner);
-              s_name = trash_scanner_name (scanner);
-            }
-          else
-            {
-              s_uuid = scanner_uuid (scanner);
-              s_name = scanner_name (scanner);
-            }
-
-          SENDF_TO_CLIENT_OR_FAIL ("<scanner id='%s'>"
-                                   "%s"
-                                   "<trash>%d</trash>"
-                                   "</scanner>",
-                                   s_uuid, s_name,
-                                   config_iterator_scanner_trash (&configs));
-
-          g_free (s_uuid);
-          g_free (s_name);
-          SEND_TO_CLIENT_OR_FAIL ("<preferences>");
-
-          init_config_preference_iterator (&prefs, config);
-          while (next (&prefs))
-            {
-              const char *name, *hr_name, *value, *type, *def;
-
-              hr_name = config_preference_iterator_hr_name (&prefs);
-              name = config_preference_iterator_name (&prefs);
-              value = config_preference_iterator_value (&prefs);
-              def = config_preference_iterator_default (&prefs);
-              type = config_preference_iterator_type (&prefs);
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<preference>"
-                "<nvt oid=\"\"><name/></nvt>"
-                "<hr_name>%s</hr_name>"
-                "<id/>"
-                "<name>%s</name>"
-                "<type>osp_%s</type>"
-                "<value>%s</value>"
-                "<default>%s</default>"
-                "</preference>",
-                hr_name, name, type, value ?: "", def);
-            }
-          cleanup_iterator (&prefs);
-          SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-        }
-      else if (get_configs_data->preferences
-               || get_configs_data->get.details)
+      if (get_configs_data->preferences || get_configs_data->get.details)
         {
           iterator_t prefs;
 
@@ -11804,7 +11700,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</preferences>");
         }
 
-      if (config_type == 0 && get_configs_data->get.details)
+      if (get_configs_data->get.details)
         {
           iterator_t selectors;
 
@@ -15397,31 +15293,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
       count++;
       if (get_scanners_data->get.details)
         {
-          iterator_t configs, tasks;
-
-          SEND_TO_CLIENT_OR_FAIL ("<configs>");
-          init_scanner_config_iterator (&configs,
-                                        get_iterator_resource (&scanners));
-          while (next (&configs))
-            {
-              if (scanner_task_iterator_readable (&configs) == 0)
-                /* Only show configs the user may see. */
-                continue;
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<config id=\"%s\">"
-                "<name>%s</name>",
-                scanner_config_iterator_uuid (&configs),
-                scanner_config_iterator_name (&configs));
-
-              if (scanner_config_iterator_readable (&configs))
-                SEND_TO_CLIENT_OR_FAIL ("</config>");
-              else
-                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                        "</config>");
-            }
-          cleanup_iterator (&configs);
-          SEND_TO_CLIENT_OR_FAIL ("</configs>");
+          iterator_t tasks;
 
           SEND_TO_CLIENT_OR_FAIL ("<tasks>");
           init_scanner_task_iterator (&tasks,
@@ -15447,8 +15319,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           cleanup_iterator (&tasks);
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
         }
-      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
-           || scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
+      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
           && get_scanners_data->get.details)
         {
           char *s_name = NULL, *s_ver = NULL;
@@ -17228,7 +17099,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "<usage_type>%s</usage_type>"
                        "<config id=\"%s\">"
                        "<name>%s</name>"
-                       "<type>%i</type>"
                        "<trash>%i</trash>"
                        "%s"
                        "</config>"
@@ -17258,7 +17128,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        task_iterator_usage_type (&tasks),
                        config_uuid ?: "",
                        config_name_escaped ?: "",
-                       config_type (task_config (index)),
                        task_config_in_trash (index),
                        config_available ? "" : "<permissions/>",
                        task_target_uuid ?: "",
@@ -17527,8 +17396,8 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       iterator_t groups, roles;
-      const char *hosts, *ifaces;
-      int hosts_allow, ifaces_allow;
+      const char *hosts;
+      int hosts_allow;
 
       ret = get_next (&users, &get_users_data->get, &first, &count,
                       init_user_iterator);
@@ -17552,13 +17421,6 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
                                user_iterator_method (&users)
                                 ? user_iterator_method (&users)
                                 : "file");
-
-      /* Interfaces Access */
-      ifaces = user_iterator_ifaces (&users);
-      ifaces_allow = user_iterator_ifaces_allow (&users);
-      SENDF_TO_CLIENT_OR_FAIL ("<ifaces allow=\"%i\">%s</ifaces>",
-                               ifaces_allow,
-                               ifaces ? ifaces : "");
 
       /* User Roles */
       init_user_role_iterator (&roles,
@@ -17734,81 +17596,6 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_END ("vuln", &get_vulns_data->get, count, filtered);
 
   get_vulns_data_reset (get_vulns_data);
-  set_client_state (CLIENT_AUTHENTIC);
-}
-
-/**
- * @brief Handle end of SYNC_CONFIG element.
- *
- * @param[in]  gmp_parser   GMP parser.
- * @param[in]  error        Error parameter.
- */
-static void
-handle_sync_config (gmp_parser_t *gmp_parser, GError **error)
-{
-  assert (current_credentials.username);
-  if (!sync_config_data->config_id)
-    {
-      SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("sync_config",
-                          "SYNC_CONFIG requires a config_id attribute"));
-      sync_config_data_reset (sync_config_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-  switch (sync_config (sync_config_data->config_id))
-    {
-      case 0:
-        log_event ("config", "config", sync_config_data->config_id,
-                   "synchronized");
-        SEND_TO_CLIENT_OR_FAIL (XML_OK ("sync_config"));
-        break;
-      case 1:
-        if (send_find_error_to_client
-             ("sync_config", "config", sync_config_data->config_id, gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 2:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                 ("sync_config", "Config not of type OSP"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 3:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                 ("sync_config", "Config has no scanner"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 4:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                 ("sync_config",
-                                  "Couldn't get parameters from scanner"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case 99:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("sync_config", "Permission denied"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      case -1:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_config"));
-        log_event_fail ("config", "Config", sync_config_data->config_id,
-                        "synchronized");
-        break;
-      default:
-        abort ();
-        break;
-    }
-
-  sync_config_data_reset (sync_config_data);
   set_client_state (CLIENT_AUTHENTIC);
 }
 
@@ -18184,8 +17971,9 @@ gmp_xml_handle_result ()
   // https://www.freebsd.org/cgi/man.cgi?query=strcspn&sektion=3
   // strcspn returns the number of chars spanned so it should be safe
   // without double checking.
-  create_report_data
-    ->result_host[strcspn (create_report_data->result_host, "\n")] = 0;
+  if (create_report_data->result_host)
+    create_report_data
+      ->result_host[strcspn (create_report_data->result_host, "\n")] = 0;
   result->host = create_report_data->result_host;
   result->hostname = create_report_data->result_hostname;
   result->nvt_oid = create_report_data->result_nvt_oid;
@@ -18226,7 +18014,7 @@ gmp_xml_handle_result ()
           detail->ip = g_strdup (result->host);
           detail->name = g_strconcat ("detected_by@", detection->location, NULL);
           detail->source_desc = g_strdup ("create_report_import");
-          detail->source_name = g_strdup (detection->source_oid);
+          detail->source_name = g_strdup (result->nvt_oid);
           detail->source_type = g_strdup ("create_report_import");
           detail->value = g_strdup (detection->source_oid);
           array_add (create_report_data->details, detail);
@@ -18848,6 +18636,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_INFO:
         handle_get_info (gmp_parser, error);
         break;
+
+      case CLIENT_GET_LICENSE:
+        {
+          if (get_license_element_end (gmp_parser,
+                                       error,
+                                       element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_GET_NOTES:
         handle_get_notes (gmp_parser, error);
@@ -22019,7 +21816,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              if (!create_task_check_config_scanner (config, scanner))
+              if (!create_task_check_scanner_type (scanner))
                 {
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
@@ -22197,8 +21994,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         ? create_user_data->comment : "",
                       create_user_data->hosts,
                       create_user_data->hosts_allow,
-                      create_user_data->ifaces,
-                      create_user_data->ifaces_allow,
                       create_user_data->sources,
                       create_user_data->groups,
                       &fail_group_id,
@@ -22282,7 +22077,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_USER, GROUPS);
       CLOSE (CLIENT_CREATE_USER_GROUPS, GROUP);
       CLOSE (CLIENT_CREATE_USER, HOSTS);
-      CLOSE (CLIENT_CREATE_USER, IFACES);
       CLOSE (CLIENT_CREATE_USER, NAME);
       CLOSE (CLIENT_CREATE_USER, PASSWORD);
       CLOSE (CLIENT_CREATE_USER, ROLE);
@@ -23235,6 +23029,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_GROUP, COMMENT);
       CLOSE (CLIENT_MODIFY_GROUP, NAME);
       CLOSE (CLIENT_MODIFY_GROUP, USERS);
+
+      case CLIENT_MODIFY_LICENSE:
+        {
+          if (modify_license_element_end (gmp_parser,
+                                          error,
+                                          element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_MODIFY_NOTE:
         {
@@ -24760,8 +24563,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                        modify_user_data->comment,
                        modify_user_data->hosts,
                        modify_user_data->hosts_allow,
-                       modify_user_data->ifaces,
-                       modify_user_data->ifaces_allow,
                        modify_user_data->sources,
                        modify_user_data->groups, &fail_group_id,
                        modify_user_data->roles, &fail_role_id,
@@ -24860,7 +24661,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_USER, GROUPS);
       CLOSE (CLIENT_MODIFY_USER_GROUPS, GROUP);
       CLOSE (CLIENT_MODIFY_USER, HOSTS);
-      CLOSE (CLIENT_MODIFY_USER, IFACES);
       CLOSE (CLIENT_MODIFY_USER, NAME);
       CLOSE (CLIENT_MODIFY_USER, NEW_NAME);
       CLOSE (CLIENT_MODIFY_USER, PASSWORD);
@@ -25548,10 +25348,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_SYNC_CONFIG:
-        handle_sync_config (gmp_parser, error);
-        break;
-
       case CLIENT_VERIFY_REPORT_FORMAT:
         if (verify_report_format_data->report_format_id)
           {
@@ -25798,9 +25594,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_USER_HOSTS,
               &modify_user_data->hosts);
-
-      APPEND (CLIENT_MODIFY_USER_IFACES,
-              &modify_user_data->ifaces);
 
       APPEND (CLIENT_MODIFY_USER_NAME,
               &modify_user_data->name);
@@ -26336,9 +26129,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_USER_HOSTS,
               &create_user_data->hosts);
 
-      APPEND (CLIENT_CREATE_USER_IFACES,
-              &create_user_data->ifaces);
-
       APPEND (CLIENT_CREATE_USER_NAME,
               &create_user_data->name);
 
@@ -26366,6 +26156,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
           last->data = text_column;
           break;
         }
+
+
+      case CLIENT_GET_LICENSE:
+        get_license_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
@@ -26439,6 +26234,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_GROUP_USERS,
               &modify_group_data->users);
+
+
+      case CLIENT_MODIFY_LICENSE:
+        modify_license_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_MODIFY_NOTE_ACTIVE,

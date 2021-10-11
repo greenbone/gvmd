@@ -36,7 +36,7 @@
  * @param[in]  nvt_oid   OID of NVT of preference.
  * @param[in]  alts      Array of gchar's.  Alternative values for type radio.
  * @param[in]  default_value   Default value of preference.
- * @param[in]  hr_name   Extended, more human-readable name of the preference.
+ * @param[in]  hr_name   The hr_name of the nvt_preference.
  * @param[in]  free_strings Whether string fields are freed by preference_free.
  *
  * @return Newly allocated preference.
@@ -85,7 +85,6 @@ preference_free (preference_t *preference)
       free (preference->nvt_name);
       free (preference->nvt_oid);
       free (preference->default_value);
-      free (preference->hr_name);
     }
 
   g_free (preference);

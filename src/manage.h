@@ -303,7 +303,7 @@ typedef enum
 typedef enum scanner_type
 {
   SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_OSP = 1,
+  /* 1 was removed (SCANNER_TYPE_OSP). */
   SCANNER_TYPE_OPENVAS = 2,
   SCANNER_TYPE_CVE = 3,
   /* 4 was removed (SCANNER_TYPE_GMP). */
@@ -1256,6 +1256,9 @@ create_report (array_t*, const char *, const char *, const char *, const char *,
 void
 report_add_result (report_t, result_t);
 
+void
+report_add_results_array (report_t, GArray *);
+
 char*
 report_uuid (report_t);
 
@@ -1751,11 +1754,8 @@ target_login_port (target_t, const char*);
  *
  * These are here because they need definitions that are still in manage.h. */
 
-scanner_t
-config_iterator_scanner (iterator_t*);
-
 int
-create_task_check_config_scanner (config_t, scanner_t);
+create_task_check_scanner_type (scanner_t);
 
 int
 modify_task_check_config_scanner (task_t, const char *, const char *);
@@ -2582,15 +2582,6 @@ scanner_iterator_key_pub (iterator_t *);
 const char*
 scanner_iterator_credential_type (iterator_t *);
 
-void
-init_scanner_config_iterator (iterator_t*, scanner_t);
-
-const char*
-scanner_config_iterator_uuid (iterator_t *);
-
-const char*
-scanner_config_iterator_name (iterator_t *);
-
 int
 scanner_config_iterator_readable (iterator_t *);
 
@@ -2713,6 +2704,12 @@ set_scheduled_user_uuid (const gchar* uuid);
 
 void
 manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
+
+int
+manage_rebuild_gvmd_data_from_feed (const char *,
+                                    GSList *,
+                                    const db_conn_info_t *,
+                                    gchar **);
 
 int
 manage_schedule (manage_connection_forker_t,
@@ -3358,12 +3355,6 @@ user_iterator_hosts (iterator_t*);
 int
 user_iterator_hosts_allow (iterator_t*);
 
-const char*
-user_iterator_ifaces (iterator_t*);
-
-int
-user_iterator_ifaces_allow (iterator_t*);
-
 void
 init_user_group_iterator (iterator_t *, user_t);
 
@@ -3390,7 +3381,7 @@ user_role_iterator_readable (iterator_t*);
 
 int
 create_user (const gchar *, const gchar *, const gchar *, const gchar *,
-             int, const gchar *, int, const array_t *, array_t *, gchar **,
+             int, const array_t *, array_t *, gchar **,
              array_t *, gchar **, gchar **, user_t *, int);
 
 int
@@ -3398,7 +3389,7 @@ delete_user (const char *, const char *, int, int, const char*, const char*);
 
 int
 modify_user (const gchar *, gchar **, const gchar *, const gchar *,
-             const gchar*, const gchar *, int, const gchar *, int,
+             const gchar*, const gchar *, int,
              const array_t *, array_t *, gchar **, array_t *, gchar **,
              gchar **);
 
@@ -3422,12 +3413,6 @@ user_name (const char *);
 
 char*
 user_uuid (user_t);
-
-gchar*
-user_ifaces (const char *);
-
-int
-user_ifaces_allow (const char *);
 
 gchar*
 user_hosts (const char *);
@@ -3671,6 +3656,9 @@ manage_update_nvts_osp (const gchar *);
 int
 manage_rebuild (GSList *, const db_conn_info_t *);
 
+int
+manage_dump_vt_verification (GSList *, const db_conn_info_t *);
+
 
 /* Wizards. */
 
@@ -3708,5 +3696,13 @@ manage_optimize (GSList *, const db_conn_info_t *, const gchar *);
 
 int
 sql_cancel ();
+
+
+/* General settings */
+const char *
+get_vt_verification_collation ();
+
+void
+set_vt_verification_collation (const char *);
 
 #endif /* not _GVMD_MANAGE_H */

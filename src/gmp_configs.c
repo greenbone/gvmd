@@ -178,7 +178,6 @@ attr_or_null (entity_t entity, const gchar *name)
  * @param[out] config_id             Address for config ID, or NULL.
  * @param[out] name                  Address for name.
  * @param[out] comment               Address for comment.
- * @param[out] type                  Address for type.
  * @param[out] usage_type            Address for usage type.
  * @param[out] all_selector          True if ALL_SELECTOR was present.
  * @param[out] import_nvt_selectors  Address for selectors.
@@ -188,14 +187,14 @@ attr_or_null (entity_t entity, const gchar *name)
  */
 int
 parse_config_entity (entity_t config, const char **config_id, char **name,
-                     char **comment, char **type, char **usage_type,
+                     char **comment, char **usage_type,
                      int *all_selector,
                      array_t **import_nvt_selectors,
                      array_t **import_preferences)
 {
   entity_t entity, preferences, nvt_selectors;
 
-  *name = *comment = *type = NULL;
+  *name = *comment = NULL;
   *all_selector = 0;
 
   if (config_id)
@@ -208,10 +207,6 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
   entity = entity_child (config, "comment");
   if (entity)
     *comment = entity_text (entity);
-
-  entity = entity_child (config, "type");
-  if (entity)
-    *type = entity_text (entity);
 
   if (usage_type)
     {
@@ -282,8 +277,8 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
       children = preferences->entities;
       while ((preference = first_entity (children)))
         {
-          entity_t pref_name, pref_nvt_name, hr_name, nvt, alt;
-          char *preference_hr_name, *preference_nvt_oid;
+          entity_t pref_name, pref_nvt_name, nvt, alt;
+          char *preference_nvt_oid;
           array_t *import_alts;
           entities_t alts;
           preference_t *new_preference;
@@ -294,17 +289,6 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
           nvt = entity_child (preference, "nvt");
           if (nvt)
             pref_nvt_name = entity_child (nvt, "name");
-
-          hr_name = entity_child (preference, "hr_name");
-          if (*type == NULL || strcmp (*type, "0") == 0)
-            /* Classic OpenVAS config preference. */
-            preference_hr_name = NULL;
-          else if (hr_name && strlen (entity_text (hr_name)))
-            /* OSP config preference with hr_name given. */
-            preference_hr_name = entity_text (hr_name);
-          else
-            /* Old OSP config without hr_name. */
-            preference_hr_name = text_or_null (pref_name);
 
           import_alts = make_array ();
           alts = preference->entities;
@@ -318,8 +302,7 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
 
           preference_nvt_oid = attr_or_null (nvt, "oid");
 
-          if ((*type == NULL || strcmp (*type, "0") == 0)
-              && preference_nvt_oid
+          if ( preference_nvt_oid
               && strcmp (preference_nvt_oid, ""))
             {
               /* Preference in an OpenVAS config:
@@ -374,7 +357,7 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                        preference_nvt_oid,
                        import_alts,
                        text_or_null (entity_child (preference, "default")),
-                       preference_hr_name,
+                       NULL,
                        0 /* do not free strings */);
             }
 
@@ -398,7 +381,7 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
 void
 create_config_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, get_configs_response, config, name, copy, scanner;
+  entity_t entity, get_configs_response, config, name, copy;
 
   entity = (entity_t) create_config_data.context->first->data;
 
@@ -411,7 +394,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
     {
       config_t new_config;
       const char *usage_type_text;
-      char *created_name, *comment, *type, *import_name;
+      char *created_name, *comment, *import_name;
       entity_t usage_type;
       array_t *import_nvt_selectors, *import_preferences;
       int all_selector;
@@ -431,7 +414,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       /* Get the config data from the XML. */
 
-      if (parse_config_entity (config, NULL, &import_name, &comment, &type,
+      if (parse_config_entity (config, NULL, &import_name, &comment,
                                NULL, &all_selector, &import_nvt_selectors,
                                &import_preferences))
         {
@@ -455,7 +438,6 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
                              all_selector,
                              import_nvt_selectors,
                              import_preferences,
-                             type,
                              usage_type_text,
                              &new_config,
                              &created_name))
@@ -522,68 +504,6 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       cleanup_import_preferences (import_preferences);
       array_free (import_nvt_selectors);
-
-      create_config_reset ();
-      return;
-    }
-
-  /* Check for creation from scanner. */
-
-  scanner = entity_child (entity, "scanner");
-  if (scanner && strlen (entity_text (scanner)))
-    {
-      char *uuid;
-
-      uuid = NULL;
-
-      switch (create_config_from_scanner
-               (entity_text (scanner),
-                text_or_null (entity_child (entity, "name")),
-                text_or_null (entity_child (entity, "comment")),
-                text_or_null (entity_child (entity, "usage_type")),
-                &uuid))
-        {
-          case 0:
-            SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
-                                      ("create_config"), uuid);
-            log_event ("config", "Scan config", uuid, "created");
-            break;
-          case 1:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Failed to find scanner"));
-            break;
-          case 2:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Scanner not of type OSP"));
-            break;
-          case 3:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Config name exists already"));
-            break;
-          case 4:
-            SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Failed to get params from scanner"
-                                " - the scanner may be offline or not"
-                                " configured correctly"));
-            break;
-          case 99:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_config",
-                                "Permission denied"));
-            log_event_fail ("config", "Scan config", NULL, "created");
-            break;
-          case -1:
-          default:
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("create_config"));
-            log_event_fail ("config", "Scan config", NULL, "created");
-            break;
-        }
-      g_free (uuid);
 
       create_config_reset ();
       return;
@@ -775,7 +695,6 @@ modify_config_element_start (gmp_parser_t *gmp_parser, const gchar *name,
  * @param[in]  config       The config to modify.
  * @param[in]  name         The name to set or NULL to keep old value.
  * @param[in]  comment      The comment to set or NULL to keep old value.
- * @param[in]  scanner_id   The scanner ID to set or NULL to keep old value.
  * @param[in]  gmp_parser   GMP parser.
  * @param[out] error        GError output.
  * 
@@ -785,31 +704,16 @@ static int
 modify_config_handle_basic_fields (config_t config,
                                    const char *name,
                                    const char *comment,
-                                   const char *scanner_id,
                                    gmp_parser_t *gmp_parser,
                                    GError **error)
 {
-  switch (manage_set_config (config, name, comment, scanner_id))
+  switch (manage_set_config (config, name, comment))
     {
       case 0:
         return 0;
       case 1:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
           (-1, XML_ERROR_SYNTAX ("modify_config", "Name must be unique"));
-        return -1;
-      case 2:
-        if (send_find_error_to_client ("modify_config",
-                                       "scanner",
-                                       scanner_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return -1;
-          }
-        return -1;
-      case 3:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
         return -1;
       case -1:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
@@ -1146,7 +1050,6 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
          (config,
           text_or_null (entity_child (entity, "name")),
           text_or_null (entity_child (entity, "comment")),
-          text_or_null (entity_child (entity, "scanner")),
           gmp_parser,
           error))
     {

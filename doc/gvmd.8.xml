@@ -283,7 +283,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--optimize=<arg>NAME</arg></opt></p>
       <optdesc>
-        <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
+        <p>Run an optimization: vacuum, add-feed-permissions, analyze,
+           cleanup-config-prefs, cleanup-feed-permissions,
            cleanup-port-names, cleanup-report-formats, cleanup-result-nvts,
            cleanup-result-severities, cleanup-schedule-times,
            migrate-relay-sensors, rebuild-report-cache
@@ -312,6 +313,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--port2=<arg>NUMBER</arg></opt></p>
       <optdesc>
         <p>Use port number NUMBER for address 2.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--rebuild-gvmd-data=<arg>TYPES</arg></opt></p>
+      <optdesc>
+        <p>
+          Reload all gvmd data objects of a given types from feed.
+        </p>
+        <p>
+          The types must be &quot;all&quot; or a comma-separated of the
+          following: &quot;configs&quot;, &quot;port_lists&quot; and
+          &quot;report_formats&quot;.
+        </p>
       </optdesc>
     </option>
     <option>
@@ -387,7 +401,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--scanner-type=<arg>SCANNER-TYPE</arg></opt></p>
       <optdesc>
         <p>Scanner type for --create-scanner and --modify-scanner.</p>
-        <p>Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor' or a number
+        <p>Either 'OpenVAS', 'GMP', 'OSP-Sensor' or a number
            as used in GMP.</p>
       </optdesc>
     </option>
@@ -446,6 +460,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--version</opt></p>
       <optdesc>
         <p>Print version and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--vt-verification-collation=<arg>COLLATION</arg></opt></p>
+      <optdesc>
+        <p>
+          Set collation for VT verification to COLLATION, omit or leave empty
+          to choose automatically. Should be 'ucs_default' if DB uses UTF-8
+          or 'C' for single-byte encodings.
+        </p>
       </optdesc>
     </option>
   </options>

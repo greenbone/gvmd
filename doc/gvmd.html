@@ -245,7 +245,8 @@
     
       <p><b>--optimize=<em>NAME</em></b></p>
       
-        <p>Run an optimization: vacuum, analyze, cleanup-config-prefs,
+        <p>Run an optimization: vacuum, analyze, add-feed-permissions,
+           cleanup-config-prefs, cleanup-feed-permissions,
            cleanup-port-names, cleanup-report-formats, cleanup-result-nvts,
            cleanup-result-severities, cleanup-schedule-times,
            migrate-relay-sensors, rebuild-report-cache
@@ -275,8 +276,20 @@
       
         <p>Use port number NUMBER for address 2.</p>
       
-    
-    
+      
+      <p><b>--rebuild-gvmd-data=<em>TYPES</em></b></p>
+      
+        <p>
+          Reload all gvmd data objects of a given types from feed.
+        </p>
+
+        <p>
+          The types must be &quot;all&quot; or a comma-separated of the
+          following: &quot;configs&quot;, &quot;port_lists&quot; and
+          &quot;report_formats&quot;.
+        </p>
+
+
       <p><b>--rebuild-scap</b></p>
       
         <p>
@@ -349,7 +362,7 @@
       <p><b>--scanner-type=<em>SCANNER-TYPE</em></b></p>
       
         <p>Scanner type for --create-scanner and --modify-scanner.</p>
-        <p>Either 'OpenVAS', 'OSP', 'GMP', 'OSP-Sensor' or a number
+        <p>Either 'OpenVAS', 'GMP', 'OSP-Sensor' or a number
            as used in GMP.</p>
       
     
@@ -410,7 +423,14 @@
         <p>Print version and exit.</p>
       
     
-  
+    
+      <p><b>--vt-verification-collation=<em>COLLATION</em></b></p>
+      
+        <p>          
+          Set collation for VT verification to COLLATION, omit or leave empty
+          to choose automatically. Should be 'ucs_default' if DB uses UTF-8
+          or 'C' for single-byte encodings.
+        </p>
 
   <h2>SIGNALS</h2>
 

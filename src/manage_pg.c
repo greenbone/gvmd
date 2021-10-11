@@ -843,6 +843,83 @@ manage_create_sql_functions ()
 
   /* Functions in SQL. */
 
+  if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
+               "                WHERE table_catalog = '%s'"
+               "                AND table_schema = 'public'"
+               "                AND table_name = 'nvts')"
+               "        AND EXISTS (SELECT * FROM information_schema.tables"
+               "                    WHERE table_catalog = '%s'"
+               "                    AND table_schema = 'public'"
+               "                    AND table_name = 'nvt_preferences'))"
+               " ::integer;",
+               sql_database (),
+               sql_database ()))
+    {
+      char *quoted_collation;
+      if (get_vt_verification_collation ())
+        {
+          gchar *string_quoted_collation;
+          string_quoted_collation
+            = sql_quote (get_vt_verification_collation ());
+          quoted_collation = sql_string ("SELECT quote_ident('%s')",
+                                         string_quoted_collation);
+          g_free (string_quoted_collation);
+        }
+      else
+        {
+          char *encoding;
+          encoding = sql_string ("SHOW server_encoding;");
+
+          if (g_str_match_string ("UTF-8", encoding, 0)
+              || g_str_match_string ("UTF8", encoding, 0))
+            quoted_collation = strdup ("ucs_basic");
+          else
+            // quote C collation because this seems to be required
+            // without quoting it an error is raised
+            // other collations don't need quoting
+            quoted_collation = strdup ("\"C\"");
+
+          free (encoding);
+        }
+
+      g_debug ("Using vt verification collation %s", quoted_collation);
+
+      sql ("CREATE OR REPLACE FUNCTION vts_verification_str ()"
+           " RETURNS text AS $$"
+           " WITH pref_str AS ("
+           "   SELECT name,"
+           "          substring(name, '^(.*?):') AS oid,"
+           "          substring (name, '^.*?:([^:]+):') AS pref_id,"
+           "          (substring (name, '^.*?:([^:]+):')"
+           "           || substring (name,"
+           "                         '^[^:]*:[^:]*:[^:]*:(.*)')"
+           "           || value) AS pref"
+           "   FROM nvt_preferences"
+           "  ),"
+           "  nvt_str AS ("
+           "   SELECT (SELECT nvts.oid"
+           "             || max(modification_time)"
+           "             || coalesce (string_agg"
+           "                            (pref_str.pref, ''"
+           "                             ORDER BY (pref_id"
+           "                                       COLLATE %s)),"
+           "                          ''))"
+           "          AS vt_string"
+           "   FROM nvts"
+           "   LEFT JOIN pref_str ON nvts.oid = pref_str.oid"
+           "   GROUP BY nvts.oid"
+           "   ORDER BY (nvts.oid COLLATE %s) ASC"
+           "  )"
+           " SELECT coalesce (string_agg (nvt_str.vt_string, ''), '')"
+           "   FROM nvt_str"
+           "$$ LANGUAGE SQL"
+           " STABLE;",
+           quoted_collation,
+           quoted_collation);
+
+      g_free (quoted_collation);
+    }
+
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
        "  SELECT true;"
        "$$ LANGUAGE SQL"
@@ -1676,8 +1753,6 @@ create_tables ()
        "  timezone text,"
        "  hosts text,"
        "  hosts_allow integer,"
-       "  ifaces text,"
-       "  ifaces_allow integer,"
        "  method text,"
        "  creation_time integer,"
        "  modification_time integer);");
@@ -2163,8 +2238,6 @@ create_tables ()
        "  nvt_count integer,"
        "  families_growing integer,"
        "  nvts_growing integer,"
-       "  type integer,"
-       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer,"
@@ -2181,8 +2254,6 @@ create_tables ()
        "  nvt_count integer,"
        "  families_growing integer,"
        "  nvts_growing integer,"
-       "  type integer,"
-       "  scanner integer," /* REFERENCES scanners (id) */
        "  predefined integer,"
        "  creation_time integer,"
        "  modification_time integer,"
@@ -2195,8 +2266,7 @@ create_tables ()
        "  type text,"
        "  name text,"
        "  value text,"
-       "  default_value text,"
-       "  hr_name text);");
+       "  default_value text);");
 
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2204,8 +2274,7 @@ create_tables ()
        "  type text,"
        "  name text,"
        "  value text,"
-       "  default_value text,"
-       "  hr_name text);");
+       "  default_value text);");
 
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id SERIAL PRIMARY KEY,"

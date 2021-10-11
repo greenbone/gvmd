@@ -920,7 +920,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>cvss_base</e>
           <e>severities</e>
           <o><e>cve</e></o>
-          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -944,11 +943,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cve</name>
           <summary>CVE value associated with the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bid</name>
-          <summary>BID associated with the NVT</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -1276,7 +1270,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>cvss_base</e>
           <e>severities</e>
           <o><e>cve</e></o>
-          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
@@ -1300,11 +1293,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>cve</name>
           <summary>CVE value associated with the NVT</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>bid</name>
-          <summary>BID associated with the NVT</summary>
-          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -1597,7 +1585,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </attrib>
             <attrib>
               <name>type</name>
-              <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"
+              <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"
               </summary>
               <type>text</type>
             </attrib>
@@ -5815,7 +5803,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>copy</e></o>
       <o><e>comment</e></o>
       <o><e>hosts</e></o>
-      <o><e>ifaces</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
     </pattern>
@@ -5839,18 +5826,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>hosts</name>
       <summary>User access rules: a comma-separated list of hosts</summary>
-      <pattern>
-        <attrib>
-          <name>allow</name>
-          <summary>If 1, allow only listed, otherwise forbid listed</summary>
-          <type>boolean</type>
-        </attrib>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>ifaces</name>
-      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -7589,7 +7564,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>preference</name>
             <pattern>
               <e>nvt</e>
-              <e>hr_name</e>
               <e>name</e>
               <e>id</e>
               <e>type</e>
@@ -7613,11 +7587,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <summary>The name of the NVT</summary>
                 <pattern><t>name</t></pattern>
               </ele>
-            </ele>
-            <ele>
-              <name>hr_name</name>
-              <summary>The full, more "human readable" name of the preference</summary>
-              <pattern><t>name</t></pattern>
             </ele>
             <ele>
               <name>name</name>
@@ -12620,7 +12589,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <cvss_base>5</cvss_base>
                 <severities score="50"/>
                 <cve></cve>
-                <bid></bid>
               </nvt>
               <threat>Medium</threat>
               <description>Warning with control char between fullstops: . .</description>
@@ -12628,6 +12596,207 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </note>
           <truncated>...</truncated>
         </get_notes_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_license</name>
+    <summary>Get the current license</summary>
+    <description>
+      <p>
+        The client uses the get_license command to get the current license.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>license</e>
+      </pattern>
+      <ele>
+        <name>license</name>
+        <summary>The license information</summary>
+        <pattern>
+          <e>status</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>status</name>
+          <summary>Status of the license</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content</name>
+          <summary>The main content of the license file</summary>
+          <pattern>
+            <e>meta</e>
+            <e>appliance</e>
+            <e>keys</e>
+            <e>signatures</e>
+          </pattern>
+          <ele>
+            <name>meta</name>
+            <summary>License metadata</summary>
+            <pattern>
+              <e>version</e>
+              <e>id</e>
+              <e>title</e>
+              <e>type</e>
+              <e>customer_name</e>
+              <e>created</e>
+              <e>begins</e>
+              <e>expires</e>
+            </pattern>
+            <ele>
+              <name>version</name>
+              <summary>Version of the license file schema</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>id</name>
+              <summary>Unique Identifier of the license</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>title</name>
+              <summary>Short title summarizing the license</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>License type, e.g. &quot;trial&quot; or &quot;commercial&quot;</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>customer_name</name>
+              <summary>Name of the customer the license is issued for</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>created</name>
+              <summary>Time the license was created</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>begins</name>
+              <summary>Time after which the license is valid</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>expires</name>
+              <summary>Time the license expires</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>appliance</name>
+            <summary>Hardware and appliance information</summary>
+            <pattern>
+              <e>model</e>
+              <e>model_type</e>
+            </pattern>
+            <ele>
+              <name>model</name>
+              <summary>Appliance model, e.g. "one"</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>model_type</name>
+              <summary>Appliance model type, e.g. "virtual" or "hardware"</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>sensor</name>
+              <summary>Whether the license is applied to a sensor or not</summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>keys</name>
+            <summary>Base64 encoded access keys, e.g. feed keys</summary>
+            <pattern>
+              <any><e>key</e></any>
+            </pattern>
+            <ele>
+              <name>key</name>
+              <summary>A Base64 encoded access key</summary>
+              <pattern>
+                <attrib>
+                  <name>name</name>
+                  <summary>Name of the key</summary>
+                  <type>text</type>
+                </attrib>
+                <t>text</t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>signatures</name>
+            <summary>Signatures of the license</summary>
+            <pattern>
+              <any><e>signature</e></any>
+            </pattern>
+            <ele>
+              <name>signature</name>
+              <summary>A signature info item</summary>
+              <pattern>
+                <attrib>
+                  <name>name</name>
+                  <summary>Name of the signature</summary>
+                  <type>text</type>
+                </attrib>
+                <t>text</t>
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the current license</summary>
+      <request>
+        <get_license>
+        </get_license>
+      </request>
+      <response>
+        <get_license_response status="200" status_text="OK">
+          <license>
+            <status>active</status>
+            <content>
+              <meta>
+                <id>4711</id>
+                <version>1.0.0</version>
+                <title>Test License</title>
+                <type>trial</type>
+                <customer_name>Jane Doe</customer_name>
+                <created>2021-08-27T06:05:21Z</created>
+                <begins>2021-08-27T07:05:21Z</begins>
+                <expires>2021-09-04T07:05:21Z</expires>
+              </meta>
+              <appliance>
+                <model>trial</model>
+                <model_type>virtual</model_type>
+                <sensor>0</sensor>
+              </appliance>
+              <keys>
+                <key name="feed">*base64 GSF key*</key>
+              </keys>
+              <signatures>
+                <signature name="license">*base64 signature*</signature>
+              </signatures>
+            </content>
+          </license>
+        </get_license_response>
       </response>
     </example>
   </command>
@@ -12887,7 +13056,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </attrib>
               <attrib>
                 <name>type</name>
-                <summary>Type of the reference, for example "cve", "bid", "dfn-cert", "cert-bund"</summary>
+                <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"</summary>
                 <type>text</type>
               </attrib>
             </pattern>
@@ -12961,7 +13130,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern>
               <e>nvt</e>
               <e>name</e>
-              <e>hr_name</e>
               <e>id</e>
               <e>type</e>
               <e>value</e>
@@ -12988,11 +13156,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <ele>
               <name>name</name>
               <summary>The name of the preference</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>hr_name</name>
-              <summary>The full, more "human readable" name of the preference</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
@@ -14515,7 +14678,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>preference</name>
         <pattern>
           <e>nvt</e>
-          <e>hr_name</e>
           <e>name</e>
           <e>id</e>
           <e>type</e>
@@ -14539,11 +14701,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>The name of the NVT</summary>
             <pattern><t>name</t></pattern>
           </ele>
-        </ele>
-        <ele>
-          <name>hr_name</name>
-          <summary>The full, more "human readable" name of the preference</summary>
-          <pattern><t>name</t></pattern>
         </ele>
         <ele>
           <name>name</name>
@@ -15412,7 +15569,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <tags>NOTAGS</tags>
                     <refs>
                       <ref id="CVE-2013-1406" type="cve"/>
-                      <ref id="51702" type="bid"/>
                       <ref id="DFN-CERT-2013-0246" type="dfn-cert"/>
                     </refs>
                   </nvt>
@@ -16447,7 +16603,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
-                 <ref type="bid" id="36254"/>
               </refs>
             </nvt>
             <threat>Medium</threat>
@@ -16510,7 +16665,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <tags>NOTAGS</tags>
               <refs>
                  <ref type="cve" id="CVE-2009-3095"/>
-                 <ref type="bid" id="36254"/>
               </refs>
             </nvt>
             <threat>High</threat>
@@ -21143,11 +21297,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>text</type>
             <summary>List of host that are either allowed of forbidden</summary>
           </column>
-          <column>
-            <name>ifaces</name>
-            <type>text</type>
-            <summary>List of ifaces that are either allowed of forbidden</summary>
-          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -21193,7 +21342,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <any><e>role</e></any>
           <e>groups</e>
           <e>hosts</e>
-          <e>ifaces</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
           <e>sources</e>
@@ -21295,26 +21443,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <ele>
           <name>hosts</name>
           <summary>Host access rule for the user</summary>
-          <pattern>
-            <attrib>
-              <name>allow</name>
-              <summary>0 forbidden, 1 allowed, 2 all allowed, 3 custom</summary>
-              <type>
-                <alts>
-                  <alt>0</alt>
-                  <alt>1</alt>
-                  <alt>2</alt>
-                  <alt>3</alt>
-                </alts>
-              </type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>ifaces</name>
-          <summary>Iface access rule for the user</summary>
           <pattern>
             <attrib>
               <name>allow</name>
@@ -23674,6 +23802,59 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </example>
   </command>
   <command>
+    <name>modify_license</name>
+    <summary>Modify the existing license</summary>
+    <description>
+      <p>
+        The client uses the modify_license command to change the current
+        license.
+      </p>
+      <p>
+        The license has to be provided as a valid license TOML file.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>allow_empty</name>
+        <summary>Whether to allow an empty file</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+      <e>file</e>
+    </pattern>
+    <ele>
+      <name>file</name>
+      <summary>The license TOML file in plain-text form</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Upload an new license file</summary>
+      <request>
+        <modify_license>
+          <file>[...]</file>
+        </modify_license>
+      </request>
+      <response>
+        <modify_note_response status="200" status_text="OK">
+        </modify_note_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_note</name>
     <summary>Modify an existing note</summary>
     <description>
@@ -25178,7 +25359,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>password</e></o>
       <any><e>role</e></any>
       <o><e>hosts</e></o>
-      <o><e>ifaces</e></o>
       <o><e>sources</e></o>
     </pattern>
     <ele>
@@ -25202,18 +25382,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <description>
         User is allowed to access any host if this element is missing.
       </description>
-      <pattern>
-        <attrib>
-          <name>allow</name>
-          <summary>If 1, allow only listed, otherwise forbid listed</summary>
-          <type>boolean</type>
-        </attrib>
-        text
-      </pattern>
-    </ele>
-    <ele>
-      <name>ifaces</name>
-      <summary>User access rules: a comma-separated list of ifaces</summary>
       <pattern>
         <attrib>
           <name>allow</name>
@@ -25804,6 +25972,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <!-- Compatibility changes between versions. -->
 
+  <change>
+    <command>CREATE_TASK, CREATE_USER, GET_TASKS, GET_USERS, MODIFY_TASK, MODIFY_USER</command>
+    <summary>Removed network interface (iface) options</summary>
+    <description>
+      <p>
+        The option to choose the source interface in the form of the task
+        preference &quot;source_iface&quot; has been removed as well as
+        the &quot;ifaces&quot; element of users to limit the allowed network
+        interfaces.
+      </p>
+    </description>
+    <version>21.10</version>
+  </change>
   <change>
     <command>GET_INFO</command>
     <summary>Removed the Secinfo-type OVALDEF from the GET_INFO command

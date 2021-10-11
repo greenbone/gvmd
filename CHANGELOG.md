@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519), [#1590](https://github.com/greenbone/gvmd/pull/1590)
 - Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
+- Add GMP get_license and modify_license [#1642](https://github.com/greenbone/gvmd/pull/1642)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
@@ -24,17 +25,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove Network Source Interface from gvmd [#1511](https://github.com/greenbone/gvmd/pull/1511)
 - Removed OVAL definitions from gvmd [#1525](https://github.com/greenbone/gvmd/pull/1525)
 - Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
+- Removed the Business Process Map from gvmd [1627](https://github.com/greenbone/gvmd/pull/1627)
+- Removed ifaces element from users [#1676](https://github.com/greenbone/gvmd/pull/1676)
+- Removed OSP scanners from gvmd [#1689](https://github.com/greenbone/gvmd/pull/1689) [#1691](https://github.com/greenbone/gvmd/pull/1691) [#1694](https://github.com/greenbone/gvmd/pull/1694)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
-## [21.4.3] (Unreleased)
+## [21.4.4] (unreleased)
 ### Added
+- Add --rebuild-gvmd-data command line option [#1680](https://github.com/greenbone/gvmd/pull/1680) [#1683](https://github.com/greenbone/gvmd/pull/1683)
+
 ### Changed
 ### Deprecated
 ### Removed
 ### Fixed
+- Fix resume task. [#1679](https://github.com/greenbone/gvmd/pull/1679)
+- Added a dedicated error message for the create ticket dialogue when the create permission permission is missing [#1686](https://github.com/greenbone/gvmd/pull/1686)
+- Fix import of report results / errors without host [#1687](https://github.com/greenbone/gvmd/pull/1687)
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
+[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
+
+
+## [21.4.3] - 2021-08-03
+### Fixed
+- Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
+- Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
+
+[21.4.3]: https://github.com/greenbone/gvmd/compare/v21.4.2...gvmd-21.04
 
 ## [21.4.2] - 2021-06-28
 ### Fixed
@@ -61,7 +78,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix whole-only config family selection [#1517](https://github.com/greenbone/gvmd/pull/1517)
 - Migrate GMP Scanners to OSP Sensors [#1533](https://github.com/greenbone/gvmd/pull/1533)
 - Solved a peformance problem for tasks after scanning lots of hosts [#1567](https://github.com/greenbone/gvmd/pull/1567)
-- Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
 
 [21.4.1]: https://github.com/greenbone/gvmd/compare/v21.4.0...v21.4.1
 
@@ -113,14 +129,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 [21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
 
-## [20.8.3] (Unreleased)
+## [20.8.4] - Unreleased
 ### Added
 ### Changed
+* Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662) [#1665](https://github.com/greenbone/gvmd/pull/1665)
+    * SYSCONFDIR is /etc by default now
+    * LOCALSTATEDIR is /var by default now
+    * GVM_RUN_DIR is /run/gvm by default now
+    * OPENVAS_DEFAULT_SOCKET is /run/ospd/ospd-openvas.sock by default now
+    * SYSTEMD_SERVICE_DIR is /lib/systemd/system by default now
+    * Removed gvmd.default file and adjusted gvmd.service file accordingly
+    * GVM_FEED_LOCK_PATH is /var/lib/gvm/feed-update.lock by default now
+
 ### Deprecated
 ### Removed
-### Fixed
+*  Remove BID from GMP documentation [#1673](https://github.com/greenbone/gvmd/pull/1673)
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
+### Fixed
+- Fixed the lack of the severities in the display of the applications [#1666](https://github.com/greenbone/gvmd/pull/1666)
+
+[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
+
+
+## [20.8.3] - 2021-08-03
+
+### Added
+- Add --optimize add-/cleanup-feed-permissions [#1612](https://github.com/greenbone/gvmd/pull/1612)
+
+### Changed
+- Use less report cache SQL when adding results [#1618](https://github.com/greenbone/gvmd/pull/1618)
+
+### Fixed
+- Solved a performance problem when filtering results by tags [#1579](https://github.com/greenbone/gvmd/pull/1579)
+- Fix VTs hash check and add --dump-vt-verification
+  [#1611](https://github.com/greenbone/gvmd/pull/1611)
+  [#1629](https://github.com/greenbone/gvmd/pull/1629)
+  [#1641](https://github.com/greenbone/gvmd/pull/1651)
+  [#1643](https://github.com/greenbone/gvmd/pull/1643)
+  [#1655](https://github.com/greenbone/gvmd/pull/1655)
+- Fix memory errors in modify_permission [#1613](https://github.com/greenbone/gvmd/pull/1613)
+- Fix sensor connection for performance reports on failure [#1633](https://github.com/greenbone/gvmd/pull/1633)
+- Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
+- Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
+
+[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
 
 ## [20.8.2] - 2021-06-23
 

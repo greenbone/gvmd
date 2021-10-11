@@ -103,6 +103,7 @@ add_executable (manage-utils-test
                 gvmd.c gmpd.c
                 manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
+                manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_formats.c
                 manage_authentication.c
@@ -115,6 +116,7 @@ add_executable (manage-utils-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_license.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -128,6 +130,7 @@ add_executable (manage-test
                 gvmd.c gmpd.c
                 manage_utils.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
+                manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_formats.c
                 manage_authentication.c
@@ -140,6 +143,7 @@ add_executable (manage-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_license.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -153,6 +157,7 @@ add_executable (manage-sql-test
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
+                manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_formats.c
                 manage_authentication.c
@@ -165,6 +170,7 @@ add_executable (manage-sql-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_license.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -178,6 +184,7 @@ add_executable (gmp-tickets-test
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
+                manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_formats.c
                 manage_authentication.c
@@ -190,6 +197,7 @@ add_executable (gmp-tickets-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_license.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
@@ -202,6 +210,7 @@ add_executable (utils-test
                 gvmd.c gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
+                manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_formats.c
                 manage_authentication.c
@@ -214,6 +223,7 @@ add_executable (utils-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_license.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -229,6 +239,7 @@ add_executable (gvmd
                 gmpd.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
+                manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_formats.c
                 manage_authentication.c
@@ -241,6 +252,7 @@ add_executable (gvmd
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
+                gmp_license.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 

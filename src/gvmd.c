@@ -1787,6 +1787,7 @@ gvmd (int argc, char** argv)
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
+  static gboolean dump_vt_verification = FALSE;
   static gboolean get_roles = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
@@ -1835,12 +1836,14 @@ gvmd (int argc, char** argv)
   static gchar *rc_name = NULL;
   static gchar *relay_mapper = NULL;
   static gboolean rebuild = FALSE;
+  static gchar *rebuild_gvmd_data = NULL;
   static gboolean rebuild_scap = FALSE;
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static gchar *vt_verification_collation = NULL;
 
   int sentry_initialized;
   GError *error = NULL;
@@ -1914,6 +1917,10 @@ gvmd (int argc, char** argv)
         { "disable-scheduling", '\0', 0, G_OPTION_ARG_NONE,
           &disable_scheduling,
           "Disable task scheduling.",
+          NULL },
+        { "dump-vt-verification", '\0', 0, G_OPTION_ARG_NONE,
+          &dump_vt_verification,
+          "Dump the string the VTs verification hash is calculated from.",
           NULL },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &encrypt_all_credentials,
@@ -2012,7 +2019,8 @@ gvmd (int argc, char** argv)
           "<password>" },
         { "optimize", '\0', 0, G_OPTION_ARG_STRING,
           &optimize,
-          "Run an optimization: vacuum, analyze, cleanup-config-prefs,"
+          "Run an optimization: vacuum, analyze, add-feed-permissions,"
+          " cleanup-config-prefs, cleanup-feed-permissions,"
           " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
           " cleanup-result-nvts, cleanup-result-severities,"
           " cleanup-schedule-times, migrate-relay-sensors,"
@@ -2039,6 +2047,12 @@ gvmd (int argc, char** argv)
           &rebuild,
           "Remove NVT db, and rebuild it from the scanner.",
           NULL },
+        { "rebuild-gvmd-data", '\0', 0, G_OPTION_ARG_STRING,
+          &rebuild_gvmd_data,
+          "Reload all gvmd data objects of a given types from feed."
+          " The types must be \"all\" or a comma-separated of the following:"
+          " \"configs\", \"port_lists\" and \"report_formats\"",
+          "<types>" },
         { "rebuild-scap", '\0', 0, G_OPTION_ARG_NONE,
           &rebuild_scap,
           "Rebuild all SCAP data.",
@@ -2141,6 +2155,12 @@ gvmd (int argc, char** argv)
           &print_version,
           "Print version and exit.",
           NULL },
+        { "vt-verification-collation", '\0', 0, G_OPTION_ARG_STRING,
+          &vt_verification_collation,
+          "Set collation for VT verification to <collation>, omit or leave"
+          " empty to choose automatically. Should be 'ucs_default' if DB uses"
+          " UTF-8 or 'C' for single-byte encodings.",
+          "<collation>" },
         { NULL }
       };
 
@@ -2213,6 +2233,9 @@ gvmd (int argc, char** argv)
   /* Set SecInfo update commit size */
 
   set_secinfo_commit_size (secinfo_commit_size);
+
+  /* Set VT verification collation override */
+  set_vt_verification_collation (vt_verification_collation);
 
   /* Check which type of socket to use. */
 
@@ -2549,6 +2572,34 @@ gvmd (int argc, char** argv)
         }
       return EXIT_SUCCESS;
     }
+  
+  if (rebuild_gvmd_data)
+    {
+      int ret;
+      gchar *error_msg;
+      
+      error_msg = NULL;
+
+      proctitle_set ("gvmd: --rebuild-gvmd-data");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_rebuild_gvmd_data_from_feed (rebuild_gvmd_data,
+                                                log_config,
+                                                &database,
+                                                &error_msg);
+      if (ret)
+        {
+          g_warning ("Failed to rebuild gvmd data: %s\n", error_msg);
+          printf ("Failed to rebuild gvmd data: %s\n", error_msg);
+          g_free (error_msg);
+          log_config_free ();
+          return EXIT_FAILURE;
+        }
+      log_config_free ();
+      return EXIT_SUCCESS;
+    }
 
   if (rebuild_scap)
     {
@@ -2564,6 +2615,25 @@ gvmd (int argc, char** argv)
       if (ret)
         {
           printf ("Failed to rebuild SCAP data.\n");
+          return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+  
+  if (dump_vt_verification)
+    {
+      int ret;
+
+      proctitle_set ("gvmd: --dump-vt-verification");
+  
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_dump_vt_verification (log_config, &database);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to dump VT verification data.\n");
           return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;
@@ -2598,8 +2668,6 @@ gvmd (int argc, char** argv)
 
       if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS"))
         type = SCANNER_TYPE_OPENVAS;
-      else if (!strcasecmp (scanner_type, "OSP"))
-        type = SCANNER_TYPE_OSP;
       else if (!strcasecmp (scanner_type, "OSP-Sensor"))
         type = SCANNER_TYPE_OSP_SENSOR;
       else
@@ -2642,8 +2710,6 @@ gvmd (int argc, char** argv)
 
           if (strcasecmp (scanner_type, "OpenVAS") == 0)
             type = SCANNER_TYPE_OPENVAS;
-          else if (strcasecmp (scanner_type, "OSP") == 0)
-            type = SCANNER_TYPE_OSP;
           else if (!strcasecmp (scanner_type, "OSP-Sensor"))
             type = SCANNER_TYPE_OSP_SENSOR;
           else
