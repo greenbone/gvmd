@@ -4,13 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [21.4.4] - Unreleased
+## [21.4.4] - Unreleased - 2021-10-12
 ### Added
 - Add --rebuild-gvmd-data command line option [#1680](https://github.com/greenbone/gvmd/pull/1680) [#1683](https://github.com/greenbone/gvmd/pull/1683)
 
-### Changed
-### Deprecated
-### Removed
 ### Fixed
 - Ensure gvmd sends error messages if gvmcg fails [#1682](https://github.com/greenbone/gvmd/pull/1682)
 - Fix resume task.
@@ -19,8 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a dedicated error message for the create ticket dialogue when the create permission permission is missing [#1686](https://github.com/greenbone/gvmd/pull/1686)
 - Fix import of report results / errors without host [#1687](https://github.com/greenbone/gvmd/pull/1687)
 
-[Unreleased]: https://github.com/greenbone/gvmd/compare/v21.4.3...HEAD
-
+[21.4.4]: https://github.com/greenbone/gvmd/compare/v21.4.3...v21.4.4
 
 ## [21.4.3] - 2021-08-03
 ### Fixed
