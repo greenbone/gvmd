@@ -4,8 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [20.8.4] - Unreleased
-### Added
+## [20.8.4] - Unreleased - 2021-10-12
 ### Changed
 * Changed defaults for installation locations [#1662](https://github.com/greenbone/gvmd/pull/1662) [#1665](https://github.com/greenbone/gvmd/pull/1665)
     * SYSCONFDIR is /etc by default now
@@ -16,14 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Removed gvmd.default file and adjusted gvmd.service file accordingly
     * GVM_FEED_LOCK_PATH is /var/lib/gvm/feed-update.lock by default now
 
-### Deprecated
 ### Removed
 *  Remove BID from GMP documentation [#1673](https://github.com/greenbone/gvmd/pull/1673)
 
 ### Fixed
 
 [20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
-
 
 ## [20.8.3] - 2021-08-03
 
