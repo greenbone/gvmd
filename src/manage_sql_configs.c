@@ -2491,7 +2491,7 @@ create_config_internal (int check_access, const char *config_id,
            " creation_time, modification_time, usage_type, predefined)"
            " VALUES (%s%s%s, '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', m_now (), m_now (), '%s', %i);",
+           " '%s', '%s', m_now (), m_now (), '%s', %i);",
            config_id ? "'" : "",
            config_id ? config_id : "make_uuid ()",
            config_id ? "'" : "",
@@ -2508,7 +2508,7 @@ create_config_internal (int check_access, const char *config_id,
          " creation_time, modification_time, usage_type, predefined)"
          " VALUES (%s%s%s, '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', m_now (), m_now (), '%s', %i);",
+         " '', '%s', m_now (), m_now (), '%s', %i);",
          config_id ? "'" : "",
          config_id ? config_id : "make_uuid ()",
          config_id ? "'" : "",
