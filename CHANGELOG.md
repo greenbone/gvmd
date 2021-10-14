@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519), [#1590](https://github.com/greenbone/gvmd/pull/1590)
 - Add basic Sentry integration and logging [#1550](https://github.com/greenbone/gvmd/pull/1550)
-- Add GMP get_license and modify_license [#1642](https://github.com/greenbone/gvmd/pull/1642)
+- Add GMP get_license and modify_license [#1642](https://github.com/greenbone/gvmd/pull/1642), [#1696](https://github.com/greenbone/gvmd/pull/1696)
 
 ### Changed
 - Use pg-gvm extension for C PostgreSQL functions [#1400](https://github.com/greenbone/gvmd/pull/1400), [#1453](https://github.com/greenbone/gvmd/pull/1453)
@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removed OVAL definitions from GMP and gvmd documentation [1551](https://github.com/greenbone/gvmd/pull/1551)
 - Removed the Business Process Map from gvmd [1627](https://github.com/greenbone/gvmd/pull/1627)
 - Removed ifaces element from users [#1676](https://github.com/greenbone/gvmd/pull/1676)
-- Removed OSP scanners from gvmd [#1689](https://github.com/greenbone/gvmd/pull/1689) [#1691](https://github.com/greenbone/gvmd/pull/1691) [#1694](https://github.com/greenbone/gvmd/pull/1694)
+- Removed OSP scanners from gvmd [#1689](https://github.com/greenbone/gvmd/pull/1689) [#1691](https://github.com/greenbone/gvmd/pull/1691) [#1694](https://github.com/greenbone/gvmd/pull/1694) [#1701](https://github.com/greenbone/gvmd/pull/1701)
 
 [Unreleased]: https://github.com/greenbone/gvmd/compare/gvmd-21.04...master
 
@@ -39,7 +39,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Deprecated
 ### Removed
 ### Fixed
-- Fix resume task. [#1679](https://github.com/greenbone/gvmd/pull/1679)
+- Ensure gvmd sends error messages if gvmcg fails [#1682](https://github.com/greenbone/gvmd/pull/1682)
+- Fix resume task.
+  [#1679](https://github.com/greenbone/gvmd/pull/1679)
+  [#1695](https://github.com/greenbone/gvmd/pull/1695)
 - Added a dedicated error message for the create ticket dialogue when the create permission permission is missing [#1686](https://github.com/greenbone/gvmd/pull/1686)
 - Fix import of report results / errors without host [#1687](https://github.com/greenbone/gvmd/pull/1687)
 
