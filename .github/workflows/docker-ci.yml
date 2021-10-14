@@ -2,7 +2,7 @@ name: Build and upload docker images
 
 on:
   push:
-    branches: [ master, gvmd-20.08, gvmd-21.04 ]
+    branches: [ main, oldstable, stable ]
 
 jobs:
   upload-testing:
@@ -22,9 +22,9 @@ jobs:
           then echo "BRANCH=${GITHUB_BASE_REF##*/}" >> $GITHUB_ENV;  \
           else echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV;       \
           fi;                                                        \
-          if [ $BRANCH != "master" ];                                \
+          if [ $BRANCH != "main" ];                                \
           then VERSION=$(echo "$BRANCH" | sed 's/gvmd-//g' -);       \
-          else VERSION=master; fi;                                   \
+          else VERSION=main; fi;                                   \
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -63,9 +63,9 @@ jobs:
           then echo "BRANCH=${GITHUB_BASE_REF##*/}" >> $GITHUB_ENV;  \
           else echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV;       \
           fi;                                                        \
-          if [ $BRANCH != "master" ];                                \
+          if [ $BRANCH != "main" ];                                \
           then VERSION=$(echo "$BRANCH" | sed 's/gvmd-//g' -);       \
-          else VERSION=master; fi;                                   \
+          else VERSION=main; fi;                                   \
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
