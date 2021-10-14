@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
+[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...oldstable
 
 ## [20.8.3] - 2021-08-03
 
@@ -43,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
 - Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
-[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...gvmd-20.08
+[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...oldstable
 
 ## [20.8.2] - 2021-06-23
 
