@@ -16,16 +16,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Find reference branch and version
+      - name: Find version
         run: |
           if [ -n "$GITHUB_BASE_REF" ];                              \
-          then echo "BRANCH=${GITHUB_BASE_REF##*/}" >> $GITHUB_ENV;  \
-          else echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV;       \
+          then echo "VERSION=${GITHUB_BASE_REF##*/}" >> $GITHUB_ENV;  \
+          else echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV;       \
           fi;                                                        \
-          if [ $BRANCH != "main" ];                                \
-          then VERSION=$(echo "$BRANCH" | sed 's/gvmd-//g' -);       \
-          else VERSION=main; fi;                                   \
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
@@ -33,7 +29,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        # this only works with github.ref on push not on pull_request. ;)
       - run: echo "Build and push ${{ github.repository }}-${{ env.VERSION }}-${{matrix.compiler}}-testing"
       - name: Build and push
         uses: docker/build-push-action@v2.5.0
@@ -57,16 +52,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Find reference branch and version
+      - name: Find version
         run: |
           if [ -n "$GITHUB_BASE_REF" ];                              \
-          then echo "BRANCH=${GITHUB_BASE_REF##*/}" >> $GITHUB_ENV;  \
-          else echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV;       \
+          then echo "VERSION=${GITHUB_BASE_REF##*/}" >> $GITHUB_ENV;  \
+          else echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV;       \
           fi;                                                        \
-          if [ $BRANCH != "main" ];                                \
-          then VERSION=$(echo "$BRANCH" | sed 's/gvmd-//g' -);       \
-          else VERSION=main; fi;                                   \
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
@@ -74,7 +65,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        # this only works with github.ref on push not on pull_request. ;)
       - run: echo "Build and push ${{ github.repository }}-${{ env.VERSION }}-${{matrix.compiler}}-build"
       - name: Build and push
         uses: docker/build-push-action@v2.5.0
