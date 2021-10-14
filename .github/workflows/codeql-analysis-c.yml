@@ -2,9 +2,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ master, gvm-libs-20.08, gvm-libs-21.04 ]
+    branches: [ main, stable, oldstable ]
   pull_request:
-    branches: [ master, gvm-libs-20.08, gvm-libs-21.04 ]
+    branches: [ main, stable, oldstable ]
     paths-ignore:
       - '**/*.md'
       - '**/*.txt'
@@ -19,7 +19,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    container: greenbone/build-env-gvm-master-debian-buster-gcc-postgresql
+    container: greenbone/gvmd-main-gcc-testing
 
     strategy:
       fail-fast: false
@@ -35,33 +35,6 @@ jobs:
       with:
         languages: ${{ matrix.language }}
     # build between init and analyze ...
-    - name: Find gvmd reference branch
-      run: |
-        if [ -n "$GITHUB_BASE_REF" ];                          \
-        then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
-        else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
-        fi
-    - name: Select gvm-libs branch
-      run: |
-        if [ $GVMD_REF = "master" ];                           \
-          then GVM_LIBS_REF="master";                          \
-          else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
-                              | sed 's/refs\/.*\///g'          \
-                              | sed 's/gvmd-/gvm-libs-/g' -);  \
-          fi;                                                  \
-        echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
-    - name: Check out gvm-libs
-      uses: actions/checkout@v2
-      with:
-        repository: greenbone/gvm-libs
-        ref: ${{ env.GVM_LIBS_REF }}
-        path: gvm-libs
-    - name: Configure and compile gvm-libs (${{ env.BUILD_TYPE }})
-      working-directory: gvm-libs
-      run: |
-        mkdir build && cd build/ &&                \
-        cmake -DCMAKE_BUILD_TYPE=Debug .. && \
-        make install
     - name: Configure and compile gvmd
       run: |
         mkdir build && cd build/ &&                \
