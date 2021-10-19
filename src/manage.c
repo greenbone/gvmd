@@ -2331,7 +2331,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   hosts_str = target_hosts (target);
   ports_str = target_port_range (target);
   exclude_hosts_str = target_exclude_hosts (target);
-  
+
   clean_hosts = clean_hosts_string (hosts_str);
   clean_exclude_hosts = clean_hosts_string (exclude_hosts_str);
 
@@ -2386,57 +2386,14 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   if (snmp_credential)
     osp_target_add_credential (osp_target, snmp_credential);
 
-  /* Setup general scanner preferences */
-  scanner_options
-    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  init_preference_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
-  while (next (&scanner_prefs_iter))
-    {
-      const char *name, *value;
-      name = preference_iterator_name (&scanner_prefs_iter);
-      value = preference_iterator_value (&scanner_prefs_iter);
-      if (name && value)
-        {
-          const char *osp_value;
-
-          // Workaround for boolean scanner preferences
-          if (strcmp (value, "yes") == 0)
-            osp_value = "1";
-          else if (strcmp (value, "no") == 0)
-            osp_value = "0";
-          else
-            osp_value = value;
-          g_hash_table_replace (scanner_options,
-                                g_strdup (name),
-                                g_strdup (osp_value));
-        }
-    }
-  cleanup_iterator (&scanner_prefs_iter);
-
-  /* Setup user-specific scanner preference */
-  add_user_scan_preferences (scanner_options);
-
-  /* Setup general task preferences */
-  max_checks = task_preference_value (task, "max_checks");
-  g_hash_table_insert (scanner_options, g_strdup ("max_checks"),
-                       max_checks ? max_checks : g_strdup (MAX_CHECKS_DEFAULT));
-
-  max_hosts = task_preference_value (task, "max_hosts");
-  g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
-                       max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
-
-  hosts_ordering = task_hosts_ordering (task);
-  if (hosts_ordering)
-    g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
-                         hosts_ordering);
-
-  /* Setup vulnerability tests (without preferences) */
+  /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;
   vts_hash_table
     = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
                              /* Value is freed in vts list. */
                              NULL);
 
+  /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
   while (next (&families))
     {
@@ -2460,6 +2417,65 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  /* Setup general scanner preferences */
+  scanner_options
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  init_preference_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
+  while (next (&scanner_prefs_iter))
+    {
+      const char *name, *value;
+      name = preference_iterator_name (&scanner_prefs_iter);
+      value = preference_iterator_value (&scanner_prefs_iter);
+      if (name && value && !g_str_has_prefix (name, "timeout."))
+        {
+          const char *osp_value;
+
+          // Workaround for boolean scanner preferences
+          if (strcmp (value, "yes") == 0)
+            osp_value = "1";
+          else if (strcmp (value, "no") == 0)
+            osp_value = "0";
+          else
+            osp_value = value;
+          g_hash_table_replace (scanner_options,
+                                g_strdup (name),
+                                g_strdup (osp_value));
+        }
+      /* Timeouts are stored as SERVER_PREFS, but are actually
+         script preferences. This prefs is converted into a
+         script preference to be sent to the scanner. */
+      else if (name && value && g_str_has_prefix (name, "timeout."))
+        {
+          char **oid = NULL;
+          osp_vt_single_t *osp_vt = NULL;
+
+          oid = g_strsplit (name, ".", 2);
+          osp_vt = g_hash_table_lookup (vts_hash_table, oid[1]);
+          if (osp_vt)
+            osp_vt_single_add_value (osp_vt, "0", value);
+          g_strfreev (oid);
+        }
+
+    }
+  cleanup_iterator (&scanner_prefs_iter);
+
+  /* Setup user-specific scanner preference */
+  add_user_scan_preferences (scanner_options);
+
+  /* Setup general task preferences */
+  max_checks = task_preference_value (task, "max_checks");
+  g_hash_table_insert (scanner_options, g_strdup ("max_checks"),
+                       max_checks ? max_checks : g_strdup (MAX_CHECKS_DEFAULT));
+
+  max_hosts = task_preference_value (task, "max_hosts");
+  g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
+                       max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
+
+  hosts_ordering = task_hosts_ordering (task);
+  if (hosts_ordering)
+    g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
+                         hosts_ordering);
 
   /* Setup VT preferences */
   init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
