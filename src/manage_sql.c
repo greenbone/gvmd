@@ -86,6 +86,11 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Number of retries for
+ *        LOCK TABLE .. IN ACCESS EXLUSIVE MODE NOWAIT
+ *        statements.
+ */
 #define LOCK_RETRIES 16
 
 #ifdef DEBUG_FUNCTION_NAMES
