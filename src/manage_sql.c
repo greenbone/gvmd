@@ -86,6 +86,8 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+#define LOCK_RETRIES 16
+
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
 
@@ -24454,7 +24456,7 @@ int
 delete_report (const char *report_id, int dummy)
 {
   report_t report;
-  int ret;
+  int ret, lock_ret, lock_retries;
 
   sql_begin_immediate ();
 
@@ -24464,7 +24466,19 @@ delete_report (const char *report_id, int dummy)
    *
    * If the report is running already then delete_report_internal will
    * ROLLBACK. */
-  sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
+  lock_retries = LOCK_RETRIES;
+  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+  while ((lock_ret == 0) && (lock_retries > 0))
+    {
+      sleep(2);
+      lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+      lock_retries--;
+    }
+  if (lock_ret == 0)
+    {
+      sql_rollback ();
+      return -1;
+    }
 
   if (acl_user_may ("delete_report") == 0)
     {
@@ -29324,7 +29338,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
 static int
 delete_task_lock (task_t task, int ultimate)
 {
-  int ret;
+  int ret, lock_ret, lock_retries;
 
   g_debug ("   delete task %llu", task);
 
@@ -29336,7 +29350,15 @@ delete_task_lock (task_t task, int ultimate)
    *
    * If the task is already active then delete_report (via delete_task)
    * will fail and rollback. */
-  if (sql_error ("LOCK table reports IN ACCESS EXCLUSIVE MODE;"))
+  lock_retries = LOCK_RETRIES;
+  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+  while ((lock_ret == 0) && (lock_retries > 0))
+    {
+      sleep(2);
+      lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+      lock_retries--;
+    }
+  if (lock_ret == 0)
     {
       sql_rollback ();
       return -1;
@@ -29425,6 +29447,7 @@ int
 request_delete_task_uuid (const char *task_id, int ultimate)
 {
   task_t task = 0;
+  int lock_ret, lock_retries;
 
   /* Tasks have special handling for the trashcan.  Other resources have trash
    * tables, like targets_trash.  Tasks are marked as trash in the tasks table
@@ -29500,13 +29523,27 @@ request_delete_task_uuid (const char *task_id, int ultimate)
           int ret;
 
           if (ultimate)
-            /* This prevents other processes (for example a START_TASK) from
-             * getting a reference to a report ID or the task ID, and then using
-             * that reference to try access the deleted report or task.
-             *
-             * If the task is running already then delete_task will lead to
-             * ROLLBACK. */
-            sql ("LOCK table reports IN ACCESS EXCLUSIVE MODE;");
+            {
+              /* This prevents other processes (for example a START_TASK) from
+               * getting a reference to a report ID or the task ID, and then
+               * using that reference to try access the deleted report or task.
+               *
+               * If the task is running already then delete_task will lead to
+               * ROLLBACK. */
+              lock_retries = LOCK_RETRIES;
+              lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+              while ((lock_ret == 0) && (lock_retries > 0))
+                {
+                  sleep(2);
+                  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+                  lock_retries--;
+                }
+              if (lock_ret == 0)
+                {
+                  sql_rollback ();
+                  return -1;
+                }
+            }
 
           ret = delete_task (task, ultimate);
           if (ret)
