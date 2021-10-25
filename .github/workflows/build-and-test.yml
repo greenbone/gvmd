@@ -1,15 +1,15 @@
 
 on:
   push:
-    branches: [ master, gvmd-21.04, gvmd-20.08 ]
+    branches: [ main, stable, oldstable ]
   pull_request:
-    branches: [ master, gvmd-21.04, gvmd-20.08 ]
+    branches: [ main, stable, oldstable ]
 name: 'Build and Test'
 jobs:
   check-format:
     name: Check formatting
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-21.04-clang-testing
+    container: greenbone/gvmd-stable-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -59,7 +59,7 @@ jobs:
     name: Upload doc coverage to Codecov
     needs: gen_xml_doc
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-21.04-clang-testing
+    container: greenbone/gvmd-stable-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -89,7 +89,7 @@ jobs:
   build_gmp_doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-21.04-clang-testing
+    container: greenbone/gvmd-stable-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -110,41 +110,14 @@ jobs:
           - Debug
           - Release
         docker_base:
-          - greenbone/gvmd-21.04-clang-testing
-          - greenbone/gvmd-21.04-gcc-testing
+          - greenbone/gvmd-stable-clang-testing
+          - greenbone/gvmd-stable-gcc-testing
     container: ${{ matrix.docker_base }}
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Find gvmd reference branch
-        run: |
-          if [ -n "$GITHUB_BASE_REF" ];                          \
-          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
-          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
-          fi
-      - name: Select gvm-libs branch
-        run: |
-          if [ $GVMD_REF = "master" ];                           \
-            then GVM_LIBS_REF="master";                          \
-            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
-                                | sed 's/refs\/.*\///g'          \
-                                | sed 's/gvmd-/gvm-libs-/g' -);  \
-            fi;                                                  \
-          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
-      - name: Check out gvm-libs
-        uses: actions/checkout@v2
-        with:
-          repository: greenbone/gvm-libs
-          ref: ${{ env.GVM_LIBS_REF }}
-          path: gvm-libs
-      - name: Configure and compile gvm-libs (${{ env.BUILD_TYPE }})
-        working-directory: gvm-libs
-        run: |
-          mkdir build && cd build/ &&                \
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
-          make install
       - name: Configure and compile gvmd
         run: |
           mkdir build && cd build/ &&                \
@@ -154,37 +127,10 @@ jobs:
   scan-build:
     name: Scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-21.04-clang-testing
+    container: greenbone/gvmd-stable-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Find gvmd reference branch
-        run: |
-          if [ -n "$GITHUB_BASE_REF" ];                          \
-          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
-          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
-          fi
-      - name: Select gvm-libs branch
-        run: |
-          if [ $GVMD_REF = "master" ];                           \
-            then GVM_LIBS_REF="master";                          \
-            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
-                                | sed 's/refs\/.*\///g'          \
-                                | sed 's/gvmd-/gvm-libs-/g' -);  \
-            fi;                                                  \
-          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
-      - name: Check out gvm-libs
-        uses: actions/checkout@v2
-        with:
-          repository: greenbone/gvm-libs
-          ref: ${{ env.GVM_LIBS_REF }}
-          path: gvm-libs
-      - name: Configure and compile gvm-libs (Debug)
-        working-directory: gvm-libs
-        run: |
-          mkdir build && cd build/ &&                \
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
-          make install
       - name: Configure and Scan Build (Debug, PostgreSQL)
         run: |
           mkdir build && cd build/ && scan-build cmake \
@@ -204,39 +150,12 @@ jobs:
     strategy:
       matrix:
         docker_base:
-          - greenbone/gvmd-21.04-clang-testing
-          - greenbone/gvmd-21.04-gcc-testing
+          - greenbone/gvmd-stable-clang-testing
+          - greenbone/gvmd-stable-gcc-testing
     container: ${{ matrix.docker_base }}
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Find gvmd reference branch
-        run: |
-          if [ -n "$GITHUB_BASE_REF" ];                          \
-          then echo "GVMD_REF=$GITHUB_BASE_REF" >> $GITHUB_ENV;  \
-          else echo "GVMD_REF=$GITHUB_REF" >> $GITHUB_ENV;       \
-          fi
-      - name: Select gvm-libs branch
-        run: |
-          if [ $GVMD_REF = "master" ];                           \
-            then GVM_LIBS_REF="master";                          \
-            else GVM_LIBS_REF=$(echo "$GVMD_REF"                 \
-                                | sed 's/refs\/.*\///g'          \
-                                | sed 's/gvmd-/gvm-libs-/g' -);  \
-            fi;                                                  \
-          echo "GVM_LIBS_REF=$GVM_LIBS_REF" >> $GITHUB_ENV
-      - name: Check out gvm-libs
-        uses: actions/checkout@v2
-        with:
-          repository: greenbone/gvm-libs
-          ref: ${{ env.GVM_LIBS_REF }}
-          path: gvm-libs
-      - name: Configure and compile gvm-libs (Debug)
-        working-directory: gvm-libs
-        run: |
-          mkdir build && cd build/ &&                \
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
-          make install
       - name: Configure and run unit tests
         run: |
           mkdir build && cd build/ &&                                  \

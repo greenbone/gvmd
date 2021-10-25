@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix sending prefs for whole, growing VT families [#1603](https://github.com/greenbone/gvmd/pull/1603)
 - Add trash columns for target "elevate" credential [#1636](https://github.com/greenbone/gvmd/pull/1636)
 
-[21.4.3]: https://github.com/greenbone/gvmd/compare/v21.4.2...v21.4.3
+[21.4.3]: https://github.com/greenbone/gvmd/compare/v21.4.2...stable
 
 ## [21.4.2] - 2021-06-28
 ### Fixed
@@ -100,7 +100,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove severity type "debug" [#1316](https://github.com/greenbone/gvmd/pull/1316)
 - Remove element "threat" of element "notes" [#1324](https://github.com/greenbone/gvmd/pull/1324)
 
-[21.4.0]: https://github.com/greenbone/gvmd/compare/gvmd-20.08...v21.4.0
+[21.4.0]: https://github.com/greenbone/gvmd/compare/oldstable...v21.4.0
 
 ## [20.8.4] - Unreleased
 ### Added
@@ -121,7 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Fixed the lack of the severities in the display of the applications [#1666](https://github.com/greenbone/gvmd/pull/1666)
 
-[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...gvmd-20.08
+[20.8.4]: https://github.com/greenbone/gvmd/compare/v20.8.3...oldstable
 
 
 ## [20.8.3] - 2021-08-03
@@ -145,7 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sort the "host" column by IPv4 address if possible [#1637](https://github.com/greenbone/gvmd/pull/1637)
 - Fix for parse_iso_time_tz error with musl library [#1644](https://github.com/greenbone/gvmd/pull/1644)
 
-[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...v20.8.3
+[20.8.3]: https://github.com/greenbone/gvmd/compare/v20.8.2...oldstable
 
 ## [20.8.2] - 2021-06-23
 

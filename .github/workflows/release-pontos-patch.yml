@@ -3,7 +3,7 @@ name: Release patch version with pontos
 on:
   pull_request:
     types: [closed]
-    branches: [ 'gvmd-21.04', 'gvmd-20.08' ]
+    branches: [ 'stable', 'oldstable' ]
 
 jobs:
   release-patch:
