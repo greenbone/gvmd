@@ -95,6 +95,11 @@
  */
 #define LOCK_RETRIES 16
 
+/**
+ * @brief Time of delay between two lock retries.
+ */
+#define LOCK_RETRY_DELAY 2
+
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
 
@@ -24470,7 +24475,7 @@ delete_report (const char *report_id, int dummy)
   lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
   while ((lock_ret == 0) && (lock_retries > 0))
     {
-      sleep(2);
+      sleep(LOCK_RETRY_DELAY);
       lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
       lock_retries--;
     }
@@ -29322,7 +29327,7 @@ delete_task_lock (task_t task, int ultimate)
   lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
   while ((lock_ret == 0) && (lock_retries > 0))
     {
-      sleep(2);
+      sleep(LOCK_RETRY_DELAY);
       lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
       lock_retries--;
     }
@@ -29502,7 +29507,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
               lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
               while ((lock_ret == 0) && (lock_retries > 0))
                 {
-                  sleep(2);
+                  sleep(LOCK_RETRY_DELAY);
                   lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
                   lock_retries--;
                 }
