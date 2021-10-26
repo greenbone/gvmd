@@ -3121,6 +3121,13 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
                   const char *location;
                   location = app_locations_iterator_location (&locations_iter);
 
+                  if (location == NULL)
+                    {
+                      g_warning ("%s: Location is null for ip %s, app %s",
+                                 __func__, ip, app);
+                      continue;
+                    }
+
                   if (locations->len)
                     g_string_append (locations, ", ");
                   g_string_append (locations, location);
