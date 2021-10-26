@@ -2909,7 +2909,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   manage_session_init (current_credentials.uuid);
 
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
-      || scanner_type (task_scanner (task) == SCANNER_TYPE_OSP_SENSOR))
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     {
       rc = launch_osp_openvas_task (task, target, report_id, from, &error);
     }
