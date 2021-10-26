@@ -83,15 +83,15 @@ else (NOT GPGME)
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (NOT GPGME)
 
-find_package(Theia 1.0.0 QUIET)
-if (Theia_DIR)
-  message (STATUS "Found libtheia ${Theia_VERSION} in ${Theia_DIR}")
+if (WITH_LIBTHEIA)
+  find_package(Theia 1.0.0 REQUIRED)
+  message (STATUS "Using libtheia ${Theia_VERSION} in ${Theia_DIR}")
   add_definitions (-DHAS_LIBTHEIA="1")
   set (OPT_THEIA_TGT Theia::Theia)
-else (Theia_DIR)
-  message (STATUS "No compatible libtheia version found")
+else (WITH_LIBTHEIA)
+  message (STATUS "Not using libtheia - licensing functions disabled")
   set (OPT_THEIA_TGT "")
-endif (Theia_DIR)
+endif (WITH_LIBTHEIA)
 
 include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
                      ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
