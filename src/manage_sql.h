@@ -133,6 +133,11 @@
 #define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
 
 /**
+ * @brief UUID of 'Licensing Enabled' setting.
+ */
+#define SETTING_UUID_LICENSING_ENABLED "bb051ce6-de58-4bcf-bacd-7743797b22fa"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
