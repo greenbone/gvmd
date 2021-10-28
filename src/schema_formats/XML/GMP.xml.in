@@ -12606,6 +12606,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p>
         The client uses the get_license command to get the current license.
       </p>
+      <p>
+        This command is only available if gvmd is built with the licensing
+        library (libtheia).
+      </p>
     </description>
     <pattern>
     </pattern>
@@ -23811,6 +23815,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </p>
       <p>
         The license has to be provided as a valid license TOML file.
+      </p>
+      <p>
+        This command is only available if gvmd is built with the licensing
+        library (libtheia).
       </p>
     </description>
     <pattern>

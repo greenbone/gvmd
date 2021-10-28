@@ -1851,6 +1851,8 @@ gvmd (int argc, char** argv)
   static int feed_lock_timeout = 0;
   static gchar *vt_verification_collation = NULL;
 
+  GString *full_disable_commands = g_string_new ("");
+
   int sentry_initialized;
   GError *error = NULL;
   lockfile_t lockfile_checking, lockfile_serving;
@@ -3062,7 +3064,18 @@ gvmd (int argc, char** argv)
   /* Setup global variables. */
 
   if (disable)
-    disabled_commands = g_strsplit (disable, ",", 0);
+    g_string_append (full_disable_commands, disable);
+
+#ifndef HAS_LIBTHEIA
+  if (full_disable_commands->len)
+    g_string_append_c (full_disable_commands, ',');
+  g_string_append (full_disable_commands, "get_license,modify_license");
+#endif
+
+  if (full_disable_commands->len)
+    disabled_commands = g_strsplit (full_disable_commands->str, ",", 0);
+
+  g_string_free(full_disable_commands, TRUE);
 
   scheduling_enabled = (disable_scheduling == FALSE);
 
