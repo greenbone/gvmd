@@ -27,107 +27,11 @@
 #include "manage_license.h"
 #include "utils.h"
 
-/* Data types */
-
+#undef G_LOG_DOMAIN
 /**
- * @brief Allocates a new license metadata struct
- *
- * @return Newly allocated license metadata. Free with license_meta_free.
+ * @brief GLib log domain.
  */
-license_meta_t *
-license_meta_new ()
-{
-  return g_malloc0 (sizeof (license_meta_t));
-}
-
-/**
- * @brief Frees a license metadata struct and its fields.
- *
- * @param[in]  data  The data struct to free.
- */
-void
-license_meta_free (license_meta_t *data)
-{
-  if (data == NULL)
-    return;
-
-  free (data->id);
-  free (data->version);
-  free (data->title);
-  free (data->type);
-  free (data->customer_name);
-
-  g_free (data);
-}
-
-/**
- * @brief Allocates a new license appliance data struct
- *
- * @return Newly allocated license appliance data. Free with license_meta_free.
- */
-license_appliance_t *
-license_appliance_new ()
-{
-  return g_malloc0 (sizeof (license_appliance_t));
-}
-
-/**
- * @brief Frees a license appliance data struct and its fields.
- *
- * @param[in]  data  The data struct to free.
- */
-void
-license_appliance_free (license_appliance_t *data)
-{
-  if (data == NULL)
-    return;
-
-  free (data->model);
-  free (data->model_type);
-
-  g_free (data);
-}
-
-/**
- * @brief Allocates a new license data struct
- *
- * @return Newly allocated license data. Free with license_meta_free.
- */
-license_data_t *
-license_data_new ()
-{
-  license_data_t *data = g_malloc0 (sizeof (license_data_t));
-
-  data->meta = license_meta_new ();
-  data->appliance = license_appliance_new ();
-
-  data->keys = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
-                                NULL, g_free, g_free);
-
-  data->signatures = g_tree_new_full ((GCompareDataFunc) g_ascii_strcasecmp,
-                                      NULL, g_free, g_free);
-
-  return data;
-}
-
-/**
- * @brief Frees a license data struct and its fields.
- *
- * @param[in]  data  The data struct to free.
- */
-void
-license_data_free (license_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  license_meta_free (data->meta);
-  license_appliance_free (data->appliance);
-  g_tree_destroy (data->keys);
-  g_tree_destroy (data->signatures);
-
-  g_free (data);
-}
+#define G_LOG_DOMAIN "md manage"
 
 /* Actions */
 
@@ -156,46 +60,115 @@ manage_update_license_file (const char *new_license)
  * @param[out] status       The validation status (e.g. "valid", "expired").
  * @param[out] license_data The content of the license organized in a struct.
  *
- * @return 0 success, 1 service unavailable, 99 permission denied.
+ * @return 0 success, 1 service unavailable, 2 error sending command,
+ *         3 error receiving response, 99 permission denied, -1 internal error.
  */
 int
 manage_get_license (gchar **status,
-                    license_data_t **license_data)
+                    theia_license_t **license_data)
 {
+  if (status)
+    *status = NULL;
+  if (license_data)
+    *license_data = NULL;
+
   if (! acl_user_may ("get_license"))
     return 99;
 
+#ifdef HAS_LIBTHEIA
+  int ret;
+  const char *broker_address;
+  theia_client_t *client;
+  theia_get_license_cmd_t *get_license_cmd;
+  theia_got_license_info_t *got_license_info;
+
+  // TODO: Replace with command line option
+  broker_address = get_broker_address ();
+  if (broker_address == NULL)
+    return 1;
+
+  client = theia_client_new_mqtt (&client);
+  if (client == NULL)
+    {
+      g_warning ("%s: Failed to create MQTT client", __func__);
+      return -1;
+    }
+
+  ret = theia_client_connect (client, broker_address);
+  if (ret)
+    {
+      g_warning ("%s: Failed to connect to MQTT broker (%s)",
+                 __func__, broker_address);
+      return 1;
+    }
+  else
+    g_debug ("%s: Connected to %s\n", __func__, broker_address);
+
+  ret = theia_new_get_license_cmd (&get_license_cmd);
+  if (ret)
+    {
+      g_warning ("%s: Error preparing get.license command", __func__);
+      theia_client_disconnect (client);
+      free (client);
+      return -1;
+    }
+
+  ret = theia_client_send_cmd (client, THEIA_LICENSE_CMD_TOPIC,
+                               (theia_cmd_t *) get_license_cmd);
+  if (ret)
+    {
+      fprintf (stderr, "Error publishing get.license message.");
+      theia_client_disconnect (client);
+      theia_get_license_cmd_free (get_license_cmd);
+      free (client);
+      return 2;
+    }
+  else
+    g_debug ("%s: Sent get.license command"
+             " (message_id: %s, group_id: %s)\n",
+             __func__,
+             get_license_cmd->message->id,
+             get_license_cmd->message->group_id);
+
+
+  ret = theia_client_get_info_response (client, THEIA_LICENSE_INFO_TOPIC,
+                                        "got.license",
+                                        get_license_cmd->message->group_id,
+                                        (theia_info_t **) &got_license_info);
+  if (ret)
+    {
+      g_debug ("%s: Failed to get got.license response", __func__);
+      theia_client_disconnect (client);
+      theia_get_license_cmd_free (get_license_cmd);
+      free (client);
+      return 3;
+    }
+  else
+    g_debug ("%s: Received got.license response", __func__);
+
+  theia_client_disconnect (client);
+
   if (status)
-    *status = g_strdup ("active");
+    {
+      *status = got_license_info->status;
+      got_license_info->status = NULL;
+    }
 
   if (license_data)
     {
-      *license_data = license_data_new ();
-      license_meta_t *license_meta = (*license_data)->meta;
-      license_appliance_t *license_appliance = (*license_data)->appliance;
-
-      // TODO : replace dummy data with data from license service
-      license_meta->id = g_strdup ("4711");
-      license_meta->version = g_strdup_printf("1.0.0");
-      license_meta->title = g_strdup ("Test License");
-      license_meta->type = g_strdup ("trial");
-      license_meta->customer_name = g_strdup ("Jane Doe");
-      license_meta->created = time (NULL) - 3600;
-      license_meta->begins = time (NULL);
-      license_meta->expires = time (NULL) + 3600 * 24 * 8;
-
-      license_appliance->model = g_strdup ("trial");
-      license_appliance->model_type = g_strdup ("virtual");
-      license_appliance->sensor = FALSE;
-
-      g_tree_replace ((*license_data)->keys,
-                      g_strdup ("feed"),
-                      g_strdup ("*base64 GSF key*"));
-
-      g_tree_replace ((*license_data)->signatures,
-                      g_strdup ("license"),
-                      g_strdup ("*base64 signature*"));
+      *license_data = got_license_info->license;
+      got_license_info->license = NULL;
     }
+
+  theia_got_license_info_free (got_license_info);
+
+#else // HAS_LIBTHEIA
+  if (status)
+    *status = NULL;
+  if (license_data)
+    *license_data = NULL;
+  return 1;
+#endif // HAS_LIBTHEIA
 
   return 0;
 }

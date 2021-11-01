@@ -3612,6 +3612,12 @@ gboolean
 manage_gvmd_data_feed_dirs_exist ();
 
 const gchar *
+get_broker_address ();
+
+void
+set_broker_address (const char *);
+
+const gchar *
 get_feed_lock_path ();
 
 void

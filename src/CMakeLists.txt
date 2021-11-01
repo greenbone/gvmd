@@ -83,6 +83,16 @@ else (NOT GPGME)
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (NOT GPGME)
 
+if (WITH_LIBTHEIA)
+  find_package(Theia 1.0.0 REQUIRED)
+  message (STATUS "Using libtheia ${Theia_VERSION} in ${Theia_DIR}")
+  add_definitions (-DHAS_LIBTHEIA="1")
+  set (OPT_THEIA_TGT Theia::Theia)
+else (WITH_LIBTHEIA)
+  message (STATUS "Not using libtheia - licensing functions disabled")
+  set (OPT_THEIA_TGT "")
+endif (WITH_LIBTHEIA)
+
 include_directories (${LIBGVM_GMP_INCLUDE_DIRS}
                      ${LIBGVM_BASE_INCLUDE_DIRS} ${LIBGVM_UTIL_INCLUDE_DIRS}
                      ${LIBGVM_OSP_INCLUDE_DIRS}  ${GLIB_INCLUDE_DIRS})
@@ -260,32 +270,32 @@ target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-sql-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gmp-tickets-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
-                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
+                       ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gvm-pg-server ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)

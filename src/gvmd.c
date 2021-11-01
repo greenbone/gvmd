@@ -185,6 +185,11 @@
 #define DEFAULT_CLIENT_WATCH_INTERVAL 1
 
 /**
+ * @brief Default broker address
+ */
+#define DEFAULT_BROKER_ADDRESS "localhost:9138"
+
+/**
  * @brief Interval in seconds to check whether client connection was closed.
  */
 static int client_watch_interval = DEFAULT_CLIENT_WATCH_INTERVAL;
@@ -1841,9 +1846,12 @@ gvmd (int argc, char** argv)
   static gchar *role = NULL;
   static gchar *disable = NULL;
   static gchar *value = NULL;
+  static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
   static gchar *vt_verification_collation = NULL;
+
+  GString *full_disable_commands = g_string_new ("");
 
   int sentry_initialized;
   GError *error = NULL;
@@ -1851,6 +1859,11 @@ gvmd (int argc, char** argv)
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "broker-address", '\0', 0, G_OPTION_ARG_STRING,
+          &broker_address,
+          "Sets the address for the publish-subscribe message (MQTT) broker."
+          " Defaults to " DEFAULT_BROKER_ADDRESS ". Set to empty to disable.",
+          "<address>" },
         { "check-alerts", '\0', 0, G_OPTION_ARG_NONE,
           &check_alerts,
           "Check SecInfo alerts.",
@@ -2216,6 +2229,11 @@ gvmd (int argc, char** argv)
     {
       client_watch_interval = 0;
     }
+
+  /* Set broker address */
+  set_broker_address (broker_address
+                        ? broker_address
+                        : DEFAULT_BROKER_ADDRESS);
 
   /* Set feed lock path */
   set_feed_lock_path (feed_lock_path);
@@ -3046,7 +3064,18 @@ gvmd (int argc, char** argv)
   /* Setup global variables. */
 
   if (disable)
-    disabled_commands = g_strsplit (disable, ",", 0);
+    g_string_append (full_disable_commands, disable);
+
+#ifndef HAS_LIBTHEIA
+  if (full_disable_commands->len)
+    g_string_append_c (full_disable_commands, ',');
+  g_string_append (full_disable_commands, "get_license,modify_license");
+#endif
+
+  if (full_disable_commands->len)
+    disabled_commands = g_strsplit (full_disable_commands->str, ",", 0);
+
+  g_string_free(full_disable_commands, TRUE);
 
   scheduling_enabled = (disable_scheduling == FALSE);
 
