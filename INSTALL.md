@@ -16,10 +16,11 @@ Prerequisites:
 * pkg-config (Debian package: pkg-config)
 * libical >= 1.0.0 (Debian package: libical-dev)
 * xsltproc (Debian package: xsltproc)
+* gpgme
 
 Install these prerequisites on Debian GNU/Linux 'Buster' 10:
 
-    apt-get install gcc cmake libglib2.0-dev libgnutls30-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev xsltproc
+    apt-get install gcc cmake libglib2.0-dev libgnutls30-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev xsltproc libgpgme-dev
 
 Prerequisites for building documentation:
 * Doxygen
