@@ -18,11 +18,12 @@ WORKDIR /usr/local/src
 # support and not yet installed as dependencies of gvm-libs-core
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \ 
+    build-essential \
     cmake \
     libglib2.0-dev \
-    libgnutls30-dev \
+    libgnutls28-dev \
     libpq-dev \
-    postgresql-server-dev-11 \
+    postgresql-server-dev-13 \
     pkg-config \
     libical-dev \
     xsltproc \
@@ -30,7 +31,6 @@ RUN apt-get update && \
     lcov \
     libgpgme-dev && \
     rm -rf /var/lib/apt/lists/*
-
 
 # Install gcc/g++ compiler
 RUN if ( test "$COMPILER" = "gcc"); then \

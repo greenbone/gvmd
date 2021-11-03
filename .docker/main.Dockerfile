@@ -1,29 +1,27 @@
 FROM greenbone/gvm-libs:main as builder
 
-# This will make apt-get install without question
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install Debian core dependencies required for building gvm with PostgreSQL
 # support and not yet installed as dependencies of gvm-libs-core
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \ 
-    gcc \
+    build-essential \
     cmake \
     libglib2.0-dev \
-    libgnutls30-dev \
+    libgnutls28-dev \
     libpq-dev \
-    postgresql-server-dev-11 \
+    postgresql-server-dev-13 \
     pkg-config \
     libical-dev \
     xsltproc \
     libgpgme-dev && \
     rm -rf /var/lib/apt/lists/*
 
-COPY . /usr/local/src/gvmd
-WORKDIR /usr/local/src
+COPY . /source
+WORKDIR /source
 
-RUN cmake --version && \ 
-    mkdir /build && \
+RUN mkdir /build && \
     mkdir /install && \
     cd /build && \
     cmake -DCMAKE_BUILD_TYPE=Release /source && \
