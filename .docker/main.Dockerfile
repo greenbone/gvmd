@@ -33,8 +33,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \ 
-    libglib2.0-0 \
-    libgnutls30 \
     libpq5 \
     libgpgme11 \
     postgresql-13 \
