@@ -22,7 +22,7 @@ jobs:
   build-doc:
     name: Build standard documentation
     runs-on: ubuntu-latest
-    container: greenbone/code-metrics-doxygen-debian-stretch
+    container: greenbone/doxygen
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -36,7 +36,7 @@ jobs:
   generate-xml-doc:
     name: Build XML documentation
     runs-on: ubuntu-latest
-    container: greenbone/code-metrics-doxygen-debian-stretch
+    container: greenbone/doxygen
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -91,7 +91,7 @@ jobs:
   build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-clang-build:main
+    container: greenbone/gvmd-clang-build:unstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
