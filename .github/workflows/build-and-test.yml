@@ -19,7 +19,7 @@ jobs:
           src/manage_utils.h src/sql.h src/types.h src/utils.h
           git diff --exit-code
 
-  build_doc:
+  build-doc:
     name: Build standard documentation
     runs-on: ubuntu-latest
     container: greenbone/code-metrics-doxygen-debian-stretch
@@ -33,7 +33,7 @@ jobs:
           cmake -DSKIP_SRC=1 ..
           make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
 
-  gen_xml_doc:
+  generate-xml-doc:
     name: Build XML documentation
     runs-on: ubuntu-latest
     container: greenbone/code-metrics-doxygen-debian-stretch
@@ -88,7 +88,7 @@ jobs:
         with:
           files: lcov.info
 
-  build_gmp_doc:
+  build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
     container: greenbone/gvmd-clang-build:unstable
