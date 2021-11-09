@@ -1,21 +1,23 @@
-FROM greenbone/gvm-libs:main as builder
-
+ARG VERSION=unstable
 ARG DEBIAN_FRONTEND=noninteractive
+
+FROM greenbone/gvm-libs:${VERSION} as builder
 
 # Install Debian core dependencies required for building gvm with PostgreSQL
 # support and not yet installed as dependencies of gvm-libs-core
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \ 
+    apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
+    pkg-config \
     libglib2.0-dev \
     libgnutls28-dev \
+    libgpgme-dev \
     libpq-dev \
-    postgresql-server-dev-13 \
-    pkg-config \
     libical-dev \
-    xsltproc \
-    libgpgme-dev && \
+    postgresql-server-dev-13 \
+    xml-twig-tools \
+    xsltproc && \
     rm -rf /var/lib/apt/lists/*
 
 COPY . /source
@@ -27,18 +29,35 @@ RUN mkdir /build && \
     cmake -DCMAKE_BUILD_TYPE=Release /source && \
     make DESTDIR=/install install
 
-FROM debian:stable-slim
+FROM greenbone/gvm-libs:${VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \ 
-    libpq5 \
+    apt-get install -y --no-install-recommends \
     libgpgme11 \
-    postgresql-13 \
-    libical3 && \
+    libical3 \
+    libpq5 \
+    postgresql-client-13 \
+    postgresql-client-common \
+    xml-twig-tools && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install/ /
 
-RUN ldconfig
+COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
+
+RUN addgroup --gid 1001 --system gvm && \
+    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvm
+
+RUN mkdir -p /run/gvm && \
+    mkdir -p /var/log/gvm && \
+    chown -R gvm:gvm /etc/gvm && \
+    chown -R gvm:gvm /run/gvm && \
+    chown -R gvm:gvm /var/lib/gvm && \
+    chown -R gvm:gvm /var/log/gvm && \
+    chmod 755 /usr/local/bin/start-gvmd
+
+USER gvm
+
+CMD [ "/usr/local/bin/start-gvmd" ]
