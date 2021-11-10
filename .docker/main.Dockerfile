@@ -1,6 +1,7 @@
-FROM greenbone/gvm-libs:main as builder
-
+ARG VERSION=unstable
 ARG DEBIAN_FRONTEND=noninteractive
+
+FROM greenbone/gvm-libs:${VERSION} as builder
 
 # Install Debian core dependencies required for building gvm with PostgreSQL
 # support and not yet installed as dependencies of gvm-libs-core
@@ -28,7 +29,7 @@ RUN mkdir /build && \
     cmake -DCMAKE_BUILD_TYPE=Release /source && \
     make DESTDIR=/install install
 
-FROM greenbone/gvm-libs:main
+FROM greenbone/gvm-libs:${VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
