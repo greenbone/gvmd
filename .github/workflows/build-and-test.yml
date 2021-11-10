@@ -59,7 +59,7 @@ jobs:
 
   doc-coverage:
     name: Upload doc coverage to Codecov
-    needs: gen_xml_doc
+    needs: generate-xml-doc
     runs-on: ubuntu-latest
     container: greenbone/gvmd-clang-build:unstable
     steps:
