@@ -12654,7 +12654,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern>
               <e>version</e>
               <e>id</e>
-              <e>title</e>
+              <e>comment</e>
               <e>type</e>
               <e>customer_name</e>
               <e>created</e>
@@ -12672,8 +12672,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern>text</pattern>
             </ele>
             <ele>
-              <name>title</name>
-              <summary>Short title summarizing the license</summary>
+              <name>comment</name>
+              <summary>Short comment summarizing the license</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
@@ -12780,7 +12780,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <meta>
                 <id>4711</id>
                 <version>1.0.0</version>
-                <title>Test License</title>
+                <comment>Test License</comment>
                 <type>trial</type>
                 <customer_name>Jane Doe</customer_name>
                 <created>2021-08-27T06:05:21Z</created>

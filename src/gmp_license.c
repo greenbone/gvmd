@@ -123,12 +123,12 @@ buffer_license_content_xml (GString *response, theia_license_t *license_data)
                      "<meta>"
                      "<id>%s</id>"
                      "<version>%s</version>"
-                     "<title>%s</title>"
+                     "<comment>%s</comment>"
                      "<type>%s</type>"
                      "<customer_name>%s</customer_name>",
                      license_data->meta->id,
                      license_data->meta->version,
-                     license_data->meta->title,
+                     license_data->meta->comment,
                      license_data->meta->type,
                      license_data->meta->customer_name);
 
