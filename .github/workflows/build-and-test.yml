@@ -9,41 +9,43 @@ jobs:
   check-format:
     name: Check formatting
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-oldstable-clang-testing
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Check Source Format
         run: |
-          clang-format -i -style=file                               \
-          src/gmp.h src/gmp_base.h src/gmp_delete.h                 \
+          clang-format -i -style=file src/gmp.h src/gmp_base.h src/gmp_delete.h \
           src/gmp_get.h src/gmp_tickets.h src/gmpd.h src/iterator.h \
-          src/manage_utils.h src/sql.h src/types.h src/utils.h &&   \
+          src/manage_utils.h src/sql.h src/types.h src/utils.h
           git diff --exit-code
 
-  build_doc:
+  build-doc:
     name: Build standard documentation
     runs-on: ubuntu-latest
-    container: greenbone/code-metrics-doxygen-debian-stretch
+    container: greenbone/doxygen
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Build standard documentation, failing if there are warnings
         run: |
-          mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && \
+          mkdir build
+          cd build
+          cmake -DSKIP_SRC=1 ..
           make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
 
-  gen_xml_doc:
+  generate-xml-doc:
     name: Build XML documentation
     runs-on: ubuntu-latest
-    container: greenbone/code-metrics-doxygen-debian-stretch
+    container: greenbone/doxygen
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Generate documentation (XML)
         run: |
-             mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. \
-             && make doc-xml 2> ~/doxygen-stderr.txt
+          mkdir build
+          cd build
+          cmake -DSKIP_SRC=1 ..
+          make doc-xml 2> ~/doxygen-stderr.txt
       - name: Upload doxygen error output as artifact
         uses: actions/upload-artifact@v2
         with:
@@ -57,9 +59,9 @@ jobs:
 
   doc-coverage:
     name: Upload doc coverage to Codecov
-    needs: gen_xml_doc
+    needs: generate-xml-doc
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-oldstable-clang-testing
+    container: greenbone/gvmd-clang-build:oldstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -79,22 +81,26 @@ jobs:
       - name: Establish documentation coverage
         run: |
             . venv/bin/activate
-            python -m coverxygen --src-dir ${{ github.workspace }}      \
+            python -m coverxygen --src-dir ${{ github.workspace }} \
             --xml-dir ${{steps.xml-doc-download.outputs.download-path}} \
             --output lcov.info
       - uses: codecov/codecov-action@v1
         with:
           files: lcov.info
 
-  build_gmp_doc:
+  build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-oldstable-clang-testing
+    container: greenbone/gvmd-clang-build:oldstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Generate GMP documentation (HTML)
-        run: mkdir build && cd build/ && cmake -DSKIP_SRC=1 .. && make doc-gmp
+        run: |
+          mkdir build
+          cd build
+          cmake -DSKIP_SRC=1 ..
+          make doc-gmp
       - name: Upload GMP documentation artifact
         uses: actions/upload-artifact@v2
         with:
@@ -110,8 +116,8 @@ jobs:
           - Debug
           - Release
         docker_base:
-          - greenbone/gvmd-oldstable-clang-testing
-          - greenbone/gvmd-oldstable-gcc-testing
+          - greenbone/gvmd-clang-build:oldstable
+          - greenbone/gvmd-gcc-build:oldstable
     container: ${{ matrix.docker_base }}
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
@@ -120,22 +126,24 @@ jobs:
         uses: actions/checkout@v2
       - name: Configure and compile gvmd
         run: |
-          mkdir build && cd build/ &&                \
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && \
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
           make install
 
   scan-build:
     name: Scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-oldstable-clang-testing
+    container: greenbone/gvmd-clang-build:oldstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Configure and Scan Build (Debug, PostgreSQL)
         run: |
-          mkdir build && cd build/ && scan-build cmake \
-          -DCMAKE_BUILD_TYPE=Debug .. && \
-          scan-build -o ~/scan-build-report make && \
+          mkdir build
+          cd build
+          scan-build cmake -DCMAKE_BUILD_TYPE=Debug ..
+          scan-build -o ~/scan-build-report make
           [ -z "$(ls -A ~/scan-build-report/)" ]
       - name: Upload scan-build report
         if: failure()
@@ -150,16 +158,19 @@ jobs:
     strategy:
       matrix:
         docker_base:
-          - greenbone/gvmd-oldstable-clang-testing
-          - greenbone/gvmd-oldstable-gcc-testing
+          - greenbone/gvmd-clang-build:oldstable
+          - greenbone/gvmd-gcc-build:oldstable
     container: ${{ matrix.docker_base }}
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
       - name: Configure and run unit tests
         run: |
-          mkdir build && cd build/ &&                                  \
-          cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_COVERAGE=1 .. &&   \
-          make && make tests && CTEST_OUTPUT_ON_FAILURE=1 make test && \
-          lcov --directory . --capture --output-file coverage.info &&  \
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_COVERAGE=1 ..
+          make
+          make tests
+          CTEST_OUTPUT_ON_FAILURE=1 make test
+          lcov --directory . --capture --output-file coverage.info
           genhtml -o coverage coverage.info
