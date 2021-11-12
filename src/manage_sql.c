@@ -44269,6 +44269,7 @@ clean_feed_role_permissions (const char *type,
       const char *permission_resource_id = iterator_string (&resources, 1);
       const char *permission_resource_name = iterator_string (&resources, 2);
       iterator_t permissions;
+      roles = NULL;
 
       init_iterator (&permissions,
                      "DELETE FROM permissions"
