@@ -59,3 +59,5 @@ RUN mkdir -p /run/gvm && \
     chmod 755 /usr/local/bin/start-gvmd
 
 USER gvm
+
+CMD [ "/usr/local/bin/start-gvmd" ]
