@@ -35,10 +35,29 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    libpq5 \
     libgpgme11 \
     libical3 \
+    libpq5 \
+    postgresql-client-13 \
+    postgresql-client-common \
     xml-twig-tools && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install/ /
+
+COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
+
+RUN addgroup --gid 1001 --system gvm && \
+    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvm
+
+RUN mkdir -p /run/gvm && \
+    mkdir -p /var/log/gvm && \
+    chown -R gvm:gvm /etc/gvm && \
+    chown -R gvm:gvm /run/gvm && \
+    chown -R gvm:gvm /var/lib/gvm && \
+    chown -R gvm:gvm /var/log/gvm && \
+    chmod 755 /usr/local/bin/start-gvmd
+
+USER gvm
+
+CMD [ "/usr/local/bin/start-gvmd" ]
