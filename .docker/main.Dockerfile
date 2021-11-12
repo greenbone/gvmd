@@ -26,7 +26,7 @@ WORKDIR /source
 RUN mkdir /build && \
     mkdir /install && \
     cd /build && \
-    cmake -DCMAKE_BUILD_TYPE=Release /source && \
+    cmake -DCMAKE_BUILD_TYPE=Release -DGVM_RUN_DIR=/run/gvmd /source && \
     make DESTDIR=/install install
 
 FROM greenbone/gvm-libs:${VERSION}
@@ -50,10 +50,10 @@ COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 RUN addgroup --gid 1001 --system gvm && \
     adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvm
 
-RUN mkdir -p /run/gvm && \
+RUN mkdir -p /run/gvmd && \
     mkdir -p /var/log/gvm && \
     chown -R gvm:gvm /etc/gvm && \
-    chown -R gvm:gvm /run/gvm && \
+    chown -R gvm:gvm /run/gvmd && \
     chown -R gvm:gvm /var/lib/gvm && \
     chown -R gvm:gvm /var/log/gvm && \
     chmod 755 /usr/local/bin/start-gvmd
