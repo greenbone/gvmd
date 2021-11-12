@@ -46,3 +46,8 @@ RUN apt-get update && \
 COPY --from=builder /install/ /
 
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
+
+RUN addgroup --gid 1001 --system gvm && \
+    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvm
+
+USER gvm
