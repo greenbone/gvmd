@@ -27,7 +27,7 @@ jobs:
           context: .
           push: true
           tags: ${{ github.repository }}:${{ env.VERSION }}
-          file: .docker/stable.Dockerfile
+          file: .docker/prod.Dockerfile
 
   upload-build:
     name: "Upload images for building gvmd"
