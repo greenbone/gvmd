@@ -2264,7 +2264,7 @@ gvmd (int argc, char** argv)
       else
         {
           use_tls = 0;
-          manager_address_string_unix = g_build_filename (GVM_RUN_DIR,
+          manager_address_string_unix = g_build_filename (GVMD_RUN_DIR,
                                                           "gvmd.sock",
                                                           NULL);
         }
