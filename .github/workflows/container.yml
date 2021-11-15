@@ -28,7 +28,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.container.outputs.image-tags }}
-          file: .docker/main.Dockerfile
+          file: .docker/prod.Dockerfile
 
   upload-build:
     name: "Upload images for building gvmd"
