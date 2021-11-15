@@ -370,6 +370,10 @@ if (GVM_RUN_DIR)
         add_definitions (-DGVM_RUN_DIR="${GVM_RUN_DIR}")
 endif (GVM_RUN_DIR)
 
+if (GVMD_PID_PATH)
+        add_definitions (-DGVMD_PID_PATH="${GVMD_PID_PATH}")
+endif (GVMD_PID_PATH)
+
 if (GVM_SYSCONF_DIR)
         add_definitions (-DGVM_SYSCONF_DIR="${GVM_SYSCONF_DIR}")
 endif (GVM_SYSCONF_DIR)
