@@ -195,12 +195,12 @@ set (GVM_CLIENT_CERTIFICATE  "${GVM_STATE_DIR}/CA/clientcert.pem")
 set (GVM_CLIENT_KEY          "${GVM_STATE_DIR}/private/CA/clientkey.pem")
 set (GVM_CA_CERTIFICATE      "${GVM_STATE_DIR}/CA/cacert.pem")
 
-if (NOT GVM_RUN_DIR)
-  set (GVM_RUN_DIR      "/run/gvm")
-endif (NOT GVM_RUN_DIR)
+if (NOT GVMD_RUN_DIR)
+  set (GVMD_RUN_DIR      "/run/gvmd")
+endif (NOT GVMD_RUN_DIR)
 
 if (NOT GVMD_PID_PATH)
-  set (GVMD_PID_PATH     "/run/gvmd/gvmd.pid")
+  set (GVMD_PID_PATH     "${GVMD_RUN_DIR}/gvmd.pid")
 endif (NOT GVMD_PID_PATH)
 
 if (NOT GVM_FEED_LOCK_PATH)
