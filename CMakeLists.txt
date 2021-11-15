@@ -199,6 +199,10 @@ if (NOT GVM_RUN_DIR)
   set (GVM_RUN_DIR      "/run/gvm")
 endif (NOT GVM_RUN_DIR)
 
+if (NOT GVMD_PID_PATH)
+  set (GVMD_PID_PATH     "/run/gvmd/gvmd.pid")
+endif (NOT GVMD_PID_PATH)
+
 if (NOT GVM_FEED_LOCK_PATH)
   set (GVM_FEED_LOCK_PATH "${GVM_STATE_DIR}/feed-update.lock")
 endif (NOT GVM_FEED_LOCK_PATH)
