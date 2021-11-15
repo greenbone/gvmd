@@ -953,7 +953,7 @@ cleanup ()
   if (log_config) log_config_free ();
 
   /* Delete pidfile if this process is the parent. */
-  if (is_parent == 1) pidfile_remove ("gvmd");
+  if (is_parent == 1) pidfile_remove (GVMD_PID_PATH);
 }
 
 #ifndef NDEBUG
@@ -3055,7 +3055,7 @@ gvmd (int argc, char** argv)
 
   /* Set our pidfile. */
 
-  if (pidfile_create ("gvmd"))
+  if (pidfile_create (GVMD_PID_PATH))
     {
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
