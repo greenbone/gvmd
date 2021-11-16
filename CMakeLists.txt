@@ -294,6 +294,8 @@ add_subdirectory (doc)
 
 install (DIRECTORY DESTINATION ${GVMD_STATE_DIR})
 
+install (DIRECTORY DESTINATION ${GVMD_RUN_DIR})
+
 install (FILES ${CMAKE_BINARY_DIR}/src/gvmd_log.conf
          DESTINATION ${GVM_SYSCONF_DIR})
 
