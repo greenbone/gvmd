@@ -925,7 +925,7 @@ cleanup ()
   if (log_config) log_config_free ();
 
   /* Delete pidfile if this process is the parent. */
-  if (is_parent == 1) pidfile_remove ("gvmd");
+  if (is_parent == 1) pidfile_remove (GVMD_PID_PATH);
 }
 
 #ifndef NDEBUG
@@ -2190,7 +2190,7 @@ gvmd (int argc, char** argv)
       else
         {
           use_tls = 0;
-          manager_address_string_unix = g_build_filename (GVM_RUN_DIR,
+          manager_address_string_unix = g_build_filename (GVMD_RUN_DIR,
                                                           "gvmd.sock",
                                                           NULL);
         }
@@ -2942,7 +2942,7 @@ gvmd (int argc, char** argv)
 
   /* Set our pidfile. */
 
-  if (pidfile_create ("gvmd")) exit (EXIT_FAILURE);
+  if (pidfile_create (GVMD_PID_PATH)) exit (EXIT_FAILURE);
 
   /* Setup global variables. */
 
