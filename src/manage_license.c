@@ -55,13 +55,11 @@ manage_update_license_file (const char *new_license)
 #ifdef HAS_LIBTHEIA
   int ret;
   const char *broker_address;
-  char *new_license64;
   theia_client_t *client;
   theia_modify_license_cmd_t *modify_license_cmd;
   theia_modified_license_info_t *modified_license_info;
   theia_failure_modify_license_info_t *failure_modify_license_info;
 
-  // TODO: Replace with command line option
   broker_address = get_broker_address ();
   if (broker_address == NULL)
     return 1;
@@ -83,9 +81,7 @@ manage_update_license_file (const char *new_license)
   else
     g_debug ("%s: Connected to %s\n", __func__, broker_address);
 
-  new_license64 = g_base64_encode ((guchar *) new_license, strlen(new_license));
-  ret = theia_new_modify_license_cmd (new_license64, &modify_license_cmd);
-  g_free (new_license64);
+  ret = theia_new_modify_license_cmd ((char *) new_license, &modify_license_cmd);
 
   if (ret)
     {
@@ -186,7 +182,6 @@ manage_get_license (gchar **status,
   theia_get_license_cmd_t *get_license_cmd;
   theia_got_license_info_t *got_license_info;
 
-  // TODO: Replace with command line option
   broker_address = get_broker_address ();
   if (broker_address == NULL)
     return 1;
