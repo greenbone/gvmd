@@ -47,17 +47,17 @@ COPY --from=builder /install/ /
 
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 
-RUN addgroup --gid 1001 --system gvm && \
-    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvm
+RUN addgroup --gid 1001 --system gvmd && \
+    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
 
-RUN mkdir -p /run/gvm && \
+RUN mkdir -p /run/gvmd && \
     mkdir -p /var/log/gvm && \
-    chown -R gvm:gvm /etc/gvm && \
-    chown -R gvm:gvm /run/gvm && \
-    chown -R gvm:gvm /var/lib/gvm && \
-    chown -R gvm:gvm /var/log/gvm && \
+    chown -R gvmd:gvmd /etc/gvm && \
+    chown -R gvmd:gvmd /run/gvmd && \
+    chown -R gvmd:gvmd /var/lib/gvm && \
+    chown -R gvmd:gvmd /var/log/gvm && \
     chmod 755 /usr/local/bin/start-gvmd
 
-USER gvm
+USER gvmd
 
 CMD [ "/usr/local/bin/start-gvmd" ]
