@@ -180,9 +180,13 @@ set (GVM_CLIENT_CERTIFICATE  "${GVM_STATE_DIR}/CA/clientcert.pem")
 set (GVM_CLIENT_KEY          "${GVM_STATE_DIR}/private/CA/clientkey.pem")
 set (GVM_CA_CERTIFICATE      "${GVM_STATE_DIR}/CA/cacert.pem")
 
-if (NOT GVM_RUN_DIR)
-  set (GVM_RUN_DIR      "/run/gvm")
-endif (NOT GVM_RUN_DIR)
+if (NOT GVMD_RUN_DIR)
+  set (GVMD_RUN_DIR      "/run/gvmd")
+endif (NOT GVMD_RUN_DIR)
+
+if (NOT GVMD_PID_PATH)
+  set (GVMD_PID_PATH     "${GVMD_RUN_DIR}/gvmd.pid")
+endif (NOT GVMD_PID_PATH)
 
 if (NOT GVM_FEED_LOCK_PATH)
   set (GVM_FEED_LOCK_PATH "${GVM_STATE_DIR}/feed-update.lock")
@@ -289,6 +293,8 @@ add_subdirectory (doc)
 ## Install
 
 install (DIRECTORY DESTINATION ${GVMD_STATE_DIR})
+
+install (DIRECTORY DESTINATION ${GVMD_RUN_DIR})
 
 install (FILES ${CMAKE_BINARY_DIR}/src/gvmd_log.conf
          DESTINATION ${GVM_SYSCONF_DIR})

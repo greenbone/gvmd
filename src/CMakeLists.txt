@@ -366,9 +366,13 @@ if (GVMD_STATE_DIR)
   add_definitions (-DGVMD_STATE_DIR="${GVMD_STATE_DIR}")
 endif (GVMD_STATE_DIR)
 
-if (GVM_RUN_DIR)
-        add_definitions (-DGVM_RUN_DIR="${GVM_RUN_DIR}")
-endif (GVM_RUN_DIR)
+if (GVMD_RUN_DIR)
+        add_definitions (-DGVMD_RUN_DIR="${GVMD_RUN_DIR}")
+endif (GVMD_RUN_DIR)
+
+if (GVMD_PID_PATH)
+        add_definitions (-DGVMD_PID_PATH="${GVMD_PID_PATH}")
+endif (GVMD_PID_PATH)
 
 if (GVM_SYSCONF_DIR)
         add_definitions (-DGVM_SYSCONF_DIR="${GVM_SYSCONF_DIR}")
