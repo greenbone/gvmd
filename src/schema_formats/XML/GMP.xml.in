@@ -23814,7 +23814,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         license.
       </p>
       <p>
-        The license has to be provided as a valid license TOML file.
+        The license has to be provided as a valid base64 encoded license
+        file.
       </p>
       <p>
         This command is only available if gvmd is built with the licensing
@@ -23832,7 +23833,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </pattern>
     <ele>
       <name>file</name>
-      <summary>The license TOML file in plain-text form</summary>
+      <summary>The license file in base64 encoded form</summary>
       <pattern>text</pattern>
     </ele>
     <response>
