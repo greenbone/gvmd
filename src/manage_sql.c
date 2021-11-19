@@ -15546,25 +15546,6 @@ check_db_settings ()
          "  'Feed Import Roles',"
          "  'Roles given access to new resources from feed.',"
          "  '" ROLE_UUID_ADMIN "," ROLE_UUID_USER "');");
-
-#ifdef HAS_LIBTHEIA
-  // This setting is automatically set only here if licensing is available
-  // and intentionally cannot be modified via GMP or CLI
-  if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '" SETTING_UUID_LICENSING_ENABLED "'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('" SETTING_UUID_LICENSING_ENABLED "', NULL,"
-         "  'Licensing Enabled',"
-         "  'Whether the theia license management is enabled.',"
-         "  '1');");
-#else
-  // Remove setting if licensing is not available
-  sql ("DELETE FROM settings"
-       " WHERE uuid = '" SETTING_UUID_LICENSING_ENABLED "';");
-#endif
 }
 
 /**
