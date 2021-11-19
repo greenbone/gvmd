@@ -15954,6 +15954,7 @@ check_db_permissions ()
     {
       if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
           && strcmp (command[0].name, "GET_VERSION")
+          && strcmp (command[0].name, "MODIFY_LICENSE")
           && strstr (command[0].name, "GROUP") == NULL
           && strstr (command[0].name, "ROLE") == NULL
           && strstr (command[0].name, "SYNC") == NULL
