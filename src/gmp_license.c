@@ -372,9 +372,9 @@ modify_license (gchar *file_content, gboolean allow_empty)
 {
   if (allow_empty == FALSE
       && (file_content == NULL || strcmp (file_content, "") == 0))
-    return 2;
+    return 4;
 
-  return 0;
+  return manage_update_license_file(file_content);
 }
 
 /**
@@ -412,9 +412,25 @@ modify_license_run (gmp_parser_t *gmp_parser,
         break;
       case 2:
         SENDF_TO_CLIENT_OR_FAIL
+         ("<modify_license_response status=\"%s\""
+          " status_text=\"Could not send modify.license command.\"/>",
+          STATUS_SERVICE_DOWN);
+        break;
+      case 3:
+        SENDF_TO_CLIENT_OR_FAIL
+         ("<modify_license_response status=\"%s\""
+          " status_text=\"Could not retrieve modify.license response.\"/>",
+          STATUS_SERVICE_DOWN);
+        break;
+      case 4:
+        SENDF_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_license",
-                            "A non-empty FILE or the allow_empty attribute"
-                            " is required"));
+                            "A non-empty FILE is required."));
+        break;
+      case 5:
+        SENDF_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_license",
+                            "License could not be updated."));
         break;
       case 99:
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_ACCESS ("modify_license"));

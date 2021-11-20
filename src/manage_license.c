@@ -40,16 +40,116 @@
  *
  * @param[in]  new_license  The content of the new license.
  *
- * @return 0 success, 99 permission denied.
+ * @return 0 success, 1 service unavailable, 2 error sending command,
+ *         3 error receiving response, 4 no new_license data,
+ *         5 error updating license, 99 permission denied, -1 internal error.
  */
 int
 manage_update_license_file (const char *new_license)
 {
+  if (new_license == NULL)
+    return 4;
   if (! acl_user_may ("modify_license"))
     return 99;
 
-  g_message ("%s: Uploaded new license file (%lu bytes)",
-             __func__, strlen (new_license));
+#ifdef HAS_LIBTHEIA
+  int ret;
+  const char *broker_address;
+  theia_client_t *client;
+  theia_modify_license_cmd_t *modify_license_cmd;
+  theia_modified_license_info_t *modified_license_info;
+  theia_failure_modify_license_info_t *failure_modify_license_info;
+
+  broker_address = get_broker_address ();
+  if (broker_address == NULL)
+    return 1;
+
+  client = theia_client_new_mqtt (&client);
+  if (client == NULL)
+    {
+      g_warning ("%s: Failed to create MQTT client", __func__);
+      return -1;
+    }
+
+  ret = theia_client_connect (client, broker_address);
+  if (ret)
+    {
+      g_warning ("%s: Failed to connect to MQTT broker (%s)",
+                 __func__, broker_address);
+      return 1;
+    }
+  else
+    g_debug ("%s: Connected to %s\n", __func__, broker_address);
+
+  ret = theia_new_modify_license_cmd ((char *) new_license, &modify_license_cmd);
+
+  if (ret)
+    {
+      g_warning ("%s: Error preparing modify.license command", __func__);
+      theia_client_disconnect (client);
+      free (client);
+      return -1;
+    }
+
+  ret = theia_client_send_cmd (client, THEIA_LICENSE_CMD_TOPIC,
+                               (theia_cmd_t *) modify_license_cmd);
+  if (ret)
+    {
+      fprintf (stderr, "Error publishing modify.license message.");
+      theia_client_disconnect (client);
+      theia_modify_license_cmd_free (modify_license_cmd);
+      free (client);
+      return 2;
+    }
+  else
+    g_debug ("%s: Sent modify.license command"
+             " (message_id: %s, group_id: %s)\n",
+             __func__,
+             modify_license_cmd->message->id,
+             modify_license_cmd->message->group_id);
+
+
+  ret = theia_client_get_info_response (client, THEIA_LICENSE_INFO_TOPIC,
+                                        "modified.license",
+                                        "failure.modify.license",
+                                        modify_license_cmd->message->group_id,
+                                        (theia_info_t **) &modified_license_info,
+                                        (theia_info_t **) &failure_modify_license_info);
+  if (ret)
+    {
+      g_debug ("%s: Failed to get modified.license response", __func__);
+      theia_client_disconnect (client);
+      theia_modify_license_cmd_free (modify_license_cmd);
+      free (client);
+      return 3;
+    }
+  else
+    g_debug ("%s: Received modified.license response", __func__);
+
+  if (failure_modify_license_info)
+    {
+      g_message ("%s: Upload of new license file failed. Error: %s.\n",
+                 __func__, failure_modify_license_info->error);
+      theia_client_disconnect (client);
+      theia_modified_license_info_free (modified_license_info);
+      theia_failure_modify_license_info_free (failure_modify_license_info);
+      theia_modify_license_cmd_free (modify_license_cmd);
+      free (client);
+      return 5;
+    }
+  else
+    g_message ("%s: Uploaded new license file (%lu bytes)",
+               __func__, strlen (new_license));
+
+  theia_client_disconnect (client);
+  theia_modified_license_info_free (modified_license_info);
+  theia_failure_modify_license_info_free (failure_modify_license_info);
+  theia_modify_license_cmd_free (modify_license_cmd);
+  free (client);
+
+#else // HAS_LIBTHEIA
+  return 1;
+#endif // HAS_LIBTHEIA
 
   return 0;
 }
@@ -82,7 +182,6 @@ manage_get_license (gchar **status,
   theia_get_license_cmd_t *get_license_cmd;
   theia_got_license_info_t *got_license_info;
 
-  // TODO: Replace with command line option
   broker_address = get_broker_address ();
   if (broker_address == NULL)
     return 1;
@@ -132,9 +231,10 @@ manage_get_license (gchar **status,
 
 
   ret = theia_client_get_info_response (client, THEIA_LICENSE_INFO_TOPIC,
-                                        "got.license",
+                                        "got.license", NULL,
                                         get_license_cmd->message->group_id,
-                                        (theia_info_t **) &got_license_info);
+                                        (theia_info_t **) &got_license_info,
+                                        NULL);
   if (ret)
     {
       g_debug ("%s: Failed to get got.license response", __func__);
