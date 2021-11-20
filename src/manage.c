@@ -396,8 +396,10 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
                          __func__);
               return -1;
             }
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
           cert_truncated = g_memdup (certificate, certificate_len);
+#pragma GCC diagnostic pop
           certificate_format_internal = GNUTLS_X509_FMT_DER;
         }
 
