@@ -19,20 +19,6 @@ jobs:
           src/manage_utils.h src/sql.h src/types.h src/utils.h
           git diff --exit-code
 
-  build-doc:
-    name: Build standard documentation
-    runs-on: ubuntu-latest
-    container: greenbone/doxygen
-    steps:
-      - name: Check out gvmd
-        uses: actions/checkout@v2
-      - name: Build standard documentation, failing if there are warnings
-        run: |
-          mkdir build
-          cd build
-          cmake -DSKIP_SRC=1 ..
-          make doc 2>&1 1>/dev/null | { ! grep --invert-match "CGI::Pretty"; }
-
   generate-doc-and-upload-coverage:
     name: Build XML documentation
     runs-on: ubuntu-latest
