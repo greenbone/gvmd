@@ -1,10 +1,11 @@
+name: 'Build and Test'
 
 on:
   push:
     branches: [ main, stable, oldstable ]
   pull_request:
     branches: [ main, stable, oldstable ]
-name: 'Build and Test'
+
 jobs:
   check-format:
     name: Check formatting
@@ -14,9 +15,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Check Source Format
         run: |
-          clang-format -i -style=file src/gmp.h src/gmp_base.h src/gmp_delete.h \
-          src/gmp_get.h src/gmp_tickets.h src/gmpd.h src/iterator.h \
-          src/manage_utils.h src/sql.h src/types.h src/utils.h
+          clang-format -i -style=file src/gmp_{base,delete,get,tickets}.h \
+          src/{gmp,gmpd,iterator,sql,types,utils,manage_utils}.h
           git diff --exit-code
 
   generate-doc-and-upload-coverage:
@@ -31,7 +31,7 @@ jobs:
             python3 -m venv .venv
             . .venv/bin/activate
             pip install setuptools --upgrade
-            pip install 'coverxygen>=1.3.1' codecov
+            pip install coverxygen codecov
       - name: Generate documentation (XML)
         run: |
           mkdir build
@@ -91,14 +91,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_base:
-          - greenbone/gvmd-clang-build:stable
-          - greenbone/gvmd-gcc-build:stable
-    container: ${{ matrix.docker_base }}
+        compiler:
+          - gcc
+          - clang
+    container: greenbone/gvmd-${{ matrix.compiler }}-build:unstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Build gvmd
+      - name: Build gvmd with ${{ matrix.compiler }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
           cmake --build build
