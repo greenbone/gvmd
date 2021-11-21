@@ -81,30 +81,6 @@ jobs:
       #     name: gmp.html
       #     path: build/doc/gmp.html
 
-  build:
-    name: Build various configs
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        build_type:
-          - Debug
-          - Release
-        docker_base:
-          - greenbone/gvmd-clang-build:unstable
-          - greenbone/gvmd-gcc-build:unstable
-    container: ${{ matrix.docker_base }}
-    env:
-      BUILD_TYPE: ${{ matrix.build_type }}
-    steps:
-      - name: Check out gvmd
-        uses: actions/checkout@v2
-      - name: Configure and compile gvmd
-        run: |
-          mkdir build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-          make install
-
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
