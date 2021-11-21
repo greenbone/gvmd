@@ -147,5 +147,3 @@ jobs:
           make
           make tests
           CTEST_OUTPUT_ON_FAILURE=1 make test
-          lcov --directory . --capture --output-file coverage.info
-          genhtml -o coverage coverage.info
