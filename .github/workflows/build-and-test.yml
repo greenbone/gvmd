@@ -106,19 +106,16 @@ jobs:
           make install
 
   scan-build:
-    name: Scan-build (clang static analyzer)
+    name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
     container: greenbone/gvmd-clang-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Configure and Scan Build (Debug, PostgreSQL)
+      - name: Configure scan build
         run: |
-          mkdir build
-          cd build
-          scan-build cmake -DCMAKE_BUILD_TYPE=Debug ..
-          scan-build -o ~/scan-build-report make
-          [ -z "$(ls -A ~/scan-build-report/)" ]
+          scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug
+          scan-build -o ~/scan-build-report cmake --build build
       # We do not use this upload ...
       # - name: Upload scan-build report
       #   if: failure()
@@ -128,7 +125,7 @@ jobs:
       #     path: ~/scan-build-report/
 
   test-units:
-    name: Run unit tests
+    name: Unit Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -139,11 +136,14 @@ jobs:
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
-      - name: Configure and run unit tests
+      - name: Build gvmd
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_COVERAGE=1 ..
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1 ..
           make
+          make install
+      - name: Configure and run tests
+        run: |
           make tests
           CTEST_OUTPUT_ON_FAILURE=1 make test
