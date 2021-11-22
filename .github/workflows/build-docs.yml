@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main, stable, oldstable ]
 
+jobs:
   generate-doc-and-upload-coverage:
     name: Build XML documentation and upload coverage
     runs-on: ubuntu-latest
