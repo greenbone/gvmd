@@ -19,34 +19,6 @@ jobs:
           src/{gmp,gmpd,iterator,sql,types,utils,manage_utils}.h
           git diff --exit-code
 
-  generate-doc-and-upload-coverage:
-    name: Build XML documentation and upload coverage
-    runs-on: ubuntu-latest
-    container: greenbone/doxygen
-    steps:
-      - name: Run the c lang coverage action
-        uses: greenbone/actions/doc-coverage-clang@v1
-
-  build-gmp-doc:
-    name: Build GMP documentation
-    runs-on: ubuntu-latest
-    container: greenbone/gvmd-clang-build:unstable
-    steps:
-      - name: Check out gvmd
-        uses: actions/checkout@v2
-      - name: Generate GMP documentation (HTML)
-        run: |
-          mkdir build
-          cd build
-          cmake -DSKIP_SRC=1 ..
-          make doc-gmp
-      # We do not use this upload ...
-      # - name: Upload GMP documentation artifact
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: gmp.html
-      #     path: build/doc/gmp.html
-
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
