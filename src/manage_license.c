@@ -39,14 +39,17 @@
  * @brief Update the license file by replacing it with the given one.
  *
  * @param[in]  new_license  The content of the new license.
+ * @param[out] error_msg    The error message of the license update if any
  *
  * @return 0 success, 1 service unavailable, 2 error sending command,
  *         3 error receiving response, 4 no new_license data,
  *         5 error updating license, 99 permission denied, -1 internal error.
  */
 int
-manage_update_license_file (const char *new_license)
+manage_update_license_file (const char *new_license, char **error_msg)
 {
+  *error_msg = NULL;
+
   if (new_license == NULL)
     return 4;
   if (! acl_user_may ("modify_license"))
@@ -130,6 +133,7 @@ manage_update_license_file (const char *new_license)
     {
       g_message ("%s: Upload of new license file failed. Error: %s.\n",
                  __func__, failure_modify_license_info->error);
+      *error_msg = g_strdup (failure_modify_license_info->error);
       theia_client_disconnect (client);
       theia_modified_license_info_free (modified_license_info);
       theia_failure_modify_license_info_free (failure_modify_license_info);
