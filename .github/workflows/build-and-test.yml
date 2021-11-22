@@ -30,7 +30,7 @@ jobs:
   build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-clang-build:unstable
+    container: greenbone/gvmd-clang-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -74,7 +74,7 @@ jobs:
         compiler:
           - gcc
           - clang
-    container: greenbone/gvmd-${{ matrix.compiler }}-build:unstable
+    container: greenbone/gvmd-${{ matrix.compiler }}-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
