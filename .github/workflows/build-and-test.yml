@@ -30,13 +30,13 @@ jobs:
         run: |
           scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug
           scan-build -o ~/scan-build-report cmake --build build
-      # We do not use this upload ...
-      # - name: Upload scan-build report
-      #   if: failure()
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: scan-build-report
-      #     path: ~/scan-build-report/
+      - name: Upload scan-build report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: scan-build-report
+          path: ~/scan-build-report/
+          retention-days: 7
 
   test-units:
     name: Unit Tests
