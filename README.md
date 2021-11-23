@@ -1,10 +1,13 @@
-![Greenbone Logo](https://www.greenbone.net/wp-content/uploads/gb_logo_resilience_horizontal.png)
+![Greenbone Logo](https://www.greenbone.net/wp-content/uploads/gb_new-logo_horizontal_rgb_small.png)
 
 # Greenbone Vulnerability Manager
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
-[![Code Documentation Coverage](https://img.shields.io/codecov/c/github/greenbone/gvmd.svg?label=Doc%20Coverage&logo=codecov)](https://codecov.io/gh/greenbone/gvmd)
-[![CircleCI](https://circleci.com/gh/greenbone/gvmd/tree/main.svg?style=svg)](https://circleci.com/gh/greenbone/gvmd/tree/main)
+[![codecov](https://codecov.io/gh/greenbone/gvmd/branch/oldstable/graph/badge.svg?token=y8cY3Pfn7P)](https://codecov.io/gh/greenbone/gvmd)
+[![Build and Test](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/greenbone/gvmd.svg)](https://hub.docker.com/r/greenbone/gvmd/)
+[![Docker Image Size](https://img.shields.io/docker/image-size/greenbone/gvmd.svg?maxAge=2592000)](https://hub.docker.com/r/greenbone/gvmd/)
+[![Twitter Badge](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/openvas)
 
 The Greenbone Vulnerability Manager is the central management service between
 security scanners and the user clients.
@@ -16,7 +19,6 @@ XML-based Greenbone Management Protocol (GMP). Controlling scanners like
 Protocol (OSP).
 
 ## Releases
-￼
 All [release files](https://github.com/greenbone/gvmd/releases) are signed with
 the [Greenbone Community Feed integrity key](https://community.greenbone.net/t/gcf-managing-the-digital-signatures/101).
 This gpg key can be downloaded at https://www.greenbone.net/GBCommunitySigningKey.asc
