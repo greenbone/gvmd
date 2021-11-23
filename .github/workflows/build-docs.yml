@@ -1,0 +1,34 @@
+name: 'Build Documentation'
+
+on:
+  push:
+    branches: [ main, stable, oldstable ]
+
+jobs:
+  generate-doc-and-upload-coverage:
+    name: Build XML documentation and upload coverage
+    runs-on: ubuntu-latest
+    container: greenbone/doxygen
+    steps:
+      - name: Run the c lang coverage action
+        uses: greenbone/actions/doc-coverage-clang@v1
+
+  build-gmp-doc:
+    name: Build GMP documentation
+    runs-on: ubuntu-latest
+    container: greenbone/gvmd-clang-build:oldstable
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Generate GMP documentation (HTML)
+        run: |
+          mkdir build
+          cd build
+          cmake -DSKIP_SRC=1 ..
+          make doc-gmp
+      - name: Upload GMP documentation artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: gmp.html
+          path: build/doc/gmp.html
+          retention-days: 14
