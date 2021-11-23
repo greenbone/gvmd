@@ -3808,18 +3808,18 @@ credential_full_type (const char* abbreviation)
  * @param[in]  titles           The end titles for the performance report.
  * @param[in]  performance_str  The performance string.
  *
- * @return 0 if successful, 4 could not connect to scanner,
- *         6 failed to get performance report, -1 error
+ * @return 0 if successful, 6 could not connect to scanner or failed to get
+ *         performance report
  */
 static int
 get_osp_performance_string (scanner_t scanner, int start, int end,
-                            const char *titles, gchar **performance_str)
+                            const char *titles, gchar **performance_str,
+                            gchar **error)
 {
   char *host, *ca_pub, *key_pub, *key_priv;
   int port;
   osp_connection_t *connection = NULL;
   osp_get_performance_opts_t opts;
-  gchar *error;
   int connection_retry, return_value;
 
   host = scanner_host (scanner);
@@ -3844,37 +3844,89 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   free (key_priv);
 
   if (connection == NULL)
-    return 4;
+    {
+      *error = g_strdup("Could not connect to scanner");
+      return 6;
+    }
 
   opts.start = start;
   opts.end = end;
   opts.titles = g_strdup (titles);
-  error = NULL;
 
-  connection_retry = get_scanner_connection_retry ();
   return_value = osp_get_performance_ext (connection, opts,
-                                          performance_str, &error);
-  while (return_value != 0 && connection_retry > 0)
-    {
-      sleep(1);
-      return_value = osp_get_performance_ext (connection, opts,
-                                              performance_str, &error);
-      connection_retry--;
-    }
+                                          performance_str, error);
 
   if (return_value)
     {
       osp_connection_close (connection);
-      g_warning ("Error getting OSP performance report: %s", error);
-      g_free (error);
+      g_warning ("Error getting OSP performance report: %s", *error);
       g_free (opts.titles);
-      return 4;
+      return 6;
     }
 
   osp_connection_close (connection);
   g_free (opts.titles);
 
   return 0;
+}
+
+/**
+ * @brief Header for fallback system report.
+ */
+#define FALLBACK_SYSTEM_REPORT_HEADER \
+"This is the most basic, fallback report.  The system can be configured to\n" \
+"produce more powerful reports.  Please contact your system administrator\n" \
+"for more information.\n\n"
+
+/**
+ * @brief Get the fallback report as a string.
+ *
+ * @param[in]  fallback_report  The string for the fallback report.
+ */
+static void
+get_fallback_report_string(GString *fallback_report)
+{
+  int ret;
+  double load[3];
+  GError *get_error;
+  gchar *output;
+  gsize output_len;
+
+  g_string_append_printf (fallback_report, FALLBACK_SYSTEM_REPORT_HEADER);
+
+  ret = getloadavg (load, 3);
+  if (ret == 3)
+    {
+      g_string_append_printf (fallback_report,
+                              "Load average for past minute:     %.1f\n",
+                              load[0]);
+      g_string_append_printf (fallback_report,
+                              "Load average for past 5 minutes:  %.1f\n",
+                              load[1]);
+      g_string_append_printf (fallback_report,
+                              "Load average for past 15 minutes: %.1f\n",
+                              load[2]);
+    }
+  else
+    g_string_append (fallback_report, "Error getting load averages.\n");
+
+  get_error = NULL;
+  g_file_get_contents ("/proc/meminfo",
+                       &output,
+                       &output_len,
+                       &get_error);
+
+  if (get_error)
+    g_error_free (get_error);
+  else
+    {
+      gchar *safe;
+      g_string_append (fallback_report, "\n/proc/meminfo:\n\n");
+      safe = g_markup_escape_text (output, strlen (output));
+      g_free (output);
+      g_string_append (fallback_report, safe);
+      g_free (safe);
+    }
 }
 
 /**
@@ -3902,6 +3954,7 @@ get_system_report_types (const char *required_type, gchar ***start,
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
+  gchar *slave_error = NULL;
   GError *err = NULL;
   gint exit_status;
 
@@ -3918,10 +3971,14 @@ get_system_report_types (const char *required_type, gchar ***start,
         return 2;
 
       // Assume OSP scanner
-      ret = get_osp_performance_string (slave, 0, 0, "titles", &astdout);
+      ret = get_osp_performance_string (slave, 0, 0, "titles",
+                                        &astdout, &slave_error);
 
       if (ret)
-        return ret;
+        {
+          g_free (slave_error);
+          return ret;
+        }
     }
   else
     {
@@ -3962,6 +4019,7 @@ get_system_report_types (const char *required_type, gchar ***start,
               *types = NULL;
               g_free (astdout);
               g_free (astderr);
+              g_free (slave_error);
               return -1;
             }
           *space = '\0';
@@ -3980,6 +4038,7 @@ get_system_report_types (const char *required_type, gchar ***start,
               *types = type;
               g_free (astdout);
               g_free (astderr);
+              g_free (slave_error);
               return 0;
             }
           type++;
@@ -3989,6 +4048,7 @@ get_system_report_types (const char *required_type, gchar ***start,
           /* Failed to find the single given type. */
           g_free (astdout);
           g_free (astderr);
+          g_free (slave_error);
           g_strfreev (*types);
           return 1;
         }
@@ -3998,6 +4058,7 @@ get_system_report_types (const char *required_type, gchar ***start,
 
   g_free (astdout);
   g_free (astderr);
+  g_free (slave_error);
   return 0;
 }
 
@@ -4089,14 +4150,6 @@ report_type_iterator_title (report_type_iterator_t* iterator)
   const char *name = *iterator->current;
   return name + strlen (name) + 1;
 }
-
-/**
- * @brief Header for fallback system report.
- */
-#define FALLBACK_SYSTEM_REPORT_HEADER \
-"This is the most basic, fallback report.  The system can be configured to\n" \
-"produce more powerful reports.  Please contact your system administrator\n" \
-"for more information.\n\n"
 
 /**
  * @brief Default duration for system reports.
@@ -4213,8 +4266,7 @@ parse_performance_params (const char *duration,
  *
  * @return 0 if successful (including failure to find report), -1 on error,
  *         2 could not find slave scanner,
- *         3 if used the fallback report,  4 could not connect to slave,
- *         5 authentication failed, 6 failed to get system report.
+ *         3 if used the fallback report or got an error message to print
  */
 int
 manage_system_report (const char *name, const char *duration,
@@ -4223,9 +4275,12 @@ manage_system_report (const char *name, const char *duration,
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
+  gchar *slave_error = NULL;
   GError *err = NULL;
+  GString *buffer = NULL;
   gint exit_status;
-  gchar *command;
+  gint return_code = 0;
+  gchar *command = NULL;
   time_t cmd_param_1, cmd_param_2;
   int params_count;
 
@@ -4233,6 +4288,8 @@ manage_system_report (const char *name, const char *duration,
 
   parse_performance_params (duration, start_time, end_time,
                             &cmd_param_1, &cmd_param_2, &params_count);
+
+  *report = NULL;
 
   if (params_count == 0)
     return manage_system_report ("blank", NULL, NULL, NULL, NULL, report);
@@ -4253,100 +4310,88 @@ manage_system_report (const char *name, const char *duration,
           // only duration
           time_t now;
           now = time (NULL);
-          return get_osp_performance_string (slave,
-                                             now - cmd_param_1,
-                                             now,
-                                             name,
-                                             report);
+          return_code = get_osp_performance_string (slave,
+                                                    now - cmd_param_1,
+                                                    now,
+                                                    name,
+                                                    report,
+                                                    &slave_error);
         }
       else
         {
           // start and end time
-          return get_osp_performance_string (slave,
-                                             cmd_param_1,
-                                             cmd_param_2,
-                                             name,
-                                             report);
+          return_code = get_osp_performance_string (slave,
+                                                    cmd_param_1,
+                                                    cmd_param_2,
+                                                    name,
+                                                    report,
+                                                    &slave_error);
         }
     }
-
-  /* For simplicity, it's up to the command to do the base64 encoding. */
-  if (params_count == 1)
-    command = g_strdup_printf ("gvmcg %ld %s",
-                               cmd_param_1,
-                               name);
   else
-    command = g_strdup_printf ("gvmcg %ld %ld %s",
-                               cmd_param_1,
-                               cmd_param_2,
-                               name);
-
-  g_debug ("   command: %s", command);
-
-  if ((g_spawn_command_line_sync (command,
-                                  &astdout,
-                                  &astderr,
-                                  &exit_status,
-                                  &err)
-       == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
     {
-      int ret;
-      double load[3];
-      GError *get_error;
-      gchar *output;
-      gsize output_len;
-      GString *buffer;
-
-      g_debug ("%s: gvmcg failed with %d", __func__, exit_status);
-      g_debug ("%s: stdout: %s", __func__, astdout);
-      g_debug ("%s: stderr: %s", __func__, astderr);
-      g_free (astdout);
-      g_free (astderr);
-      g_free (command);
-
-      buffer = g_string_new (FALLBACK_SYSTEM_REPORT_HEADER);
-
-      ret = getloadavg (load, 3);
-      if (ret == 3)
+      if (!g_find_program_in_path ("gvmcg"))
         {
-          g_string_append_printf (buffer,
-                                  "Load average for past minute:     %.1f\n",
-                                  load[0]);
-          g_string_append_printf (buffer,
-                                  "Load average for past 5 minutes:  %.1f\n",
-                                  load[1]);
-          g_string_append_printf (buffer,
-                                  "Load average for past 15 minutes: %.1f\n",
-                                  load[2]);
+          buffer = g_string_new ("");
+          get_fallback_report_string(buffer);
+          *report = g_string_free (buffer, FALSE);
+          return_code = 7;
         }
       else
-        g_string_append (buffer, "Error getting load averages.\n");
-
-      get_error = NULL;
-      g_file_get_contents ("/proc/meminfo",
-                           &output,
-                           &output_len,
-                           &get_error);
-      if (get_error)
-        g_error_free (get_error);
-      else
         {
-          gchar *safe;
-          g_string_append (buffer, "\n/proc/meminfo:\n\n");
-          safe = g_markup_escape_text (output, strlen (output));
-          g_free (output);
-          g_string_append (buffer, safe);
-          g_free (safe);
-        }
+          /* For simplicity, it's up to the command to do the base64
+           * encoding.
+           */
+          if (params_count == 1)
+            command = g_strdup_printf ("gvmcg %ld %s",
+                                       cmd_param_1,
+                                       name);
+          else
+            command = g_strdup_printf ("gvmcg %ld %ld %s",
+                                       cmd_param_1,
+                                       cmd_param_2,
+                                       name);
 
-      *report = g_string_free (buffer, FALSE);
-      return 3;
+          g_debug ("   command: %s", command);
+
+          if ((g_spawn_command_line_sync (command,
+                                          &astdout,
+                                          &astderr,
+                                          &exit_status,
+                                          &err)
+               == FALSE)
+              || (WIFEXITED (exit_status) == 0)
+              || WEXITSTATUS (exit_status))
+            {
+              return_code = 3;
+
+              g_warning ("%s: Failed to create performance graph -- %s",
+                         __func__, astderr);
+              g_debug ("%s: gvmcg failed with %d", __func__, exit_status);
+              g_debug ("%s: stdout: %s", __func__, astdout);
+              g_debug ("%s: stderr: %s", __func__, astderr);
+            }
+          g_free (command);
+        }
     }
+
+  if (return_code == 3 || return_code == 6)
+    {
+      buffer = g_string_new ("");
+      g_string_append_printf (buffer,
+                              "Failed to create performance graph: %s",
+                              (return_code == 3 ? astderr : slave_error));
+      *report = g_string_free (buffer, FALSE);
+    }
+
   g_free (astderr);
-  g_free (command);
-  if (astdout == NULL || strlen (astdout) == 0)
+  g_free (slave_error);
+
+  if (return_code == 6 || return_code == 7)
+    return_code = 3;
+
+  if ((astdout == NULL || strlen (astdout) == 0) &&
+      *report == NULL)
     {
       g_free (astdout);
       if (strcmp (name, "blank") == 0)
@@ -4354,9 +4399,12 @@ manage_system_report (const char *name, const char *duration,
       return manage_system_report ("blank", NULL, NULL, NULL,
                                    NULL, report);
     }
-  else
+  else if (*report == NULL)
     *report = astdout;
-  return 0;
+  else
+    g_free (astdout);
+
+  return return_code;
 }
 
 
