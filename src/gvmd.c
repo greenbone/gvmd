@@ -938,8 +938,17 @@ cleanup ()
   /** @todo These should happen via gmp, maybe with "cleanup_gmp ();". */
   cleanup_manage_process (TRUE);
   g_strfreev (disabled_commands);
-  if (manager_socket > -1) close (manager_socket);
-  if (manager_socket_2 > -1) close (manager_socket_2);
+  if (manager_socket > -1)
+    {
+      close (manager_socket);
+      manager_socket = -1;
+    }
+  if (manager_socket_2 > -1)
+    {
+      close (manager_socket_2);
+      manager_socket_2 = -1;
+    }
+
 #if LOG
   if (log_stream != NULL)
     {
@@ -1206,8 +1215,16 @@ fork_update_nvt_cache ()
           pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
-        if (manager_socket > -1) close (manager_socket);
-        if (manager_socket_2 > -1) close (manager_socket_2);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
 
         /* Update the cache. */
 
@@ -1309,8 +1326,16 @@ fork_feed_sync ()
           pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
-        if (manager_socket > -1) close (manager_socket);
-        if (manager_socket_2 > -1) close (manager_socket_2);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
 
         /* Check the feed version. */
 
