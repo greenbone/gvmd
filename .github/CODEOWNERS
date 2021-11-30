@@ -2,5 +2,5 @@
 *                 @greenbone/gvmd-maintainers
 
 # dev ops
-.github/*         @greenbone/devops
-.docker/*         @greenbone/devops
+.github/          @greenbone/devops
+.docker/          @greenbone/devops
