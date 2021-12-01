@@ -4,8 +4,14 @@
 [ -z "$PASSWORD" ] && PASSWORD="admin"
 [ -z "$GVMD_ARGS" ] && GVMD_ARGS="--listen-mode=666"
 [ -z "$GVMD_USER" ] && GVMD_USER="gvmd"
+[ -z "$PGRES_DATA"] && PGRES_DATA="/var/lib/postgresql"
 
 # check for psql connection
+FILE=$PGRES_DATA/started
+until test -f "$FILE"; do
+	echo "waiting 1 second for ready postgres container"
+    sleep 1
+done
 until psql -U "$GVMD_USER" -d gvmd -c "SELECT 'connected' as connection"; do
 	echo "waiting 1 second to retry psql connection"
 	sleep 1
