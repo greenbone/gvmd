@@ -1952,15 +1952,15 @@ osp_scanner_feed_version (const gchar *update_socket)
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      g_debug ("%s: failed to connect to %s", __func__, update_socket);
+      g_warning ("%s: failed to connect to %s", __func__, update_socket);
       return NULL;
     }
 
   error = NULL;
   if (osp_get_vts_version (connection, &scanner_feed_version, &error))
     {
-      g_debug ("%s: failed to get scanner_feed_version. %s",
-               __func__, error ? : "");
+      g_warning ("%s: failed to get scanner_feed_version. %s",
+                 __func__, error ? : "");
       g_free (error);
       osp_connection_close (connection);
       return NULL;
