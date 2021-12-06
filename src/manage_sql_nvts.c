@@ -1952,15 +1952,15 @@ osp_scanner_feed_version (const gchar *update_socket)
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      g_debug ("%s: failed to connect to %s", __func__, update_socket);
+      g_warning ("%s: failed to connect to %s", __func__, update_socket);
       return NULL;
     }
 
   error = NULL;
   if (osp_get_vts_version (connection, &scanner_feed_version, &error))
     {
-      g_debug ("%s: failed to get scanner_feed_version. %s",
-               __func__, error ? : "");
+      g_warning ("%s: failed to get scanner_feed_version. %s",
+                 __func__, error ? : "");
       g_free (error);
       osp_connection_close (connection);
       return NULL;
@@ -2089,7 +2089,8 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
  *
  * @param[in]  update  0 rebuild, else update.
  *
- * @return 0 success, -1 error, -4 no osp update socket.
+ * @return 0 success, -1 error, -1 no osp update socket, -2 could not connect
+ *         to osp update socket -3 failed to get scanner version
  */
 int
 update_or_rebuild_nvts (int update)
@@ -2102,17 +2103,17 @@ update_or_rebuild_nvts (int update)
 
   if (check_osp_vt_update_socket ())
     {
-      printf ("No OSP VT update socket found."
-              " Use --osp-vt-update or change the 'OpenVAS Default'"
-              " scanner to use the main ospd-openvas socket.\n");
-      return -4;
+      g_warning ("No OSP VT update socket found."
+               " Use --osp-vt-update or change the 'OpenVAS Default'"
+               " scanner to use the main ospd-openvas socket.");
+      return -1;
     }
 
   osp_update_socket = get_osp_vt_update_socket ();
   if (osp_update_socket == NULL)
     {
-      printf ("No OSP VT update socket set.\n");
-      return -4;
+      g_warning ("No OSP VT update socket set.");
+      return -1;
     }
 
   db_feed_version = nvts_feed_version ();
@@ -2121,16 +2122,16 @@ update_or_rebuild_nvts (int update)
   connection = osp_connection_new (osp_update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
-      printf ("Failed to connect to %s.\n", osp_update_socket);
-      return -1;
+      g_warning ("Failed to connect to %s.", osp_update_socket);
+      return -2;
     }
 
   error = NULL;
   if (osp_get_vts_version (connection, &scanner_feed_version, &error))
     {
-      printf ("Failed to get scanner_version. %s\n", error ? : "");
+      g_warning ("Failed to get scanner_version. %s", error ? : "");
       g_free (error);
-      return -1;
+      return -3;
     }
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
 
@@ -2189,10 +2190,31 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
 
   sql_begin_immediate ();
   ret = update_or_rebuild_nvts (0);
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
+
+  switch (ret)
+    {
+      case 0:
+        sql_commit ();
+        break;
+      case -1:
+        printf ("No OSP VT update socket found."
+                " Use --osp-vt-update or change the 'OpenVAS Default'"
+                " scanner to use the main ospd-openvas socket.\n");
+        sql_rollback ();
+        break;
+      case -2:
+        printf ("Failed to connect to OSP VT update socket.\n");
+        sql_rollback ();
+        break;
+      case -3:
+        printf ("Failed to get scanner_version.\n");
+        sql_rollback ();
+        break;
+      default:
+        printf ("Failed to update or rebuild nvts.\n");
+        sql_rollback ();
+        break;
+    }
 
   feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();
