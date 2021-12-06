@@ -1,2 +1,9 @@
 # default reviewers
 *                 @greenbone/gvmd-maintainers
+<<<<<<< HEAD
+=======
+
+# dev ops
+.github/          @greenbone/devops @greenbone/gvmd-maintainers
+.docker/          @greenbone/devops @greenbone/gvmd-maintainers
+>>>>>>> 82e361378 (Adjust CODEOWNERS for .github and .docker)
