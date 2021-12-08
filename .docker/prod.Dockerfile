@@ -33,14 +33,79 @@ FROM greenbone/gvm-libs:${VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Runtime dependencies
+
+# PDF Report
+# texlive-fonts-recommended
+# texlive-latex-extra
+
+# HTML Reports, cert data and scan data details
+# xsltproc
+
+# verinice report
+# xsltproc
+# xmlstarlet
+# zip
+
+# RPM credential packages
+# rpm
+# fakeroot
+
+# DEB credential packages
+# dpkg
+# fakeroot
+
+# signature verification
+# gnupg
+
+# HTTP alerts
+# wget
+
+# SCP alert
+# sshpass
+# openssh-client
+
+# Send alert
+# socat
+
+# SNMP alert
+# snmp
+
+# SMB alert
+# python3
+# smbclient
+
+# s/mime email encryption
+# gpgsm
+
+# Loading scap and cert data
+# xml-twig-tools
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    dpkg \
+    fakeroot \
+    gnupg \
+    gpgsm \
     libgpgme11 \
     libical3 \
     libpq5 \
+    openssh-client \
     postgresql-client-13 \
     postgresql-client-common \
-    xml-twig-tools && \
+    python3 \
+    rpm \
+    socat \
+    smbclient \
+    snmp \
+    sshpass \
+    texlive-fonts-recommended \
+    texlive-latex-extra \
+    wget \
+    xml-twig-tools \
+    xmlstarlet \
+    xsltproc \
+    zip && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install/ /
