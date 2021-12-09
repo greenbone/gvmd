@@ -938,8 +938,17 @@ cleanup ()
   /** @todo These should happen via gmp, maybe with "cleanup_gmp ();". */
   cleanup_manage_process (TRUE);
   g_strfreev (disabled_commands);
-  if (manager_socket > -1) close (manager_socket);
-  if (manager_socket_2 > -1) close (manager_socket_2);
+  if (manager_socket > -1)
+    {
+      close (manager_socket);
+      manager_socket = -1;
+    }
+  if (manager_socket_2 > -1)
+    {
+      close (manager_socket_2);
+      manager_socket_2 = -1;
+    }
+
 #if LOG
   if (log_stream != NULL)
     {
@@ -994,7 +1003,7 @@ handle_sigabrt (int given_signal)
       frame_count = 0;
     }
   for (index = 0; index < frame_count; index++)
-    g_debug ("%s", frames_text[index]);
+    g_debug ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
 #endif
 
@@ -1026,6 +1035,24 @@ handle_termination_signal (int signal)
 static void
 handle_sigsegv (/* unused */ int given_signal)
 {
+#ifndef NDEBUG
+  void *frames[BA_SIZE];
+  int frame_count, index;
+  char **frames_text;
+
+  /* Print a backtrace. */
+  frame_count = backtrace (frames, BA_SIZE);
+  frames_text = backtrace_symbols (frames, frame_count);
+  if (frames_text == NULL)
+    {
+      perror ("backtrace symbols");
+      frame_count = 0;
+    }
+  for (index = 0; index < frame_count; index++)
+    g_debug ("BACKTRACE: %s", frames_text[index]);
+  free (frames_text);
+#endif
+
   manage_cleanup_process_error (given_signal);
 
   /* This previously called "cleanup", but it seems that the regular manager
@@ -1206,8 +1233,16 @@ fork_update_nvt_cache ()
           pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
-        if (manager_socket > -1) close (manager_socket);
-        if (manager_socket_2 > -1) close (manager_socket_2);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
 
         /* Update the cache. */
 
@@ -1309,8 +1344,16 @@ fork_feed_sync ()
           pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
         /** @todo This should happen via gmp, maybe with "cleanup_gmp ();". */
         cleanup_manage_process (FALSE);
-        if (manager_socket > -1) close (manager_socket);
-        if (manager_socket_2 > -1) close (manager_socket_2);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
 
         /* Check the feed version. */
 

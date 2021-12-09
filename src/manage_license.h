@@ -34,7 +34,7 @@
 /* Actions */
 
 int
-manage_update_license_file (const char *);
+manage_update_license_file (const char *, char **);
 
 int
 manage_get_license (char **, theia_license_t **);
