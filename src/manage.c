@@ -5374,11 +5374,11 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
       || (WIFEXITED (exit_status) == 0)
       || WEXITSTATUS (exit_status))
     {
-      g_debug ("%s: failed to transform the xml: %d (WIF %i, WEX %i)",
-               __func__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
+      g_warning ("%s: failed to transform the xml: %d (WIF %i, WEX %i)",
+                 __func__,
+                 exit_status,
+                 WIFEXITED (exit_status),
+                 WEXITSTATUS (exit_status));
       g_debug ("%s: stderr: %s", __func__, standard_err);
       g_debug ("%s: stdout: %s", __func__, standard_out);
       success = FALSE;
