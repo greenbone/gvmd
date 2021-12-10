@@ -116,6 +116,7 @@ RUN addgroup --gid 1001 --system gvmd && \
     adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
 
 RUN mkdir -p /run/gvmd && \
+    mkdir -p /var/lib/gvm && \
     mkdir -p /var/log/gvm && \
     chown -R gvmd:gvmd /etc/gvm && \
     chown -R gvmd:gvmd /run/gvmd && \
