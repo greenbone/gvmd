@@ -85,6 +85,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     dpkg \
     fakeroot \
+    gosu \
     gnupg \
     gpgsm \
     libgpgme11 \
@@ -111,18 +112,21 @@ RUN apt-get update && \
 COPY --from=builder /install/ /
 
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
+COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
 
 RUN addgroup --gid 1001 --system gvmd && \
     adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
 
 RUN mkdir -p /run/gvmd && \
+    mkdir -p /var/lib/gvm && \
     mkdir -p /var/log/gvm && \
     chown -R gvmd:gvmd /etc/gvm && \
     chown -R gvmd:gvmd /run/gvmd && \
     chown -R gvmd:gvmd /var/lib/gvm && \
     chown -R gvmd:gvmd /var/log/gvm && \
+    chmod 755 /usr/local/bin/entrypoint && \
     chmod 755 /usr/local/bin/start-gvmd
 
-USER gvmd
+ENTRYPOINT [ "/usr/local/bin/entrypoint" ]
 
 CMD [ "/usr/local/bin/start-gvmd" ]
