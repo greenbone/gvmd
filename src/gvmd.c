@@ -2528,7 +2528,7 @@ gvmd (int argc, char** argv)
             g_info ("   Migration succeeded.");
             return EXIT_SUCCESS;
           case 1:
-            g_warning ("%s: databases are already at the supported version",
+            g_info ("%s: databases are already at the supported version",
                        __func__);
             return EXIT_SUCCESS;
           case 2:
