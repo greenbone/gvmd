@@ -187,7 +187,7 @@
 /**
  * @brief Default broker address
  */
-#define DEFAULT_BROKER_ADDRESS "localhost:9138"
+#define DEFAULT_BROKER_ADDRESS "localhost:1883"
 
 /**
  * @brief Interval in seconds to check whether client connection was closed.
