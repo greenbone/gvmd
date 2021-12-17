@@ -3421,15 +3421,14 @@ init_preference_iterator (iterator_t* iterator,
                  " UNION"
                  " SELECT nvt_preferences.name, nvt_preferences.value"
                  " FROM nvt_preferences"
-                 " WHERE nvt_preferences.name %s"
-                 " AND (SELECT COUNT(*) FROM config_preferences"
-                 "      WHERE config = %llu"
-                 "      AND config_preferences.name = nvt_preferences.name) = 0;",
+                 " LEFT JOIN config_preferences"
+                 "      ON config_preferences.config = %llu AND config_preferences.name = nvt_preferences.name"
+                 " WHERE config_preferences.id IS NULL AND nvt_preferences.name %s",
                  config,
                  quoted_section,
+                 config,
                  strcmp (quoted_section, "SERVER_PREFS") == 0
-                  ? "NOT LIKE '%:%:%:%'" : "LIKE '%:%:%:%'",
-                 config);
+                  ? "NOT LIKE '%:%:%:%'" : "LIKE '%:%:%:%'");
   g_free (quoted_section);
 }
 
