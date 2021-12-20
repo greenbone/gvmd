@@ -3657,6 +3657,12 @@ gboolean
 gvm_get_sync_script_feed_version (const gchar *, gchar **);
 
 int
+nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
+
+int
+nvts_check_feed (int *, int *, gchar **);
+
+int
 manage_update_nvts_osp (const gchar *);
 
 int
