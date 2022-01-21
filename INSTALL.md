@@ -273,6 +273,7 @@ The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling th
 
 Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
 and should be called after syncing the latter.
+You will need the `rsync` tool for a successful synchronization.
 
 
 ## Configure the default OSPD scanner socket path
