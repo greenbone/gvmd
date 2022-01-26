@@ -928,7 +928,6 @@ cleanup ()
   if (is_parent == 1) pidfile_remove (GVMD_PID_PATH);
 }
 
-#ifndef NDEBUG
 #include <execinfo.h>
 
 /**
@@ -937,7 +936,6 @@ cleanup ()
  * For debugging backtrace in \ref handle_sigabrt.
  */
 #define BA_SIZE 100
-#endif
 
 /**
  * @brief Handle a SIGABRT signal.
@@ -952,7 +950,6 @@ handle_sigabrt (int given_signal)
   if (in_sigabrt) _exit (EXIT_FAILURE);
   in_sigabrt = 1;
 
-#ifndef NDEBUG
   void *frames[BA_SIZE];
   int frame_count, index;
   char **frames_text;
@@ -968,7 +965,6 @@ handle_sigabrt (int given_signal)
   for (index = 0; index < frame_count; index++)
     g_debug ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
-#endif
 
   manage_cleanup_process_error (given_signal);
   cleanup ();
@@ -998,7 +994,6 @@ handle_termination_signal (int signal)
 static void
 handle_sigsegv (/* unused */ int given_signal)
 {
-#ifndef NDEBUG
   void *frames[BA_SIZE];
   int frame_count, index;
   char **frames_text;
@@ -1014,7 +1009,6 @@ handle_sigsegv (/* unused */ int given_signal)
   for (index = 0; index < frame_count; index++)
     g_debug ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
-#endif
 
   manage_cleanup_process_error (given_signal);
 
