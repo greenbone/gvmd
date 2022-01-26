@@ -184,13 +184,6 @@
 #define DEFAULT_CLIENT_WATCH_INTERVAL 1
 
 /**
-<<<<<<< HEAD
-=======
- * @brief Default broker address
- */
-#define DEFAULT_BROKER_ADDRESS "localhost:1883"
-
-/**
  * @brief Maximum number of frames in backtrace.
  *
  * For debugging backtrace in \ref handle_sigabrt and handle_sigsegv.
@@ -198,7 +191,6 @@
 #define BA_SIZE 100
 
 /**
->>>>>>> a20c5a376 (Moved some lines of code for better readability.)
  * @brief Interval in seconds to check whether client connection was closed.
  */
 static int client_watch_interval = DEFAULT_CLIENT_WATCH_INTERVAL;
