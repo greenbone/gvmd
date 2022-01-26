@@ -90,6 +90,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <execinfo.h>
 
 #include <gvm/base/pidfile.h>
 #include <gvm/base/pwpolicy.h>
@@ -183,6 +184,21 @@
 #define DEFAULT_CLIENT_WATCH_INTERVAL 1
 
 /**
+<<<<<<< HEAD
+=======
+ * @brief Default broker address
+ */
+#define DEFAULT_BROKER_ADDRESS "localhost:1883"
+
+/**
+ * @brief Maximum number of frames in backtrace.
+ *
+ * For debugging backtrace in \ref handle_sigabrt and handle_sigsegv.
+ */
+#define BA_SIZE 100
+
+/**
+>>>>>>> a20c5a376 (Moved some lines of code for better readability.)
  * @brief Interval in seconds to check whether client connection was closed.
  */
 static int client_watch_interval = DEFAULT_CLIENT_WATCH_INTERVAL;
@@ -927,15 +943,6 @@ cleanup ()
   /* Delete pidfile if this process is the parent. */
   if (is_parent == 1) pidfile_remove (GVMD_PID_PATH);
 }
-
-#include <execinfo.h>
-
-/**
- * @brief Maximum number of frames in backtrace.
- *
- * For debugging backtrace in \ref handle_sigabrt.
- */
-#define BA_SIZE 100
 
 /**
  * @brief Handle a SIGABRT signal.
