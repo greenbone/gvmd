@@ -38,15 +38,20 @@
 /**
  * @brief Update the license file by replacing it with the given one.
  *
- * @param[in]  new_license  The content of the new license.
- * @param[out] error_msg    The error message of the license update if any
+ * @param[in]  new_license          The content of the new license.
+ * @param[out] model_change_needed  Indicates Whether a model change is
+ *                                  needed
+ * @param[out] error_msg            The error message of the license
+ *                                  update if any
  *
  * @return 0 success, 1 service unavailable, 2 error sending command,
  *         3 error receiving response, 4 no new_license data,
  *         5 error updating license, 99 permission denied, -1 internal error.
  */
 int
-manage_update_license_file (const char *new_license, char **error_msg)
+manage_update_license_file (const char *new_license,
+                            gboolean *model_change_needed,
+                            char **error_msg)
 {
   *error_msg = NULL;
 
@@ -142,8 +147,11 @@ manage_update_license_file (const char *new_license, char **error_msg)
       return 5;
     }
   else
+    {
+    *model_change_needed = modified_license_info->model_change_needed;
     g_message ("%s: Uploaded new license file (%lu bytes)",
                __func__, strlen (new_license));
+    }
 
   theia_client_disconnect (client);
   theia_modified_license_info_free (modified_license_info);
