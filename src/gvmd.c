@@ -186,7 +186,7 @@
 /**
  * @brief Maximum number of frames in backtrace.
  *
- * For debugging backtrace in \ref handle_sigabrt and handle_sigsegv.
+ * For debugging backtrace in \ref handle_sigabrt and \ref handle_sigsegv.
  */
 #define BA_SIZE 100
 
