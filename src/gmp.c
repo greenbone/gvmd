@@ -12255,14 +12255,14 @@ get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
             }
           else
             {
-              if (self_test_exit_error)
+              if (self_test_exit_error > 0 || self_test_exit_error < -1)
                 SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
                                          "<error>%s</error>"
                                          "</sync_not_available>",
                                          self_test_error_msg
                                            ? self_test_error_msg : "");
 
-              if (lockfile_in_use)
+              if (lockfile_in_use > 0 || lockfile_in_use < -1)
                 SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
                                          "<timestamp></timestamp>"
                                          "</currently_syncing>");
