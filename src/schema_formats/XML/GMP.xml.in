@@ -23848,12 +23848,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>text</type>
           <required>1</required>
         </attrib>
-        <attrib>
-          <name>model_change_needed</name>
-          <summary>Whether a model change is necessary or not</summary>
-          <type>boolean</type>
-          <required>1</required>
-        </attrib>
       </pattern>
     </response>
     <example>
@@ -23864,7 +23858,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </modify_license>
       </request>
       <response>
-        <modify_license_response status="200" status_text="OK" model_change_needed="1">
+        <modify_license_response status="200" status_text="OK">
         </modify_license_response>
       </response>
     </example>

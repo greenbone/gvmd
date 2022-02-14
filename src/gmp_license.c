@@ -412,8 +412,9 @@ modify_license_run (gmp_parser_t *gmp_parser,
       case 0:
         SENDF_TO_CLIENT_OR_FAIL
          ("<modify_license_response status=\"%s\""
-          " status_text=\"%s\""
-          " model_change_needed=\"%d\"/>",
+          " status_text=\"%s\">"
+          " <status_details>%d</status_details>"
+          " </modify_license_response>",
           STATUS_OK,
           STATUS_OK_TEXT,
           model_change_needed ? 1 : 0);
