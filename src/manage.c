@@ -1814,7 +1814,7 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
  * @param[in]   scan_id   The UUID of the scan on the scanner.
  *
  * @return 0 if success, -1 if error, -2 if scan was stopped,
- *         -3 if the scan was interrupted.
+ *         -3 if the scan was interrupted, -4 already stopped.
  */
 static int
 handle_osp_scan (task_t task, report_t report, const char *scan_id)
@@ -1846,7 +1846,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       if (run_status == TASK_STATUS_STOPPED
           || run_status == TASK_STATUS_STOP_REQUESTED)
         {
-          rc = -2;
+          rc = -4;
           break;
         }
 
