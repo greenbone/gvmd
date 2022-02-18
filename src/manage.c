@@ -1623,7 +1623,8 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  * @param[in]   pop_results 1 to pop results, 0 to leave results intact.
  * @param[out]  report_xml  Scan report.
  *
- * @return -1 on error, progress value between 0 and 100 on success.
+ * @return -1 on connection error, -2 on fail to find scan,
+ *         progress value between 0 and 100 on success.
  */
 static int
 get_osp_scan_report (const char *scan_id, const char *host, int port,
@@ -1644,9 +1645,13 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
                                pop_results, &error);
   if (progress > 100 || progress < 0)
     {
+      if (g_strrstr (error, "Failed to find scan") != NULL)
+        progress = -2; // Scan already deleted
+      else
+        progress = -1; // connection error. Should retry.
       g_warning ("OSP get_scan %s: %s", scan_id, error);
       g_free (error);
-      progress = -1;
+
     }
 
   osp_connection_close (connection);
@@ -1745,13 +1750,18 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
       if (progress < 0 || progress > 100)
         {
-          if (retry > 0)
+          if (retry > 0 && progress == -1)
             {
               retry--;
               g_warning ("Connection lost with the scanner at %s. "
                          "Trying again in 1 second.", host);
               gvm_sleep (1);
               continue;
+            }
+          else if (progress == -2)
+            {
+              rc = -2;
+              break;
             }
           result_t result = make_osp_result
                              (task, "", "", "",
@@ -1772,7 +1782,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                           key_priv, 1, 1, &report_xml);
           if (progress < 0 || progress > 100)
             {
-              if (retry > 0)
+              if (retry > 0 && progress == -1)
                 {
                   retry--;
                   g_warning ("Connection lost with the scanner at %s. "
@@ -1780,7 +1790,11 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   gvm_sleep (1);
                   continue;
                 }
-
+              else if (progress == -2)
+                {
+                  rc = -2;
+                  break;
+                }
               g_free (report_xml);
               result_t result = make_osp_result
                                  (task, "", "", "",
