@@ -1,39 +1,18 @@
 ARG VERSION=stable
 ARG DEBIAN_FRONTEND=noninteractive
 
-FROM greenbone/gvm-libs:${VERSION} as builder
+FROM greenbone/gvmd-build:${VERSION} as build
 
-# Install Debian core dependencies required for building gvm with PostgreSQL
-# support and not yet installed as dependencies of gvm-libs-core
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    pkg-config \
-    libglib2.0-dev \
-    libgnutls28-dev \
-    libgpgme-dev \
-    libpq-dev \
-    libical-dev \
-    postgresql-server-dev-13 \
-    xml-twig-tools \
-    xsltproc && \
-    rm -rf /var/lib/apt/lists/*
-
+# Install
 COPY . /source
-WORKDIR /source
-
-RUN mkdir /build && \
-    mkdir /install && \
-    cd /build && \
-    cmake -DCMAKE_BUILD_TYPE=Release /source && \
-    make DESTDIR=/install install
+RUN cmake -DCMAKE_BUILD_TYPE=Release -B/build /source
+RUN DESTDIR=/install cmake --build /build -- install 
 
 FROM greenbone/gvm-libs:${VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Runtime dependencies
+# Install Runtime dependencies
 
 # PDF Report
 # texlive-fonts-recommended
@@ -109,23 +88,17 @@ RUN apt-get update && \
     zip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /install/ /
-
+COPY --from=build /install/ /
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
 
-RUN addgroup --gid 1001 --system gvmd && \
-    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
+RUN addgroup --gid 1001 --system gvmd \
+    && adduser --no-create-home --shell /bin/false --disabled-password \
+    --uid 1001 --system --group gvmd
 
-RUN mkdir -p /run/gvmd && \
-    mkdir -p /var/lib/gvm && \
-    mkdir -p /var/log/gvm && \
-    chown -R gvmd:gvmd /etc/gvm && \
-    chown -R gvmd:gvmd /run/gvmd && \
-    chown -R gvmd:gvmd /var/lib/gvm && \
-    chown -R gvmd:gvmd /var/log/gvm && \
-    chmod 755 /usr/local/bin/entrypoint && \
-    chmod 755 /usr/local/bin/start-gvmd
+RUN mkdir -p /run/gvmd /var/lib/gvm /var/log/gvm \
+    && chown -R gvmd:gvmd /etc/gvm /run/gvmd /var/lib/gvm /var/log/gvm \
+    && chmod 755 /usr/local/bin/entrypoint /usr/local/bin/start-gvmd
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint" ]
 
