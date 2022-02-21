@@ -19,34 +19,10 @@ jobs:
           src/{gmp,gmpd,iterator,sql,types,utils,manage_utils}.h
           git diff --exit-code
 
-  scan-build:
-    name: scan-build (clang static analyzer)
-    runs-on: ubuntu-latest
-    container: greenbone/gvmd-clang-build:stable
-    steps:
-      - name: Check out gvmd
-        uses: actions/checkout@v2
-      - name: Configure scan build
-        run: |
-          scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug
-          scan-build -o ~/scan-build-report cmake --build build
-      - name: Upload scan-build report
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: scan-build-report
-          path: ~/scan-build-report/
-          retention-days: 7
-
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compiler:
-          - gcc
-          - clang
-    container: greenbone/gvmd-${{ matrix.compiler }}-build:stable
+    container: greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v2
@@ -56,3 +32,27 @@ jobs:
           cmake --build build
       - name: Configure and run tests
         run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
+
+  scan-build:
+    name: scan-build (clang static analyzer)
+    runs-on: ubuntu-latest
+    container: greenbone/gvmd-build:stable
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v2
+      - name: Install clang tools
+        run: |
+          apt update
+          apt install --no-install-recommends -y clang clang-format clang-tools
+          rm -rf /var/lib/apt/lists/*
+      - name: Configure and Scan Build gvm-libs
+        run: |
+          cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+          scan-build -o ~/scan-build-report cmake --build build
+      - name: Upload scan-build report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: scan-build-report
+          path: ~/scan-build-report/
+          retention-days: 3

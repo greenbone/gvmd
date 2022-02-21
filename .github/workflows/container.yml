@@ -33,11 +33,6 @@ jobs:
   upload-build:
     name: "Upload images for building gvmd"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compiler:
-          - gcc
-          - clang
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -45,7 +40,7 @@ jobs:
         uses: greenbone/actions/container-image-tags@v1
         id: container
         with:
-          image-name: ${{ github.repository }}-${{matrix.compiler}}-build
+          image-name: ${{ github.repository }}-build
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
@@ -61,5 +56,3 @@ jobs:
           push: true
           tags: ${{ steps.container.outputs.image-tags }}
           file: .docker/build.Dockerfile
-          build-args: |
-            COMPILER=${{matrix.compiler}}
