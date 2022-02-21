@@ -19077,6 +19077,8 @@ qod_from_type (const char *qod_type)
     return 70;
   else if (strcmp (qod_type, "remote_probe") == 0)
     return 50;
+  else if (strcmp (qod_type, "package_unreliable") == 0)
+    return 30;
   else if (strcmp (qod_type, "remote_banner_unreliable") == 0)
     return 30;
   else if (strcmp (qod_type, "executable_version_unreliable") == 0)
