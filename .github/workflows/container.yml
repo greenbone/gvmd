@@ -8,9 +8,10 @@ on:
 
 
 jobs:
-  images:
+  upload-production:
     name: Build and upload container images
     runs-on: ubuntu-latest
+    needs: upload-build
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
