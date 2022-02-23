@@ -20,7 +20,7 @@ cmake_minimum_required (VERSION 3.0)
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
 project (gvm
-         VERSION 21.10.0
+         VERSION 22.4.0
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -102,8 +102,8 @@ set (GVMD_SCAP_DATABASE_VERSION 19)
 
 set (GVMD_CERT_DATABASE_VERSION 8)
 
-set (GMP_VERSION "21.10")
-set (GMP_VERSION_FEED "21.10")
+set (GMP_VERSION "22.4")
+set (GMP_VERSION_FEED "22.4")
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")

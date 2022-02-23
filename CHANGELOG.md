@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [21.10] (unreleased)
+## [22.4] (unreleased)
 
 ### Added
 - Add a new modification_time column to reports [#1513](https://github.com/greenbone/gvmd/pull/1513), [#1519](https://github.com/greenbone/gvmd/pull/1519), [#1590](https://github.com/greenbone/gvmd/pull/1590)
