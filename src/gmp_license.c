@@ -181,13 +181,15 @@ get_license_run (gmp_parser_t *gmp_parser,
   int ret;
 
   gchar *license_status;
+  gchar *appliance_status;
   theia_license_t *license_data;
 
   license_status = NULL;
   license_data = NULL;
 
   ret = manage_get_license (&license_status,
-                            &license_data);
+                            &license_data,
+                            &appliance_status);
 
   switch (ret)
     {
@@ -200,10 +202,12 @@ get_license_run (gmp_parser_t *gmp_parser,
                              "<get_license_response status=\"%s\""
                              " status_text=\"%s\">"
                              "<license>"
-                             "<status>%s</status>",
+                             "<status>%s</status>"
+                             "<appliance_status>%s</appliance_status>",
                              STATUS_OK,
                              STATUS_OK_TEXT,
-                             license_status);
+                             license_status,
+                             appliance_status ? appliance_status : "");
 
           if (license_data)
             {
@@ -245,6 +249,7 @@ get_license_run (gmp_parser_t *gmp_parser,
     }
 
   g_free (license_status);
+  g_free (appliance_status);
 
 #ifdef HAS_LIBTHEIA
   theia_license_free (license_data);

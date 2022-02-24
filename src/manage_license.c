@@ -26,6 +26,7 @@
 #include "manage_acl.h"
 #include "manage_license.h"
 #include "utils.h"
+#include "sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -167,20 +168,51 @@ manage_update_license_file (const char *new_license,
 }
 
 /**
+ * @brief Get the current appliance status
+ *
+ * @param[in]  got_license_info  The info about the received license
+ *
+ * @return appliance status or NULL if not available
+ */
+static gchar*
+get_appliance_status(theia_got_license_info_t *gli)
+{
+  gchar *comm_app;
+  gchar *app_status;
+
+  comm_app = sql_string ("SELECT value from public.meta"
+                         " where name = 'community_appliance';");
+
+  if (comm_app && atoi (comm_app))
+    app_status = g_strdup("community");
+  else if (gli && gli->license && gli->license->meta)
+    app_status = g_strdup_printf ("%s_%s", gli->license->meta->type,
+                                 gli->status);
+  else
+    app_status = NULL;
+
+  return app_status;
+}
+
+/**
  * @brief Get the current license information.
  *
- * @param[out] status       The validation status (e.g. "valid", "expired").
- * @param[out] license_data The content of the license organized in a struct.
+ * @param[out] status           The validation status (e.g. "valid", "expired").
+ * @param[out] license_data     The content of the license organized in a struct.
+ * @param[out] appliance_status The status of the appliance.
  *
  * @return 0 success, 1 service unavailable, 2 error sending command,
  *         3 error receiving response, 99 permission denied, -1 internal error.
  */
 int
 manage_get_license (gchar **status,
-                    theia_license_t **license_data)
+                    theia_license_t **license_data,
+                    gchar **appliance_status)
 {
   if (status)
     *status = NULL;
+  if (appliance_status)
+    *appliance_status = NULL;
   if (license_data)
     *license_data = NULL;
 
@@ -259,6 +291,11 @@ manage_get_license (gchar **status,
     g_debug ("%s: Received got.license response", __func__);
 
   theia_client_disconnect (client);
+
+  if (appliance_status)
+    {
+      *appliance_status = get_appliance_status(got_license_info);
+    }
 
   if (status)
     {
