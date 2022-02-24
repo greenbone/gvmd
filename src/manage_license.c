@@ -167,6 +167,8 @@ manage_update_license_file (const char *new_license,
   return 0;
 }
 
+#ifdef HAS_LIBTHEIA
+
 /**
  * @brief Get the current appliance status
  *
@@ -193,6 +195,8 @@ get_appliance_status(theia_got_license_info_t *gli)
 
   return app_status;
 }
+
+#endif // HAS_LIBTHEIA
 
 /**
  * @brief Get the current license information.
