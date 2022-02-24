@@ -26,7 +26,7 @@
 #include "manage_acl.h"
 #include "manage_license.h"
 #include "utils.h"
-#include "sql.h"
+#include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -182,8 +182,7 @@ get_appliance_status(theia_got_license_info_t *gli)
   gchar *comm_app;
   gchar *app_status;
 
-  comm_app = sql_string ("SELECT value from public.meta"
-                         " where name = 'community_appliance';");
+  comm_app = get_community_appliance_value ();
 
   if (comm_app && atoi (comm_app))
     app_status = g_strdup("community");
