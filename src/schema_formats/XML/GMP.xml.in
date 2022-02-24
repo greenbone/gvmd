@@ -25999,7 +25999,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         interfaces.
       </p>
     </description>
-    <version>21.10</version>
+    <version>22.4</version>
   </change>
   <change>
     <command>GET_INFO</command>
@@ -26014,7 +26014,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         OVAL Definitions are no longer supported.
       </p>
     </description>
-    <version>21.10</version>
+    <version>22.4</version>
   </change>
   <change>
     <command>GET_INFO</command>
