@@ -1960,7 +1960,7 @@ osp_scanner_feed_version (const gchar *update_socket)
   if (osp_get_vts_version (connection, &scanner_feed_version, &error))
     {
       if (error && strcmp (error, "OSPd OpenVAS is still starting") == 0)
-        g_info ("%s: failed to get scanner_feed_version. %s",
+        g_info ("%s: No feed version available yet. %s",
                 __func__, error);
       else
         g_warning ("%s: failed to get scanner_feed_version. %s",
