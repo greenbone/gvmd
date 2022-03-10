@@ -26,7 +26,6 @@
 #include "manage_acl.h"
 #include "manage_license.h"
 #include "utils.h"
-#include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -40,8 +39,6 @@
  * @brief Update the license file by replacing it with the given one.
  *
  * @param[in]  new_license          The content of the new license.
- * @param[out] model_change_needed  Indicates Whether a model change is
- *                                  needed
  * @param[out] error_msg            The error message of the license
  *                                  update if any
  *
@@ -50,9 +47,7 @@
  *         5 error updating license, 99 permission denied, -1 internal error.
  */
 int
-manage_update_license_file (const char *new_license,
-                            gboolean *model_change_needed,
-                            char **error_msg)
+manage_update_license_file (const char *new_license, char **error_msg)
 {
   *error_msg = NULL;
 
@@ -149,7 +144,6 @@ manage_update_license_file (const char *new_license,
     }
   else
     {
-    *model_change_needed = modified_license_info->model_change_needed;
     g_message ("%s: Uploaded new license file (%lu bytes)",
                __func__, strlen (new_license));
     }
@@ -167,55 +161,21 @@ manage_update_license_file (const char *new_license,
   return 0;
 }
 
-#ifdef HAS_LIBTHEIA
-
-/**
- * @brief Get the current appliance status
- *
- * @param[in]  got_license_info  The info about the received license
- *
- * @return appliance status or NULL if not available
- */
-static gchar*
-get_appliance_status(theia_got_license_info_t *gli)
-{
-  gchar *comm_app;
-  gchar *app_status;
-
-  comm_app = get_community_appliance_value ();
-
-  if (comm_app && atoi (comm_app))
-    app_status = g_strdup("community");
-  else if (gli && gli->license && gli->license->meta)
-    app_status = g_strdup_printf ("%s_%s", gli->license->meta->type,
-                                 gli->status);
-  else
-    app_status = NULL;
-
-  return app_status;
-}
-
-#endif // HAS_LIBTHEIA
-
 /**
  * @brief Get the current license information.
  *
- * @param[out] status           The validation status (e.g. "valid", "expired").
- * @param[out] license_data     The content of the license organized in a struct.
- * @param[out] appliance_status The status of the appliance.
+ * @param[out] status       The validation status (e.g. "valid", "expired").
+ * @param[out] license_data The content of the license organized in a struct.
  *
  * @return 0 success, 1 service unavailable, 2 error sending command,
  *         3 error receiving response, 99 permission denied, -1 internal error.
  */
 int
 manage_get_license (gchar **status,
-                    theia_license_t **license_data,
-                    gchar **appliance_status)
+                    theia_license_t **license_data)
 {
   if (status)
     *status = NULL;
-  if (appliance_status)
-    *appliance_status = NULL;
   if (license_data)
     *license_data = NULL;
 
@@ -294,11 +254,6 @@ manage_get_license (gchar **status,
     g_debug ("%s: Received got.license response", __func__);
 
   theia_client_disconnect (client);
-
-  if (appliance_status)
-    {
-      *appliance_status = get_appliance_status(got_license_info);
-    }
 
   if (status)
     {

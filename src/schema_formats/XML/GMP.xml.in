@@ -12632,17 +12632,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>The license information</summary>
         <pattern>
           <e>status</e>
-          <e>appliance_status</e>
           <e>content</e>
         </pattern>
         <ele>
           <name>status</name>
           <summary>Status of the license</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>appliance_status</name>
-          <summary>Status of the appliance</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -12782,7 +12776,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <get_license_response status="200" status_text="OK">
           <license>
             <status>active</status>
-            <appliance_status>commercial_active</appliance_status>
             <content>
               <meta>
                 <id>4711</id>

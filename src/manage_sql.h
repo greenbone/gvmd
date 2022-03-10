@@ -480,8 +480,4 @@ config_family_entire_and_growing (config_t, const char*);
 void
 reports_clear_count_cache_dynamic ();
 
-
-gchar *
-get_community_appliance_value ();
-
 #endif /* not _GVMD_MANAGE_SQL_H */
