@@ -55493,18 +55493,6 @@ delete_permissions_cache_for_user (user_t user)
   sql ("DELETE FROM permissions_get_tasks WHERE \"user\" = %llu;", user);
 }
 
-/**
- * @brief Get the community appliance value
- *
- * @return community appliance value or NULL if not available or on error
- */
-gchar *
-get_community_appliance_value ()
-{
-  return (sql_string ("SELECT value from public.meta"
-                      " where name = 'community_appliance';"));
-}
-
 
 /* Optimize. */
 
