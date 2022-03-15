@@ -54,6 +54,43 @@ RSYNC_COMPRESS="--compress-level=9"
 # RSYNC_CHMOD specifies the permissions to chmod the files to.
 RSYNC_CHMOD="--perms --chmod=Fugo+r,Fug+w,Dugo-s,Dugo+rx,Dug+w"
 
+# RSYNC_COMMUNITY_BASE_URL defines the base rsync URL for the community feed
+# not including the feed type (data or vulnerability) and version.
+RSYNC_COMMUNITY_BASE_URL="rsync://feed.community.greenbone.net/"
+
+# RSYNC_COMMUNITY_DATA_URL defines the rsync URL for the community data feed.
+RSYNC_COMMUNITY_DATA_URL="${RSYNC_COMMUNITY_BASE_URL}/data-feed/@GMP_VERSION_FEED@/"
+
+# RSYNC_COMMUNITY_CERT_URL defines the rsync URL for the community SCAP feed.
+RSYNC_COMMUNITY_CERT_URL="${RSYNC_COMMUNITY_BASE_URL}/vulnerability-feed/@GMP_VERSION_FEED@/cert-data/"
+
+# RSYNC_COMMUNITY_SCAP_URL defines the rsync URL for the community SCAP feed.
+RSYNC_COMMUNITY_SCAP_URL="${RSYNC_COMMUNITY_BASE_URL}/vulnerability-feed/@GMP_VERSION_FEED@/scap-data/"
+
+# If ENTERPRISE_FEED_HOST_OVERRIDE is set to a non-empty string,
+#  the hostname of the enterprise feed server will overridden with it.
+# Otherwise the server hostname from the feed access key will be used.
+if [ -z "$ENTERPRISE_FEED_HOST_OVERRIDE" ]
+then
+  ENTERPRISE_FEED_HOST_OVERRIDE=""
+fi
+
+# ENTERPRISE_FEED_BASE_PATH defines the common base path for the feed data
+#  on the enterprise feed server.
+ENTERPRISE_FEED_BASE_PATH="/"
+
+# ENTERPRISE_FEED_DATA_PATH defines the path of the gvmd data feed
+#  on the enterprise feed server.
+ENTERPRISE_FEED_DATA_PATH="$ENTERPRISE_FEED_BASE_PATH/data-feed/@GMP_VERSION_FEED@/"
+
+# ENTERPRISE_FEED_DATA_PATH defines the path of the CERT feed
+#  on the enterprise feed server.
+ENTERPRISE_FEED_CERT_PATH="$ENTERPRISE_FEED_BASE_PATH/vulnerability-feed/@GMP_VERSION_FEED@/cert-data/"
+
+# ENTERPRISE_FEED_DATA_PATH defines the path of the SCAP feed
+#  on the enterprise feed server.
+ENTERPRISE_FEED_SCAP_PATH="$ENTERPRISE_FEED_BASE_PATH/vulnerability-feed/@GMP_VERSION_FEED@/scap-data/"
+
 # PORT controls the outgoing TCP port for updates. If PAT/Port-Translation is
 # not used, this should be "24". For some application layer firewalls or gates
 # the value 22 (Standard SSH) is useful. Only change if you know what you are
@@ -169,14 +206,12 @@ init_feed_type () {
     SCRIPT_ID="CERTSYNC"
 
     if [ -z "$COMMUNITY_CERT_RSYNC_FEED" ]; then
-      COMMUNITY_RSYNC_FEED="rsync://feed.community.greenbone.net:/cert-data"
-      # An alternative syntax which might work if the above doesn't:
-      # COMMUNITY_RSYNC_FEED="rsync@feed.community.greenbone.net::cert-data"
+      COMMUNITY_RSYNC_FEED="$RSYNC_COMMUNITY_CERT_URL"
     else
       COMMUNITY_RSYNC_FEED="$COMMUNITY_CERT_RSYNC_FEED"
     fi
 
-    GSF_RSYNC_PATH="/cert-data"
+    GSF_RSYNC_PATH="$ENTERPRISE_FEED_CERT_PATH"
 
     if [ -e $ACCESSKEY ]; then
       if [ -z "$FEED_NAME" ]; then
@@ -197,14 +232,12 @@ init_feed_type () {
     SCRIPT_ID="SCAPSYNC"
 
     if [ -z "$COMMUNITY_SCAP_RSYNC_FEED" ]; then
-      COMMUNITY_RSYNC_FEED="rsync://feed.community.greenbone.net:/scap-data"
-      # An alternative syntax which might work if the above doesn't:
-      # COMMUNITY_RSYNC_FEED="rsync@feed.community.greenbone.net::scap-data"
+      COMMUNITY_RSYNC_FEED="$RSYNC_COMMUNITY_SCAP_URL"
     else
       COMMUNITY_RSYNC_FEED="$COMMUNITY_SCAP_RSYNC_FEED"
     fi
 
-    GSF_RSYNC_PATH="/scap-data"
+    GSF_RSYNC_PATH="$ENTERPRISE_FEED_SCAP_PATH"
 
     if [ -e $ACCESSKEY ]; then
       if [ -z "$FEED_NAME" ]; then
@@ -225,14 +258,12 @@ init_feed_type () {
     SCRIPT_ID="GVMD_DATA_SYNC"
 
     if [ -z "$COMMUNITY_GVMD_DATA_RSYNC_FEED" ]; then
-      COMMUNITY_RSYNC_FEED="rsync://feed.community.greenbone.net:/data-objects/gvmd/"
-      # An alternative syntax which might work if the above doesn't:
-      # COMMUNITY_RSYNC_FEED="rsync@feed.community.greenbone.net::data-objects/gvmd/"
+      COMMUNITY_RSYNC_FEED="$RSYNC_COMMUNITY_DATA_URL"
     else
       COMMUNITY_RSYNC_FEED="$COMMUNITY_GVMD_DATA_RSYNC_FEED"
     fi
 
-    GSF_RSYNC_PATH="/data-objects/gvmd/"
+    GSF_RSYNC_PATH="$ENTERPRISE_FEED_DATA_PATH"
 
     if [ -e $ACCESSKEY ]; then
       if [ -z "$FEED_NAME" ]; then
@@ -343,7 +374,13 @@ is_feed_current () {
   if [ -e $ACCESSKEY ]
   then
     read feeduser < $ACCESSKEY
-    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    if [ -z "$ENTERPRISE_FEED_HOST_OVERRIDE" ]
+    then
+      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    else
+      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+      custid_at_host="${custid}@${ENTERPRISE_FEED_HOST_OVERRIDE}"
+    fi
 
     if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
     then
@@ -473,7 +510,13 @@ sync_feed_data(){
 
     mkdir -p "$FEED_DIR"
     read feeduser < $ACCESSKEY
-    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    if [ -z "$ENTERPRISE_FEED_HOST_OVERRIDE" ]
+    then
+      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+    else
+      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+      custid_at_host="${custid}@${ENTERPRISE_FEED_HOST_OVERRIDE}"
+    fi
 
     if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
     then
