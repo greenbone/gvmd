@@ -363,7 +363,6 @@ modify_license_element_start (gmp_parser_t *gmp_parser,
  *
  * @param[in]  file_content         The content of the new license file.
  * @param[in]  allow_empty          Whether to allow an empty file.
- * @param[out] model_change_needed  Whether to allow an empty file.
  * @param[out] error_msg            The error message of the license update
  *                                  if any
  * 
@@ -371,15 +370,13 @@ modify_license_element_start (gmp_parser_t *gmp_parser,
  *         99 permission denied. 
  */
 static int
-modify_license (gchar *file_content, gboolean allow_empty,
-                gboolean *model_change_needed, char **error_msg)
+modify_license (gchar *file_content, gboolean allow_empty, char **error_msg)
 {
   if (allow_empty == FALSE
       && (file_content == NULL || strcmp (file_content, "") == 0))
     return 4;
 
-  return manage_update_license_file(file_content, model_change_needed,
-                                    error_msg);
+  return manage_update_license_file(file_content, error_msg);
 }
 
 /**
@@ -394,7 +391,6 @@ modify_license_run (gmp_parser_t *gmp_parser,
 {
   entity_t entity, file_entity;
   const char *allow_empty_str;
-  gboolean model_change_needed;
   char *error_msg;
   int allow_empty, ret;
 
@@ -406,18 +402,16 @@ modify_license_run (gmp_parser_t *gmp_parser,
   file_entity = entity_child (entity, "file");
 
   ret = modify_license (file_entity ? file_entity->text : NULL, allow_empty,
-                        &model_change_needed, &error_msg);
+                        &error_msg);
   switch (ret)
     {
       case 0:
         SENDF_TO_CLIENT_OR_FAIL
          ("<modify_license_response status=\"%s\""
           " status_text=\"%s\">"
-          " <status_details>%d</status_details>"
           " </modify_license_response>",
           STATUS_OK,
-          STATUS_OK_TEXT,
-          model_change_needed ? 1 : 0);
+          STATUS_OK_TEXT);
         break;
       case 1:
         SENDF_TO_CLIENT_OR_FAIL
