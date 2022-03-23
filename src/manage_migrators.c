@@ -2206,7 +2206,6 @@ migrate_232_to_233_set_predefined (const gchar *type, const gchar *table)
   gchar *dir_path;
 
   dir_path = g_build_filename (GVMD_FEED_DIR,
-                               GMP_VERSION_FEED,
                                type,
                                NULL);
 
@@ -2289,13 +2288,13 @@ migrate_232_to_233 ()
        " WHERE id IN (SELECT resource FROM resources_predefined"
        "              WHERE resource_type = 'report_format');");
 
-  migrate_232_to_233_set_predefined ("report_formats", "report_formats");
-  migrate_232_to_233_set_predefined ("configs", "configs");
-  migrate_232_to_233_set_predefined ("port_lists", "port_lists");
+  migrate_232_to_233_set_predefined ("report-formats", "report_formats");
+  migrate_232_to_233_set_predefined ("scan-configs", "configs");
+  migrate_232_to_233_set_predefined ("port-lists", "port_lists");
 
-  migrate_232_to_233_set_predefined ("report_formats", "report_formats_trash");
-  migrate_232_to_233_set_predefined ("configs", "configs_trash");
-  migrate_232_to_233_set_predefined ("port_lists", "port_lists_trash");
+  migrate_232_to_233_set_predefined ("report-formats", "report_formats_trash");
+  migrate_232_to_233_set_predefined ("scan-configs", "configs_trash");
+  migrate_232_to_233_set_predefined ("port-lists", "port_lists_trash");
 
   sql ("DROP TABLE resources_predefined;");
 
