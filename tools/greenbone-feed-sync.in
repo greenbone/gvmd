@@ -79,7 +79,7 @@ fi
 #  on the enterprise feed server.
 if [ -z "$ENTERPRISE_FEED_BASE_PATH" ]
 then
-  ENTERPRISE_FEED_BASE_PATH="/"
+  ENTERPRISE_FEED_BASE_PATH="/enterprise"
 fi
 
 # ENTERPRISE_FEED_DATA_PATH defines the path of the gvmd data feed
