@@ -17,8 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # This script synchronizes a GVM installation with the
-# feed data from either the Greenbone Security Feed (in
-# case a GSF access key is present) or else from the Greenbone
+# feed data from either the Greenbone Enterprise Feed (in
+# case a access key is present) or else from the Greenbone
 # Community Feed.
 
 log_notice () {
@@ -141,8 +141,8 @@ then
   fi
 fi
 
-# Determine whether a GSF access key is present. If yes,
-# then use the Greenbone Security Feed. Else use the
+# Determine whether a access key is present. If yes,
+# then use the Greenbone Enterprise Feed. Else use the
 # Greenbone Community Feed.
 if [ -e $ACCESSKEY ]
 then
@@ -153,7 +153,7 @@ then
   fi
 
   if [ -z "$FEED_HOME" ]; then
-    FEED_HOME="https://www.greenbone.net/en/security-feed/"
+    FEED_HOME="https://www.greenbone.net/en/enterprise-feed/"
   fi
 
 else
@@ -423,7 +423,7 @@ is_feed_current () {
     # Sleep for five seconds (a previous feed might have been synced a few seconds before) to prevent
     # IP blocking due to network equipment in between keeping the previous connection too long open.
     sleep 5
-    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Enterprise Feed key found, falling back to Greenbone Community Feed"
     eval "$RSYNC -ltvrP $RSYNC_CHMOD \"$COMMUNITY_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
     if [ $? -ne 0 ]
     then
@@ -460,9 +460,9 @@ do_help () {
 
   if [ -e $ACCESSKEY ]
   then
-    echo "GSF access key found: Using Greenbone Security Feed"
+    echo "Access key found: Using Greenbone Enterprise Feed"
   else
-    echo "No GSF access key found: Using Community Feed"
+    echo "No access key found: Using Community Feed"
   fi
 
   echo " --describe      display current feed info"
@@ -508,7 +508,7 @@ do_sync_community_feed () {
 sync_feed_data(){
   if [ -e $ACCESSKEY ]
   then
-    log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone $FEED_TYPE_LONG Repository ..."
+    log_notice "Found Greenbone Enterprise Feed access key, trying to synchronize with Greenbone $FEED_TYPE_LONG Repository ..."
     notsynced=1
 
     mkdir -p "$FEED_DIR"
@@ -559,7 +559,7 @@ sync_feed_data(){
     done
     log_notice "Synchronization with the Greenbone $FEED_TYPE_LONG Repository successful."
   else
-    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Enterprise Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 
