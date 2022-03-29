@@ -77,7 +77,10 @@ fi
 
 # ENTERPRISE_FEED_BASE_PATH defines the common base path for the feed data
 #  on the enterprise feed server.
-ENTERPRISE_FEED_BASE_PATH="/"
+if [ -z "$ENTERPRISE_FEED_BASE_PATH" ]
+then
+  ENTERPRISE_FEED_BASE_PATH="/"
+fi
 
 # ENTERPRISE_FEED_DATA_PATH defines the path of the gvmd data feed
 #  on the enterprise feed server.
