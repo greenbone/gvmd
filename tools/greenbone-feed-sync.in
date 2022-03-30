@@ -440,24 +440,6 @@ do_help () {
   exit 0
 }
 
-do_rsync_community_feed () {
-  if [ -z "$RSYNC" ]; then
-    log_err "rsync not found!"
-  else
-    # Sleep for five seconds (after is_feed_current) to prevent IP blocking due to
-    # network equipment in between keeping the previous connection too long open.
-    sleep 5
-    log_notice "Using rsync: $RSYNC"
-    log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
-    mkdir -p "$FEED_DIR"
-    eval "$RSYNC -ltvrP $RSYNC_CHMOD $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
-    if [ $? -ne 0 ]; then
-      log_err "rsync failed. Your $FEED_TYPE_LONG might be broken now."
-      exit 1
-    fi
-  fi
-}
-
 do_sync_community_feed () {
   if [ -z "$RSYNC" ]; then
     log_err "rsync not found!"
@@ -465,7 +447,21 @@ do_sync_community_feed () {
     exit 1
   else
     log_notice "Will use rsync"
-    do_rsync_community_feed
+
+    # Sleep for five seconds (after is_feed_current) to prevent IP blocking due to
+    # network equipment in between keeping the previous connection too long open.
+    sleep 5
+
+    log_notice "Using rsync: $RSYNC"
+    log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
+
+    mkdir -p "$FEED_DIR"
+    eval "$RSYNC -ltvrP $RSYNC_CHMOD $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
+
+    if [ $? -ne 0 ]; then
+      log_err "rsync failed. Your $FEED_TYPE_LONG might be broken now."
+      exit 1
+    fi
   fi
 }
 
