@@ -504,7 +504,6 @@ sync_feed_data(){
     done
     log_notice "Synchronization with the Greenbone $FEED_TYPE_LONG Repository successful."
   else
-    log_notice "No Greenbone Enterprise Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 
