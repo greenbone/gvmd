@@ -338,27 +338,6 @@ do_feedversion () {
   fi
 }
 
-# This function uses gos-state-manager to get information about the settings.
-# gos-state-manager is only available on a Greenbone OS.
-# If gos-state-manager is missing the settings values can not be retrieved.
-#
-# Input: option
-# Output: value as string or empty String if gos-state-manager is not installed
-#         or option not set
-get_value ()
-{
-  value=""
-  key=$1
-  if which gos-state-manager 1>/dev/null 2>&1
-  then
-    if gos-state-manager get "$key.value" 1>/dev/null 2>&1
-    then
-      value="$(gos-state-manager get "$key.value")"
-    fi
-  fi
-  echo "$value"
-}
-
 is_feed_current () {
   if [ -r $TIMESTAMP ]
   then
@@ -392,23 +371,8 @@ is_feed_current () {
       exit 1
     fi
 
-    gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-    syncport=$(get_value syncport)
-    if [ "$syncport" ]
-    then
-      PORT="$syncport"
-    fi
+    RSYNC_SSH_PROXY_CMD=""
 
-    if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-    then
-      RSYNC_SSH_PROXY_CMD=""
-    else
-      if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-      else
-        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-      fi
-    fi
     create_tmp_key
     rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/timestamp "$FEED_INFO_TEMP_DIR"
     if [ $? -ne 0 ]
@@ -530,23 +494,8 @@ sync_feed_data(){
     while [ 0 -ne "$notsynced" ]
     do
 
-      gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-      syncport=$(get_value syncport)
-      if [ "$syncport" ]
-      then
-        PORT="$syncport"
-      fi
+      RSYNC_SSH_PROXY_CMD=""
 
-      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-      then
-        RSYNC_SSH_PROXY_CMD=""
-      else
-        if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-        else
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-        fi
-      fi
       create_tmp_key
       rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
       if [ 0 -ne "$?" ]; then
