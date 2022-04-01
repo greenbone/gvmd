@@ -17,8 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # This script synchronizes a GVM installation with the
-# feed data from either the Greenbone Security Feed (in
-# case a GSF access key is present) or else from the Greenbone
+# feed data from either the Greenbone Enterprise Feed (in
+# case a access key is present) or else from the Greenbone
 # Community Feed.
 
 log_notice () {
@@ -56,7 +56,7 @@ RSYNC_CHMOD="--perms --chmod=Fugo+r,Fug+w,Dugo-s,Dugo+rx,Dug+w"
 
 # RSYNC_COMMUNITY_BASE_URL defines the base rsync URL for the community feed
 # not including the feed type (data or vulnerability) and version.
-RSYNC_COMMUNITY_BASE_URL="rsync://feed.community.greenbone.net/"
+RSYNC_COMMUNITY_BASE_URL="rsync://feed.community.greenbone.net/community"
 
 # RSYNC_COMMUNITY_DATA_URL defines the rsync URL for the community data feed.
 RSYNC_COMMUNITY_DATA_URL="${RSYNC_COMMUNITY_BASE_URL}/data-feed/@GMP_VERSION_FEED@/"
@@ -79,7 +79,7 @@ fi
 #  on the enterprise feed server.
 if [ -z "$ENTERPRISE_FEED_BASE_PATH" ]
 then
-  ENTERPRISE_FEED_BASE_PATH="/"
+  ENTERPRISE_FEED_BASE_PATH="/enterprise"
 fi
 
 # ENTERPRISE_FEED_DATA_PATH defines the path of the gvmd data feed
@@ -141,8 +141,8 @@ then
   fi
 fi
 
-# Determine whether a GSF access key is present. If yes,
-# then use the Greenbone Security Feed. Else use the
+# Determine whether a access key is present. If yes,
+# then use the Greenbone Enterprise Feed. Else use the
 # Greenbone Community Feed.
 if [ -e $ACCESSKEY ]
 then
@@ -153,7 +153,7 @@ then
   fi
 
   if [ -z "$FEED_HOME" ]; then
-    FEED_HOME="https://www.greenbone.net/en/security-feed/"
+    FEED_HOME="https://www.greenbone.net/en/enterprise-feed/"
   fi
 
 else
@@ -338,27 +338,6 @@ do_feedversion () {
   fi
 }
 
-# This function uses gos-state-manager to get information about the settings.
-# gos-state-manager is only available on a Greenbone OS.
-# If gos-state-manager is missing the settings values can not be retrieved.
-#
-# Input: option
-# Output: value as string or empty String if gos-state-manager is not installed
-#         or option not set
-get_value ()
-{
-  value=""
-  key=$1
-  if which gos-state-manager 1>/dev/null 2>&1
-  then
-    if gos-state-manager get "$key.value" 1>/dev/null 2>&1
-    then
-      value="$(gos-state-manager get "$key.value")"
-    fi
-  fi
-  echo "$value"
-}
-
 is_feed_current () {
   if [ -r $TIMESTAMP ]
   then
@@ -392,23 +371,8 @@ is_feed_current () {
       exit 1
     fi
 
-    gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-    syncport=$(get_value syncport)
-    if [ "$syncport" ]
-    then
-      PORT="$syncport"
-    fi
+    RSYNC_SSH_PROXY_CMD=""
 
-    if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-    then
-      RSYNC_SSH_PROXY_CMD=""
-    else
-      if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-      else
-        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-      fi
-    fi
     create_tmp_key
     rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/timestamp "$FEED_INFO_TEMP_DIR"
     if [ $? -ne 0 ]
@@ -423,7 +387,7 @@ is_feed_current () {
     # Sleep for five seconds (a previous feed might have been synced a few seconds before) to prevent
     # IP blocking due to network equipment in between keeping the previous connection too long open.
     sleep 5
-    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
+    log_notice "No Greenbone Enterprise Feed key found, falling back to Greenbone Community Feed"
     eval "$RSYNC -ltvrP $RSYNC_CHMOD \"$COMMUNITY_RSYNC_FEED/timestamp\" \"$FEED_INFO_TEMP_DIR\""
     if [ $? -ne 0 ]
     then
@@ -460,9 +424,9 @@ do_help () {
 
   if [ -e $ACCESSKEY ]
   then
-    echo "GSF access key found: Using Greenbone Security Feed"
+    echo "Access key found: Using Greenbone Enterprise Feed"
   else
-    echo "No GSF access key found: Using Community Feed"
+    echo "No access key found: Using Community Feed"
   fi
 
   echo " --describe      display current feed info"
@@ -476,24 +440,6 @@ do_help () {
   exit 0
 }
 
-do_rsync_community_feed () {
-  if [ -z "$RSYNC" ]; then
-    log_err "rsync not found!"
-  else
-    # Sleep for five seconds (after is_feed_current) to prevent IP blocking due to
-    # network equipment in between keeping the previous connection too long open.
-    sleep 5
-    log_notice "Using rsync: $RSYNC"
-    log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
-    mkdir -p "$FEED_DIR"
-    eval "$RSYNC -ltvrP $RSYNC_CHMOD $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
-    if [ $? -ne 0 ]; then
-      log_err "rsync failed. Your $FEED_TYPE_LONG might be broken now."
-      exit 1
-    fi
-  fi
-}
-
 do_sync_community_feed () {
   if [ -z "$RSYNC" ]; then
     log_err "rsync not found!"
@@ -501,65 +447,68 @@ do_sync_community_feed () {
     exit 1
   else
     log_notice "Will use rsync"
-    do_rsync_community_feed
+
+    # Sleep for five seconds (after is_feed_current) to prevent IP blocking due to
+    # network equipment in between keeping the previous connection too long open.
+    sleep 5
+
+    log_notice "Using rsync: $RSYNC"
+    log_notice "Configured $FEED_TYPE_LONG rsync feed: $COMMUNITY_RSYNC_FEED"
+
+    mkdir -p "$FEED_DIR"
+    eval "$RSYNC -ltvrP $RSYNC_CHMOD $RSYNC_DELETE \"$COMMUNITY_RSYNC_FEED\" \"$FEED_DIR\""
+
+    if [ $? -ne 0 ]; then
+      log_err "rsync failed. Your $FEED_TYPE_LONG might be broken now."
+      exit 1
+    fi
   fi
+}
+
+do_sync_enterprise_feed () {
+  log_notice "Found Greenbone Enterprise Feed access key, trying to synchronize with Greenbone $FEED_TYPE_LONG Repository ..."
+  notsynced=1
+
+  mkdir -p "$FEED_DIR"
+  read feeduser < $ACCESSKEY
+  if [ -z "$ENTERPRISE_FEED_HOST_OVERRIDE" ]
+  then
+    custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
+  else
+    custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+    custid_at_host="${custid}@${ENTERPRISE_FEED_HOST_OVERRIDE}"
+  fi
+
+  if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
+  then
+    log_err "Could not determine credentials, aborting synchronization."
+    exit 1
+  fi
+
+  while [ 0 -ne "$notsynced" ]
+  do
+
+    RSYNC_SSH_PROXY_CMD=""
+
+    create_tmp_key
+    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
+    if [ 0 -ne "$?" ]; then
+      log_err "rsync failed, aborting synchronization."
+      remove_tmp_key
+      exit 1
+    fi
+    remove_tmp_key
+    notsynced=0
+  done
+
+  log_notice "Synchronization with the Greenbone $FEED_TYPE_LONG Repository successful."
 }
 
 sync_feed_data(){
   if [ -e $ACCESSKEY ]
   then
-    log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone $FEED_TYPE_LONG Repository ..."
-    notsynced=1
-
-    mkdir -p "$FEED_DIR"
-    read feeduser < $ACCESSKEY
-    if [ -z "$ENTERPRISE_FEED_HOST_OVERRIDE" ]
-    then
-      custid_at_host=`head -1 $ACCESSKEY | cut -d : -f 1`
-    else
-      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-      custid_at_host="${custid}@${ENTERPRISE_FEED_HOST_OVERRIDE}"
-    fi
-
-    if [ -z "$feeduser" ] || [ -z "$custid_at_host" ]
-    then
-      log_err "Could not determine credentials, aborting synchronization."
-      exit 1
-    fi
-
-    while [ 0 -ne "$notsynced" ]
-    do
-
-      gsmproxy=$(get_value proxy_feed | sed -r -e 's/^.*\/\///' -e 's/:([0-9]+)$/ \1/')
-      syncport=$(get_value syncport)
-      if [ "$syncport" ]
-      then
-        PORT="$syncport"
-      fi
-
-      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-      then
-        RSYNC_SSH_PROXY_CMD=""
-      else
-        if [ -e $GVM_SYSCONF_DIR/proxyauth ] && [ -r $GVM_SYSCONF_DIR/proxyauth ]; then
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p $GVM_SYSCONF_DIR/proxyauth\""
-        else
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-        fi
-      fi
-      create_tmp_key
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP $RSYNC_CHMOD $RSYNC_DELETE $RSYNC_COMPRESS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
-      if [ 0 -ne "$?" ]; then
-        log_err "rsync failed, aborting synchronization."
-        remove_tmp_key
-        exit 1
-      fi
-      remove_tmp_key
-      notsynced=0
-    done
-    log_notice "Synchronization with the Greenbone $FEED_TYPE_LONG Repository successful."
+    do_sync_enterprise_feed
   else
-    log_notice "No Greenbone Security Feed access key found, falling back to Greenbone Community Feed"
     do_sync_community_feed
   fi
 
