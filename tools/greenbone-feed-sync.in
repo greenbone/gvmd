@@ -345,6 +345,8 @@ is_feed_current () {
   if [ -r $TIMESTAMP ]
   then
     FEED_VERSION=`cat $TIMESTAMP`
+  else
+    FEED_VERSION=0
   fi
 
   if [ -z "$FEED_VERSION" ]
