@@ -6493,6 +6493,146 @@ gvm_get_sync_script_feed_version (const gchar * sync_script,
 }
 
 /**
+ * @brief Get VTs feed information from a scanner.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ * @param[out] vts_version    Output of scanner feed version.
+ * @param[out] feed_name      Output of feed name.
+ * @param[out] feed_vendor    Output of feed vendor.
+ * @param[out] feed_home      Output of feed name home URL.
+ *
+ * @return 0 success, 1 connection to scanner failed, 2 scanner still starting,
+ *         -1 other error.
+ */
+static int
+nvts_feed_info_internal (const gchar *update_socket,
+                         gchar **vts_version,
+                         gchar **feed_name,
+                         gchar **feed_vendor,
+                         gchar **feed_home)
+{
+  osp_connection_t *connection;
+  gchar *error;
+
+  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
+  if (!connection)
+    {
+      g_warning ("%s: failed to connect to %s", __func__, update_socket);
+      return 1;
+    }
+
+  error = NULL;
+  if (osp_get_vts_feed_info (connection,
+                             vts_version,
+                             feed_name,
+                             feed_vendor,
+                             feed_home,
+                             &error))
+    {
+      if (error && strcmp (error, "OSPd OpenVAS is still starting") == 0)
+        {
+          g_free (error);
+          osp_connection_close (connection);
+          return 2;
+        }
+      g_warning ("%s: failed to get VT feed info. %s",
+                 __func__, error ? : "");
+      g_free (error);
+      osp_connection_close (connection);
+      return -1;
+    }
+
+  osp_connection_close (connection);
+
+  return 0;
+}
+
+/**
+ * @brief Get VTs feed information from the scanner using VT update socket.
+ *
+ * @param[out] vts_version  Output of scanner feed version.
+ * @param[out] feed_name    Output of feed name.
+ * @param[out] feed_vendor  Output of feed vendor.
+ * @param[out] feed_home    Output of feed name home URL.
+ *
+ * @return 0 success, 1 connection to scanner failed, 2 scanner still starting,
+ *         -1 other error.
+ */
+int
+nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
+                gchar **feed_home)
+{
+  return nvts_feed_info_internal (get_osp_vt_update_socket (),
+                                  vts_version,
+                                  feed_name,
+                                  feed_vendor,
+                                  feed_home);
+}
+
+/**
+ * @brief Check the VTs feed sync for information using a OSP socket.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ * @param[out] lockfile_in_use       Whether the lockfile is in use.
+ * @param[out] self_test_exit_error  Whether the sync script self check failed.
+ * @param[out] self_test_error_msg   Self check error message if failed.
+ *
+ * @return 0 success, 1 connection to scanner failed, -1 other error.
+ */
+static int
+nvts_check_feed_internal (const char *update_socket,
+                         int *lockfile_in_use,
+                         int *self_test_exit_error,
+                         char **self_test_error_msg)
+{
+  osp_connection_t *connection;
+  gchar *error;
+
+  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
+  if (!connection)
+    {
+      g_warning ("%s: failed to connect to %s", __func__, update_socket);
+      return 1;
+    }
+
+  error = NULL;
+  if (osp_check_feed (connection,
+                      lockfile_in_use, self_test_exit_error,
+                      self_test_error_msg, &error))
+    {
+      g_warning ("%s: failed to get VT feed info. %s",
+                 __func__, error ? : "");
+      g_free (error);
+      osp_connection_close (connection);
+      return -1;
+    }
+
+  osp_connection_close (connection);
+
+  return 0;
+}
+
+/**
+ * @brief Check the VTs feed sync for information using the default OSP socket.
+ *
+ * @param[out] lockfile_in_use       Whether the lockfile is in use.
+ * @param[out] self_test_exit_error  Whether the sync script self check failed.
+ * @param[out] self_test_error_msg   Self check error message if failed.
+ *
+ * @return 0 success, 1 connection to scanner failed, -1 other error.
+ */
+int
+nvts_check_feed (int *lockfile_in_use,
+                 int *self_test_exit_error,
+                 char **self_test_error_msg)
+{
+  return nvts_check_feed_internal (get_osp_vt_update_socket (),
+                                   lockfile_in_use,
+                                   self_test_exit_error,
+                                   self_test_error_msg);
+}
+
+/**
  * @brief Migrates SCAP or CERT database, waiting until migration terminates.
  *
  * Calls a sync script to migrate the SCAP or CERT database.

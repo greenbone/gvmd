@@ -3978,11 +3978,6 @@ xml_context = NULL;
  */
 static GMarkupParser xml_parser;
 
-/**
- * @brief The nvt synchronization script for this daemon.
- */
-static const gchar *nvt_sync_script = BINDIR "/greenbone-nvt-sync";
-
 
 /* Client state. */
 
@@ -12174,6 +12169,33 @@ get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
 }
 
 /**
+ * @brief Template string for feed descriptions.
+ *
+ * The first and second placeholders are replaced with the name,
+ * the third one with the vendor and the last one with the home URL.
+ */
+#define FEED_DESCRIPTION_TEMPLATE \
+"This script synchronizes an NVT collection with the '%s'.\n" \
+"The '%s' is provided by '%s'.\n"                             \
+"Online information about this feed: '%s'.\n"
+
+/**
+ * @brief Template string for get_nvt_feed error messages.
+ *
+ * The placeholder is to be replaced by the actual message.
+ */
+#define GET_NVT_FEED_ERROR \
+"<feed>"                      \
+"<type>NVT</type>"            \
+"<name></name>"               \
+"<version></version>"         \
+"<description></description>" \
+"<sync_not_available>"        \
+"<error>%s</error>"           \
+"</sync_not_available>"       \
+"</feed>"
+
+/**
  * @brief Get NVT feed.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -12182,73 +12204,95 @@ get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
 static void
 get_nvt_feed (gmp_parser_t *gmp_parser, GError **error)
 {
-  gchar *feed_description, *feed_identification, *feed_version;
+  gchar *vts_version, *feed_name, *feed_vendor, *feed_home;
 
-  feed_description = NULL;
-  feed_identification = NULL;
-  feed_version = NULL;
+  vts_version = feed_name = feed_vendor = feed_home = NULL;
 
-  if (gvm_get_sync_script_description (nvt_sync_script, &feed_description)
-      && gvm_get_sync_script_identification (nvt_sync_script,
-                                             &feed_identification,
-                                             NVT_FEED)
-      && gvm_get_sync_script_feed_version (nvt_sync_script,
-                                           &feed_version))
+  switch (nvts_feed_info (&vts_version, &feed_name, &feed_vendor, &feed_home))
     {
-      gchar **ident = g_strsplit (feed_identification, "|", 6);
-      gchar *selftest_result = NULL;
-      const char *lockfile_name;
-      gchar *timestamp;
+      case 0:
+        {
+          gchar *feed_description;
+          gchar *self_test_error_msg;
+          int ret, lockfile_in_use, self_test_exit_error;
 
-      if (ident[0] == NULL || ident[1] == NULL
-          || ident[2] == NULL || ident[3] == NULL)
-        {
-          g_strfreev (ident);
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_feeds"));
-        }
-      else
-        {
+          feed_description = g_strdup_printf (FEED_DESCRIPTION_TEMPLATE,
+                                              feed_name,
+                                              feed_name,
+                                              feed_vendor,
+                                              feed_home);
           SENDF_TO_CLIENT_OR_FAIL
            ("<feed>"
             "<type>NVT</type>"
             "<name>%s</name>"
             "<version>%s</version>"
             "<description>%s</description>",
-            ident[3],
-            feed_version,
+            feed_name,
+            vts_version,
             feed_description);
-          g_strfreev (ident);
-          if (gvm_sync_script_perform_selftest (nvt_sync_script,
-                                                &selftest_result)
-              == FALSE)
+
+          self_test_error_msg = NULL;
+          lockfile_in_use = self_test_exit_error = 0;
+          ret = nvts_check_feed (&lockfile_in_use,
+                                 &self_test_exit_error, &self_test_error_msg);
+          if (ret == 1)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
-                                       "<error>%s</error>"
-                                       "</sync_not_available>",
-                                       selftest_result ? selftest_result : "");
-              g_free (selftest_result);
+                                       "<error>"
+                                       "Could not connect to scanner for"
+                                       " sync lock status and self test."
+                                       "</error>"
+                                       "</sync_not_available>");
             }
-
-          /* Note: Checking the feed lockfile assumes that the default scanner
-           *  is running locally.
-           */
-          lockfile_name = get_feed_lock_path ();
-          if (get_feed_lock_status (lockfile_name, &timestamp))
+          else if (ret)
             {
-              SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
-                                       "<timestamp>%s</timestamp>"
-                                       "</currently_syncing>",
-                                       timestamp);
-              g_free (timestamp);
+              SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
+                                       "<error>"
+                                       "Error getting sync lock status"
+                                       " and self test."
+                                       "</error>"
+                                       "</sync_not_available>");
             }
+          else
+            {
+              if (self_test_exit_error > 0 || self_test_exit_error < -1)
+                SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
+                                         "<error>%s</error>"
+                                         "</sync_not_available>",
+                                         self_test_error_msg
+                                           ? self_test_error_msg : "");
+
+              if (lockfile_in_use > 0 || lockfile_in_use < -1)
+                SENDF_TO_CLIENT_OR_FAIL ("<currently_syncing>"
+                                         "<timestamp></timestamp>"
+                                         "</currently_syncing>");
+            }
+          g_free (self_test_error_msg);
+          g_free (feed_description);
 
           SEND_TO_CLIENT_OR_FAIL ("</feed>");
         }
-
-      g_free (feed_version);
+        break;
+      case 1:
+        SENDF_TO_CLIENT_OR_FAIL
+           (GET_NVT_FEED_ERROR,
+            "Could not connect to scanner to get feed info");
+        break;
+      case 2:
+        SENDF_TO_CLIENT_OR_FAIL
+           (GET_NVT_FEED_ERROR,
+            "Scanner is still starting");
+        break;
+      default:
+        SENDF_TO_CLIENT_OR_FAIL
+           (GET_NVT_FEED_ERROR,
+            "Error getting feed info from scanner");
     }
-  g_free (feed_identification);
-  g_free (feed_description);
+
+  g_free (vts_version);
+  g_free (feed_name);
+  g_free (feed_vendor);
+  g_free (feed_home);
 }
 
 /**
