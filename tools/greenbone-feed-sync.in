@@ -56,7 +56,10 @@ RSYNC_CHMOD="--perms --chmod=Fugo+r,Fug+w,Dugo-s,Dugo+rx,Dug+w"
 
 # RSYNC_COMMUNITY_BASE_URL defines the base rsync URL for the community feed
 # not including the feed type (data or vulnerability) and version.
-RSYNC_COMMUNITY_BASE_URL="rsync://feed.community.greenbone.net/community"
+if [ -z "$RSYNC_COMMUNITY_BASE_URL" ]
+then
+  RSYNC_COMMUNITY_BASE_URL="rsync://feed.community.greenbone.net/community"
+fi
 
 # RSYNC_COMMUNITY_DATA_URL defines the rsync URL for the community data feed.
 RSYNC_COMMUNITY_DATA_URL="${RSYNC_COMMUNITY_BASE_URL}/data-feed/@GMP_VERSION_FEED@/"
