@@ -2546,6 +2546,19 @@ create_config_internal (int check_access, const char *config_id,
 
   update_config_caches (*config);
 
+  /* Workaround to disable notus checks in compliance policies */
+
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
+       "    FROM configs"
+       "   WHERE configs.id = %llu"
+       "     AND usage_type='policy'"
+       "     AND configs.id NOT IN"
+       "          (SELECT config FROM config_preferences"
+       "           WHERE name = 'table_driven_lsc'"
+       "           AND type = 'SERVER_PREFS');",
+       *config);
+
   sql_commit ();
   *name = candidate_name;
   return 0;
@@ -4414,6 +4427,19 @@ update_config (config_t config, const gchar *name,
       sql_rollback ();
       return;
     }
+
+  /* Workaround to disable notus checks in compliance policies */
+
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
+       "    FROM configs"
+       "   WHERE configs.id = %llu"
+       "     AND usage_type='policy'"
+       "     AND configs.id NOT IN"
+       "          (SELECT config FROM config_preferences"
+       "           WHERE name = 'table_driven_lsc'"
+       "           AND type = 'SERVER_PREFS');",
+       config);
 
   sql_commit ();
 }
