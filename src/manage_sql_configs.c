@@ -2897,6 +2897,19 @@ copy_config (const char* name, const char* comment, const char *config_id,
        quoted_config_selector);
   g_free (quoted_config_selector);
 
+  /* Workaround to disable notus checks in compliance policies */
+
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
+       "    FROM configs"
+       "   WHERE configs.id = %llu"
+       "     AND usage_type='policy'"
+       "     AND configs.id NOT IN"
+       "          (SELECT config FROM config_preferences"
+       "           WHERE name = 'table_driven_lsc'"
+       "           AND type = 'SERVER_PREFS');",
+       new);
+
   sql_commit ();
   if (new_config) *new_config = new;
   return 0;
