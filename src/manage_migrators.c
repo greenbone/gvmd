@@ -2892,6 +2892,55 @@ migrate_248_to_249 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 249 to version 250.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_249_to_250 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 249. */
+
+  if (manage_db_version () != 249)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Disable the "table_based_lsc" scanner preference for all policies */
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
+       "    FROM configs"
+       "   WHERE usage_type='policy'"
+       "     AND configs.id NOT IN"
+       "          (SELECT config FROM config_preferences"
+       "           WHERE name = 'table_driven_lsc'"
+       "           AND type = 'SERVER_PREFS');");
+
+  /* Disable the "table_based_lsc" scanner preference for all policies 
+   * in the trashcan. */
+  sql ("INSERT INTO config_preferences_trash (config, type, name, value)"
+       " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
+       "    FROM configs_trash"
+       "   WHERE usage_type='policy'"
+       "     AND configs_trash.id NOT IN"
+       "          (SELECT config FROM config_preferences_trash"
+       "           WHERE name = 'table_driven_lsc'"
+       "           AND type = 'SERVER_PREFS');");
+  
+  /* Set the database version to 250. */
+
+  set_db_version (250);
+
+  sql_commit ();
+
+  return 0;
+}
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -2948,6 +2997,7 @@ static migrator_t database_migrators[] = {
   {247, migrate_246_to_247},
   {248, migrate_247_to_248},
   {249, migrate_248_to_249},
+  {250, migrate_249_to_250},
   /* End marker. */
   {-1, NULL}};
 
