@@ -404,10 +404,6 @@ if (GVMD_PID_PATH)
 endif (GVMD_PID_PATH)
 
 if (GVM_SYSCONF_DIR)
-        add_definitions (-DGVM_SYSCONF_DIR="${GVM_SYSCONF_DIR}")
-endif (GVM_SYSCONF_DIR)
-
-if (GVM_SYSCONF_DIR)
   add_definitions (-DGVM_SYSCONF_DIR="${GVM_SYSCONF_DIR}")
 endif (GVM_SYSCONF_DIR)
 
