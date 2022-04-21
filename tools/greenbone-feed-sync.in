@@ -505,7 +505,7 @@ do_sync_enterprise_feed () {
     RSYNC_SSH_PROXY_CMD=""
 
     create_tmp_key
-    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" $RSYNC_OPTIONS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
+    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $TMPACCESSKEY" $RSYNC_OPTIONS $custid_at_host:$GSF_RSYNC_PATH/ $FEED_DIR
     if [ 0 -ne "$?" ]; then
       log_err "rsync failed, aborting synchronization."
       remove_tmp_key
