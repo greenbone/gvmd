@@ -9096,7 +9096,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </column>
           <column>
             <name>ip</name>
-            <type>ip</type>
+            <type>text</type>
             <summary>IP address</summary>
           </column>
         </filter_keywords>
@@ -9151,6 +9151,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <alt>os</alt>
           </alts>
         </type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include additional information (e.g., tags)</summary>
+        <type>boolean</type>
       </attrib>
     </pattern>
     <response>
