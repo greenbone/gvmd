@@ -29,6 +29,7 @@ RUN apt-get update && \
     xsltproc \
     libcgreen1-dev \
     lcov \
+    libbsd-dev \
     libgpgme-dev && \
     rm -rf /var/lib/apt/lists/*
 
