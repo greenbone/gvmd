@@ -71,7 +71,7 @@
 #include <gvm/base/hosts.h>
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
-#include <gvm/base/proctitle.h>
+#include <bsd/unistd.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/gpgmeutils.h>
 #include <gvm/util/serverutils.h>
@@ -9398,7 +9398,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                 init_sentry ();
                 cleanup_manage_process (FALSE);
 
-                proctitle_set ("gvmd: Running alert script");
+                setproctitle ("gvmd: Running alert script");
 
                 if (setgroups (0,NULL))
                   {
@@ -10201,7 +10201,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 init_sentry ();
                 cleanup_manage_process (FALSE);
 
-                proctitle_set ("gvmd: Sending to Sourcefire");
+                setproctitle ("gvmd: Sending to Sourcefire");
 
                 if (setgroups (0,NULL))
                   {
@@ -10530,7 +10530,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
               {
                 /* Child.  Drop privileges, run command, exit. */
                 init_sentry ();
-                proctitle_set ("gvmd: Sending to Verinice");
+                setproctitle ("gvmd: Sending to Verinice");
 
                 cleanup_manage_process (FALSE);
 
@@ -20481,7 +20481,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         }
     }
 
-  proctitle_set ("gvmd: Importing results");
+  setproctitle ("gvmd: Importing results");
 
   /* Add the results. */
 

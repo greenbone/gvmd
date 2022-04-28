@@ -34,7 +34,7 @@
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 int
-main (int argc, char **argv)
+main (int argc, char **argv, char *env[])
 {
-  return gvmd (argc, argv);
+  return gvmd (argc, argv, env);
 }

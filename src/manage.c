@@ -82,7 +82,7 @@
 
 #include <gvm/base/gvm_sentry.h>
 #include <gvm/base/hosts.h>
-#include <gvm/base/proctitle.h>
+#include <bsd/unistd.h>
 #include <gvm/osp/osp.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
@@ -2651,7 +2651,7 @@ static int
 fork_osp_scan_handler (task_t task, target_t target, int from,
                        char **report_id_return)
 {
-  char *report_id, title[128], *error = NULL;
+  char *report_id, *error = NULL;
   int rc;
 
   assert (task);
@@ -2726,8 +2726,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       exit (-1);
     }
 
-  snprintf (title, sizeof (title), "gvmd: OSP: Handling scan %s", report_id);
-  proctitle_set (title);
+  setproctitle ("gvmd: OSP: Handling scan %s", report_id);
 
   rc = handle_osp_scan (task, global_current_report, report_id);
   g_free (report_id);
@@ -2996,7 +2995,7 @@ static int
 fork_cve_scan_handler (task_t task, target_t target)
 {
   int pid;
-  char *report_id, title[128], *hosts;
+  char *report_id, *hosts;
   gvm_hosts_t *gvm_hosts;
   gvm_host_t *gvm_host;
 
@@ -3046,9 +3045,8 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  snprintf (title, sizeof (title), "gvmd: CVE: Handling scan %s", report_id);
+  setproctitle ("gvmd: CVE: Handling scan %s", report_id);
   g_free (report_id);
-  proctitle_set (title);
 
   hosts = target_hosts (target);
   if (hosts == NULL)
@@ -4536,7 +4534,6 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
                       manage_connection_forker_t fork_connection,
                       sigset_t *sigmask_current)
 {
-  char title[128];
   int pid;
   gvm_connection_t connection;
   gmp_authenticate_info_opts_t auth_opts;
@@ -4594,10 +4591,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
 
           /* Parent.  Wait for child, to check return. */
 
-          snprintf (title, sizeof (title),
-                    "gvmd: scheduler: waiting for %i",
-                    pid);
-          proctitle_set (title);
+          setproctitle ("gvmd: scheduler: waiting for %i", pid);
 
           g_debug ("%s: %i fork_connectioned %i",
                    __func__, getpid (), pid);
@@ -4698,10 +4692,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
 
   /* Start the task. */
 
-  snprintf (title, sizeof (title),
-            "gvmd: scheduler: starting %s",
-            scheduled_task->task_uuid);
-  proctitle_set (title);
+  setproctitle ("gvmd: scheduler: starting %s", scheduled_task->task_uuid);
 
   auth_opts = gmp_authenticate_info_opts_defaults;
   auth_opts.username = scheduled_task->owner_name;
@@ -4767,7 +4758,6 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
                      manage_connection_forker_t fork_connection,
                      sigset_t *sigmask_current)
 {
-  char title[128];
   gvm_connection_t connection;
   gmp_authenticate_info_opts_t auth_opts;
 
@@ -4793,10 +4783,8 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
 
   /* Stop the task. */
 
-  snprintf (title, sizeof (title),
-            "gvmd: scheduler: stopping %s",
+  setproctitle ("gvmd: scheduler: stopping %s",
             scheduled_task->task_uuid);
-  proctitle_set (title);
 
   auth_opts = gmp_authenticate_info_opts_defaults;
   auth_opts.username = scheduled_task->owner_name;
