@@ -17,6 +17,7 @@ RUN apt-get update && \
     libical-dev \
     postgresql-server-dev-13 \
     xml-twig-tools \
+	libbsd \
     xsltproc && \
     rm -rf /var/lib/apt/lists/*
 
