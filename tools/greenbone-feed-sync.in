@@ -113,7 +113,11 @@ then
   fi
 
   if [ -z "$FEED_HOME" ]; then
+<<<<<<< HEAD
     FEED_HOME="https://www.greenbone.net/en/security-feed/"
+=======
+    FEED_HOME="https://www.greenbone.net/en/feed-comparison/"
+>>>>>>> 7b2a4fcb7 (Update FEED_HOME)
   fi
 
 else
