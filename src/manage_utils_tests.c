@@ -90,6 +90,7 @@ Ensure (manage_utils, icalendar_next_time_from_string_utc)
            "DTSTAMP:19700101T000000Z\n"
            "END:VEVENT\n"
            "END:VCALENDAR\n",
+           now,
            "UTC",
            0);
   assert_that (verify_next (next, EPOCH_2020JAN1_UTC, now, 2 * 60),
@@ -107,6 +108,7 @@ Ensure (manage_utils, icalendar_next_time_from_string_utc)
            "DTSTAMP:19700101T000000Z\n"
            "END:VEVENT\n"
            "END:VCALENDAR\n",
+           now,
            "UTC",
            0);
   assert_that (next, is_equal_to (EPOCH_2030JAN1_UTC));
@@ -142,6 +144,7 @@ Ensure (manage_utils, icalendar_next_time_from_string_tz)
            "DTSTAMP:19700101T000000Z\n"
            "END:VEVENT\n"
            "END:VCALENDAR\n",
+           now,
            "Africa/Harare",
            0);
 
