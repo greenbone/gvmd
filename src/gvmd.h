@@ -25,6 +25,6 @@
 #define _GVMD_H
 
 int
-gvmd (int, char **);
+gvmd (int, char **, char **);
 
 #endif /* not _GVMD_H */

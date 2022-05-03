@@ -45,7 +45,7 @@
 #include <unistd.h>
 
 #include <gvm/base/gvm_sentry.h>
-#include <gvm/base/proctitle.h>
+#include <bsd/unistd.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/fileutils.h>
 
@@ -3416,7 +3416,7 @@ run_report_format_script (gchar *report_format_id,
               /* Child.  Drop privileges, run command, exit. */
 
               init_sentry ();
-              proctitle_set ("gvmd: Generating report");
+              setproctitle ("gvmd: Generating report");
 
               cleanup_manage_process (FALSE);
 
