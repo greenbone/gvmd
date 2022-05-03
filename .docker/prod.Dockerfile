@@ -17,7 +17,7 @@ RUN apt-get update && \
     libical-dev \
     postgresql-server-dev-13 \
     xml-twig-tools \
-    libbsd0 \
+    libbsd-dev \
     xsltproc && \
     rm -rf /var/lib/apt/lists/*
 
@@ -89,6 +89,7 @@ RUN apt-get update && \
     gosu \
     gnupg \
     gpgsm \
+    libbsd0 \
     libgpgme11 \
     libical3 \
     libpq5 \
