@@ -165,7 +165,7 @@ then
   fi
 
   if [ -z "$FEED_HOME" ]; then
-    FEED_HOME="https://www.greenbone.net/en/enterprise-feed/"
+    FEED_HOME="https://www.greenbone.net/en/feed-comparison/"
   fi
 
 else
