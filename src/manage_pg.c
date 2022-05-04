@@ -3010,6 +3010,9 @@ check_db_extensions ()
       sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pg-gvm\"");
+      if (sql_int ("SELECT extversion != '1.1' FROM pg_extension"
+                   " WHERE extname='pg-gvm';"))
+        sql ("ALTER EXTENSION \"pg-gvm\" UPDATE;");
 
       sql ("RESET ROLE;");
       return 0;
