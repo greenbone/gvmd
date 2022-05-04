@@ -65,7 +65,7 @@ jobs:
             COMPILER=${{matrix.compiler}}
       - name: Trigger libtheia container build
         run: |
-          curl -X POST https://api.github.com//repos/greenbone/libtheia/actions/workflows/container.yml/dispatches \
+          curl -X POST https://api.github.com/repos/greenbone/libtheia/actions/workflows/container.yml/dispatches \
           -H "Accept: application/vnd.github.v3+json" \
           -u greenbonebot:${{ secrets.GREENBONE_BOT_TOKEN }} \
-          -d '{"ref":"main"}
+          -d '{"ref":"main"}'
