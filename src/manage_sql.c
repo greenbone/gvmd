@@ -18218,7 +18218,9 @@ set_task_schedule (task_t task, schedule_t schedule, int periods)
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
        " schedule_periods = %i,"
-       " schedule_next_time = (SELECT next_time_ical (icalendar, timezone)"
+       " schedule_next_time = (SELECT next_time_ical (icalendar,"
+       "                                              m_now()::bigint,"
+       "                                              timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
@@ -18252,7 +18254,9 @@ set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
        "%s"
-       " schedule_next_time = (SELECT next_time_ical (icalendar, timezone)"
+       " schedule_next_time = (SELECT next_time_ical (icalendar,"
+       "                                              m_now()::bigint,"
+       "                                              timezone)"
        "                       FROM schedules"
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
@@ -18730,7 +18734,7 @@ update_duration_schedule_periods (task_t task)
   duration_expired_element
    = /* The task has started, so assume that the start time was the last
       * most recent start of the period. */
-     " AND (SELECT next_time_ical (icalendar, timezone, -1)"
+     " AND (SELECT next_time_ical (icalendar, m_now()::bigint, timezone, -1)"
      "             + duration"
      "      FROM schedules"
      "      WHERE schedules.id = schedule)"
@@ -29740,16 +29744,18 @@ cleanup_schedule_times ()
 {
   sql ("UPDATE tasks"
         " SET schedule_next_time"
-        "   = (SELECT next_time_ical (icalendar, timezone)"
+        "   = (SELECT next_time_ical (icalendar, m_now()::bigint, timezone)"
         "      FROM schedules"
         "      WHERE schedules.id = tasks.schedule)"
         " WHERE schedule_next_time != 0"
         "   AND schedule_next_time"
-        "         = (SELECT next_time_ical (icalendar, timezone)"
+        "         = (SELECT next_time_ical (icalendar, m_now()::bigint,"
+        "                                   timezone)"
         "              FROM schedules"
         "             WHERE schedules.id = tasks.schedule)"
         "   AND schedule_next_time"
-        "         != (SELECT next_time_ical (icalendar, timezone)"
+        "         != (SELECT next_time_ical (icalendar, m_now()::bigint,"
+        "                                    timezone)"
         "              FROM schedules"
         "             WHERE schedules.id = tasks.schedule);");
 
@@ -41002,7 +41008,7 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
    { "duration", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "timezone", NULL, KEYWORD_TYPE_STRING },                              \
    { "icalendar", NULL, KEYWORD_TYPE_STRING },                             \
-   { "next_time_ical (icalendar, timezone)",                               \
+   { "next_time_ical (icalendar, m_now()::bigint, timezone)",              \
      "next_run",                                                           \
      KEYWORD_TYPE_INTEGER },                                               \
    { "first_time", "first_run", KEYWORD_TYPE_INTEGER },                    \
@@ -41298,7 +41304,8 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 
           now = time (NULL);
 
-          start = icalendar_next_time_from_string (icalendar, zone, -1);
+          start = icalendar_next_time_from_string (icalendar, time(NULL), zone,
+                                                   -1);
           if ((start + duration) < now)
             return TRUE;
         }
@@ -41568,6 +41575,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   // Update scheduled next times for tasks
 
   new_next_time = icalendar_next_time_from_vcalendar (ical_component,
+                                                      time(NULL),
                                                       real_timezone, 0);
 
   sql ("UPDATE tasks SET schedule_next_time = %ld"

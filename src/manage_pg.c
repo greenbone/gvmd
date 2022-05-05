@@ -280,17 +280,21 @@ manage_create_sql_functions ()
        "END;"
        "$$ LANGUAGE plpgsql;");
 
-  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text)"
+  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, bigint, text)"
        " RETURNS integer"
        " AS '%s/libgvm-pg-server', 'sql_next_time_ical'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
 
-  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, text, integer)"
+  sql ("CREATE OR REPLACE FUNCTION next_time_ical (text, bigint, text, integer)"
        " RETURNS integer"
        " AS '%s/libgvm-pg-server', 'sql_next_time_ical'"
        " LANGUAGE C;",
        GVM_LIB_INSTALL_DIR);
+  
+  sql ("DROP FUNCTION IF EXISTS next_time_ical (text, text);");
+
+  sql ("DROP FUNCTION IF EXISTS next_time_ical (text, text, integer);");
 
   sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (a double precision,"
        "                                                b double precision)"

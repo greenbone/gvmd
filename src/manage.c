@@ -5367,7 +5367,7 @@ manage_schedule (manage_connection_forker_t fork_connection,
                  task_schedule_iterator_task (&schedules));
         set_task_schedule_next_time
          (task_schedule_iterator_task (&schedules),
-          icalendar_next_time_from_string (icalendar, zone, 0));
+          icalendar_next_time_from_string (icalendar, time(NULL), zone, 0));
 
         /* Skip this task if it was already added to the starts list
          * to avoid conflicts between multiple users with permissions. */
