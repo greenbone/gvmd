@@ -317,6 +317,20 @@ truncate_private_key (const gchar* private_key)
         }
     }
 
+  if (key_start == NULL)
+    {
+      key_start = strstr (private_key, "-----BEGIN OPENSSH PRIVATE KEY-----");
+      if (key_start)
+        {
+          key_end = strstr (key_start, "-----END OPENSSH PRIVATE KEY-----");
+
+          if (key_end)
+            key_end += strlen ("-----END OPENSSH PRIVATE KEY-----");
+          else
+            return NULL;
+        }
+    }
+
   if (key_end && key_end[0] == '\n')
     key_end++;
 
