@@ -8,7 +8,6 @@ ConditionKernelCommandLine=!recovery
 [Service]
 Type=forking
 User=gvm
-Group=gvm
 PIDFile=${GVMD_PID_PATH}
 RuntimeDirectory=gvmd
 RuntimeDirectoryMode=2775
