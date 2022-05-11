@@ -34617,7 +34617,7 @@ modify_credential (const char *credential_id,
         {
           if (key_private_to_use || password)
             {
-              if (check_private_key (key_private_truncated
+              if (check_private_key (key_private_to_use
                                       ? key_private_to_use
                                       : credential_iterator_private_key
                                          (&iterator),
@@ -34633,7 +34633,7 @@ modify_credential (const char *credential_id,
 
               set_credential_private_key
                 (credential,
-                 key_private_truncated
+                 key_private_to_use
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
                  password
