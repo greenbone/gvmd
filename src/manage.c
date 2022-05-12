@@ -411,7 +411,11 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               return -1;
             }
 
+#if GLIB_CHECK_VERSION(2, 68, 0)
+          cert_truncated = g_memdup2 (certificate, certificate_len);
+#else
           cert_truncated = g_memdup (certificate, certificate_len);
+#endif
           certificate_format_internal = GNUTLS_X509_FMT_DER;
         }
 
