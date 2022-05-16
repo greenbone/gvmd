@@ -38,11 +38,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/**
- * @brief Database superuser role
- */
-#define DB_SUPERUSER_ROLE "dba"
-
 
 /* Headers */
 int

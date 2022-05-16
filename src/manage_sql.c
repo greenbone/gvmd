@@ -55808,6 +55808,31 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
                                       " Due date updated for %d tasks.",
                                       changes);
     }
+  else if (strcasecmp (name, "cleanup-sequences") == 0)
+    {
+      success_text = NULL;
+
+      if (cleanup_config_sequences ())
+        {
+          fprintf (stderr, "Failed to clean up config related sequences.\n");
+          ret = -1;
+        }
+      else if (cleanup_nvt_sequences ())
+        {
+          fprintf (stderr, "Failed to clean up NVT related sequences.\n");
+          ret = -1;
+        }
+      else if (cleanup_port_list_sequences ())
+        {
+          fprintf (stderr, "Failed to clean up port list related sequences.\n");
+          ret = -1;
+        }
+      else
+        {
+          success_text = g_strdup_printf ("Optimized: cleanup-sequences."
+                                          " Cleaned up id sequences.");
+        }
+    }
   else if (strcasecmp (name, "migrate-relay-sensors") == 0)
     {
       if (get_relay_mapper_path ())
@@ -55929,4 +55954,64 @@ set_vt_verification_collation (const char *new_collation)
     vt_verification_collation = g_strdup(new_collation);
   else
     vt_verification_collation = NULL;
+}
+
+/**
+ * @brief Resets the id sequence for a table and assigns new ids to all rows.
+ *
+ * This ensures the id column has the lowest possible value, closing any gaps
+ * while preserving the original order.
+ *
+ * @param[in]  table  The table to assign new ids to.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+cleanup_ids_for_table (const char *table)
+{
+  char *sequence_name;
+  iterator_t ids;
+
+  g_info ("Cleaning up id sequence for table \"%s\"", table);
+
+  if (sql_int ("SELECT try_exclusive_lock ('%s')", table) == 0)
+    {
+      g_warning ("%s: Failed to acquire lock on table \"%s\"",
+                 __func__, table);
+      return -1;
+    }
+
+  sequence_name = sql_string ("SELECT pg_get_serial_sequence('%s', 'id')",
+                              table);
+  if (sequence_name == NULL)
+    {
+      g_warning ("%s: Failed to get sequence name for %s id",
+                 __func__, table);
+      return -1;
+    }
+
+  sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
+  sql ("ALTER SEQUENCE %s RESTART;", sequence_name);
+  sql ("RESET ROLE;");
+
+  init_iterator (&ids,
+                 "SELECT id AS old_id, nextval('%s'::regclass) AS new_id"
+                 "   FROM %s"
+                 "   ORDER BY old_id ASC"
+                 "   FOR UPDATE",
+                 sequence_name,
+                 table);
+
+  while (next (&ids))
+    {
+      resource_t old_id, new_id;
+      old_id = iterator_int64 (&ids, 0);
+      new_id = iterator_int64 (&ids, 1);
+
+      sql ("UPDATE %s SET id = %llu WHERE id = %llu", table, new_id, old_id);
+    }
+  cleanup_iterator(&ids);
+
+  free (sequence_name);
+  return 0;
 }

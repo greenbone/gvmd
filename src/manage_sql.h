@@ -158,6 +158,11 @@
 #define TIMEVAL_SUBTRACT_MS(a,b) ((((a).tv_sec - (b).tv_sec) * 1000) + \
                                   ((a).tv_usec - (b).tv_usec) / 1000)
 
+/**
+ * @brief Database superuser role
+ */
+#define DB_SUPERUSER_ROLE "dba"
+
 
 /* Macros. */
 
@@ -479,5 +484,17 @@ config_family_entire_and_growing (config_t, const char*);
 
 void
 reports_clear_count_cache_dynamic ();
+
+int
+cleanup_config_sequences ();
+
+int
+cleanup_port_list_sequences ();
+
+int
+cleanup_nvt_sequences ();
+
+int
+cleanup_ids_for_table (const char *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */
