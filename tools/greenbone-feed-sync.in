@@ -116,9 +116,13 @@ PORT=24
 # log messages.
 SCRIPT_NAME="greenbone-feed-sync"
 
-# LOG_CMD defines the command to use for logging. To have logger log to stderr
-# as well as syslog, add "-s" here.
-LOG_CMD="logger -t $SCRIPT_NAME"
+# LOG_CMD defines the command to use for logging. To have logger log to syslog
+# only, remove "-s" here.
+if [ -z "$LOG_CMD" ]
+then
+  LOG_CMD="logger -t $SCRIPT_NAME -s"
+fi
+
 
 # LOCK_FILE is the name of the file used to lock the feed during sync or update.
 if [ -z "$LOCK_FILE" ]
