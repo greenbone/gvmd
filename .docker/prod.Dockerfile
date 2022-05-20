@@ -75,6 +75,7 @@ RUN apt-get update && \
     postgresql-client-common \
     python3 \
     rpm \
+    rsync \
     socat \
     smbclient \
     snmp \
