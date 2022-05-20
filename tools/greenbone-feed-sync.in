@@ -21,10 +21,58 @@
 # case a GSF access key is present) or else from the Greenbone
 # Community Feed.
 
-log_notice () {
-  $LOG_CMD -p daemon.notice "$1"
+########## LOG FUNCTIONS
+########## =============
+
+# LOG_CMD defines the command to use for logging. To have logger log to syslog
+# only, remove "-s" here.
+if [ -z "$LOG_CMD" ]
+then
+  LOG_CMD="logger -t $SCRIPT_NAME -s"
+fi
+
+TEST_LOGGER=$(logger -s "" 2>/dev/null)
+HAS_LOGGER=$?
+
+log_debug () {
+  if [ $HAS_LOGGER -eq 0 ]; then
+    $LOG_CMD -p daemon.debug "$1"
+  else
+    echo "$1"
+  fi
 }
 
+log_info () {
+  if [ $HAS_LOGGER -eq 0 ]; then
+    $LOG_CMD -p daemon.info "$1"
+  else
+    echo "$1"
+  fi
+}
+
+log_warning () {
+  if [ $HAS_LOGGER -eq 0 ]; then
+    $LOG_CMD -p daemon.warning "$1"
+  else
+    echo "$1"
+  fi
+}
+
+log_err () {
+  if [ $HAS_LOGGER -eq 0 ]; then
+    $LOG_CMD -p daemon.err "$1"
+  else
+    echo "$1" >&2
+  fi
+}
+
+log_notice () {
+  if [ $HAS_LOGGER -eq 0 ]; then
+    $LOG_CMD -p daemon.notice "$1"
+  else
+    echo "$1"
+  fi
+}
 
 ########## SETTINGS
 ########## ========
@@ -63,13 +111,6 @@ PORT=24
 # SCRIPT_NAME is the name the scripts will use to identify itself and to mark
 # log messages.
 SCRIPT_NAME="greenbone-feed-sync"
-
-# LOG_CMD defines the command to use for logging. To have logger log to syslog
-# only, remove "-s" here.
-if [ -z "$LOG_CMD" ]
-then
-  LOG_CMD="logger -t $SCRIPT_NAME -s"
-fi
 
 
 # LOCK_FILE is the name of the file used to lock the feed during sync or update.
@@ -140,22 +181,6 @@ FEED_TYPES_SUPPORTED="CERT, SCAP or GVMD_DATA"
 
 ########## FUNCTIONS
 ########## =========
-
-log_debug () {
-  $LOG_CMD -p daemon.debug "$1"
-}
-
-log_info () {
-  $LOG_CMD -p daemon.info "$1"
-}
-
-log_warning () {
-  $LOG_CMD -p daemon.warning "$1"
-}
-
-log_err () {
-  $LOG_CMD -p daemon.err "$1"
-}
 
 init_feed_type () {
   if [ -z "$FEED_TYPE" ]
