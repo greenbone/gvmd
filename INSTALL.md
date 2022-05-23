@@ -409,6 +409,11 @@ supported values for `<name>` are:
   older versions, so this function can be used to correct missing severity
   scores in older reports.
 
+- `cleanup-sequences`
+
+  This cleans up id sequences that are likely to run out due to regular feed
+  updates like the ids for config preferences.
+
 - `migrate-relay-sensors`
 
   If relays are active, this can be used to make sure all sensor type

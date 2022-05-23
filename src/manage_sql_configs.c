@@ -4525,3 +4525,29 @@ check_whole_only_in_configs ()
       g_free (quoted_family);
     }
 }
+
+/**
+ * @brief Cleans up scan config related id sequences likely to run out.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+cleanup_config_sequences () {
+  g_info ("Cleaning up scan config related id sequences...");
+  sql_begin_immediate ();
+
+  if (cleanup_ids_for_table ("config_preferences"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (cleanup_ids_for_table ("nvt_selectors"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  sql_commit ();
+  return 0;
+}

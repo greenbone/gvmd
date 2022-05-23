@@ -2269,3 +2269,36 @@ manage_dump_vt_verification (GSList *log_config,
 
   return 0;
 }
+
+/**
+ * @brief Cleans up NVT related id sequences likely to run out.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+cleanup_nvt_sequences () {
+  g_info ("Cleaning up NVT related id sequences...");
+  sql_begin_immediate ();
+
+  if (cleanup_ids_for_table ("nvts"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  g_info ("Updating nvt references in tags to new row ids");
+  sql ("UPDATE tag_resources"
+       " SET resource = (SELECT id FROM nvts WHERE uuid = resource_uuid)"
+       " WHERE resource_type = 'nvt';");
+  sql ("UPDATE tag_resources_trash"
+       " SET resource = (SELECT id FROM nvts WHERE uuid = resource_uuid)"
+       " WHERE resource_type = 'nvt';");
+
+  if (cleanup_ids_for_table ("vt_refs"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  sql_commit ();
+  return 0;
+}

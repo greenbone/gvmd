@@ -2072,7 +2072,7 @@ gvmd (int argc, char** argv, char *env[])
           " cleanup-config-prefs, cleanup-feed-permissions,"
           " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
           " cleanup-result-nvts, cleanup-result-severities,"
-          " cleanup-schedule-times, migrate-relay-sensors,"
+          " cleanup-schedule-times, cleanup-sequences, migrate-relay-sensors,"
           " rebuild-report-cache or update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
