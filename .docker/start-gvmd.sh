@@ -5,6 +5,9 @@
 [ -z "$GVMD_ARGS" ] && GVMD_ARGS="--listen-mode=666"
 [ -z "$GVMD_USER" ] && GVMD_USER="gvmd"
 
+echo "waiting 10 seconds for postgres startup"
+sleep 10
+
 # check for psql connection
 until psql -U "$GVMD_USER" -d gvmd -c "SELECT 'connected' as connection"; do
 	echo "waiting 1 second to retry psql connection"
