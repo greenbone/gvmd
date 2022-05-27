@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check Source Format
         run: |
           clang-format -i -style=file src/gmp_{base,delete,get,tickets}.h \
@@ -25,7 +25,7 @@ jobs:
     container: greenbone/gvmd-clang-build:unstable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Configure scan build
         run: |
           scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug
@@ -49,7 +49,7 @@ jobs:
     container: greenbone/gvmd-${{ matrix.compiler }}-build:unstable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build gvmd with ${{ matrix.compiler }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
