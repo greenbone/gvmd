@@ -20,6 +20,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
+    gcc \
     libglib2.0-dev \
     libgnutls28-dev \
     libpq-dev \
@@ -32,22 +33,5 @@ RUN apt-get update && \
     libbsd-dev \
     libgpgme-dev && \
     rm -rf /var/lib/apt/lists/*
-
-# Install gcc/g++ compiler
-RUN if ( test "$COMPILER" = "gcc"); then \
-    echo "Compiler is $COMPILER" && \
-    apt-get update && \
-    apt-get install --no-install-recommends --assume-yes gcc g++; \
-    fi
-
-# Install clang compiler
-RUN if ( test "$COMPILER" = "clang"); then \
-    echo "Compiler is $COMPILER" && \
-    apt-get update && \
-    apt-get install --no-install-recommends --assume-yes \
-    clang \
-    clang-format \
-    clang-tools; \
-    fi
 
 RUN ldconfig
