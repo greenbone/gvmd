@@ -1,5 +1,9 @@
 # Define ARG we use through the build
+<<<<<<< HEAD
 ARG VERSION=oldstable
+=======
+ARG VERSION=unstable
+>>>>>>> 8af99fddf ([DevOps] Trigger Docker Image build from gvm-libs (#1839))
 
 # We want gvm-libs to be ready so we use the build docker image of gvm-libs
 FROM greenbone/gvm-libs:$VERSION
@@ -7,6 +11,12 @@ FROM greenbone/gvm-libs:$VERSION
 # This will make apt-get install without question
 ARG DEBIAN_FRONTEND=noninteractive
 
+<<<<<<< HEAD
+=======
+# Redefine ARG we use through the build
+ARG VERSION
+
+>>>>>>> 8af99fddf ([DevOps] Trigger Docker Image build from gvm-libs (#1839))
 WORKDIR /usr/local/src
 
 # Install Debian core dependencies required for building gvm with PostgreSQL
