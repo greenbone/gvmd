@@ -26,6 +26,11 @@ jobs:
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v3
+      - name: Install clang tools
+        run: |
+          apt update
+          apt install --no-install-recommends -y clang clang-format clang-tools
+          rm -rf /var/lib/apt/lists/*
       - name: Configure scan build
         run: |
           scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug
