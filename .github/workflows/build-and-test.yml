@@ -22,7 +22,7 @@ jobs:
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-clang-build:unstable
+    container: greenbone/gvmd-build:unstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v3
@@ -41,16 +41,11 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compiler:
-          - gcc
-          - clang
-    container: greenbone/gvmd-${{ matrix.compiler }}-build:unstable
+    container: greenbone/gvmd-build:unstable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v3
-      - name: Build gvmd with ${{ matrix.compiler }}
+      - name: Build gvmd
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
           cmake --build build

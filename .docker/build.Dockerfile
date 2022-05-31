@@ -1,6 +1,5 @@
 # Define ARG we use through the build
 ARG VERSION=unstable
-ARG COMPILER=gcc
 
 # We want gvm-libs to be ready so we use the build docker image of gvm-libs
 FROM greenbone/gvm-libs:$VERSION
@@ -10,7 +9,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Redefine ARG we use through the build
 ARG VERSION
-ARG COMPILER
 
 WORKDIR /usr/local/src
 
