@@ -92,6 +92,8 @@ RUN apt-get update && \
 COPY --from=build /install/ /
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
+# quick fix for stable only v21.x.x fix is already in next major release
+COPY --from=greenbone/openvas-scanner:stable /usr/local/bin/greenbone-nvt-sync /usr/local/bin/greenbone-nvt-sync
 
 RUN addgroup --gid 1001 --system gvmd \
     && adduser --no-create-home --shell /bin/false --disabled-password \
