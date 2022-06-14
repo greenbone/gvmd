@@ -37203,7 +37203,7 @@ create_override (const char* active, const char* nvt, const char* text,
               && new_severity_dbl != SEVERITY_FP))
         {
           g_free (quoted_severity);
-          return 2;
+          return 3;
         }
     }
   else if (new_threat != NULL && strcmp (new_threat, ""))
