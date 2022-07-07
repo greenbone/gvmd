@@ -59,6 +59,11 @@
 static gchar *osp_vt_update_socket = NULL;
 
 /**
+ * @brief Number of extra days of VTs to fetch during feed sync.
+ */
+static int vt_sync_extra_days;
+
+/**
  * @brief Get the current file socket for OSP NVT update.
  *
  * @return The path of the file socket for OSP NVT update.
@@ -82,6 +87,31 @@ set_osp_vt_update_socket (const char *new_socket)
       g_free (osp_vt_update_socket);
       osp_vt_update_socket = g_strdup (new_socket);
     }
+}
+
+/**
+ * @brief Get the number of extra days of VTs to fetch during feed update.
+ *
+ * @return The number of extra days of VTs to fetch during feed update.
+ */
+int
+get_vt_sync_extra_days ()
+{
+  return vt_sync_extra_days;
+}
+
+/**
+ * @brief Set the number of extra days of VTs to fetch during feed update.
+ *
+ * @param new_extra_days The new number of extra days of VTs to fetch.
+ */
+void
+set_vt_sync_extra_days (int new_extra_days)
+{
+  if (new_extra_days > 0)
+    vt_sync_extra_days = new_extra_days;
+  else
+    vt_sync_extra_days = 0;
 }
 
 /**
@@ -1795,6 +1825,7 @@ static int
 update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
                       gchar *scanner_feed_version)
 {
+  gchar *filter_feed_version;
   osp_connection_t *connection;
   GSList *scanner_prefs;
   entity_t vts;
@@ -1818,11 +1849,46 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
       return -1;
     }
 
+  filter_feed_version = NULL;
+  if (db_feed_version && vt_sync_extra_days > 0)
+    {
+      struct tm parsed_time, new_time;
+      memset (&parsed_time, 0, sizeof(parsed_time));
+      memset (&new_time, 0, sizeof(new_time));
+
+      if (strlen(db_feed_version) == 12 &&
+          strptime(db_feed_version, "%Y%m%d%H%M", &parsed_time)
+            == db_feed_version + 12)
+        {
+          time_t unix_time;
+          unix_time = mktime(&parsed_time);
+          unix_time -= vt_sync_extra_days * 86400;
+          gmtime_r(&unix_time, &new_time);
+          filter_feed_version = g_malloc0 (13);
+          strftime (filter_feed_version, 13, "%Y%m%d%H%M", &new_time);
+        }
+      else
+        {
+          g_warning ("%s: Failed to parse VT feed version: %s",
+                     __func__, db_feed_version);
+          filter_feed_version = g_strdup(db_feed_version);
+        }
+    }
+  else if (db_feed_version)
+    {
+      filter_feed_version = g_strdup(db_feed_version);
+    }
+
   get_vts_opts = osp_get_vts_opts_default;
-  if (db_feed_version)
-    get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version);
+  if (filter_feed_version)
+    get_vts_opts.filter = g_strdup_printf ("modification_time>%s", filter_feed_version);
   else
     get_vts_opts.filter = NULL;
+  g_free (db_feed_version);
+
+  if (get_vts_opts.filter)
+    g_debug ("%s: using get_vts filter: %s", __func__, get_vts_opts.filter);
+
   if (osp_get_vts_ext (connection, get_vts_opts, &vts))
     {
       g_warning ("%s: failed to get VTs", __func__);

@@ -472,6 +472,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--vt-sync-extra-days=<arg>N</arg></opt></p>
+      <optdesc>
+        <p>
+          Also fetch VTs up to N days older than the feed timestamp
+          when synchronizing the feed.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--vt-verification-collation=<arg>COLLATION</arg></opt></p>
       <optdesc>
         <p>

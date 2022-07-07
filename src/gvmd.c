@@ -1885,6 +1885,7 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static int vt_sync_extra_days = 0;
   static gchar *vt_verification_collation = NULL;
 
   GString *full_disable_commands = g_string_new ("");
@@ -2204,6 +2205,11 @@ gvmd (int argc, char** argv, char *env[])
           &print_version,
           "Print version and exit.",
           NULL },
+        { "vt-sync-extra-days", '\0', 0, G_OPTION_ARG_INT,
+          &vt_sync_extra_days,
+          "Also fetch VTs up to <N> days older than the feed timestamp"
+          " when synchronizing the feed",
+          "<N>" },
         { "vt-verification-collation", '\0', 0, G_OPTION_ARG_STRING,
           &vt_verification_collation,
           "Set collation for VT verification to <collation>, omit or leave"
@@ -2287,6 +2293,9 @@ gvmd (int argc, char** argv, char *env[])
   /* Set SecInfo update commit size */
 
   set_secinfo_commit_size (secinfo_commit_size);
+
+  /* Set extra days to fetch with VT feed sync */
+  set_vt_sync_extra_days (vt_sync_extra_days);
 
   /* Set VT verification collation override */
   set_vt_verification_collation (vt_verification_collation);

@@ -104,6 +104,12 @@ void
 set_osp_vt_update_socket (const char *new_socket);
 
 int
+get_vt_sync_extra_days ();
+
+void
+set_vt_sync_extra_days (int);
+
+int
 check_osp_vt_update_socket ();
 
 void

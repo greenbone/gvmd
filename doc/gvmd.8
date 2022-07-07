@@ -211,6 +211,9 @@ Verify scanner SCANNER-UUID and exit.
 \fB--version\f1
 Print version and exit.
 .TP
+\fB--vt-sync-extra-days=\fIN\fB\f1
+Also fetch VTs up to N days older than the feed timestamp when synchronizing the feed. 
+.TP
 \fB--vt-verification-collation=\fICOLLATION\fB\f1
 Set collation for VT verification to COLLATION, omit or leave empty to choose automatically. Should be 'ucs_default' if DB uses UTF-8 or 'C' for single-byte encodings. 
 .SH SIGNALS
