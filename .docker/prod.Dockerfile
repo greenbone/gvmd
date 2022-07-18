@@ -1,4 +1,4 @@
-ARG VERSION=stable
+ARG VERSION=oldstable
 ARG DEBIAN_FRONTEND=noninteractive
 
 FROM greenbone/gvmd-build:${VERSION} as build

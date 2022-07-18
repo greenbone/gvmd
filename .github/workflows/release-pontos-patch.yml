@@ -3,7 +3,7 @@ name: Release Patch from PR
 on:
   pull_request:
     types: [closed]
-    branches: [ 'stable' ]
+    branches: [ 'oldstable' ]
 
 jobs:
   release-patch:
