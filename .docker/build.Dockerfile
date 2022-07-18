@@ -1,5 +1,5 @@
 # Define ARG we use through the build
-ARG VERSION=unstable
+ARG VERSION=stable
 
 # We want gvm-libs to be ready so we use the build docker image of gvm-libs
 FROM greenbone/gvm-libs:$VERSION
