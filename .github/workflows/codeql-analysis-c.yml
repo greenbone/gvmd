@@ -19,7 +19,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    container: greenbone/gvmd-build:stable
+    container: greenbone/gvmd-build:oldstable
 
     strategy:
       fail-fast: false

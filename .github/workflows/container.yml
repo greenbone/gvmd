@@ -2,7 +2,7 @@ name: Container Image Builds
 
 on:
   push:
-    branches: [ stable ]
+    branches: [ oldstable ]
     tags: ["v*"]
   workflow_dispatch:
 
