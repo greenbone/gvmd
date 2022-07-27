@@ -19,44 +19,19 @@ jobs:
           src/{gmp,gmpd,iterator,sql,types,utils,manage_utils}.h
           git diff --exit-code
 
-  test-units:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:oldstable
-    steps:
-      - name: Check out gvmd
-        uses: actions/checkout@v2
-      - name: Build gvmd with ${{ matrix.compiler }}
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
-          cmake --build build
-      - name: Configure and run tests
-        run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
-
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-<<<<<<< HEAD:.github/workflows/ci-c.yml
     container: greenbone/gvmd-build:oldstable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v2
-=======
-    container: greenbone/gvmd-build:unstable
-    steps:
-      - name: Check out gvmd
         uses: actions/checkout@v3
->>>>>>> 8af99fddf ([DevOps] Trigger Docker Image build from gvm-libs (#1839)):.github/workflows/build-and-test.yml
       - name: Install clang tools
         run: |
           apt update
           apt install --no-install-recommends -y clang clang-format clang-tools
           rm -rf /var/lib/apt/lists/*
-<<<<<<< HEAD:.github/workflows/ci-c.yml
-      - name: Configure and Scan Build gvm-libs
-=======
       - name: Configure scan build
->>>>>>> 8af99fddf ([DevOps] Trigger Docker Image build from gvm-libs (#1839)):.github/workflows/build-and-test.yml
         run: |
           cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
           scan-build -o ~/scan-build-report cmake --build build
@@ -66,9 +41,6 @@ jobs:
         with:
           name: scan-build-report
           path: ~/scan-build-report/
-<<<<<<< HEAD:.github/workflows/ci-c.yml
-          retention-days: 3
-=======
           retention-days: 7
 
   test-units:
@@ -84,4 +56,3 @@ jobs:
           cmake --build build
       - name: Configure and run tests
         run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
->>>>>>> 8af99fddf ([DevOps] Trigger Docker Image build from gvm-libs (#1839)):.github/workflows/build-and-test.yml
