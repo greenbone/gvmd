@@ -7,6 +7,9 @@ FROM greenbone/gvm-libs:$VERSION
 # This will make apt-get install without question
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Redefine ARG we use through the build
+ARG VERSION
+
 WORKDIR /usr/local/src
 
 # Install Debian core dependencies required for building gvm with PostgreSQL

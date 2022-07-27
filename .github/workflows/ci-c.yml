@@ -19,33 +19,19 @@ jobs:
           src/{gmp,gmpd,iterator,sql,types,utils,manage_utils}.h
           git diff --exit-code
 
-  test-units:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:oldstable
-    steps:
-      - name: Check out gvmd
-        uses: actions/checkout@v2
-      - name: Build gvmd with ${{ matrix.compiler }}
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
-          cmake --build build
-      - name: Configure and run tests
-        run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
-
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
     container: greenbone/gvmd-build:oldstable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install clang tools
         run: |
           apt update
           apt install --no-install-recommends -y clang clang-format clang-tools
           rm -rf /var/lib/apt/lists/*
-      - name: Configure and Scan Build gvm-libs
+      - name: Configure scan build
         run: |
           cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
           scan-build -o ~/scan-build-report cmake --build build
@@ -55,4 +41,18 @@ jobs:
         with:
           name: scan-build-report
           path: ~/scan-build-report/
-          retention-days: 3
+          retention-days: 7
+
+  test-units:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    container: greenbone/gvmd-build:unstable
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v3
+      - name: Build gvmd
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
+          cmake --build build
+      - name: Configure and run tests
+        run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
