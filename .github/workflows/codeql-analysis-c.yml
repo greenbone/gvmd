@@ -19,11 +19,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-<<<<<<< HEAD
     container: greenbone/gvmd-build:oldstable
-=======
-    container: greenbone/gvmd-build:unstable
->>>>>>> 8af99fddf ([DevOps] Trigger Docker Image build from gvm-libs (#1839))
 
     strategy:
       fail-fast: false
