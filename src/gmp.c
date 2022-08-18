@@ -26618,7 +26618,7 @@ process_gmp_client_input ()
             g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE");
           else
             err = -1;
-          g_info ("   Failed to parse client XML: %s", error->message);
+          g_debug ("   Failed to parse client XML: %s", error->message);
           g_error_free (error);
         }
       else
@@ -26733,7 +26733,7 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
             g_debug ("   client error: G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE");
           else
             err = -1;
-          g_info ("   Failed to parse client XML: %s", error->message);
+          g_debug ("   Failed to parse client XML: %s", error->message);
           g_error_free (error);
         }
       else
