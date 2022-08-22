@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main, stable, oldstable ]
     tags: ["v*"]
+  pull_request:
+    branches: [ main, stable, oldstable ]
   workflow_dispatch:
   repository_dispatch:
 
@@ -18,7 +20,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: greenbone/gvmd
+          images: ${{ github.repository }}
           labels: |
             org.opencontainers.image.vendor=Greenbone
             org.opencontainers.image.base.name=debian/stable-slim
@@ -26,6 +28,7 @@ jobs:
           tags: |
             # create container tag for git tags
             type=ref,event=tag
+            type=ref,event=pr
             # use latest for stable branch
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
             type=raw,value=stable,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
@@ -33,6 +36,7 @@ jobs:
             # use unstable for main branch
             type=raw,value=unstable,enable={{is_default_branch}}
       - name: Login to Docker Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -45,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           file: .docker/prod.Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
@@ -61,7 +65,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: greenbone/gvmd-build
+          images: ${{ github.repository }}-build
           labels: |
             org.opencontainers.image.vendor=Greenbone
             org.opencontainers.image.base.name=debian/stable-slim
@@ -69,6 +73,7 @@ jobs:
           tags: |
             # create container tag for git tags
             type=ref,event=tag
+            type=ref,event=pr
             # use latest for stable branch
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
             type=raw,value=stable,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
@@ -76,6 +81,7 @@ jobs:
             # use unstable for main branch
             type=raw,value=unstable,enable={{is_default_branch}}
       - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -89,12 +95,13 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           file: .docker/build.Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Trigger libtheia container build
+        if: github.event_name != 'pull_request'
         run: |
           curl -X POST https://api.github.com/repos/greenbone/libtheia/actions/workflows/container.yml/dispatches \
           -H "Accept: application/vnd.github.v3+json" \
