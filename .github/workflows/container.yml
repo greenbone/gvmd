@@ -14,8 +14,13 @@ on:
   repository_dispatch:
 
 jobs:
+<<<<<<< HEAD
   upload-production:
     name: Build and upload container images
+=======
+  images:
+    name: Production Images
+>>>>>>> 5f8e4d2ad (Rename jobs for clearer understanding of their purpose)
     runs-on: ubuntu-latest
     needs: upload-build
     steps:
@@ -64,8 +69,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  upload-build:
-    name: "Upload images for building gvmd"
+  build-images:
+    name: "Build Images"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
