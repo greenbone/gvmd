@@ -14,12 +14,6 @@ jobs:
     needs: upload-build
     steps:
       - name: Checkout repository
-<<<<<<< HEAD
-        uses: actions/checkout@v2
-      - name: Gather container image tags
-        id: container
-        uses: greenbone/actions/container-image-tags@v1
-=======
         uses: actions/checkout@v3
       - name: Setup container meta information
         id: meta
@@ -39,7 +33,6 @@ jobs:
             type=raw,value=oldstable,enable=${{ github.ref == format('refs/heads/{0}', 'oldstable') }}
             # use unstable for main branch
             type=raw,value=unstable,enable={{is_default_branch}}
->>>>>>> e02cbf770 (Change: Use docker/meta-action for container tags and labels)
       - name: Login to Docker Registry
         uses: docker/login-action@v1
         with:
@@ -64,17 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-<<<<<<< HEAD
-        uses: actions/checkout@v2
-      - name: Gather container image names
-        uses: greenbone/actions/container-image-tags@v1
-        id: container
-=======
         uses: actions/checkout@v3
       - name: Setup container meta information
         id: meta
         uses: docker/metadata-action@v4
->>>>>>> e02cbf770 (Change: Use docker/meta-action for container tags and labels)
         with:
           images: greenbone/gvmd-build
           labels: |
@@ -107,8 +93,6 @@ jobs:
           push: true
           file: .docker/build.Dockerfile
           platforms: linux/amd64,linux/arm64
-<<<<<<< HEAD
-=======
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Trigger libtheia container build
@@ -117,4 +101,3 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           -u greenbonebot:${{ secrets.GREENBONE_BOT_TOKEN }} \
           -d '{"ref":"main"}'
->>>>>>> e02cbf770 (Change: Use docker/meta-action for container tags and labels)
