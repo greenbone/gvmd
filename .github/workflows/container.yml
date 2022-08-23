@@ -2,11 +2,7 @@ name: Container Image Builds
 
 on:
   push:
-<<<<<<< HEAD
-    branches: [ oldstable ]
-=======
     branches: [ main, stable, oldstable ]
->>>>>>> 2782ed8cb (Change: Run container image builds also for pull requests)
     tags: ["v*"]
   pull_request:
     branches: [ main, stable, oldstable ]
@@ -14,13 +10,8 @@ on:
   repository_dispatch:
 
 jobs:
-<<<<<<< HEAD
-  upload-production:
-    name: Build and upload container images
-=======
   images:
     name: Production Images
->>>>>>> 5f8e4d2ad (Rename jobs for clearer understanding of their purpose)
     runs-on: ubuntu-latest
     needs: upload-build
     steps:
@@ -46,12 +37,8 @@ jobs:
             # use unstable for main branch
             type=raw,value=unstable,enable={{is_default_branch}}
       - name: Login to Docker Registry
-<<<<<<< HEAD
-        uses: docker/login-action@v1
-=======
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
->>>>>>> 2782ed8cb (Change: Run container image builds also for pull requests)
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -95,12 +82,8 @@ jobs:
             # use unstable for main branch
             type=raw,value=unstable,enable={{is_default_branch}}
       - name: Login to DockerHub
-<<<<<<< HEAD
-        uses: docker/login-action@v1
-=======
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
->>>>>>> 2782ed8cb (Change: Run container image builds also for pull requests)
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -118,13 +101,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-<<<<<<< HEAD
-=======
-      - name: Trigger libtheia container build
-        if: github.event_name != 'pull_request'
-        run: |
-          curl -X POST https://api.github.com/repos/greenbone/libtheia/actions/workflows/container.yml/dispatches \
-          -H "Accept: application/vnd.github.v3+json" \
-          -u greenbonebot:${{ secrets.GREENBONE_BOT_TOKEN }} \
-          -d '{"ref":"main"}'
->>>>>>> 2782ed8cb (Change: Run container image builds also for pull requests)
