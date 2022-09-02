@@ -14610,7 +14610,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
    "first", "last", "false_positive", "log", "low", "medium", "high",         \
    "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
-   "medium_per_host", "high_per_host", "target", "usage_type", NULL }
+   "medium_per_host", "high_per_host", "target", "usage_type",                \
+   "first_report_created", "last_report_created", NULL }
 
 /**
  * @brief Task iterator columns.
@@ -14823,7 +14824,23 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "(SELECT name FROM targets WHERE id = target)",                         \
      "target",                                                               \
      KEYWORD_TYPE_STRING                                                     \
-   }
+   },                                                                        \
+   {                                                                         \
+     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
+     /* TODO 1 == TASK_STATUS_DONE */                                        \
+     " AND scan_run_status = 1"                                              \
+     " ORDER BY creation_time ASC LIMIT 1)",                                 \
+     "first_report_created",                                                 \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
+     /* TODO 1 == TASK_STATUS_DONE */                                        \
+     " AND scan_run_status = 1"                                              \
+     " ORDER BY creation_time DESC LIMIT 1)",                                \
+     "last_report_created",                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   }                                                                         \
 
 /**
  * @brief Task iterator WHERE columns.
