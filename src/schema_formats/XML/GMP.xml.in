@@ -19559,14 +19559,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Time the task is next due to run</summary>
           </column>
           <column>
-            <name>first</name>
+            <name>first_report_created</name>
             <type>iso_time</type>
             <summary>Timestamp of the first report</summary>
           </column>
           <column>
-            <name>last</name>
+            <name>last_report_created</name>
             <type>iso_time</type>
             <summary>Timestamp of the last finished report</summary>
+          </column>
+          <column>
+            <name>first</name>
+            <type>iso_time</type>
+            <summary>Timestamp of the first report (deprecated, use first_report_created)</summary>
+          </column>
+          <column>
+            <name>last</name>
+            <type>iso_time</type>
+            <summary>Timestamp of the last finished report (deprecated, use last_report_created)</summary>
           </column>
           <column>
             <name>false_positive</name>
