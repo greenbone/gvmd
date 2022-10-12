@@ -6997,7 +6997,7 @@ validate_tippingpoint_data (alert_method_t method, const gchar *name,
 
       if (strcmp (name, "tp_sms_hostname") == 0)
         {
-          if (g_regex_match_simple ("^[0-9A-Za-z][0-9A-Za-z.-]*$",
+          if (g_regex_match_simple ("^[0-9A-Za-z][0-9A-Za-z.\\-]*$",
                                     *data, 0, 0)
               == FALSE)
             {
@@ -49757,8 +49757,8 @@ modify_setting (const gchar *uuid, const gchar *name,
            */
           languages_regex
             = g_regex_new ("^(Browser Language|"
-                           "([a-z]{2,3})(_[A-Z]{2})?(@[[:alnum:]_-]+)?"
-                           "(:([a-z]{2,3})(_[A-Z]{2})?(@[[:alnum:]_-]+)?)*)$",
+                           "([a-z]{2,3})(_[A-Z]{2})?(@[[:alnum:]_\\-]+)?"
+                           "(:([a-z]{2,3})(_[A-Z]{2})?(@[[:alnum:]_\\-]+)?)*)$",
                            0, 0, NULL);
           match = g_regex_match (languages_regex, value, 0, NULL);
           g_regex_unref (languages_regex);
@@ -50326,7 +50326,7 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
   if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
     {
       if (g_regex_match_simple
-            ("^([[:alnum:]-_]*@[[:alnum:]-_][[:alnum:]-_.]*)?$",
+            ("^([[:alnum:]\\-_]*@[[:alnum:]\\-_][[:alnum:]\\-_.]*)?$",
             value, 0, 0) == FALSE)
         return 1;
     }

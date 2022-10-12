@@ -339,7 +339,7 @@ parse_iso_time_tz (const char *text_time, const char *fallback_tz)
   epoch_time = 0;
 
   if (regex == NULL)
-    regex = g_regex_new ("^([0-9]{4}-[0-9]{2}-[0-9]{2})"
+    regex = g_regex_new ("^([0-9]{4}\\-[0-9]{2}\\-[0-9]{2})"
                          "[T ]([0-9]{2}:[0-9]{2})"
                          "(:[0-9]{2})?(?:\\.[0-9]+)?"
                          "(Z|[+-][0-9]{2}:?[0-9]{2})?$",
