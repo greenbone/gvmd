@@ -1210,7 +1210,7 @@ manage_create_sql_functions ()
                TASK_STATUS_DONE);
         }
 
-      /* result_nvt column (in OVERRIDES_SQL) was added in version 189.           */
+
       /* if (current_db_version >= 189)                                           */
       /* column date in table reports was renamed to creation_time in version 245 */
       if (current_db_version >= 245)
@@ -1229,6 +1229,28 @@ manage_create_sql_functions ()
                "                                   WHERE task = $1"
                "                                   AND scan_run_status = %u"
                "                                   ORDER BY creation_time DESC"
+               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               "         END;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
+        }
+      /* result_nvt column (in OVERRIDES_SQL) was added in version 189. */
+      else if (current_db_version >= 189)
+        {
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
+               "                                          integer,"  // overrides
+               "                                          integer)"  // min_qod
+               " RETURNS double precision AS $$"
+               /* Calculate the severity of a task. */
+               "  SELECT CASE"
+               "         WHEN (SELECT target = 0"
+               "               FROM tasks WHERE id = $1)"
+               "         THEN CAST (NULL AS double precision)"
+               "         ELSE"
+               "         (SELECT report_severity ((SELECT id FROM reports"
+               "                                   WHERE task = $1"
+               "                                   AND scan_run_status = %u"
+               "                                   ORDER BY date DESC"
                "                                   LIMIT 1 OFFSET 0), $2, $3))"
                "         END;"
                "$$ LANGUAGE SQL;",
@@ -2986,6 +3008,39 @@ db_extension_available (const char *name)
 }
 
 /**
+ * @brief Clean up old SQL functions now incliuded in the pg-gvm extension.
+ */
+void
+cleanup_old_sql_functions ()
+{
+  if (sql_int("SELECT count(*) FROM pg_extension WHERE extname = 'pg-gvm'"))
+    {
+      g_debug ("%s: pg-gvm already installed, skipping function cleanup",
+               __func__);
+      return;
+    }
+
+  g_message ("%s: cleaning up SQL functions now included in pg-gvm extension",
+               __func__);
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " hosts_contains (text, text) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " max_hosts (text, text) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " next_time_ical (text, bigint, text) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " next_time_ical (text, bigint, text, integer) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " regexp (text, text) CASCADE;");
+
+}
+
+/**
  * @brief Ensure all extensions are installed.
  *
  * @return 0 success, 1 extension missing.
@@ -3002,6 +3057,10 @@ check_db_extensions ()
       // Switch to superuser role and try to install extensions.
       sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
       
+      // Clean up old functions now in pg-gvm
+      cleanup_old_sql_functions ();
+
+      // Install the extensions
       sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pg-gvm\"");
