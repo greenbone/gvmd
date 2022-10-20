@@ -2986,6 +2986,39 @@ db_extension_available (const char *name)
 }
 
 /**
+ * @brief Clean up old SQL functions now incliuded in the pg-gvm extension.
+ */
+void
+cleanup_old_sql_functions ()
+{
+  if (sql_int("SELECT count(*) FROM pg_extension WHERE extname = 'pg-gvm'"))
+    {
+      g_message ("%s: pg-gvm already installed, skipping function cleanup",
+               __func__);
+      return;
+    }
+
+  g_message ("%s: cleaning up SQL functions now included in pg-gvm extension",
+               __func__);
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " hosts_contains (text, text) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " max_hosts (text, text) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " next_time_ical (text, bigint, text) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " next_time_ical (text, bigint, text, integer) CASCADE;");
+
+  sql ("DROP FUNCTION IF EXISTS"
+       " regexp (text, text) CASCADE;");
+
+}
+
+/**
  * @brief Ensure all extensions are installed.
  *
  * @return 0 success, 1 extension missing.
@@ -3002,6 +3035,10 @@ check_db_extensions ()
       // Switch to superuser role and try to install extensions.
       sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
       
+      // Clean up old functions now in pg-gvm
+      cleanup_old_sql_functions ();
+
+      // Install the extensions
       sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pg-gvm\"");
