@@ -3015,7 +3015,7 @@ cleanup_old_sql_functions ()
 {
   if (sql_int("SELECT count(*) FROM pg_extension WHERE extname = 'pg-gvm'"))
     {
-      g_message ("%s: pg-gvm already installed, skipping function cleanup",
+      g_debug ("%s: pg-gvm already installed, skipping function cleanup",
                __func__);
       return;
     }
