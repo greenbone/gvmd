@@ -5336,7 +5336,8 @@ get_cve_filename (char *item_id)
 /**
  * @brief Compute the filename where a given CERT-Bund Advisory can be found.
  *
- * @param[in] item_id   CERT-Bund identifier without version ("CB-K??/????").
+ * @param[in] item_id   CERT-Bund identifier without version 
+                        ("CB-K??/????" or "WID-SEC-????-????")
  *
  * @return A dynamically allocated string (to be g_free'd) containing the
  *         path to the desired file or NULL on error.
@@ -5349,6 +5350,11 @@ get_cert_bund_adv_filename (char *item_id)
   if (sscanf (item_id, "CB-K%d-%*s", &year) == 1)
     {
       return g_strdup_printf (CERT_BUND_ADV_FILENAME_FMT, year);
+    }
+  if (sscanf (item_id, "WID-SEC-%d-%*s", &year) == 1 )
+    {
+      // new year format is YYYY thus subtract 2000 from the int
+      return g_strdup_printf (CERT_BUND_ADV_FILENAME_FMT, year - 2000);
     }
   return NULL;
 }
