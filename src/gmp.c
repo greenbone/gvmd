@@ -10231,7 +10231,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                 = g_tree_lookup (subgroup_c_counts, subgroup_value);
               if (subgroup_c_count == NULL)
                 {
-                  subgroup_c_count = g_malloc0 (sizeof (long int*));
+                  subgroup_c_count = g_malloc0 (sizeof (long int));
                   g_tree_insert (subgroup_c_counts,
                                  g_strdup (subgroup_value),
                                  subgroup_c_count);
@@ -10415,7 +10415,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
               if (subgroup_c_sum == NULL)
                 {
-                  subgroup_c_sum = g_malloc (sizeof (double *));
+                  subgroup_c_sum = g_malloc (sizeof (double));
                   *subgroup_c_sum = 0;
 
                   g_tree_insert (c_sum_tree,
