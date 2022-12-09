@@ -161,7 +161,7 @@ COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
 
 # Create data archive
 cd "${DATA_DIR}"
-tar -C "${DATA_DIR}" -acf "../data.tar.gz" "${HOME_SUBDIR}" "${DOC_SUBDIR}"
+tar -C "${DATA_DIR}" -acfz "../data.tar.gz" "${HOME_SUBDIR}" "${DOC_SUBDIR}"
 
 
 #
