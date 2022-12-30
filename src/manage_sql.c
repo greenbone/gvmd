@@ -12580,7 +12580,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    * anyway, to make it easier for the compiler to see. */
                   filter = 0;
                   ret = report_content_for_alert
-                          (alert, 0, task, get,
+                          (alert, report, task, get,
                            "notice_report_format",
                            NULL,
                            /* TXT fallback */
@@ -12660,7 +12660,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                    * anyway, to make it easier for the compiler to see. */
                   filter = 0;
                   ret = report_content_for_alert
-                          (alert, 0, task, get,
+                          (alert, report, task, get,
                            "notice_attach_format",
                            NULL,
                            /* TXT fallback */
