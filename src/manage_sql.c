@@ -28623,6 +28623,7 @@ manage_send_report (report_t report, report_t delta_report,
       ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
                         (void*) TASK_STATUS_DONE, method, condition,
                         &get_copy, notes_details, overrides_details, NULL);
+      g_free(get_copy.filter);
       if (ret == -3)
         return -4;
       if (ret == -1)
