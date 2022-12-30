@@ -28602,6 +28602,7 @@ manage_send_report (report_t report, report_t delta_report,
       alert_t alert = 0;
       alert_condition_t condition;
       alert_method_t method;
+      get_data_t get_copy;
 
       if (find_alert_with_permission (alert_id, &alert, "get_alerts"))
         return -1;
@@ -28609,12 +28610,19 @@ manage_send_report (report_t report, report_t delta_report,
       if (alert == 0)
         return 1;
 
+      get_copy = *get;
       condition = alert_condition (alert);
       method = alert_method (alert);
+      if (method == ALERT_METHOD_EMAIL)
+        {
+          get_copy.filter = g_strdup_printf ("notes=1 overrides=1"
+                                             " sort-reverse=severity rows=1000");
+	  get_copy.ignore_pagination = 0;
+	}
 
       ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
                         (void*) TASK_STATUS_DONE, method, condition,
-                        get, notes_details, overrides_details, NULL);
+                        &get_copy, notes_details, overrides_details, NULL);
       if (ret == -3)
         return -4;
       if (ret == -1)
