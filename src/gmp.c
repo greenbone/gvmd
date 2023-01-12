@@ -13977,6 +13977,14 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+/**
+ * @brief Init some data of the get_data_t structure of an alert.
+ *
+ * @param[in]  alert_id   Id of the alert the get_data_t structure
+ *                        belongs to.
+ * @param[in]  get        The get_data_t structure where some components
+ *                        are to be initialized
+ */
 static void
 init_alert_get_data(const char *alert_id, get_data_t *get)
 {
