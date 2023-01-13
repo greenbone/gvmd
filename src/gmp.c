@@ -13978,6 +13978,41 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Init some data of the get_data_t structure of an alert.
+ *
+ * @param[in]  alert_id   Id of the alert the get_data_t structure
+ *                        belongs to.
+ * @param[in]  get        The get_data_t structure where some components
+ *                        are to be initialized
+ */
+static void
+init_alert_get_data(const char *alert_id, get_data_t *get)
+{
+  alert_t alert = 0;
+  alert_method_t method;
+  char *to_free;
+
+  /* Always enable details when using a report to test an alert. */
+  get->details = 1;
+  get->ignore_pagination = 0;
+
+  if (get->filter == NULL)
+    return;
+  if (strstr(get->filter, " rows="))
+    return;
+  if (find_alert_with_permission (alert_id, &alert, "get_alerts"))
+    return;
+  if (alert == 0)
+    return;
+
+  method = alert_method (alert);
+  to_free = get->filter;
+  get->filter = g_strdup_printf ("%s rows=%d", get->filter,
+                                 method == ALERT_METHOD_EMAIL ? 1000 : -1);
+  g_free(to_free);
+}
+
+/**
  * @brief Handle end of GET_REPORTS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -14377,9 +14412,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       if (request_report)
         cleanup_iterator (&reports);
 
-      /* Always enable details when using a report to test an alert. */
       if (get_reports_data->alert_id)
-        get_reports_data->get.details = 1;
+        init_alert_get_data(get_reports_data->alert_id, &get_reports_data->get);
 
       ret = manage_send_report (report,
                                 delta_report,
