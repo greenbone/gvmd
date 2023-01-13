@@ -638,6 +638,9 @@ event_name (event_t);
 gchar*
 event_description (event_t, const void *, const char *);
 
+alert_method_t
+alert_method (alert_t alert);
+
 const char*
 alert_method_name (alert_method_t);
 
