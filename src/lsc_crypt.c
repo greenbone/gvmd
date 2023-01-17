@@ -634,7 +634,7 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
  *         has not been called.  If no value is available NULL is
  *         returned.
  */
-const char *
+char *
 lsc_crypt_decrypt (lsc_crypt_ctx_t ctx, const char *ciphertext,
                    const char *name)
 {

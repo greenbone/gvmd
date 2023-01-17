@@ -18664,7 +18664,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 "<value>%s</value>"
                 "</auth_conf_setting>"
                 "</group>",
-                radius_enabled ? "true" : "false", radius_host, radius_key);
+                radius_enabled ? "true" : "false", radius_host,
+                "ThisIsAPlaceholderSecretKey!");
               g_free (radius_host);
               g_free (radius_key);
             }
