@@ -53348,6 +53348,8 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 void
 manage_get_radius_info (int *enabled, char **host, char **key)
 {
+  char *secret;
+
   if (enabled)
     *enabled = radius_auth_enabled ();
 
@@ -53355,9 +53357,15 @@ manage_get_radius_info (int *enabled, char **host, char **key)
   if (!*host)
     *host = g_strdup ("127.0.0.1");
 
-  *key = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
-  if (!*key)
-    *key = g_strdup ("testing123");
+  secret = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
+  if (!secret)
+    *key = g_strdup ("ThisIsAPlaceholderSecretKey!");
+  else
+    {
+      lsc_crypt_ctx_t crypt_ctx;
+      crypt_ctx = lsc_crypt_new ();
+      *key = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
+    }
 }
 
 /**
@@ -53390,12 +53398,18 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
       g_free (quoted);
     }
 
-  if (key)
+  if (key && strcmp (key, "ThisIsAPlaceholderSecretKey!"))
     {
+      char *secret;
+      lsc_crypt_ctx_t crypt_ctx;
+      crypt_ctx = lsc_crypt_new ();
+
       sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
-      quoted = sql_quote (key);
+      secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
+      quoted = sql_quote (secret);
       sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
            quoted);
+      g_free (secret);
       g_free (quoted);
     }
 
