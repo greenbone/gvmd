@@ -127,7 +127,7 @@ add_executable (manage-utils-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_license.c
+                gmp_license.c gmp_logout.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -154,7 +154,7 @@ add_executable (manage-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_license.c
+                gmp_license.c gmp_logout.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -181,7 +181,7 @@ add_executable (manage-sql-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_license.c
+                gmp_license.c gmp_logout.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
@@ -208,7 +208,7 @@ add_executable (gmp-tickets-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_license.c
+                gmp_license.c gmp_logout.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
@@ -234,7 +234,7 @@ add_executable (utils-test
                 sql_pg.c manage_pg.c
                 lsc_user.c lsc_crypt.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
-                gmp_license.c
+                gmp_license.c gmp_logout.c
                 gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
