@@ -16653,6 +16653,8 @@ manage_reset_currents ()
 {
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
+  sql ("RESET \"gvmd.user.id\";");
+  sql ("RESET \"gvmd.tz_override\";");
   free_credentials (&current_credentials);
 }
 
@@ -16924,8 +16926,8 @@ auth_cache_find (const char *username, const char *password, int method)
 
   quoted_username = sql_quote (username);
   hash = sql_string ("SELECT hash FROM auth_cache WHERE username = '%s'"
-                     " AND method = %i AND creation_time >= m_now () - 300;",
-                     quoted_username, method);
+                     " AND method = %i AND creation_time >= m_now () - %d;",
+                     quoted_username, method, get_auth_timeout()*60);
   g_free (quoted_username);
   if (!hash)
     return -1;
@@ -16968,7 +16970,33 @@ auth_cache_insert (const char *username, const char *password, int method)
   sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
        " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
   /* Cleanup cache */
-  sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - 300");
+  sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - %d",
+       get_auth_timeout()*60);
+}
+
+/**
+ * @brief Delete the credentials of a user from the authentication
+ * cache.
+ *
+ * @param[in]  username     Username.
+ */
+static void
+auth_cache_delete (const char *username)
+{
+  sql ("DELETE from auth_cache WHERE username = '%s'", username);
+}
+
+/**
+ * @brief Refresh the authentication of a user in the authentication
+ * cache.
+ *
+ * @param[in]  username     Username.
+ */
+static void
+auth_cache_refresh (const char *username)
+{
+  sql ("UPDATE auth_cache SET creation_time = m_now() WHERE username = '%s'",
+       username);
 }
 
 /**
@@ -16999,7 +17027,10 @@ authenticate_any_method (const gchar *username, const gchar *password,
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
       /* Search the LDAP authentication cache first. */
       if (auth_cache_find (username, password, 0) == 0)
-        return 0;
+        {
+          auth_cache_refresh (username);
+          return 0;
+        }
 
       manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext, &cacert);
       info = ldap_auth_info_new (host, authdn, allow_plaintext);
@@ -17021,7 +17052,10 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       *auth_method = AUTHENTICATION_METHOD_RADIUS_CONNECT;
       if (auth_cache_find (username, password, 1) == 0)
-        return 0;
+        {
+          auth_cache_refresh (username);
+          return 0;
+        }
 
       manage_get_radius_info (NULL, &host, &key);
       ret = radius_authenticate (host, key, username, password);
@@ -17032,6 +17066,11 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
+  if (auth_cache_find (username, password, 2) == 0)
+    {
+      auth_cache_refresh (username);
+      return 0;
+    }
   hash = manage_user_hash (username);
   ret = manage_authentication_verify(hash, password);
   switch(ret){
@@ -17043,9 +17082,11 @@ authenticate_any_method (const gchar *username, const gchar *password,
           hash = manage_authentication_hash(password);
           sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
                hash, username);
+          auth_cache_insert (username, password, 2);
           ret = 0;
           break;
         case GMA_SUCCESS:
+          auth_cache_insert (username, password, 2);
           ret = 0;
           break;
         default:
@@ -17129,6 +17170,18 @@ authenticate (credentials_t* credentials)
       return fail;
     }
   return 1;
+}
+
+/**
+ * @brief Perform actions necessary at user logout
+ *
+ * @param[in]  username     Username.
+ */
+void
+logout_user ()
+{
+  auth_cache_delete(current_credentials.username);
+  manage_reset_currents ();
 }
 
 /**
