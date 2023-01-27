@@ -163,6 +163,12 @@
 #define MAX_HOSTS_DEFAULT "20"
 
 /**
+ * @brief Number of minutes until the authentication cache is deleted
+ *        if the session is idle.
+ */
+static int auth_timeout = 0;
+
+/**
  * @brief Address of the broker used for publish-subscribe messaging (MQTT).
  */
 static gchar *broker_address = NULL;
@@ -5995,6 +6001,31 @@ manage_gvmd_data_feed_dirs_exist ()
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();
+}
+
+/**
+ * @brief Get the authentication cache timeout.
+ *
+ * @return The current timeout in minutes.
+ */
+int
+get_auth_timeout ()
+{
+  return auth_timeout;
+}
+
+/**
+ * @brief Set the authentication cache timeout.
+ *
+ * @param new_timeout The new timeout in minutes.
+ */
+void
+set_auth_timeout (int new_timeout)
+{
+  if (new_timeout < 1)
+    auth_timeout = 1;
+  else
+    auth_timeout = new_timeout;
 }
 
 /**

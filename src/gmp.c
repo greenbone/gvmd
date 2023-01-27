@@ -89,6 +89,7 @@
 #include "gmp_get.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
+#include "gmp_logout.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_formats.h"
 #include "gmp_tickets.h"
@@ -4322,6 +4323,7 @@ typedef enum
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_GET_VULNS,
   CLIENT_HELP,
+  CLIENT_LOGOUT,
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -5695,6 +5697,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "type",
                               &help_data->type);
             set_client_state (CLIENT_HELP);
+          }
+        else if (strcasecmp ("LOGOUT", element_name) == 0)
+          {
+            set_client_state (CLIENT_LOGOUT);
           }
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
@@ -7684,6 +7690,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_read_over (gmp_parser);
         break;
 
+      case CLIENT_LOGOUT:
+          logout_element_start (gmp_parser, element_name,
+                                attribute_names, attribute_values);
+	break;
       case CLIENT_MODIFY_LICENSE:
         modify_license_element_start (gmp_parser, element_name,
                                       attribute_names, attribute_values);
@@ -22191,7 +22201,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           }
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
+      case CLIENT_LOGOUT:
+        {
+          if (logout_element_end (gmp_parser, error, element_name))
+            {
+              set_client_state (CLIENT_TOP);
+            }
+          break;
+        }
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
