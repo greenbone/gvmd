@@ -5700,6 +5700,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("LOGOUT", element_name) == 0)
           {
+            logout_start (gmp_parser,
+                          attribute_names,
+                          attribute_values);
             set_client_state (CLIENT_LOGOUT);
           }
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)

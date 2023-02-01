@@ -22,6 +22,11 @@
 #include <gvm/util/xmlutils.h>
 
 void
+logout_start (gmp_parser_t *,
+              const gchar **,
+              const gchar **);
+
+void
 logout_element_start (gmp_parser_t *, const gchar *,
                       const gchar **, const gchar **);
 
