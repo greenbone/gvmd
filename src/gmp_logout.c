@@ -29,9 +29,42 @@
 typedef struct
 {
   context_data_t *context;     ///< XML parser context.
-} do_logout_t;
+} logout_t;
 
-static do_logout_t logout_data;
+static logout_t logout_data;
+
+/*
+ * @brief Reset command data.
+ */
+static void
+logout_reset ()
+{
+  if (logout_data.context->first)
+    {
+      free_entity (logout_data.context->first->data);
+      g_slist_free_1 (logout_data.context->first);
+    }
+  g_free (logout_data.context);
+  memset (&logout_data, 0, sizeof (logout_t));
+}
+
+/**
+ * @brief Start a command.
+ *
+ * @param[in]  gmp_parser        GMP parser.
+ * @param[in]  attribute_names   All attribute names.
+ * @param[in]  attribute_values  All attribute values.
+ */
+void
+logout_start (gmp_parser_t *gmp_parser,
+              const gchar **attribute_names,
+              const gchar **attribute_values)
+{
+  memset (&logout_data, 0, sizeof (logout_t));
+  logout_data.context = g_malloc0 (sizeof (context_data_t));
+  logout_element_start (gmp_parser, "logout",
+                        attribute_names, attribute_values);
+}
 
 /**
  * @brief Start element.
@@ -62,6 +95,8 @@ logout_run (gmp_parser_t *gmp_parser,
             GError **error)
 {
   logout_user ();
+  SEND_TO_CLIENT_OR_FAIL ("<logout_response status=\"200\" status_text=\"User logged out\"/>");
+  logout_reset ();
 }
 
 /**
