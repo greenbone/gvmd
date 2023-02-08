@@ -3008,7 +3008,7 @@ db_extension_available (const char *name)
 }
 
 /**
- * @brief Clean up old SQL functions now incliuded in the pg-gvm extension.
+ * @brief Clean up old SQL functions now included in the pg-gvm extension.
  */
 void
 cleanup_old_sql_functions ()
