@@ -1822,6 +1822,7 @@ gvmd (int argc, char** argv, char *env[])
 {
   /* Process options. */
 
+  static int auth_timeout = 15;
   static gboolean check_alerts = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
@@ -1895,6 +1896,11 @@ gvmd (int argc, char** argv, char *env[])
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "auth-timeout", '\0', 0, G_OPTION_ARG_INT,
+          &auth_timeout,
+          "Sets the authentication timeout time for the cached authentication."
+          " Defaults to 15 minutes.",
+          "<timeout>" },
         { "broker-address", '\0', 0, G_OPTION_ARG_STRING,
           &broker_address,
           "Sets the address for the publish-subscribe message (MQTT) broker."
@@ -2265,6 +2271,9 @@ gvmd (int argc, char** argv, char *env[])
     {
       client_watch_interval = 0;
     }
+
+  /* Set authentication cache timeout */
+  set_auth_timeout (auth_timeout);
 
   /* Set broker address */
   set_broker_address (broker_address

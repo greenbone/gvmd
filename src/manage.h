@@ -199,6 +199,8 @@ extern credentials_t current_credentials;
 int
 authenticate (credentials_t*);
 
+void
+logout_user ();
 
 /* Database. */
 
@@ -3613,6 +3615,12 @@ manage_gvmd_data_feed_dir_exists (const char *);
 
 gboolean
 manage_gvmd_data_feed_dirs_exist ();
+
+int
+get_auth_timeout ();
+
+void
+set_auth_timeout (int);
 
 const gchar *
 get_broker_address ();
