@@ -53363,6 +53363,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
            quoted);
       g_free (secret);
       g_free (quoted);
+      lsc_crypt_release(crypt_ctx);
     }
 
   sql_commit ();
