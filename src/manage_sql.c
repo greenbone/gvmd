@@ -53365,7 +53365,7 @@ manage_get_radius_info (int *enabled, char **host, char **key)
       const char *decrypted;
       lsc_crypt_ctx_t crypt_ctx;
       crypt_ctx = lsc_crypt_new ();
-      decrypted = g_strdup (lsc_crypt_decrypt (crypt_ctx, secret, "secret_key"));
+      decrypted = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
       if (decrypted)
         *key = g_strdup (decrypted);
       lsc_crypt_release (crypt_ctx);
