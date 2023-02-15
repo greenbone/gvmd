@@ -18645,10 +18645,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           if (gvm_auth_radius_enabled ())
             {
-              char *radius_host, *radius_key;
+              char *radius_host = NULL;
+              char *radius_key = NULL;
+              char *key = "";
               int radius_enabled;
               manage_get_radius_info (&radius_enabled, &radius_host,
                                       &radius_key);
+              if (radius_key && strlen(radius_key))
+                key = "********";
+
               SENDF_TO_CLIENT_OR_FAIL
                ("<group name=\"method:radius_connect\">"
                 "<auth_conf_setting>"
@@ -18665,7 +18670,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 "</auth_conf_setting>"
                 "</group>",
                 radius_enabled ? "true" : "false", radius_host,
-                "ThisIsAPlaceholderSecretKey!");
+                key);
               g_free (radius_host);
               g_free (radius_key);
             }

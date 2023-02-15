@@ -53306,12 +53306,17 @@ manage_get_radius_info (int *enabled, char **host, char **key)
 
   secret = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
   if (!secret)
-    *key = g_strdup ("ThisIsAPlaceholderSecretKey!");
+    *key = g_strdup ("");
   else
     {
+      const char *decrypted;
       lsc_crypt_ctx_t crypt_ctx;
       crypt_ctx = lsc_crypt_new ();
-      *key = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
+      decrypted = g_strdup (lsc_crypt_decrypt (crypt_ctx, secret, "secret_key"));
+      if (decrypted)
+        *key = g_strdup (decrypted);
+      lsc_crypt_release (crypt_ctx);
+      g_free (secret);
     }
 }
 
@@ -53345,7 +53350,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
       g_free (quoted);
     }
 
-  if (key && strcmp (key, "ThisIsAPlaceholderSecretKey!"))
+  if (key && strlen (key))
     {
       char *secret;
       lsc_crypt_ctx_t crypt_ctx;
