@@ -43,7 +43,7 @@ void lsc_crypt_flush (lsc_crypt_ctx_t);
 char *lsc_crypt_encrypt (lsc_crypt_ctx_t,
                          const char *, ...) G_GNUC_NULL_TERMINATED;
 
-char *lsc_crypt_decrypt (lsc_crypt_ctx_t, const char *, const char *);
+const char *lsc_crypt_decrypt (lsc_crypt_ctx_t, const char *, const char *);
 const char *lsc_crypt_get_password (lsc_crypt_ctx_t, const char *);
 const char *lsc_crypt_get_private_key (lsc_crypt_ctx_t, const char *);
 
