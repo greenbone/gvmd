@@ -53413,11 +53413,15 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 
       sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
       secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
-      quoted = sql_quote (secret);
-      sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
-           quoted);
-      g_free (secret);
-      g_free (quoted);
+      if (secret)
+        {
+          quoted = sql_quote (secret);
+          sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
+               quoted);
+          g_free (secret);
+	  secret = NULL;
+          g_free (quoted);
+        }
       lsc_crypt_release(crypt_ctx);
     }
 
