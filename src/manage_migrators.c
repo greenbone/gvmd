@@ -2975,10 +2975,15 @@ migrate_250_to_251 ()
 
       sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
       secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", secret_key, NULL);
-      quoted = sql_quote (secret);
-      sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');", quoted);
-      g_free (secret);
-      g_free (quoted);
+      if (secret)
+        {
+          quoted = sql_quote (secret);
+          sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');", quoted);
+          g_free (secret);
+          secret = NULL;
+          g_free (quoted);
+        }
+      lsc_crypt_release(crypt_ctx);
       g_free (secret_key);
     }
 
