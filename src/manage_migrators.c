@@ -2942,6 +2942,60 @@ migrate_249_to_250 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 250 to version 251.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_250_to_251 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 249. */
+
+  if (manage_db_version () != 250)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  char *secret_key = NULL;
+
+  secret_key = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
+
+  if (secret_key)
+    {
+      char *secret;
+      char *quoted;
+      lsc_crypt_ctx_t crypt_ctx;
+      crypt_ctx = lsc_crypt_new ();
+
+      sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
+      secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", secret_key, NULL);
+      if (secret)
+        {
+          quoted = sql_quote (secret);
+          sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');", quoted);
+          g_free (secret);
+          secret = NULL;
+          g_free (quoted);
+        }
+      lsc_crypt_release(crypt_ctx);
+      g_free (secret_key);
+    }
+
+  /* Set the database version to 251. */
+
+  set_db_version (251);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -2998,6 +3052,7 @@ static migrator_t database_migrators[] = {
   {248, migrate_247_to_248},
   {249, migrate_248_to_249},
   {250, migrate_249_to_250},
+  {251, migrate_250_to_251},
   /* End marker. */
   {-1, NULL}};
 
