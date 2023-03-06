@@ -32,8 +32,9 @@ def smb_error_print(message, stdout, stderr):
         print(stdout, file=sys.stderr)
 
 
-def smb_call(auth_path, share, command):
-    args = ["smbclient", "-A", auth_path, share, "-c", command]
+def smb_call(auth_path, share, command, extra_args):
+    args = ["smbclient"] + extra_args + ["-A", auth_path, share, "-c", command]
+
     retries = 10
     stdout = ''
     stderr = ''
@@ -74,9 +75,9 @@ def smb_call(auth_path, share, command):
     sys.exit(1)
 
 
-def smb_dir_exists(auth_path, share, check_dir):
+def smb_dir_exists(auth_path, share, check_dir, extra_args):
     command = "cd \"%s\"" % (check_dir)
-    rc, stdout, stderr = smb_call(auth_path, share, command)
+    rc, stdout, stderr = smb_call(auth_path, share, command, extra_args)
 
     if rc == 0:
         return True
@@ -89,12 +90,12 @@ def smb_dir_exists(auth_path, share, check_dir):
         sys.exit(1)
 
 
-def smb_mkdir(auth_path, share, check_dir):
+def smb_mkdir(auth_path, share, check_dir, extra_args):
     command = "mkdir \"%s\"" % (check_dir)
-    rc, stdout, stderr = smb_call(auth_path, share, command)
+    rc, stdout, stderr = smb_call(auth_path, share, command, extra_args)
 
     if rc == 0:
-        if not smb_dir_exists(auth_path, share, check_dir):
+        if not smb_dir_exists(auth_path, share, check_dir, extra_args):
             print("Could not create directory %s" % check_dir,
                   file=sys.stderr)
             sys.exit(1)
@@ -106,9 +107,9 @@ def smb_mkdir(auth_path, share, check_dir):
         sys.exit(1)
 
 
-def smb_put(auth_path, share, report_path, dest_path):
+def smb_put(auth_path, share, report_path, dest_path, extra_args):
     command = "put \"%s\" \"%s\"" % (report_path, dest_path)
-    rc, stdout, stderr = smb_call(auth_path, share, command)
+    rc, stdout, stderr = smb_call(auth_path, share, command, extra_args)
 
     if rc == 0:
         print("Report copied to directory %s" % dest_path)
@@ -119,15 +120,21 @@ def smb_put(auth_path, share, report_path, dest_path):
 
 
 def main():
-    if len(sys.argv) != 5:
-        print("usage: %s <share> <dest_path> <auth_path> <report_path>"
+    if len(sys.argv) != 6:
+        print("usage: %s <share> <dest_path> <max_protocol> <auth_path> <report_path>"
               % sys.argv[0], file=sys.stderr)
         sys.exit(1)
 
     share = sys.argv[1]
     dest_path = sys.argv[2]
-    auth_path = sys.argv[3]
-    report_path = sys.argv[4]
+    
+    extra_args = []
+    if sys.argv[3]:
+        extra_args.append("-m")
+        extra_args.append(sys.argv[3])
+
+    auth_path = sys.argv[4]
+    report_path = sys.argv[5]
 
     create_dirs = True
 
@@ -158,16 +165,16 @@ def main():
     # Find first existing path
     first_existing_path_index = -1
     for i in range(len(dest_subpaths)-1, -1, -1):
-        if smb_dir_exists(auth_path, share, dest_subpaths[i]):
+        if smb_dir_exists(auth_path, share, dest_subpaths[i], extra_args):
             first_existing_path_index = i
             break
 
     # Create missing directories
     if create_dirs:
         for i in range(first_existing_path_index + 1, len(dest_subpaths)):
-            smb_mkdir(auth_path, share, dest_subpaths[i])
+            smb_mkdir(auth_path, share, dest_subpaths[i], extra_args)
 
-    smb_put(auth_path, share, report_path, dest_path)
+    smb_put(auth_path, share, report_path, dest_path, extra_args)
 
 
 if __name__ == '__main__':
