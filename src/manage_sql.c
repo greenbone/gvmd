@@ -9987,15 +9987,17 @@ scp_to_host (const char *username, const char *password,
 static int
 smb_send_to_host (const char *password, const char *username,
                   const char *share_path, const char *file_path,
+                  const char *max_protocol,
                   const char *report, gsize report_size,
                   gchar **script_message)
 {
-  gchar *clean_share_path, *clean_file_path;
+  gchar *clean_share_path, *clean_file_path, *clean_max_protocol;
   gchar *authfile_content;
   gchar *command_args;
   int ret;
 
-  g_debug ("smb as %s to share: %s, path: %s", username, share_path, file_path);
+  g_debug ("smb as %s to share: %s, path: %s, max_protocol: %s",
+           username, share_path, file_path, max_protocol);
 
   if (password == NULL || username == NULL
       || share_path == NULL || file_path == NULL)
@@ -10003,13 +10005,17 @@ smb_send_to_host (const char *password, const char *username,
 
   clean_share_path = g_shell_quote (share_path);
   clean_file_path = g_shell_quote (file_path);
+  clean_max_protocol = g_shell_quote (max_protocol ? max_protocol : "");
   authfile_content = g_strdup_printf ("username = %s\n"
                                       "password = %s\n",
                                       username, password);
-  command_args = g_strdup_printf ("%s %s",
-                                  clean_share_path, clean_file_path);
+  command_args = g_strdup_printf ("%s %s %s",
+                                  clean_share_path,
+                                  clean_file_path,
+                                  clean_max_protocol);
   g_free (clean_share_path);
   g_free (clean_file_path);
+  g_free (clean_max_protocol);
 
   ret = run_alert_script ("c427a688-b653-40ab-a9d0-d6ba842a9d63", command_args,
                           "report", report, report_size,
@@ -13122,7 +13128,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_SMB:
         {
           char *credential_id, *username, *password;
-          char *share_path, *file_path_format;
+          char *share_path, *file_path_format, *max_protocol;
           gboolean file_path_is_dir;
           report_format_t report_format;
           gchar *file_path, *report_content, *extension;
@@ -13167,6 +13173,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           credential_id = alert_data (alert, "method", "smb_credential");
           share_path = alert_data (alert, "method", "smb_share_path");
+          max_protocol = alert_data (alert, "method", "smb_max_protocol");
 
           file_path_format
             = sql_string ("SELECT value FROM tags"
@@ -13207,6 +13214,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (credential_id);
               free (share_path);
               free (file_path_format);
+              free (max_protocol);
               g_free (report_content);
               g_free (extension);
               return ret ? ret : -1;
@@ -13245,6 +13253,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (credential_id);
               free (share_path);
               free (file_path);
+              free (max_protocol);
               g_free (report_content);
               g_free (extension);
               return ret ? -1 : -4;
@@ -13254,7 +13263,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           password = credential_encrypted_value (credential, "password");
 
           ret = smb_send_to_host (password, username, share_path, file_path,
-                                  report_content, content_length,
+                                  max_protocol, report_content, content_length,
                                   script_message);
 
           g_free (username);
@@ -13262,6 +13271,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           free (credential_id);
           free (share_path);
           free (file_path);
+          free (max_protocol);
           g_free (report_content);
           g_free (extension);
           return ret;
