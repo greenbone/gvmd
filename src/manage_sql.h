@@ -295,6 +295,8 @@ host_nthlast_report_host (const char *, report_host_t *, int);
 char*
 report_host_ip (const char *);
 
+gchar *report_host_hostname (report_host_t);
+
 void trim_report (report_t);
 
 int delete_report_internal (report_t);
