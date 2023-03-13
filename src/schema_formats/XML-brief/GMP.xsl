@@ -7,7 +7,7 @@
     extension-element-prefixes="str func">
 
 <!--
-Copyright (C) 2010-2022 Greenbone Networks GmbH
+Copyright (C) 2010-2022 Greenbone AG
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 
