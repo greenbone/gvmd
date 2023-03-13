@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2011-2022 Greenbone Networks GmbH
+# Copyright (C) 2011-2022 Greenbone AG
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -206,7 +206,7 @@ then
   RESTRICTED=1
 
   if [ -z "$FEED_VENDOR" ]; then
-    FEED_VENDOR="Greenbone Networks GmbH"
+    FEED_VENDOR="Greenbone AG"
   fi
 
   if [ -z "$FEED_HOME" ]; then
@@ -217,7 +217,7 @@ else
   RESTRICTED=0
 
   if [ -z "$FEED_VENDOR" ]; then
-    FEED_VENDOR="Greenbone Networks GmbH"
+    FEED_VENDOR="Greenbone AG"
   fi
 
   if [ -z "$FEED_HOME" ]; then
