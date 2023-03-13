@@ -28867,7 +28867,7 @@ report_host_ip (const char *host)
  *
  * @param[in]  report_host  Report host.
  *
- * @return Newly allocated UUID if available, else NULL.
+ * @return Newly allocated hostname if available, else NULL.
  */
 gchar*
 report_host_hostname (report_host_t report_host)
