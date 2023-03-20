@@ -309,8 +309,9 @@ insert_nvt (const nvti_t *nvti, int truncate)
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
-               nvti_oid (nvti)))
+  if ((truncate == 0)
+      && sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
+                  nvti_oid (nvti)))
     sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
 
   sql ("INSERT into nvts (oid, name, summary, insight, affected,"
@@ -326,7 +327,8 @@ insert_nvt (const nvti_t *nvti, int truncate)
        nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
-  sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+  if (truncate == 0)
+    sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
@@ -347,7 +349,8 @@ insert_nvt (const nvti_t *nvti, int truncate)
       g_free (quoted_text);
     }
 
-  sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
+  if (truncate == 0)
+    sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
 
   highest = 0;
 
@@ -1559,8 +1562,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
           sql_rollback ();
           return -1;
         }
-      sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
-           nvti_oid (nvti));
+      if (truncate == 0)
+        sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
+             nvti_oid (nvti));
       insert_nvt_preferences_list (preferences);
       g_list_free_full (preferences, g_free);
 
