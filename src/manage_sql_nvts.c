@@ -1810,6 +1810,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     old_nvts_last_modified
       = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
 
+  /* Update NVTs. */
+
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
@@ -1838,6 +1840,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     return ret;
 
   /* Update scanner preferences */
+
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
