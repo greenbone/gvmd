@@ -2990,7 +2990,7 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
 
           if (prognosis_report_host)
             {
-              gchar *hostname;
+              gchar *hostname, *best;
 
               /* Complete the report_host. */
 
@@ -3001,6 +3001,20 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
                 insert_report_host_detail (report, ip, "cve", "",
                                            "CVE Scanner", "hostname", hostname);
                 g_free(hostname);
+              }
+
+              best = report_host_best_os_cpe (report_host);
+              if (best) {
+                insert_report_host_detail (report, ip, "cve", "",
+                                           "CVE Scanner", "best_os_cpe", best);
+                g_free(best);
+              }
+
+              best = report_host_best_os_txt (report_host);
+              if (best) {
+                insert_report_host_detail (report, ip, "cve", "",
+                                           "CVE Scanner", "best_os_txt", best);
+                g_free(best);
               }
 
               insert_report_host_detail (report, ip, "cve", "",
