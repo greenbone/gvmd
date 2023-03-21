@@ -1,6 +1,6 @@
 # default reviewers
-*                 @greenbone/gvmd-maintainers
+*                 @greenbone/gvmd-maintainers @mattmundell
 
 # dev ops
-.github/          @greenbone/devops @greenbone/gvmd-maintainers
-.docker/          @greenbone/devops @greenbone/gvmd-maintainers
+.github/          @greenbone/devops @greenbone/gvmd-maintainers @mattmundell
+.docker/          @greenbone/devops @greenbone/gvmd-maintainers @mattmundell
