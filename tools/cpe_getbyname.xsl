@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Copyright (C) 2011-2022 Greenbone Networks GmbH
+Copyright (C) 2011-2022 Greenbone AG
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 
