@@ -28861,6 +28861,25 @@ report_host_ip (const char *host)
 }
 
 /**
+ * @brief Get the hostname of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated hostname if available, else NULL.
+ */
+gchar*
+report_host_hostname (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'hostname'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
  * @brief Check if a report host is alive and has at least one result.
  *
  * @param[in]  report  Report.
