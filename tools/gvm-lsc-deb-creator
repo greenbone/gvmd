@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2018-2022 Greenbone Networks GmbH
+# Copyright (C) 2018-2022 Greenbone AG
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -155,7 +155,7 @@ COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
   echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/"
   echo ""
   echo "Files: *"
-  echo "Copyright: 2018-2020 Greenbone Networks GmbH"
+  echo "Copyright: 2018-2020 Greenbone AG"
   echo "License: GPL-2+ (/usr/share/common-licenses/GPL-2)"
 } > "${COPYRIGHT_FILE}"
 
