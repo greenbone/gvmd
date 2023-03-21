@@ -94,9 +94,6 @@ sql_error (char *sql, ...);
 int
 sql_giveup (char *sql, ...);
 
-void
-sql_quiet (char *sql, ...);
-
 double
 sql_double (char *sql, ...);
 
