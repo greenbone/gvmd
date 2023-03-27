@@ -351,7 +351,7 @@ insert_nvt (const nvti_t *nvti, int truncate)
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
+  gchar *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
   int qod;
   double highest;
@@ -379,8 +379,6 @@ insert_nvt (const nvti_t *nvti, int truncate)
 
   quoted_tag = sql_quote (nvti_tag (nvti) ?  nvti_tag (nvti) : "");
 
-  quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
-
   qod_str = nvti_qod (nvti);
   qod_type = nvti_qod_type (nvti);
 
@@ -405,17 +403,13 @@ insert_nvt (const nvti_t *nvti, int truncate)
        " creation_time, modification_time, uuid, solution_type,"
        " solution_method, solution, detection, qod, qod_type)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
+       " '%s', %i, '%s', %0.1f, %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
        nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
-       nvti_category (nvti), quoted_family, quoted_cvss_base,
+       nvti_category (nvti), quoted_family, highest,
        nvti_creation_time (nvti), nvti_modification_time (nvti),
        nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
-
-  sql ("UPDATE nvts SET cvss_base = %0.1f WHERE oid = '%s';",
-       highest,
-       nvti_oid (nvti));
 
   g_free (quoted_name);
   g_free (quoted_summary);
@@ -424,7 +418,6 @@ insert_nvt (const nvti_t *nvti, int truncate)
   g_free (quoted_impact);
   g_free (quoted_cve);
   g_free (quoted_tag);
-  g_free (quoted_cvss_base);
   g_free (quoted_family);
   g_free (quoted_solution);
   g_free (quoted_solution_type);
