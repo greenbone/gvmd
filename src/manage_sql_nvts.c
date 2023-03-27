@@ -258,6 +258,86 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
+ * @brief Insert vt_refs for an NVT.
+ *
+ * @param[in]  nvti       NVT Information.
+ * @param[in]  truncate   True if NVT tables were truncated.
+ */
+static void
+insert_vt_refs (const nvti_t *nvti, int truncate)
+{
+  int i;
+
+  if (truncate == 0)
+    sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
+    {
+      vtref_t *ref;
+      gchar *quoted_type, *quoted_id, *quoted_text;
+
+      ref = nvti_vtref (nvti, i);
+      quoted_type = sql_quote (vtref_type (ref));
+      quoted_id = sql_quote (vtref_id (ref));
+      quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
+
+      sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
+           " VALUES ('%s', '%s', '%s', '%s');",
+           nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
+
+      g_free (quoted_type);
+      g_free (quoted_id);
+      g_free (quoted_text);
+    }
+}
+
+/**
+ * @brief Insert vt_severities for an NVT.
+ *
+ * @param[in]  nvti       NVT Information.
+ * @param[in]  truncate   True if NVT tables were truncated.
+ *
+ * @return Highest severity.
+ */
+static double
+insert_vt_severities (const nvti_t *nvti, int truncate)
+{
+  int i;
+  double highest;
+
+  if (truncate == 0)
+    sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
+
+  highest = 0;
+
+  for (i = 0; i < nvti_vtseverities_len (nvti); i++)
+    {
+      vtseverity_t *severity;
+      gchar *quoted_origin, *quoted_value;
+
+      severity = nvti_vtseverity (nvti, i);
+      quoted_origin = sql_quote (vtseverity_origin (severity) ?
+                                 vtseverity_origin (severity) : "");
+      quoted_value = sql_quote (vtseverity_value (severity) ?
+                                 vtseverity_value (severity) : "");
+
+      sql ("INSERT into vt_severities (vt_oid, type, origin, date, score,"
+           "                           value)"
+           " VALUES ('%s', '%s', '%s', %i, %0.1f, '%s');",
+           nvti_oid (nvti), vtseverity_type (severity),
+           quoted_origin, vtseverity_date (severity),
+           vtseverity_score (severity), quoted_value);
+      if (vtseverity_score (severity) > highest)
+        highest = vtseverity_score (severity);
+
+      g_free (quoted_origin);
+      g_free (quoted_value);
+    }
+
+  return highest;
+}
+
+/**
  * @brief Insert an NVT.
  *
  * @param[in]  nvti       NVT Information.
@@ -271,7 +351,7 @@ insert_nvt (const nvti_t *nvti, int truncate)
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
-  int qod, i;
+  int qod;
   double highest;
 
   cve = nvti_refs (nvti, "cve", "", 0);
@@ -327,56 +407,9 @@ insert_nvt (const nvti_t *nvti, int truncate)
        nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
-  if (truncate == 0)
-    sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+  insert_vt_refs(nvti, truncate);
 
-  for (i = 0; i < nvti_vtref_len (nvti); i++)
-    {
-      vtref_t *ref;
-      gchar *quoted_type, *quoted_id, *quoted_text;
-
-      ref = nvti_vtref (nvti, i);
-      quoted_type = sql_quote (vtref_type (ref));
-      quoted_id = sql_quote (vtref_id (ref));
-      quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
-
-      sql ("INSERT into vt_refs (vt_oid, type, ref_id, ref_text)"
-           " VALUES ('%s', '%s', '%s', '%s');",
-           nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
-
-      g_free (quoted_type);
-      g_free (quoted_id);
-      g_free (quoted_text);
-    }
-
-  if (truncate == 0)
-    sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
-
-  highest = 0;
-
-  for (i = 0; i < nvti_vtseverities_len (nvti); i++)
-    {
-      vtseverity_t *severity;
-      gchar *quoted_origin, *quoted_value;
-
-      severity = nvti_vtseverity (nvti, i);
-      quoted_origin = sql_quote (vtseverity_origin (severity) ?
-                                 vtseverity_origin (severity) : "");
-      quoted_value = sql_quote (vtseverity_value (severity) ?
-                                 vtseverity_value (severity) : "");
-
-      sql ("INSERT into vt_severities (vt_oid, type, origin, date, score,"
-           "                           value)"
-           " VALUES ('%s', '%s', '%s', %i, %0.1f, '%s');",
-           nvti_oid (nvti), vtseverity_type (severity),
-           quoted_origin, vtseverity_date (severity),
-           vtseverity_score (severity), quoted_value);
-      if (vtseverity_score (severity) > highest)
-        highest = vtseverity_score (severity);
-
-      g_free (quoted_origin);
-      g_free (quoted_value);
-    }
+  highest = insert_vt_severities(nvti, truncate);
 
   sql ("UPDATE nvts SET cvss_base = %0.1f WHERE oid = '%s';",
        highest,
