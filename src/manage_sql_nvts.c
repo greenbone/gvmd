@@ -340,6 +340,8 @@ insert_vt_severities (const nvti_t *nvti, int truncate)
 /**
  * @brief Insert an NVT.
  *
+ * Always called within a transaction.
+ *
  * @param[in]  nvti       NVT Information.
  * @param[in]  truncate   True if NVT tables were truncated.
  */
@@ -394,6 +396,10 @@ insert_nvt (const nvti_t *nvti, int truncate)
                   nvti_oid (nvti)))
     sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
 
+  insert_vt_refs(nvti, truncate);
+
+  highest = insert_vt_severities(nvti, truncate);
+
   sql ("INSERT into nvts (oid, name, summary, insight, affected,"
        " impact, cve, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid, solution_type,"
@@ -406,10 +412,6 @@ insert_nvt (const nvti_t *nvti, int truncate)
        nvti_creation_time (nvti), nvti_modification_time (nvti),
        nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
-
-  insert_vt_refs(nvti, truncate);
-
-  highest = insert_vt_severities(nvti, truncate);
 
   sql ("UPDATE nvts SET cvss_base = %0.1f WHERE oid = '%s';",
        highest,
