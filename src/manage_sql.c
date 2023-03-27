@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2022 Greenbone Networks GmbH
+/* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -28858,6 +28858,25 @@ report_host_ip (const char *host)
                     quoted_host);
   g_free (quoted_host);
   return ret;
+}
+
+/**
+ * @brief Get the hostname of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated hostname if available, else NULL.
+ */
+gchar*
+report_host_hostname (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'hostname'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
 }
 
 /**

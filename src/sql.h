@@ -1,4 +1,4 @@
-/* Copyright (C) 2012-2022 Greenbone Networks GmbH
+/* Copyright (C) 2012-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -93,9 +93,6 @@ sql_error (char *sql, ...);
 
 int
 sql_giveup (char *sql, ...);
-
-void
-sql_quiet (char *sql, ...);
 
 double
 sql_double (char *sql, ...);

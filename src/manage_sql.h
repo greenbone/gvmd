@@ -1,4 +1,4 @@
-/* Copyright (C) 2010-2022 Greenbone Networks GmbH
+/* Copyright (C) 2010-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -294,6 +294,8 @@ host_nthlast_report_host (const char *, report_host_t *, int);
 
 char*
 report_host_ip (const char *);
+
+gchar *report_host_hostname (report_host_t);
 
 void trim_report (report_t);
 

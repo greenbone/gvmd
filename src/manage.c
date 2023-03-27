@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2022 Greenbone Networks GmbH
+/* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -2990,9 +2990,19 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
 
           if (prognosis_report_host)
             {
+              gchar *hostname;
+
               /* Complete the report_host. */
 
               report_host_set_end_time (prognosis_report_host, time (NULL));
+
+              hostname = report_host_hostname (report_host);
+              if (hostname) {
+                insert_report_host_detail (report, ip, "cve", "",
+                                           "CVE Scanner", "hostname", hostname);
+                g_free(hostname);
+              }
+
               insert_report_host_detail (report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
               update_report_modification_time (report);
