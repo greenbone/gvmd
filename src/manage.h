@@ -3453,10 +3453,10 @@ int
 vuln_count (const get_data_t*);
 
 void
-manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **);
+manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **, int *);
 
 void
-manage_set_ldap_info (int, gchar *, gchar *, int, gchar *);
+manage_set_ldap_info (int, gchar *, gchar *, int, gchar *, int);
 
 void
 manage_get_radius_info (int *, char **, char **);
