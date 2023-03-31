@@ -261,9 +261,10 @@ find_nvt (const char* oid, nvt_t* nvt)
  * @brief Insert an NVT.
  *
  * @param[in]  nvti       NVT Information.
+ * @param[in]  truncate   True if NVT tables were truncated.
  */
 static void
-insert_nvt (const nvti_t *nvti)
+insert_nvt (const nvti_t *nvti, int truncate)
 {
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
@@ -1482,12 +1483,14 @@ nvti_from_vt (entity_t vt)
  *
  * @param[in]  get_vts_response      OSP GET_VTS response.
  * @param[in]  scanner_feed_version  Version of feed from scanner.
+ * @param[in]  truncate              Whether to truncate the NVT tables first.
  *
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 static int
 update_nvts_from_vts (entity_t *get_vts_response,
-                      const gchar *scanner_feed_version)
+                      const gchar *scanner_feed_version,
+                      int truncate)
 {
   entity_t vts, vt;
   entities_t children;
@@ -1512,11 +1515,15 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   sql_begin_immediate ();
 
-  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
-               "                  FROM meta"
-               "                  WHERE name = 'checked_preferences'),"
-               "                 0);")
-      == 0)
+  if (truncate) {
+    sql ("TRUNCATE nvts;");
+    sql ("TRUNCATE nvt_preferences;");
+  }
+  else if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+                    "                  FROM meta"
+                    "                  WHERE name = 'checked_preferences'),"
+                    "                 0);")
+           == 0)
     /* We're in the first NVT sync after migrating preference names.
      *
      * If a preference was removed from an NVT then the preference will be in
@@ -1544,7 +1551,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
       else
         count_modified_vts += 1;
 
-      insert_nvt (nvti);
+      insert_nvt (nvti, truncate);
 
       preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
@@ -1788,12 +1795,13 @@ DEF_ACCESS (nvt_severity_iterator_value, 4);
  * @param[in]  update_socket         Socket to use to contact scanner.
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
+ * @param[in]  truncate              Whether to truncate the NVT tables first.
  *
  * @return 0 success, 1 VT integrity check failed, -1 error.
  */
 static int
 update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
-                      gchar *scanner_feed_version)
+                      gchar *scanner_feed_version, int truncate)
 {
   osp_connection_t *connection;
   GSList *scanner_prefs;
@@ -1802,13 +1810,16 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   time_t old_nvts_last_modified;
   int ret;
 
-  if (db_feed_version == NULL
+  if (truncate
+      || db_feed_version == NULL
       || strcmp (db_feed_version, "") == 0
       || strcmp (db_feed_version, "0") == 0)
     old_nvts_last_modified = 0;
   else
     old_nvts_last_modified
       = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
+
+  /* Update NVTs. */
 
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
@@ -1832,12 +1843,13 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   g_free (get_vts_opts.filter);
 
   osp_connection_close (connection);
-  ret = update_nvts_from_vts (&vts, scanner_feed_version);
+  ret = update_nvts_from_vts (&vts, scanner_feed_version, truncate);
   free_entity (vts);
   if (ret)
     return ret;
 
   /* Update scanner preferences */
+
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
@@ -2065,7 +2077,7 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
               sql_int ("SELECT count (*) FROM nvts;"));
 
       ret = update_nvt_cache_osp (update_socket, db_feed_version,
-                                  scanner_feed_version);
+                                  scanner_feed_version, 0);
 
       g_free (db_feed_version);
       g_free (scanner_feed_version);
@@ -2142,13 +2154,9 @@ update_or_rebuild_nvts (int update)
   osp_connection_close (connection);
 
   if (update == 0)
-    {
-      sql ("TRUNCATE nvts;");
-      sql ("TRUNCATE nvt_preferences;");
-      set_nvts_feed_version ("0");
-    }
+    set_nvts_feed_version ("0");
 
-  ret = update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version);
+  ret = update_nvt_cache_osp (osp_update_socket, NULL, scanner_feed_version, update == 0);
   if (ret)
     {
       return -1;
