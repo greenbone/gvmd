@@ -1864,6 +1864,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 
   /* Update NVTs. */
 
+  g_info ("Updating VTs in database ... fetching VTs.");
+
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
     {
@@ -1885,6 +1887,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     }
   g_free (get_vts_opts.filter);
 
+  g_info ("Updating VTs in database ... %s DB.", truncate ? "adding to" : "updating");
+
   osp_connection_close (connection);
   ret = update_nvts_from_vts (&vts, scanner_feed_version, truncate);
   free_entity (vts);
@@ -1892,6 +1896,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     return ret;
 
   /* Update scanner preferences */
+
+  g_info ("Updating VTs in database ... fetching scanner prefs");
 
   connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
   if (!connection)
@@ -1913,6 +1919,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
       GString *prefs_sql;
       GSList *point;
       int first;
+
+      g_info ("Updating VTs in database ... inserting scanner prefs");
 
       point = scanner_prefs;
       first = 1;
@@ -1952,6 +1960,8 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     }
 
   /* Update the cache of report counts. */
+
+  g_info ("Updating VTs in database ... updating counts");
 
   reports_clear_count_cache_dynamic ();
 
