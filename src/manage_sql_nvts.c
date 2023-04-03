@@ -51,6 +51,15 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Headers from backend specific manage_xxx.c file. */
+
+void
+create_indexes_nvt ();
+
+void
+drop_indexes_nvt ();
+
+
 /* NVT related global options */
 
 /**
@@ -1547,6 +1556,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   sql_begin_immediate ();
 
   if (truncate) {
+    drop_indexes_nvt ();
     sql ("TRUNCATE nvts;");
     sql ("TRUNCATE nvt_preferences;");
   }
@@ -1613,6 +1623,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
           count_new_vts, count_modified_vts);
 
+  create_indexes_nvt ();
   sql_commit ();
 
   if (osp_vt_hash && strcmp (osp_vt_hash, ""))

@@ -1748,6 +1748,41 @@ create_view_vulns ()
 #undef VULNS_RESULTS_WHERE
 
 /**
+ * @brief Create indexes for nvt table.
+ */
+void
+create_indexes_nvt ()
+{
+  sql ("SELECT create_index ('host_identifiers_by_host',"
+       "                     'host_identifiers', 'host');");
+  sql ("SELECT create_index ('host_identifiers_by_value',"
+       "                     'host_identifiers', 'value');");
+
+  sql ("SELECT create_index ('host_max_severities_by_host',"
+       "                     'host_max_severities', 'host');");
+  sql ("SELECT create_index ('host_oss_by_host',"
+       "                     'host_oss', 'host');");
+
+  sql ("SELECT create_index ('nvt_selectors_by_family_or_nvt',"
+       "                     'nvt_selectors',"
+       "                     'type, family_or_nvt');");
+  sql ("SELECT create_index ('nvt_selectors_by_name',"
+       "                     'nvt_selectors',"
+       "                     'name');");
+}
+
+/**
+ * @brief Drop indexes for nvt table.
+ */
+void
+drop_indexes_nvt ()
+{
+  sql ("DROP INDEX host_identifiers_by_host, host_max_severities_by_host,"
+       "           host_oss_by_host, nvt_selectors_by_family_or_nvt,"
+       "           nvt_selectors_by_name;");
+}
+
+/**
  * @brief Create all tables.
  */
 void
@@ -2858,22 +2893,8 @@ create_tables ()
   sql ("SELECT create_index ('host_details_by_host',"
        "                     'host_details', 'host');");
 
-  sql ("SELECT create_index ('host_identifiers_by_host',"
-       "                     'host_identifiers', 'host');");
-  sql ("SELECT create_index ('host_identifiers_by_value',"
-       "                     'host_identifiers', 'value');");
+  create_indexes_nvt ();
 
-  sql ("SELECT create_index ('host_max_severities_by_host',"
-       "                     'host_max_severities', 'host');");
-  sql ("SELECT create_index ('host_oss_by_host',"
-       "                     'host_oss', 'host');");
-
-  sql ("SELECT create_index ('nvt_selectors_by_family_or_nvt',"
-       "                     'nvt_selectors',"
-       "                     'type, family_or_nvt');");
-  sql ("SELECT create_index ('nvt_selectors_by_name',"
-       "                     'nvt_selectors',"
-       "                     'name');");
   sql ("SELECT create_index ('nvts_by_creation_time',"
        "                     'nvts',"
        "                     'creation_time');");
