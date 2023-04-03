@@ -1676,20 +1676,28 @@ update_nvts_from_vts (entity_t *get_vts_response,
     g_string_free(batch_sql_nvts, TRUE);
   }
 
+  g_info ("Updating VTs in database ... refs");
+
   if (batch_sql_refs) {
     sql("%s", batch_sql_refs->str);
     g_string_free(batch_sql_refs, TRUE);
   }
+
+  g_info ("Updating VTs in database ... sevs");
 
   if (batch_sql_sevs) {
     sql("%s", batch_sql_sevs->str);
     g_string_free(batch_sql_sevs, TRUE);
   }
 
+  g_info ("Updating VTs in database ... prefs");
+
   if (batch_sql_prefs) {
     sql("%s", batch_sql_prefs->str);
     g_string_free(batch_sql_prefs, TRUE);
   }
+
+  g_info ("Updating VTs in database ... setting time");
 
   set_nvts_check_time (count_new_vts, count_modified_vts);
 
@@ -1701,10 +1709,13 @@ update_nvts_from_vts (entity_t *get_vts_response,
                __func__);
   update_all_config_caches ();
 
+  g_info ("Updating VTs in database ... creating indexes");
+
+  create_indexes_nvt ();
+
   g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
           count_new_vts, count_modified_vts);
 
-  create_indexes_nvt ();
   sql_commit ();
 
   if (osp_vt_hash && strcmp (osp_vt_hash, ""))
