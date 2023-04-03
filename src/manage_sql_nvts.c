@@ -1180,18 +1180,19 @@ insert_nvt_preference (gpointer nvt_preference, gpointer truncated)
     return;
 
   preference = (preference_t*) nvt_preference;
-  manage_nvt_preference_add (preference->name, preference->value);
+  manage_nvt_preference_add (preference->name, preference->value, GPOINTER_TO_INT(truncated));
 }
 
 /**
  * @brief Inserts NVT preferences in DB from a list of nvt_preference_t structures.
  *
- * @param[in]  nvt_preferences_list     List of nvts to be inserted.
+ * @param[in]  nvt_preferences_list  List of nvts to be inserted.
+ * @param[in]  truncated             Whether nvt_preferences was truncated beforehand.
  */
 static void
-insert_nvt_preferences_list (GList *nvt_preferences_list)
+insert_nvt_preferences_list (GList *nvt_preferences_list, int truncated)
 {
-  g_list_foreach (nvt_preferences_list, insert_nvt_preference, NULL);
+  g_list_foreach (nvt_preferences_list, insert_nvt_preference, GINT_TO_POINTER(truncated));
 }
 
 /**
@@ -1647,7 +1648,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
       if (truncate == 0)
         sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
              nvti_oid (nvti));
-      insert_nvt_preferences_list (preferences);
+      insert_nvt_preferences_list (preferences, truncate);
       g_list_free_full (preferences, g_free);
 
       nvti_free (nvti);
