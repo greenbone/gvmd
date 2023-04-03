@@ -17031,7 +17031,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
     {
       ldap_auth_info_t info;
-      int allow_plaintext;
+      int allow_plaintext, ldaps_only;
       gchar *authdn, *host, *cacert;
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
@@ -17042,8 +17042,9 @@ authenticate_any_method (const gchar *username, const gchar *password,
           return 0;
         }
 
-      manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext, &cacert);
-      info = ldap_auth_info_new (host, authdn, allow_plaintext);
+      manage_get_ldap_info (NULL, &host, &authdn, &allow_plaintext, &cacert,
+                            &ldaps_only);
+      info = ldap_auth_info_new_2 (host, authdn, allow_plaintext, ldaps_only);
       g_free (host);
       g_free (authdn);
       ret = ldap_connect_authenticate (username, password, info, cacert);
@@ -28875,6 +28876,44 @@ report_host_hostname (report_host_t report_host)
   return sql_string ("SELECT value FROM report_host_details"
                      " WHERE report_host = %llu"
                      " AND name = 'hostname'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
+ * @brief Get the best_os_cpe of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated best_os_cpe if available, else NULL.
+ */
+gchar*
+report_host_best_os_cpe (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'best_os_cpe'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
+ * @brief Get the best_os_txt of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated best_os_txt if available, else NULL.
+ */
+gchar*
+report_host_best_os_txt (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'best_os_txt'"
                      " ORDER BY id DESC LIMIT 1;",
                      report_host);
 }
@@ -53273,15 +53312,16 @@ vulns_extra_where ()
 /**
  * @brief Get LDAP info.
  *
- * @param[out]  enabled    Whether LDAP is enabled.
- * @param[out]  host       Freshly allocated host.
- * @param[out]  authdn     Freshly allocated Auth DN.
- * @param[out]  plaintext  Whether plaintext auth is allowed.
- * @param[out]  cacert     CA cert if there's one, else NULL.
+ * @param[out]  enabled       Whether LDAP is enabled.
+ * @param[out]  host          Freshly allocated host.
+ * @param[out]  authdn        Freshly allocated Auth DN.
+ * @param[out]  plaintext     Whether plaintext auth is allowed.
+ * @param[out]  cacert        CA cert if there's one, else NULL.
+ * @param[out]  ldaps_only    Whether to try LDAPS auth only.
  */
 void
 manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
-                      int *plaintext, gchar **cacert)
+                      int *plaintext, gchar **cacert, int *ldaps_only)
 {
   if (enabled)
     *enabled = ldap_auth_enabled ();
@@ -53304,6 +53344,12 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
 
   *cacert = sql_string ("SELECT value FROM meta"
                         " WHERE name = 'ldap_cacert';");
+
+  if (sql_int ("SELECT count(*) FROM meta WHERE name = 'ldap_ldaps_only';"))
+    *ldaps_only = sql_int ("SELECT value FROM meta"
+                             " WHERE name = 'ldap_ldaps_only';");
+  else
+    *ldaps_only = 0;
 }
 
 /**
@@ -53311,14 +53357,16 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  *
  * @param[in]  enabled    Whether LDAP is enabled.  -1 to keep current value.
  * @param[in]  host       LDAP host.  NULL to keep current value.
- * @param[in]  authdn     Auth DN.  NULL to keep current value.
+ * @param[in]  authdn           Auth DN.  NULL to keep current value.
  * @param[in]  allow_plaintext  Whether plaintext auth is allowed.  -1 to
  *                              keep current value.
- * @param[in]  cacert     CA certificate.  NULL to keep current value.
+ * @param[in]  cacert           CA certificate.  NULL to keep current value.
+ * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
+ *                              keep current value.
  */
 void
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
-                      int allow_plaintext, gchar *cacert)
+                      int allow_plaintext, gchar *cacert, int ldaps_only)
 {
   gchar *quoted;
 
@@ -53362,6 +53410,13 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
       sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
            quoted);
       g_free (quoted);
+    }
+
+  if (ldaps_only >= 0)
+    {
+      sql ("DELETE FROM meta WHERE name LIKE 'ldap_ldaps_only';");
+      sql ("INSERT INTO meta (name, value) VALUES ('ldap_ldaps_only', %i);",
+           ldaps_only);
     }
 
   sql_commit ();
