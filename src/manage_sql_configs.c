@@ -1697,15 +1697,19 @@ check_config_families ()
  * @param[in]  name       The name of the preference.
  * @param[in]  value      The value of the preference.
  * @param[in]  truncated  Whether nvt_preferences was truncated beforehand.
+ * @param[in]  batch      Batch SQL.
  */
 void
-manage_nvt_preference_add (const char* name, const char* value, int truncated)
+manage_nvt_preference_add (const char* name, const char* value, int truncated,
+                           GString **batch)
 {
   gchar* quoted_name = sql_quote (name);
   gchar* quoted_value = sql_quote (value);
 
   if (strcmp (name, "port_range"))
     {
+      int first;
+
       if ((truncated == 0)
           && sql_int ("SELECT EXISTS"
                       "  (SELECT * FROM nvt_preferences"
@@ -1713,9 +1717,19 @@ manage_nvt_preference_add (const char* name, const char* value, int truncated)
                       quoted_name))
         sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
 
-      sql ("INSERT into nvt_preferences (name, value)"
-           " VALUES ('%s', '%s');",
-           quoted_name, quoted_value);
+      first = 0;
+      if (*batch == NULL)
+        {
+          first = 1;
+          *batch = g_string_new ("INSERT into nvt_preferences (name, value)"
+                                 " VALUES ");
+        }
+
+      g_string_append_printf
+        (*batch,
+         "%s('%s', '%s')",
+         first ? "" : ", ",
+         quoted_name, quoted_value);
     }
 
   g_free (quoted_name);

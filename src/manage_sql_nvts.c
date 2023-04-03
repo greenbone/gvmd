@@ -1172,15 +1172,18 @@ family_count ()
  * @param[in] truncated       Whether nvt_preferences was truncated beforehand.
  */
 static void
-insert_nvt_preference (gpointer nvt_preference, gpointer truncated)
+insert_nvt_preference (gpointer nvt_preference, gpointer argsp)
 {
+  struct { int truncated; GString **batch; } *args;
   preference_t *preference;
 
   if (nvt_preference == NULL)
     return;
 
+  args = argsp;
+
   preference = (preference_t*) nvt_preference;
-  manage_nvt_preference_add (preference->name, preference->value, GPOINTER_TO_INT(truncated));
+  manage_nvt_preference_add (preference->name, preference->value, args->truncated, args->batch);
 }
 
 /**
@@ -1188,11 +1191,17 @@ insert_nvt_preference (gpointer nvt_preference, gpointer truncated)
  *
  * @param[in]  nvt_preferences_list  List of nvts to be inserted.
  * @param[in]  truncated             Whether nvt_preferences was truncated beforehand.
+ * @param[in]  batch                 Batch SQL.
  */
 static void
-insert_nvt_preferences_list (GList *nvt_preferences_list, int truncated)
+insert_nvt_preferences_list (GList *nvt_preferences_list, int truncated, GString **batch)
 {
-  g_list_foreach (nvt_preferences_list, insert_nvt_preference, GINT_TO_POINTER(truncated));
+  struct { int truncated; GString **batch; } args;
+
+  args.truncated = truncated;
+  args.batch = batch;
+   
+  g_list_foreach (nvt_preferences_list, insert_nvt_preference, &args);
 }
 
 /**
@@ -1578,7 +1587,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
   const char *osp_vt_hash;
-  GString *batch_sql_nvts, *batch_sql_refs, *batch_sql_sevs;
+  GString *batch_sql_nvts, *batch_sql_refs, *batch_sql_sevs, *batch_sql_prefs;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1623,6 +1632,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   batch_sql_nvts = NULL;
   batch_sql_refs = NULL;
   batch_sql_sevs = NULL;
+  batch_sql_prefs = NULL;
 
   children = vts->entities;
   while ((vt = first_entity (children)))
@@ -1648,17 +1658,18 @@ update_nvts_from_vts (entity_t *get_vts_response,
       if (truncate == 0)
         sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
              nvti_oid (nvti));
-      insert_nvt_preferences_list (preferences, truncate);
+      insert_nvt_preferences_list (preferences, truncate, &batch_sql_prefs);
       g_list_free_full (preferences, g_free);
 
       nvti_free (nvti);
       children = next_entities (children);
     }
 
-  g_info ("Updating VTs in database ... batch_sql_nvts %zu bytes, batch_sql_refs %zu bytes, batch_sql_sevs %zu bytes",
+  g_info ("Updating VTs in database ... batch_sql_nvts %zu bytes, batch_sql_refs %zu bytes, batch_sql_sevs %zu bytes, batch_sql_prefs %zu bytes",
           batch_sql_nvts ? strlen(batch_sql_nvts->str) : 0,
           batch_sql_refs ? strlen(batch_sql_refs->str) : 0,
-          batch_sql_sevs ? strlen(batch_sql_sevs->str) : 0);
+          batch_sql_sevs ? strlen(batch_sql_sevs->str) : 0,
+          batch_sql_prefs ? strlen(batch_sql_prefs->str) : 0);
 
   if (batch_sql_nvts) {
     sql("%s", batch_sql_nvts->str);
@@ -1673,6 +1684,11 @@ update_nvts_from_vts (entity_t *get_vts_response,
   if (batch_sql_sevs) {
     sql("%s", batch_sql_sevs->str);
     g_string_free(batch_sql_sevs, TRUE);
+  }
+
+  if (batch_sql_prefs) {
+    sql("%s", batch_sql_prefs->str);
+    g_string_free(batch_sql_prefs, TRUE);
   }
 
   set_nvts_check_time (count_new_vts, count_modified_vts);
