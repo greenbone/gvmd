@@ -353,17 +353,29 @@ insert_vt_severities (const nvti_t *nvti, int truncate)
  *
  * @param[in]  nvti       NVT Information.
  * @param[in]  truncate   True if NVT tables were truncated.
+ * @param[in]  batch      Batch SQL.
  */
 static void
-insert_nvt (const nvti_t *nvti, int truncate)
+insert_nvt (const nvti_t *nvti, int truncate, GString **batch)
 {
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
   gchar *quoted_qod_type, *quoted_family;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
-  int qod;
+  int qod, first;
   double highest;
+
+  first = 0;
+  if (*batch == NULL)
+    {
+      first = 1;
+      *batch = g_string_new ("INSERT into nvts (oid, name, summary, insight, affected,"
+                             " impact, cve, tag, category, family, cvss_base,"
+                             " creation_time, modification_time, uuid, solution_type,"
+                             " solution_method, solution, detection, qod, qod_type)"
+                             " VALUES");
+    }
 
   cve = nvti_refs (nvti, "cve", "", 0);
 
@@ -405,20 +417,19 @@ insert_nvt (const nvti_t *nvti, int truncate)
 
   insert_vt_refs(nvti, truncate);
 
-  highest = insert_vt_severities(nvti, truncate);
+  highest = insert_vt_severities (nvti, truncate);
 
-  sql ("INSERT into nvts (oid, name, summary, insight, affected,"
-       " impact, cve, tag, category, family, cvss_base,"
-       " creation_time, modification_time, uuid, solution_type,"
-       " solution_method, solution, detection, qod, qod_type)"
-       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', %0.1f, %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
-       nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
-       quoted_affected, quoted_impact, quoted_cve, quoted_tag,
-       nvti_category (nvti), quoted_family, highest,
-       nvti_creation_time (nvti), nvti_modification_time (nvti),
-       nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
-       quoted_solution, quoted_detection, qod, quoted_qod_type);
+  g_string_append_printf
+    (*batch,
+     "%s('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+     " '%s', %i, '%s', %0.1f, %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s')",
+     (first ? "" : ", "),
+     nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
+     quoted_affected, quoted_impact, quoted_cve, quoted_tag,
+     nvti_category (nvti), quoted_family, highest,
+     (int) nvti_creation_time (nvti), (int) nvti_modification_time (nvti),
+     nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
+     quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   g_free (quoted_name);
   g_free (quoted_summary);
@@ -1538,6 +1549,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
   const char *osp_vt_hash;
+  GString *batch_sql_nvts;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1579,6 +1591,8 @@ update_nvts_from_vts (entity_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
+  batch_sql_nvts = NULL;
+
   children = vts->entities;
   while ((vt = first_entity (children)))
     {
@@ -1592,7 +1606,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
       else
         count_modified_vts += 1;
 
-      insert_nvt (nvti, truncate);
+      insert_nvt (nvti, truncate, &batch_sql_nvts);
 
       preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
@@ -1609,6 +1623,11 @@ update_nvts_from_vts (entity_t *get_vts_response,
       nvti_free (nvti);
       children = next_entities (children);
     }
+
+  if (batch_sql_nvts) {
+    sql("%s", batch_sql_nvts->str);
+    g_string_free(batch_sql_nvts, TRUE);
+  }
 
   set_nvts_check_time (count_new_vts, count_modified_vts);
 
