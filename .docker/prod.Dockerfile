@@ -38,6 +38,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # dpkg
 # fakeroot
 
+# Windows Executable (.exe) credential installer
+# nsis
+
 # signature verification
 # gnupg
 
@@ -68,6 +71,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     dpkg \
     fakeroot \
+    nsis \
     gosu \
     gnupg \
     gpgsm \
