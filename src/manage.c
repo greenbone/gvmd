@@ -5315,18 +5315,6 @@ set_schedule_timeout (int new_timeout)
 void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 /**
- * @brief Return the path to the CPE dictionary.
- *
- * @return A dynamically allocated string (to be g_free'd) containing the
- *         path to the desired file.
- */
-static char *
-get_cpe_filename ()
-{
-  return g_strdup (CPE_DICT_FILENAME);
-}
-
-/**
  * @brief Compute the filename where a given CVE can be found.
  *
  * @param[in] item_id   Full CVE identifier ("CVE-YYYY-ZZZZ").
@@ -5884,15 +5872,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
 
   if (g_ascii_strcasecmp ("CPE", type) == 0)
     {
-      fname = get_cpe_filename ();
-      if (fname)
-        {
-          gchar *cpe;
-          cpe = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
-          g_free (fname);
-          if (cpe)
-            *result = cpe;
-        }
+      *result = cpe_details_xml(uid);
     }
   else if (g_ascii_strcasecmp ("CVE", type) == 0)
     {

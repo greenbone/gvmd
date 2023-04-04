@@ -13122,7 +13122,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
           manage_read_info (get_info_data->type, nonconst_id,
                             nonconst_name, &raw_data);
           g_string_append_printf (result, "<raw_data>%s</raw_data>",
-                                  raw_data);
+                                  raw_data ? raw_data : "");
           g_free(nonconst_id);
           g_free(nonconst_name);
           g_free(raw_data);
