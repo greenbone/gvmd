@@ -3275,6 +3275,11 @@ manage_db_init (const gchar *name)
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
 
+      sql ("CREATE TABLE scap2.cpe_details"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe_id text,"
+           "  details_xml text);");
+
       sql ("CREATE TABLE scap2.affected_products"
            " (cve INTEGER,"
            "  cpe INTEGER);");
@@ -3313,6 +3318,9 @@ manage_db_add_constraints (const gchar *name)
 
       sql ("ALTER TABLE scap2.cpes"
            " ADD UNIQUE (uuid);");
+
+      sql ("ALTER TABLE scap2.cpe_details"
+           " ADD UNIQUE (cpe_id);");
 
       sql ("ALTER TABLE scap2.affected_products"
            " ALTER cve SET NOT NULL,"
