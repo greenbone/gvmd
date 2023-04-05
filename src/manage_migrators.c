@@ -2996,6 +2996,38 @@ migrate_250_to_251 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 251 to version 252.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_251_to_252 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 218. */
+
+  if (manage_db_version () != 251)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE IF EXISTS results ADD COLUMN hash_value text;");
+
+  /* Set the database version to 252. */
+
+  set_db_version (252);
+
+  sql_commit ();
+
+  return 0;
+}
+
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3053,6 +3085,7 @@ static migrator_t database_migrators[] = {
   {249, migrate_248_to_249},
   {250, migrate_249_to_250},
   {251, migrate_250_to_251},
+  {252, migrate_251_to_252},
   /* End marker. */
   {-1, NULL}};
 

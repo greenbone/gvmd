@@ -19067,14 +19067,15 @@ result_t
 make_osp_result (task_t task, const char *host, const char *hostname,
                  const char *nvt, const char *type, const char *description,
                  const char *port, const char *severity, int qod,
-                 const char *path)
+                 const char *path, const char *hash_value)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port, *quoted_hostname, *quoted_path;
+  char *quoted_port, *quoted_hostname, *quoted_path, *quoted_hash_value;
 
   assert (task);
   assert (type);
 
+  quoted_hash_value = sql_quote(hash_value ?: "");
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
@@ -19111,14 +19112,14 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port, nvt,"
        "  nvt_version, severity, type, qod, qod_type, description,"
-       "  path, uuid, result_nvt)"
+       "  path, uuid, result_nvt, hash_value)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
        "         '%s', '%s', '%s', %d, '', '%s',"
        "         '%s', make_uuid (),"
-       "         (SELECT id FROM result_nvts WHERE nvt = '%s'));",
+       "         (SELECT id FROM result_nvts WHERE nvt = '%s'), '%s');",
        task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
        nvt_revision ?: "", result_severity ?: "0",
-       type, qod, quoted_desc, quoted_path, quoted_nvt);
+       type, qod, quoted_desc, quoted_path, quoted_nvt, quoted_hash_value);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
@@ -19126,6 +19127,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   g_free (quoted_port);
   g_free (quoted_hostname);
   g_free (quoted_path);
+  g_free (quoted_hash_value);
 
   return sql_last_insert_id ();
 }
@@ -29006,9 +29008,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       result_t result;
       const char *type, *name, *severity, *host, *hostname, *test_id, *port;
       const char *qod, *path;
+      GString *entity_string;
       char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
       entity_t r_entity = results->data;
       int qod_int;
+      gchar *entity_hash_value = NULL;
 
       if (strcmp (entity_name (r_entity), "result"))
         {
@@ -29038,12 +29042,29 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           continue;
         }
 
+      entity_string = g_string_new ("");
+      print_entity_to_string (r_entity, entity_string);
+      entity_hash_value = get_hash_value_from_string (entity_string->str);
+      g_string_free(entity_string, TRUE);
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM results"
+                   "  WHERE report = %llu and hash_value = '%s');",
+		   report, entity_hash_value))
+        {
+          g_warning ("Captured duplicate result, report: %llu, hash value: %s",
+                     report, entity_hash_value);
+          g_free (entity_hash_value);
+          results = next_entities (results);
+          continue;
+        }
+
       /* Add report host if it doesn't exist. */
       manage_report_host_add (report, host, start_time, end_time);
       if (!strcmp (type, "Host Detail"))
         {
           insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
                                      name, entity_text (r_entity));
+          g_free (entity_hash_value);
           results = next_entities (results);
           continue;
         }
@@ -29093,12 +29114,14 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
                                     port ?: "",
                                     severity_str ?: severity,
                                     qod_int,
-                                    path);
+                                    path,
+                                    entity_hash_value);
           g_array_append_val (results_array, result);
         }
       g_free (nvt_id);
       g_free (desc);
       g_free (severity_str);
+      g_free (entity_hash_value);
       results = next_entities (results);
     }
 
