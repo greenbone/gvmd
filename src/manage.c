@@ -1791,7 +1791,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                              (task, "", "", "",
                               threat_message_type ("Error"),
                               "Erroneous scan progress value", "", "",
-                              QOD_DEFAULT, NULL);
+                              QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                            key_priv);
@@ -1824,7 +1824,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                  (task, "", "", "",
                                   threat_message_type ("Error"),
                                   "Erroneous scan progress value", "", "",
-                                  QOD_DEFAULT, NULL);
+                                  QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
               rc = -1;
               break;
@@ -1854,7 +1854,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     (task, "", "", "",
                      threat_message_type ("Error"),
                      "Task interrupted unexpectedly", "", "",
-                     QOD_DEFAULT, NULL);
+                     QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
@@ -1877,7 +1877,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     (task, "", "", "",
                      threat_message_type ("Error"),
                      "Scan stopped unexpectedly by the server", "", "",
-                     QOD_DEFAULT, NULL);
+                     QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
@@ -2748,7 +2748,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       g_warning ("OSP start_scan %s: %s", report_id, error);
       result = make_osp_result (task, "", "", "",
                                 threat_message_type ("Error"),
-                                error, "", "", QOD_DEFAULT, NULL);
+                                error, "", "", QOD_DEFAULT, NULL, NULL);
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
