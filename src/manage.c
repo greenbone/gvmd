@@ -2323,7 +2323,7 @@ add_user_scan_preferences (GHashTable *scanner_options)
  *                          2 continue if stopped else start from beginning.
  * @param[out]  error       Error return.
  *
- * @return 0 success, -1 if scanner is down.
+ * @return 0 success, -1 if error.
  */
 static int
 launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
@@ -2340,7 +2340,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
-  int ret;
+  int ret, empty;
   config_t config;
   iterator_t scanner_prefs_iter, families, prefs;
   osp_start_scan_opts_t start_scan_opts;
@@ -2438,6 +2438,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
+  empty = 1;
   while (next (&families))
     {
       const char *family = family_iterator_name (&families);
@@ -2450,6 +2451,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
               const char *oid;
               osp_vt_single_t *new_vt;
 
+              empty = 0;
               oid = nvt_iterator_oid (&nvts);
               new_vt = osp_vt_single_new (oid);
 
@@ -2460,6 +2462,15 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  if (empty) {
+    if (error)
+      *error = g_strdup ("Exiting because VT list is empty");
+    g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
+    // Credentials are freed with target
+    g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+    return -1;
+  }
 
   /* Setup general scanner preferences */
   scanner_options
