@@ -580,6 +580,25 @@ DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
  */
 DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
+/**
+ * @brief Get the XML details / raw data for a given CPE ID.
+ * 
+ * @param[in]  cpe_id  ID of the CPE to get the raw XML of.
+ * 
+ * @return newly allocated XML details string
+ */
+char *
+cpe_details_xml (const char *cpe_id) {
+  gchar *quoted_cpe_id, *details_xml;
+  quoted_cpe_id = sql_quote (cpe_id);
+  details_xml = sql_string ("SELECT details_xml"
+                            " FROM scap.cpe_details"
+                            " WHERE cpe_id = '%s'",
+                            cpe_id);
+  g_free (quoted_cpe_id);
+  return details_xml;
+}
+
 
 /* CVE data. */
 
@@ -1841,6 +1860,20 @@ update_cert_bund_advisories (int last_cert_update)
 
 /* SCAP update: CPEs. */
 
+static gchar *
+decode_and_quote_cpe_name (const char *name)
+{
+  gchar *name_decoded, *name_tilde, *quoted_name;
+
+  name_decoded = g_uri_unescape_string (name, NULL);
+  name_tilde = string_replace (name_decoded,
+                               "~", "%7E", "%7e", NULL);
+  g_free (name_decoded);
+  quoted_name = sql_quote (name_tilde);
+  g_free (name_tilde);
+  return quoted_name;
+}
+
 /**
  * @brief Insert a SCAP CPE.
  *
@@ -1857,7 +1890,6 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
 {
   gchar *name, *status, *deprecated, *nvd_id;
   gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
-  gchar *name_decoded, *name_tilde;
   element_t title;
   int first;
 
@@ -1928,13 +1960,8 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
       title = element_next (title);
     }
 
-  name_decoded = g_uri_unescape_string (name, NULL);
+  quoted_name = decode_and_quote_cpe_name (name);
   g_free (name);
-  name_tilde = string_replace (name_decoded,
-                               "~", "%7E", "%7e", NULL);
-  g_free (name_decoded);
-  quoted_name = sql_quote (name_tilde);
-  g_free (name_tilde);
   quoted_status = sql_quote (status);
   g_free (status);
   quoted_nvd_id = sql_quote (nvd_id);
@@ -1966,6 +1993,51 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
 }
 
 /**
+ * @brief Insert a SCAP CPE.
+ *
+ * @param[in]  inserts            Pointer to SQL buffer.
+ * @param[in]  cpe_item           CPE item XML element.
+ * @param[in]  item_metadata      Item's metadata element.
+ * @param[in]  modification_time  Modification time of item.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+insert_scap_cpe_details (inserts_t *inserts, element_t cpe_item)
+{
+  gchar *name, *details_xml, *quoted_name, *quoted_details_xml;
+  int first;
+
+  assert (inserts);
+
+  name = element_attribute (cpe_item, "name");
+  if (name == NULL)
+    {
+      g_warning ("%s: name missing", __func__);
+      return -1;
+    }
+
+  quoted_name = decode_and_quote_cpe_name (name);
+  g_free (name);
+
+  details_xml = element_to_string (cpe_item);
+  quoted_details_xml = sql_quote (details_xml);
+  g_free (details_xml);
+
+  first = inserts_check_size (inserts);
+
+  g_string_append_printf (inserts->statement,
+                          "%s ('%s', '%s')",
+                          first ? "" : ",",
+                          quoted_name,
+                          quoted_details_xml);
+
+  inserts->current_chunk_size++;
+
+  return 0;
+}
+
+/**
  * @brief Update SCAP CPEs from a file.
  *
  * @param[in]  path             Path to file.
@@ -1979,7 +2051,7 @@ update_scap_cpes_from_file (const gchar *path)
   element_t element, cpe_list, cpe_item;
   gchar *xml;
   gsize xml_len;
-  inserts_t inserts;
+  inserts_t inserts, details_inserts;
 
   g_debug ("%s: parsing %s", __func__, path);
 
@@ -2064,11 +2136,37 @@ update_scap_cpes_from_file (const gchar *path)
       cpe_item = element_next (cpe_item);
     }
 
+  inserts_run (&inserts);
+  sql_commit ();
+
+  // Extract and save details XML.
+  inserts_init (&details_inserts,
+                CPE_MAX_CHUNK_SIZE,
+                "INSERT INTO scap2.cpe_details"
+                " (cpe_id, details_xml)"
+                " VALUES",
+                " ON CONFLICT (cpe_id) DO UPDATE"
+                " SET details_xml = EXCLUDED.details_xml");
+  cpe_item = element_first_child (cpe_list);
+  while (cpe_item)
+    {
+      if (strcmp (element_name (cpe_item), "cpe-item"))
+        {
+          cpe_item = element_next (cpe_item);
+          continue;
+        }
+
+      if (insert_scap_cpe_details (&details_inserts, cpe_item))
+        goto fail;
+      cpe_item = element_next (cpe_item);
+    }
+
   element_free (element);
 
-  inserts_run (&inserts);
+  sql_begin_immediate();
+  inserts_run (&details_inserts);
+  sql_commit();
 
-  sql_commit ();
   return 0;
 
  fail:
