@@ -18572,9 +18572,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           if (gvm_auth_ldap_enabled ())
             {
               gchar *ldap_host, *ldap_authdn, *ldap_cacert;
-              int ldap_enabled, ldap_allow_plaintext;
+              int ldap_enabled, ldap_allow_plaintext, ldap_ldaps_only;
               manage_get_ldap_info (&ldap_enabled, &ldap_host, &ldap_authdn,
-                                    &ldap_allow_plaintext, &ldap_cacert);
+                                    &ldap_allow_plaintext, &ldap_cacert,
+                                    &ldap_ldaps_only);
               SENDF_TO_CLIENT_OR_FAIL
                ("<group name=\"method:ldap_connect\">"
                 "<auth_conf_setting>"
@@ -18596,11 +18597,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 "<auth_conf_setting>"
                 "<key>allow-plaintext</key>"
                 "<value>%i</value>"
+                "</auth_conf_setting>"
+                "<auth_conf_setting>"
+                "<key>ldaps-only</key>"
+                "<value>%s</value>"
                 "</auth_conf_setting>",
                 ldap_enabled ? "true" : "false",
                 ldap_host,
                 ldap_authdn,
-                ldap_allow_plaintext);
+                ldap_allow_plaintext,
+                ldap_ldaps_only ? "true" : "false");
 
               g_free (ldap_host);
               g_free (ldap_authdn);
@@ -22709,9 +22715,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 {
                   GSList *setting;
                   gchar *ldap_host, *ldap_authdn, *ldap_cacert;
-                  int ldap_enabled, ldap_plaintext;
+                  int ldap_enabled, ldap_plaintext, ldap_ldaps_only;
 
-                  ldap_enabled = ldap_plaintext = -1;
+                  ldap_enabled = ldap_plaintext = ldap_ldaps_only = -1;
                   ldap_host = ldap_authdn = ldap_cacert = NULL;
                   setting = auth_group->settings;
                   while (setting)
@@ -22731,12 +22737,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         ldap_plaintext = (strcmp (kvp->value, "true") == 0);
                       else if (strcmp (kvp->key, "cacert") == 0)
                         ldap_cacert = g_strdup (kvp->value);
-
+                      else if (strcmp (kvp->key, "ldaps-only") == 0)
+                        ldap_ldaps_only = (strcmp (kvp->value, "true") == 0);
+                      
                       setting = g_slist_next (setting);
                     }
 
                   manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
-                                        ldap_plaintext, ldap_cacert);
+                                        ldap_plaintext, ldap_cacert,
+                                        ldap_ldaps_only);
                 }
               if (strcmp (group, "method:radius_connect") == 0)
                 {
@@ -22949,10 +22958,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "modified");
                 break;
             }
-
-          modify_credential_data_reset (modify_credential_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
         }
         modify_credential_data_reset (modify_credential_data);
         set_client_state (CLIENT_AUTHENTIC);
