@@ -28880,6 +28880,44 @@ report_host_hostname (report_host_t report_host)
 }
 
 /**
+ * @brief Get the best_os_cpe of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated best_os_cpe if available, else NULL.
+ */
+gchar*
+report_host_best_os_cpe (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'best_os_cpe'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
+ * @brief Get the best_os_txt of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated best_os_txt if available, else NULL.
+ */
+gchar*
+report_host_best_os_txt (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'best_os_txt'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
  * @brief Check if a report host is alive and has at least one result.
  *
  * @param[in]  report  Report.
