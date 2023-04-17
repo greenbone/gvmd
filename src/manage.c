@@ -2465,7 +2465,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   if (empty) {
     if (error)
-      *error = g_strdup ("Exiting because VT list is empty");
+      *error = g_strdup ("Exiting because VT list is empty (e.g. feed not synced yet)");
     g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
     // Credentials are freed with target
     g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
