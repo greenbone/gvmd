@@ -40,7 +40,7 @@
 
 
 /* Headers */
-int
+int
 check_db_extensions ();
 
 
