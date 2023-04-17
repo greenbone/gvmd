@@ -267,16 +267,16 @@ find_nvt (const char* oid, nvt_t* nvt)
  * @brief Insert vt_refs for an NVT.
  *
  * @param[in]  nvti       NVT Information.
- * @param[in]  truncate   True if NVT tables were truncated.
+ * @param[in]  rebuild    True if rebuilding.
  */
 static void
-insert_vt_refs (const nvti_t *nvti, int truncate)
+insert_vt_refs (const nvti_t *nvti, int rebuild)
 {
   int i;
 
-  if (truncate == 0)
+  if (rebuild == 0)
     sql ("DELETE FROM vt_refs%s where vt_oid = '%s';",
-         truncate ? "_rebuild" : "",
+         rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
@@ -291,7 +291,7 @@ insert_vt_refs (const nvti_t *nvti, int truncate)
 
       sql ("INSERT into vt_refs%s (vt_oid, type, ref_id, ref_text)"
            " VALUES ('%s', '%s', '%s', '%s');",
-           truncate ? "_rebuild" : "",
+           rebuild ? "_rebuild" : "",
            nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
 
       g_free (quoted_type);
@@ -304,19 +304,19 @@ insert_vt_refs (const nvti_t *nvti, int truncate)
  * @brief Insert vt_severities for an NVT.
  *
  * @param[in]  nvti       NVT Information.
- * @param[in]  truncate   True if NVT tables were truncated.
+ * @param[in]  rebuild    True if rebuilding.
  *
  * @return Highest severity.
  */
 static double
-insert_vt_severities (const nvti_t *nvti, int truncate)
+insert_vt_severities (const nvti_t *nvti, int rebuild)
 {
   int i;
   double highest;
 
-  if (truncate == 0)
+  if (rebuild == 0)
     sql ("DELETE FROM vt_severities%s where vt_oid = '%s';",
-         truncate ? "_rebuild" : "",
+         rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
   highest = 0;
@@ -335,7 +335,7 @@ insert_vt_severities (const nvti_t *nvti, int truncate)
       sql ("INSERT into vt_severities%s (vt_oid, type, origin, date, score,"
            "                             value)"
            " VALUES ('%s', '%s', '%s', %i, %0.1f, '%s');",
-           truncate ? "_rebuild" : "",
+           rebuild ? "_rebuild" : "",
            nvti_oid (nvti), vtseverity_type (severity),
            quoted_origin, vtseverity_date (severity),
            vtseverity_score (severity), quoted_value);
@@ -355,10 +355,10 @@ insert_vt_severities (const nvti_t *nvti, int truncate)
  * Always called within a transaction.
  *
  * @param[in]  nvti       NVT Information.
- * @param[in]  truncate   True if NVT tables were truncated.
+ * @param[in]  rebuild    True if rebuilding.
  */
 static void
-insert_nvt (const nvti_t *nvti, int truncate)
+insert_nvt (const nvti_t *nvti, int rebuild)
 {
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
@@ -401,16 +401,16 @@ insert_nvt (const nvti_t *nvti, int truncate)
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
-  if ((truncate == 0)
+  if ((rebuild == 0)
       && sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
                   nvti_oid (nvti)))
     sql ("DELETE FROM nvts%s WHERE oid = '%s';",
-         truncate ? "_rebuild" : "",
+         rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
-  insert_vt_refs(nvti, truncate);
+  insert_vt_refs(nvti, rebuild);
 
-  highest = insert_vt_severities(nvti, truncate);
+  highest = insert_vt_severities(nvti, rebuild);
 
   sql ("INSERT into nvts%s (oid, name, summary, insight, affected,"
        " impact, cve, tag, category, family, cvss_base,"
@@ -418,7 +418,7 @@ insert_nvt (const nvti_t *nvti, int truncate)
        " solution_method, solution, detection, qod, qod_type)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', %0.1f, %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
-       truncate ? "_rebuild" : "",
+       rebuild ? "_rebuild" : "",
        nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
        nvti_category (nvti), quoted_family, highest,
@@ -1529,14 +1529,14 @@ nvti_from_vt (entity_t vt)
  *
  * @param[in]  get_vts_response      OSP GET_VTS response.
  * @param[in]  scanner_feed_version  Version of feed from scanner.
- * @param[in]  truncate              Whether to truncate the NVT tables first.
+ * @param[in]  rebuild               Whether we're rebuilding the tables.
  *
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 static int
 update_nvts_from_vts (entity_t *get_vts_response,
                       const gchar *scanner_feed_version,
-                      int truncate)
+                      int rebuild)
 {
   entity_t vts, vt;
   entities_t children;
@@ -1561,7 +1561,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
 
   sql_begin_immediate ();
 
-  if (truncate) {
+  if (rebuild) {
     sql ("DROP TABLE IF EXISTS vt_refs_rebuild;");
     sql ("DROP TABLE IF EXISTS vt_severities_rebuild;");
     sql ("DROP TABLE IF EXISTS nvt_preferences_rebuild;");
@@ -1601,7 +1601,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
       else
         count_modified_vts += 1;
 
-      insert_nvt (nvti, truncate);
+      insert_nvt (nvti, rebuild);
 
       preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
@@ -1609,18 +1609,18 @@ update_nvts_from_vts (entity_t *get_vts_response,
           sql_rollback ();
           return -1;
         }
-      if (truncate == 0)
+      if (rebuild == 0)
         sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",
-             truncate ? "_rebuild" : "",
+             rebuild ? "_rebuild" : "",
              nvti_oid (nvti));
-      insert_nvt_preferences_list (preferences, truncate);
+      insert_nvt_preferences_list (preferences, rebuild);
       g_list_free_full (preferences, g_free);
 
       nvti_free (nvti);
       children = next_entities (children);
     }
 
-  if (truncate) {
+  if (rebuild) {
     sql ("DROP VIEW vulns;");
     sql ("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
 
@@ -1859,13 +1859,13 @@ DEF_ACCESS (nvt_severity_iterator_value, 4);
  * @param[in]  update_socket         Socket to use to contact scanner.
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
- * @param[in]  truncate              Whether to truncate the NVT tables first.
+ * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.
  *
  * @return 0 success, 1 VT integrity check failed, -1 error.
  */
 static int
 update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
-                      gchar *scanner_feed_version, int truncate)
+                      gchar *scanner_feed_version, int rebuild)
 {
   osp_connection_t *connection;
   GSList *scanner_prefs;
@@ -1874,7 +1874,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   time_t old_nvts_last_modified;
   int ret;
 
-  if (truncate
+  if (rebuild
       || db_feed_version == NULL
       || strcmp (db_feed_version, "") == 0
       || strcmp (db_feed_version, "0") == 0)
@@ -1907,7 +1907,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   g_free (get_vts_opts.filter);
 
   osp_connection_close (connection);
-  ret = update_nvts_from_vts (&vts, scanner_feed_version, truncate);
+  ret = update_nvts_from_vts (&vts, scanner_feed_version, rebuild);
   free_entity (vts);
   if (ret)
     return ret;
