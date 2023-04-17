@@ -1694,25 +1694,29 @@ check_config_families ()
 /**
  * @brief Add/replace an NVT preference.
  *
- * @param[in]  name    The name of the preference.
- * @param[in]  value   The value of the preference.
+ * @param[in]  name     The name of the preference.
+ * @param[in]  value    The value of the preference.
+ * @param[in]  rebuild  Whether a rebuild is happening.
  */
 void
-manage_nvt_preference_add (const char* name, const char* value)
+manage_nvt_preference_add (const char* name, const char* value, int rebuild)
 {
   gchar* quoted_name = sql_quote (name);
   gchar* quoted_value = sql_quote (value);
 
   if (strcmp (name, "port_range"))
     {
-      if (sql_int ("SELECT EXISTS"
-                   "  (SELECT * FROM nvt_preferences"
-                   "   WHERE name = '%s')",
-                   quoted_name))
-        sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
+      if (rebuild == 0) {
+        if (sql_int ("SELECT EXISTS"
+                     "  (SELECT * FROM nvt_preferences"
+                     "   WHERE name = '%s')",
+                     quoted_name))
+          sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
+      }
 
-      sql ("INSERT into nvt_preferences (name, value)"
+      sql ("INSERT into nvt_preferences%s (name, value)"
            " VALUES ('%s', '%s');",
+           rebuild ? "_rebuild" : "",
            quoted_name, quoted_value);
     }
 
