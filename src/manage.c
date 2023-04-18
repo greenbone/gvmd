@@ -2323,7 +2323,7 @@ add_user_scan_preferences (GHashTable *scanner_options)
  *                          2 continue if stopped else start from beginning.
  * @param[out]  error       Error return.
  *
- * @return 0 success, -1 if scanner is down.
+ * @return 0 success, -1 if error.
  */
 static int
 launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
@@ -2340,7 +2340,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
-  int ret;
+  int ret, empty;
   config_t config;
   iterator_t scanner_prefs_iter, families, prefs;
   osp_start_scan_opts_t start_scan_opts;
@@ -2438,6 +2438,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
+  empty = 1;
   while (next (&families))
     {
       const char *family = family_iterator_name (&families);
@@ -2450,6 +2451,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
               const char *oid;
               osp_vt_single_t *new_vt;
 
+              empty = 0;
               oid = nvt_iterator_oid (&nvts);
               new_vt = osp_vt_single_new (oid);
 
@@ -2460,6 +2462,15 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  if (empty) {
+    if (error)
+      *error = g_strdup ("Exiting because VT list is empty (e.g. feed not synced yet)");
+    g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
+    // Credentials are freed with target
+    g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+    return -1;
+  }
 
   /* Setup general scanner preferences */
   scanner_options
@@ -5332,18 +5343,6 @@ set_schedule_timeout (int new_timeout)
 void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 /**
- * @brief Return the path to the CPE dictionary.
- *
- * @return A dynamically allocated string (to be g_free'd) containing the
- *         path to the desired file.
- */
-static char *
-get_cpe_filename ()
-{
-  return g_strdup (CPE_DICT_FILENAME);
-}
-
-/**
  * @brief Compute the filename where a given CVE can be found.
  *
  * @param[in] item_id   Full CVE identifier ("CVE-YYYY-ZZZZ").
@@ -5901,15 +5900,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
 
   if (g_ascii_strcasecmp ("CPE", type) == 0)
     {
-      fname = get_cpe_filename ();
-      if (fname)
-        {
-          gchar *cpe;
-          cpe = xsl_transform (CPE_GETBYNAME_XSL, fname, pnames, pvalues);
-          g_free (fname);
-          if (cpe)
-            *result = cpe;
-        }
+      *result = cpe_details_xml(uid);
     }
   else if (g_ascii_strcasecmp ("CVE", type) == 0)
     {
