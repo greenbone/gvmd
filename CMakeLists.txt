@@ -37,6 +37,8 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 OPTION (ENABLE_COVERAGE "Enable support for coverage analysis" OFF)
 OPTION (DEBUG_FUNCTION_NAMES "Print function names on entry and exit" OFF)
+# the shell based scripts got replaced by https://github.com/greenbone/greenbone-feed-sync/
+OPTION (INSTALL_OLD_SYNC_SCRIPTS "Install shell based feed sync scripts" OFF)
 
 ## Retrieve git revision (at configure time)
 include (GetGit)
@@ -96,7 +98,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 251)
+set (GVMD_DATABASE_VERSION 253)
 
 set (GVMD_SCAP_DATABASE_VERSION 20)
 
@@ -394,20 +396,22 @@ install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          DESTINATION ${GVM_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-feed-sync
-         DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+if (INSTALL_OLD_SYNC_SCRIPTS)
+  install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-feed-sync
+          DESTINATION ${SBINDIR}
+          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-scapdata-sync
-         DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-scapdata-sync
+          DESTINATION ${SBINDIR}
+          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-certdata-sync
-         DESTINATION ${SBINDIR}
-         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
-                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-certdata-sync
+          DESTINATION ${SBINDIR}
+          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif (INSTALL_OLD_SYNC_SCRIPTS)
 
 install (FILES ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-deb-creator
                ${CMAKE_SOURCE_DIR}/tools/gvm-lsc-exe-creator
