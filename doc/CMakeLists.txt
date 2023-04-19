@@ -106,33 +106,18 @@ endif (NOT XSLTPROC_EXECUTABLE)
 
 if (XMLTOMAN_EXECUTABLE)
   add_custom_target (man COMMENT "Building manual page..."
-    DEPENDS gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8)
+    DEPENDS gvmd.8)
 
   add_custom_command (OUTPUT gvmd.8
 					  COMMAND sh
 					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gvmd.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/gvmd.8\;\"
 					  DEPENDS gvmd.8.xml)
 
-  add_custom_command (OUTPUT greenbone-certdata-sync.8
-					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/greenbone-certdata-sync.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/greenbone-certdata-sync.8\;\"
-					  DEPENDS greenbone-certdata-sync.8.xml)
-
-  add_custom_command (OUTPUT greenbone-scapdata-sync.8
-					  COMMAND sh
-					  ARGS -c \"${XMLTOMAN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/greenbone-scapdata-sync.8.xml > ${CMAKE_CURRENT_BINARY_DIR}/greenbone-scapdata-sync.8\;\"
-					  DEPENDS greenbone-scapdata-sync.8.xml)
 else (XMLTOMAN_EXECUTABLE)
   message (STATUS "WARNING: xmltoman is required to generate manpage.")
   add_custom_command (OUTPUT gvmd.8
                       COMMAND echo "[Error: xmltoman required to see manpage here]"
 					          > gvmd.8)
-  add_custom_command (OUTPUT greenbone-certdata-sync.8
-                      COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > greenbone-certdata-sync.8)
-  add_custom_command (OUTPUT greenbone-scapdata-sync.8
-                      COMMAND echo "[Error: xmltoman required to see manpage here]"
-					          > greenbone-scapdata-sync.8)
 endif (XMLTOMAN_EXECUTABLE)
 
 if (XMLMANTOHTML_EXECUTABLE)
@@ -158,6 +143,6 @@ if (XSLTPROC_EXECUTABLE)
     COMPONENT doc)
 endif (XSLTPROC_EXECUTABLE)
 
-install (FILES gvmd.8 greenbone-certdata-sync.8 greenbone-scapdata-sync.8
+install (FILES gvmd.8
   DESTINATION share/man/man8/
   COMPONENT doc)
