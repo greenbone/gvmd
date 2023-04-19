@@ -258,75 +258,18 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
- * @brief Insert an NVT.
+ * @brief Insert vt_refs for an NVT.
  *
  * @param[in]  nvti       NVT Information.
  * @param[in]  truncate   True if NVT tables were truncated.
  */
 static void
-insert_nvt (const nvti_t *nvti, int truncate)
+insert_vt_refs (const nvti_t *nvti, int truncate)
 {
-  gchar *qod_str, *qod_type, *cve;
-  gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
-  gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family;
-  gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
-  int qod, i;
-  double highest;
+  int i;
 
-  cve = nvti_refs (nvti, "cve", "", 0);
-
-  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
-  quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
-  quoted_insight = sql_quote (nvti_insight (nvti) ? nvti_insight (nvti) : "");
-  quoted_affected = sql_quote (nvti_affected (nvti) ?
-                               nvti_affected (nvti) : "");
-  quoted_impact = sql_quote (nvti_impact (nvti) ? nvti_impact (nvti) : "");
-
-  quoted_cve = sql_quote (cve ? cve : "");
-  g_free (cve);
-
-  quoted_solution = sql_quote (nvti_solution (nvti) ?
-                               nvti_solution (nvti) : "");
-  quoted_solution_type = sql_quote (nvti_solution_type (nvti) ?
-                                    nvti_solution_type (nvti) : "");
-  quoted_solution_method = sql_quote (nvti_solution_method (nvti) ?
-                                      nvti_solution_method (nvti) : "");
-  quoted_detection = sql_quote (nvti_detection (nvti) ?
-                                nvti_detection (nvti) : "");
-
-  quoted_tag = sql_quote (nvti_tag (nvti) ?  nvti_tag (nvti) : "");
-
-  quoted_cvss_base = sql_quote (nvti_cvss_base (nvti) ? nvti_cvss_base (nvti) : "");
-
-  qod_str = nvti_qod (nvti);
-  qod_type = nvti_qod_type (nvti);
-
-  if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
-    qod = qod_from_type (qod_type);
-
-  quoted_qod_type = sql_quote (qod_type ? qod_type : "");
-
-  quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
-
-  if (sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
-               nvti_oid (nvti)))
-    sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
-
-  sql ("INSERT into nvts (oid, name, summary, insight, affected,"
-       " impact, cve, tag, category, family, cvss_base,"
-       " creation_time, modification_time, uuid, solution_type,"
-       " solution_method, solution, detection, qod, qod_type)"
-       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
-       nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
-       quoted_affected, quoted_impact, quoted_cve, quoted_tag,
-       nvti_category (nvti), quoted_family, quoted_cvss_base,
-       nvti_creation_time (nvti), nvti_modification_time (nvti),
-       nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
-       quoted_solution, quoted_detection, qod, quoted_qod_type);
-
-  sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
+  if (truncate == 0)
+    sql ("DELETE FROM vt_refs where vt_oid = '%s';", nvti_oid (nvti));
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
@@ -346,8 +289,24 @@ insert_nvt (const nvti_t *nvti, int truncate)
       g_free (quoted_id);
       g_free (quoted_text);
     }
+}
 
-  sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
+/**
+ * @brief Insert vt_severities for an NVT.
+ *
+ * @param[in]  nvti       NVT Information.
+ * @param[in]  truncate   True if NVT tables were truncated.
+ *
+ * @return Highest severity.
+ */
+static double
+insert_vt_severities (const nvti_t *nvti, int truncate)
+{
+  int i;
+  double highest;
+
+  if (truncate == 0)
+    sql ("DELETE FROM vt_severities where vt_oid = '%s';", nvti_oid (nvti));
 
   highest = 0;
 
@@ -375,9 +334,82 @@ insert_nvt (const nvti_t *nvti, int truncate)
       g_free (quoted_value);
     }
 
-  sql ("UPDATE nvts SET cvss_base = %0.1f WHERE oid = '%s';",
-       highest,
-       nvti_oid (nvti));
+  return highest;
+}
+
+/**
+ * @brief Insert an NVT.
+ *
+ * Always called within a transaction.
+ *
+ * @param[in]  nvti       NVT Information.
+ * @param[in]  truncate   True if NVT tables were truncated.
+ */
+static void
+insert_nvt (const nvti_t *nvti, int truncate)
+{
+  gchar *qod_str, *qod_type, *cve;
+  gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
+  gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
+  gchar *quoted_qod_type, *quoted_family;
+  gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
+  int qod;
+  double highest;
+
+  cve = nvti_refs (nvti, "cve", "", 0);
+
+  quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
+  quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
+  quoted_insight = sql_quote (nvti_insight (nvti) ? nvti_insight (nvti) : "");
+  quoted_affected = sql_quote (nvti_affected (nvti) ?
+                               nvti_affected (nvti) : "");
+  quoted_impact = sql_quote (nvti_impact (nvti) ? nvti_impact (nvti) : "");
+
+  quoted_cve = sql_quote (cve ? cve : "");
+  g_free (cve);
+
+  quoted_solution = sql_quote (nvti_solution (nvti) ?
+                               nvti_solution (nvti) : "");
+  quoted_solution_type = sql_quote (nvti_solution_type (nvti) ?
+                                    nvti_solution_type (nvti) : "");
+  quoted_solution_method = sql_quote (nvti_solution_method (nvti) ?
+                                      nvti_solution_method (nvti) : "");
+  quoted_detection = sql_quote (nvti_detection (nvti) ?
+                                nvti_detection (nvti) : "");
+
+  quoted_tag = sql_quote (nvti_tag (nvti) ?  nvti_tag (nvti) : "");
+
+  qod_str = nvti_qod (nvti);
+  qod_type = nvti_qod_type (nvti);
+
+  if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
+    qod = qod_from_type (qod_type);
+
+  quoted_qod_type = sql_quote (qod_type ? qod_type : "");
+
+  quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
+
+  if ((truncate == 0)
+      && sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
+                  nvti_oid (nvti)))
+    sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
+
+  insert_vt_refs(nvti, truncate);
+
+  highest = insert_vt_severities(nvti, truncate);
+
+  sql ("INSERT into nvts (oid, name, summary, insight, affected,"
+       " impact, cve, tag, category, family, cvss_base,"
+       " creation_time, modification_time, uuid, solution_type,"
+       " solution_method, solution, detection, qod, qod_type)"
+       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       " '%s', %i, '%s', %0.1f, %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
+       nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
+       quoted_affected, quoted_impact, quoted_cve, quoted_tag,
+       nvti_category (nvti), quoted_family, highest,
+       nvti_creation_time (nvti), nvti_modification_time (nvti),
+       nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
+       quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   g_free (quoted_name);
   g_free (quoted_summary);
@@ -386,7 +418,6 @@ insert_nvt (const nvti_t *nvti, int truncate)
   g_free (quoted_impact);
   g_free (quoted_cve);
   g_free (quoted_tag);
-  g_free (quoted_cvss_base);
   g_free (quoted_family);
   g_free (quoted_solution);
   g_free (quoted_solution_type);
@@ -1559,8 +1590,9 @@ update_nvts_from_vts (entity_t *get_vts_response,
           sql_rollback ();
           return -1;
         }
-      sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
-           nvti_oid (nvti));
+      if (truncate == 0)
+        sql ("DELETE FROM nvt_preferences WHERE name LIKE '%s:%%';",
+             nvti_oid (nvti));
       insert_nvt_preferences_list (preferences);
       g_list_free_full (preferences, g_free);
 
