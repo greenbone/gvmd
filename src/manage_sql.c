@@ -4160,6 +4160,46 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
 }
 
 /**
+ * @brief Find a resource given a UUID.
+ *
+ * @param[in]   type       Type of resource.
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  resource   Resource return, 0 if successfully failed to find resource.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on error.
+ */
+gboolean
+find_resource_no_acl (const char* type, const char* uuid, resource_t* resource)
+{
+  gchar *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+
+  // TODO should really check type
+  switch (sql_int64 (resource,
+                     "SELECT id FROM %ss WHERE uuid = '%s'%s;",
+                     type,
+                     quoted_uuid,
+                     strcmp (type, "task") ? "" : " AND hidden < 2"))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+
+/**
  * @brief Find a resource given a UUID and a permission.
  *
  * @param[in]   type        Type of resource.
@@ -42343,6 +42383,8 @@ find_permission (const char* uuid, permission_t* permission)
 /**
  * @brief Check args for create_permission or modify_permission.
  *
+ * @param[in]   check_access    Whether to check if user may get resource and
+ *                              subject.
  * @param[in]   name_arg        Name of permission.
  * @param[in]   resource_type_arg  Type of resource, for special permissions.
  * @param[in]   resource_id_arg    UUID of resource.
@@ -42360,7 +42402,8 @@ find_permission (const char* uuid, permission_t* permission)
  *         99 permission denied, -1 error.
  */
 static int
-check_permission_args (const char *name_arg, const char *resource_type_arg,
+check_permission_args (gboolean check_access, const char *name_arg,
+                       const char *resource_type_arg,
                        const char *resource_id_arg, const char *subject_type,
                        const char *subject_id, gchar **name,
                        resource_t *resource, char **resource_type,
@@ -42429,23 +42472,56 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
         {
           g_free (*resource_type);
           *resource_type = g_strdup ("host");
-          if (find_resource (*resource_type, resource_id_arg, resource))
+          if (check_access == FALSE)
             {
-              g_free (*name);
-              g_free (*resource_type);
-              return -1;
+              if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+                {
+                  g_free (*name);
+                  g_free (*resource_type);
+                  return -1;
+                }
             }
-
-          if (*resource == 0)
+          else
             {
-              g_free (*resource_type);
-              *resource_type = g_strdup ("os");
               if (find_resource (*resource_type, resource_id_arg, resource))
                 {
                   g_free (*name);
                   g_free (*resource_type);
                   return -1;
                 }
+            }
+
+          if (*resource == 0)
+            {
+              g_free (*resource_type);
+              *resource_type = g_strdup ("os");
+              if (check_access == FALSE)
+                {
+                  if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+                    {
+                      g_free (*name);
+                      g_free (*resource_type);
+                      return -1;
+                    }
+                }
+              else
+                {
+                  if (find_resource (*resource_type, resource_id_arg, resource))
+                    {
+                      g_free (*name);
+                      g_free (*resource_type);
+                      return -1;
+                    }
+                }
+            }
+        }
+      else if (check_access == FALSE)
+        {
+          if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
             }
         }
       else
@@ -42520,16 +42596,27 @@ check_permission_args (const char *name_arg, const char *resource_type_arg,
     {
       /* Permission on a particular resource.  Only need read access to the
        * subject. */
-
-      if (find_resource_with_permission (subject_type,
-                                         subject_id,
-                                         subject,
-                                         NULL, /* GET permission. */
-                                         0))   /* Trash. */
+      if (check_access)
         {
-          g_free (*name);
-          g_free (*resource_type);
-          return -1;
+          if (find_resource_with_permission (subject_type,
+                                             subject_id,
+                                             subject,
+                                             NULL, /* GET permission. */
+                                             0))   /* Trash. */
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
+            }
+        }
+       else
+        {
+          if (find_resource_no_acl (subject_type, subject_id, subject))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
+            }
         }
     }
   else
@@ -42651,9 +42738,11 @@ create_permission_internal (int check_access, const char *name_arg,
   if (check_access && (acl_user_may ("create_permission") == 0))
     return 99;
 
-  ret = check_permission_args (name_arg, resource_type_arg, resource_id_arg,
-                               subject_type, subject_id, &name, &resource,
-                               &resource_type, &resource_id, &subject);
+  ret = check_permission_args (check_access, name_arg, resource_type_arg,
+                               resource_id_arg, subject_type, subject_id, &name,
+                               &resource, &resource_type, &resource_id,
+                               &subject);
+
   if (ret)
     return ret;
 
@@ -43789,7 +43878,7 @@ modify_permission (const char *permission_id, const char *name_arg,
   new_subject_id = subject_id ? NULL : permission_subject_id (permission);
 
   ret = check_permission_args
-         (new_name ? new_name : name_arg,
+         (TRUE, new_name ? new_name : name_arg,
           new_resource_type ? new_resource_type : resource_type_arg,
           new_resource_id ? new_resource_id : resource_id_arg,
           new_subject_type ? new_subject_type : subject_type,

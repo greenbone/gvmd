@@ -375,6 +375,9 @@ trash_id_exists (const char *, const char *);
 gboolean
 find_resource (const char*, const char*, resource_t*);
 
+gboolean
+find_resource_no_acl (const char*, const char*, resource_t*);
+
 const char *
 type_name_plural (const char*);
 
