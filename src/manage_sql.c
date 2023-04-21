@@ -42472,22 +42472,46 @@ check_permission_args (gboolean check_access, const char *name_arg,
         {
           g_free (*resource_type);
           *resource_type = g_strdup ("host");
-          if (find_resource (*resource_type, resource_id_arg, resource))
+          if (check_access == FALSE)
             {
-              g_free (*name);
-              g_free (*resource_type);
-              return -1;
+              if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+                {
+                  g_free (*name);
+                  g_free (*resource_type);
+                  return -1;
+                }
+            }
+          else
+            {
+              if (find_resource (*resource_type, resource_id_arg, resource))
+                {
+                  g_free (*name);
+                  g_free (*resource_type);
+                  return -1;
+                }
             }
 
           if (*resource == 0)
             {
               g_free (*resource_type);
               *resource_type = g_strdup ("os");
-              if (find_resource (*resource_type, resource_id_arg, resource))
+              if (check_access == FALSE)
                 {
-                  g_free (*name);
-                  g_free (*resource_type);
-                  return -1;
+                  if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+                    {
+                      g_free (*name);
+                      g_free (*resource_type);
+                      return -1;
+                    }
+                }
+              else
+                {
+                  if (find_resource (*resource_type, resource_id_arg, resource))
+                    {
+                      g_free (*name);
+                      g_free (*resource_type);
+                      return -1;
+                    }
                 }
             }
         }
