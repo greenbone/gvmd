@@ -27435,7 +27435,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   max_results = manage_max_rows (max_results);
 
-  levels = levels ? levels : g_strdup ("hmlgd");
+  levels = levels ? levels : g_strdup ("hmlgdf");
 
   if (task && task_uuid (task, &tsk_uuid))
     {
