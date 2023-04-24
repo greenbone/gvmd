@@ -273,12 +273,14 @@ static void
 insert_vt_refs (const nvti_t *nvti, int rebuild)
 {
   int i;
+  GString *insert;
 
   if (rebuild == 0)
     sql ("DELETE FROM vt_refs%s where vt_oid = '%s';",
          rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
+  insert = NULL;
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
       vtref_t *ref;
@@ -289,15 +291,29 @@ insert_vt_refs (const nvti_t *nvti, int rebuild)
       quoted_id = sql_quote (vtref_id (ref));
       quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
-      sql ("INSERT into vt_refs%s (vt_oid, type, ref_id, ref_text)"
-           " VALUES ('%s', '%s', '%s', '%s');",
-           rebuild ? "_rebuild" : "",
-           nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
+      if (i == 0) {
+        insert = g_string_new ("");
+        g_string_append_printf (insert,
+                                "INSERT into vt_refs%s (vt_oid, type, ref_id, ref_text)"
+                                " VALUES",
+                                rebuild ? "_rebuild" : "");
+      }
+                               
+      g_string_append_printf (insert,
+                              "%s ('%s', '%s', '%s', '%s')",
+                              i == 0 ? "" : ",",
+                              nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
 
       g_free (quoted_type);
       g_free (quoted_id);
       g_free (quoted_text);
     }
+
+  if (insert) {
+    g_string_append_printf (insert, ";");
+    sql ("%s", insert->str);
+    g_string_free (insert, TRUE);
+  }
 }
 
 /**
