@@ -14248,7 +14248,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       || (strlen (get_reports_data->report_get.id) == 0))
     {
       int overrides, min_qod;
-      gchar *filter;
+      gchar *filter, *levels;
       get_data_t * get;
 
       /* For simplicity, use a fixed result filter when filtering
@@ -14269,12 +14269,14 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       g_free (get_reports_data->get.filter);
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
+      levels = filter_term_value (filter ? filter : get->filter, "levels");
       g_free (filter);
 
       /* Setup result filter from overrides. */
       get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%i",
-                           overrides, min_qod);
+        = g_strdup_printf ("apply_overrides=%i min_qod=%i levels=%s",
+                           overrides, min_qod, levels);
+      g_free (levels);
     }
 
   ret = init_report_iterator (&reports, &get_reports_data->report_get);
