@@ -40,7 +40,7 @@
 
 
 /* Headers */
-int
+int
 check_db_extensions ();
 
 
@@ -1748,6 +1748,62 @@ create_view_vulns ()
 #undef VULNS_RESULTS_WHERE
 
 /**
+ * @brief Create NVT related tables.
+ */
+void
+create_tables_nvt (const gchar *suffix)
+{
+  sql ("CREATE TABLE IF NOT EXISTS vt_refs%s"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);",
+       suffix);
+
+  sql ("CREATE TABLE IF NOT EXISTS vt_severities%s"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_oid text NOT NULL,"
+       "  type text NOT NULL,"
+       "  origin text,"
+       "  date integer,"
+       "  score double precision,"
+       "  value text);",
+       suffix);
+
+  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences%s"
+       " (id SERIAL PRIMARY KEY,"
+       "  name text UNIQUE NOT NULL,"
+       "  value text);",
+       suffix);
+
+  sql ("CREATE TABLE IF NOT EXISTS nvts%s"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  oid text UNIQUE NOT NULL,"
+       "  name text,"
+       "  comment text,"
+       "  summary text,"
+       "  insight text,"
+       "  affected text,"
+       "  impact text,"
+       "  cve text,"
+       "  tag text,"
+       "  category text,"
+       "  family text,"
+       "  cvss_base text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  solution text,"
+       "  solution_type text,"
+       "  solution_method text,"
+       "  detection text,"
+       "  qod integer,"
+       "  qod_type text);",
+       suffix);
+}
+
+/**
  * @brief Create all tables.
  */
 void
@@ -2565,50 +2621,7 @@ create_tables ()
        "  name text,"
        "  value text);");
 
-  sql ("CREATE TABLE IF NOT EXISTS vt_refs"
-       " (id SERIAL PRIMARY KEY,"
-       "  vt_oid text NOT NULL,"
-       "  type text NOT NULL,"
-       "  ref_id text NOT NULL,"
-       "  ref_text text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS vt_severities"
-       " (id SERIAL PRIMARY KEY,"
-       "  vt_oid text NOT NULL,"
-       "  type text NOT NULL,"
-       "  origin text,"
-       "  date integer,"
-       "  score double precision,"
-       "  value text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
-       " (id SERIAL PRIMARY KEY,"
-       "  name text UNIQUE NOT NULL,"
-       "  value text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS nvts"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  oid text UNIQUE NOT NULL,"
-       "  name text,"
-       "  comment text,"
-       "  summary text,"
-       "  insight text,"
-       "  affected text,"
-       "  impact text,"
-       "  cve text,"
-       "  tag text,"
-       "  category text,"
-       "  family text,"
-       "  cvss_base text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  solution text,"
-       "  solution_type text,"
-       "  solution_method text,"
-       "  detection text,"
-       "  qod integer,"
-       "  qod_type text);");
+  create_tables_nvt ("");
 
   sql ("CREATE TABLE IF NOT EXISTS notes"
        " (id SERIAL PRIMARY KEY,"
