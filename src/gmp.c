@@ -14275,7 +14275,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       /* Setup result filter from overrides. */
       get_reports_data->get.filter
         = g_strdup_printf ("apply_overrides=%i min_qod=%i levels=%s",
-                           overrides, min_qod, levels);
+                           overrides, min_qod, levels ? levels : "hmlgdf");
       g_free (levels);
     }
 
