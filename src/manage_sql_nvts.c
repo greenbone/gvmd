@@ -1885,10 +1885,11 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 {
   osp_connection_t *connection;
   GSList *scanner_prefs;
-  entity_t vts;
+  element_t vts;
   osp_get_vts_opts_t get_vts_opts;
   time_t old_nvts_last_modified;
   int ret;
+  char *str;
 
   if (rebuild
       || db_feed_version == NULL
@@ -1914,17 +1915,28 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version);
   else
     get_vts_opts.filter = NULL;
-  if (osp_get_vts_ext (connection, get_vts_opts, &vts))
+
+  if (osp_get_vts_ext_str (connection, get_vts_opts, &str))
     {
       g_warning ("%s: failed to get VTs", __func__);
       g_free (get_vts_opts.filter);
+      g_free (str);
       return -1;
     }
+
   g_free (get_vts_opts.filter);
+
+  if (parse_element (str, &vts))
+    {
+      g_warning ("%s: failed to parse VTs", __func__);
+      g_free (str);
+      return -1;
+    }
 
   osp_connection_close (connection);
   ret = update_nvts_from_vts (&vts, scanner_feed_version, rebuild);
-  free_entity (vts);
+  element_free (vts);
+  g_free (str);
   if (ret)
     return ret;
 
