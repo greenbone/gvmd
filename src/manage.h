@@ -1185,7 +1185,8 @@ make_result (task_t, const char*, const char*, const char*, const char*,
 
 result_t
 make_osp_result (task_t, const char*, const char*, const char*, const char*,
-                 const char *, const char *, const char *, int, const char*);
+                 const char *, const char *, const char *, int, const char*,
+                 const char *);
 
 result_t
 make_cve_result (task_t, const char*, const char*, double, const char*);
@@ -1237,7 +1238,8 @@ host_detail_free (host_detail_t *);
 
 void
 insert_report_host_detail (report_t, const char *, const char *, const char *,
-                           const char *, const char *, const char *);
+                           const char *, const char *, const char *,
+                           const char *);
 
 int
 manage_report_host_detail (report_t, const char *, const char *);

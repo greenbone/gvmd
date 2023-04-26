@@ -1791,7 +1791,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                              (task, "", "", "",
                               threat_message_type ("Error"),
                               "Erroneous scan progress value", "", "",
-                              QOD_DEFAULT, NULL);
+                              QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                            key_priv);
@@ -1824,7 +1824,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                  (task, "", "", "",
                                   threat_message_type ("Error"),
                                   "Erroneous scan progress value", "", "",
-                                  QOD_DEFAULT, NULL);
+                                  QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
               rc = -1;
               break;
@@ -1854,7 +1854,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     (task, "", "", "",
                      threat_message_type ("Error"),
                      "Task interrupted unexpectedly", "", "",
-                     QOD_DEFAULT, NULL);
+                     QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
@@ -1877,7 +1877,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     (task, "", "", "",
                      threat_message_type ("Error"),
                      "Scan stopped unexpectedly by the server", "", "",
-                     QOD_DEFAULT, NULL);
+                     QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
@@ -2748,7 +2748,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       g_warning ("OSP start_scan %s: %s", report_id, error);
       result = make_osp_result (task, "", "", "",
                                 threat_message_type ("Error"),
-                                error, "", "", QOD_DEFAULT, NULL);
+                                error, "", "", QOD_DEFAULT, NULL, NULL);
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
@@ -2936,7 +2936,7 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
               locations = g_string_new("");
 
               insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                         "CVE Scanner", "App", app);
+                                         "CVE Scanner", "App", app, NULL);
 
               init_app_locations_iterator (&locations_iter, report_host, app);
 
@@ -2957,16 +2957,16 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
                   g_string_append (locations, location);
 
                   insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", app, location);
+                                             "CVE Scanner", app, location, NULL);
 
                   insert_report_host_detail (report, ip, "cve", cve,
                                              "CVE Scanner", "detected_at",
-                                             location);
+                                             location, NULL);
 
                   insert_report_host_detail (report, ip, "cve", cve,
                                              "CVE Scanner", "detected_by",
                                              /* Detected by itself. */
-                                             cve);
+                                             cve, NULL);
                 }
 
               desc = g_strdup_printf ("The host carries the product: %s\n"
@@ -3010,26 +3010,29 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
               hostname = report_host_hostname (report_host);
               if (hostname) {
                 insert_report_host_detail (report, ip, "cve", "",
-                                           "CVE Scanner", "hostname", hostname);
+                                           "CVE Scanner", "hostname", hostname,
+                                           NULL);
                 g_free(hostname);
               }
 
               best = report_host_best_os_cpe (report_host);
               if (best) {
                 insert_report_host_detail (report, ip, "cve", "",
-                                           "CVE Scanner", "best_os_cpe", best);
+                                           "CVE Scanner", "best_os_cpe", best,
+                                           NULL);
                 g_free(best);
               }
 
               best = report_host_best_os_txt (report_host);
               if (best) {
                 insert_report_host_detail (report, ip, "cve", "",
-                                           "CVE Scanner", "best_os_txt", best);
+                                           "CVE Scanner", "best_os_txt", best,
+                                           NULL);
                 g_free(best);
               }
 
               insert_report_host_detail (report, ip, "cve", "",
-                                         "CVE Scanner", "CVE Scan", "1");
+                                         "CVE Scanner", "CVE Scan", "1", NULL);
               update_report_modification_time (report);
             }
         }

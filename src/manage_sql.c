@@ -19107,14 +19107,15 @@ result_t
 make_osp_result (task_t task, const char *host, const char *hostname,
                  const char *nvt, const char *type, const char *description,
                  const char *port, const char *severity, int qod,
-                 const char *path)
+                 const char *path, const char *hash_value)
 {
   char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port, *quoted_hostname, *quoted_path;
+  char *quoted_port, *quoted_hostname, *quoted_path, *quoted_hash_value;
 
   assert (task);
   assert (type);
 
+  quoted_hash_value = sql_quote(hash_value ?: "");
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
@@ -19151,14 +19152,14 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   sql ("INSERT into results"
        " (owner, date, task, host, hostname, port, nvt,"
        "  nvt_version, severity, type, qod, qod_type, description,"
-       "  path, uuid, result_nvt)"
+       "  path, uuid, result_nvt, hash_value)"
        " VALUES (NULL, m_now(), %llu, '%s', '%s', '%s', '%s',"
        "         '%s', '%s', '%s', %d, '', '%s',"
        "         '%s', make_uuid (),"
-       "         (SELECT id FROM result_nvts WHERE nvt = '%s'));",
+       "         (SELECT id FROM result_nvts WHERE nvt = '%s'), '%s');",
        task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
        nvt_revision ?: "", result_severity ?: "0",
-       type, qod, quoted_desc, quoted_path, quoted_nvt);
+       type, qod, quoted_desc, quoted_path, quoted_nvt, quoted_hash_value);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
@@ -19166,6 +19167,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
   g_free (quoted_port);
   g_free (quoted_hostname);
   g_free (quoted_path);
+  g_free (quoted_hash_value);
 
   return sql_last_insert_id ();
 }
@@ -20388,10 +20390,11 @@ void
 insert_report_host_detail (report_t report, const char *host,
                            const char *s_type, const char *s_name,
                            const char *s_desc, const char *name,
-                           const char *value)
+                           const char *value, const char * hash_value)
 {
   char *quoted_host, *quoted_source_name, *quoted_source_type;
   char *quoted_source_desc, *quoted_name, *quoted_value;
+  char *quoted_hash_value;
 
   quoted_host = sql_quote (host);
   quoted_source_type = sql_quote (s_type);
@@ -20399,15 +20402,16 @@ insert_report_host_detail (report_t report, const char *host,
   quoted_source_desc = sql_quote (s_desc);
   quoted_name = sql_quote (name);
   quoted_value = sql_quote (value);
+  quoted_hash_value = sql_quote(hash_value ?: "");
   sql ("INSERT INTO report_host_details"
        " (report_host, source_type, source_name, source_description,"
-       "  name, value)"
+       "  name, value, hash_value)"
        " VALUES"
        " ((SELECT id FROM report_hosts"
        "   WHERE report = %llu AND host = '%s'),"
-       "  '%s', '%s', '%s', '%s', '%s');",
+       "  '%s', '%s', '%s', '%s', '%s', '%s');",
        report, quoted_host, quoted_source_type, quoted_source_name,
-       quoted_source_desc, quoted_name, quoted_value);
+       quoted_source_desc, quoted_name, quoted_value, quoted_hash_value);
 
   g_free (quoted_host);
   g_free (quoted_source_type);
@@ -20415,6 +20419,7 @@ insert_report_host_detail (report_t report, const char *host,
   g_free (quoted_source_desc);
   g_free (quoted_name);
   g_free (quoted_value);
+  g_free (quoted_hash_value);
 }
 
 /**
@@ -28982,6 +28987,126 @@ report_host_noticeable (report_t report, const gchar *host)
          && report_host_result_count (report_host) > 0;
 }
 
+/*
+ * @brief Generate the hash value for the entity of the result and
+ * check if osp result for report already exists
+ *
+ * @param[in]  report      Report.
+ * @param[in]  task        Task.
+ * @param[in]  r_entity    entity of the result.
+ *
+ * @param[out] hash_value  The generated hash value of r_entity.
+ *
+ * @return     "1" if osp result already exists, else "0"
+ */
+static int
+check_osp_result_exists (report_t report, task_t task,
+                         entity_t r_entity, char **entity_hash_value)
+{
+  GString *entity_string;
+  int return_value = 0;
+
+  entity_string = g_string_new ("");
+  print_entity_to_string (r_entity, entity_string);
+  *entity_hash_value = get_md5_hash_from_string (entity_string->str);
+  g_string_free(entity_string, TRUE);
+  if (sql_int ("SELECT EXISTS"
+               " (SELECT * FROM results"
+               "  WHERE report = %llu and hash_value = '%s');",
+               report, *entity_hash_value))
+    {
+      const char *type, *severity, *host, *hostname, *port;
+      const char *qod, *path;
+      gchar * desc;
+
+      host = entity_attribute (r_entity, "host");
+      hostname = entity_attribute (r_entity, "hostname");
+      type = entity_attribute (r_entity, "type");
+      desc = sql_quote (entity_text (r_entity));
+      port = entity_attribute (r_entity, "port") ?: "";
+      severity = entity_attribute (r_entity, "severity");
+      qod = entity_attribute (r_entity, "qod") ?: "";
+      path = entity_attribute (r_entity, "uri") ?: "";
+
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM results"
+                   "   WHERE report = %llu and hash_value = '%s'"
+                   "    and host = '%s' and hostname = '%s'"
+                   "    and type = '%s' and description = '%s'"
+                   "    and port = '%s' and severity = %s"
+                   "    and qod = %s and path = '%s'"
+                   " );",
+                   report, *entity_hash_value,
+                   host, hostname,
+		   type, desc,
+                   port, severity,
+		   qod, path))
+        {
+          g_info ("Captured duplicate result, report: %llu hash_value: %s",
+                   report, *entity_hash_value);
+          return_value = 1;
+        }
+      g_free (desc);
+  }
+  return return_value;
+}
+
+/*
+ * @brief Generate the hash value for the report host detail and
+ * check if the report host detail entry already exists
+ *
+ * @param[in]  report      Report.
+ * @param[in]  task        Task.
+ * @param[in]  r_entity    entity of the result.
+ *
+ * @param[out] hash_value  The generated hash value of r_entity.
+ *
+ * @return     "1" if osp result already exists, else "0"
+ */
+static int
+check_host_detail_exists (report_t report, const char *host, const char *s_type,
+                          const char *s_name, const char *s_desc, const char *name,
+                          const char *value, char **detail_hash_value)
+{
+  char *hash_string;
+  long long int report_host;
+  int return_value = 0;
+
+  hash_string = g_strdup_printf ("%llu-%s-%s-%s-%s-%s-%s", report, host, s_type,
+                                 s_name, s_desc, name, value);
+  *detail_hash_value = get_md5_hash_from_string (hash_string);
+  g_free (hash_string);
+
+  sql_int64 (&report_host, "SELECT id FROM report_hosts"
+                           " WHERE report = %llu AND host = '%s';",
+             report, host);
+
+  if (sql_int ("SELECT EXISTS"
+               " (SELECT * FROM report_host_details"
+               "  WHERE report_host = %llu and hash_value = '%s');",
+               report_host, *detail_hash_value))
+    {
+      gchar *quoted_s_desc = sql_quote ((gchar*) s_desc);
+
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM report_host_details"
+                   "   WHERE report_host = %llu and hash_value = '%s'"
+		   "   and source_type = '%s' and source_name = '%s'"
+                   "   and source_description = '%s'"
+                   "   and  name = '%s' and value = '%s'"
+                   " );",
+                   report_host, *detail_hash_value,  s_type, s_name,
+                   quoted_s_desc, name, value))
+        {
+          g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
+                      report, *detail_hash_value);
+          return_value = 1;
+        }
+      g_free (quoted_s_desc);
+    }
+  return return_value;
+}
+
 /**
  * @brief Parse an OSP report.
  *
@@ -29082,8 +29207,15 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       manage_report_host_add (report, host, start_time, end_time);
       if (!strcmp (type, "Host Detail"))
         {
-          insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
-                                     name, entity_text (r_entity));
+          gchar *hash_value = NULL;
+          if (!check_host_detail_exists (report, host, "osp", "",
+                                         "OSP Host Detail", name,
+                                         entity_text (r_entity), &hash_value))
+            {
+              insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
+                                         name, entity_text (r_entity), hash_value);
+            }
+          g_free (hash_value);
           results = next_entities (results);
           continue;
         }
@@ -29109,9 +29241,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
            */
           if (manage_report_host_detail (report, host, desc))
             g_warning ("%s: Failed to add report detail for host '%s': %s",
-                      __func__,
-                      host,
-                      desc);
+                       __func__, host, desc);
         }
       else if (host && nvt_id && desc && (strcmp (nvt_id, "HOST_START") == 0))
         {
@@ -29124,17 +29254,23 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
         }
       else
         {
-          result = make_osp_result (task,
-                                    host,
-                                    hostname,
-                                    nvt_id,
-                                    type,
-                                    desc,
-                                    port ?: "",
-                                    severity_str ?: severity,
-                                    qod_int,
-                                    path);
-          g_array_append_val (results_array, result);
+          char *hash_value;
+          if (!check_osp_result_exists (report, task, r_entity, &hash_value))
+            {
+              result = make_osp_result (task,
+                                        host,
+                                        hostname,
+                                        nvt_id,
+                                        type,
+                                        desc,
+                                        port ?: "",
+                                        severity_str ?: severity,
+                                        qod_int,
+                                        path,
+                                        hash_value);
+              g_array_append_val (results_array, result);
+            }
+          g_free (hash_value);
         }
       g_free (nvt_id);
       g_free (desc);
@@ -47985,6 +48121,7 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
   entities_t details;
   entity_t detail;
   char *uuid;
+  char *hash_value;
 
   in_assets = sql_int ("SELECT not(value = 'no') FROM task_preferences"
                        " WHERE task = (SELECT task FROM reports"
@@ -48023,9 +48160,26 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
           value = entity_child (detail, "value");
           if (value == NULL)
             goto error;
-          insert_report_host_detail
-           (report, ip, entity_text (source_type), entity_text (source_name),
-            entity_text (source_desc), entity_text (name), entity_text (value));
+
+          if (!check_host_detail_exists (report, ip, entity_text (source_type),
+                                         entity_text (source_name),
+                                         entity_text (source_desc),
+                                         entity_text (name),
+                                         entity_text (value),
+                                         (char**) &hash_value))
+            {
+              insert_report_host_detail
+               (report, ip, entity_text (source_type), entity_text (source_name),
+                entity_text (source_desc), entity_text (name), entity_text (value),
+                hash_value);
+              g_free (hash_value);
+            }
+          else
+            {
+              g_free (hash_value);
+              details = next_entities (details);
+              continue;
+            }
 
           /* Only add to assets if "Add to Assets" is set on the task. */
           if (in_assets)
