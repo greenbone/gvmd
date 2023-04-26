@@ -375,6 +375,9 @@ trash_id_exists (const char *, const char *);
 gboolean
 find_resource (const char*, const char*, resource_t*);
 
+gboolean
+find_resource_no_acl (const char*, const char*, resource_t*);
+
 const char *
 type_name_plural (const char*);
 
@@ -1921,7 +1924,7 @@ nvt_selector_iterator_type (iterator_t*);
 /* NVT preferences. */
 
 void
-manage_nvt_preference_add (const char*, const char*);
+manage_nvt_preference_add (const char*, const char*, int);
 
 void
 manage_nvt_preferences_enable ();
