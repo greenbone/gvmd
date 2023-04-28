@@ -33292,11 +33292,11 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
   count = 0;
   if (example)
     init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
+                   "SELECT uuid, name, severity, description FROM cves"
                    " LIMIT 4;");
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
+                   "SELECT uuid, name, severity, description FROM cves"
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -33306,7 +33306,7 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
                    " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
+                   "SELECT uuid, name, severity, description FROM cves"
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
