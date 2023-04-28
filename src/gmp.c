@@ -18095,8 +18095,7 @@ gmp_xml_handle_result ()
           detail->ip = g_strdup (result->host);
           detail->name = g_strdup ("detected_at");
           detail->source_desc = g_strdup ("create_report_import");
-          detail->source_name = g_strdup (
-            detection->source_oid); // verify when detected_at || detected_by
+          detail->source_name = g_strdup (result->nvt_oid);
           detail->source_type = g_strdup ("create_report_import");
           detail->value = g_strdup (detection->location);
           array_add (create_report_data->details, detail);
