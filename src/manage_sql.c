@@ -17884,8 +17884,10 @@ task_running_report (task_t task)
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu AND end_time IS NULL"
                                      " AND (scan_run_status = %u "
+                                     " OR scan_run_status = %u "
                                      " OR scan_run_status = %u);",
                                      task,
+                                     TASK_STATUS_REQUESTED,
                                      TASK_STATUS_RUNNING,
                                      TASK_STATUS_QUEUED);
     }
