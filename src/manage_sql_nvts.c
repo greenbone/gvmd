@@ -1266,20 +1266,22 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
             }
           else
             {
-              gchar *full_name;
+              gchar *full_name, *text;
               preference_t *preference;
 
+              text = element_text (name);
               full_name = g_strdup_printf ("%s:%s:%s:%s",
                                            oid,
                                            id,
                                            type,
-                                           element_text (name));
+                                           text);
+              g_free (text);
 
               blank_control_chars (full_name);
               preference = g_malloc0 (sizeof (preference_t));
               preference->name = full_name;
               if (def)
-                preference->value = g_strdup (element_text (def));
+                preference->value = element_text (def);
               else
                 preference->value = g_strdup ("");
               *preferences = g_list_prepend (*preferences, preference);
@@ -1306,13 +1308,11 @@ static nvti_t *
 nvti_from_vt (element_t vt)
 {
   nvti_t *nvti = nvti_new ();
-  gchar *id;
+  gchar *id, *category_text;
   element_t name, summary, insight, affected, impact, detection, solution;
   element_t creation_time, modification_time;
   element_t refs, ref, custom, family, category, deprecated;
   element_t severities, severity;
-
-  // FIX must free element_text  nvti_set_*_use
 
   id = element_attribute (vt, "id");
   if (id == NULL)
@@ -1331,40 +1331,48 @@ nvti_from_vt (element_t vt)
       nvti_free (nvti);
       return NULL;
     }
-  nvti_set_name (nvti, element_text (name));
+  nvti_put_name (nvti, element_text (name));
 
   summary = element_child (vt, "summary");
   if (summary)
-    nvti_set_summary (nvti, element_text (summary));
+    nvti_put_summary (nvti, element_text (summary));
 
   insight = element_child (vt, "insight");
   if (insight)
-    nvti_set_insight (nvti, element_text (insight));
+    nvti_put_insight (nvti, element_text (insight));
 
   affected = element_child (vt, "affected");
   if (affected)
-    nvti_set_affected (nvti, element_text (affected));
+    nvti_put_affected (nvti, element_text (affected));
 
   impact = element_child (vt, "impact");
   if (impact)
-    nvti_set_impact (nvti, element_text (impact));
+    nvti_put_impact (nvti, element_text (impact));
 
   creation_time = element_child (vt, "creation_time");
-  if (creation_time)
-    nvti_set_creation_time (nvti, strtol (element_text (creation_time),
-                                          NULL, 10));
+  if (creation_time) {
+    gchar *text;
+
+    text = element_text (creation_time);
+    nvti_set_creation_time (nvti, strtol (text, NULL, 10));
+    g_free (text);
+  }
 
   modification_time = element_child (vt, "modification_time");
-  if (modification_time)
-    nvti_set_modification_time (nvti, strtol (element_text (modification_time),
-                                              NULL, 10));
+  if (modification_time) {
+    gchar *text;
+
+    text = element_text (modification_time);
+    nvti_set_modification_time (nvti, strtol(text, NULL, 10));
+    g_free (text);
+  }
 
   detection = element_child (vt, "detection");
   if (detection)
     {
       gchar *qod;
 
-      nvti_set_detection (nvti, element_text (detection));
+      nvti_put_detection (nvti, element_text (detection));
 
       qod = element_attribute (detection, "qod");
       if (qod == NULL) {
@@ -1384,7 +1392,7 @@ nvti_from_vt (element_t vt)
     {
       gchar *type, *method;
 
-      nvti_set_solution (nvti, element_text (solution));
+      nvti_put_solution (nvti, element_text (solution));
 
       type = element_attribute (solution, "type");
       if (type == NULL)
@@ -1440,36 +1448,45 @@ nvti_from_vt (element_t vt)
             {
               element_t origin, severity_date;
               double cvss_base_dbl;
-              gchar * cvss_base;
+              gchar *cvss_base, *value_text, *origin_text;
               time_t parsed_severity_date;
 
+              value_text = element_text (value);
+
               cvss_base_dbl
-                = get_cvss_score_from_base_metrics (element_text (value));
+                = get_cvss_score_from_base_metrics (value_text);
 
               origin
                 = element_child (severity, "origin");
               severity_date
                 = element_child (severity, "date");
               
-              if (severity_date)
-                parsed_severity_date = strtol (element_text (severity_date),
-                                               NULL, 10);
+              if (severity_date) {
+                gchar *text;
+
+                text = element_text (severity_date);
+                parsed_severity_date = strtol (text, NULL, 10);
+                g_free (text);
+              }
               else
                 parsed_severity_date = nvti_creation_time (nvti);
 
+              origin_text = origin ? element_text (origin) : NULL,
               nvti_add_vtseverity (nvti,
                 vtseverity_new (severity_type,
-                                origin ? element_text (origin) : NULL,
+                                origin_text,
                                 parsed_severity_date,
                                 cvss_base_dbl,
-                                element_text (value)));
+                                value_text));
+              g_free (origin_text);
 
-              nvti_add_tag (nvti, "cvss_base_vector", element_text (value));
+              nvti_add_tag (nvti, "cvss_base_vector", value_text);
 
               cvss_base = g_strdup_printf ("%.1f",
-                get_cvss_score_from_base_metrics (element_text (value)));
+                get_cvss_score_from_base_metrics (value_text));
               nvti_set_cvss_base (nvti, cvss_base);
               g_free (cvss_base);
+              g_free (value_text);
             }
 
           g_free (severity_type);
@@ -1536,7 +1553,7 @@ nvti_from_vt (element_t vt)
       nvti_free (nvti);
       return NULL;
     }
-  nvti_set_family (nvti, element_text (family));
+  nvti_put_family (nvti, element_text (family));
 
   category = element_child (custom, "category");
   if (category == NULL)
@@ -1545,12 +1562,18 @@ nvti_from_vt (element_t vt)
       nvti_free (nvti);
       return NULL;
     }
-  nvti_set_category (nvti, atoi (element_text (category)));
+  category_text = element_text (category);
+  nvti_set_category (nvti, atoi (category_text));
+  g_free (category_text);
 
   deprecated = element_child (custom, "deprecated");
   if (deprecated)
     {
-      nvti_add_tag (nvti, "deprecated", element_text (deprecated));
+      gchar *text;
+
+      text = element_text (deprecated);
+      nvti_add_tag (nvti, "deprecated", text);
+      g_free (text);
     }
 
   return nvti;
