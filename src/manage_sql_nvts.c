@@ -1232,7 +1232,7 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
     {
       if (strcasecmp (element_name (param), "param") == 0)
         {
-          const gchar *type, *id;
+          gchar *type, *id;
           element_t name, def;
 
           type = element_attribute (param, "type");
@@ -1284,6 +1284,9 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
                 preference->value = g_strdup ("");
               *preferences = g_list_prepend (*preferences, preference);
             }
+
+          g_free (type);
+          g_free (id);
         }
 
       param = element_next (param);
@@ -1303,13 +1306,13 @@ static nvti_t *
 nvti_from_vt (element_t vt)
 {
   nvti_t *nvti = nvti_new ();
-  const char *id;
+  gchar *id;
   element_t name, summary, insight, affected, impact, detection, solution;
   element_t creation_time, modification_time;
   element_t refs, ref, custom, family, category, deprecated;
   element_t severities, severity;
 
-  // FIX must free element_text,_attr  nvti_set_name_use
+  // FIX must free element_text  nvti_set_*_use
 
   id = element_attribute (vt, "id");
   if (id == NULL)
@@ -1319,6 +1322,7 @@ nvti_from_vt (element_t vt)
       return NULL;
     }
   nvti_set_oid (nvti, id);
+  g_free (id);
 
   name = element_child (vt, "name");
   if (name == NULL)
@@ -1358,21 +1362,27 @@ nvti_from_vt (element_t vt)
   detection = element_child (vt, "detection");
   if (detection)
     {
-      const gchar *qod;
+      gchar *qod;
 
       nvti_set_detection (nvti, element_text (detection));
 
       qod = element_attribute (detection, "qod");
-      if (qod == NULL)
-        nvti_set_qod_type (nvti, element_attribute (detection, "qod_type"));
+      if (qod == NULL) {
+        gchar *qod_type;
+
+        qod_type = element_attribute (detection, "qod_type");
+        nvti_set_qod_type (nvti, qod_type);
+        g_free (qod_type);
+      }
       else
         nvti_set_qod (nvti, qod);
+      g_free (qod);
     }
 
   solution = element_child (vt, "solution");
   if (solution)
     {
-      const gchar *type, *method;
+      gchar *type, *method;
 
       nvti_set_solution (nvti, element_text (solution));
 
@@ -1381,10 +1391,12 @@ nvti_from_vt (element_t vt)
         g_debug ("%s: SOLUTION missing type", __func__);
       else
         nvti_set_solution_type (nvti, type);
+      g_free (type);
 
       method = element_attribute (solution, "method");
       if (method)
         nvti_set_solution_method (nvti, method);
+      g_free (method);
     }
 
   severities = element_child (vt, "severities");
@@ -1398,7 +1410,7 @@ nvti_from_vt (element_t vt)
   severity = element_first_child (severities);
   while (severity)
     {
-      const gchar *severity_type;
+      gchar *severity_type;
 
       severity_type = element_attribute (severity, "type");
 
@@ -1459,6 +1471,8 @@ nvti_from_vt (element_t vt)
               nvti_set_cvss_base (nvti, cvss_base);
               g_free (cvss_base);
             }
+
+          g_free (severity_type);
         }
 
       severity = element_next (severity);
@@ -1470,7 +1484,7 @@ nvti_from_vt (element_t vt)
       ref = element_first_child (refs);
       while (ref)
         {
-          const gchar *ref_type;
+          gchar *ref_type;
 
           ref_type = element_attribute (ref, "type");
           if (ref_type == NULL)
@@ -1483,7 +1497,7 @@ nvti_from_vt (element_t vt)
             }
           else
             {
-              const gchar *ref_id;
+              gchar *ref_id;
 
               ref_id = element_attribute (ref, "id");
               if (ref_id == NULL)
@@ -1497,7 +1511,10 @@ nvti_from_vt (element_t vt)
               else
                 {
                   nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
+                  g_free (ref_id);
                 }
+
+              g_free (ref_type);
             }
 
           ref = element_next (ref);
@@ -1557,7 +1574,7 @@ update_nvts_from_vts (element_t *get_vts_response,
   GList *preferences;
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
-  const char *osp_vt_hash;
+  char *osp_vt_hash;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1690,6 +1707,7 @@ update_nvts_from_vts (element_t *get_vts_response,
                      " does not match the one from the scanner (%s).",
                      __func__, db_vts_hash, osp_vt_hash);
 
+          g_free (osp_vt_hash);
           g_free (db_vts_hash);
           return 1;
         }
@@ -1700,6 +1718,7 @@ update_nvts_from_vts (element_t *get_vts_response,
     g_warning ("%s: No SHA-256 hash received from scanner, skipping check.",
                __func__);
 
+  g_free (osp_vt_hash);
   return 0;
 }
 
