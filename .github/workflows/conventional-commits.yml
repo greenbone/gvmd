@@ -3,6 +3,9 @@ name: Conventional Commits
 on:
   pull_request:
 
+permissions:
+  pull-requests: write
+
 jobs:
   conventional-commits:
     name: Conventional Commits
