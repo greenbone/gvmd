@@ -1637,6 +1637,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
     }
 
   if (rebuild) {
+    sql ("DROP VIEW IF EXISTS results_autofp;");
     sql ("DROP VIEW vulns;");
     sql ("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
 
