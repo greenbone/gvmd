@@ -2245,6 +2245,9 @@ const char*
 asset_os_iterator_average_severity (iterator_t *);
 
 int
+asset_os_iterator_all_installs (iterator_t *);
+
+int
 asset_os_count (const get_data_t *);
 
 int
