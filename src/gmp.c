@@ -11417,10 +11417,12 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
           g_string_append_printf (result,
                                   "<title>%s</title>"
                                   "<installs>%i</installs>"
+                                  "<all_installs>%i</all_installs>"
                                   "<hosts>"
                                   "%i",
                                   asset_os_iterator_title (&assets),
                                   asset_os_iterator_installs (&assets),
+                                  asset_os_iterator_all_installs (&assets),
                                   asset_os_iterator_installs (&assets));
           init_os_host_iterator (&os_hosts,
                                   get_iterator_resource (&assets));

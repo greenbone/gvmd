@@ -9074,6 +9074,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </filter_keywords>
         <filter_keywords>
           <condition>type is "host"</condition>
+          <option>
+            <name>os_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an OS asset that was detected on the hosts but
+              does not have to be the best match
+            </summary>
+          </option>
+          <column>
+            <name>best_os_cpe</name>
+            <type>text</type>
+            <summary>CPE-ID of best matching OS</summary>
+          </column>
           <column>
             <name>severity</name>
             <type>severity</type>
@@ -9082,7 +9095,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>os</name>
             <type>text</type>
-            <summary>Best matching OS</summary>
+            <summary>Best matching OS, either name or CPE-ID</summary>
           </column>
           <column>
             <name>oss</name>
@@ -9103,6 +9116,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <filter_keywords>
           <condition>type is "os"</condition>
           <column>
+            <name>all_hosts</name>
+            <type>integer</type>
+            <summary>
+              Number of all hosts using the asset, even if the OS
+              is not the best match
+            </summary>
+          </column>
+          <column>
             <name>title</name>
             <type>text</type>
             <summary>CPE title of the asset</summary>
@@ -9110,7 +9131,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>hosts</name>
             <type>integer</type>
-            <summary>Number of hosts using the asset</summary>
+            <summary>Number of hosts using the asset as best OS match</summary>
           </column>
           <column>
             <name>latest_severity</name>
@@ -9418,6 +9439,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern>
             <e>title</e>
             <e>installs</e>
+            <e>all_installs</e>
             <e>latest_severity</e>
             <e>highest_severity</e>
             <e>average_severity</e>
@@ -9431,7 +9453,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
 <!-- FIX hosts/host_count? -->
             <name>installs</name>
-            <summary>Number of hosts on which OS has been detected</summary>
+            <summary>
+              Number of hosts on which OS has been detected as the best match
+            </summary>
+            <pattern>integer</pattern>
+          </ele>
+          <ele>
+            <name>all_installs</name>
+            <summary>
+              Number of hosts on which OS has been detected,
+              not necessarily as the best match
+            </summary>
             <pattern>integer</pattern>
           </ele>
           <ele>
@@ -9469,7 +9501,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
           <ele>
             <name>hosts</name>
-            <summary>Hosts on which this OS has been detected</summary>
+            <summary>
+              Hosts on which this OS has been detected as the best match
+            </summary>
             <pattern>
               <e>asset</e>
             </pattern>
