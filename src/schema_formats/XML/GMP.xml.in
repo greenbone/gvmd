@@ -8768,6 +8768,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               text
               <e>name</e>
               <o><e>credential</e></o>
+              <o><e>certificate_info</e></o>
             </pattern>
             <ele>
               <name>name</name>
@@ -8798,6 +8799,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <summary>The username of the credential</summary>
                 <pattern><t>name</t></pattern>
               </ele>
+            </ele>
+            <ele>
+              <name>certificate_info</name>
+              <summary>Certificate info if the data is a TLS certificate</summary>
+              <type>certificate_info</type>
             </ele>
           </ele>
         </ele>
