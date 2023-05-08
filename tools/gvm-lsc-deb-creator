@@ -1,28 +1,4 @@
 #!/bin/bash
-# Copyright (C) 2018-2022 Greenbone AG
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# This script generates a Debian package that creates a user for GVM
-# local security checks.
-
-#
-# Variables
-#
-
 # Command line parameters
 USERNAME="$1"
 PUBKEY_FILE="$2"
@@ -30,6 +6,7 @@ TEMP_DIR="$3"
 OUTPUT_PATH=$4
 MAINTAINER_EMAIL="$5"
 
+# Verify required args
 if [ -z "${USERNAME}" ]
 then
   echo "No username given" >&2
@@ -38,7 +15,7 @@ fi
 
 if [ -z "${PUBKEY_FILE}" ]
 then
-  echo "No pubkey path given" >&2
+  echo "No pubkey at given path" >&2
   exit 1
 fi
 
@@ -54,6 +31,7 @@ then
   exit 1
 fi
 
+# Ensure maintainer email
 if [ -z "${MAINTAINER_EMAIL}" ]
 then
   MAINTAINER_HOSTNAME="$(hostname)"
@@ -71,7 +49,7 @@ PACKAGE_VERSION="0.5-1"
 PACKAGE_NAME_VERSION="${PACKAGE_NAME}_${PACKAGE_VERSION}"
 MAINTAINER="Greenbone Vulnerability Manager  <${MAINTAINER_EMAIL}>"
 PACKAGE_DATE=$(date "+%a, %d %b %Y %H:%M:%S %z")
-
+# Used for identifying username entry in /etc/passwd
 USER_COMMENT="GVM Local Security Checks"
 USER_COMMENT_GREP="GVM\\ Local\\ Security\\ Checks"
 
@@ -110,14 +88,6 @@ then
   exit 1
 fi
 
-#
-# Set up error handling
-#
-handle_error() {
-  echo "DEB package generation failed" >&2
-  exit 1
-}
-trap handle_error ERR
 
 #
 # Create data files
@@ -194,6 +164,9 @@ chmod "0755" "${PREINST_FILE}"
 {
   echo "#!/bin/sh"
   echo "set -e  # abort on errors"
+  echo "# Delete GVM Local Security Checks user by username and comment identifier"
+  echo "grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -fr ${USERNAME}"
+  echo "# GVM Local Security Checks user and create home directory"
   echo "useradd -c \"${USER_COMMENT}\" -d /home/${USERNAME} -m -s /bin/bash ${USERNAME}"
 } > "${PREINST_FILE}"
 
@@ -204,6 +177,7 @@ chmod "0755" "${POSTINST_FILE}"
 {
   echo "#!/bin/sh"
   echo "set -e  # abort on errors"
+  echo "# Change file permissions"
   echo "chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}"
   echo "chmod 500 /home/${USERNAME}/.ssh"
   echo "chmod 400 /home/${USERNAME}/.ssh/authorized_keys"
@@ -215,13 +189,15 @@ touch "${POSTRM_FILE}"
 chmod "0755" "${POSTRM_FILE}"
 {
   echo "#!/bin/sh"
-  echo "# Remove user only if it was created by this package."
+  echo "# Remove user only if it was created by this package and only"
+  echo "# if postrm is not called when reinstalling the same package."
   echo "# The debian package will run the postun script in case of errors"
   echo "# (e.g. user already existed)."
   echo "# Delete the user only if /etc/passwd lists content that suggests"
   echo "# that the user was created by this package."
   # echo "set -e  # abort on errors"
-  echo "grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -fr ${USERNAME}"
+  echo "if [ \$1 != \"upgrade\" ]; then grep \"${USERNAME}.*${USER_COMMENT_GREP}\" /etc/passwd && userdel -fr ${USERNAME}; fi"
+  echo "exit 0"
 } > "${POSTRM_FILE}"
 
 # Calculate md5 checksums
