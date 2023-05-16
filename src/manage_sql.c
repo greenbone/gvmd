@@ -29011,7 +29011,6 @@ check_osp_result_exists (report_t report, task_t task,
   entity_string = g_string_new ("");
   print_entity_to_string (r_entity, entity_string);
   *entity_hash_value = get_md5_hash_from_string (entity_string->str);
-  g_string_free(entity_string, TRUE);
   if (sql_int ("SELECT EXISTS"
                " (SELECT * FROM results"
                "  WHERE report = %llu and hash_value = '%s');",
@@ -29046,10 +29045,12 @@ check_osp_result_exists (report_t report, task_t task,
         {
           g_info ("Captured duplicate result, report: %llu hash_value: %s",
                    report, *entity_hash_value);
+          g_debug ("Entity string: %s", entity_string->str);
           return_value = 1;
         }
       g_free (desc);
   }
+  g_string_free(entity_string, TRUE);
   return return_value;
 }
 
@@ -29077,7 +29078,6 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
   hash_string = g_strdup_printf ("%llu-%s-%s-%s-%s-%s-%s", report, host, s_type,
                                  s_name, s_desc, name, value);
   *detail_hash_value = get_md5_hash_from_string (hash_string);
-  g_free (hash_string);
 
   sql_int64 (&report_host, "SELECT id FROM report_hosts"
                            " WHERE report = %llu AND host = '%s';",
@@ -29102,10 +29102,12 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
         {
           g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
                       report, *detail_hash_value);
+          g_debug ("Hash string: %s", hash_string);
           return_value = 1;
         }
       g_free (quoted_s_desc);
     }
+  g_free (hash_string);
   return return_value;
 }
 
