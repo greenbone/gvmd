@@ -21,6 +21,10 @@
 # case a access key is present) or else from the Greenbone
 # Community Feed.
 
+# SCRIPT_NAME is the name the scripts will use to identify itself and to mark
+# log messages.
+SCRIPT_NAME="greenbone-feed-sync"
+
 ########## LOG FUNCTIONS
 ########## =============
 
@@ -159,10 +163,6 @@ ENTERPRISE_FEED_SCAP_PATH="$ENTERPRISE_FEED_BASE_PATH/vulnerability-feed/@GMP_VE
 # the value 22 (Standard SSH) is useful. Only change if you know what you are
 # doing.
 PORT=24
-
-# SCRIPT_NAME is the name the scripts will use to identify itself and to mark
-# log messages.
-SCRIPT_NAME="greenbone-feed-sync"
 
 
 # LOCK_FILE is the name of the file used to lock the feed during sync or update.
