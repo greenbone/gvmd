@@ -2368,8 +2368,8 @@ config_insert_preferences (config_t config,
             sql ("INSERT INTO config_preferences"
                  " (config, type, name, value, pref_nvt, pref_id, pref_type,"
                  "  pref_name)"
-                 " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s', %i,"
-                 "         '%s', '%s', '%s');",
+                 " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s', '%s',"
+                 "         %i, '%s', '%s');",
                  config,
                  quoted_nvt_oid,
                  quoted_preference_id,
