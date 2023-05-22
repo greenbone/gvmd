@@ -50,6 +50,13 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Rows per statement when inserting VT refs for update/rebuild.
+ *
+ * There are about 500k vt_refs.
+ */
+#define VT_REFS_BATCH_SIZE 50000
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -264,56 +271,126 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
+ * @brief SQL batch.
+ */
+typedef struct
+{
+  GString *sql;  ///< SQL buffer.
+  int max;       ///< Max number of inserts.
+  int size;      ///< Number of inserts.
+} batch_t;
+
+/**
+ * @brief Create an SQL batch.
+ *
+ * @param[in]  max  Max number of iterations.
+ *
+ * @return Freshly allocated batch.
+ */
+batch_t *
+batch_start (int max)
+{
+  batch_t *b;
+  b = g_malloc0 (sizeof (batch_t));
+  b->sql = g_string_new ("");
+  b->max = max;
+  return b;
+}
+
+/**
+ * @brief Check an SQL batch.
+ *
+ * @para[in]  b  Batch.
+ *
+ * @return 1 init b->str, 0 continue as normal.
+ */
+int
+batch_check (batch_t *b)
+{
+  b->size++;
+
+  if (b->size == 1)
+    // First time, caller must init sql.
+    return 1;
+
+  if (b->size > b->max) {
+    sql ("%s", b->sql->str);
+
+    b->size = 1;
+
+    g_string_free (b->sql, TRUE);
+    b->sql = g_string_new ("");
+
+    // Batch just ran, caller must init sql again.
+    return 1;
+  }
+
+  return 0;
+}
+
+/**
+ * @brief End and free an SQL batch.
+ *
+ * @para[in]  b  Batch.
+ */
+void
+batch_end (batch_t *b)
+{
+  if (b->size > 0) {
+    g_string_append_printf (b->sql, ";");
+    sql ("%s", b->sql->str);
+  }
+  g_string_free (b->sql, TRUE);
+  g_free (b);
+}
+
+/**
  * @brief Insert vt_refs for an NVT.
  *
  * @param[in]  nvti       NVT Information.
  * @param[in]  rebuild    True if rebuilding.
+ * @param[in]  batch      Batch for inserts.
  */
 static void
-insert_vt_refs (const nvti_t *nvti, int rebuild)
+insert_vt_refs (const nvti_t *nvti, int rebuild, batch_t *batch)
 {
   int i;
-  GString *insert;
 
   if (rebuild == 0)
     sql ("DELETE FROM vt_refs%s where vt_oid = '%s';",
          rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
-  insert = NULL;
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
       vtref_t *ref;
       gchar *quoted_type, *quoted_id, *quoted_text;
+      int comma;
 
+      comma = 0;
       ref = nvti_vtref (nvti, i);
       quoted_type = sql_quote (vtref_type (ref));
       quoted_id = sql_quote (vtref_id (ref));
       quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
-      if (i == 0) {
-        insert = g_string_new ("");
-        g_string_append_printf (insert,
+      if (batch_check (batch))
+        g_string_append_printf (batch->sql,
                                 "INSERT into vt_refs%s (vt_oid, type, ref_id, ref_text)"
                                 " VALUES",
                                 rebuild ? "_rebuild" : "");
-      }
+      else
+        comma = 1;
                                
-      g_string_append_printf (insert,
-                              "%s ('%s', '%s', '%s', '%s')",
-                              i == 0 ? "" : ",",
+      g_string_append_printf (batch->sql,
+                              // Newline in case it gets logged.
+                              "%s\n ('%s', '%s', '%s', '%s')",
+                              comma ? "," : "",
                               nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
 
       g_free (quoted_type);
       g_free (quoted_id);
       g_free (quoted_text);
     }
-
-  if (insert) {
-    g_string_append_printf (insert, ";");
-    sql ("%s", insert->str);
-    g_string_free (insert, TRUE);
-  }
 }
 
 /**
@@ -370,11 +447,12 @@ insert_vt_severities (const nvti_t *nvti, int rebuild)
  *
  * Always called within a transaction.
  *
- * @param[in]  nvti       NVT Information.
- * @param[in]  rebuild    True if rebuilding.
+ * @param[in]  nvti           NVT Information.
+ * @param[in]  rebuild        True if rebuilding.
+ * @param[in]  vt_refs_batch  Batch for vt_refs.
  */
 static void
-insert_nvt (const nvti_t *nvti, int rebuild)
+insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch)
 {
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
@@ -424,7 +502,7 @@ insert_nvt (const nvti_t *nvti, int rebuild)
          rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
-  insert_vt_refs(nvti, rebuild);
+  insert_vt_refs (nvti, rebuild, vt_refs_batch);
 
   highest = insert_vt_severities(nvti, rebuild);
 
@@ -1598,6 +1676,7 @@ update_nvts_from_vts (element_t *get_vts_response,
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
   char *osp_vt_hash;
+  batch_t *vt_refs_batch;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1642,6 +1721,7 @@ update_nvts_from_vts (element_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
+  vt_refs_batch = batch_start (VT_REFS_BATCH_SIZE);
   vt = element_first_child (vts);
   while (vt)
     {
@@ -1655,7 +1735,7 @@ update_nvts_from_vts (element_t *get_vts_response,
       else
         count_modified_vts += 1;
 
-      insert_nvt (nvti, rebuild);
+      insert_nvt (nvti, rebuild, vt_refs_batch);
 
       preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
@@ -1673,6 +1753,7 @@ update_nvts_from_vts (element_t *get_vts_response,
       nvti_free (nvti);
       vt = element_next (vt);
     }
+  batch_end (vt_refs_batch);
 
   if (rebuild) {
     sql ("DROP VIEW IF EXISTS results_autofp;");
