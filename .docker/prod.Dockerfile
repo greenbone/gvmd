@@ -68,6 +68,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Loading scap and cert data
 # xml-twig-tools
 
+# Required for set up certificates for GVM
+# gnutls-bin
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     dpkg \
@@ -76,6 +79,7 @@ RUN apt-get update && \
     gosu \
     gnupg \
     gpgsm \
+    gnutls-bin \
     libbsd0 \
     libgpgme11 \
     libical3 \
@@ -110,6 +114,7 @@ RUN addgroup --gid 1001 --system gvmd && \
 RUN mkdir -p /run/gvmd && \
     mkdir -p /var/lib/gvm && \
     mkdir -p /var/log/gvm && \
+    gvm-manage-certs -a && \
     chown -R gvmd:gvmd /etc/gvm && \
     chown -R gvmd:gvmd /run/gvmd && \
     chown -R gvmd:gvmd /var/lib/gvm && \
