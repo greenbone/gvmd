@@ -57,6 +57,13 @@
  */
 #define VT_REFS_BATCH_SIZE 50000
 
+/**
+ * @brief Rows per statement when inserting VT severities for update/rebuild.
+ *
+ * There are about 80k vt_severities.
+ */
+#define VT_SEVS_BATCH_SIZE 100000
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -398,11 +405,12 @@ insert_vt_refs (const nvti_t *nvti, int rebuild, batch_t *batch)
  *
  * @param[in]  nvti       NVT Information.
  * @param[in]  rebuild    True if rebuilding.
+ * @param[in]  batch      Batch for inserts.
  *
  * @return Highest severity.
  */
 static double
-insert_vt_severities (const nvti_t *nvti, int rebuild)
+insert_vt_severities (const nvti_t *nvti, int rebuild, batch_t *batch)
 {
   int i;
   double highest;
@@ -418,20 +426,32 @@ insert_vt_severities (const nvti_t *nvti, int rebuild)
     {
       vtseverity_t *severity;
       gchar *quoted_origin, *quoted_value;
+      int comma;
 
+      comma = 0;
       severity = nvti_vtseverity (nvti, i);
       quoted_origin = sql_quote (vtseverity_origin (severity) ?
                                  vtseverity_origin (severity) : "");
       quoted_value = sql_quote (vtseverity_value (severity) ?
                                  vtseverity_value (severity) : "");
 
-      sql ("INSERT into vt_severities%s (vt_oid, type, origin, date, score,"
-           "                             value)"
-           " VALUES ('%s', '%s', '%s', %i, %0.1f, '%s');",
-           rebuild ? "_rebuild" : "",
-           nvti_oid (nvti), vtseverity_type (severity),
-           quoted_origin, vtseverity_date (severity),
-           vtseverity_score (severity), quoted_value);
+      if (batch_check (batch))
+        g_string_append_printf (batch->sql,
+                                "INSERT into vt_severities%s (vt_oid, type, origin, date, score,"
+                                "                             value)"
+                                " VALUES",
+                                rebuild ? "_rebuild" : "");
+      else
+        comma = 1;
+
+      g_string_append_printf (batch->sql,
+                              // Newline in case it gets logged.
+                              "%s\n ('%s', '%s', '%s', %i, %0.1f, '%s')",
+                              comma ? "," : "",
+                              nvti_oid (nvti), vtseverity_type (severity),
+                              quoted_origin, vtseverity_date (severity),
+                              vtseverity_score (severity), quoted_value);
+
       if (vtseverity_score (severity) > highest)
         highest = vtseverity_score (severity);
 
@@ -450,9 +470,11 @@ insert_vt_severities (const nvti_t *nvti, int rebuild)
  * @param[in]  nvti           NVT Information.
  * @param[in]  rebuild        True if rebuilding.
  * @param[in]  vt_refs_batch  Batch for vt_refs.
+ * @param[in]  vt_sevs_batch  Batch for vt_severities.
  */
 static void
-insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch)
+insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
+            batch_t *vt_sevs_batch)
 {
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
@@ -504,7 +526,7 @@ insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch)
 
   insert_vt_refs (nvti, rebuild, vt_refs_batch);
 
-  highest = insert_vt_severities(nvti, rebuild);
+  highest = insert_vt_severities (nvti, rebuild, vt_sevs_batch);
 
   sql ("INSERT into nvts%s (oid, name, summary, insight, affected,"
        " impact, cve, tag, category, family, cvss_base,"
@@ -1676,7 +1698,7 @@ update_nvts_from_vts (element_t *get_vts_response,
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
   char *osp_vt_hash;
-  batch_t *vt_refs_batch;
+  batch_t *vt_refs_batch, *vt_sevs_batch;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1722,6 +1744,7 @@ update_nvts_from_vts (element_t *get_vts_response,
     sql ("TRUNCATE nvt_preferences;");
 
   vt_refs_batch = batch_start (VT_REFS_BATCH_SIZE);
+  vt_sevs_batch = batch_start (VT_SEVS_BATCH_SIZE);
   vt = element_first_child (vts);
   while (vt)
     {
@@ -1735,7 +1758,7 @@ update_nvts_from_vts (element_t *get_vts_response,
       else
         count_modified_vts += 1;
 
-      insert_nvt (nvti, rebuild, vt_refs_batch);
+      insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
 
       preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
@@ -1754,6 +1777,7 @@ update_nvts_from_vts (element_t *get_vts_response,
       vt = element_next (vt);
     }
   batch_end (vt_refs_batch);
+  batch_end (vt_sevs_batch);
 
   if (rebuild) {
     sql ("DROP VIEW IF EXISTS results_autofp;");
