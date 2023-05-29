@@ -2497,7 +2497,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  date integer,"
        "  hostname text,"
-       "  path text);");
+       "  path text,"
+       "  hash_value text);");
 
   sql ("CREATE TABLE IF NOT EXISTS results_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -2627,7 +2628,8 @@ create_tables ()
        "  source_name text,"
        "  source_description text,"
        "  name text,"
-       "  value text);");
+       "  value text,"
+       "  hash_value text);");
 
   create_tables_nvt ("");
 
