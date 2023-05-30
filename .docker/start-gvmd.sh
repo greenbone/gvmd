@@ -24,6 +24,11 @@
 [ -z "$GVMD_USER" ] && GVMD_USER="gvmd"
 [ -z "$PGRES_DATA"] && PGRES_DATA="/var/lib/postgresql"
 
+if [ -n "$GVM_CERTS" ] && [ "$GVM_CERTS" = true ]; then
+	echo "Generating certs"
+	gvm-manage-certs -a
+fi
+
 # check for psql connection
 FILE=$PGRES_DATA/started
 until test -f "$FILE"; do
