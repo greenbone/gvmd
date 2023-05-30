@@ -26,7 +26,7 @@
 
 if [ -n "$GVM_CERTS" ] && [ "$GVM_CERTS" = true ]; then
 	echo "Generating certs"
-    gvm-manage-certs -a
+	gvm-manage-certs -a
 fi
 
 # check for psql connection
