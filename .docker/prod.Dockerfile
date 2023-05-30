@@ -67,6 +67,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Loading scap and cert data
 # xml-twig-tools
 
+# Required for set up certificates for GVM
+# gnutls-bin
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     dpkg \
@@ -75,6 +78,7 @@ RUN apt-get update && \
     gosu \
     gnupg \
     gpgsm \
+    gnutls-bin \
     libbsd0 \
     libgpgme11 \
     libical3 \
