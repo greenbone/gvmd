@@ -114,7 +114,6 @@ RUN addgroup --gid 1001 --system gvmd && \
 RUN mkdir -p /run/gvmd && \
     mkdir -p /var/lib/gvm && \
     mkdir -p /var/log/gvm && \
-    gvm-manage-certs -a && \
     chown -R gvmd:gvmd /etc/gvm && \
     chown -R gvmd:gvmd /run/gvmd && \
     chown -R gvmd:gvmd /var/lib/gvm && \
