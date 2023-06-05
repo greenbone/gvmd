@@ -3265,7 +3265,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
  * @return The usage type of the config, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get predefined status from a config iterator.
@@ -3557,10 +3557,10 @@ modify_config_preference (config_t config, const char* nvt,
               return 2;
             }
 
-          quoted_pref_nvt = g_strdup (splits[0]);
+          quoted_pref_nvt = sql_quote (splits[0]);
           pref_id = atoi (splits[1]);
-          quoted_pref_type = g_strdup (splits[2]);
-          quoted_pref_name = g_strdup (splits[3]);
+          quoted_pref_type = sql_quote (splits[2]);
+          quoted_pref_name = sql_quote (splits[3]);
 
           /* A radio.  Put the new value on the front of the list of options. */
 
