@@ -24229,7 +24229,7 @@ cache_report_counts (report_t report, int override, int min_qod,
       if (i)
         {
           g_string_append_printf (insert, ";");
-          ret = sql_giveup (insert->str);
+          ret = sql_giveup ("%s", insert->str);
           if (ret)
             {
               g_string_free (insert, TRUE);
