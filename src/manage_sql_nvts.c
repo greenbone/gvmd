@@ -1217,35 +1217,34 @@ set_nvts_check_time (int count_new, int count_modified)
  * @return 0 success, -1 error.
  */
 static int
-update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
+update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
 {
-  entity_t params, param;
-  entities_t children;
+  element_t params, param;
 
   assert (preferences);
 
-  params = entity_child (vt, "params");
+  params = element_child (vt, "params");
   if (params == NULL)
     return 0;
 
-  children = params->entities;
-  while ((param = first_entity (children)))
+  param = element_first_child (params);
+  while (param)
     {
-      if (strcasecmp (entity_name (param), "param") == 0)
+      if (strcasecmp (element_name (param), "param") == 0)
         {
-          const gchar *type, *id;
-          entity_t name, def;
+          gchar *type, *id;
+          element_t name, def;
 
-          type = entity_attribute (param, "type");
-          id = entity_attribute (param, "id");
-          name = entity_child (param, "name");
-          def = entity_child (param, "default");
+          type = element_attribute (param, "type");
+          id = element_attribute (param, "id");
+          name = element_child (param, "name");
+          def = element_child (param, "default");
 
           if (type == NULL)
             {
               GString *debug = g_string_new ("");
               g_warning ("%s: PARAM missing type attribute", __func__);
-              print_entity_to_string (param, debug);
+              print_element_to_string (param, debug);
               g_warning ("%s: PARAM: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
@@ -1253,7 +1252,7 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
             {
               GString *debug = g_string_new ("");
               g_warning ("%s: PARAM missing id attribute", __func__);
-              print_entity_to_string (param, debug);
+              print_element_to_string (param, debug);
               g_warning ("%s: PARAM: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
@@ -1261,33 +1260,38 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
             {
               GString *debug = g_string_new ("");
               g_warning ("%s: PARAM missing NAME", __func__);
-              print_entity_to_string (param, debug);
+              print_element_to_string (param, debug);
               g_warning ("%s: PARAM: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
             {
-              gchar *full_name;
+              gchar *full_name, *text;
               preference_t *preference;
 
+              text = element_text (name);
               full_name = g_strdup_printf ("%s:%s:%s:%s",
                                            oid,
                                            id,
                                            type,
-                                           entity_text (name));
+                                           text);
+              g_free (text);
 
               blank_control_chars (full_name);
               preference = g_malloc0 (sizeof (preference_t));
               preference->name = full_name;
               if (def)
-                preference->value = g_strdup (entity_text (def));
+                preference->value = element_text (def);
               else
                 preference->value = g_strdup ("");
               *preferences = g_list_prepend (*preferences, preference);
             }
+
+          g_free (type);
+          g_free (id);
         }
 
-      children = next_entities (children);
+      param = element_next (param);
     }
 
   return 0;
@@ -1301,18 +1305,16 @@ update_preferences_from_vt (entity_t vt, const gchar *oid, GList **preferences)
  * @return The NVTI object on success (needs to be free'd), NULL on error.
  */
 static nvti_t *
-nvti_from_vt (entity_t vt)
+nvti_from_vt (element_t vt)
 {
   nvti_t *nvti = nvti_new ();
-  const char *id;
-  entity_t name, summary, insight, affected, impact, detection, solution;
-  entity_t creation_time, modification_time;
-  entity_t refs, ref, custom, family, category, deprecated;
-  entity_t severities, severity;
+  gchar *id, *category_text;
+  element_t name, summary, insight, affected, impact, detection, solution;
+  element_t creation_time, modification_time;
+  element_t refs, ref, custom, family, category, deprecated;
+  element_t severities, severity;
 
-  entities_t children;
-
-  id = entity_attribute (vt, "id");
+  id = element_attribute (vt, "id");
   if (id == NULL)
     {
       g_warning ("%s: VT missing id attribute", __func__);
@@ -1320,75 +1322,92 @@ nvti_from_vt (entity_t vt)
       return NULL;
     }
   nvti_set_oid (nvti, id);
+  g_free (id);
 
-  name = entity_child (vt, "name");
+  name = element_child (vt, "name");
   if (name == NULL)
     {
       g_warning ("%s: VT missing NAME", __func__);
       nvti_free (nvti);
       return NULL;
     }
-  nvti_set_name (nvti, entity_text (name));
+  nvti_put_name (nvti, element_text (name));
 
-  summary = entity_child (vt, "summary");
+  summary = element_child (vt, "summary");
   if (summary)
-    nvti_set_summary (nvti, entity_text (summary));
+    nvti_put_summary (nvti, element_text (summary));
 
-  insight = entity_child (vt, "insight");
+  insight = element_child (vt, "insight");
   if (insight)
-    nvti_set_insight (nvti, entity_text (insight));
+    nvti_put_insight (nvti, element_text (insight));
 
-  affected = entity_child (vt, "affected");
+  affected = element_child (vt, "affected");
   if (affected)
-    nvti_set_affected (nvti, entity_text (affected));
+    nvti_put_affected (nvti, element_text (affected));
 
-  impact = entity_child (vt, "impact");
+  impact = element_child (vt, "impact");
   if (impact)
-    nvti_set_impact (nvti, entity_text (impact));
+    nvti_put_impact (nvti, element_text (impact));
 
-  creation_time = entity_child (vt, "creation_time");
-  if (creation_time)
-    nvti_set_creation_time (nvti, strtol (entity_text (creation_time),
-                                          NULL, 10));
+  creation_time = element_child (vt, "creation_time");
+  if (creation_time) {
+    gchar *text;
 
-  modification_time = entity_child (vt, "modification_time");
-  if (modification_time)
-    nvti_set_modification_time (nvti, strtol (entity_text (modification_time),
-                                              NULL, 10));
+    text = element_text (creation_time);
+    nvti_set_creation_time (nvti, strtol (text, NULL, 10));
+    g_free (text);
+  }
 
-  detection = entity_child (vt, "detection");
+  modification_time = element_child (vt, "modification_time");
+  if (modification_time) {
+    gchar *text;
+
+    text = element_text (modification_time);
+    nvti_set_modification_time (nvti, strtol(text, NULL, 10));
+    g_free (text);
+  }
+
+  detection = element_child (vt, "detection");
   if (detection)
     {
-      const gchar *qod;
+      gchar *qod;
 
-      nvti_set_detection (nvti, entity_text (detection));
+      nvti_put_detection (nvti, element_text (detection));
 
-      qod = entity_attribute (detection, "qod");
-      if (qod == NULL)
-        nvti_set_qod_type (nvti, entity_attribute (detection, "qod_type"));
+      qod = element_attribute (detection, "qod");
+      if (qod == NULL) {
+        gchar *qod_type;
+
+        qod_type = element_attribute (detection, "qod_type");
+        nvti_set_qod_type (nvti, qod_type);
+        g_free (qod_type);
+      }
       else
         nvti_set_qod (nvti, qod);
+      g_free (qod);
     }
 
-  solution = entity_child (vt, "solution");
+  solution = element_child (vt, "solution");
   if (solution)
     {
-      const gchar *type, *method;
+      gchar *type, *method;
 
-      nvti_set_solution (nvti, entity_text (solution));
+      nvti_put_solution (nvti, element_text (solution));
 
-      type = entity_attribute (solution, "type");
+      type = element_attribute (solution, "type");
       if (type == NULL)
         g_debug ("%s: SOLUTION missing type", __func__);
       else
         nvti_set_solution_type (nvti, type);
+      g_free (type);
 
-      method = entity_attribute (solution, "method");
+      method = element_attribute (solution, "method");
       if (method)
         nvti_set_solution_method (nvti, method);
+      g_free (method);
     }
 
-  severities = entity_child (vt, "severities");
+  severities = element_child (vt, "severities");
   if (severities == NULL)
     {
       g_warning ("%s: VT missing SEVERITIES", __func__);
@@ -1396,116 +1415,130 @@ nvti_from_vt (entity_t vt)
       return NULL;
     }
 
-  children = severities->entities;
-  while ((severity = first_entity (children)))
+  severity = element_first_child (severities);
+  while (severity)
     {
-      const gchar *severity_type;
+      gchar *severity_type;
 
-      severity_type = entity_attribute (severity, "type");
+      severity_type = element_attribute (severity, "type");
 
       if (severity_type == NULL)
         {
           GString *debug = g_string_new ("");
           g_warning ("%s: SEVERITY missing type attribute", __func__);
-          print_entity_to_string (severity, debug);
+          print_element_to_string (severity, debug);
           g_warning ("%s: severity: %s", __func__, debug->str);
           g_string_free (debug, TRUE);
         }
       else
         {
-          entity_t value;
+          element_t value;
 
-          value = entity_child (severity, "value");
+          value = element_child (severity, "value");
 
           if (!value)
             {
               GString *debug = g_string_new ("");
               g_warning ("%s: SEVERITY missing value element", __func__);
-              print_entity_to_string (severity, debug);
+              print_element_to_string (severity, debug);
               g_warning ("%s: severity: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
             {
-              entity_t origin, severity_date;
+              element_t origin, severity_date;
               double cvss_base_dbl;
-              gchar * cvss_base;
+              gchar *cvss_base, *value_text, *origin_text;
               time_t parsed_severity_date;
 
+              value_text = element_text (value);
+
               cvss_base_dbl
-                = get_cvss_score_from_base_metrics (entity_text (value));
+                = get_cvss_score_from_base_metrics (value_text);
 
               origin
-                = entity_child (severity, "origin");
+                = element_child (severity, "origin");
               severity_date
-                = entity_child (severity, "date");
+                = element_child (severity, "date");
               
-              if (severity_date)
-                parsed_severity_date = strtol (entity_text (severity_date),
-                                               NULL, 10);
+              if (severity_date) {
+                gchar *text;
+
+                text = element_text (severity_date);
+                parsed_severity_date = strtol (text, NULL, 10);
+                g_free (text);
+              }
               else
                 parsed_severity_date = nvti_creation_time (nvti);
 
+              origin_text = origin ? element_text (origin) : NULL,
               nvti_add_vtseverity (nvti,
                 vtseverity_new (severity_type,
-                                origin ? entity_text (origin) : NULL,
+                                origin_text,
                                 parsed_severity_date,
                                 cvss_base_dbl,
-                                entity_text (value)));
+                                value_text));
+              g_free (origin_text);
 
-              nvti_add_tag (nvti, "cvss_base_vector", entity_text (value));
+              nvti_add_tag (nvti, "cvss_base_vector", value_text);
 
               cvss_base = g_strdup_printf ("%.1f",
-                get_cvss_score_from_base_metrics (entity_text (value)));
+                get_cvss_score_from_base_metrics (value_text));
               nvti_set_cvss_base (nvti, cvss_base);
               g_free (cvss_base);
+              g_free (value_text);
             }
+
+          g_free (severity_type);
         }
 
-      children = next_entities (children);
+      severity = element_next (severity);
     }
 
-  refs = entity_child (vt, "refs");
+  refs = element_child (vt, "refs");
   if (refs)
     {
-      children = refs->entities;
-      while ((ref = first_entity (children)))
+      ref = element_first_child (refs);
+      while (ref)
         {
-          const gchar *ref_type;
+          gchar *ref_type;
 
-          ref_type = entity_attribute (ref, "type");
+          ref_type = element_attribute (ref, "type");
           if (ref_type == NULL)
             {
               GString *debug = g_string_new ("");
               g_warning ("%s: REF missing type attribute", __func__);
-              print_entity_to_string (ref, debug);
+              print_element_to_string (ref, debug);
               g_warning ("%s: ref: %s", __func__, debug->str);
               g_string_free (debug, TRUE);
             }
           else
             {
-              const gchar *ref_id;
+              gchar *ref_id;
 
-              ref_id = entity_attribute (ref, "id");
+              ref_id = element_attribute (ref, "id");
               if (ref_id == NULL)
                 {
                   GString *debug = g_string_new ("");
                   g_warning ("%s: REF missing id attribute", __func__);
-                  print_entity_to_string (ref, debug);
+                  print_element_to_string (ref, debug);
                   g_warning ("%s: ref: %s", __func__, debug->str);
                   g_string_free (debug, TRUE);
                 }
               else
                 {
                   nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
+                  g_free (ref_id);
                 }
+
+              g_free (ref_type);
             }
 
-          children = next_entities (children);
+          ref = element_next (ref);
         }
     }
 
-  custom = entity_child (vt, "custom");
+  custom = element_child (vt, "custom");
   if (custom == NULL)
     {
       g_warning ("%s: VT missing CUSTOM", __func__);
@@ -1513,28 +1546,34 @@ nvti_from_vt (entity_t vt)
       return NULL;
     }
 
-  family = entity_child (custom, "family");
+  family = element_child (custom, "family");
   if (family == NULL)
     {
       g_warning ("%s: VT/CUSTOM missing FAMILY", __func__);
       nvti_free (nvti);
       return NULL;
     }
-  nvti_set_family (nvti, entity_text (family));
+  nvti_put_family (nvti, element_text (family));
 
-  category = entity_child (custom, "category");
+  category = element_child (custom, "category");
   if (category == NULL)
     {
       g_warning ("%s: VT/CUSTOM missing CATEGORY", __func__);
       nvti_free (nvti);
       return NULL;
     }
-  nvti_set_category (nvti, atoi (entity_text (category)));
+  category_text = element_text (category);
+  nvti_set_category (nvti, atoi (category_text));
+  g_free (category_text);
 
-  deprecated = entity_child (custom, "deprecated");
+  deprecated = element_child (custom, "deprecated");
   if (deprecated)
     {
-      nvti_add_tag (nvti, "deprecated", entity_text (deprecated));
+      gchar *text;
+
+      text = element_text (deprecated);
+      nvti_add_tag (nvti, "deprecated", text);
+      g_free (text);
     }
 
   return nvti;
@@ -1550,30 +1589,29 @@ nvti_from_vt (entity_t vt)
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 static int
-update_nvts_from_vts (entity_t *get_vts_response,
+update_nvts_from_vts (element_t *get_vts_response,
                       const gchar *scanner_feed_version,
                       int rebuild)
 {
-  entity_t vts, vt;
-  entities_t children;
+  element_t vts, vt;
   GList *preferences;
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
-  const char *osp_vt_hash;
+  char *osp_vt_hash;
 
   count_modified_vts = 0;
   count_new_vts = 0;
 
   feed_version_epoch = nvts_feed_version_epoch();
 
-  vts = entity_child (*get_vts_response, "vts");
+  vts = element_child (*get_vts_response, "vts");
   if (vts == NULL)
     {
       g_warning ("%s: VTS missing", __func__);
       return -1;
     }
 
-  osp_vt_hash = entity_attribute (vts, "sha256_hash");
+  osp_vt_hash = element_attribute (vts, "sha256_hash");
 
   sql_begin_immediate ();
 
@@ -1604,8 +1642,8 @@ update_nvts_from_vts (entity_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
-  children = vts->entities;
-  while ((vt = first_entity (children)))
+  vt = element_first_child (vts);
+  while (vt)
     {
       nvti_t *nvti = nvti_from_vt (vt);
 
@@ -1633,7 +1671,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
       g_list_free_full (preferences, g_free);
 
       nvti_free (nvti);
-      children = next_entities (children);
+      vt = element_next (vt);
     }
 
   if (rebuild) {
@@ -1693,6 +1731,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
                      " does not match the one from the scanner (%s).",
                      __func__, db_vts_hash, osp_vt_hash);
 
+          g_free (osp_vt_hash);
           g_free (db_vts_hash);
           return 1;
         }
@@ -1703,6 +1742,7 @@ update_nvts_from_vts (entity_t *get_vts_response,
     g_warning ("%s: No SHA-256 hash received from scanner, skipping check.",
                __func__);
 
+  g_free (osp_vt_hash);
   return 0;
 }
 
@@ -1886,10 +1926,11 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 {
   osp_connection_t *connection;
   GSList *scanner_prefs;
-  entity_t vts;
+  element_t vts;
   osp_get_vts_opts_t get_vts_opts;
   time_t old_nvts_last_modified;
   int ret;
+  char *str;
 
   if (rebuild
       || db_feed_version == NULL
@@ -1915,17 +1956,28 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     get_vts_opts.filter = g_strdup_printf ("modification_time>%s", db_feed_version);
   else
     get_vts_opts.filter = NULL;
-  if (osp_get_vts_ext (connection, get_vts_opts, &vts))
+
+  if (osp_get_vts_ext_str (connection, get_vts_opts, &str))
     {
       g_warning ("%s: failed to get VTs", __func__);
       g_free (get_vts_opts.filter);
+      g_free (str);
       return -1;
     }
+
   g_free (get_vts_opts.filter);
+
+  if (parse_element (str, &vts))
+    {
+      g_warning ("%s: failed to parse VTs", __func__);
+      g_free (str);
+      return -1;
+    }
 
   osp_connection_close (connection);
   ret = update_nvts_from_vts (&vts, scanner_feed_version, rebuild);
-  free_entity (vts);
+  element_free (vts);
+  g_free (str);
   if (ret)
     return ret;
 
