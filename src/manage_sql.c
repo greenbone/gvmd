@@ -14322,7 +14322,10 @@ condition_met (task_t task, report_t report, alert_t alert,
                     {
                       /* Same as "increased". */
                       if (cmp >= count)
-                        return 1;
+                        {
+                          free (filter_id);
+                          return 1;
+                        }
                     }
                   else if (((strcasecmp (direction, "changed") == 0)
                             && (abs (cmp) >= count))
@@ -14341,7 +14344,16 @@ condition_met (task_t task, report_t report, alert_t alert,
                   g_debug ("direction: %s", direction);
                   g_debug ("last_count: %i", last_count);
                   g_debug ("second_last_count NULL");
-                  if (((strcasecmp (direction, "changed") == 0)
+                  if (direction == NULL)
+                    {
+                      /* Same as "increased". */
+                      if (last_count > 0)
+                        {
+                          free (filter_id);
+                          return 1;
+                        }
+                    }
+                  else if (((strcasecmp (direction, "changed") == 0)
                        || (strcasecmp (direction, "increased") == 0))
                       && (last_count > 0))
                     {
@@ -17884,8 +17896,10 @@ task_running_report (task_t task)
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu AND end_time IS NULL"
                                      " AND (scan_run_status = %u "
+                                     " OR scan_run_status = %u "
                                      " OR scan_run_status = %u);",
                                      task,
+                                     TASK_STATUS_REQUESTED,
                                      TASK_STATUS_RUNNING,
                                      TASK_STATUS_QUEUED);
     }
@@ -29009,7 +29023,6 @@ check_osp_result_exists (report_t report, task_t task,
   entity_string = g_string_new ("");
   print_entity_to_string (r_entity, entity_string);
   *entity_hash_value = get_md5_hash_from_string (entity_string->str);
-  g_string_free(entity_string, TRUE);
   if (sql_int ("SELECT EXISTS"
                " (SELECT * FROM results"
                "  WHERE report = %llu and hash_value = '%s');",
@@ -29044,10 +29057,12 @@ check_osp_result_exists (report_t report, task_t task,
         {
           g_info ("Captured duplicate result, report: %llu hash_value: %s",
                    report, *entity_hash_value);
+          g_debug ("Entity string: %s", entity_string->str);
           return_value = 1;
         }
       g_free (desc);
   }
+  g_string_free(entity_string, TRUE);
   return return_value;
 }
 
@@ -29075,7 +29090,6 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
   hash_string = g_strdup_printf ("%llu-%s-%s-%s-%s-%s-%s", report, host, s_type,
                                  s_name, s_desc, name, value);
   *detail_hash_value = get_md5_hash_from_string (hash_string);
-  g_free (hash_string);
 
   sql_int64 (&report_host, "SELECT id FROM report_hosts"
                            " WHERE report = %llu AND host = '%s';",
@@ -29100,10 +29114,12 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
         {
           g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
                       report, *detail_hash_value);
+          g_debug ("Hash string: %s", hash_string);
           return_value = 1;
         }
       g_free (quoted_s_desc);
     }
+  g_free (hash_string);
   return return_value;
 }
 
@@ -33292,11 +33308,11 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
   count = 0;
   if (example)
     init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
+                   "SELECT uuid, name, severity, description FROM cves"
                    " LIMIT 4;");
   else if (event == EVENT_NEW_SECINFO)
     init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
+                   "SELECT uuid, name, severity, description FROM cves"
                    " WHERE creation_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -33306,7 +33322,7 @@ new_cves_list (event_t event, const void* event_data, alert_t alert,
                    " ORDER BY creation_time DESC;");
   else
     init_iterator (&rows,
-                   "SELECT uuid, name, cvss, description FROM cves"
+                   "SELECT uuid, name, severity, description FROM cves"
                    " WHERE modification_time"
                    "       > coalesce (CAST ((SELECT value FROM meta"
                    "                          WHERE name"
@@ -46332,8 +46348,10 @@ manage_restore (const char *id)
       config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences"
-           " (config, type, name, value, default_value)"
-           " SELECT %llu, type, name, value, default_value"
+           " (config, type, name, value, default_value, pref_nvt, pref_id,"
+           "  pref_type, pref_name)"
+           " SELECT %llu, type, name, value, default_value, pref_nvt, pref_id,"
+           "        pref_type, pref_name"
            " FROM config_preferences_trash WHERE config = %llu;",
            config,
            resource);
@@ -48429,7 +48447,7 @@ DEF_ACCESS (host_identifier_iterator_os_title,
  */
 #define HOST_ITERATOR_FILTER_COLUMNS                                        \
  { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", "hostname", "ip",  \
-   "severity_level", "updated", NULL }
+   "severity_level", "updated", "best_os_cpe", NULL }
 
 /**
  * @brief Host iterator columns.
@@ -48533,8 +48551,50 @@ DEF_ACCESS (host_identifier_iterator_os_title,
    {                                                                  \
      "modification_time", "updated", KEYWORD_TYPE_INTEGER             \
    },                                                                 \
+   {                                                                  \
+     "(SELECT value"                                                  \
+     "   FROM (SELECT max (id) AS id"                                 \
+     "           FROM host_details"                                   \
+     "          WHERE host = hosts.id"                                \
+     "            AND name = 'best_os_cpe')"                          \
+     "         AS sub, host_details"                                  \
+     "  WHERE sub.id = host_details.id)",                             \
+     "best_os_cpe",                                                   \
+     KEYWORD_TYPE_STRING                                              \
+   },                                                                 \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
  }
+
+/**
+ * @brief Extra WHERE clause for host assets.
+ *
+ * @return WHERE clause.
+ */
+static gchar*
+asset_host_extra_where (const char *filter)
+{
+  gchar *ret, *os_id;
+
+  os_id = filter_term_value (filter, "os_id");
+
+  if (os_id)
+    {
+      gchar *quoted_os_id = os_id ? sql_quote (os_id) : NULL;
+      ret = g_strdup_printf (" AND EXISTS"
+                             "  (SELECT * FROM host_oss"
+                             "   WHERE os = (SELECT id FROM oss"
+                             "                WHERE uuid = '%s')"
+                             "     AND host = hosts.id)",
+                             quoted_os_id);
+      g_free (quoted_os_id);
+    }
+  else
+    ret = g_strdup ("");
+
+  g_free (os_id);
+
+  return ret;
+}
 
 /**
  * @brief Initialise a host iterator.
@@ -48552,25 +48612,52 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
   static column_t columns[] = HOST_ITERATOR_COLUMNS;
   static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
 
-  return init_get_iterator2 (iterator,
-                             "host",
-                             get,
-                             /* Columns. */
-                             columns,
-                             /* Columns for trashcan. */
-                             NULL,
-                             /* WHERE Columns. */
-                             where_columns,
-                             /* WHERE Columns for trashcan. */
-                             NULL,
-                             filter_columns,
-                             0,
-                             NULL,
-                             NULL,
-                             NULL,
-                             TRUE,
-                             FALSE,
-                             NULL);
+  int ret;
+  gchar *filter, *extra_where;
+
+  // Get filter
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        {
+          return 1;
+        }
+    }
+  else
+    filter = NULL;
+
+  extra_where = asset_host_extra_where (filter ? filter : get->filter);
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            where_columns,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            extra_where,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
+  g_free (filter);
+  g_free (extra_where);
+  return ret;
 }
 
 /**
@@ -48634,7 +48721,7 @@ asset_host_count (const get_data_t *get)
 #define OS_ITERATOR_FILTER_COLUMNS                                           \
  { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
    "highest_severity", "average_severity", "average_severity_score",         \
-   "severity", NULL }
+   "severity", "all_hosts", NULL }
 
 /**
  * @brief OS iterator columns.
@@ -48703,6 +48790,11 @@ asset_host_count (const get_data_t *get)
      " AS severities)",                                                       \
      "average_severity",                                                      \
      KEYWORD_TYPE_DOUBLE                                                      \
+   },                                                                         \
+   {                                                                          \
+     "(SELECT count(DISTINCT host) FROM host_oss WHERE os = oss.id)",         \
+     "all_hosts",                                                             \
+     KEYWORD_TYPE_INTEGER                                                     \
    },                                                                         \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
@@ -48861,6 +48953,22 @@ DEF_ACCESS (asset_os_iterator_highest_severity, GET_ITERATOR_COLUMN_COUNT + 5);
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the number of all installs from an asset OS iterator.
+ *
+ * This includes hosts where the OS is not the best match.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of any hosts that have the OS not only as the best match.
+ */
+int
+asset_os_iterator_all_installs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+}
 
 /**
  * @brief Count number of oss.
@@ -55401,6 +55509,10 @@ type_extra_where (const char *type, int trash, const char *filter,
       extra_where = configs_extra_where (usage_type);
       if (extra_where == NULL)
         extra_where = g_strdup ("");
+    }
+  else if (strcasecmp (type, "HOST") == 0)
+    {
+      extra_where = asset_host_extra_where (filter);
     }
   else if (strcasecmp (type, "TASK") == 0)
     {

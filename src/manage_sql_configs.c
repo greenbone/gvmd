@@ -2366,14 +2366,20 @@ config_insert_preferences (config_t config,
             /* NVT preference */
             /* OID:PrefID:PrefType:PrefName value */
             sql ("INSERT INTO config_preferences"
-                 " (config, type, name, value)"
-                 " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s');",
+                 " (config, type, name, value, pref_nvt, pref_id, pref_type,"
+                 "  pref_name)"
+                 " VALUES (%llu, 'PLUGINS_PREFS', '%s:%s:%s:%s', '%s', '%s',"
+                 "         %i, '%s', '%s');",
                  config,
                  quoted_nvt_oid,
                  quoted_preference_id,
                  quoted_type,
                  quoted_preference_name,
-                 quoted_value);
+                 quoted_value,
+                 quoted_nvt_oid,
+                 atoi (preference->id),
+                 quoted_type,
+                 quoted_preference_name);
 
             g_free (quoted_nvt_oid);
             g_free (quoted_preference_name);
@@ -2861,8 +2867,10 @@ copy_config (const char* name, const char* comment, const char *config_id,
   sql ("UPDATE configs SET predefined = 0 WHERE id = %llu;", new);
 
   sql ("INSERT INTO config_preferences (config, type, name, value,"
-       "                                default_value)"
-       " SELECT %llu, type, name, value, default_value"
+       "                                default_value, pref_nvt, pref_id,"
+       "                                pref_type, pref_name)"
+       " SELECT %llu, type, name, value, default_value, pref_nvt, pref_id,"
+       "        pref_type, pref_name"
        " FROM config_preferences"
        " WHERE config = %llu;", new, old);
 
@@ -3041,8 +3049,10 @@ delete_config (const char *config_id, int ultimate)
       trash_config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences_trash"
-           " (config, type, name, value, default_value)"
-           " SELECT %llu, type, name, value, default_value"
+           " (config, type, name, value, default_value, pref_nvt, pref_id,"
+           "  pref_type, pref_name)"
+           " SELECT %llu, type, name, value, default_value, pref_nvt, pref_id,"
+           "        pref_type, pref_name"
            " FROM config_preferences WHERE config = %llu;",
            trash_config,
            config);
@@ -3255,7 +3265,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
  * @return The usage type of the config, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get predefined status from a config iterator.
@@ -3515,8 +3525,12 @@ modify_config_preference (config_t config, const char* nvt,
                           const char* name, const char* value_64)
 {
   gchar *quoted_name, *quoted_value, *value, **splits;
+  gchar *quoted_pref_nvt, *quoted_pref_type, *quoted_pref_name;
+  int pref_id;
 
   quoted_name = sql_quote (name);
+  quoted_pref_nvt = quoted_pref_type = quoted_pref_name = NULL;
+  pref_id = 0;
 
   if (strlen (value_64))
     {
@@ -3542,6 +3556,11 @@ modify_config_preference (config_t config, const char* nvt,
               g_free (value);
               return 2;
             }
+
+          quoted_pref_nvt = sql_quote (splits[0]);
+          pref_id = atoi (splits[1]);
+          quoted_pref_type = sql_quote (splits[2]);
+          quoted_pref_name = sql_quote (splits[3]);
 
           /* A radio.  Put the new value on the front of the list of options. */
 
@@ -3605,9 +3624,17 @@ modify_config_preference (config_t config, const char* nvt,
        nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
        quoted_name);
   sql ("INSERT INTO config_preferences"
-       " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
+       " (config, type, name, value, pref_nvt, pref_id, pref_type, pref_name)"
+       " VALUES (%llu, %s, '%s', '%s', '%s', %i, '%s', '%s');",
        config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
-       quoted_value);
+       quoted_value, quoted_pref_nvt, pref_id, quoted_pref_type,
+       quoted_pref_name);
+
+  g_free (quoted_value);
+  g_free (quoted_name);
+  g_free (quoted_pref_nvt);
+  g_free (quoted_pref_type);
+  g_free (quoted_pref_name);
 
   return 0;
 }
@@ -4158,56 +4185,6 @@ DEF_ACCESS (config_timeout_iterator_nvt_name, 2);
  *         cleanup_iterator.
  */
 DEF_ACCESS (config_timeout_iterator_value, 3);
-
-/**
- * @brief Update or optionally insert a NVT preference.
- *
- * @param[in]  config_id        UUID of the config to set the preference in
- * @param[in]  type             Type of the preference, e.g. "PLUGINS_PREFS"
- * @param[in]  preference_name  Full name of the preference
- * @param[in]  new_value        The new value to set
- * @param[in]  insert           Whether to insert the preference if missing
- */
-void
-update_config_preference (const char *config_id,
-                          const char *type,
-                          const char *preference_name,
-                          const char *new_value,
-                          gboolean insert)
-{
-  gchar *quoted_config_id = sql_quote (config_id);
-  gchar *quoted_type = sql_quote (type);
-  gchar *quoted_name = sql_quote (preference_name);
-  gchar *quoted_value = sql_quote (new_value);
-
-  if (sql_int ("SELECT count (*) FROM config_preferences"
-               " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
-               "   AND type = '%s'"
-               "   AND name = '%s';",
-               quoted_config_id, quoted_type, quoted_name) == 0)
-    {
-      if (insert)
-        {
-          sql ("INSERT INTO config_preferences (config, type, name, value)"
-               " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
-               "         '%s', '%s', '%s');",
-               quoted_config_id, quoted_type, quoted_name, quoted_value);
-        }
-    }
-  else
-    {
-      sql ("UPDATE config_preferences SET value = '%s'"
-           " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
-           "   AND type = '%s'"
-           "   AND name = '%s';",
-           quoted_value, quoted_config_id, quoted_type, quoted_name);
-    }
-
-  g_free (quoted_config_id);
-  g_free (quoted_type);
-  g_free (quoted_name);
-  g_free (quoted_value);
-}
 
 /**
  * @brief Update the cached count and growing information in a config.
