@@ -50,13 +50,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/**
- * @brief Rows per statement when inserting VT refs for update/rebuild.
- *
- * There are about 500k vt_refs.
- */
-#define VT_REFS_BATCH_SIZE 50000
-
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -65,6 +58,11 @@ create_tables_nvt (const gchar *);
 
 
 /* NVT related global options */
+
+/**
+ * @brief Max number of rows inserted per statement.
+ */
+static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
 
 /**
  * @brief File socket for OSP NVT update.
@@ -128,6 +126,20 @@ check_osp_vt_update_socket ()
 
 
 /* NVT's. */
+
+/**
+ * @brief Set the VT ref insert size.
+ *
+ * @param new_size  New size.
+ */
+void
+set_vt_ref_insert_size (int new_size)
+{
+  if (new_size < 0)
+    vt_ref_insert_size = 0;
+  else
+    vt_ref_insert_size = new_size;
+}
 
 /**
  * @brief Ensures the sanity of nvts cache in DB.
@@ -1721,7 +1733,7 @@ update_nvts_from_vts (element_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
-  vt_refs_batch = batch_start (VT_REFS_BATCH_SIZE);
+  vt_refs_batch = batch_start (vt_ref_insert_size);
   vt = element_first_child (vts);
   while (vt)
     {
