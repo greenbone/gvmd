@@ -3255,7 +3255,7 @@ config_iterator_nvts_growing (iterator_t* iterator)
  * @return The usage type of the config, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (config_iterator_usage_type, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get predefined status from a config iterator.
