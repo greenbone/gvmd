@@ -325,6 +325,9 @@ batch_check (batch_t *b)
     // First time, caller must init sql.
     return 1;
 
+  if (b->max == 0)
+    return 0;
+
   if (b->size > b->max) {
     sql ("%s", b->sql->str);
 
