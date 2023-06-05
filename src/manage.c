@@ -3089,9 +3089,12 @@ fork_cve_scan_handler (task_t task, target_t target)
         set_report_scan_run_status (global_current_report,
                                     TASK_STATUS_INTERRUPTED);
         global_current_report = (report_t) 0;
+        current_scanner_task = 0;
         return -9;
       default:
         /* Parent, successfully forked. */
+        global_current_report = 0;
+        current_scanner_task = 0;
         g_debug ("%s: %i forked %i", __func__, getpid (), pid);
         return 0;
     }
