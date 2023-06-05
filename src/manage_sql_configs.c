@@ -3557,10 +3557,10 @@ modify_config_preference (config_t config, const char* nvt,
               return 2;
             }
 
-          quoted_pref_nvt = g_strdup (splits[0]);
+          quoted_pref_nvt = sql_quote (splits[0]);
           pref_id = atoi (splits[1]);
-          quoted_pref_type = g_strdup (splits[2]);
-          quoted_pref_name = g_strdup (splits[3]);
+          quoted_pref_type = sql_quote (splits[2]);
+          quoted_pref_name = sql_quote (splits[3]);
 
           /* A radio.  Put the new value on the front of the list of options. */
 
