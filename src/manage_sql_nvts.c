@@ -1787,7 +1787,10 @@ check_preference_names (int trash, time_t modification_time)
   init_iterator (&prefs,
                  "WITH new_pref_matches AS"
                  " (SELECT substring (nvt_preferences.name,"
-                 "                    '^([^:]*:[^:]*)') || ':%%' AS match,"
+                 "                    '^([^:]*):') AS pref_nvt,"
+                 "         CAST (substring (nvt_preferences.name,"
+                 "                          '^[^:]*:([^:]*):')"
+                 "               AS integer) AS pref_id,"
                  "          name AS new_name"
                  "     FROM nvt_preferences"
                  "    WHERE substr (name, 0, position (':' IN name))"
@@ -1797,7 +1800,8 @@ check_preference_names (int trash, time_t modification_time)
                  "        configs%s.uuid AS config_id"
                  "  FROM config_preferences%s AS c_prefs"
                  "  JOIN new_pref_matches"
-                 "    ON c_prefs.name LIKE new_pref_matches.match"
+                 "    ON c_prefs.pref_nvt = new_pref_matches.pref_nvt"
+                 "   AND c_prefs.pref_id = new_pref_matches.pref_id"
                  "  JOIN configs%s ON configs%s.id = c_prefs.config"
                  " WHERE c_prefs.name != new_name;",
                  modification_time,
@@ -1809,13 +1813,14 @@ check_preference_names (int trash, time_t modification_time)
   while (next (&prefs))
     {
       resource_t preference;
-      const char *old_name, *new_name, *config_id;
-      gchar *quoted_new_name;
+      const char *old_name, *new_name, *config_id, *new_pref_name;
+      gchar *quoted_new_name, *quoted_new_pref_name;
 
       preference = iterator_int64 (&prefs, 0);
       old_name = iterator_string (&prefs, 1);
       new_name = iterator_string (&prefs, 2);
       config_id = iterator_string (&prefs, 3);
+      new_pref_name = iterator_string (&prefs, 4);
 
       g_message ("Preference '%s' of %sconfig %s changed to '%s'",
                  old_name,
@@ -1824,15 +1829,18 @@ check_preference_names (int trash, time_t modification_time)
                  new_name);
 
       quoted_new_name = sql_quote (new_name);
+      quoted_new_pref_name = sql_quote (new_pref_name);
 
       sql ("UPDATE config_preferences%s"
-           " SET name = '%s'"
+           " SET name = '%s', pref_name = '%s'"
            " WHERE id = %llu",
            trash ? "_trash " : "",
            quoted_new_name,
+           quoted_new_pref_name,
            preference);
 
       g_free (quoted_new_name);
+      g_free (quoted_new_pref_name);
     }
 
   sql_commit ();

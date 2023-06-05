@@ -3059,6 +3059,72 @@ migrate_252_to_253 ()
 }
 
 
+/**
+ * @brief Alter and update for migrate_253_to_254.
+ *
+ * @param[in]  trash  Whether to alter trash tables.
+ */
+static void
+migrate_253_to_254_alter (int trash)
+{
+  sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_nvt text;",
+       trash ? "_trash" : "");
+  sql ("UPDATE config_preferences%s"
+       " SET pref_nvt = substring (name, '^([^:]*)');",
+       trash ? "_trash" : "");
+
+  sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_id integer;",
+       trash ? "_trash" : "");
+  sql ("UPDATE config_preferences%s"
+       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer);",
+       trash ? "_trash" : "");
+
+  sql ("ALTER table config_preferences%s ADD COLUMN pref_type text;",
+       trash ? "_trash" : "");
+  sql ("UPDATE config_preferences%s"
+       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):');",
+       trash ? "_trash" : "");
+
+  sql ("ALTER table config_preferences%s ADD COLUMN pref_name text;",
+       trash ? "_trash" : "");
+  sql ("UPDATE config_preferences%s"
+       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)');",
+       trash ? "_trash" : "");
+}
+
+/**
+ * @brief Migrate the database from version 253 to version 254.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_253_to_254 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 253. */
+
+  if (manage_db_version () != 253)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  migrate_253_to_254_alter(0);
+  migrate_253_to_254_alter(1);
+
+  /* Set the database version to 254. */
+
+  set_db_version (254);
+
+  sql_commit ();
+
+  return 0;
+}
+
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3118,6 +3184,7 @@ static migrator_t database_migrators[] = {
   {251, migrate_250_to_251},
   {252, migrate_251_to_252},
   {253, migrate_252_to_253},
+  {254, migrate_253_to_254},
   /* End marker. */
   {-1, NULL}};
 
