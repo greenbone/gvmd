@@ -32149,40 +32149,45 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('ssh' AS text)))",     \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('ssh' AS text)))",            \
      "ssh_credential",                                         \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('smb' AS text)))",     \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('smb' AS text)))",            \
      "smb_credential",                                         \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('esxi' AS text)))",    \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('esxi' AS text)))",           \
      "esxi_credential",                                        \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('snmp' AS text)))",    \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('snmp' AS text)))",           \
      "snmp_credential",                                        \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('elevate' AS text)))", \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('elevate' AS text)))",        \
      "ssh_elevate_credential",                                 \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
