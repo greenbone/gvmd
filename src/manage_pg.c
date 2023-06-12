@@ -1774,6 +1774,10 @@ create_tables_nvt (const gchar *suffix)
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences%s"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
+       "  pref_nvt text,"
+       "  pref_id integer,"
+       "  pref_type text,"
+       "  pref_name text,"
        "  value text);",
        suffix);
 
