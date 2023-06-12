@@ -32102,13 +32102,17 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  {                                                             \
    GET_ITERATOR_COLUMNS (targets),                             \
    { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
-   { "target_credential (id, 0, CAST ('ssh' AS text))",        \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('ssh' AS text))",                      \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "target_login_port (id, 0, CAST ('ssh' AS text))",        \
      "ssh_port",                                               \
      KEYWORD_TYPE_INTEGER },                                   \
-   { "target_credential (id, 0, CAST ('smb' AS text))",        \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('smb' AS text))",                      \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "port_list", NULL, KEYWORD_TYPE_INTEGER },                \
@@ -32131,15 +32135,21 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },      \
    { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },     \
    { "alive_test", NULL, KEYWORD_TYPE_INTEGER },               \
-   { "target_credential (id, 0, CAST ('esxi' AS text))",       \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('esxi' AS text))",                     \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "target_credential (id, 0, CAST ('snmp' AS text))",       \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('snmp' AS text))",                     \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "target_credential (id, 0, CAST ('elevate' AS text))",    \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('elevate' AS text))",                  \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
