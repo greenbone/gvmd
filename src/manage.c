@@ -5529,13 +5529,14 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @param[in]  timeout     Timeout.  Used if details is true.
  * @param[in]  config      Config, used if preferences is true.
  * @param[in]  close_tag   Whether to close the NVT tag or not.
+ * @param[in]  skip_cert_refs  Whether to exclude the CERT REFs.
  *
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
 get_nvt_xml (iterator_t *nvts, int details, int pref_count,
              int preferences, const char *timeout, config_t config,
-             int close_tag)
+             int close_tag, int skip_cert_refs)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5612,7 +5613,11 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       refs_str = g_string_new ("");
 
-      if (manage_cert_loaded())
+      if (skip_cert_refs)
+        {
+          // Faster.
+        }
+      else if (manage_cert_loaded())
         {
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
@@ -5933,7 +5938,8 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
                                    1,    /* Include preferences. */
                                    NULL, /* Timeout. */
                                    0,    /* Config. */
-                                   1);   /* Close tag. */
+                                   1,    /* Close tag. */
+                                   0);   /* Skip CERT refs. */
 
           cleanup_iterator (&nvts);
         }
