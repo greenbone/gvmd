@@ -1,5 +1,5 @@
-ARG VERSION=unstable
-ARG GVM_LIBS_VERSION=edge
+ARG VERSION=edge
+ARG GVM_LIBS_VERSION=oldstable
 ARG DEBIAN_FRONTEND=noninteractive
 
 FROM greenbone/gvmd-build:${VERSION} as builder

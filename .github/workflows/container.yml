@@ -2,12 +2,13 @@ name: Container Image Builds
 
 on:
   push:
-    branches: [main, stable, oldstable]
+    branches:
+      - main
     tags: ["v*"]
   pull_request:
-    branches: [main, stable, oldstable]
+    branches:
+      - main
   workflow_dispatch:
-  repository_dispatch:
 
 jobs:
   images:
@@ -16,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - uses: greenbone/actions/is-latest-tag@v2
+        id: latest
       - name: Setup container meta information
         id: meta
         uses: docker/metadata-action@v4
@@ -23,23 +26,23 @@ jobs:
           images: ${{ github.repository }}
           labels: |
             org.opencontainers.image.vendor=Greenbone
-            org.opencontainers.image.base.name=debian/stable-slim
+            org.opencontainers.image.base.name=greenbone/gvm-libs
           flavor: latest=false # no latest container tag for git tags
           tags: |
-            # use container tag for git tags
-            type=match,pattern=v(.*),group=1
-            # use latest for latest tag from stable branch
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v22.4') }}
-            # use stable for latest 22.4 tag
-            type=raw,value=stable,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v22.4') }}
-            # use oldstable for latest 21.4 tag
-            type=raw,value=oldstable,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v21.4') }}
+            # use version, major.minor and major  for tags
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
             # use edge for default branch
             type=edge
-            # use branch-sha otherwise for pushes to branches other then main (will not be uploaded)
-            type=raw,value={{branch}}-{{sha}},enable=${{ github.ref_type == 'branch' && github.event_name == 'push' && github.ref_name != 'main' }}
-            # use pr-$PR_ID for pull requests (will not be uploaded)
+
+            # set label for non-published pull request builds
             type=ref,event=pr
+
+            # when a new git tag is created set stable and a latest tags
+            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
       - name: Login to Docker Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2

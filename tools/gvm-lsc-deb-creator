@@ -162,9 +162,7 @@ COPYRIGHT_FILE="${DOC_DATA_DIR}/copyright"
 } > "${COPYRIGHT_FILE}"
 
 # Create data archive
-cd "${DATA_DIR}"
-tar -C "${DATA_DIR}" -z -cf "../data.tar.gz" "${HOME_SUBDIR}" "${DOC_SUBDIR}"
-
+tar -P -z -cf "${TEMP_DIR}/data.tar.gz" "${PACKAGE_BASE_DIR}/${HOME_DATA_SUBDIR}" "${PACKAGE_BASE_DIR}/${DOC_DATA_SUBDIR}"
 
 #
 # Create control files
