@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 ARG VERSION=stable
+=======
+ARG VERSION=edge
+ARG GVM_LIBS_VERSION=oldstable
+>>>>>>> 2707a7baf (Change: Use gvm-libs:oldstable images)
 ARG DEBIAN_FRONTEND=noninteractive
 
 FROM greenbone/gvmd-build:${VERSION} as builder
