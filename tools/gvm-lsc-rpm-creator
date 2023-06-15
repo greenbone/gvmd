@@ -130,6 +130,8 @@ SPEC_FILE="${SPEC_DIR}/${PACKAGE_NAME_VERSION}.spec"
   echo "BuildArch: noarch"
   # Put output in current directory
   echo "%define _rpmdir %(pwd)"
+  # Set _topdir
+  echo "%define _topdir ${TEMP_DIR}"
 
   # Create description section
   echo "%description"
