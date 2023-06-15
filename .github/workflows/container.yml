@@ -26,7 +26,7 @@ jobs:
           images: ${{ github.repository }}
           labels: |
             org.opencontainers.image.vendor=Greenbone
-            org.opencontainers.image.base.name=debian/stable-slim
+            org.opencontainers.image.base.name=greenbone/gvm-libs
           flavor: latest=false # no latest container tag for git tags
           tags: |
             # use version, major.minor and major  for tags
