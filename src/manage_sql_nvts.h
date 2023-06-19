@@ -97,6 +97,14 @@
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
+/**
+ * @brief Default for vt_ref_insert_size.
+ */
+#define VT_REF_INSERT_SIZE_DEFAULT 50000
+
+void
+set_vt_ref_insert_size (int);
+
 const char *
 get_osp_vt_update_socket ();
 
