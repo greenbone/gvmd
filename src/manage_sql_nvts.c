@@ -74,6 +74,11 @@ create_tables_nvt (const gchar *);
 /* NVT related global options */
 
 /**
+ * @brief Max number of rows inserted per statement.
+ */
+static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
+
+/**
  * @brief File socket for OSP NVT update.
  */
 static gchar *osp_vt_update_socket = NULL;
@@ -135,6 +140,20 @@ check_osp_vt_update_socket ()
 
 
 /* NVT's. */
+
+/**
+ * @brief Set the VT ref insert size.
+ *
+ * @param new_size  New size.
+ */
+void
+set_vt_ref_insert_size (int new_size)
+{
+  if (new_size < 0)
+    vt_ref_insert_size = 0;
+  else
+    vt_ref_insert_size = new_size;
+}
 
 /**
  * @brief Ensures the sanity of nvts cache in DB.
@@ -319,6 +338,9 @@ batch_check (batch_t *b)
   if (b->size == 1)
     // First time, caller must init sql.
     return 1;
+
+  if (b->max == 0)
+    return 0;
 
   if (b->size > b->max) {
     sql ("%s", b->sql->str);
@@ -1743,7 +1765,7 @@ update_nvts_from_vts (element_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
-  vt_refs_batch = batch_start (VT_REFS_BATCH_SIZE);
+  vt_refs_batch = batch_start (vt_ref_insert_size);
   vt_sevs_batch = batch_start (VT_SEVS_BATCH_SIZE);
   vt = element_first_child (vts);
   while (vt)

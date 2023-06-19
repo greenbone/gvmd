@@ -65,9 +65,9 @@ Section
   ; Create user and add it to the Administrators group
   DetailPrint `Creating user ${__USERNAME__}`
   SetDetailsPrint none
-  ExecWait `cmd /C net user ${__USERNAME__} "${__PASSWORD__}" /add /active:yes`
+  ExecWait 'cmd /C net user ${__USERNAME__} "${__PASSWORD__}" /add /active:yes'
   SetDetailsPrint both
-  ExecWait `cmd /C net localgroup $ADMINGROUPNAME %COMPUTERNAME%\${__USERNAME__} /add`
+  ExecWait 'cmd /C net localgroup $ADMINGROUPNAME %COMPUTERNAME%\${__USERNAME__} /add'
 
   ; Remove temporary files for localized admin group names
   Delete $TEMPVBSFILE
@@ -81,7 +81,7 @@ SectionEnd
 ; Uninstaller section
 Section Uninstall
 
-  ExecWait "net user ${__USERNAME__} /delete"
+  ExecWait 'net user ${__USERNAME__} /delete'
 
   ; Display message that everything seems to be fine
   MessageBox MB_OK "A user has been removed. You can now safely remove the uninstaller from your Desktop."
