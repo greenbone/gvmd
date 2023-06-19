@@ -1887,6 +1887,7 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
+  static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
   static gchar *vt_verification_collation = NULL;
 
   GString *full_disable_commands = g_string_new ("");
@@ -2216,6 +2217,11 @@ gvmd (int argc, char** argv, char *env[])
           "Max number of VT refs to insert per statement during VT update,"
           " 0 for unlimited, default: "
           G_STRINGIFY (VT_REF_INSERT_SIZE_DEFAULT), "<number>" },
+        { "vt-sev-insert-size", '\0', 0, G_OPTION_ARG_INT,
+          &vt_sev_insert_size,
+          "Max number of VT severities to insert per statement during VT update,"
+          " 0 for unlimited, default: "
+          G_STRINGIFY (VT_SEV_INSERT_SIZE_DEFAULT), "<number>" },
         { "vt-verification-collation", '\0', 0, G_OPTION_ARG_STRING,
           &vt_verification_collation,
           "Set collation for VT verification to <collation>, omit or leave"
@@ -2304,6 +2310,8 @@ gvmd (int argc, char** argv, char *env[])
   set_secinfo_commit_size (secinfo_commit_size);
 
   set_vt_ref_insert_size (vt_ref_insert_size);
+
+  set_vt_sev_insert_size (vt_sev_insert_size);
 
   /* Set VT verification collation override */
   set_vt_verification_collation (vt_verification_collation);

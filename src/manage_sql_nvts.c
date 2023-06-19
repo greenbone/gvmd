@@ -50,20 +50,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/**
- * @brief Rows per statement when inserting VT refs for update/rebuild.
- *
- * There are about 500k vt_refs.
- */
-#define VT_REFS_BATCH_SIZE 50000
-
-/**
- * @brief Rows per statement when inserting VT severities for update/rebuild.
- *
- * There are about 80k vt_severities.
- */
-#define VT_SEVS_BATCH_SIZE 100000
-
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -77,6 +63,11 @@ create_tables_nvt (const gchar *);
  * @brief Max number of rows inserted per statement.
  */
 static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
+
+/**
+ * @brief Max number of rows inserted per statement.
+ */
+static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
 
 /**
  * @brief File socket for OSP NVT update.
@@ -153,6 +144,20 @@ set_vt_ref_insert_size (int new_size)
     vt_ref_insert_size = 0;
   else
     vt_ref_insert_size = new_size;
+}
+
+/**
+ * @brief Set the VT severity insert size.
+ *
+ * @param new_size  New size.
+ */
+void
+set_vt_sev_insert_size (int new_size)
+{
+  if (new_size < 0)
+    vt_sev_insert_size = 0;
+  else
+    vt_sev_insert_size = new_size;
 }
 
 /**
@@ -1766,7 +1771,7 @@ update_nvts_from_vts (element_t *get_vts_response,
     sql ("TRUNCATE nvt_preferences;");
 
   vt_refs_batch = batch_start (vt_ref_insert_size);
-  vt_sevs_batch = batch_start (VT_SEVS_BATCH_SIZE);
+  vt_sevs_batch = batch_start (vt_sev_insert_size);
   vt = element_first_child (vts);
   while (vt)
     {
