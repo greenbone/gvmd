@@ -1374,6 +1374,7 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
 
               blank_control_chars (full_name);
               preference = g_malloc0 (sizeof (preference_t));
+              preference->free_strings = 1;
               preference->name = full_name;
               if (def)
                 preference->value = element_text (def);
@@ -1769,7 +1770,7 @@ update_nvts_from_vts (element_t *get_vts_response,
              rebuild ? "_rebuild" : "",
              nvti_oid (nvti));
       insert_nvt_preferences_list (preferences, rebuild);
-      g_list_free_full (preferences, g_free);
+      g_list_free_full (preferences, (GDestroyNotify) preference_free);
 
       nvti_free (nvti);
       vt = element_next (vt);
