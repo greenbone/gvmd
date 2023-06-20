@@ -31,7 +31,8 @@
  */
 typedef struct
 {
-  char *name;          ///< Name of preference.
+  char *name;          ///< Full name of preference, including OID etc.
+  char *pref_name;     ///< Name of preference.
   char *id;            ///< ID of preference.
   char *type;          ///< Type of preference (radio, password, ...).
   char *value;         ///< Value of preference.

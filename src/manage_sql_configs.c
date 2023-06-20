@@ -1699,13 +1699,22 @@ check_config_families ()
  * @param[in]  rebuild  Whether a rebuild is happening.
  */
 void
-manage_nvt_preference_add (const char* name, const char* value, int rebuild)
+manage_nvt_preference_add (const char *name, const char *value,
+                           const char *oid, const char *id,
+                           const char *type, const char *pref_name,
+                           int rebuild)
 {
-  gchar* quoted_name = sql_quote (name);
-  gchar* quoted_value = sql_quote (value);
-
   if (strcmp (name, "port_range"))
     {
+      gchar *quoted_name, *quoted_value, *quoted_oid, *quoted_type;
+      gchar *quoted_pref_name;
+
+      quoted_name = sql_quote (name);
+      quoted_value = sql_quote (value);
+      quoted_oid = sql_quote (oid);
+      quoted_type = sql_quote (type);
+      quoted_pref_name = sql_quote (pref_name);
+
       if (rebuild == 0) {
         if (sql_int ("SELECT EXISTS"
                      "  (SELECT * FROM nvt_preferences"
@@ -1714,14 +1723,19 @@ manage_nvt_preference_add (const char* name, const char* value, int rebuild)
           sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
       }
 
-      sql ("INSERT into nvt_preferences%s (name, value)"
-           " VALUES ('%s', '%s');",
+      sql ("INSERT into nvt_preferences%s"
+           " (name, value, pref_nvt, pref_id, pref_type, pref_name)"
+           " VALUES ('%s', '%s', '%s', %i, '%s', '%s');",
            rebuild ? "_rebuild" : "",
-           quoted_name, quoted_value);
-    }
+           quoted_name, quoted_value, quoted_oid, atoi (id), quoted_type,
+           quoted_pref_name);
 
-  g_free (quoted_name);
-  g_free (quoted_value);
+      g_free (quoted_name);
+      g_free (quoted_value);
+      g_free (quoted_oid);
+      g_free (quoted_type);
+      g_free (quoted_pref_name);
+    }
 }
 
 /**
