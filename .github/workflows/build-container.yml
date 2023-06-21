@@ -38,12 +38,27 @@ jobs:
             # create container tag for git tags
             type=ref,event=tag
             type=ref,event=pr
+<<<<<<< HEAD
             # use latest for stable branch
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
             type=raw,value=stable,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
             type=raw,value=oldstable,enable=${{ github.ref == format('refs/heads/{0}', 'oldstable') }}
             # use unstable for main branch
             type=raw,value=unstable,enable={{is_default_branch}}
+=======
+
+            # when a new git tag is created set stable and a latest tags
+            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+      - name: Set container build options
+        id: container-opts
+        run: |
+          if [[ "${{ github.ref_type }}" = 'tag' ]]; then
+            echo "gvm-libs-version=oldstable" >> $GITHUB_OUTPUT
+          else
+            echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
+          fi
+>>>>>>> f3cf64fe7 (Change: Use (old)stable for release Docker images)
       - name: Login to DockerHub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
@@ -60,6 +75,8 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
           file: .docker/build.Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
