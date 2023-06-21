@@ -53,6 +53,14 @@ jobs:
             # when a new git tag is created set stable and a latest tags
             type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
             type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+      - name: Set container build options
+        id: container-opts
+        run: |
+          if [[ "${{ github.ref_type }}" = 'tag' ]]; then
+            echo "gvm-libs-version=oldstable" >> $GITHUB_OUTPUT
+          else
+            echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
+          fi
       - name: Login to DockerHub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
@@ -69,6 +77,8 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
           file: .docker/build.Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
