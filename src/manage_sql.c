@@ -19123,16 +19123,19 @@ make_osp_result (task_t task, const char *host, const char *hostname,
                  const char *port, const char *severity, int qod,
                  const char *path, const char *hash_value)
 {
-  char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port, *quoted_hostname, *quoted_path, *quoted_hash_value;
+  char *nvt_revision = NULL;
+  gchar *quoted_type, *quoted_desc, *quoted_nvt, *result_severity, *quoted_port;
+  gchar *quoted_host, *quoted_hostname, *quoted_path, *quoted_hash_value;
 
   assert (task);
   assert (type);
 
   quoted_hash_value = sql_quote(hash_value ?: "");
+  quoted_type = sql_quote (type ?: "");
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
+  quoted_host = sql_quote (host ?: "");
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_path = sql_quote (path ? path : "");
 
@@ -19171,14 +19174,17 @@ make_osp_result (task_t task, const char *host, const char *hostname,
        "         '%s', '%s', '%s', %d, '', '%s',"
        "         '%s', make_uuid (),"
        "         (SELECT id FROM result_nvts WHERE nvt = '%s'), '%s');",
-       task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
+       task, quoted_host, quoted_hostname, quoted_port, quoted_nvt,
        nvt_revision ?: "", result_severity ?: "0",
-       type, qod, quoted_desc, quoted_path, quoted_nvt, quoted_hash_value);
+       quoted_type, qod, quoted_desc, quoted_path, quoted_nvt,
+       quoted_hash_value);
   g_free (result_severity);
   g_free (nvt_revision);
+  g_free (quoted_type);
   g_free (quoted_desc);
   g_free (quoted_nvt);
   g_free (quoted_port);
+  g_free (quoted_host);
   g_free (quoted_hostname);
   g_free (quoted_path);
   g_free (quoted_hash_value);
@@ -29028,39 +29034,71 @@ check_osp_result_exists (report_t report, task_t task,
                "  WHERE report = %llu and hash_value = '%s');",
                report, *entity_hash_value))
     {
-      const char *type, *severity, *host, *hostname, *port;
-      const char *qod, *path;
-      gchar * desc;
+      const char *desc, *type, *severity, *host;
+      const char *hostname, *port, *qod, *path;
+      gchar *quoted_desc, *quoted_type, *quoted_severity, *quoted_host;
+      gchar *quoted_hostname, *quoted_port, *quoted_qod, *quoted_path;
 
       host = entity_attribute (r_entity, "host");
       hostname = entity_attribute (r_entity, "hostname");
       type = entity_attribute (r_entity, "type");
-      desc = sql_quote (entity_text (r_entity));
-      port = entity_attribute (r_entity, "port") ?: "";
+      desc = entity_text (r_entity);
+      port = entity_attribute (r_entity, "port");
       severity = entity_attribute (r_entity, "severity");
-      qod = entity_attribute (r_entity, "qod") ?: "";
-      path = entity_attribute (r_entity, "uri") ?: "";
+      qod = entity_attribute (r_entity, "qod");
+      path = entity_attribute (r_entity, "uri");
+
+      if (!severity || !strcmp (severity, ""))
+        {
+          if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
+            quoted_severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+          else
+            {
+              g_debug ("%s: Result without severity", __func__);
+              return 0;
+            }
+        }
+      else
+        {
+          quoted_severity = sql_quote (severity);
+        }
+
+      quoted_host = sql_quote (host ?: "");
+      quoted_hostname = sql_quote (hostname ?: "");
+      quoted_type = sql_quote (type ?: "");
+      quoted_desc = sql_quote (desc ?: "");
+      quoted_port = sql_quote (port ?: "");
+      quoted_qod = sql_quote (qod ?: "");
+      quoted_path = sql_quote (path ?: "");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM results"
                    "   WHERE report = %llu and hash_value = '%s'"
                    "    and host = '%s' and hostname = '%s'"
                    "    and type = '%s' and description = '%s'"
-                   "    and port = '%s' and severity = %s"
-                   "    and qod = %s and path = '%s'"
+                   "    and port = '%s' and severity = '%s'"
+                   "    and qod = '%s' and path = '%s'"
                    " );",
                    report, *entity_hash_value,
-                   host, hostname,
-		   type, desc,
-                   port, severity,
-		   qod, path))
+                   quoted_host, quoted_hostname,
+                   quoted_type, quoted_desc,
+                   quoted_port, quoted_severity,
+                   quoted_qod, quoted_path))
         {
           g_info ("Captured duplicate result, report: %llu hash_value: %s",
                    report, *entity_hash_value);
           g_debug ("Entity string: %s", entity_string->str);
           return_value = 1;
         }
-      g_free (desc);
+
+      g_free (quoted_host);
+      g_free (quoted_hostname);
+      g_free (quoted_type);
+      g_free (quoted_desc);
+      g_free (quoted_port);
+      g_free (quoted_qod);
+      g_free (quoted_path);
+      g_free (quoted_severity);
   }
   g_string_free(entity_string, TRUE);
   return return_value;
@@ -29100,24 +29138,34 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                "  WHERE report_host = %llu and hash_value = '%s');",
                report_host, *detail_hash_value))
     {
-      gchar *quoted_s_desc = sql_quote ((gchar*) s_desc);
+      gchar *quoted_host = sql_quote (host);
+      gchar *quoted_s_type = sql_quote (s_type);
+      gchar *quoted_s_name = sql_quote (s_name);
+      gchar *quoted_s_desc = sql_quote (s_desc);
+      gchar *quoted_name = sql_quote (name);
+      gchar *quoted_value = sql_quote (value);
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM report_host_details"
                    "   WHERE report_host = %llu and hash_value = '%s'"
-		   "   and source_type = '%s' and source_name = '%s'"
+                   "   and source_type = '%s' and source_name = '%s'"
                    "   and source_description = '%s'"
                    "   and  name = '%s' and value = '%s'"
                    " );",
-                   report_host, *detail_hash_value,  s_type, s_name,
-                   quoted_s_desc, name, value))
+                   report_host, *detail_hash_value, quoted_s_type,
+                   quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
         {
           g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
                       report, *detail_hash_value);
           g_debug ("Hash string: %s", hash_string);
           return_value = 1;
         }
+      g_free (quoted_host);
+      g_free (quoted_s_type);
+      g_free (quoted_s_name);
       g_free (quoted_s_desc);
+      g_free (quoted_name);
+      g_free (quoted_value);
     }
   g_free (hash_string);
   return return_value;
