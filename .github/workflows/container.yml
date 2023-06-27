@@ -26,7 +26,7 @@ jobs:
           images: ${{ github.repository }}
           labels: |
             org.opencontainers.image.vendor=Greenbone
-            org.opencontainers.image.base.name=debian/stable-slim
+            org.opencontainers.image.base.name=greenbone/gvm-libs
           flavor: latest=false # no latest container tag for git tags
           tags: |
             # use version, major.minor and major  for tags
@@ -43,6 +43,16 @@ jobs:
             # when a new git tag is created set stable and a latest tags
             type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
             type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+      - name: Set container build options
+        id: container-opts
+        run: |
+          if [[ "${{ github.ref_type }}" = 'tag' ]]; then
+            echo "version=stable" >> $GITHUB_OUTPUT
+            echo "gvm-libs-version=oldstable" >> $GITHUB_OUTPUT
+          else
+            echo "version=edge" >> $GITHUB_OUTPUT
+            echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
+          fi
       - name: Login to Docker Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
@@ -58,6 +68,9 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref_name == 'main') }}
+          build-args: |
+            VERSION=${{ steps.container-opts.outputs.version }}
+            GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
           file: .docker/prod.Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
