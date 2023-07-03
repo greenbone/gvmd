@@ -378,9 +378,6 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
       switch (write_to_client (write_to_client_data))
         {
           case  0:      /* Wrote everything in to_client. */
-            // FIX
-            //if (close_connection)
-            //  goto client_free;
             break;
           case -1:      /* Error. */
             g_debug ("   %s full (%i < %zu); client write failed",
