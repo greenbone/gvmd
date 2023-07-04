@@ -78,6 +78,11 @@ buffer_size_t from_client_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
+ * @brief Flag for serve_gmp and gmpd_send_to_client.
+ */
+static int close_connection = 0;
+
+/**
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
@@ -455,9 +460,12 @@ int
 serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
            gchar **disable)
 {
-  int nfds, rc = 0;
+  int nfds, rc;
 
   g_debug ("   Serving GMP");
+
+  rc = 0;
+  close_connection = 0;
 
   /* Initialise the XML parser and the manage library. */
   init_gmp_process (database,
@@ -542,7 +550,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
         }
 
       /* Read any data from the client. */
-      if (client_connection->socket > 0
+      if (close_connection == 0
+          && client_connection->socket > 0
           && FD_ISSET (client_connection->socket, &readfds))
         {
           buffer_size_t initial_start = from_client_end;
@@ -561,11 +570,9 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
                 g_debug ("   EOF reading from client");
                 if (client_connection->socket > 0
                     && FD_ISSET (client_connection->socket, &writefds))
-                  /* Write rest of to_client to client, so that the client gets
-                   * any buffered output and the response to the error. */
-                  write_to_client (client_connection);
-                rc = 0;
-                goto client_free;
+                  /* Stop reading, but process rest of input and output. */
+                  close_connection = 1;
+                break;
               default:       /* Programming error. */
                 assert (0);
             }
@@ -613,6 +620,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
           switch (write_to_client (client_connection))
             {
               case  0:      /* Wrote everything in to_client. */
+                if (close_connection)
+                  goto client_free;
                 break;
               case -1:      /* Error. */
                 rc = -1;
