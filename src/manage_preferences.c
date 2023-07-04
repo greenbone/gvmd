@@ -80,6 +80,7 @@ preference_free (preference_t *preference)
     {
       free (preference->id);
       free (preference->name);
+      free (preference->pref_name);
       free (preference->type);
       free (preference->value);
       free (preference->nvt_name);

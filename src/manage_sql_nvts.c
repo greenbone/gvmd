@@ -1289,7 +1289,10 @@ insert_nvt_preference (gpointer nvt_preference, gpointer rebuild)
     return;
 
   preference = (preference_t*) nvt_preference;
-  manage_nvt_preference_add (preference->name, preference->value, GPOINTER_TO_INT (rebuild));
+  manage_nvt_preference_add (preference->name, preference->value,
+                             preference->nvt_oid, preference->id,
+                             preference->type, preference->pref_name,
+                             GPOINTER_TO_INT (rebuild));
 }
 
 /**
@@ -1402,15 +1405,19 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
                                            id,
                                            type,
                                            text);
-              g_free (text);
 
               blank_control_chars (full_name);
               preference = g_malloc0 (sizeof (preference_t));
+              preference->free_strings = 1;
               preference->name = full_name;
               if (def)
                 preference->value = element_text (def);
               else
                 preference->value = g_strdup ("");
+              preference->nvt_oid = g_strdup (oid);
+              preference->id = g_strdup (id);
+              preference->type = g_strdup (type);
+              preference->pref_name = text;
               *preferences = g_list_prepend (*preferences, preference);
             }
 
@@ -1798,7 +1805,7 @@ update_nvts_from_vts (element_t *get_vts_response,
              rebuild ? "_rebuild" : "",
              nvti_oid (nvti));
       insert_nvt_preferences_list (preferences, rebuild);
-      g_list_free_full (preferences, g_free);
+      g_list_free_full (preferences, (GDestroyNotify) preference_free);
 
       nvti_free (nvti);
       vt = element_next (vt);
