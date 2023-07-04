@@ -105,6 +105,16 @@
 void
 set_vt_ref_insert_size (int);
 
+/**
+ * @brief Default for vt_sev_insert_size.
+ *
+ * There are about 80k vt_severities.
+ */
+#define VT_SEV_INSERT_SIZE_DEFAULT 100000
+
+void
+set_vt_sev_insert_size (int);
+
 const char *
 get_osp_vt_update_socket ();
 
