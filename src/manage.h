@@ -1924,7 +1924,8 @@ nvt_selector_iterator_type (iterator_t*);
 /* NVT preferences. */
 
 void
-manage_nvt_preference_add (const char*, const char*, int);
+manage_nvt_preference_add (const char*, const char*, const char*, const char*,
+                           const char*, const char*, int);
 
 void
 manage_nvt_preferences_enable ();

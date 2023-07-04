@@ -835,7 +835,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>Port to which note applies</summary>
+      <summary>Port (location) to which note applies</summary>
       <pattern>
         text
       </pattern>
@@ -1192,7 +1192,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>Port to which override applies</summary>
+      <summary>Port (location) to which override applies</summary>
       <pattern>
         text
       </pattern>
@@ -1507,7 +1507,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>The port on the host</summary>
+      <summary>The port (location) on the host</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -2852,7 +2852,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
           <ele>
             <name>port</name>
-            <summary>The port of the error message</summary>
+            <summary>The port (location) of the error message</summary>
             <pattern><t>port</t></pattern>
           </ele>
           <ele>
@@ -4024,7 +4024,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>Port to which note applies</summary>
+      <summary>Port (location) to which note applies</summary>
       <pattern>
         text
       </pattern>
@@ -4180,7 +4180,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>Port to which override applies</summary>
+      <summary>Port (location) to which override applies</summary>
       <pattern>
         text
       </pattern>
@@ -12398,7 +12398,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>port</name>
             <type>text</type>
-            <summary>Port the Note applies to</summary>
+            <summary>Port (location) the Note applies to</summary>
           </column>
           <column>
             <name>active</name>
@@ -13456,7 +13456,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>port</name>
             <type>text</type>
-            <summary>Port the Override applies to</summary>
+            <summary>Port (location) the Override applies to</summary>
           </column>
           <column>
             <name>threat</name>
@@ -23976,7 +23976,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>Port to which note applies</summary>
+      <summary>Port (location) to which note applies</summary>
       <pattern>
         text
       </pattern>
@@ -24116,7 +24116,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>port</name>
-      <summary>Port to which override applies</summary>
+      <summary>Port (location) to which override applies</summary>
       <pattern>
         text
       </pattern>
