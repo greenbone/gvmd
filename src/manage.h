@@ -1924,7 +1924,8 @@ nvt_selector_iterator_type (iterator_t*);
 /* NVT preferences. */
 
 void
-manage_nvt_preference_add (const char*, const char*, int);
+manage_nvt_preference_add (const char*, const char*, const char*, const char*,
+                           const char*, const char*, int);
 
 void
 manage_nvt_preferences_enable ();
@@ -1960,7 +1961,7 @@ void
 xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int, int);
 
 char*
 task_preference_value (task_t, const char *);

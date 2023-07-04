@@ -98,7 +98,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 254)
+set (GVMD_DATABASE_VERSION 255)
 
 set (GVMD_SCAP_DATABASE_VERSION 20)
 
@@ -303,6 +303,10 @@ install (FILES ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
          DESTINATION ${GVM_SYSCONF_DIR})
 
 # Schema formats.
+
+install (FILES src/schema_formats/rnc.xsl
+         DESTINATION ${GVMD_DATA_DIR}/global_schema_formats/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/rnc.xsl
                src/schema_formats/HTML/HTML.xsl
