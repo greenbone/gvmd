@@ -12911,6 +12911,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>skip_cert_refs</name>
+        <summary>Whether to exclude refs of types cert-bund and dfn-cert</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>timeout</name>
         <summary>Whether to include the special timeout preference</summary>
         <type>boolean</type>
