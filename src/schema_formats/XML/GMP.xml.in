@@ -67,6 +67,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>text</pattern>
   </type>
   <type>
+    <name>delta_states</name>
+    <summary>A string selecting delta states that may include the characters c, g, n and s</summary>
+    <description>
+      The meanings of the letters for each state are: 
+      "c" for "changed", "g" for "gone", "n" for "new", and "s" for "same". 
+    </description>
+    <pattern>xsd:token { pattern = "c?g?n?s?" }</pattern>
+  </type>
+  <type>
     <name>type_name</name>
     <summary>A name of a data type</summary>
     <pattern>xsd:Name</pattern>
@@ -86,8 +95,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </type>
   <type>
     <name>levels</name>
-    <summary>A string that may include the characters h, m, l, g and d</summary>
-    <pattern>xsd:token { pattern = "h?m?l?g?d?" }</pattern>
+    <summary>A string selecting severity levels that may include the characters h, m, l, g and f</summary>
+    <description>
+      The meanings of the letters for each level are: "h" for "high",
+      "m" for "medium", "l" for "low", "g" for "log" and
+      "f" for "false positive". 
+    </description>
+    <pattern>xsd:token { pattern = "h?m?l?g?f?" }</pattern>
   </type>
   <type>
     <name>name</name>
@@ -14910,6 +14924,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
+          </option>
+          <option>
+            <name>delta_states</name>
+            <type>delta_states</type>
+            <summary>States to select in a delta report</summary>
           </option>
           <option>
             <name>levels</name>
