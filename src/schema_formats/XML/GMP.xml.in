@@ -76,6 +76,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>xsd:token { pattern = "c?g?n?s?" }</pattern>
   </type>
   <type>
+    <name>decimal</name>
+    <summary>A decimal number that can have a fractional part</summary>
+    <pattern>xsd:decimal</pattern>
+  </type>
+  <type>
     <name>type_name</name>
     <summary>A name of a data type</summary>
     <pattern>xsd:Name</pattern>
@@ -7186,16 +7191,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Whether new NVTs will be added</summary>
           </column>
           <column>
-            <name>type</name>
-            <type>
-              <alts>
-                <alt>0</alt>
-                <alt>1</alt>
-              </alts>
-            </type>
-            <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
-          </column>
-          <column>
             <name>usage_type</name>
             <type>
               <alts>
@@ -9113,6 +9108,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Highest severity of the asset from latest report</summary>
           </column>
           <column>
+            <name>severity_level</name>
+            <type>threat</type>
+            <summary>
+              Highest severity level of the asset from latest report,
+              e.g. "High" or "Low"
+            </summary>
+          </column>
+          <column>
             <name>os</name>
             <type>text</type>
             <summary>Best matching OS, either name or CPE-ID</summary>
@@ -9131,6 +9134,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>ip</name>
             <type>text</type>
             <summary>IP address</summary>
+          </column>
+          <column>
+            <name>updated</name>
+            <type>iso_time</type>
+            <summary>Time of last update (alias of modified)</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -9156,17 +9164,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <column>
             <name>latest_severity</name>
             <type>severity</type>
-            <summary>Latest severity score of the asset</summary>
+            <summary>Latest severity of the asset</summary>
           </column>
           <column>
             <name>highest_severity</name>
             <type>severity</type>
-            <summary>Latest severity score of the asset</summary>
+            <summary>Latest severity of the asset</summary>
           </column>
           <column>
             <name>average_severity</name>
             <type>severity</type>
-            <summary>Average severity score of the asset</summary>
+            <summary>Average severity of the asset</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>
+              Average severity of the asset (alias of average_severity)
+            </summary>
+          </column>
+          <column>
+            <name>average_severity_score</name>
+            <type>decimal</type>
+            <summary>
+              Average severity times the number of hosts the asset was found on
+            </summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -11473,11 +11495,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>List of CVEs of the NVT</summary>
           </column>
           <column>
-            <name>xref</name>
-            <type>text</type>
-            <summary>List of XREFs of the NVT</summary>
-          </column>
-          <column>
             <name>family</name>
             <type>text</type>
             <summary>Family of the NVT</summary>
@@ -11512,48 +11529,53 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>text</type>
             <summary>Solution type</summary>
           </column>
+          <column>
+            <name>solution</name>
+            <type>text</type>
+            <summary>Solution description text</summary>
+          </column>
+          <column>
+            <name>insight</name>
+            <type>text</type>
+            <summary>Insight section text</summary>
+          </column>
+          <column>
+            <name>affected</name>
+            <type>text</type>
+            <summary>Text listing affected software</summary>
+          </column>
+          <column>
+            <name>impact</name>
+            <type>text</type>
+            <summary>Impact description text</summary>
+          </column>
+          <column>
+            <name>detection</name>
+            <type>text</type>
+            <summary>Detection description text</summary>
+          </column>
+          <column>
+            <name>solution_method</name>
+            <type>text</type>
+            <summary>Solution method</summary>
+          </column>
+          <column>
+            <name>version</name>
+            <type>integer</type>
+            <summary>Version of the NVT (deprected)</summary>
+          </column>
         </filter_keywords>
         <filter_keywords>
           <condition>type is "cve"</condition>
           <column>
-            <name>vector</name>
+            <name>cvss_vector</name>
             <type>text</type>
-            <summary>"Vector" component of the CVSS base vector</summary>
-          </column>
-          <column>
-            <name>complexity</name>
-            <type>text</type>
-            <summary>"Complexity" component of the CVSS base vector</summary>
-          </column>
-          <column>
-            <name>authentication</name>
-            <type>text</type>
-            <summary>"Authentication" component of the CVSS base vector</summary>
-          </column>
-          <column>
-            <name>confidentiality_impact</name>
-            <type>text</type>
-            <summary>"Confidentiality Impact" component of the CVSS base vector</summary>
-          </column>
-          <column>
-            <name>integrity_impact</name>
-            <type>text</type>
-            <summary>"Integrity Impact" component of the CVSS base vector</summary>
-          </column>
-          <column>
-            <name>availability_impact</name>
-            <type>text</type>
-            <summary>"Availability Impact" component of the CVSS base vector</summary>
+            <summary>The CVSS base vector</summary>
           </column>
           <column>
             <name>products</name>
             <type>text</type>
             <summary>Space separated list CPEs the CVE applies to</summary>
-          </column>
-          <column>
-            <name>cvss</name>
-            <type>severity</type>
-            <summary>Alias for severity</summary>
           </column>
           <column>
             <name>description</name>
@@ -11584,11 +11606,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>NVD ID that has deprecated this CPE</summary>
           </column>
           <column>
-            <name>max_cvss</name>
-            <type>severity</type>
-            <summary>Alias for severity</summary>
-          </column>
-          <column>
             <name>cves</name>
             <type>integer</type>
             <summary>Number of CVEs referencing this CPE</summary>
@@ -11615,11 +11632,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>cves</name>
             <type>integer</type>
             <summary>Number of CVEs referenced by the CERT advisory</summary>
-          </column>
-          <column>
-            <name>max_cvss</name>
-            <type>severity</type>
-            <summary>Alias for severity</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -12354,6 +12366,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the Task the Note applies to</summary>
+          </option>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -12398,11 +12415,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>task_name</name>
             <type>text</type>
             <summary>Name of the Task the Note applies to</summary>
-          </column>
-          <column>
-            <name>task_id</name>
-            <type>uuid</type>
-            <summary>UUID of the Task the Note applies to</summary>
           </column>
           <column>
             <name>hosts</name>
@@ -13412,6 +13424,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>task_id</name>
+            <type>uuid</type>
+            <summary>UUID of the Task the Override applies to</summary>
+          </option>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -13458,11 +13475,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Name of the Task the Override applies to</summary>
           </column>
           <column>
-            <name>task_id</name>
-            <type>uuid</type>
-            <summary>UUID of the Task the Override applies to</summary>
-          </column>
-          <column>
             <name>hosts</name>
             <type>text</type>
             <summary>Hosts the Override applies to</summary>
@@ -13501,6 +13513,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>new_severity</name>
             <type>severity</type>
             <summary>Severity level results are changed to by the Override</summary>
+          </column>
+          <column>
+            <name>active_days</name>
+            <type>integer</type>
+            <summary>Number of days the override will still be active</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -13801,6 +13818,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>subject_uuid</name>
             <type>text</type>
             <summary>UUID of the subject of the permission</summary>
+          </column>
+          <column>
+            <name>orphan</name>
+            <type>boolean</type>
+            <summary>Whether the resource of the permission is in the trashcan</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -14996,6 +15018,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Port and protocol of the result</summary>
           </column>
           <column>
+            <name>path</name>
+            <type>text</type>
+            <summary>The local path on the host, e.g. a file location</summary>
+          </column>
+          <column>
             <name>nvt</name>
             <type>text</type>
             <summary>Unique ID of the test that produced the result</summary>
@@ -15218,22 +15245,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Number of high severity results per host with results</summary>
           </column>
           <column>
-	    <name>start_time</name>
+            <name>start_time</name>
             <type>iso_time</type>
             <summary>Scan start time</summary>
           </column>
           <column>
-	    <name>end_time</name>
+            <name>end_time</name>
             <type>iso_time</type>
             <summary>Scan end time</summary>
           </column>
           <column>
-	    <name>scan_start</name>
+            <name>scan_start</name>
             <type>iso_time</type>
             <summary>Scan start time</summary>
           </column>
           <column>
-	    <name>scan_end</name>
+            <name>scan_end</name>
             <type>iso_time</type>
             <summary>Scan end time</summary>
           </column>
@@ -16328,6 +16355,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Severity levels to select</summary>
           </option>
           <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the results</summary>
+          </option>
+          <option>
             <name>notes</name>
             <type>boolean</type>
             <summary>Whether to include Notes in the report</summary>
@@ -16368,11 +16400,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Name of the owner</summary>
           </column>
           <column>
-            <name>min_qod</name>
-            <type>integer</type>
-            <summary>Minimum QoD of the results</summary>
-          </column>
-          <column>
             <name>host</name>
             <type>text</type>
             <summary>Host IP address of the result</summary>
@@ -16386,6 +16413,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>location</name>
             <type>text</type>
             <summary>Port and protocol of the result</summary>
+          </column>
+          <column>
+            <name>path</name>
+            <type>text</type>
+            <summary>The local path on the host, e.g. a file location</summary>
           </column>
           <column>
             <name>nvt</name>
@@ -18898,6 +18930,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>name</type>
             <summary>Name of the SNMP credential</summary>
           </column>
+          <column>
+            <name>ssh_elevate_credential</name>
+            <type>name</type>
+            <summary>Name of the SSH credential to elevate privileges after initial login</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -18958,6 +18995,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>smb_credential</e>
           <e>esxi_credential</e>
           <e>snmp_credential</e>
+          <e>ssh_elevate_credential</e>
           <e>permissions</e>
           <e>port_range</e>
           <e>port_list</e>
@@ -19223,6 +19261,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <ele>
             <name>trash</name>
             <summary>Whether the credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ssh_elevate_credential</name>
+          <summary>
+            SSH LSC credential used to elevate privileges after initial login
+          </summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the SSH LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the task</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the LSC credential is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
@@ -20800,6 +20872,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>iso_time</type>
             <summary>Time ticket was closed</summary>
           </column>
+          <column>
+            <name>orphan</name>
+            <type>boolean</type>
+            <summary>Whether the ticket is missing a task or report</summary>
+          </column>
+          <column>
+            <name>result_id</name>
+            <type>uuid</type>
+            <summary>UUID of the result referenced by the ticket</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -21784,6 +21866,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>host_id</name>
+            <type>uuid</type>
+            <summary>UUID of the host asset where the certificate must be found</summary>
+          </option>
+          <option>
+            <name>report_id</name>
+            <type>uuid</type>
+            <summary>UUID of the report the cerificate must appear in</summary>
+          </option>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -21848,12 +21940,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               Whether the certificate is valid, expired or not active yet
             </summary>
             <pattern>
-			  <alts>
-				<alt>expired</alt>
-				<alt>inactive</alt>
-				<alt>unknown</alt>
-				<alt>valid</alt>
-			  </alts>
+              <alts>
+                <alt>expired</alt>
+                <alt>inactive</alt>
+                <alt>unknown</alt>
+                <alt>valid</alt>
+              </alts>
             </pattern>
           </column>
           <column>
@@ -21883,16 +21975,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>iso_time</type>
             <summary>Most recent time the TLS certificate was imported or found in a scan</summary>
           </column>
-          <option>
-            <name>host_id</name>
-            <type>uuid</type>
-            <summary>UUID of the host asset where the certificate must be found</summary>
-          </option>
-          <option>
-            <name>report_id</name>
-            <type>uuid</type>
-            <summary>UUID of the report the cerificate must appear in</summary>
-          </option>
+          <column>
+            <name>certificate_format</name>
+            <type>
+              <alts>
+                <alt>DER</alt>
+                <alt>PEM</alt>
+                <alt>unknown</alt>
+              </alts>
+            </type>
+            <summary>
+              File format of the certificate
+            </summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -22060,12 +22155,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             Whether the certificate is valid, expired or not active yet
           </summary>
           <pattern>
-			<alts>
-			  <alt>expired</alt>
-			  <alt>inactive</alt>
-			  <alt>unknown</alt>
-			  <alt>valid</alt>
-			</alts>
+            <alts>
+              <alt>expired</alt>
+              <alt>inactive</alt>
+              <alt>unknown</alt>
+              <alt>valid</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -22481,6 +22576,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the vulnerability</summary>
+          </option>
+          <option>
+            <name>task_id</name>
+            <type>UUID</type>
+            <summary>UUID of the task to limit the selected vulnerabilities to</summary>
+          </option>
+          <option>
+            <name>report_id</name>
+            <type>UUID</type>
+            <summary>UUID of the report to limit the selected vulnerabilities to</summary>
+          </option>
+          <option>
+            <name>host</name>
+            <type>text</type>
+            <summary>IP address of the host to limit the selected vulnerabilities to</summary>
+          </option>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -22500,11 +22615,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>modified</name>
             <type>iso_time</type>
             <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>min_qod</name>
-            <type>integer</type>
-            <summary>Minimum QoD of the vulnerability</summary>
           </column>
           <column>
             <name>results</name>
