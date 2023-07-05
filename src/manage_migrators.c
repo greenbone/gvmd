@@ -3070,25 +3070,29 @@ migrate_253_to_254_alter (int trash)
   sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_nvt text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_nvt = substring (name, '^([^:]*)');",
+       " SET pref_nvt = substring (name, '^([^:]*)')"
+       " WHERE name LIKE '%%:%%';",
        trash ? "_trash" : "");
 
   sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_id integer;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer);",
+       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer)"
+       " WHERE name LIKE '%%:%%';",
        trash ? "_trash" : "");
 
   sql ("ALTER table config_preferences%s ADD COLUMN pref_type text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):');",
+       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):')"
+       " WHERE name LIKE '%%:%%';",
        trash ? "_trash" : "");
 
   sql ("ALTER table config_preferences%s ADD COLUMN pref_name text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)');",
+       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)')"
+       " WHERE name LIKE '%%:%%';",
        trash ? "_trash" : "");
 }
 
