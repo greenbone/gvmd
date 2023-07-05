@@ -3128,57 +3128,6 @@ migrate_253_to_254 ()
   return 0;
 }
 
-<<<<<<< HEAD
-=======
-/**
- * @brief Migrate the database from version 254 to version 255.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_254_to_255 ()
-{
-  sql_begin_immediate ();
-
-  /* Ensure that the database is currently version 254. */
-
-  if (manage_db_version () != 254)
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  /* Update the database. */
-
-  sql ("ALTER TABLE nvt_preferences ADD COLUMN pref_nvt text;");
-  sql ("UPDATE nvt_preferences"
-       " SET pref_nvt = substring (name, '^([^:]*)')"
-       " WHERE name LIKE '%%:%%';");
-
-  sql ("ALTER TABLE nvt_preferences ADD COLUMN pref_id integer;");
-  sql ("UPDATE nvt_preferences"
-       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer)"
-       " WHERE name LIKE '%%:%%';");
-
-  sql ("ALTER table nvt_preferences ADD COLUMN pref_type text;");
-  sql ("UPDATE nvt_preferences"
-       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):')"
-       " WHERE name LIKE '%%:%%';");
-
-  sql ("ALTER table nvt_preferences ADD COLUMN pref_name text;");
-  sql ("UPDATE nvt_preferences"
-       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)')"
-       " WHERE name LIKE '%%:%%';");
-
-  /* Set the database version to 255. */
-
-  set_db_version (255);
-
-  sql_commit ();
-
-  return 0;
-}
->>>>>>> c7a00046c (Fix: Fix pattern match for migrating preferences)
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
