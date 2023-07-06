@@ -3070,28 +3070,28 @@ migrate_253_to_254_alter (int trash)
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
        " SET pref_nvt = substring (name, '^([^:]*)')"
-       " WHERE name LIKE '%%:%%';",
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 
   sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_id integer;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer)"
-       " WHERE name LIKE '%%:%%';",
+       " SET pref_id = CAST (substring (name, '^[^:]*:([0-9]+)') AS integer)"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 
   sql ("ALTER table config_preferences%s ADD COLUMN pref_type text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):')"
-       " WHERE name LIKE '%%:%%';",
+       " SET pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 
   sql ("ALTER table config_preferences%s ADD COLUMN pref_name text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)')"
-       " WHERE name LIKE '%%:%%';",
+       " SET pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 }
 
@@ -3150,22 +3150,22 @@ migrate_254_to_255 ()
   sql ("ALTER TABLE nvt_preferences ADD COLUMN pref_nvt text;");
   sql ("UPDATE nvt_preferences"
        " SET pref_nvt = substring (name, '^([^:]*)')"
-       " WHERE name LIKE '%%:%%';");
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
 
   sql ("ALTER TABLE nvt_preferences ADD COLUMN pref_id integer;");
   sql ("UPDATE nvt_preferences"
-       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer)"
-       " WHERE name LIKE '%%:%%';");
+       " SET pref_id = CAST (substring (name, '^[^:]*:([0-9]+)') AS integer)"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
 
   sql ("ALTER table nvt_preferences ADD COLUMN pref_type text;");
   sql ("UPDATE nvt_preferences"
-       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):')"
-       " WHERE name LIKE '%%:%%';");
+       " SET pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
 
   sql ("ALTER table nvt_preferences ADD COLUMN pref_name text;");
   sql ("UPDATE nvt_preferences"
-       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)')"
-       " WHERE name LIKE '%%:%%';");
+       " SET pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
 
   /* Set the database version to 255. */
 
