@@ -7135,6 +7135,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -8498,6 +8536,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -9056,6 +9132,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -9858,6 +9972,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -10628,6 +10780,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -11058,6 +11248,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -11446,6 +11674,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -12367,10 +12633,48 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>task_id</name>
             <type>uuid</type>
             <summary>UUID of the Task the Note applies to</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -13425,10 +13729,48 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>task_id</name>
             <type>uuid</type>
             <summary>UUID of the Task the Override applies to</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -13759,6 +14101,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -14245,6 +14625,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -14943,6 +15361,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
@@ -14977,6 +15418,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>text</type>
             <summary>The timezone to use for the report</summary>
           </option>
+          <column>
+          <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -15125,6 +15581,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
@@ -15134,6 +15613,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>integer</type>
             <summary>Minimum QoD of the results</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -15714,6 +16208,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -16345,6 +16877,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
@@ -16374,6 +16929,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>text</type>
             <summary>The timezone to use for the report</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -16831,6 +17401,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -17207,6 +17815,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -17726,6 +18372,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -18169,6 +18853,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
           <column>
             <name>name</name>
             <type>name</type>
@@ -18467,6 +19174,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -18860,6 +19590,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -19602,6 +20370,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
@@ -19611,6 +20402,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>integer</type>
             <summary>Minimum QoD of the results</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -20802,6 +21608,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -21412,6 +22256,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <summary>Filter term to use to filter query</summary>
         <type>text</type>
         <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -21867,6 +22749,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>host_id</name>
             <type>uuid</type>
             <summary>UUID of the host asset where the certificate must be found</summary>
@@ -21876,6 +22781,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>uuid</type>
             <summary>UUID of the report the cerificate must appear in</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
@@ -22577,6 +23497,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>text</type>
         <filter_keywords>
           <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>min_qod</name>
             <type>integer</type>
             <summary>Minimum QoD of the vulnerability</summary>
@@ -22596,6 +23539,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <type>text</type>
             <summary>IP address of the host to limit the selected vulnerabilities to</summary>
           </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
           <column>
             <name>uuid</name>
             <type>uuid</type>
