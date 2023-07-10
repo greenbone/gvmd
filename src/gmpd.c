@@ -513,7 +513,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
       /** @todo Shutdown on failure (for example, if a read fails). */
 
       /* See whether to read from the client.  */
-      if (from_client_end < from_buffer_size)
+      if ((close_connection == 0)
+          && (from_client_end < from_buffer_size))
         FD_SET (client_connection->socket, &readfds);
 
       /* See whether to write to the client.  */
@@ -553,8 +554,7 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
         }
 
       /* Read any data from the client. */
-      if (close_connection == 0
-          && client_connection->socket > 0
+      if (client_connection->socket > 0
           && FD_ISSET (client_connection->socket, &readfds))
         {
           buffer_size_t initial_start = from_client_end;
