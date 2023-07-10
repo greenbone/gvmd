@@ -568,8 +568,7 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
                 break;
               case -3:       /* End of file. */
                 g_debug ("   EOF reading from client");
-                if (client_connection->socket > 0
-                    && FD_ISSET (client_connection->socket, &writefds))
+                if (client_connection->socket > 0)
                   /* Stop reading, but process rest of input and output. */
                   close_connection = 1;
                 break;
