@@ -515,9 +515,12 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
       /* See whether to read from the client.  */
       if (from_client_end < from_buffer_size)
         FD_SET (client_connection->socket, &readfds);
+
       /* See whether to write to the client.  */
       if (to_client_start < to_client_end)
         FD_SET (client_connection->socket, &writefds);
+      else if (close_connection)
+        goto client_free;
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
