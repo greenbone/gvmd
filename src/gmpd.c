@@ -513,11 +513,15 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
       /** @todo Shutdown on failure (for example, if a read fails). */
 
       /* See whether to read from the client.  */
-      if (from_client_end < from_buffer_size)
+      if ((close_connection == 0)
+          && (from_client_end < from_buffer_size))
         FD_SET (client_connection->socket, &readfds);
+
       /* See whether to write to the client.  */
       if (to_client_start < to_client_end)
         FD_SET (client_connection->socket, &writefds);
+      else if (close_connection)
+        goto client_free;
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -550,8 +554,7 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
         }
 
       /* Read any data from the client. */
-      if (close_connection == 0
-          && client_connection->socket > 0
+      if (client_connection->socket > 0
           && FD_ISSET (client_connection->socket, &readfds))
         {
           buffer_size_t initial_start = from_client_end;
@@ -568,8 +571,7 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
                 break;
               case -3:       /* End of file. */
                 g_debug ("   EOF reading from client");
-                if (client_connection->socket > 0
-                    && FD_ISSET (client_connection->socket, &writefds))
+                if (client_connection->socket > 0)
                   /* Stop reading, but process rest of input and output. */
                   close_connection = 1;
                 break;
