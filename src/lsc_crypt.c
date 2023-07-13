@@ -629,6 +629,72 @@ lsc_crypt_create_enckey (lsc_crypt_ctx_t ctx)
 /**
  * @brief Encrypt a list of name/value pairs
  *
+ * @param[in] ctx   The context
+ * @param[in] data  The GHashTable containing the plain text data
+ *                  using the name as key, value as value.
+ *
+ * @return A pointer to a freshly allocated string in base64 encoding.
+ *         Caller must free.  On error NULL is returned.
+ */
+char *
+lsc_crypt_encrypt_hashtable (lsc_crypt_ctx_t ctx, GHashTable *data)
+{
+  GString *stringbuf;
+  char *plaintext;
+  size_t plaintextlen;
+  char *ciphertext;
+  char *name, *value;
+  size_t len;
+
+  if (!ctx || !data)
+    return NULL;
+
+  /* Assuming a 2048 bit RSA ssh private key in PEM encoding, a buffer
+     with an initial size of 2k should be large enough.  */
+  stringbuf = g_string_sized_new (2048);
+  GHashTableIter iter;
+  g_hash_table_iter_init (&iter, data);
+
+  while (g_hash_table_iter_next (&iter,
+                                 (gpointer*)(&name),
+                                 (gpointer*)(&value)))
+    {
+      if (!value)
+        value = "";
+      len = strlen (name);
+      if (len)  /* We skip pairs with an empty name. */
+        {
+          put32 (stringbuf, len);
+          g_string_append (stringbuf, name);
+          len = strlen (value);
+          if (len > MAX_VALUE_LENGTH)
+            {
+              g_warning ("%s: value for '%s' larger than our limit (%d)",
+                         G_STRFUNC, name, MAX_VALUE_LENGTH);
+              g_string_free (stringbuf, TRUE);
+              return NULL;
+            }
+          put32 (stringbuf, len);
+          g_string_append (stringbuf, value);
+        }
+    }
+
+  plaintext = stringbuf->str;
+  plaintextlen = stringbuf->len;
+  g_string_free (stringbuf, FALSE);
+  g_assert (plaintextlen);
+
+  ciphertext = do_encrypt (ctx, plaintext, plaintextlen);
+  g_free (plaintext);
+
+  return ciphertext;
+}
+
+
+
+/**
+ * @brief Encrypt a list of name/value pairs
+ *
  * @param[in] ctx        The context
  * @param[in] first_name The name of the first name/value pair.  This
  *                       must be followed by a string value and

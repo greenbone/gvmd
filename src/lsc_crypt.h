@@ -70,6 +70,8 @@ gboolean lsc_crypt_enckey_exists (lsc_crypt_ctx_t);
 
 int lsc_crypt_create_enckey (lsc_crypt_ctx_t ctx);
 
+char *lsc_crypt_encrypt_hashtable (lsc_crypt_ctx_t, GHashTable*);
+
 char *lsc_crypt_encrypt (lsc_crypt_ctx_t,
                          const char *, ...) G_GNUC_NULL_TERMINATED;
 

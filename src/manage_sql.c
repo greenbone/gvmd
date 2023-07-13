@@ -6041,7 +6041,13 @@ encrypt_all_credentials (gboolean decrypt_flag)
                  "  AND type = 'password'),"
                  " (SELECT value FROM credentials_data"
                  "  WHERE credential = credentials.id"
-                 "  AND type = 'private_key')"
+                 "  AND type = 'private_key'),"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'community'),"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'privacy_password')"
                  " FROM credentials");
 
   char *encryption_key_uid = current_encryption_key_uid (TRUE);
@@ -6054,7 +6060,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
   while (next (&iterator))
     {
       long long int rowid;
-      const char *secret, *password, *privkey;
+      const char *secret, *password, *privkey, *community, *privacy_password;
 
       ntotal++;
       if (!(ntotal % 10))
@@ -6064,9 +6070,11 @@ encrypt_all_credentials (gboolean decrypt_flag)
       secret   = iterator_string (&iterator, 1);
       password = iterator_string (&iterator, 2);
       privkey  = iterator_string (&iterator, 3);
+      community        = iterator_string (&iterator, 4);
+      privacy_password = iterator_string (&iterator, 5);
 
       /* If there is no secret, password or private key, skip the row.  */
-      if (!secret && !password && !privkey)
+      if (!secret && !password && !privkey && !privacy_password)
         continue;
 
       if (secret)
@@ -6074,9 +6082,13 @@ encrypt_all_credentials (gboolean decrypt_flag)
           lsc_crypt_flush (iterator.crypt_ctx);
           password = lsc_crypt_get_password (iterator.crypt_ctx, secret);
           privkey  = lsc_crypt_get_private_key (iterator.crypt_ctx, secret);
+          community        = lsc_crypt_decrypt (iterator.crypt_ctx,
+                                                secret, "community");
+          privacy_password = lsc_crypt_decrypt (iterator.crypt_ctx,
+                                                secret, "privacy_password");
 
-          /* If there is no password or private key, skip the row.  */
-          if (!password && !privkey)
+          /* If there is none of the expected secrets, skip the row.  */
+          if (!password && !privkey && !community && !privacy_password)
             continue;
 
           nreencrypted++;
@@ -6093,6 +6105,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
         {
           set_credential_data (rowid, "password", password);
           set_credential_data (rowid, "private_key", privkey);
+          set_credential_data (rowid, "community", community);
+          set_credential_data (rowid, "privacy_password", privacy_password);
           set_credential_data (rowid, "secret", NULL);
           sql ("UPDATE credentials SET"
                " modification_time = m_now ()"
@@ -6101,18 +6115,32 @@ encrypt_all_credentials (gboolean decrypt_flag)
         }
       else
         {
+          GHashTable *plaintext_hashtable;
           char *encblob;
+          
+          plaintext_hashtable 
+            = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
 
-          if (password && privkey)
-            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
-                                         "password", password,
-                                         "private_key", privkey, NULL);
-          else if (password)
-            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
-                                         "password", password, NULL);
-          else
-            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
-                                         "private_key", privkey, NULL);
+          if (password)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "password",
+                                 g_strdup (password));
+          if (privkey)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "private_key",
+                                 g_strdup (privkey));
+          if (community)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "community",
+                                 g_strdup (community));
+          if (privacy_password)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "privacy_password",
+                                 g_strdup (privacy_password));
+
+          encblob = lsc_crypt_encrypt_hashtable (iterator.crypt_ctx,
+                                                 plaintext_hashtable);
+          g_hash_table_destroy (plaintext_hashtable);
 
           if (!encblob)
             {
@@ -6122,6 +6150,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
             }
           set_credential_data (rowid, "password", NULL);
           set_credential_data (rowid, "private_key", NULL);
+          set_credential_data (rowid, "community", NULL);
+          set_credential_data (rowid, "privacy_password", NULL);
           set_credential_data (rowid, "secret", encblob);
           sql ("UPDATE credentials SET"
                " modification_time = m_now ()"
