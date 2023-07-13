@@ -201,6 +201,7 @@ authenticate (credentials_t*);
 
 void
 logout_user ();
+
 
 /* Database. */
 
@@ -233,6 +234,21 @@ manage_encrypt_all_credentials (GSList *, const db_conn_info_t *);
 
 int
 manage_decrypt_all_credentials (GSList *, const db_conn_info_t *);
+
+int
+manage_create_encryption_key (GSList *log_config,
+                              const db_conn_info_t *database);
+
+int
+manage_set_encryption_key (GSList *log_config,
+                           const db_conn_info_t *database,
+                           const char*);
+
+char *
+current_encryption_key_uid (gboolean);
+
+void
+set_current_encryption_key_uid (const char *new_uid);
 
 void
 manage_session_set_timezone (const char *);

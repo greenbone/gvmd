@@ -26,6 +26,30 @@
 
 #include <glib.h>
 
+/// @brief Default length for RSA encryption keys
+#define DEFAULT_ENCRYPTION_RSA_KEY_LENGTH 4096
+
+/**
+ * @brief The name of the old encryption key.
+ *
+ * Note that the code will use the "=" prefix flag to indicate an
+ * exact search.  Thus when creating the key it should not have a
+ * comment or email address part.
+ */
+#define OLD_ENCRYPTION_KEY_UID "GVM Credential Encryption"
+
+/**
+ * @brief Template for the name of the encryption key.
+ *
+ * It must contain a single %s that will be replaced with the current 
+ * date and time.
+ *
+ * Note that the code will use the "=" prefix flag to indicate an
+ * exact search.  Thus when creating the key it should not have a
+ * comment or email address part.
+ */
+#define ENCRYPTION_KEY_UID_TEMPLATE "GVM Credential Encryption - %s"
+
 /* (Defined in gvmd.c) */
 extern int disable_encrypted_credentials;
 
@@ -33,12 +57,18 @@ extern int disable_encrypted_credentials;
 struct lsc_crypt_ctx_s;
 typedef struct lsc_crypt_ctx_s *lsc_crypt_ctx_t;
 
-lsc_crypt_ctx_t lsc_crypt_new ();
+int lsc_crypt_enckey_parms_init (const char *, int);
+
+lsc_crypt_ctx_t lsc_crypt_new (const char*);
 void lsc_crypt_release (lsc_crypt_ctx_t);
 
 int lsc_crypt_create_key ();
 
 void lsc_crypt_flush (lsc_crypt_ctx_t);
+
+gboolean lsc_crypt_enckey_exists (lsc_crypt_ctx_t);
+
+int lsc_crypt_create_enckey (lsc_crypt_ctx_t ctx);
 
 char *lsc_crypt_encrypt (lsc_crypt_ctx_t,
                          const char *, ...) G_GNUC_NULL_TERMINATED;

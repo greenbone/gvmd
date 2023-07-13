@@ -2971,7 +2971,7 @@ migrate_250_to_251 ()
       char *secret;
       char *quoted;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      crypt_ctx = lsc_crypt_new (OLD_ENCRYPTION_KEY_UID);
 
       sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
       secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", secret_key, NULL);

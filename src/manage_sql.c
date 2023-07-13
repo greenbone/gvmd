@@ -6043,7 +6043,10 @@ encrypt_all_credentials (gboolean decrypt_flag)
                  "  WHERE credential = credentials.id"
                  "  AND type = 'private_key')"
                  " FROM credentials");
-  iterator.crypt_ctx = lsc_crypt_new ();
+
+  char *encryption_key_uid = current_encryption_key_uid (TRUE);
+  iterator.crypt_ctx = lsc_crypt_new (encryption_key_uid);
+  free (encryption_key_uid);
 
   sql_begin_immediate ();
 
@@ -6208,6 +6211,69 @@ manage_decrypt_all_credentials (GSList *log_config,
 
   return ret;
 }
+
+/**
+ * @brief Gets the UID of the currently configured encryption key.
+ *
+ * @param[in]  with_fallback  If TRUE, set and return old key UID if
+ *                            the key UID is undefined.
+ *
+ * @return The encryption key UID.
+ */
+char *
+current_encryption_key_uid (gboolean with_fallback)
+{
+  char *key_uid = sql_string ("SELECT value FROM meta"
+                              " WHERE name = 'encryption_key_uid';");
+
+  if (key_uid)
+    return key_uid;
+  
+  if (!with_fallback)
+    return NULL;
+
+  // Check if an old, fixed UID key exists
+  lsc_crypt_ctx_t ctx = lsc_crypt_new (OLD_ENCRYPTION_KEY_UID);
+  if (lsc_crypt_enckey_exists (ctx))
+    {
+      lsc_crypt_flush(ctx);
+      set_current_encryption_key_uid (OLD_ENCRYPTION_KEY_UID);
+      return strdup (OLD_ENCRYPTION_KEY_UID);
+    }
+  lsc_crypt_flush(ctx);
+
+  // Generate a new key UID
+  time_t now = time(NULL);
+  gchar *generated_uid
+    = g_strdup_printf (ENCRYPTION_KEY_UID_TEMPLATE, iso_time (&now));
+  set_current_encryption_key_uid (generated_uid);
+  key_uid = strdup (generated_uid);
+  g_free (generated_uid);
+  return key_uid;
+}
+
+
+/**
+ * @brief Sets the database field defining the encryption key UID.
+ *
+ * Note: This does not have any effects on any already created 
+ *       encryption contexts that may be using the old UID.
+ *
+ * @param[in]  new_uid  The new UID to set.
+ */
+void
+set_current_encryption_key_uid (const char *new_uid)
+{
+  gchar *quoted_new_uid = sql_quote (new_uid);
+  
+  sql ("INSERT INTO meta (name, value)"
+       " VALUES ('encryption_key_uid', '%s')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+       quoted_new_uid);
+
+  g_free (quoted_new_uid);
+}
+
 
 
 /* Collation. */
@@ -33913,7 +33979,9 @@ check_db_encryption_key ()
   lsc_crypt_ctx_t crypt_ctx;
   gchar *secret;
 
-  crypt_ctx = lsc_crypt_new ();
+  char *encryption_key_uid = current_encryption_key_uid (TRUE);
+  crypt_ctx = lsc_crypt_new (encryption_key_uid);
+  free (encryption_key_uid);
   /* The encryption layer creates the key if it does not exist. */
   secret = lsc_crypt_encrypt (crypt_ctx, "dummy", "dummy", NULL);
   lsc_crypt_release (crypt_ctx);
@@ -34407,7 +34475,9 @@ create_credential (const char* name, const char* comment, const char* login,
       if (!disable_encrypted_credentials)
         {
           gchar *secret;
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "password", given_password,
                                       "private_key", key_private, NULL);
@@ -34446,7 +34516,9 @@ create_credential (const char* name, const char* comment, const char* login,
       if (!disable_encrypted_credentials)
         {
           gchar *secret;
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "community", community,
                                       "password", given_password,
@@ -34488,7 +34560,9 @@ create_credential (const char* name, const char* comment, const char* login,
 
       if (!disable_encrypted_credentials)
         {
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
           gchar *secret = lsc_crypt_encrypt (crypt_ctx,
                                              "password", given_password,
                                              NULL);
@@ -34549,7 +34623,9 @@ create_credential (const char* name, const char* comment, const char* login,
     if (!disable_encrypted_credentials)
       {
         gchar *secret;
-        crypt_ctx = lsc_crypt_new ();
+        char *encryption_key_uid = current_encryption_key_uid (TRUE);
+        crypt_ctx = lsc_crypt_new (encryption_key_uid);
+        free (encryption_key_uid);
         if (generated_private_key)
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "password", generated_password,
@@ -35365,7 +35441,9 @@ credential_encrypted_value (credential_t credential, const char* value_name)
       gchar *secret;
       const char* decrypted;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       secret = sql_string ("SELECT value FROM credentials_data"
                            " WHERE credential = %llu"
@@ -35496,7 +35574,9 @@ set_credential_password (credential_t credential, const char *password)
   if (!disable_encrypted_credentials)
     {
       gchar *encrypted_blob;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
                                           "password", password, NULL);
       if (!encrypted_blob)
@@ -35540,7 +35620,9 @@ set_credential_private_key (credential_t credential,
   if (!disable_encrypted_credentials)
     {
       gchar *encrypted_blob;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
                                           "private_key", private_key,
                                           "password", passphrase,
@@ -35603,7 +35685,9 @@ set_credential_snmp_secret (credential_t credential, const char* community,
   if (!disable_encrypted_credentials)
     {
       gchar *encrypted_blob;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
                                           "community", community,
                                           "password", password,
@@ -35728,7 +35812,11 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
     {
       /* This is an encrypted credential.  */
       if (!iterator->crypt_ctx)
-        iterator->crypt_ctx = lsc_crypt_new ();
+        {
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          iterator->crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+        }
 
       return lsc_crypt_decrypt (iterator->crypt_ctx, secret, type);
     }
@@ -38747,7 +38835,9 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
           lsc_crypt_ctx_t crypt_ctx;
           char *secret;
 
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
 
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "private_key", key_priv, NULL);
@@ -39051,7 +39141,9 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
               lsc_crypt_ctx_t crypt_ctx;
               char *secret;
 
-              crypt_ctx = lsc_crypt_new ();
+              char *encryption_key_uid = current_encryption_key_uid (TRUE);
+              crypt_ctx = lsc_crypt_new (encryption_key_uid);
+              free (encryption_key_uid);
 
               secret = lsc_crypt_encrypt (crypt_ctx,
                                           "private_key", key_priv, NULL);
@@ -39881,8 +39973,11 @@ scanner_iterator_key_priv (iterator_t* iterator)
     {
       const char *secret;
       if (!iterator->crypt_ctx)
-        iterator->crypt_ctx = lsc_crypt_new ();
-
+        {
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          iterator->crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+        }
       secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
       private_key = lsc_crypt_get_private_key (iterator->crypt_ctx, secret);
     }
@@ -40209,7 +40304,9 @@ scanner_key_priv (scanner_t scanner)
     {
       gchar *secret;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       secret = sql_string ("SELECT value FROM credentials_data"
                            " WHERE credential"
@@ -40268,7 +40365,9 @@ scanner_password (scanner_t scanner)
     {
       gchar *secret;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       secret = sql_string ("SELECT credentials_data.value"
                            " FROM scanners, credentials_data"
@@ -53872,7 +53971,9 @@ manage_get_radius_info (int *enabled, char **host, char **key)
     {
       const char *decrypted;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       decrypted = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
       if (decrypted)
         *key = g_strdup (decrypted);
@@ -53917,7 +54018,9 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
     {
       char *secret;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
       secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
@@ -53927,7 +54030,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
           sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
                quoted);
           g_free (secret);
-	  secret = NULL;
+          secret = NULL;
           g_free (quoted);
         }
       lsc_crypt_release(crypt_ctx);
