@@ -29036,9 +29036,11 @@ check_osp_result_exists (report_t report, task_t task,
     {
       const char *desc, *type, *severity, *host;
       const char *hostname, *port, *qod, *path;
-      gchar *quoted_desc, *quoted_type, *quoted_severity, *quoted_host;
-      gchar *quoted_hostname, *quoted_port, *quoted_qod, *quoted_path;
-
+      gchar *quoted_desc, *quoted_type, *quoted_host;
+      gchar *quoted_hostname, *quoted_port, *quoted_path;
+      double severity_double = 0.0;
+      int qod_int = QOD_DEFAULT;
+      
       host = entity_attribute (r_entity, "host");
       hostname = entity_attribute (r_entity, "hostname");
       type = entity_attribute (r_entity, "type");
@@ -29048,10 +29050,21 @@ check_osp_result_exists (report_t report, task_t task,
       qod = entity_attribute (r_entity, "qod");
       path = entity_attribute (r_entity, "uri");
 
+      if (!qod)
+        {
+          qod_int = QOD_DEFAULT;
+        }
+      else
+        {
+          qod_int = atoi (qod);
+          if (qod_int <= 0 || qod_int > 100)
+            qod_int = QOD_DEFAULT;
+        }
+
       if (!severity || !strcmp (severity, ""))
         {
           if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
-            quoted_severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+            severity_double = SEVERITY_ERROR;
           else
             {
               g_debug ("%s: Result without severity", __func__);
@@ -29060,7 +29073,7 @@ check_osp_result_exists (report_t report, task_t task,
         }
       else
         {
-          quoted_severity = sql_quote (severity);
+          severity_double = strtod (severity, NULL);
         }
 
       quoted_host = sql_quote (host ?: "");
@@ -29068,7 +29081,6 @@ check_osp_result_exists (report_t report, task_t task,
       quoted_type = sql_quote (type ?: "");
       quoted_desc = sql_quote (desc ?: "");
       quoted_port = sql_quote (port ?: "");
-      quoted_qod = sql_quote (qod ?: "");
       quoted_path = sql_quote (path ?: "");
 
       if (sql_int ("SELECT EXISTS"
@@ -29076,14 +29088,14 @@ check_osp_result_exists (report_t report, task_t task,
                    "   WHERE report = %llu and hash_value = '%s'"
                    "    and host = '%s' and hostname = '%s'"
                    "    and type = '%s' and description = '%s'"
-                   "    and port = '%s' and severity = '%s'"
-                   "    and qod = '%s' and path = '%s'"
+                   "    and port = '%s' and severity = %1.1f"
+                   "    and qod = %d and path = '%s'"
                    " );",
                    report, *entity_hash_value,
                    quoted_host, quoted_hostname,
                    quoted_type, quoted_desc,
-                   quoted_port, quoted_severity,
-                   quoted_qod, quoted_path))
+                   quoted_port, severity_double,
+                   qod_int, quoted_path))
         {
           g_info ("Captured duplicate result, report: %llu hash_value: %s",
                    report, *entity_hash_value);
@@ -29096,9 +29108,7 @@ check_osp_result_exists (report_t report, task_t task,
       g_free (quoted_type);
       g_free (quoted_desc);
       g_free (quoted_port);
-      g_free (quoted_qod);
       g_free (quoted_path);
-      g_free (quoted_severity);
   }
   g_string_free(entity_string, TRUE);
   return return_value;
