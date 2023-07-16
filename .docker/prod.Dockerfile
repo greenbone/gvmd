@@ -84,6 +84,8 @@ RUN apt-get update && \
     libgpgme11 \
     libical3 \
     libpq5 \
+    msmtp \
+    msmtp-mta \
     openssh-client \
     postgresql-client-13 \
     postgresql-client-common \
@@ -107,6 +109,7 @@ COPY --from=builder /install/ /
 
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
+COPY .docker/setup-mta.sh /usr/local/bin/setup-mta
 
 RUN addgroup --gid 1001 --system gvmd && \
     adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
