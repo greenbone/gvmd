@@ -36,11 +36,11 @@ jobs:
     steps:
       - name: Selecting the Release type
         id: release-type
-        uses: greenbone/actions/release-type@v2
+        uses: greenbone/actions/release-type@v3
         with:
           release-type-input: ${{ inputs.release-type }}
       - name: Release with release action
-        uses: greenbone/actions/release@v2
+        uses: greenbone/actions/release@v3
         with:
           github-user: ${{ secrets.GREENBONE_BOT }}
           github-user-mail: ${{ secrets.GREENBONE_BOT_MAIL }}

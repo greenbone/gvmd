@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - uses: greenbone/actions/is-latest-tag@v2
+      - uses: greenbone/actions/is-latest-tag@v3
         id: latest
       - name: Setup container meta information
         id: meta
