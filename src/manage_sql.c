@@ -6173,11 +6173,71 @@ encrypt_all_credentials (gboolean decrypt_flag)
 }
 
 /**
- * @brief Encrypt or re-encrypt all credentials
+ * @brief Encrypt, re-encrypt or decrypt all auth settings.
  *
- * All plaintext credentials in the credentials table are
- * encrypted, all already encrypted credentials are encrypted again
+ * All plaintext settings in the meta table are
+ * encrypted, all already encrypted settings are encrypted again
  * using the latest key.
+ *
+ * @param[in] decrypt_flag  If true decrypt all settings.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+encrypt_all_auth_settings (gboolean decrypt_flag)
+{
+  unsigned long ntotal, nencrypted, nreencrypted, ndecrypted;
+  char *radius_key = NULL;
+  gboolean radius_key_encrypted;
+  ntotal = ndecrypted = nencrypted = nreencrypted = 0;
+  
+  sql_begin_immediate ();
+
+  radius_key = get_radius_key (&radius_key_encrypted);
+  if (radius_key && strcmp (radius_key, ""))
+    {
+      ntotal ++;
+
+      if (decrypt_flag)
+        {
+          if (radius_key_encrypted)
+            ndecrypted ++;
+        }
+      else
+        {
+          if (radius_key_encrypted)
+            nreencrypted ++;
+          else
+            nencrypted ++;
+        }
+
+      set_radius_key (radius_key, decrypt_flag == FALSE);
+    }
+  free (radius_key);
+
+  sql_commit ();
+
+  if (ntotal)
+    {
+      if (decrypt_flag)
+        g_message ("%lu out of %lu auth settings decrypted",
+                  ndecrypted, ntotal);
+      else
+        g_message ("%lu out of %lu auth settings encrypted and %lu re-encrypted",
+                  nencrypted, ntotal, nreencrypted);
+    }
+  else
+    g_message ("No auth settings to encrypt or decrypt");
+
+  return 0;
+}
+
+/**
+ * @brief Encrypt or re-encrypt all credentials and auth settings
+ *
+ * All plaintext credentials and auth settings are
+ * encrypted, all already encrypted credentials and auth settings
+ * are encrypted again using the latest key.
  *
  * @param[in] log_config    Log configuration.
  * @param[in] database      Location of manage database.
@@ -6200,6 +6260,14 @@ manage_encrypt_all_credentials (GSList *log_config,
 
   ret = encrypt_all_credentials (FALSE);
   if (ret)
+    {
+      printf ("Encryption failed.\n");
+      manage_option_cleanup ();
+      return ret;
+    }
+
+  ret = encrypt_all_auth_settings (FALSE);
+  if (ret)
     printf ("Encryption failed.\n");
   else
     printf ("Encryption succeeded.\n");
@@ -6210,7 +6278,7 @@ manage_encrypt_all_credentials (GSList *log_config,
 }
 
 /**
- * @brief Decrypt all credentials
+ * @brief Decrypt all credentials and auth settings
  *
  * @param[in] log_config    Log configuration.
  * @param[in] database      Location of manage database.
@@ -6232,6 +6300,14 @@ manage_decrypt_all_credentials (GSList *log_config,
     return ret;
 
   ret = encrypt_all_credentials (TRUE);
+  if (ret)
+    {
+      printf ("Decryption failed.\n");
+      manage_option_cleanup ();
+      return ret;
+    }
+
+  ret = encrypt_all_auth_settings (TRUE);
   if (ret)
     printf ("Decryption failed.\n");
   else
@@ -53976,6 +54052,102 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 }
 
 /**
+ * @brief Gets the current RADIUS secret key.
+ *
+ * @param[out] is_encrypted_ret  Whether the key is encrypted. NULL to ignore.
+ * 
+ * @return Freshly allocated RADIUS secret key.
+ */
+char *
+get_radius_key (gboolean *is_encrypted)
+{
+  gchar *key = NULL, *secret;
+
+  if (sql_int64_0 ("SELECT value FROM meta"
+                   " WHERE name = 'radius_key_is_unencrypted'"))
+    {
+      if (is_encrypted)
+        *is_encrypted = FALSE;
+      key = sql_string ("SELECT value FROM meta"
+                        " WHERE name = 'radius_key';");
+    }
+  else
+    {
+      if (is_encrypted)
+        *is_encrypted = TRUE;
+      secret = sql_string ("SELECT value FROM meta"
+                           " WHERE name = 'radius_key';");
+      if (!secret)
+        key = strdup ("");
+      else
+        {
+          const char *decrypted;
+          lsc_crypt_ctx_t crypt_ctx;
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+          decrypted = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
+          if (decrypted)
+            key = strdup (decrypted);
+          else
+            key = strdup ("");
+          lsc_crypt_release (crypt_ctx);
+          g_free (secret);
+        }
+    }
+    
+  return key;
+}
+
+/**
+ * @brief Set RADIUS key.
+ *
+ * @param[in]  key        Secret key.
+ * @param[in]  encrypt    Whether to encrypt the key.
+ */
+void
+set_radius_key (const char *key, gboolean encrypt)
+{
+  char *quoted;
+  char *secret;
+  lsc_crypt_ctx_t crypt_ctx;
+  char *encryption_key_uid = current_encryption_key_uid (TRUE);
+  crypt_ctx = lsc_crypt_new (encryption_key_uid);
+  free (encryption_key_uid);
+
+  if (encrypt == FALSE)
+    {
+      quoted = sql_quote (key);
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('radius_key', '%s')"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+            quoted);
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('radius_key_is_unencrypted', '1')"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+    }
+  else
+    {
+      secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
+      if (secret)
+        {
+          quoted = sql_quote (secret);
+          sql ("INSERT INTO meta (name, value)"
+                " VALUES ('radius_key', '%s')"
+                " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+                quoted);
+          g_free (secret);
+          secret = NULL;
+          g_free (quoted);
+        }
+      lsc_crypt_release(crypt_ctx);
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('radius_key_is_unencrypted', '0')"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+    }
+}
+
+/**
  * @brief Get RADIUS info.
  *
  * @param[out]  enabled     Whether RADIUS is enabled.
@@ -53985,8 +54157,6 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 void
 manage_get_radius_info (int *enabled, char **host, char **key)
 {
-  char *secret;
-
   if (enabled)
     *enabled = radius_auth_enabled ();
 
@@ -53994,32 +54164,15 @@ manage_get_radius_info (int *enabled, char **host, char **key)
   if (!*host)
     *host = g_strdup ("127.0.0.1");
 
-  secret = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
-  if (!secret)
-    *key = g_strdup ("");
-  else
-    {
-      const char *decrypted;
-      lsc_crypt_ctx_t crypt_ctx;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-      decrypted = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
-      if (decrypted)
-        *key = g_strdup (decrypted);
-      else
-        *key = g_strdup ("");
-      lsc_crypt_release (crypt_ctx);
-      g_free (secret);
-    }
+  *key = get_radius_key (NULL);
 }
 
 /**
  * @brief Set RADIUS info.
  *
- * @param[out]  enabled    Whether RADIUS is enabled. -1 to keep current value.
- * @param[out]  host       RADIUS host. NULL to keep current value.
- * @param[out]  key        Secret key.  NULL to keep current value.
+ * @param[in]  enabled    Whether RADIUS is enabled. -1 to keep current value.
+ * @param[in]  host       RADIUS host. NULL to keep current value.
+ * @param[in]  key        Secret key.  NULL to keep current value.
  */
 void
 manage_set_radius_info (int enabled, gchar *host, gchar *key)
@@ -54046,24 +54199,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 
   if (key && strlen (key))
     {
-      char *secret;
-      lsc_crypt_ctx_t crypt_ctx;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-
-      sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
-      secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
-      if (secret)
-        {
-          quoted = sql_quote (secret);
-          sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
-               quoted);
-          g_free (secret);
-          secret = NULL;
-          g_free (quoted);
-        }
-      lsc_crypt_release(crypt_ctx);
+      set_radius_key (key, disable_encrypted_credentials == FALSE);
     }
 
   sql_commit ();
