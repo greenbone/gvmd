@@ -19008,6 +19008,7 @@ auto_delete_reports ()
         {
           /* Report is in use. */
           g_debug ("%s: %llu is in use", __func__, report);
+          sql_rollback ();
           continue;
         }
       if (ret)
