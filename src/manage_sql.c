@@ -19089,15 +19089,7 @@ auto_delete_reports ()
 
   g_debug ("%s", __func__);
 
-  sql_begin_immediate ();
-
-  /* As in delete_report, this prevents other processes from getting the
-   * report ID. */
-  if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
-    {
-      sql_rollback ();
-      return;
-    }
+  GArray *reports_to_delete = g_array_new (TRUE, TRUE, sizeof(report_t));
 
   init_iterator (&tasks,
                  "SELECT id, name,"
@@ -19142,31 +19134,65 @@ auto_delete_reports ()
                      keep);
       while (next (&reports))
         {
-          int ret;
           report_t report;
 
           report = iterator_int64 (&reports, 0);
           assert (report);
 
-          g_debug ("%s: delete %llu", __func__, report);
-          ret = delete_report_internal (report);
-          if (ret == 2)
-            {
-              /* Report is in use. */
-              g_debug ("%s: %llu is in use", __func__, report);
-              continue;
-            }
-          if (ret)
-            {
-              g_warning ("%s: failed to delete %llu (%i)",
-                         __func__, report, ret);
-              sql_rollback ();
-            }
+          g_debug ("%s: %llu to be deleted", __func__, report);
+
+          g_array_append_val (reports_to_delete, report);
         }
       cleanup_iterator (&reports);
     }
   cleanup_iterator (&tasks);
-  sql_commit ();
+
+  for (int i = 0; i < reports_to_delete->len; i++)
+    {
+      int ret;
+      report_t report = g_array_index (reports_to_delete, report_t, i);
+      
+      sql_begin_immediate ();
+
+      /* As in delete_report, this prevents other processes from getting the
+       * report ID. */
+      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
+        {
+          g_debug ("%s: could not acquire lock on reports table", __func__);
+          sql_rollback ();
+          g_array_free (reports_to_delete, TRUE);
+          return;
+        }
+
+      /* Check if report still exists in case another process has deleted it
+       *  in the meantime. */
+      if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu",
+                    report) == 0)
+        {
+          g_debug ("%s: %llu no longer exists", __func__, report);
+          sql_rollback ();
+          continue;
+        }
+
+      g_debug ("%s: deleting report %llu", __func__, report);
+      ret = delete_report_internal (report);
+      if (ret == 2)
+        {
+          /* Report is in use. */
+          g_debug ("%s: %llu is in use", __func__, report);
+          sql_rollback ();
+          continue;
+        }
+      if (ret)
+        {
+          g_warning ("%s: failed to delete %llu (%i)",
+                      __func__, report, ret);
+          sql_rollback ();
+          continue;
+        }
+      sql_commit ();
+    }
+  g_array_free (reports_to_delete, TRUE);
 }
 
 
