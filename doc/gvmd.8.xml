@@ -75,6 +75,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--create-encryption-key</opt></p>
+      <optdesc>
+        <p>
+          Create a new credential encryption key, set it as the new default
+           and exit.
+          With no other options given, a 4096 bit RSA key is created.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--create-scanner=<arg>SCANNER</arg></opt></p>
       <optdesc>
         <p>Create global scanner SCANNER and exit.</p>
@@ -144,6 +154,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--disable-scheduling</opt></p>
       <optdesc>
         <p>Disable task scheduling.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--encryption-key-length=<arg>LENGTH</arg></opt></p>
+      <optdesc>
+        <p>
+          Set key length to LENGTH bits when creating a new RSA
+          credential encryption key. Defaults to 4096.
+        </p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--encryption-key-type=<arg>TYPE</arg></opt></p>
+      <optdesc>
+        <p>
+          Use the key type TYPE when creating a new credential
+          encryption key. Currently only RSA is supported.
+        </p>
       </optdesc>
     </option>
     <option>

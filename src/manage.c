@@ -931,6 +931,108 @@ severity_to_type (double severity)
     }
 }
 
+
+
+/* Encryption key management. */
+
+/**
+ * @brief Creates a new encryption key and sets it as the new default.
+ * 
+ * @return 0 on success, -1 on failure.
+ */
+int
+manage_create_encryption_key (GSList *log_config,
+                              const db_conn_info_t *database)
+{
+  int ret = manage_option_setup (log_config, database);
+  if (ret)
+    {
+      printf ("Error setting up log config or database connection.");
+      g_warning ("Error setting up log config or database connection.");
+      return -1;
+    }
+
+  time_t now = time(NULL);
+  gchar *generated_uid
+    = g_strdup_printf (ENCRYPTION_KEY_UID_TEMPLATE, iso_time (&now));
+
+  lsc_crypt_ctx_t ctx = lsc_crypt_new (generated_uid);
+  switch (lsc_crypt_create_enckey (ctx))
+    {
+      case 0:
+        break;
+      case 1:
+        printf ("Credential encryption key '%s' already exists\n",
+                generated_uid);
+        g_warning ("%s: Credential encryption key '%s' already exists", 
+                 __func__, generated_uid);
+
+        lsc_crypt_flush(ctx);
+        g_free (generated_uid);
+        manage_option_cleanup ();
+        return -1;
+      default:
+        printf ("Could not create credential encryption key '%s'\n",
+                generated_uid);
+        g_warning ("%s: Could not create credential encryption key '%s'", 
+                 __func__, generated_uid);
+
+        lsc_crypt_flush(ctx);
+        g_free (generated_uid);
+        manage_option_cleanup ();
+        return -1;
+    }
+  set_current_encryption_key_uid (generated_uid);
+  printf ("Credential encryption key created: '%s'\n",
+          generated_uid);
+  g_message ("%s: Credential encryption key created: '%s'",
+             __func__, generated_uid);
+
+  lsc_crypt_flush(ctx);
+  g_free (generated_uid);
+  manage_option_cleanup ();
+  return 0;
+}
+
+/**
+ * @brief Sets the new default encryption key. The key must already exist.
+ *
+ * @param[in]  uid  UID of the encryption key.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+manage_set_encryption_key (GSList *log_config,
+                           const db_conn_info_t *database,
+                           const char *uid)
+{
+  int ret = manage_option_setup (log_config, database);
+  if (ret)
+    {
+      printf ("Error setting up log config or database connection.\n");
+      g_warning ("Error setting up log config or database connection.");
+      return -1;
+    }
+  
+  lsc_crypt_ctx_t ctx = lsc_crypt_new (uid);
+  if (! lsc_crypt_enckey_exists (ctx))
+    {
+      printf ("Credential encryption key '%s' not found\n", uid);
+      g_warning ("%s: Credential encryption key '%s' not found", __func__, uid);
+      lsc_crypt_flush(ctx);
+      manage_option_cleanup ();
+      return -1;
+    }
+
+  set_current_encryption_key_uid (uid);
+  printf ("Credential encryption key set to '%s'\n", uid);
+  g_message ("%s: Credential encryption key set to '%s'", __func__, uid);
+  lsc_crypt_flush(ctx);
+  manage_option_cleanup ();
+  return 0;
+}
+
+
 
 /* Credentials. */
 

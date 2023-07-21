@@ -57,6 +57,14 @@
       
     
     
+      <p><b>--create-encryption-key</b></p>
+      
+        <p>Create a new credential encryption key, set it as the new default
+           and exit. With no other options given, a 4096 bit RSA key is
+           created.</p>
+      
+    
+    
       <p><b>--create-scanner=<em>SCANNER</em></b></p>
       
         <p>Create global scanner SCANNER and exit.</p>
@@ -114,6 +122,20 @@
       <p><b>--disable-scheduling</b></p>
       
         <p>Disable task scheduling.</p>
+      
+    
+    
+      <p><b>--encryption-key-length=<em>LENGTH</em></b></p>
+      
+        <p>Set key length to LENGTH bits when creating a new RSA credential
+        encryption key. Defaults to 4096.</p>
+      
+    
+    
+      <p><b>--encryption-key-type=<em>TYPE</em></b></p>
+      
+        <p>Use the key type TYPE when creating a new credential encryption key.
+           Currently only RSA is supported.</p>
       
     
     
