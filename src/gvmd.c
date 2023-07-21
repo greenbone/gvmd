@@ -1824,12 +1824,16 @@ gvmd (int argc, char** argv, char *env[])
 
   static int auth_timeout = 15;
   static gboolean check_alerts = FALSE;
+  static gboolean create_encryption_key = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
   static gboolean dump_vt_verification = FALSE;
+  static gchar *encryption_key_type = NULL;
+  static int encryption_key_length = 0;
+  static gchar *set_encryption_key = NULL;
   static gboolean get_roles = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
@@ -1918,6 +1922,12 @@ gvmd (int argc, char** argv, char *env[])
           " 0 to disable. Defaults to "
           G_STRINGIFY (DEFAULT_CLIENT_WATCH_INTERVAL) " seconds.",
           "<number>" },
+        { "create-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
+          &create_encryption_key,
+          "Create a new credential encryption key, set it as the new default"
+          " and exit."
+          " With no other options given, a 4096 bit RSA key is created.",
+          NULL },
         { "create-scanner", '\0', 0, G_OPTION_ARG_STRING,
           &create_scanner,
           "Create global scanner <scanner> and exit.",
@@ -1979,6 +1989,17 @@ gvmd (int argc, char** argv, char *env[])
           &dump_vt_verification,
           "Dump the string the VTs verification hash is calculated from.",
           NULL },
+        { "encryption-key-length", '\0', 0, G_OPTION_ARG_INT,
+          &encryption_key_length,
+          "Set key length to <length> bits when creating a new RSA"
+          " credential encryption key. Defaults to "
+          G_STRINGIFY (DEFAULT_ENCRYPTION_KEY_LENGTH) ".",
+          "<length>" },
+        { "encryption-key-type", '\0', 0, G_OPTION_ARG_STRING,
+          &encryption_key_type,
+          "Use the key type <type> when creating a new credential"
+          " encryption key. Currently only RSA is supported.",
+          "<type>" },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &encrypt_all_credentials,
           "(Re-)Encrypt all credentials.",
@@ -2180,6 +2201,11 @@ gvmd (int argc, char** argv, char *env[])
           "During CERT and SCAP sync, commit updates to the database every"
           " <number> items, 0 for unlimited, default: "
           G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
+        { "set-encryption-key", '\0', 0, G_OPTION_ARG_STRING,
+          &set_encryption_key,
+          "Set the encryption key with the given UID as the new default"
+          " and exit.",
+          "<uid>" },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING,
           &manager_address_string_unix,
           "Listen on UNIX socket at <filename>.",
@@ -2436,6 +2462,17 @@ gvmd (int argc, char** argv, char *env[])
         }
       else
         g_debug ("No default relay mapper found.");
+    }
+
+  /*
+   * Parameters for new credential encryption keys
+   */
+  if (lsc_crypt_enckey_parms_init (encryption_key_type,
+                                   encryption_key_length))
+    {
+      g_critical ("%s: failed to set encryption key parameters", __func__);
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
     }
 
   /**
@@ -2828,6 +2865,37 @@ gvmd (int argc, char** argv, char *env[])
         return EXIT_FAILURE;
 
       ret = manage_check_alerts (log_config, &database);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (create_encryption_key)
+    {
+      int ret;
+      setproctitle ("gvmd: Creating encryption key");
+      
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_create_encryption_key (log_config, &database);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (set_encryption_key)
+    {
+      int ret;
+      setproctitle ("gvmd: Setting encryption key");
+      
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_set_encryption_key (log_config, &database,
+                                       set_encryption_key);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
