@@ -7219,7 +7219,16 @@ validate_tippingpoint_data (alert_method_t method, const gchar *name,
 
       if (strcmp (name, "tp_sms_tls_certificate") == 0)
         {
-          // TODO: Check certificate, return 52 on failure
+          // Check certificate, return 52 on failure
+          int ret;
+          gnutls_x509_crt_fmt_t crt_fmt;
+
+          ret = get_certificate_info (*data, strlen(*data), NULL, NULL, NULL,
+                                      NULL, NULL, NULL, NULL, &crt_fmt);
+          if (ret || crt_fmt != GNUTLS_X509_FMT_PEM)
+            {
+              return 52;
+            }
         }
 
       if (strcmp (name, "tp_sms_tls_workaround") == 0)
