@@ -1,4 +1,5 @@
 ${GVM_LOG_DIR}/gvmd.log {
+	su gvm gvm
 	compress
 	missingok
 	notifempty
