@@ -1167,6 +1167,13 @@ result_detection_reference (result_t, report_t, const char *, const char *,
  */
 #define MIN_QOD_DEFAULT 70
 
+/** 
+ * @brief Default size to limit note and override text to in reports.
+ */
+#define EXCERPT_SIZE_DEFAULT 300
+
+
+
 void
 reports_clear_count_cache_for_override (override_t, int);
 
@@ -3298,6 +3305,9 @@ setting_is_default_ca_cert (const gchar *);
 
 char *
 setting_filter (const char *);
+
+int
+setting_excerpt_size_int ();
 
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,

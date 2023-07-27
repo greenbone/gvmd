@@ -15786,6 +15786,19 @@ check_db_settings ()
          "  '1');");
 
   if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '9246a0f6-c6ad-44bc-86c2-557a527c8fb3'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('9246a0f6-c6ad-44bc-86c2-557a527c8fb3', NULL,"
+         "  'Note/Override Excerpt Size',"
+         "  'The maximum length of notes and override text shown in' ||"
+         "  ' reports without enabling note/override details.',"
+         "  '%d');",
+         EXCERPT_SIZE_DEFAULT);
+
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -17147,6 +17160,13 @@ credentials_setup (credentials_t *credentials)
                   " AND " ACL_GLOBAL_OR_USER_OWNS ()
                   " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                   credentials->uuid);
+
+  credentials->excerpt_size
+    = sql_int ("SELECT value FROM settings"
+                " WHERE name = 'Note/Override Excerpt Size'"
+                " AND " ACL_GLOBAL_OR_USER_OWNS ()
+                " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                credentials->uuid);
 
   return 0;
 }
@@ -50133,6 +50153,19 @@ setting_filter (const char *resource)
 }
 
 /**
+ * @brief Return the Note/Override Excerpt Size user setting as an int.
+ *
+ * @return The excerpt size.
+ */
+int
+setting_excerpt_size_int ()
+{
+  if (current_credentials.excerpt_size <= 0)
+    return EXCERPT_SIZE_DEFAULT;
+  return current_credentials.excerpt_size;
+}
+
+/**
  * @brief Return the Dynamic Severity user setting as an int.
  *
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
@@ -50474,6 +50507,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
@@ -50584,6 +50618,12 @@ modify_setting (const gchar *uuid, const gchar *name,
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
           reports_clear_count_cache (current_credentials.uuid);
+        }
+
+      if (strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0)
+        {
+          /* Note/Override Excerpt Size */
+          current_credentials.excerpt_size = atoi (value);
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)

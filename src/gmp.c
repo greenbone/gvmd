@@ -8026,7 +8026,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       if (include_notes_details == 0)
         {
           const char *text = note_iterator_text (notes);
-          gchar *excerpt = utf8_substring (text, 0, 60);
+          gchar *excerpt = utf8_substring (text, 0,
+                                           setting_excerpt_size_int ());
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
@@ -8288,7 +8289,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
       if (include_overrides_details == 0)
         {
           const char *text = override_iterator_text (overrides);
-          gchar *excerpt = utf8_substring (text, 0, 60);
+          gchar *excerpt = utf8_substring (text, 0,
+                                           setting_excerpt_size_int ());
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
