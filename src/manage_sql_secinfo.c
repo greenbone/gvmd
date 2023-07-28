@@ -2529,7 +2529,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
 
   if (score == NULL)
-    severity_dbl = 0;
+    severity_dbl = SEVERITY_MISSING;
   else
     severity_dbl = atof (element_text (score));
 
