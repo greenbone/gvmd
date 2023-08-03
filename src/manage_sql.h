@@ -113,6 +113,11 @@
 #define SETTING_UUID_MAX_ROWS_PER_PAGE "76374a7a-0569-11e6-b6da-28d24461215b"
 
 /**
+ * @brief UUID of 'Note/Override Excerpt Size' setting.
+ */
+#define SETTING_UUID_EXCERPT_SIZE "9246a0f6-c6ad-44bc-86c2-557a527c8fb3"
+
+/**
  * @brief UUID of 'Default CA Cert' setting.
  */
 #define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
