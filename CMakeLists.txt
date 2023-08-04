@@ -37,8 +37,12 @@ endif (NOT CMAKE_BUILD_TYPE)
 
 OPTION (ENABLE_COVERAGE "Enable support for coverage analysis" OFF)
 OPTION (DEBUG_FUNCTION_NAMES "Print function names on entry and exit" OFF)
+
 # the shell based scripts got replaced by https://github.com/greenbone/greenbone-feed-sync/
-OPTION (INSTALL_OLD_SYNC_SCRIPTS "Install shell based feed sync scripts" OFF)
+OPTION (INSTALL_OLD_SYNC_SCRIPTS "Install shell based feed sync scripts" ON)
+if (INSTALL_OLD_SYNC_SCRIPTS)
+  message (DEPRECATION "The version of greenbone-feed-sync included in gvmd is deprecated in favor of the newer Python version (https://github.com/greenbone/greenbone-feed-sync/) and will be removed in the next major version.")
+endif (INSTALL_OLD_SYNC_SCRIPTS)
 
 ## Retrieve git revision (at configure time)
 include (GetGit)

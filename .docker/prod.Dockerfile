@@ -10,7 +10,7 @@ WORKDIR /source
 RUN mkdir /build && \
     mkdir /install && \
     cd /build && \
-    cmake -DCMAKE_BUILD_TYPE=Release /source && \
+    cmake -DINSTALL_OLD_SYNC_SCRIPT=OFF -DCMAKE_BUILD_TYPE=Release /source && \
     make DESTDIR=/install install
 
 FROM greenbone/gvm-libs:${GVM_LIBS_VERSION}
