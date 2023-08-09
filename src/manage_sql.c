@@ -18861,13 +18861,12 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
       || task_target (task) == 0 /* Container task. */)
     return SEVERITY_MISSING;
 
-  sql_int64 (&report,
-             "SELECT id FROM reports"
-             "           WHERE reports.task = %llu"
-             "           AND reports.scan_run_status = %u"
-             "           ORDER BY reports.creation_time DESC"
-             "           LIMIT 1 OFFSET %d",
-             task, TASK_STATUS_DONE, offset);
+  report = sql_int64_0 ("SELECT id FROM reports"
+                        "           WHERE reports.task = %llu"
+                        "           AND reports.scan_run_status = %u"
+                        "           ORDER BY reports.creation_time DESC"
+                        "           LIMIT 1 OFFSET %d",
+                        task, TASK_STATUS_DONE, offset);
 
   return report_severity (report, overrides, min_qod);
 }
@@ -24693,6 +24692,9 @@ report_severity (report_t report, int overrides, int min_qod)
 {
   double severity;
   iterator_t iterator;
+
+  if (report == 0)
+    return SEVERITY_MISSING;
 
   init_iterator (&iterator,
                  "SELECT max(severity)"
