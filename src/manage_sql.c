@@ -6956,8 +6956,9 @@ validate_email_data (alert_method_t method, const gchar *name, gchar **data,
  * @param[in]  name            Name of data.
  * @param[in]  data            The data.
  *
- * @return 0 valid, 15 error in SCP host, 17 failed to find report format for
- *         SCP method, 18 error in SCP credential, 19 error in SCP path,
+ * @return 0 valid, 15 error in SCP host, 16 error in SCP port,
+ *         17 failed to find report format for SCP method,
+ *         18 error in SCP credential, 19 error in SCP path,
  *         -1 error.
  */
 static int
@@ -7013,6 +7014,16 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
           && (type != HOST_TYPE_IPV6)
           && (type != HOST_TYPE_NAME))
         return 15;
+    }
+
+  if (method == ALERT_METHOD_SCP
+      && strcmp (name, "scp_port") == 0)
+    {
+      int port;
+
+      port = atoi (*data);
+      if (port <= 0 || port > 65535)
+        return 16;
     }
 
   if (method == ALERT_METHOD_SCP
@@ -7372,8 +7383,9 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         5 unexpected condition data name, 6 syntax error in condition data,
  *         7 email subject too long, 8 email message too long, 9 failed to find
  *         filter for condition, 12 error in Send host, 13 error in Send port,
- *         14 failed to find report format for Send method, 15 error in
- *         SCP host, 17 failed to find report format for SCP method, 18 error
+ *         14 failed to find report format for Send method,
+ *         15 error in SCP host, 16 error in SCP port,
+ *         17 failed to find report format for SCP method, 18 error
  *         in SCP credential, 19 error in SCP path, 20 method does not match
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
@@ -7715,8 +7727,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         7 unexpected condition data name, 8 syntax error in condition data,
  *         9 email subject too long, 10 email message too long, 11 failed to
  *         find filter for condition, 12 error in Send host, 13 error in Send
- *         port, 14 failed to find report format for Send method, 15 error in
- *         SCP host, 17 failed to find report format for SCP method, 18 error
+ *         port, 14 failed to find report format for Send method,
+ *         15 error in SCP host, 16 error in SCP port,
+ *         17 failed to find report format for SCP method, 18 error
  *         in SCP credential, 19 error in SCP path, 20 method does not match
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
@@ -10101,6 +10114,7 @@ send_to_host (const char *host, const char *port,
  * @param[in]  password     Password or passphrase of private key.
  * @param[in]  private_key  Private key or NULL for password-only auth.
  * @param[in]  host         Address of host.
+ * @param[in]  port         SSH Port of host.
  * @param[in]  path         Destination filename with path.
  * @param[in]  known_hosts  Content for known_hosts file.
  * @param[in]  report       Report that should be sent.
@@ -10112,7 +10126,8 @@ send_to_host (const char *host, const char *port,
 static int
 scp_to_host (const char *username, const char *password,
              const char *private_key,
-             const char *host, const char *path, const char *known_hosts,
+             const char *host, int port,
+             const char *path, const char *known_hosts,
              const char *report, int report_size, gchar **script_message)
 {
   const char *alert_id = "2db07698-ec49-11e5-bcff-28d24461215b";
@@ -10122,9 +10137,10 @@ scp_to_host (const char *username, const char *password,
   gchar *clean_known_hosts, *command_args;
   int ret;
 
-  g_debug ("scp to host: %s@%s:%s", username, host, path);
+  g_debug ("scp to host: %s@%s:%d:%s", username, host, port, path);
 
-  if (password == NULL || username == NULL || host == NULL || path == NULL)
+  if (password == NULL || username == NULL || host == NULL || path == NULL
+      || port <= 0 || port > 65535)
     return -1;
 
   if (known_hosts == NULL)
@@ -10161,9 +10177,10 @@ scp_to_host (const char *username, const char *password,
   clean_path = g_shell_quote (path);
   clean_known_hosts = g_shell_quote (known_hosts);
   clean_private_key_path = g_shell_quote (private_key_path);
-  command_args = g_strdup_printf ("%s %s %s %s %s",
+  command_args = g_strdup_printf ("%s %s %d %s %s %s",
                                   clean_username,
                                   clean_host,
+                                  port,
                                   clean_path,
                                   clean_known_hosts,
                                   clean_private_key_path);
@@ -13153,6 +13170,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           credential_t credential;
           char *credential_id;
           char *private_key, *password, *username, *host, *path, *known_hosts;
+          char *port_str;
+          int port;
           gchar *report_content, *alert_path;
           gsize content_length;
           report_format_t report_format;
@@ -13194,6 +13213,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                             "private_key");
 
                   host = alert_data (alert, "method", "scp_host");
+                  port_str = alert_data (alert, "method", "scp_port");
+                  if (port_str)
+                    port = atoi (port_str);
+                  else
+                    port = 22;
                   path = alert_data (alert, "method", "scp_path");
                   known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
@@ -13201,7 +13225,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   free (path);
 
                   ret = scp_to_host (username, password, private_key,
-                                     host, alert_path, known_hosts,
+                                     host, port, alert_path, known_hosts,
                                      message, strlen (message),
                                      script_message);
 
@@ -13210,6 +13234,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   free (password);
                   free (username);
                   free (host);
+                  free (port_str);
                   g_free (alert_path);
                   free (known_hosts);
 
@@ -13254,6 +13279,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
 
               host = alert_data (alert, "method", "scp_host");
+              port_str = alert_data (alert, "method", "scp_port");
+              if (port_str)
+                port = atoi (port_str);
+              else
+                port = 22;
               path = alert_data (alert, "method", "scp_path");
               known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
@@ -13261,7 +13291,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (path);
 
               ret = scp_to_host (username, password, private_key,
-                                 host, alert_path, known_hosts,
+                                 host, port, alert_path, known_hosts,
                                  report_content, content_length,
                                  script_message);
 
@@ -13269,6 +13299,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (password);
               free (username);
               free (host);
+              free (port_str);
               g_free (alert_path);
               free (known_hosts);
             }
