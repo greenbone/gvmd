@@ -20,11 +20,12 @@
 
 USERNAME=$1
 HOST=$2
-DEST=$3
-KNOWN_HOSTS=$4
-PRIVATE_KEY_FILE=$5
-PASSWORD_FILE=$6
-REPORT_FILE=$7
+PORT=$3
+DEST=$4
+KNOWN_HOSTS=$5
+PRIVATE_KEY_FILE=$6
+PASSWORD_FILE=$7
+REPORT_FILE=$8
 
 KNOWN_HOSTS_FILE=`mktemp` || exit 1
 echo $KNOWN_HOSTS > $KNOWN_HOSTS_FILE
@@ -55,9 +56,9 @@ DEST_ESC=`shell_esc "$DEST"`
 
 if [ -z "$PRIVATE_KEY_FILE" ]
 then
-  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} scp -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
+  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} scp -P "$PORT" -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
 else
-  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
+  timeout $TIMEOUT sshpass -f ${PASSWORD_FILE} -P "passphrase" scp -P "$PORT" -i "$PRIVATE_KEY_FILE" -o PasswordAuthentication=no -o HashKnownHosts=no -o UserKnownHostsFile="${KNOWN_HOSTS_FILE} ~/.ssh/known_hosts ~/.ssh/known_hosts2 /etc/ssh/ssh_known_hosts" "${REPORT_FILE}" "${USERNAME}@${HOST}:${DEST_ESC}" 2>$ERROR_FILE
 fi
 
 EXIT_CODE=$?
