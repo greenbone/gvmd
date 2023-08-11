@@ -1097,6 +1097,7 @@ user_has_super (const char *, user_t);
  */
 #define LSC_FAMILY_LIST                            \
   "'AIX Local Security Checks',"                   \
+  " 'AlmaLinux Local Security Checks',"            \
   " 'Amazon Linux Local Security Checks',"         \
   " 'CentOS Local Security Checks',"               \
   " 'Citrix Xenserver Local Security Checks',"     \
@@ -1115,6 +1116,7 @@ user_has_super (const char *, user_t);
   " 'Oracle Linux Local Security Checks',"         \
   " 'Palo Alto PAN-OS Local Security Checks',"     \
   " 'Red Hat Local Security Checks',"              \
+  " 'Rocky Linux Local Security Checks',"          \
   " 'Slackware Local Security Checks',"            \
   " 'Solaris Local Security Checks',"              \
   " 'SuSE Local Security Checks',"                 \
@@ -1126,12 +1128,23 @@ user_has_super (const char *, user_t);
  * @brief Whole only families.
  */
 #define FAMILIES_WHOLE_ONLY                        \
-  { "CentOS Local Security Checks",                \
+  { "AIX Local Security Checks",                   \
+    "AlmaLinux Local Security Checks",             \
+    "Amazon Linux Local Security Checks",          \
+    "CentOS Local Security Checks",                \
     "Debian Local Security Checks",                \
     "Fedora Local Security Checks",                \
+    "FreeBSD Local Security Checks",               \
+    "Gentoo Local Security Checks",                \
+    "HP-UX Local Security Checks",                 \
     "Huawei EulerOS Local Security Checks",        \
+    "Mageia Linux Local Security Checks",          \
+    "Mandrake Local Security Checks",              \
     "Oracle Linux Local Security Checks",          \
     "Red Hat Local Security Checks",               \
+    "Rocky Linux Local Security Checks",           \
+    "Slackware Local Security Checks",             \
+    "Solaris Local Security Checks",               \
     "SuSE Local Security Checks",                  \
     "Ubuntu Local Security Checks",                \
     NULL }
