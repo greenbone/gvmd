@@ -1645,6 +1645,7 @@ run_status_name (task_status_t status)
         return "Stop Requested";
 
       case TASK_STATUS_STOPPED:          return "Stopped";
+      case TASK_STATUS_PROCESSING:       return "Processing";
       default:                           return "Interrupted";
     }
 }
@@ -1683,6 +1684,7 @@ run_status_name_internal (task_status_t status)
         return "Stop Waiting";
 
       case TASK_STATUS_STOPPED:          return "Stopped";
+      case TASK_STATUS_PROCESSING:       return "Processing";
       default:                           return "Interrupted";
     }
 }
@@ -2869,6 +2871,9 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   g_free (report_id);
   if (rc == 0)
     {
+      set_task_run_status (task, TASK_STATUS_PROCESSING);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_PROCESSING);
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
@@ -3895,6 +3900,7 @@ move_task (const char *task_id, const char *slave_id)
       case TASK_STATUS_DELETE_WAITING:
       case TASK_STATUS_DELETE_ULTIMATE_WAITING:
       case TASK_STATUS_REQUESTED:
+      case TASK_STATUS_PROCESSING:
         // Task cannot be stopped now
         return 5;
         break;

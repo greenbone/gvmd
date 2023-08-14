@@ -168,7 +168,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <name>task_status</name>
     <summary>A task run status</summary>
     <pattern>
-      xsd:token { pattern = "Delete Requested|Done|New|Requested|Running|Stop Requested|Stopped|Interrupted" }
+      xsd:token { pattern = "Delete Requested|Done|New|Processing|Requested|Running|Stop Requested|Stopped|Interrupted" }
     </pattern>
   </type>
   <type>
