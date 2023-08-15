@@ -293,6 +293,11 @@ check_public_key (const char *key_str)
 
 /* GMP parser. */
 
+/**
+ * @brief User data for XML parser.
+ */
+gmp_parser_t *global_gmp_parser;
+
 static int
 process_gmp (gmp_parser_t *, const gchar *, gchar **);
 
@@ -314,6 +319,7 @@ gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_clie
   gmp_parser->client_writer = write_to_client;
   gmp_parser->client_writer_data = write_to_client_data;
   gmp_parser->read_over = 0;
+  gmp_parser->close_connection = 0;
   gmp_parser->disabled_commands = g_strdupv (disable);
   return gmp_parser;
 }
@@ -328,6 +334,33 @@ gmp_parser_free (gmp_parser_t *gmp_parser)
 {
   g_strfreev (gmp_parser->disabled_commands);
   g_free (gmp_parser);
+}
+
+/**
+ * @brief Create global GMP parser.
+ *
+ * @param[in]  write_to_client       Function to write to client.
+ * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ * @param[in]  disable               Commands to disable.  Copied, and freed by
+ *                                   gmp_parser_free.
+ */
+static gmp_parser_t *
+global_gmp_parser_new (int (*write_to_client) (const char*, void*),
+                       void* write_to_client_data,
+                       gchar **disable)
+{
+  global_gmp_parser = gmp_parser_new (write_to_client, write_to_client_data, disable);
+  return global_gmp_parser;
+}
+
+/**
+ * @brief Free global GMP parser.
+ */
+static void
+global_gmp_parser_free ()
+{
+  gmp_parser_free (global_gmp_parser);
+  global_gmp_parser = NULL;
 }
 
 /**
@@ -4629,12 +4662,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               gpointer user_data,
                               GError **error)
 {
+  const gchar* attr;
   gmp_parser_t *gmp_parser = (gmp_parser_t*) user_data;
   int (*write_to_client) (const char *, void*)
     = (int (*) (const char *, void*)) gmp_parser->client_writer;
   void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
   g_debug ("   XML  start: %s (%i)", element_name, client_state);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "close", &attr))
+    gmp_parser->close_connection = strcmp (attr, "0");
 
   if (gmp_parser->read_over)
     gmp_parser->read_over++;
@@ -26719,9 +26757,8 @@ init_gmp_process (const db_conn_info_t *database,
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,
-                  gmp_parser_new (write_to_client, write_to_client_data,
-                                  disable),
-                  (GDestroyNotify) gmp_parser_free);
+                  global_gmp_parser_new (write_to_client, write_to_client_data, disable),
+                  (GDestroyNotify) global_gmp_parser_free);
 }
 
 /**
@@ -26739,6 +26776,7 @@ init_gmp_process (const db_conn_info_t *database,
  * \endif
  *
  * @return 0 success,
+ *         1 success and client requested connection close,
  *         -1 error,
  *         -4 XML syntax error.
  */
@@ -26788,6 +26826,10 @@ process_gmp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
+
+  if (global_gmp_parser && global_gmp_parser->close_connection)
+    return 1;
+
   return 0;
 }
 
