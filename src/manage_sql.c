@@ -2584,7 +2584,8 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("Queued", keyword->string) == NULL)
       && (strstr ("Stop Requested", keyword->string) == NULL)
       && (strstr ("Stopped", keyword->string) == NULL)
-      && (strstr ("Interrupted", keyword->string) == NULL))
+      && (strstr ("Interrupted", keyword->string) == NULL)
+      && (strstr ("Processing", keyword->string) == NULL))
     return 0;
   return 1;
 }
@@ -15420,7 +15421,8 @@ task_in_use (task_t task)
          || status == TASK_STATUS_RUNNING
          || status == TASK_STATUS_QUEUED
          || status == TASK_STATUS_STOP_REQUESTED
-         || status == TASK_STATUS_STOP_WAITING;
+         || status == TASK_STATUS_STOP_WAITING
+         || status == TASK_STATUS_PROCESSING;
 }
 
 /**
@@ -16530,6 +16532,7 @@ stop_active_tasks ()
           case TASK_STATUS_QUEUED:
           case TASK_STATUS_STOP_REQUESTED:
           case TASK_STATUS_STOP_WAITING:
+          case TASK_STATUS_PROCESSING:
             {
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
@@ -16562,6 +16565,7 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
@@ -16572,7 +16576,8 @@ stop_active_tasks ()
        TASK_STATUS_RUNNING,
        TASK_STATUS_QUEUED,
        TASK_STATUS_STOP_REQUESTED,
-       TASK_STATUS_STOP_WAITING);
+       TASK_STATUS_STOP_WAITING,
+       TASK_STATUS_PROCESSING);
 }
 
 /**
@@ -18157,11 +18162,13 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_INTERRUPTED)
+      || run_status == TASK_STATUS_INTERRUPTED
+      || run_status == TASK_STATUS_PROCESSING)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
+                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -18177,7 +18184,8 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOPPED,
-                                     TASK_STATUS_INTERRUPTED);
+                                     TASK_STATUS_INTERRUPTED,
+                                     TASK_STATUS_PROCESSING);
     }
   return (report_t) 0;
 }
@@ -52325,6 +52333,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         case TASK_STATUS_QUEUED:
         case TASK_STATUS_STOP_REQUESTED:
         case TASK_STATUS_STOP_WAITING:
+        case TASK_STATUS_PROCESSING:
           {
             cleanup_iterator (&tasks);
             free (current_credentials.uuid);
