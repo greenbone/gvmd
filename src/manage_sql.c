@@ -12031,6 +12031,7 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
                            get_data_t **alert_filter_get,
                            filter_t *filter_return)
 {
+  char *ignore_pagination;
   char *filt_id;
   filter_t filter;
 
@@ -12069,6 +12070,14 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
     }
   else
     (*alert_filter_get) = NULL;
+
+  ignore_pagination = alert_data (alert, "method",
+                                  "composer_ignore_pagination");
+  if (ignore_pagination)
+    {
+      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
+      g_free (ignore_pagination);
+    }
 
   /* Adjust filter for report composer.
    *
