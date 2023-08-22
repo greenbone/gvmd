@@ -437,6 +437,11 @@ supported values for `<name>` are:
   This cleans up id sequences that are likely to run out due to regular feed
   updates like the ids for config preferences.
 
+- `cleanup-tls-certificate-encoding`
+
+  This cleans up TLS certificates where the subject or issuer DN is not
+  valid UTF-8.
+
 - `migrate-relay-sensors`
 
   If relays are active, this can be used to make sure all sensor type

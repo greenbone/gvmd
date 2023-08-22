@@ -56836,6 +56836,22 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
                                           " Cleaned up id sequences.");
         }
     }
+  else if (strcasecmp (name, "cleanup-tls-certificate-encoding") == 0)
+    {
+      int changes;
+      sql_begin_immediate ();
+
+      g_debug ("%s: Cleaning up encoding of TLS certificate DNs",
+               __func__);
+
+      changes = cleanup_tls_certificate_encoding ();
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: Cleaned up encoding"
+                                      " of %d TLS certificate(s).",
+                                      changes);
+    }
   else if (strcasecmp (name, "migrate-relay-sensors") == 0)
     {
       if (get_relay_mapper_path ())
