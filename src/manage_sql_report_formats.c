@@ -3416,7 +3416,7 @@ run_report_format_script (gchar *report_format_id,
               /* Child.  Drop privileges, run command, exit. */
 
               init_sentry ();
-              setproctitle ("gvmd: Generating report");
+              setproctitle ("Generating report");
 
               cleanup_manage_process (FALSE);
 

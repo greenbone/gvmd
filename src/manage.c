@@ -2865,7 +2865,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       exit (-1);
     }
 
-  setproctitle ("gvmd: OSP: Handling scan %s", report_id);
+  setproctitle ("OSP: Handling scan %s", report_id);
 
   rc = handle_osp_scan (task, global_current_report, report_id);
   g_free (report_id);
@@ -3217,7 +3217,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  setproctitle ("gvmd: CVE: Handling scan %s", report_id);
+  setproctitle ("CVE: Handling scan %s", report_id);
   g_free (report_id);
 
   hosts = target_hosts (target);
@@ -4764,7 +4764,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
 
           /* Parent.  Wait for child, to check return. */
 
-          setproctitle ("gvmd: scheduler: waiting for %i", pid);
+          setproctitle ("scheduler: waiting for %i", pid);
 
           g_debug ("%s: %i fork_connectioned %i",
                    __func__, getpid (), pid);
@@ -4865,7 +4865,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
 
   /* Start the task. */
 
-  setproctitle ("gvmd: scheduler: starting %s", scheduled_task->task_uuid);
+  setproctitle ("scheduler: starting %s", scheduled_task->task_uuid);
 
   auth_opts = gmp_authenticate_info_opts_defaults;
   auth_opts.username = scheduled_task->owner_name;
@@ -4956,7 +4956,7 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
 
   /* Stop the task. */
 
-  setproctitle ("gvmd: scheduler: stopping %s",
+  setproctitle ("scheduler: stopping %s",
             scheduled_task->task_uuid);
 
   auth_opts = gmp_authenticate_info_opts_defaults;
