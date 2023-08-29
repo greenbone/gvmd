@@ -5638,13 +5638,14 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @param[in]  config      Config, used if preferences is true.
  * @param[in]  close_tag   Whether to close the NVT tag or not.
  * @param[in]  skip_cert_refs  Whether to exclude the CERT REFs.
+ * @param[in]  skip_tags       Whether to exclude the tags.
  *
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
 get_nvt_xml (iterator_t *nvts, int details, int pref_count,
              int preferences, const char *timeout, config_t config,
-             int close_tag, int skip_cert_refs)
+             int close_tag, int skip_cert_refs, int skip_tags)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5755,12 +5756,17 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       xml_append_nvt_refs (refs_str, oid, NULL);
 
-      tags_str = g_string_new ("");
-      tag_count = resource_tag_count ("nvt",
-                                      get_iterator_resource (nvts),
-                                      1);
+      if (skip_tags)
+        tags_str = NULL;
+      else
+        {
+          tags_str = g_string_new ("");
+          tag_count = resource_tag_count ("nvt",
+                                          get_iterator_resource (nvts),
+                                          1);
+        }
 
-      if (tag_count)
+      if (tags_str && tag_count)
         {
           g_string_append_printf (tags_str,
                                   "<user_tags>"
@@ -5820,7 +5826,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               get_iterator_modification_time (nvts)
                                ? get_iterator_modification_time (nvts)
                                : "",
-                              tags_str->str,
+                              tags_str ? tags_str->str : "",
                               nvt_iterator_category (nvts),
                               family_text,
                               nvt_iterator_cvss_base (nvts)
@@ -5868,9 +5874,10 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               timeout ? timeout : "",
                               default_timeout ? default_timeout : "");
       g_free (family_text);
-      g_string_free(nvt_tags, 1);
-      g_string_free(refs_str, 1);
-      g_string_free(tags_str, 1);
+      g_string_free (nvt_tags, 1);
+      g_string_free (refs_str, 1);
+      if (tags_str)
+        g_string_free (tags_str, 1);
 
       if (nvt_iterator_solution (nvts) ||
           nvt_iterator_solution_type (nvts) ||
@@ -6047,7 +6054,8 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
                                    NULL, /* Timeout. */
                                    0,    /* Config. */
                                    1,    /* Close tag. */
-                                   0);   /* Skip CERT refs. */
+                                   0,    /* Skip CERT refs. */
+                                   0);   /* Skip tags. */
 
           cleanup_iterator (&nvts);
         }
