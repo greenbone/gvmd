@@ -52,4 +52,7 @@ add_tls_certificates_from_report_host (report_host_t,
                                        const char*,
                                        const char*);
 
+int
+cleanup_tls_certificate_encoding ();
+
 #endif /* not _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H */
