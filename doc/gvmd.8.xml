@@ -324,8 +324,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
            cleanup-config-prefs, cleanup-feed-permissions,
            cleanup-port-names, cleanup-report-formats, cleanup-result-nvts,
            cleanup-result-severities, cleanup-schedule-times, cleanup-sequences,
-           migrate-relay-sensors, rebuild-report-cache
-           or update-report-cache.</p>
+           cleanup-tls-certificate-encoding, migrate-relay-sensors,
+           rebuild-report-cache or update-report-cache.</p>
       </optdesc>
     </option>
     <option>

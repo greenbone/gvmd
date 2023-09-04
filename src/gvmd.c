@@ -600,7 +600,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           init_sentry ();
           is_parent = 0;
 
-          setproctitle ("gvmd: Serving client");
+          setproctitle ("Serving client");
 
           /* Restore the sigmask that was blanked for pselect. */
           pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
@@ -736,7 +736,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         /* Child.  Serve the scheduler GMP, then exit. */
 
         init_sentry ();
-        setproctitle ("gvmd: Serving GMP internally");
+        setproctitle ("Serving GMP internally");
 
         parent_client_socket = sockets[0];
 
@@ -834,7 +834,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
         g_debug ("%s: %i forked %i", __func__, getpid (), pid);
 
-        setproctitle ("gvmd: Requesting GMP internally");
+        setproctitle ("Requesting GMP internally");
 
         /* This process is returned as the child of
          * fork_connection_for_scheduler so that the returned parent can wait
@@ -1105,7 +1105,7 @@ handle_sigabrt_simple (int signal)
 static int
 update_nvt_cache_osp (const gchar *update_socket)
 {
-  setproctitle ("gvmd: OSP: Updating NVT cache");
+  setproctitle ("OSP: Updating NVT cache");
 
   return manage_update_nvts_osp (update_socket);
 }
@@ -1121,7 +1121,7 @@ update_nvt_cache_osp (const gchar *update_socket)
 static int
 update_nvt_cache_retry ()
 {
-  setproctitle ("gvmd: Reloading NVTs");
+  setproctitle ("Reloading NVTs");
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);
@@ -1216,7 +1216,7 @@ fork_update_nvt_cache ()
         /* Child.   */
 
         init_sentry ();
-        setproctitle ("gvmd: Updating NVT cache");
+        setproctitle ("Updating NVT cache");
 
         /* Clean up the process. */
 
@@ -1327,7 +1327,7 @@ fork_feed_sync ()
         /* Child.   */
 
         init_sentry ();
-        setproctitle ("gvmd: Synchronizing feed data");
+        setproctitle ("Synchronizing feed data");
 
         /* Clean up the process. */
 
@@ -2101,7 +2101,8 @@ gvmd (int argc, char** argv, char *env[])
           " cleanup-config-prefs, cleanup-feed-permissions,"
           " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
           " cleanup-result-nvts, cleanup-result-severities,"
-          " cleanup-schedule-times, cleanup-sequences, migrate-relay-sensors,"
+          " cleanup-schedule-times, cleanup-sequences,"
+          " cleanup-tls-certificate-encoding, migrate-relay-sensors,"
           " rebuild-report-cache or update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
@@ -2378,7 +2379,7 @@ gvmd (int argc, char** argv, char *env[])
   /* Set process title. */
 
   setproctitle_init (argc, argv, env);
-  setproctitle ("gvmd: Initializing");
+  setproctitle ("Initializing");
 
   /* Setup initial signal handlers. */
 
@@ -2573,7 +2574,7 @@ gvmd (int argc, char** argv, char *env[])
           return EXIT_FAILURE;
         }
 
-      setproctitle ("gvmd: Migrating database");
+      setproctitle ("Migrating database");
 
       g_info ("   Migrating database.");
 
@@ -2658,7 +2659,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Optimizing");
+      setproctitle ("Optimizing");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2674,7 +2675,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: --rebuild");
+      setproctitle ("--rebuild");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2696,7 +2697,7 @@ gvmd (int argc, char** argv, char *env[])
       
       error_msg = NULL;
 
-      setproctitle ("gvmd: --rebuild-gvmd-data");
+      setproctitle ("--rebuild-gvmd-data");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2721,7 +2722,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: --rebuild-scap");
+      setproctitle ("--rebuild-scap");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2740,7 +2741,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: --dump-vt-verification");
+      setproctitle ("--dump-vt-verification");
   
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2763,7 +2764,7 @@ gvmd (int argc, char** argv, char *env[])
 
       /* Create the scanner and then exit. */
 
-      setproctitle ("gvmd: Creating scanner");
+      setproctitle ("Creating scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2815,7 +2816,7 @@ gvmd (int argc, char** argv, char *env[])
 
       /* Modify the scanner and then exit. */
 
-      setproctitle ("gvmd: Modifying scanner");
+      setproctitle ("Modifying scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2859,7 +2860,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Checking alerts");
+      setproctitle ("Checking alerts");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2874,7 +2875,7 @@ gvmd (int argc, char** argv, char *env[])
   if (create_encryption_key)
     {
       int ret;
-      setproctitle ("gvmd: Creating encryption key");
+      setproctitle ("Creating encryption key");
       
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2889,7 +2890,7 @@ gvmd (int argc, char** argv, char *env[])
   if (set_encryption_key)
     {
       int ret;
-      setproctitle ("gvmd: Setting encryption key");
+      setproctitle ("Setting encryption key");
       
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2906,7 +2907,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Creating user");
+      setproctitle ("Creating user");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2923,7 +2924,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Deleting user");
+      setproctitle ("Deleting user");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2939,7 +2940,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Getting roles");
+      setproctitle ("Getting roles");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2955,7 +2956,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Getting users");
+      setproctitle ("Getting users");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2971,7 +2972,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Getting scanners");
+      setproctitle ("Getting scanners");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2987,7 +2988,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Deleting scanner");
+      setproctitle ("Deleting scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3003,7 +3004,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Verifying scanner");
+      setproctitle ("Verifying scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3019,7 +3020,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Modifying user password");
+      setproctitle ("Modifying user password");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3035,7 +3036,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Modifying setting");
+      setproctitle ("Modifying setting");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3052,7 +3053,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Encrypting all credentials");
+      setproctitle ("Encrypting all credentials");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3068,7 +3069,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Decrypting all credentials");
+      setproctitle ("Decrypting all credentials");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3319,7 +3320,7 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Enter the main forever-loop. */
 
-  setproctitle ("gvmd: Waiting for incoming connections");
+  setproctitle ("Waiting for incoming connections");
   serve_and_schedule ();
 
   gvm_close_sentry ();

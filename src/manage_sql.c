@@ -9633,7 +9633,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                 init_sentry ();
                 cleanup_manage_process (FALSE);
 
-                setproctitle ("gvmd: Running alert script");
+                setproctitle ("Running alert script");
 
                 if (setgroups (0,NULL))
                   {
@@ -10446,7 +10446,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 init_sentry ();
                 cleanup_manage_process (FALSE);
 
-                setproctitle ("gvmd: Sending to Sourcefire");
+                setproctitle ("Sending to Sourcefire");
 
                 if (setgroups (0,NULL))
                   {
@@ -10775,7 +10775,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
               {
                 /* Child.  Drop privileges, run command, exit. */
                 init_sentry ();
-                setproctitle ("gvmd: Sending to Verinice");
+                setproctitle ("Sending to Verinice");
 
                 cleanup_manage_process (FALSE);
 
@@ -20905,7 +20905,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         }
     }
 
-  setproctitle ("gvmd: Importing results");
+  setproctitle ("Importing results");
 
   /* Add the results. */
 
@@ -48006,7 +48006,10 @@ hosts_set_identifiers (report_t report)
           GString *select;
 
           if (report_host_noticeable (report, ip) == 0)
-            continue;
+            {
+              host_index++;
+              continue;
+            }
 
           quoted_host_name = sql_quote (ip);
 
@@ -56835,6 +56838,22 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
           success_text = g_strdup_printf ("Optimized: cleanup-sequences."
                                           " Cleaned up id sequences.");
         }
+    }
+  else if (strcasecmp (name, "cleanup-tls-certificate-encoding") == 0)
+    {
+      int changes;
+      sql_begin_immediate ();
+
+      g_debug ("%s: Cleaning up encoding of TLS certificate DNs",
+               __func__);
+
+      changes = cleanup_tls_certificate_encoding ();
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: Cleaned up encoding"
+                                      " of %d TLS certificate(s).",
+                                      changes);
     }
   else if (strcasecmp (name, "migrate-relay-sensors") == 0)
     {

@@ -2886,6 +2886,9 @@ create_tables ()
 
   /* Create indexes. */
 
+  sql ("SELECT create_index ('config_preferences_by_config',"
+       "                     'config_preferences', 'config');");
+
   sql ("SELECT create_index ('host_details_by_host',"
        "                     'host_details', 'host');");
 

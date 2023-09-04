@@ -3228,7 +3228,7 @@ manage_sync_cert (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_cert,
-                "gvmd: Syncing CERT");
+                "Syncing CERT");
 }
 
 
@@ -3426,7 +3426,7 @@ update_scap_end ()
   sql ("ANALYZE scap.affected_products;");
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
-  setproctitle ("gvmd: Syncing SCAP: done");
+  setproctitle ("Syncing SCAP: done");
 
   return 0;
 }
@@ -3473,7 +3473,7 @@ try_load_csv ()
       /* Add the indexes and constraints, now that the data is ready. */
 
       g_debug ("%s: add indexes", __func__);
-      setproctitle ("gvmd: Syncing SCAP: Adding indexes");
+      setproctitle ("Syncing SCAP: Adding indexes");
 
       if (manage_db_init_indexes ("scap"))
         {
@@ -3482,7 +3482,7 @@ try_load_csv ()
         }
 
       g_debug ("%s: add constraints", __func__);
-      setproctitle ("gvmd: Syncing SCAP: Adding constraints");
+      setproctitle ("Syncing SCAP: Adding constraints");
 
       if (manage_db_add_constraints ("scap"))
         {
@@ -3535,7 +3535,7 @@ update_scap (gboolean reset_scap_db)
 
           if (last_scap_update == last_feed_update)
             {
-              setproctitle ("gvmd: Syncing SCAP: done");
+              setproctitle ("Syncing SCAP: done");
               return 0;
             }
 
@@ -3564,7 +3564,7 @@ update_scap (gboolean reset_scap_db)
   /* Add the indexes and constraints. */
 
   g_debug ("%s: add indexes", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Adding indexes");
+  setproctitle ("Syncing SCAP: Adding indexes");
 
   if (manage_db_init_indexes ("scap"))
     {
@@ -3585,13 +3585,13 @@ update_scap (gboolean reset_scap_db)
   g_info ("%s: Updating data from feed", __func__);
 
   g_debug ("%s: update cpes", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating CPEs");
+  setproctitle ("Syncing SCAP: Updating CPEs");
 
   if (update_scap_cpes () == -1)
     return -1;
 
   g_debug ("%s: update cves", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating CVEs");
+  setproctitle ("Syncing SCAP: Updating CVEs");
 
   if (update_scap_cves () == -1)
     return -1;
@@ -3602,12 +3602,12 @@ update_scap (gboolean reset_scap_db)
   /* Do calculations that need all data. */
 
   g_debug ("%s: update max cvss", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating max CVSS");
+  setproctitle ("Syncing SCAP: Updating max CVSS");
 
   update_scap_cvss ();
 
   g_debug ("%s: update placeholders", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating placeholders");
+  setproctitle ("Syncing SCAP: Updating placeholders");
 
   update_scap_placeholders ();
 
@@ -3635,7 +3635,7 @@ manage_sync_scap (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_scap,
-                "gvmd: Syncing SCAP");
+                "Syncing SCAP");
 }
 
 /**
