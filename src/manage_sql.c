@@ -48006,7 +48006,10 @@ hosts_set_identifiers (report_t report)
           GString *select;
 
           if (report_host_noticeable (report, ip) == 0)
-            continue;
+            {
+              host_index++;
+              continue;
+            }
 
           quoted_host_name = sql_quote (ip);
 
