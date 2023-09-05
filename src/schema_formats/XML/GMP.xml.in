@@ -13246,6 +13246,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>skip_tags</name>
+        <summary>Whether to exclude user tags</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>timeout</name>
         <summary>Whether to include the special timeout preference</summary>
         <type>boolean</type>
