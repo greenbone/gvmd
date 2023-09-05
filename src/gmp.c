@@ -7883,7 +7883,7 @@ send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
   gchar *msg;
 
   msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
-                     0, skip_cert_refs, skip_cert_refs);
+                     0, skip_cert_refs, skip_tags);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
