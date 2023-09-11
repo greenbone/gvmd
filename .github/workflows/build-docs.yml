@@ -19,7 +19,7 @@ jobs:
     container: greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Generate GMP documentation (HTML)
         run: |
           mkdir build
