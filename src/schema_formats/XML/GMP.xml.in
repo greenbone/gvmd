@@ -13231,6 +13231,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>lean</name>
+        <summary>Whether to send fewer details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>preferences</name>
         <summary>Whether to include preference</summary>
         <type>boolean</type>
