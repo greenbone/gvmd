@@ -508,9 +508,12 @@ Look for the current key and remember its keyid. Then:
     gpg --homedir /var/lib/gvm/gvmd/gnupg --edit-key KEYID
 
 At the prompt enter `disable` followed by `save` and `quit`.
-Then create a new key and re-encrypt all passwords:
+Then start gvmd to create a new key:
 
-    gvmd --create-credentials-encryption-key
+    gvmd
+
+and finally re-encrypt all passwords:
+
     gvmd --encrypt-all-credentials
 
 No encryption: If for backward compatibility reasons encrypted credentials
