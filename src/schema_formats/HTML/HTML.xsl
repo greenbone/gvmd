@@ -197,7 +197,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <xsl:text>&gt;</xsl:text>
         <xsl:call-template name="newline"/>
         <xsl:choose>
-          <xsl:when test="name() = 'help_response' or name() = 'p'">
+          <xsl:when test="name() = 'help_response' or name() = 'p' or name() = 'icalendar'">
             <!-- Special case certain responses to preserve whitespace. -->
             <xsl:variable name="string" select="func:string-trim-nl(text())"/>
             <xsl:if test="string-length($string) &gt; 0">
