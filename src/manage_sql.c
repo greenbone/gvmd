@@ -2140,8 +2140,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
             }
           point++;
         }
-      *search_phrase = g_strchomp (phrase->str);
-      g_string_free (phrase, FALSE);
+      *search_phrase = g_strchomp (g_string_free (phrase, FALSE));
     }
 
   if (result_hosts_only)
