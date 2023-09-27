@@ -17464,6 +17464,10 @@ authenticate (credentials_t* credentials)
           g_free (quoted_name);
           g_free (quoted_method);
 
+          if (credentials->uuid == NULL)
+            /* Can happen if user is deleted while logged in to GSA. */
+            return 1;
+          
           if (credentials_setup (credentials))
             {
               free (credentials->uuid);
