@@ -17464,6 +17464,10 @@ authenticate (credentials_t* credentials)
           g_free (quoted_name);
           g_free (quoted_method);
 
+          if (credentials->uuid == NULL)
+            /* Can happen if user is deleted while logged in to GSA. */
+            return 1;
+          
           if (credentials_setup (credentials))
             {
               free (credentials->uuid);
@@ -20112,7 +20116,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
                  " FROM scap.cves, scap.cpes, scap.affected_products,"
                  "      report_host_details"
                  " WHERE report_host_details.report_host = %llu"
-                 " AND cpes.name = report_host_details.value"
+                 " AND LOWER(cpes.name) = LOWER(report_host_details.value)"
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"

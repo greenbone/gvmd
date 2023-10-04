@@ -4994,11 +4994,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <summary>Create a schedule</summary>
       <request>
         <create_schedule>
-          <name>Every day</name>
-          <timezone>UTC</timezone>
+          <name>On the third Wednesday of every month</name>
+          <timezone>America/New_York</timezone>
           <icalendar>
-            <truncated>...</truncated>
-            DTSTART;TZID=/UTC:20200603T162600
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//XXX//NONSGML//EN
+BEGIN:VEVENT
+DTSTART;TZID="America/New_York":20221214T000100
+RRULE:FREQ=MONTHLY;BYDAY=3WE;
+END:VEVENT
+END:VCALENDAR
           </icalendar>
         </create_schedule>
       </request>
