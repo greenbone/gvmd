@@ -597,6 +597,9 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
           if (ret == 0)
             /* Processed all input. */
             ;
+          else if (ret == 1)
+            /* Processed all input.  Client want connection closed after output. */
+            close_connection = 1;
           else if (ret == -1 || ret == -4)
             {
               /* Error.  Write rest of to_client to client, so that the

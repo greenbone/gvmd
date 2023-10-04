@@ -28,6 +28,7 @@ typedef struct
 {
   int (*client_writer) (const char *, void *); ///< Writes to the client.
   void *client_writer_data;                    ///< Argument to client_writer.
+  int close_connection;      ///< Client requested connection by closed after.
   int importing;             ///< Whether the current op is importing.
   int read_over;             ///< Read over any child elements.
   int parent_state;          ///< Parent state when reading over.
