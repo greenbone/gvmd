@@ -679,9 +679,8 @@ lsc_crypt_encrypt_hashtable (lsc_crypt_ctx_t ctx, GHashTable *data)
         }
     }
 
-  plaintext = stringbuf->str;
   plaintextlen = stringbuf->len;
-  g_string_free (stringbuf, FALSE);
+  plaintext = g_string_free (stringbuf, FALSE);
   g_assert (plaintextlen);
 
   ciphertext = do_encrypt (ctx, plaintext, plaintextlen);
@@ -751,9 +750,8 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
   while ((name = va_arg (arg_ptr, const char *)))
     ;
   va_end (arg_ptr);
-  plaintext = stringbuf->str;
   plaintextlen = stringbuf->len;
-  g_string_free (stringbuf, FALSE);
+  plaintext = g_string_free (stringbuf, FALSE);
   g_assert (plaintextlen);
 
   ciphertext = do_encrypt (ctx, plaintext, plaintextlen);

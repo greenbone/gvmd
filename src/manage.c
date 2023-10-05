@@ -476,8 +476,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02x", buffer[i]);
             }
 
-          *md5_fingerprint = string->str;
-          g_string_free (string, FALSE);
+          *md5_fingerprint = g_string_free (string, FALSE);
         }
 
       if (sha256_fingerprint)
@@ -497,8 +496,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02X", buffer[i]);
             }
 
-          *sha256_fingerprint = string->str;
-          g_string_free (string, FALSE);
+          *sha256_fingerprint = g_string_free (string, FALSE);
         }
 
       if (subject)
@@ -541,8 +539,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02X", buffer[i]);
             }
 
-          *serial = string->str;
-          g_string_free (string, FALSE);
+          *serial = g_string_free (string, FALSE);
         }
 
       gnutls_x509_crt_deinit (gnutls_cert);
