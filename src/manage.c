@@ -5639,13 +5639,14 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @param[in]  close_tag   Whether to close the NVT tag or not.
  * @param[in]  skip_cert_refs  Whether to exclude the CERT REFs.
  * @param[in]  skip_tags       Whether to exclude the tags.
+ * @param[in]  lean            Whether to send fewer details.
  *
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
 get_nvt_xml (iterator_t *nvts, int details, int pref_count,
              int preferences, const char *timeout, config_t config,
-             int close_tag, int skip_cert_refs, int skip_tags)
+             int close_tag, int skip_cert_refs, int skip_tags, int lean)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5658,9 +5659,8 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
     {
       int tag_count;
       GString *refs_str, *tags_str, *buffer, *nvt_tags;
-      iterator_t cert_refs_iterator, tags, severities;
+      iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
-      char *default_timeout = nvt_default_timeout (oid);
 
       DEF (family);
       DEF (tag);
@@ -5811,77 +5811,95 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
       g_string_append_printf (buffer,
                               "<nvt oid=\"%s\">"
                               "<name>%s</name>"
-                              "<creation_time>%s</creation_time>"
-                              "<modification_time>%s</modification_time>"
                               "%s" // user_tags
-                              "<category>%d</category>"
-                              "<family>%s</family>"
-                              "<cvss_base>%s</cvss_base>"
-                              "<severities score=\"%s\">",
+                              "<preference_count>%i</preference_count>"
+                              "<timeout>%s</timeout>",
                               oid,
                               name_text,
-                              get_iterator_creation_time (nvts)
-                               ? get_iterator_creation_time (nvts)
-                               : "",
-                              get_iterator_modification_time (nvts)
-                               ? get_iterator_modification_time (nvts)
-                               : "",
                               tags_str ? tags_str->str : "",
-                              nvt_iterator_category (nvts),
-                              family_text,
-                              nvt_iterator_cvss_base (nvts)
-                               ? nvt_iterator_cvss_base (nvts)
-                               : "",
-                              nvt_iterator_cvss_base (nvts)
-                               ? nvt_iterator_cvss_base (nvts)
-                               : "");
+                              pref_count,
+                              timeout ? timeout : "");
 
-      init_nvt_severity_iterator (&severities, oid);
-      while (next (&severities))
+      if (lean == 0)
         {
-          buffer_xml_append_printf
-              (buffer,
-               "<severity type=\"%s\">"
-               "<origin>%s</origin>"
-               "<date>%s</date>"
-               "<score>%0.1f</score>"
-               "<value>%s</value>"
-               "</severity>",
-               nvt_severity_iterator_type (&severities),
-               nvt_severity_iterator_origin (&severities),
-               nvt_severity_iterator_date (&severities),
-               nvt_severity_iterator_score (&severities),
-               nvt_severity_iterator_value (&severities));
+          char *default_timeout;
+
+          default_timeout = nvt_default_timeout (oid);
+          g_string_append_printf (buffer,
+                                  "<default_timeout>%s</default_timeout>"
+                                  "<creation_time>%s</creation_time>"
+                                  "<modification_time>%s</modification_time>"
+                                  "<category>%d</category>"
+                                  "<family>%s</family>"
+                                  "<cvss_base>%s</cvss_base>"
+                                  "<qod>"
+                                  "<value>%s</value>"
+                                  "<type>%s</type>"
+                                  "</qod>"
+                                  "<refs>%s</refs>"
+                                  "<tags>%s</tags>",
+                                  default_timeout ? default_timeout : "",
+                                  get_iterator_creation_time (nvts)
+                                  ? get_iterator_creation_time (nvts)
+                                  : "",
+                                  get_iterator_modification_time (nvts)
+                                  ? get_iterator_modification_time (nvts)
+                                  : "",
+                                  nvt_iterator_category (nvts),
+                                  family_text,
+                                  nvt_iterator_cvss_base (nvts)
+                                  ? nvt_iterator_cvss_base (nvts)
+                                  : "",
+                                  nvt_iterator_qod (nvts),
+                                  nvt_iterator_qod_type (nvts),
+                                  refs_str->str,
+                                  nvt_tags->str);
+          free (default_timeout);
         }
-      cleanup_iterator (&severities);
 
       g_string_append_printf (buffer,
-                              "</severities>"
-                              "<qod>"
-                              "<value>%s</value>"
-                              "<type>%s</type>"
-                              "</qod>"
-                              "<refs>%s</refs>"
-                              "<tags>%s</tags>"
-                              "<preference_count>%i</preference_count>"
-                              "<timeout>%s</timeout>"
-                              "<default_timeout>%s</default_timeout>",
-                              nvt_iterator_qod (nvts),
-                              nvt_iterator_qod_type (nvts),
-                              refs_str->str,
-                              nvt_tags->str,
-                              pref_count,
-                              timeout ? timeout : "",
-                              default_timeout ? default_timeout : "");
+                              "<severities score=\"%s\">",
+                              nvt_iterator_cvss_base (nvts)
+                              ? nvt_iterator_cvss_base (nvts)
+                              : "");
+
+      if (lean == 0)
+        {
+          iterator_t severities;
+
+          init_nvt_severity_iterator (&severities, oid);
+          while (next (&severities))
+            {
+              buffer_xml_append_printf
+                (buffer,
+                 "<severity type=\"%s\">"
+                 "<origin>%s</origin>"
+                 "<date>%s</date>"
+                 "<score>%0.1f</score>"
+                 "<value>%s</value>"
+                 "</severity>",
+                 nvt_severity_iterator_type (&severities),
+                 nvt_severity_iterator_origin (&severities),
+                 nvt_severity_iterator_date (&severities),
+                 nvt_severity_iterator_score (&severities),
+                 nvt_severity_iterator_value (&severities));
+            }
+          cleanup_iterator (&severities);
+        }
+
+      g_string_append_printf (buffer,
+                              "</severities>");
+
       g_free (family_text);
       g_string_free (nvt_tags, 1);
       g_string_free (refs_str, 1);
       if (tags_str)
         g_string_free (tags_str, 1);
 
-      if (nvt_iterator_solution (nvts) ||
-          nvt_iterator_solution_type (nvts) ||
-          nvt_iterator_solution_method (nvts))
+      if (lean == 0
+          && (nvt_iterator_solution (nvts)
+              || nvt_iterator_solution_type (nvts)
+              || nvt_iterator_solution_method (nvts)))
         {
           buffer_xml_append_printf (buffer, "<solution");
 
@@ -5900,11 +5918,14 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
             buffer_xml_append_printf (buffer, "/>");
         }
 
-
       if (preferences)
         {
           iterator_t prefs;
-          const char *nvt_oid = nvt_iterator_oid (nvts);
+          char *default_timeout;
+          const char *nvt_oid;
+
+          default_timeout = nvt_default_timeout (oid);
+          nvt_oid = nvt_iterator_oid (nvts);
 
           /* Send the preferences for the NVT. */
 
@@ -5921,11 +5942,11 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
           cleanup_iterator (&prefs);
 
           xml_string_append (buffer, "</preferences>");
+          free (default_timeout);
         }
 
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
       msg = g_string_free (buffer, FALSE);
-      free (default_timeout);
     }
   else
     {
@@ -6055,7 +6076,8 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
                                    0,    /* Config. */
                                    1,    /* Close tag. */
                                    0,    /* Skip CERT refs. */
-                                   0);   /* Skip tags. */
+                                   0,    /* Skip tags. */
+                                   0);   /* Lean. */
 
           cleanup_iterator (&nvts);
         }

@@ -1821,6 +1821,7 @@ typedef struct
   char *preferences_config_id;  ///< ID of config to get preference values from.
   int details;           ///< Boolean.  Whether to include full NVT details.
   char *family;          ///< Name of family to which to limit NVT selection.
+  int lean;              ///< Boolean.  Whether to send fewer details.
   char *nvt_oid;         ///< Name of single NVT to get.
   int preference_count;  ///< Boolean.  Whether to include NVT preference count.
   int preferences;       ///< Boolean.  Whether to include NVT preferences.
@@ -5304,6 +5305,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "family",
                               &get_nvts_data->family);
             if (find_attribute (attribute_names, attribute_values,
+                                "lean", &attribute))
+              get_nvts_data->lean = strcmp (attribute, "0");
+            else
+              get_nvts_data->lean = 0;
+            if (find_attribute (attribute_names, attribute_values,
                                 "preferences", &attribute))
               get_nvts_data->preferences = strcmp (attribute, "0");
             else
@@ -7868,6 +7874,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
  * @param[in]  config      Config, used if preferences is true.
  * @param[in]  skip_cert_refs        If true, exclude CERT refs.
  * @param[in]  skip_tags             If true, exclude tags.
+ * @param[in]  lean                  If true, send fewer details.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
@@ -7876,14 +7883,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 static gboolean
 send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
           const char *timeout, config_t config, int skip_cert_refs,
-          int skip_tags,
+          int skip_tags, int lean,
           int (*write_to_client) (const char *, void*),
           void* write_to_client_data)
 {
   gchar *msg;
 
   msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
-                     0, skip_cert_refs, skip_tags);
+                     0, skip_cert_refs, skip_tags, lean);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
@@ -13184,7 +13191,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            dfn_cert_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
-          if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0,
+          if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0, 0,
                         gmp_parser->client_writer,
                         gmp_parser->client_writer_data))
             {
@@ -13405,6 +13412,12 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The skip_tags attribute"
                             " requires the details attribute"));
+      else if ((get_nvts_data->details == 0)
+               && get_nvts_data->lean)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "The lean attribute"
+                            " requires the details attribute"));
       else if (((get_nvts_data->details == 0)
                 || ((get_nvts_data->config_id == NULL)
                     && (get_nvts_data->preferences_config_id == NULL)))
@@ -13515,6 +13528,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                               pref_count, timeout, config,
                               get_nvts_data->skip_cert_refs,
                               get_nvts_data->skip_tags,
+                              get_nvts_data->lean,
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -13530,7 +13544,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
           else
             while (next (&nvts))
               {
-                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0,
+                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0,
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -26803,6 +26817,7 @@ process_gmp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
+
   return 0;
 }
 

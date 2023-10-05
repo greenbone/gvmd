@@ -13237,6 +13237,11 @@ END:VCALENDAR
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>lean</name>
+        <summary>Whether to send fewer details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>preferences</name>
         <summary>Whether to include preference</summary>
         <type>boolean</type>
