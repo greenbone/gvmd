@@ -138,6 +138,12 @@
 #define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
 
 /**
+ * @brief UUID of 'Delta Reports Version' setting.
+ */
+#define SETTING_UUID_DELTA_REPORTS_VERSION "985a0c05-2140-4e66-9989-ce9a0906a5a9"
+
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
