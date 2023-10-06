@@ -332,6 +332,9 @@ setting_dynamic_severity_int ();
 static char *
 setting_timezone ();
 
+static int
+setting_delta_reports_version_int ();
+
 static double
 task_severity_double (task_t, int, int, int);
 
@@ -15860,6 +15863,17 @@ check_db_settings ()
          "  'Feed Import Roles',"
          "  'Roles given access to new resources from feed.',"
          "  '" ROLE_UUID_ADMIN "," ROLE_UUID_USER "');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_DELTA_REPORTS_VERSION "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_DELTA_REPORTS_VERSION "', NULL,"
+         "  'Delta Reports Version',"
+         "  'Version of the generation of the Delta Reports.',"
+         "  '2' );");
 }
 
 /**
@@ -27648,6 +27662,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_logs, *f_host_false_positives;
   task_status_t run_status;
 
+  int delta_reports_version = 0;
+
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
@@ -27732,6 +27748,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &notes, &overrides,
                                      &apply_overrides, &zone);
     }
+
+  if (delta) {
+    delta_reports_version = setting_delta_reports_version_int ();
+    g_debug ("%s: delta reports version %d", __func__, delta_reports_version);
+  }
 
   max_results = manage_max_rows (max_results);
 
@@ -50262,6 +50283,16 @@ setting_auto_cache_rebuild_int ()
                   current_credentials.uuid);
 }
 
+static int
+setting_delta_reports_version_int ()
+{
+  int version;
+
+  setting_value_int (SETTING_UUID_DELTA_REPORTS_VERSION, &version);
+
+  return version;
+}
+
 /**
  * @brief Initialise a setting iterator, including observed settings.
  *
@@ -51134,6 +51165,9 @@ setting_name (const gchar *uuid)
     return "Feed Import Owner";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
     return "Feed Import Roles";
+  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+    return "Delta Reports Version";
+
   return NULL;
 }
 
@@ -51170,6 +51204,9 @@ setting_description (const gchar *uuid)
     return "User who is given ownership of new resources from feed.";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
     return "Roles given access to new resources from feed.";
+  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+    return "Version of the generation of the Delta Reports.";
+
   return NULL;
 }
 
@@ -51256,6 +51293,12 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       g_strfreev (split);
     }
 
+  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+    {
+      if (strcmp(value, "1") != 0 && strcmp(value, "2") != 0)
+        return 1;
+    }
+
   return 0;
 }
 
@@ -51340,7 +51383,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
-      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES))
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
+      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -51366,7 +51410,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
-          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0))
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
