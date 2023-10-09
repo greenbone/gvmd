@@ -19886,6 +19886,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Erroneous certificate"));
                 break;
+              case 18:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Cannot determine type for new credential"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
