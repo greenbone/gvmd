@@ -34457,7 +34457,8 @@ validate_credential_username_for_format (const gchar *username,
  *         11 community missing, 12 auth algorithm missing,
  *         14 privacy algorithm missing,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
- *         17 invalid certificate, 99 permission denied, -1 error.
+ *         17 invalid certificate, 18 cannot determine type,
+ *         99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
@@ -34534,7 +34535,7 @@ create_credential (const char* name, const char* comment, const char* login,
   else
     {
       g_warning ("%s: Cannot determine type of new credential", __func__);
-      return -1;
+      return 18;
     }
 
   /* Validate credential data */
