@@ -331,7 +331,7 @@ batch_start (int max)
 /**
  * @brief Check an SQL batch.
  *
- * @para[in]  b  Batch.
+ * @param[in]  b  Batch.
  *
  * @return 1 init b->str, 0 continue as normal.
  */
@@ -365,7 +365,7 @@ batch_check (batch_t *b)
 /**
  * @brief End and free an SQL batch.
  *
- * @para[in]  b  Batch.
+ * @param[in]  b  Batch.
  */
 void
 batch_end (batch_t *b)

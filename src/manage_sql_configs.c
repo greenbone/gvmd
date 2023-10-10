@@ -1696,7 +1696,11 @@ check_config_families ()
  *
  * @param[in]  name     The name of the preference.
  * @param[in]  value    The value of the preference.
- * @param[in]  rebuild  Whether a rebuild is happening.
+ * @param[in]  oid      The OID of the NVT.
+ * @param[in]  id       The ID of the preference.
+ * @param[in]  type     The pref_type of the preference.
+ * @param[in]  pref_name  The pref_name of the preference.
+ * @param[in]  rebuild    Whether a rebuild is happening.
  */
 void
 manage_nvt_preference_add (const char *name, const char *value,

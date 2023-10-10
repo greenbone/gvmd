@@ -10219,6 +10219,7 @@ scp_to_host (const char *username, const char *password,
  * @param[in]  username       Username.
  * @param[in]  share_path     Name/address of host and name of the share.
  * @param[in]  file_path      Destination filename with path inside the share.
+ * @param[in]  max_protocol   Max protocol.
  * @param[in]  report         Report that should be sent.
  * @param[in]  report_size    Size of the report.
  * @param[out] script_message Custom error message of the alert script.
@@ -17500,8 +17501,6 @@ authenticate (credentials_t* credentials)
 
 /**
  * @brief Perform actions necessary at user logout
- *
- * @param[in]  username     Username.
  */
 void
 logout_user ()
@@ -19405,6 +19404,7 @@ result_nvt_notice (const gchar *nvt)
  * @param[in]  severity     Result severity.
  * @param[in]  qod          Quality of detection.
  * @param[in]  path         Result path, e.g. file location of a product.
+ * @param[in]  hash_value   Hash value of the result.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
@@ -20696,12 +20696,13 @@ host_detail_free (host_detail_t *detail)
  * @param[in]   s_desc      The detail's source description.
  * @param[in]   name        The detail's name.
  * @param[in]   value       The detail's value.
+ * @param[in]   hash_value  The detail's hash value.
  */
 void
 insert_report_host_detail (report_t report, const char *host,
                            const char *s_type, const char *s_name,
                            const char *s_desc, const char *name,
-                           const char *value, const char * hash_value)
+                           const char *value, const char *hash_value)
 {
   char *quoted_host, *quoted_source_name, *quoted_source_type;
   char *quoted_source_desc, *quoted_name, *quoted_value;
@@ -29308,15 +29309,14 @@ report_host_noticeable (report_t report, const gchar *host)
          && report_host_result_count (report_host) > 0;
 }
 
-/*
+/**
  * @brief Generate the hash value for the entity of the result and
  * check if osp result for report already exists
  *
  * @param[in]  report      Report.
  * @param[in]  task        Task.
  * @param[in]  r_entity    entity of the result.
- *
- * @param[out] hash_value  The generated hash value of r_entity.
+ * @param[out] entity_hash_value  The generated hash value of r_entity.
  *
  * @return     "1" if osp result already exists, else "0"
  */
@@ -29415,15 +29415,17 @@ check_osp_result_exists (report_t report, task_t task,
   return return_value;
 }
 
-/*
- * @brief Generate the hash value for the report host detail and
- * check if the report host detail entry already exists
+/**
+ * @brief Check if host detail exists.
  *
  * @param[in]  report      Report.
- * @param[in]  task        Task.
- * @param[in]  r_entity    entity of the result.
- *
- * @param[out] hash_value  The generated hash value of r_entity.
+ * @param[in]  host        Host.
+ * @param[in]  s_type      Source type.
+ * @param[in]  s_name      Source name.
+ * @param[in]  s_desc      Source description.
+ * @param[in]  name        Name.
+ * @param[in]  value       Value.
+ * @param[out] detail_hash_value  The generated hash value.
  *
  * @return     "1" if osp result already exists, else "0"
  */
@@ -29467,7 +29469,7 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                    quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
         {
           g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
-                      report, *detail_hash_value);
+                  report, *detail_hash_value);
           g_debug ("Hash string: %s", hash_string);
           return_value = 1;
         }
@@ -48979,6 +48981,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
 /**
  * @brief Extra WHERE clause for host assets.
  *
+ * @param[in]  filter  Filter term.
+ *
  * @return WHERE clause.
  */
 static gchar*
@@ -50284,6 +50288,11 @@ setting_auto_cache_rebuild_int ()
                   current_credentials.uuid);
 }
 
+/**
+ * @brief Return user setting as int.
+ *
+ * @return User setting.
+ */
 static int
 setting_delta_reports_version_int ()
 {
@@ -54232,7 +54241,7 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 /**
  * @brief Gets the current RADIUS secret key.
  *
- * @param[out] is_encrypted_ret  Whether the key is encrypted. NULL to ignore.
+ * @param[out] is_encrypted  Whether the key is encrypted. NULL to ignore.
  *
  * @return Freshly allocated RADIUS secret key.
  */

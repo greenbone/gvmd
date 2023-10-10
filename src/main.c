@@ -30,6 +30,7 @@
  *
  * @param[in]  argc  The number of arguments in argv.
  * @param[in]  argv  The list of arguments to the program.
+ * @param[in]  env   The program's environment arguments.
  *
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */

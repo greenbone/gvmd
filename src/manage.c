@@ -935,6 +935,9 @@ severity_to_type (double severity)
 /**
  * @brief Creates a new encryption key and sets it as the new default.
  *
+ * @param[in]  log_config  Logging configuration list.
+ * @param[in]  database    Connection info for manage database.
+ *
  * @return 0 on success, -1 on failure.
  */
 int
@@ -994,7 +997,9 @@ manage_create_encryption_key (GSList *log_config,
 /**
  * @brief Sets the new default encryption key. The key must already exist.
  *
- * @param[in]  uid  UID of the encryption key.
+ * @param[in]  log_config  Logging configuration list.
+ * @param[in]  database    Connection info for manage database.
+ * @param[in]  uid         UID for key.
  *
  * @return 0 on success, -1 on failure.
  */
@@ -3989,6 +3994,7 @@ credential_full_type (const char* abbreviation)
  * @param[in]  end              The end time of the performance report.
  * @param[in]  titles           The end titles for the performance report.
  * @param[in]  performance_str  The performance string.
+ * @param[out] error            Error return.
  *
  * @return 0 if successful, 6 could not connect to scanner or failed to get
  *         performance report

@@ -1753,6 +1753,8 @@ create_view_vulns ()
 
 /**
  * @brief Create NVT related tables.
+ *
+ * @param[in]  suffix  String to append to table names.
  */
 void
 create_tables_nvt (const gchar *suffix)

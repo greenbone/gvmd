@@ -1860,6 +1860,13 @@ update_cert_bund_advisories (int last_cert_update)
 
 /* SCAP update: CPEs. */
 
+/**
+ * @brief Decode and SQL quote a CPE name.
+ *
+ * @param[in]  name  Name.
+ *
+ * @return Quoted name.
+ */
 static gchar *
 decode_and_quote_cpe_name (const char *name)
 {
@@ -1997,8 +2004,6 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  *
  * @param[in]  inserts            Pointer to SQL buffer.
  * @param[in]  cpe_item           CPE item XML element.
- * @param[in]  item_metadata      Item's metadata element.
- * @param[in]  modification_time  Modification time of item.
  *
  * @return 0 success, -1 error.
  */
