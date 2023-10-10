@@ -1001,7 +1001,7 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid)
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
-		 "                                   AND type = 'cve'))"
+                 "                                   AND type = 'cve'))"
                  " ORDER BY name DESC;",
                  oid);
 }
@@ -1205,7 +1205,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
-		 "                                   AND type = 'cve'))"
+                 "                                   AND type = 'cve'))"
                  " ORDER BY name DESC;",
                  oid);
 }

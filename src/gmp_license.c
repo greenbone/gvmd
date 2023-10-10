@@ -444,7 +444,7 @@ modify_license_run (gmp_parser_t *gmp_parser,
                                 "%s"), error_msg);
             g_free (error_msg);
           }
-	else
+        else
           {
             SENDF_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_license",

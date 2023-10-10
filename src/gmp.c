@@ -7714,7 +7714,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
                                 attribute_names, attribute_values);
-	break;
+        break;
       case CLIENT_MODIFY_LICENSE:
         modify_license_element_start (gmp_parser, element_name,
                                       attribute_names, attribute_values);
@@ -21545,7 +21545,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->port_list_id,
                          create_target_data->port_range,
                          ssh_credential,
-			 ssh_elevate_credential,
+                         ssh_elevate_credential,
                          create_target_data->ssh_credential_id
                           ? create_target_data->ssh_port
                           : create_target_data->ssh_lsc_port,
