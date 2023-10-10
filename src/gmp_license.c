@@ -365,9 +365,9 @@ modify_license_element_start (gmp_parser_t *gmp_parser,
  * @param[in]  allow_empty          Whether to allow an empty file.
  * @param[out] error_msg            The error message of the license update
  *                                  if any
- * 
+ *
  * @return 0 success, 1 service unavailable, 2 empty file not allowed,
- *         99 permission denied. 
+ *         99 permission denied.
  */
 static int
 modify_license (gchar *file_content, gboolean allow_empty, char **error_msg)
@@ -440,7 +440,7 @@ modify_license_run (gmp_parser_t *gmp_parser,
         if (error_msg)
           {
             SENDF_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_license", 
+             (XML_ERROR_SYNTAX ("modify_license",
                                 "%s"), error_msg);
             g_free (error_msg);
           }

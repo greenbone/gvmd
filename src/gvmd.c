@@ -1279,7 +1279,7 @@ fork_feed_sync ()
   int pid;
   sigset_t sigmask_all, sigmask_current;
   gboolean gvmd_data_feed_dirs_exist;
-  
+
   static gboolean disable_gvmd_data_feed_warning = FALSE;
 
   if (feed_version_check_in_progress)
@@ -1756,13 +1756,13 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
 }
 
 /**
- * @brief parse_authentication_goption_arg is used to parse authentication 
+ * @brief parse_authentication_goption_arg is used to parse authentication
  * parameter.
  *
  * @param[in] opt the parameter (e.g. --pepper).
  * @param[in] arg the value of the parameter.
  * @param[in] data the pointer of the data to set (unused).
- * @param[in] err used to set error string on failure. 
+ * @param[in] err used to set error string on failure.
  *
  * @return TRUE success, FALSE on failure.
  **/
@@ -2321,7 +2321,7 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Set feed lock path */
   set_feed_lock_path (feed_lock_path);
-  
+
   /* Set feed lock timeout */
   set_feed_lock_timeout (feed_lock_timeout);
 
@@ -2689,12 +2689,12 @@ gvmd (int argc, char** argv, char *env[])
         }
       return EXIT_SUCCESS;
     }
-  
+
   if (rebuild_gvmd_data)
     {
       int ret;
       gchar *error_msg;
-      
+
       error_msg = NULL;
 
       setproctitle ("--rebuild-gvmd-data");
@@ -2736,13 +2736,13 @@ gvmd (int argc, char** argv, char *env[])
         }
       return EXIT_SUCCESS;
     }
-  
+
   if (dump_vt_verification)
     {
       int ret;
 
       setproctitle ("--dump-vt-verification");
-  
+
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
@@ -2876,7 +2876,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
       setproctitle ("Creating encryption key");
-      
+
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
@@ -2891,7 +2891,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
       setproctitle ("Setting encryption key");
-      
+
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 

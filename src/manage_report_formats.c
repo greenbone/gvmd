@@ -630,7 +630,7 @@ should_sync_report_format_from_path (const char *path,
     {
       if (rebuild)
         return 1;
-      
+
       full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
 
       g_free (uuid);
@@ -694,10 +694,10 @@ sync_report_format_with_feed (const gchar *path, gboolean rebuild)
  * @brief Open the report formats feed directory if it is available and the
  * feed owner is set.
  * Optionally set the current user to the feed owner on success.
- * 
+ *
  * The sync will be skipped if the feed directory does not exist or
- *  the feed owner is not set. 
- * 
+ *  the feed owner is not set.
+ *
  * @param[out]  dir The directory as GDir if available and feed owner is set,
  * NULL otherwise.
  * @param[in]   set_current_user Whether to set current user to feed owner.
@@ -812,7 +812,7 @@ sync_report_formats_with_feed (gboolean rebuild)
 
 /**
  * @brief Tests if the report formats feed directory exists.
- * 
+ *
  * @return TRUE if the directory exists.
  */
 gboolean

@@ -582,9 +582,9 @@ DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the XML details / raw data for a given CPE ID.
- * 
+ *
  * @param[in]  cpe_id  ID of the CPE to get the raw XML of.
- * 
+ *
  * @return newly allocated XML details string
  */
 char *
@@ -2493,7 +2493,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
   else
      cvss_is_v3 = TRUE;
-  
+
   if (cvss == NULL)
     base_metrics = NULL;
   else

@@ -206,7 +206,7 @@ main (int argc, char **argv)
 
   add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_utc);
   add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_tz);
-  
+
   add_test_with_context (suite, manage_utils, clean_hosts_string_zeroes);
 
   if (argc > 1)

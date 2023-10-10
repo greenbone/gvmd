@@ -41,7 +41,7 @@
 /**
  * @brief Template for the name of the encryption key.
  *
- * It must contain a single %s that will be replaced with the current 
+ * It must contain a single %s that will be replaced with the current
  * date and time.
  *
  * Note that the code will use the "=" prefix flag to indicate an

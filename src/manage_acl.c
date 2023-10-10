@@ -1525,7 +1525,7 @@ acl_where_owned (const char *type, const get_data_t *get, int owned,
  * @return Newly allocated owned clause.
  */
 gchar *
-acl_where_owned_for_get (const char *type, const char *user_sql, 
+acl_where_owned_for_get (const char *type, const char *user_sql,
                          const char *with_prefix, gchar **with)
 {
   gchar *owned_clause;

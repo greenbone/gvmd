@@ -2044,7 +2044,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     return;
 
   split = split_filter (filter);
-  
+
   point = (keyword_t**) split->pdata;
   if (first)
     {
@@ -6120,8 +6120,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
         {
           GHashTable *plaintext_hashtable;
           char *encblob;
-          
-          plaintext_hashtable 
+
+          plaintext_hashtable
             = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
 
           if (password)
@@ -6193,7 +6193,7 @@ encrypt_all_auth_settings (gboolean decrypt_flag)
   char *radius_key = NULL;
   gboolean radius_key_encrypted;
   ntotal = ndecrypted = nencrypted = nreencrypted = 0;
-  
+
   sql_begin_immediate ();
 
   radius_key = get_radius_key (&radius_key_encrypted);
@@ -6337,7 +6337,7 @@ current_encryption_key_uid (gboolean with_fallback)
 
   if (key_uid)
     return key_uid;
-  
+
   if (!with_fallback)
     return NULL;
 
@@ -6365,7 +6365,7 @@ current_encryption_key_uid (gboolean with_fallback)
 /**
  * @brief Sets the database field defining the encryption key UID.
  *
- * Note: This does not have any effects on any already created 
+ * Note: This does not have any effects on any already created
  *       encryption contexts that may be using the old UID.
  *
  * @param[in]  new_uid  The new UID to set.
@@ -6374,7 +6374,7 @@ void
 set_current_encryption_key_uid (const char *new_uid)
 {
   gchar *quoted_new_uid = sql_quote (new_uid);
-  
+
   sql ("INSERT INTO meta (name, value)"
        " VALUES ('encryption_key_uid', '%s')"
        " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
@@ -6897,7 +6897,7 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
  * @param[in]  data            The data.
  * @param[in]  for_modify      Whether to return error codes for modify_alert.
  *
- * @return 0 valid, 2 or 6: validation of email address failed, 
+ * @return 0 valid, 2 or 6: validation of email address failed,
  *         7 or 9 subject too long, 8 or 10 message too long,
  *         60 recipient credential not found, 61 invalid recipient credential
  *         type, -1 error. When for_modify is 0, the first code is returned,
@@ -9096,7 +9096,7 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
     }
 
   // End of message
-  if (fprintf (encrypted_file, 
+  if (fprintf (encrypted_file,
                "\n") < 0)
     {
       g_warning ("%s: output error at end of message", __func__);
@@ -11726,7 +11726,7 @@ scp_alert_path_print (const gchar *message, task_t task)
 
                 memset(&time_string, 0, 9);
                 current_time = time (NULL);
-                
+
                 if (localtime_r (&current_time, &tm) == NULL)
                   {
                     g_warning ("%s: localtime failed, aborting",
@@ -12531,7 +12531,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                           get_delta_report
                                             (alert, task, report),
                                           alert_filter_get
-                                            ? alert_filter_get 
+                                            ? alert_filter_get
                                             : get,
                                           report_format,
                                           notes_details,
@@ -13744,7 +13744,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           /* TLS certificate subject workaround setting */
-          tls_cert_workaround_str 
+          tls_cert_workaround_str
             = alert_data (alert, "method",
                           "tp_sms_tls_workaround");
           if (tls_cert_workaround_str)
@@ -14422,7 +14422,7 @@ condition_met (task_t task, report_t report, alert_t alert,
               /* SecInfo event. */
 
               db_count = alert_secinfo_count (alert, filter_id);
- 
+
               if (db_count >= count)
                 return 1;
               break;
@@ -17480,7 +17480,7 @@ authenticate (credentials_t* credentials)
           if (credentials->uuid == NULL)
             /* Can happen if user is deleted while logged in to GSA. */
             return 1;
-          
+
           if (credentials_setup (credentials))
             {
               free (credentials->uuid);
@@ -19244,7 +19244,7 @@ auto_delete_reports ()
     {
       int ret;
       report_t report = g_array_index (reports_to_delete, report_t, i);
-      
+
       sql_begin_immediate ();
 
       /* As in delete_report, this prevents other processes from getting the
@@ -19437,7 +19437,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
                                    " FROM nvts WHERE oid='%s'",
                                    quoted_nvt);
     }
-  
+
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -20038,7 +20038,7 @@ result_detection_reference (result_t result, report_t report,
                      "      OR port LIKE '%%%s%%');",
                      report, quoted_host, *oid, quoted_location,
                      quoted_location);
-  
+
   if (*ref == NULL)
     goto detect_cleanup;
 
@@ -21236,7 +21236,7 @@ report_task (report_t report, task_t *task)
 
 /**
  * @brief Get compliance counts for a report.
- * 
+ *
  * @param[in]  report_id              UUID of the report.
  * @param[out] compliance_yes         Number of "YES" results.
  * @param[out] compliance_no          Number of "NO" results.
@@ -21256,7 +21256,7 @@ report_compliance_by_uuid (const char *report_id,
 
   if (compliance_yes)
     {
-      *compliance_yes 
+      *compliance_yes
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
                    " AND description LIKE 'Compliant:%%YES%%';",
@@ -21265,7 +21265,7 @@ report_compliance_by_uuid (const char *report_id,
 
   if (compliance_no)
     {
-      *compliance_no 
+      *compliance_no
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
                    " AND description LIKE 'Compliant:%%NO%%';",
@@ -21448,7 +21448,7 @@ report_add_result (report_t report, result_t result)
 
 /**
  * @brief Add results from an array to a report.
- * 
+ *
  * @param[in]  report   The report to add the results to.
  * @param[in]  results  GArray containing the row ids of the results to add.
  */
@@ -21466,7 +21466,7 @@ report_add_results_array (report_t report, GArray *results)
     {
       result_t result;
       result = g_array_index (results, result_t, index);
-      
+
       if (index)
         g_string_append (array_sql, ", ");
       g_string_append_printf (array_sql, "%llu", result);
@@ -21483,7 +21483,7 @@ report_add_results_array (report_t report, GArray *results)
     {
       result_t result;
       result = g_array_index (results, result_t, index);
-      
+
       report_add_result_for_buffer (report, result);
     }
 
@@ -27711,12 +27711,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   assert (get);
 
-  if ((get->filt_id && strlen (get->filt_id) 
+  if ((get->filt_id && strlen (get->filt_id)
        && strcmp (get->filt_id, FILT_ID_NONE))
       || (get->filter && strlen (get->filter)))
     {
       term = NULL;
-      if (get->filt_id && strlen (get->filt_id) 
+      if (get->filt_id && strlen (get->filt_id)
           && strcmp (get->filt_id, FILT_ID_NONE))
         {
           term = filter_term (get->filt_id);
@@ -29341,7 +29341,7 @@ check_osp_result_exists (report_t report, task_t task,
       gchar *quoted_hostname, *quoted_port, *quoted_path;
       double severity_double = 0.0;
       int qod_int = QOD_DEFAULT;
-      
+
       host = entity_attribute (r_entity, "host");
       hostname = entity_attribute (r_entity, "hostname");
       type = entity_attribute (r_entity, "type");
@@ -29655,11 +29655,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
   if (has_results)
     {
-      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
+      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
            report);
       report_add_results_array (report, results_array);
     }
-  
+
 
  end_parse_osp_report:
   sql_commit ();
@@ -44624,7 +44624,7 @@ add_feed_role_permissions (const char *type,
 
   roles_str = NULL;
   setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles_str);
-  
+
   if (roles_str == NULL || strlen (roles_str) == 0)
     {
       g_message ("%s: No feed import roles defined", __func__);
@@ -44843,7 +44843,7 @@ clean_feed_role_permissions (const char *type,
                      permission_resource,
                      sql_roles->str);
 
-      while (next (&permissions)) 
+      while (next (&permissions))
         {
           const char *role_id = iterator_string (&permissions, 0);
           const char *role_name = iterator_string (&permissions, 1);
@@ -54233,7 +54233,7 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
  * @brief Gets the current RADIUS secret key.
  *
  * @param[out] is_encrypted_ret  Whether the key is encrypted. NULL to ignore.
- * 
+ *
  * @return Freshly allocated RADIUS secret key.
  */
 char *
@@ -54273,7 +54273,7 @@ get_radius_key (gboolean *is_encrypted)
           g_free (secret);
         }
     }
-    
+
   return key;
 }
 

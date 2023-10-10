@@ -934,7 +934,7 @@ severity_to_type (double severity)
 
 /**
  * @brief Creates a new encryption key and sets it as the new default.
- * 
+ *
  * @return 0 on success, -1 on failure.
  */
 int
@@ -961,7 +961,7 @@ manage_create_encryption_key (GSList *log_config,
       case 1:
         printf ("Credential encryption key '%s' already exists\n",
                 generated_uid);
-        g_warning ("%s: Credential encryption key '%s' already exists", 
+        g_warning ("%s: Credential encryption key '%s' already exists",
                  __func__, generated_uid);
 
         lsc_crypt_flush(ctx);
@@ -971,7 +971,7 @@ manage_create_encryption_key (GSList *log_config,
       default:
         printf ("Could not create credential encryption key '%s'\n",
                 generated_uid);
-        g_warning ("%s: Could not create credential encryption key '%s'", 
+        g_warning ("%s: Could not create credential encryption key '%s'",
                  __func__, generated_uid);
 
         lsc_crypt_flush(ctx);
@@ -1010,7 +1010,7 @@ manage_set_encryption_key (GSList *log_config,
       g_warning ("Error setting up log config or database connection.");
       return -1;
     }
-  
+
   lsc_crypt_ctx_t ctx = lsc_crypt_new (uid);
   if (! lsc_crypt_enckey_exists (ctx))
     {
@@ -3550,7 +3550,7 @@ slave_get_relay (const char *original_host,
               else
                 {
                   // Consider relay not found if host or port is empty
-                  ret = 1; 
+                  ret = 1;
                 }
             }
           else
@@ -5115,12 +5115,12 @@ manage_sync (sigset_t *sigmask_current,
 
 /**
  * @brief Rebuild configs, port lists and report formats from feed.
- * 
+ *
  * @param[in]  types      Comma-separated lists of types to rebuild or "all".
  * @param[in]  log_config Logging configuration list.
  * @param[in]  database   Connection info for manage database.
  * @param[out] error_msg  Error message.
- * 
+ *
  * @return 0 success, -1 failed.
  */
 int
@@ -5158,7 +5158,7 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       while (*split_iter)
         {
           gchar *type = g_strstrip (*split_iter);
-          
+
           if (strcasecmp (type, "configs") == 0)
             sync_configs = TRUE;
           else if (strcasecmp (type, "port_lists") == 0)

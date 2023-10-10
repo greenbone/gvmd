@@ -307,7 +307,7 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
 
                   gchar *extra_xml;
 
-                  SENDF_TO_CLIENT_OR_FAIL 
+                  SENDF_TO_CLIENT_OR_FAIL
                      ("<origin id=\"%s\">"
                       "<origin_type>%s</origin_type>"
                       "<origin_id>%s</origin_id>"

@@ -131,7 +131,7 @@ time_t
 add_months (time_t time, int months)
 {
   struct tm broken;
-  
+
   if (localtime_r (&time, &broken) == NULL)
     {
       g_warning ("%s: localtime failed", __func__);
@@ -157,7 +157,7 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
   int count;
   gvm_hosts_t *hosts;
   gchar *clean_hosts;
-  
+
   clean_hosts = clean_hosts_string (given_hosts);
 
   hosts = gvm_hosts_new_with_max (clean_hosts, max_hosts);
@@ -1435,7 +1435,7 @@ clean_hosts_string (const char *hosts)
    * First line matches zeroes before non-zero numbers, e.g. "000" in "000120"
    * Second line matches groups of all zeroes except one, e.g. "00" in "000"
    */
-  ipv4_replace_regex 
+  ipv4_replace_regex
     = g_regex_new ("(?<=\\D|^)(0+)(?=(?:(?:[1-9]\\d*)(?:\\D|$)))"
                    "|(?<=\\D|^)(0+)(?=0(?:\\D|$))",
                    0, 0, NULL);
@@ -1470,6 +1470,6 @@ clean_hosts_string (const char *hosts)
 
   g_regex_unref (ipv4_match_regex);
   g_regex_unref (ipv4_replace_regex);
-  
+
   return g_string_free (new_hosts, FALSE);
 }

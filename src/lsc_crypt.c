@@ -181,7 +181,7 @@ generate_parms_string (const char *enckey_uid)
           "%%no-protection\n"
           "%%no-ask-passphrase\n"
           "</GnupgKeyParms>\n",
-          (enckey_length > 0) ? enckey_length 
+          (enckey_length > 0) ? enckey_length
                               : DEFAULT_ENCRYPTION_RSA_KEY_LENGTH,
           enckey_uid
         );
@@ -512,8 +512,8 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
 /**
  * @brief Sets the parameters for creating a new encryption key
  *
- * @param[in]  type   Type of the 
- * @param[in]  length 
+ * @param[in]  type   Type of the
+ * @param[in]  length
  */
 int
 lsc_crypt_enckey_parms_init (const char *type, int length)
@@ -597,7 +597,7 @@ lsc_crypt_flush (lsc_crypt_ctx_t ctx)
  * @brief Checks if the encryption key defined by the context already exists
  *
  * @param[in] ctx        The context
- * 
+ *
  * @return Whether the key exists
  */
 gboolean
