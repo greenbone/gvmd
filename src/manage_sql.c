@@ -22030,7 +22030,7 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("results.id"),                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
@@ -22060,6 +22060,19 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
+
+#define RESULT_HOSTNAME_SQL(hostname_col, host_col, report_col)               \
+      "(CASE WHEN (" hostname_col " IS NULL) "                                \
+      "           OR (" hostname_col " = '')"                                 \
+      " THEN (SELECT value FROM report_host_details"                          \
+      "       WHERE name = 'hostname'"                                        \
+      "         AND report_host = (SELECT id FROM report_hosts "              \
+      "                            WHERE report_hosts.host = " host_col       \
+      "                            AND"                                       \
+      "                            report_hosts.report = " report_col ")"     \
+      "       LIMIT 1)"                                                       \
+      " ELSE " hostname_col                                                   \
+      " END)"
 
 /**
  * @brief Result iterator columns.
@@ -22120,18 +22133,9 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "results.qod", "qod", KEYWORD_TYPE_INTEGER },                           \
     { "results.qod_type", NULL, KEYWORD_TYPE_STRING },                        \
-    { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
-      " THEN (SELECT value FROM report_host_details"                          \
-      "       WHERE name = 'hostname'"                                        \
-      "         AND report_host = (SELECT id FROM report_hosts"               \
-      "                            WHERE report_hosts.host=results.host"      \
-      "                            AND report_hosts.report = results.report)" \
-      "       LIMIT 1)"                                                       \
-      " ELSE hostname"                                                        \
-      " END)",                                                                \
-      "hostname",                                                             \
-      KEYWORD_TYPE_STRING                                                     \
-    },                                                                        \
+    {  RESULT_HOSTNAME_SQL("hostname", "results.host", "results.report"),     \
+       "hostname",                                                            \
+       KEYWORD_TYPE_STRING },                                                 \
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
@@ -22175,7 +22179,7 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("results.id"),                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     /* ^ 35 = 25 */                                                           \
@@ -22226,6 +22230,105 @@ where_qod (int min_qod)
     { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Delta result iterator columns.
+ */
+#define DELTA_RESULT_COLUMNS                                                  \
+    { "comparison.state", "delta_state", KEYWORD_TYPE_STRING },               \
+    { "comparison.delta_description", NULL, KEYWORD_TYPE_STRING },            \
+    { "comparison.delta_severity", NULL, KEYWORD_TYPE_DOUBLE },               \
+    { "comparison.delta_qod", NULL, KEYWORD_TYPE_INTEGER },                   \
+    { "comparison.delta_uuid", NULL, KEYWORD_TYPE_STRING },                   \
+    { "delta_qod_type", NULL, KEYWORD_TYPE_STRING },                          \
+    { " iso_time (delta_date, opts.user_zone)",                               \
+      "delta_creation_time",                                                  \
+      KEYWORD_TYPE_STRING },                                                  \
+    { " iso_time (delta_date, opts.user_zone)",                               \
+      "delta_modification_time",                                              \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "delta_task", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "delta_report", NULL, KEYWORD_TYPE_INTEGER },                           \
+    { "(SELECT name FROM users WHERE users.id = results.owner)",              \
+      "_owner",                                                               \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "delta_path", NULL, KEYWORD_TYPE_STRING },                              \
+    { "(SELECT CASE WHEN delta_host IS NULL"                                  \
+      "             THEN NULL"                                                \
+      "             ELSE (SELECT uuid FROM hosts"                             \
+      "                   WHERE id = (SELECT host FROM host_identifiers"      \
+      "                               WHERE source_type = 'Report Host'"      \
+      "                               AND name = 'ip'"                        \
+      "                               AND source_id"                          \
+      "                                   = (SELECT uuid"                     \
+      "                                      FROM reports"                    \
+      "                                      WHERE id = results.report)"      \
+      "                               AND value = delta_host"                 \
+      "                               LIMIT 1))"                              \
+      "             END)",                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "delta_nvt_version", NULL, KEYWORD_TYPE_STRING },                       \
+    { "result2_id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "severity_to_type (results.severity)",                                  \
+      "original_type",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM notes"                              \
+      "                     WHERE (result = result2_id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = delta_task))"             \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM overrides"                          \
+      "                     WHERE (result = result2_id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = delta_task))"             \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+      { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                     \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+      { "delta_hostname", NULL, KEYWORD_TYPE_STRING },  
+
+/**
+ * @brief Delta result iterator columns.
+ */
+#define DELTA_RESULT_ITERATOR_COLUMNS                                         \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    DELTA_RESULT_COLUMNS                                                      \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define DELTA_RESULT_ITERATOR_COLUMNS_NO_CERT                                 \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+      DELTA_RESULT_COLUMNS                                                    \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -23393,6 +23496,303 @@ result_iterator_nvt_solution_method (iterator_t *iterator)
   /* When we used a cache this was never added to the cache. */
   return NULL;
 }
+
+/**
+ * @brief Get delta reports state from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta reports state if any, else NULL.
+ */
+const char *
+result_iterator_delta_state (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET);
+}
+
+/**
+ * @brief Get delta description from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta description if any, else NULL.
+ */
+const char *
+result_iterator_delta_description (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 1);
+}
+
+/**
+ * @brief Get delta severity from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity if any, else NULL.
+ */
+const char *
+result_iterator_delta_severity (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
+}
+
+/**
+ * @brief Get delta severity (double) from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity (double) if any, else 0.
+ */
+double
+result_iterator_delta_severity_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
+}
+
+
+/**
+ * @brief Get delta qod from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta qod if any, else NULL.
+ */
+const char *
+result_iterator_delta_qod (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 3);
+}
+
+/**
+ * @brief Get delta uuid from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta uuid if any, else NULL.
+ */
+const char *
+result_iterator_delta_uuid (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 4);
+}
+
+
+/**
+ * @brief Get delta qod type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta qod type if any, else NULL.
+ */
+const char *
+result_iterator_delta_qod_type (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 5);
+}
+
+/**
+ * @brief Get delta creation time from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta creation time if any, else NULL.
+ */
+const char *
+result_iterator_delta_creation_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 6);
+}
+
+/**
+ * @brief Get delta modification time from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta modification time if any, else NULL.
+ */
+const char *
+result_iterator_delta_modification_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
+}
+
+/**
+ * @brief Get delta task from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta task if any, else 0.
+ */
+task_t
+result_iterator_delta_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 8);
+}
+
+/**
+ * @brief Get delta report from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta report if any, else 0.
+ */
+report_t
+result_iterator_delta_report (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 9);
+}
+
+/**
+ * @brief Get delta owner from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta owner if any, else NULL.
+ */
+const char *
+result_iterator_delta_owner_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 10);
+}
+
+/**
+ * @brief Get delta path from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta path if any, else NULL.
+ */
+const char *
+result_iterator_delta_path (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 11);
+}
+
+/**
+ * @brief Get delta host asset id from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta host asset id if any, else NULL.
+ */
+const char *
+result_iterator_delta_host_asset_id (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 12);
+}
+
+/**
+ * @brief Get delta nvt version from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta nvt version if any, else NULL.
+ */
+const char *
+result_iterator_delta_nvt_version (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 13);
+}
+
+/**
+ * @brief Get delta result from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta result if any, else 0.
+ */
+result_t
+result_iterator_delta_result (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 14);
+}
+
+/**
+ * @brief Get delta level from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta level if any, else NULL.
+ */
+const char *
+result_iterator_delta_level (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 15);
+}
+
+/**
+ * @brief Get whether there are notes for the delta result from the iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return whether there are notes.
+ */
+int
+result_iterator_delta_may_have_notes (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 16);
+}
+
+/**
+ * @brief Get whether there are overrides for the delta result from the iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return whether there are overrides.
+ */
+int
+result_iterator_delta_may_have_overrides (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 17);
+}
+
+/**
+ * @brief Get whether there are tickets for the delta result from the iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return whether there are tickets.
+ */
+int
+result_iterator_delta_may_have_tickets (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 18);
+}
+
+/**
+ * @brief Get delta hostname from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta hostname if any, else NULL.
+ */
+const char *
+result_iterator_delta_hostname (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+}
+
 
 /**
  * @brief Append an NVT's references to an XML string buffer.
@@ -25252,7 +25652,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 /** @todo Defined in gmp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
                          int, int, int, int, const char *, iterator_t *,
-                         int, int, int);
+                         int, int, int, int);
 
 /**
  * @brief Comparison returns.
@@ -25632,7 +26032,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   /* This is the only case that uses 1. */
                                   1,  /* Whether result is "changed". */
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -25663,7 +26064,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   delta_results,
                                   0,
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -25694,7 +26096,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   delta_results,
                                   0,
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -25725,7 +26128,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   delta_results,
                                   0,
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -26889,6 +27293,155 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
 }
 
 /**
+ * @brief Init v2 delta iterator for print_report_xml.
+ *
+ * @param[in]  report         The report.
+ * @param[in]  results        Report result iterator.
+ * @param[in]  delta          Delta report.
+ * @param[in]  get            GET command data.
+ * @param[in]  term           Filter term.
+ * @param[out] sort_field     Sort field.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta, 
+                      const get_data_t *get, const char *term,
+                      const char *sort_field)
+{
+  int ret;
+  static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns_no_cert[] = DELTA_RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t columns[] = DELTA_RESULT_ITERATOR_COLUMNS;
+
+
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single;
+  gchar *opts_tables, *extra_with;
+  int apply_overrides, dynamic_severity;
+  column_t *actual_columns;
+
+  g_debug ("%s", __func__);
+
+  if (report == -1)
+    {
+      init_iterator (results, "SELECT NULL WHERE false;");
+      return 0;
+    }
+
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  dynamic_severity = setting_dynamic_severity_int ();
+
+  if (manage_cert_loaded ())
+    actual_columns = columns;
+  else
+    actual_columns = columns_no_cert;
+
+  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+
+  extra_tables = g_strdup_printf (" JOIN comparison "
+                                  " ON results.id = COALESCE (result1_id,"
+                                  "                           result2_id)"
+                                  " LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  result_iterator_lateral (apply_overrides,
+                                                          dynamic_severity));                                                         
+
+  g_free (opts_tables);
+
+  extra_where = results_extra_where (get->trash, 0, NULL,
+                                     apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter,
+                                     NULL);
+
+  extra_where_single = results_extra_where (get->trash, 0, NULL,
+                                            apply_overrides,
+                                            dynamic_severity,
+                                            "min_qod=0",
+                                            NULL);
+
+  free (filter);
+
+  extra_with = g_strdup_printf(" comparison AS ("
+    " SELECT r1.id AS result1_id," 
+    " r2.id AS result2_id," 
+    " compare_results("
+    "  r1.description,"
+    "  r2.description,"
+    "  r1.severity::double precision,"
+    "  r2.severity::double precision,"
+    "  r1.qod::integer,"
+    "  r2.qod::integer,"
+       RESULT_HOSTNAME_SQL("r1.hostname", "r1.host", "r1.report")","
+       RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report")","
+    "  r1.path,"
+    "  r2.path) AS state,"
+    " r2.description AS delta_description,"
+    " r2.severity AS delta_severity,"
+    " r2.qod AS delta_qod,"
+    " r2.qod_type AS delta_qod_type,"
+    " r2.uuid AS delta_uuid,"
+    " r2.date AS delta_date,"
+    " r2.task AS delta_task,"
+    " r2.report AS delta_report,"
+    " r2.owner AS delta_owner,"
+    " r2.path AS delta_path,"
+    " r2.host AS delta_host,"
+      RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
+      " AS delta_hostname,"
+    " r2.nvt_version AS delta_nvt_version"
+    " FROM (SELECT id, description, host, report, port, severity, nvt," 
+    "              qod, uuid, hostname, path FROM results WHERE report = %llu)"
+    " AS r1"
+    " FULL OUTER JOIN (SELECT * FROM results WHERE report = %llu) AS r2"
+    " ON r1.host = r2.host"
+    " AND r1.port = r2.port" 
+    " AND r1.nvt = r2.nvt "
+    " AND (r1.severity = 0) = (r2.severity = 0)"
+    " )",
+    report, delta);
+
+  ret = init_get_iterator2_with (results,
+                                "result",
+                                get,
+                                /* SELECT columns. */
+                                actual_columns,
+                                NULL,
+                                /* Filterable columns not in SELECT columns. */
+                                NULL,
+                                NULL,
+                                filter_columns,
+                                0,
+                                extra_tables,
+                                extra_where,
+                                extra_where_single,
+                                TRUE,
+                                report ? TRUE : FALSE,
+                                NULL,
+                                extra_with,
+                                0,
+                                0);
+  g_free (extra_tables);
+  g_free (extra_where);
+  g_free (extra_where_single);
+
+  g_debug ("%s: done", __func__);
+
+  return ret;
+}
+
+/**
  * @brief Print delta results for print_report_xml.
  *
  * @param[in]  out            File stream to write to.
@@ -27047,7 +27600,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     NULL,
                                     0,
                                     -1,
-                                    0);
+                                    0,  /* Lean. */
+                                    0); /* Delta fields. */
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -27094,7 +27648,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     NULL,
                                     0,
                                     -1,
-                                    0);
+                                    0,  /* Lean. */
+                                    0); /* Delta fields. */
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -27607,6 +28162,135 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 }
 
 /**
+ * @brief Print v2 delta results for print_report_xml.
+ *
+ * @param[in]  out            File stream to write to.
+ * @param[in]  results        Report result iterator.
+ * @param[in]  delta_states   String describing delta states to include in count
+ *                            (for example, "sngc" Same, New, Gone and Changed).
+ *                            All levels if NULL.
+ * @param[in]  first_result   First result.
+ * @param[in]  max_results    Max results.
+ * @param[in]  task           The task.
+ * @param[in]  notes          Whether to include notes.
+ * @param[in]  notes_details  Whether to include note details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  Whether to include override details.
+ * @param[in]  sort_order         Sort order.
+ * @param[in]  sort_field         Sort field.
+ * @param[in]  result_hosts_only  Whether to only include hosts with results.
+ * @param[in]  orig_filtered_result_count  Result count.
+ * @param[in]  filtered_result_count       Result count.
+ * @param[in]  orig_f_holes   Result count.
+ * @param[in]  f_holes        Result count.
+ * @param[in]  orig_f_infos   Result count.
+ * @param[in]  f_infos        Result count.
+ * @param[in]  orig_f_logs    Result count.
+ * @param[in]  f_logs         Result count.
+ * @param[in]  orig_f_warnings  Result count.
+ * @param[in]  f_warnings       Result count.
+ * @param[in]  orig_f_false_positives  Result count.
+ * @param[in]  f_false_positives       Result count.
+ * @param[in]  result_hosts   Result hosts.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_v2_report_delta_xml (FILE *out, iterator_t *results,
+                        const char *delta_states,
+                        int first_result, int max_results, task_t task,
+                        int notes, int notes_details, int overrides,
+                        int overrides_details, int sort_order,
+                        const char *sort_field, int result_hosts_only,
+                        int *orig_filtered_result_count,
+                        int *filtered_result_count,
+                        int *orig_f_holes, int *f_holes,
+                        int *orig_f_infos, int *f_infos,
+                        int *orig_f_logs, int *f_logs,
+                        int *orig_f_warnings, int *f_warnings,
+                        int *orig_f_false_positives, int *f_false_positives,
+                        array_t *result_hosts)
+{
+  GString *buffer = g_string_new ("");
+
+  *orig_f_holes = *f_holes;
+  *orig_f_infos = *f_infos;
+  *orig_f_logs = *f_logs;
+  *orig_f_warnings = *f_warnings;
+  *orig_f_false_positives = *f_false_positives;
+  *orig_filtered_result_count = *filtered_result_count;
+
+  while (next (results)) {
+
+    const char *state = result_iterator_delta_state (results);
+
+    if (strchr (delta_states, state[0]) == NULL) continue;
+
+    const char *level;
+    /* Increase the result count. */
+    level = result_iterator_level (results);
+    (*orig_filtered_result_count)++;
+    (*filtered_result_count)++;
+    if (strcmp (level, "High") == 0)
+      {
+        (*orig_f_holes)++;
+        (*f_holes)++;
+      }
+    else if (strcmp (level, "Medium") == 0)
+      {
+        (*orig_f_warnings)++;
+        (*f_warnings)++;
+      }
+    else if (strcmp (level, "Low") == 0)
+      {
+        (*orig_f_infos)++;
+        (*f_infos)++;
+      }
+    else if (strcmp (level, "Log") == 0)
+      {
+        (*orig_f_logs)++;
+        (*f_logs)++;
+      }
+    else if (strcmp (level, "False Positive") == 0)
+      {
+        (*orig_f_false_positives)++;
+        (*f_false_positives)++;
+      }
+
+
+    buffer_results_xml (buffer,
+                        results,
+                        task,
+                        notes,
+                        notes_details,
+                        overrides,
+                        overrides_details,
+                        0,
+                        0,
+                        0,
+                        state,
+                        NULL,
+                        (strcmp (state, "changed") == 0), 
+                        -1,
+                        0,  /* Lean. */
+                        0); /* Delta fields. */
+ 
+    if (fprintf (out, "%s", buffer->str) < 0) 
+      {
+        g_string_free (buffer, TRUE);
+        return -1;
+      }
+    g_string_truncate (buffer, 0);
+  }
+  g_string_free (buffer, TRUE);
+  if (fprintf (out, "</results>") < 0)
+    {
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -27864,7 +28548,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
-  count_filtered = (delta == 0 && ignore_pagination && get->details);
+  count_filtered = (delta == 0 && ignore_pagination && get->details)
+                   || (delta_reports_version == 2);
 
   if (report)
     {
@@ -27945,7 +28630,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   term = clean;
 
   if (delta
-      && sort_field
+      && sort_field 
+      && (delta_reports_version == 1)
       /* These are all checked in result_cmp. */
       && strcmp (sort_field, "name")
       && strcmp (sort_field, "vulnerability")
@@ -28305,14 +28991,28 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (init_delta_iterators (report, &results, delta, &delta_results, get,
-                                term, sort_field))
+      if (delta_reports_version == 1) 
         {
+          if (init_delta_iterators (report, &results, delta, 
+                                    &delta_results, get, 
+                                    term, sort_field))
+            {
+              g_free (term);
+              g_hash_table_destroy (f_host_ports);
+              return -1;
+            }
           g_free (term);
-          g_hash_table_destroy (f_host_ports);
-          return -1;
+        } 
+      else 
+        {      
+          if (init_v2_delta_iterator (report, &results, delta,
+                                      get, term, sort_field))
+            {
+              g_free (term);
+              g_hash_table_destroy (f_host_ports);
+              return -1;
+            }
         }
-      g_free (term);
     }
   else if (get->details)
     {
@@ -28360,38 +29060,80 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (print_report_delta_xml (out, &results, &delta_results, delta_states,
-                                  ignore_pagination ? 0 : first_result,
-                                  ignore_pagination ? -1 : max_results,
-                                  task, notes,
-                                  notes_details, overrides, overrides_details,
-                                  sort_order, sort_field, result_hosts_only,
-                                  &orig_filtered_result_count,
-                                  &filtered_result_count,
-                                  &orig_f_holes, &f_holes,
-                                  &orig_f_infos, &f_infos,
-                                  &orig_f_logs, &f_logs,
-                                  &orig_f_warnings, &f_warnings,
-                                  &orig_f_false_positives, &f_false_positives,
-                                  result_hosts))
+      if (delta_reports_version == 1) 
         {
-          fclose (out);
-          g_free (sort_field);
-          g_free (levels);
-          g_free (search_phrase);
-          g_free (min_qod);
-          g_free (delta_states);
-          cleanup_iterator (&results);
-          cleanup_iterator (&delta_results);
-          tz_revert (zone, tz, old_tz_override);
-          g_hash_table_destroy (f_host_ports);
-          g_hash_table_destroy (f_host_holes);
-          g_hash_table_destroy (f_host_warnings);
-          g_hash_table_destroy (f_host_infos);
-          g_hash_table_destroy (f_host_logs);
-          g_hash_table_destroy (f_host_false_positives);
-
-          return -1;
+          if (print_report_delta_xml (out, &results, &delta_results, 
+                                      delta_states,
+                                      ignore_pagination ? 0 : first_result,
+                                      ignore_pagination ? -1 : max_results,
+                                      task, notes,
+                                      notes_details, overrides, 
+                                      overrides_details, sort_order,
+                                      sort_field, result_hosts_only,
+                                      &orig_filtered_result_count,
+                                      &filtered_result_count,
+                                      &orig_f_holes, &f_holes,
+                                      &orig_f_infos, &f_infos,
+                                      &orig_f_logs, &f_logs,
+                                      &orig_f_warnings, &f_warnings,
+                                      &orig_f_false_positives, 
+                                      &f_false_positives,
+                                      result_hosts))
+            {
+              fclose (out);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_qod);
+              g_free (delta_states);
+              cleanup_iterator (&results);
+              cleanup_iterator (&delta_results);
+              tz_revert (zone, tz, old_tz_override);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
+              return -1;
+            }
+        } 
+      else 
+        {
+          if (print_v2_report_delta_xml (out, &results, delta_states,
+                                        ignore_pagination ? 0 : first_result,
+                                        ignore_pagination ? -1 : max_results,
+                                        task, notes,
+                                        notes_details, overrides, 
+                                        overrides_details, sort_order, 
+                                        sort_field, result_hosts_only,
+                                        &orig_filtered_result_count,
+                                        &filtered_result_count,
+                                        &orig_f_holes, &f_holes,
+                                        &orig_f_infos, &f_infos,
+                                        &orig_f_logs, &f_logs,
+                                        &orig_f_warnings, &f_warnings,
+                                        &orig_f_false_positives, 
+                                        &f_false_positives,
+                                        result_hosts))
+            {
+              fclose (out);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_qod);
+              g_free (delta_states);
+              cleanup_iterator (&results);
+              cleanup_iterator (&delta_results);
+              tz_revert (zone, tz, old_tz_override);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
+              return -1;
+            }
         }
     }
   else if (get->details)
@@ -28420,7 +29162,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               NULL,
                               0,
                               cert_loaded,
-                              lean);
+                              lean,
+                              0); /* Delta fields. */
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
@@ -28482,7 +29225,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   if (get->details)
     cleanup_iterator (&results);
-  if (delta && get->details)
+  if (delta && get->details && delta_reports_version == 1)
     cleanup_iterator (&delta_results);
 
   /* Print result counts and severity. */
@@ -28570,7 +29313,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           iterator_t hosts;
           init_report_host_iterator (&hosts, report, result_host, 0);
           present = next (&hosts);
-          if (delta && (present == FALSE))
+          if (delta && (present == FALSE) && delta_reports_version == 1)
             {
               cleanup_iterator (&hosts);
               init_report_host_iterator (&hosts, delta, result_host, 0);
