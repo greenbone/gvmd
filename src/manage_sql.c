@@ -22782,49 +22782,68 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @brief SQL for getting current severity.
  */
 #define CURRENT_SEVERITY_SQL                                            \
-  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
-  "           THEN CAST (nvts.cvss_base AS double precision)"           \
-  "           ELSE results.severity"                                    \
+  "coalesce ((CASE WHEN %s.severity > " G_STRINGIFY (SEVERITY_LOG)      \
+  "           THEN CAST (%s.cvss_base AS double precision)"             \
+  "           ELSE %s.severity"                                         \
   "           END),"                                                    \
-  "          results.severity)"
+  "          %s.severity)"
 
 /**
  * @brief Get LATERAL clause for result iterator.
  *
  * @param[in]  apply_overrides   Whether to apply overrides.
  * @param[in]  dynamic_severity  Whether to use dynamic severity.
+ * @param[in]  nvts_table        NVTS table.
+ * @param[in]  results_table     Results table. 
  *
  * @return SQL clause for FROM.
  */
-static const gchar *
-result_iterator_lateral (int apply_overrides, int dynamic_severity)
+static gchar *
+result_iterator_lateral (int apply_overrides, 
+                         int dynamic_severity, 
+                         const char *results_table, 
+                         const char *nvts_table)
 {
   if (apply_overrides && dynamic_severity)
     /* Overrides, dynamic. */
-    return "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
-           " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
-           "                   WHERE result = results.id"
-           "                   AND result_overrides.user = opts.user_id"
-           "                   AND severity_matches_ov"
-           "                        ((SELECT curr_severity FROM curr LIMIT 1),"
-           "                         ov_old_severity)"
-           "                   LIMIT 1),"
-           "                  (SELECT curr_severity FROM curr LIMIT 1))"
-           " AS new_severity)";
+    return g_strdup_printf(
+      " (WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
+      " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+      "                   WHERE result = %s.id"
+      "                   AND result_overrides.user = opts.user_id"
+      "                   AND severity_matches_ov"
+      "                        ((SELECT curr_severity FROM curr LIMIT 1),"
+      "                         ov_old_severity)"
+      "                   LIMIT 1),"
+      "                  (SELECT curr_severity FROM curr LIMIT 1))"
+      " AS new_severity)", 
+      results_table,
+      nvts_table,
+      results_table,
+      results_table, 
+      results_table);
+
   if (apply_overrides)
     /* Overrides, no dynamic. */
-    return "(SELECT new_severity"
-           " FROM result_new_severities_static"
-           " WHERE result_new_severities_static.result = results.id"
-           " AND result_new_severities_static.user = opts.user_id"
-           " LIMIT 1)";
+    return g_strdup_printf(
+      "(SELECT new_severity"
+      " FROM result_new_severities_static"
+      " WHERE result_new_severities_static.result = %s.id"
+      " AND result_new_severities_static.user = opts.user_id"
+      " LIMIT 1)",
+      results_table);
+
   if (dynamic_severity)
     /* No overrides, dynamic. */
-    return "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
+    return g_strdup_printf("(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)",
+                           results_table,
+                           nvts_table,
+                           results_table,
+                           results_table);
   /* No overrides, no dynamic.
    *
    * SELECT because results.severity gives syntax error. */
-  return "(SELECT results.severity AS new_severity)";
+  return g_strdup_printf("(SELECT %s.severity AS new_severity)", results_table);
 }
 
 /**
@@ -22848,7 +22867,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single;
+  gchar *opts_tables, *lateral_clause;
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
@@ -22879,13 +22899,19 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     actual_columns = columns_no_cert;
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+
+  lateral_clause = result_iterator_lateral (apply_overrides,
+                                            dynamic_severity,
+                                            "results",
+                                            "nvts");
+
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  result_iterator_lateral (apply_overrides,
-                                                           dynamic_severity));
+                                  lateral_clause);
   g_free (opts_tables);
+  g_free (lateral_clause);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
@@ -22942,7 +22968,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables, *lateral_clause;
   int apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22962,13 +22988,19 @@ result_count (const get_data_t *get, report_t report, const char* host)
   dynamic_severity = setting_dynamic_severity_int ();
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+
+  lateral_clause = result_iterator_lateral (apply_overrides, 
+                                            dynamic_severity,
+                                            "results",
+                                            "nvts");
+  
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  result_iterator_lateral (apply_overrides,
-                                                           dynamic_severity));
+                                  lateral_clause);
   g_free (opts_tables);
+  g_free (lateral_clause);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
@@ -27316,7 +27348,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
 
 
   gchar *filter, *extra_tables, *extra_where, *extra_where_single;
-  gchar *opts_tables, *extra_with;
+  gchar *opts_tables, *extra_with, *lateral_clause, *with_lateral;
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
@@ -27348,6 +27380,11 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
 
+  lateral_clause = result_iterator_lateral (apply_overrides,
+                                            dynamic_severity,
+                                            "results",
+                                            "nvts");
+
   extra_tables = g_strdup_printf (" JOIN comparison "
                                   " ON results.id = COALESCE (result1_id,"
                                   "                           result2_id)"
@@ -27355,10 +27392,9 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  result_iterator_lateral (apply_overrides,
-                                                          dynamic_severity));                                                         
+                                  lateral_clause);                                                         
 
-  g_free (opts_tables);
+  g_free (lateral_clause);
 
   extra_where = results_extra_where (get->trash, 0, NULL,
                                      apply_overrides, dynamic_severity,
@@ -27373,14 +27409,19 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
 
   free (filter);
 
+  with_lateral = result_iterator_lateral (apply_overrides,
+                                          dynamic_severity,
+                                          "results",
+                                          "nvts_cols");
+
   extra_with = g_strdup_printf(" comparison AS ("
     " SELECT r1.id AS result1_id," 
     " r2.id AS result2_id," 
     " compare_results("
     "  r1.description,"
     "  r2.description,"
-    "  r1.severity::double precision,"
-    "  r2.severity::double precision,"
+    "  r1.new_severity::double precision,"
+    "  r2.new_severity::double precision,"
     "  r1.qod::integer,"
     "  r2.qod::integer,"
        RESULT_HOSTNAME_SQL("r1.hostname", "r1.host", "r1.report")","
@@ -27388,7 +27429,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "  r1.path,"
     "  r2.path) AS state,"
     " r2.description AS delta_description,"
-    " r2.severity AS delta_severity,"
+    " r2.new_severity AS delta_severity,"
     " r2.qod AS delta_qod,"
     " r2.qod_type AS delta_qod_type,"
     " r2.uuid AS delta_uuid,"
@@ -27401,16 +27442,33 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
       RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
       " AS delta_hostname,"
     " r2.nvt_version AS delta_nvt_version"
-    " FROM (SELECT id, description, host, report, port, severity, nvt," 
-    "              qod, uuid, hostname, path FROM results WHERE report = %llu)"
+    " FROM (SELECT results.id, description, host, report, port,"
+    "              severity, nvt, results.qod, results.uuid, hostname," 
+    "              path, r1_lateral.new_severity as new_severity "
+    "       FROM results "
+    "       JOIN (SELECT cvss_base, oid AS nvts_oid from nvts) AS nvts_cols"
+    "       ON nvts_cols.nvts_oid = results.nvt"
+    "       %s, LATERAL %s AS r1_lateral" 
+    "       WHERE report = %llu)"
     " AS r1"
-    " FULL OUTER JOIN (SELECT * FROM results WHERE report = %llu) AS r2"
+    " FULL OUTER JOIN (SELECT results.*, r2_lateral.new_severity AS new_severity" 
+    "                  FROM results" 
+    "                  JOIN (SELECT cvss_base, oid AS nvts_oid from nvts) AS nvts_cols" 
+    "                  ON nvts_cols.nvts_oid = results.nvt" 
+    "                  %s, LATERAL %s AS r2_lateral" 
+    "                  WHERE report = %llu)" 
+    " AS r2"
     " ON r1.host = r2.host"
     " AND r1.port = r2.port" 
     " AND r1.nvt = r2.nvt "
-    " AND (r1.severity = 0) = (r2.severity = 0)"
+    " AND (r1.new_severity = 0) = (r2.new_severity = 0)"
     " )",
-    report, delta);
+    opts_tables,
+    with_lateral,
+    report,
+    opts_tables,
+    with_lateral,
+    delta);
 
   ret = init_get_iterator2_with (results,
                                 "result",
@@ -27435,6 +27493,8 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
+  g_free (with_lateral);
+  g_free (opts_tables);
 
   g_debug ("%s: done", __func__);
 
@@ -56896,7 +56956,7 @@ type_build_select (const char *type, const char *columns_str,
 {
   gchar *filter, *with;
   gchar *from_table, *opts_table;
-  gchar *clause, *extra_where, *filter_order;
+  gchar *clause, *extra_where, *lateral_clause, *filter_order;
   int first, max;
   gchar *owned_clause, *owner_filter;
   array_t *permissions;
@@ -56940,13 +57000,18 @@ type_build_select (const char *type, const char *columns_str,
 
       original = opts_table;
 
+      lateral_clause = result_iterator_lateral (overrides, 
+                                                dynamic, 
+                                                "results", 
+                                                "nvts");
+
       opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                     " ON results.nvt = nvts.oid %s,"
                                     " LATERAL %s AS lateral_new_severity",
                                     original,
-                                    result_iterator_lateral (overrides,
-                                                             dynamic));
+                                    lateral_clause);
       g_free (original);
+      g_free (lateral_clause);
     }
 
   // WHERE ... part
