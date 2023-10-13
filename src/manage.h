@@ -1181,7 +1181,7 @@ result_detection_reference (result_t, report_t, const char *, const char *,
  */
 #define MIN_QOD_DEFAULT 70
 
-/** 
+/**
  * @brief Default size to limit note and override text to in reports.
  */
 #define EXCERPT_SIZE_DEFAULT 300

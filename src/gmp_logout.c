@@ -26,14 +26,22 @@
 #include "gmp_logout.h"
 #include "manage.h"
 
+/**
+ * @brief The logout command.
+ */
 typedef struct
 {
   context_data_t *context;     ///< XML parser context.
 } logout_t;
 
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
 static logout_t logout_data;
 
-/*
+/**
  * @brief Reset command data.
  */
 static void

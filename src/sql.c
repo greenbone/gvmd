@@ -45,7 +45,7 @@
 #define DEADLOCK_SLEEP 1000
 
 /**
- * @brief defines the amount of retries after a deadlock is considered a warning 
+ * @brief defines the amount of retries after a deadlock is considered a warning
  */
 #define DEADLOCK_THRESHOLD 25
 
@@ -285,7 +285,7 @@ sql (char* sql, ...)
             if (deadlock_amount++ > DEADLOCK_THRESHOLD)
               {
                   g_warning("%s: %d deadlocks detected, waiting and retrying %s", __func__, deadlock_amount, sql);
-              } 
+              }
             gvm_usleep (DEADLOCK_SLEEP);
             continue;
          }

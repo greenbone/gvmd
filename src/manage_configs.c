@@ -398,11 +398,11 @@ sync_config_with_feed (const gchar *path, gboolean rebuild)
  * @brief Open the configs feed directory if it is available and the
  * feed owner is set.
  * Optionally set the current user to the feed owner on success.
- * 
+ *
  * The sync will be skipped if the feed directory does not exist or
- *  the feed owner is not set. 
+ *  the feed owner is not set.
  * For configs the NVTs also have to exist.
- * 
+ *
  * @param[out]  dir The directory as GDir if available and feed owner is set,
  * NULL otherwise.
  * @param[in]   set_current_user Whether to set current user to feed owner.
@@ -416,9 +416,9 @@ try_open_configs_feed_dir (GDir **dir, gboolean set_current_user)
   char *feed_owner_uuid, *feed_owner_name;
   GError *error;
   gchar *nvt_feed_version;
-  
+
   *dir = NULL;
-  
+
   /* Test if base feed directory exists */
 
   if (configs_feed_dir_exists () == FALSE)
@@ -533,7 +533,7 @@ sync_configs_with_feed (gboolean rebuild)
 
 /**
  * @brief Tests if the configs feed directory exists.
- * 
+ *
  * @return TRUE if the directory exists.
  */
 gboolean
@@ -553,7 +553,7 @@ manage_sync_configs ()
 
 /**
  * @brief Rebuild configs from the feed.
- * 
+ *
  * @return 0 success, 1 no feed directory, 2 no feed owner, 3 NVTs missing,
  *         -1 error.
  */

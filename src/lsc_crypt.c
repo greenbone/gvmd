@@ -90,8 +90,15 @@ struct lsc_crypt_ctx_s
 
 
 /* Key generation parameters  */
+
+/**
+ * @brief Key type.
+ */
 gchar *enckey_type = NULL;
 
+/**
+ * @brief Key length.
+ */
 int enckey_length = 0;
 
 
@@ -164,6 +171,13 @@ get32 (const void *buffer)
 
 /* Local functions. */
 
+/**
+ * @brief Generate GnupgKeyParms element.
+ *
+ * @param enckey_uid  The Name-Real field.
+ *
+ * @return Element or NULL.
+ */
 static gchar*
 generate_parms_string (const char *enckey_uid)
 {
@@ -181,7 +195,7 @@ generate_parms_string (const char *enckey_uid)
           "%%no-protection\n"
           "%%no-ask-passphrase\n"
           "</GnupgKeyParms>\n",
-          (enckey_length > 0) ? enckey_length 
+          (enckey_length > 0) ? enckey_length
                               : DEFAULT_ENCRYPTION_RSA_KEY_LENGTH,
           enckey_uid
         );
@@ -512,8 +526,10 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
 /**
  * @brief Sets the parameters for creating a new encryption key
  *
- * @param[in]  type   Type of the 
- * @param[in]  length 
+ * @param[in]  type   Type of the key.
+ * @param[in]  length Length of the key.
+ *
+ * @return 0.
  */
 int
 lsc_crypt_enckey_parms_init (const char *type, int length)
@@ -527,6 +543,8 @@ lsc_crypt_enckey_parms_init (const char *type, int length)
 /**
  * @brief Return a new context for LSC encryption
  *
+ * @param[in]  enckey_uid  UID for key, or NULL.  Will be copied.
+
  * @return A new context object to be released with \ref
  *         lsc_crypt_release.
  */
@@ -597,7 +615,7 @@ lsc_crypt_flush (lsc_crypt_ctx_t ctx)
  * @brief Checks if the encryption key defined by the context already exists
  *
  * @param[in] ctx        The context
- * 
+ *
  * @return Whether the key exists
  */
 gboolean

@@ -334,10 +334,10 @@ sync_port_list_with_feed (const gchar *path, gboolean rebuild)
  * @brief Open the port lists feed directory if it is available and the
  * feed owner is set.
  * Optionally set the current user to the feed owner on success.
- * 
+ *
  * The sync will be skipped if the feed directory does not exist or
- *  the feed owner is not set. 
- * 
+ *  the feed owner is not set.
+ *
  * @param[out]  dir The directory as GDir if available and feed owner is set,
  * NULL otherwise.
  * @param[in]   set_current_user Whether to set current user to feed owner.
@@ -401,7 +401,7 @@ try_open_port_lists_feed_dir (GDir **dir, gboolean set_current_user)
 
   return 0;
 }
-  
+
 /**
  * @brief Sync all port lists with the feed.
  *
@@ -451,7 +451,7 @@ sync_port_lists_with_feed (gboolean rebuild)
 
 /**
  * @brief Tests if the port lists feed directory exists.
- * 
+ *
  * @return TRUE if the directory exists.
  */
 gboolean

@@ -195,7 +195,7 @@ manage_create_sql_functions ()
     return -1;
 
   /* Functions in C have been moved to the "pg-gvm" extension. */
-  
+
   /* Operators */
 
   sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
@@ -1753,6 +1753,8 @@ create_view_vulns ()
 
 /**
  * @brief Create NVT related tables.
+ *
+ * @param[in]  suffix  String to append to table names.
  */
 void
 create_tables_nvt (const gchar *suffix)
@@ -3017,7 +3019,7 @@ check_db_sequences ()
 
 /**
  * @brief Check if an extension is available and can be installed.
- * 
+ *
  * @param[in]  name  Name of the extension to check.
  *
  * @return TRUE extension is available, FALSE otherwise.
@@ -3090,7 +3092,7 @@ check_db_extensions ()
 
       // Switch to superuser role and try to install extensions.
       sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
-      
+
       // Clean up old functions now in pg-gvm
       cleanup_old_sql_functions ();
 

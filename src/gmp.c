@@ -4136,7 +4136,7 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
-  
+
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS,
@@ -7276,7 +7276,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (
               CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT);
           }
-       ELSE_READ_OVER; 
+       ELSE_READ_OVER;
      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT:
         if (strcasecmp ("DETAILS", element_name) == 0)
           {
@@ -7714,7 +7714,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
                                 attribute_names, attribute_values);
-	break;
+        break;
       case CLIENT_MODIFY_LICENSE:
         modify_license_element_start (gmp_parser, element_name,
                                       attribute_names, attribute_values);
@@ -8201,7 +8201,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               while (next (&tags))
                 {
-                  buffer_xml_append_printf 
+                  buffer_xml_append_printf
                      (buffer,
                       "<tag id=\"%s\">"
                       "<name>%s</name>"
@@ -8485,7 +8485,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
               while (next (&tags))
                 {
-                  buffer_xml_append_printf 
+                  buffer_xml_append_printf
                      (buffer,
                       "<tag id=\"%s\">"
                       "<name>%s</name>"
@@ -9278,7 +9278,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
               while (next (&tags))
                 {
-                  buffer_xml_append_printf 
+                  buffer_xml_append_printf
                      (buffer,
                       "<tag id=\"%s\">"
                       "<name>%s</name>"
@@ -15812,7 +15812,7 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
               SEND_TO_CLIENT_OR_FAIL
                 ("</status_details>");
             }
-          SEND_TO_CLIENT_OR_FAIL 
+          SEND_TO_CLIENT_OR_FAIL
             ("</create_schedule_response>");
           log_event ("schedule", "Schedule", uuid, "created");
           free (uuid);
@@ -21311,7 +21311,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     log_event_fail ("tag", "Tag", NULL, "created");
                     break;
                   case 2:
-                    SEND_TO_CLIENT_OR_FAIL 
+                    SEND_TO_CLIENT_OR_FAIL
                       ("<create_tag_response"
                        " status=\"" STATUS_ERROR_MISSING "\""
                        " status_text=\"No resources found for filter\"/>");
@@ -21545,7 +21545,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->port_list_id,
                          create_target_data->port_range,
                          ssh_credential,
-			 ssh_elevate_credential,
+                         ssh_elevate_credential,
                          create_target_data->ssh_credential_id
                           ? create_target_data->ssh_port
                           : create_target_data->ssh_lsc_port,
@@ -22867,7 +22867,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         ldap_cacert = g_strdup (kvp->value);
                       else if (strcmp (kvp->key, "ldaps-only") == 0)
                         ldap_ldaps_only = (strcmp (kvp->value, "true") == 0);
-                      
+
                       setting = g_slist_next (setting);
                     }
 
@@ -24080,7 +24080,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("tag", "Tag", NULL, "modified");
                 break;
               case 5:
-                SEND_TO_CLIENT_OR_FAIL 
+                SEND_TO_CLIENT_OR_FAIL
                   ("<modify_tag_response"
                     " status=\"" STATUS_ERROR_MISSING "\""
                     " status_text=\"No resources found for filter\"/>");
@@ -26160,7 +26160,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                     create_report_data->result_detection_source_name)
               {
 
-                detection_detail_t *detail = 
+                detection_detail_t *detail =
                     (detection_detail_t*) g_malloc (sizeof (detection_detail_t));
                 if (detail)
                   {
@@ -26170,17 +26170,17 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                     create_report_data->result_detection_location = NULL;
                     detail->source_oid = create_report_data->result_detection_source_oid;
                     create_report_data->result_detection_source_oid = NULL;
-                    detail->source_name = create_report_data->result_detection_source_name; 
+                    detail->source_name = create_report_data->result_detection_source_name;
                     create_report_data->result_detection_source_name = NULL;
                     array_add(create_report_data->result_detection, detail);
                   }
             }
 
- 
+
 
         }
         break;
-    
+
       APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME,
               &create_report_data->detail_name);
 

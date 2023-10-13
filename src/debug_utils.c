@@ -29,7 +29,7 @@
 
 /**
  * @brief Initialize Sentry using the current gvmd version and DSN.
- * 
+ *
  * The DSN is set via the environment variable SENTRY_DSN_GVMD.
  *
  * @return 1 if sentry support was enabled, 0 if not.

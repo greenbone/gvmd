@@ -582,9 +582,9 @@ DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the XML details / raw data for a given CPE ID.
- * 
+ *
  * @param[in]  cpe_id  ID of the CPE to get the raw XML of.
- * 
+ *
  * @return newly allocated XML details string
  */
 char *
@@ -1001,7 +1001,7 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid)
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
-		 "                                   AND type = 'cve'))"
+                 "                                   AND type = 'cve'))"
                  " ORDER BY name DESC;",
                  oid);
 }
@@ -1205,7 +1205,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
-		 "                                   AND type = 'cve'))"
+                 "                                   AND type = 'cve'))"
                  " ORDER BY name DESC;",
                  oid);
 }
@@ -1860,6 +1860,13 @@ update_cert_bund_advisories (int last_cert_update)
 
 /* SCAP update: CPEs. */
 
+/**
+ * @brief Decode and SQL quote a CPE name.
+ *
+ * @param[in]  name  Name.
+ *
+ * @return Quoted name.
+ */
 static gchar *
 decode_and_quote_cpe_name (const char *name)
 {
@@ -1997,8 +2004,6 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  *
  * @param[in]  inserts            Pointer to SQL buffer.
  * @param[in]  cpe_item           CPE item XML element.
- * @param[in]  item_metadata      Item's metadata element.
- * @param[in]  modification_time  Modification time of item.
  *
  * @return 0 success, -1 error.
  */
@@ -2493,7 +2498,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
   else
      cvss_is_v3 = TRUE;
-  
+
   if (cvss == NULL)
     base_metrics = NULL;
   else

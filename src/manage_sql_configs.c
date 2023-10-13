@@ -871,14 +871,14 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  *
  * @param[in]  config_id    UUID of the config to find.
  * @param[out] config_out   Row ID of the config or 0 if not found.
- * 
+ *
  * @return 0 success, 1 config not found, -1 error.
  */
 int
 manage_modify_config_start (const char *config_id, config_t *config_out)
 {
   sql_begin_immediate ();
-  
+
   if (find_config_with_permission (config_id, config_out, "modify_config"))
     {
       sql_rollback ();
@@ -889,7 +889,7 @@ manage_modify_config_start (const char *config_id, config_t *config_out)
       sql_rollback ();
       return 1;
     }
-  
+
   return 0;
 }
 
@@ -1696,7 +1696,11 @@ check_config_families ()
  *
  * @param[in]  name     The name of the preference.
  * @param[in]  value    The value of the preference.
- * @param[in]  rebuild  Whether a rebuild is happening.
+ * @param[in]  oid      The OID of the NVT.
+ * @param[in]  id       The ID of the preference.
+ * @param[in]  type     The pref_type of the preference.
+ * @param[in]  pref_name  The pref_name of the preference.
+ * @param[in]  rebuild    Whether a rebuild is happening.
  */
 void
 manage_nvt_preference_add (const char *name, const char *value,

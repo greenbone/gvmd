@@ -1716,7 +1716,7 @@ tls_certificate_host_asset_id (const char *host_ip, const char *origin_id)
 
 /**
  * @brief Clean up DNs of TLS Certificates that are not valid UTF-8.
- * 
+ *
  * @return The number of TLS certificates updated.
  */
 int
@@ -1724,18 +1724,18 @@ cleanup_tls_certificate_encoding ()
 {
   int changes = 0;
   iterator_t iterator;
-  
+
   init_iterator (&iterator,
                  "SELECT id, subject_dn, issuer_dn"
                  " FROM tls_certificates"
                  " WHERE subject_dn ~ '[\\x80-\\xFF]'"
                  "   OR issuer_dn ~ '[\\x80-\\xFF]'");
-  
+
   while (next (&iterator))
     {
       tls_certificate_t tls_certificate;
       const char *subject_dn, *issuer_dn;
-  
+
       tls_certificate = iterator_int64 (&iterator, 0);
       subject_dn = iterator_string (&iterator, 1);
       issuer_dn = iterator_string (&iterator, 2);
@@ -1745,7 +1745,7 @@ cleanup_tls_certificate_encoding ()
         {
           gchar *quoted_subject_dn = sql_ascii_escape_and_quote (subject_dn);
           gchar *quoted_issuer_dn = sql_ascii_escape_and_quote (issuer_dn);
-          
+
           sql ("UPDATE tls_certificates"
                " SET subject_dn = '%s', issuer_dn = '%s'"
                " WHERE id = %llu",

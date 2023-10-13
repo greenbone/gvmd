@@ -778,7 +778,7 @@ migrate_212_to_213 ()
       certificate = g_base64_decode (certificate_64, &certificate_size);
       creation_time = iterator_int64 (&tls_certs, 2);
 
-      get_certificate_info ((gchar*)certificate, 
+      get_certificate_info ((gchar*)certificate,
                             certificate_size,
                             NULL,   /* activation_time */
                             NULL,   /* expiration_time */
@@ -2922,7 +2922,7 @@ migrate_249_to_250 ()
        "           WHERE name = 'table_driven_lsc'"
        "           AND type = 'SERVER_PREFS');");
 
-  /* Disable the "table_based_lsc" scanner preference for all policies 
+  /* Disable the "table_based_lsc" scanner preference for all policies
    * in the trashcan. */
   sql ("INSERT INTO config_preferences_trash (config, type, name, value)"
        " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
@@ -2932,7 +2932,7 @@ migrate_249_to_250 ()
        "          (SELECT config FROM config_preferences_trash"
        "           WHERE name = 'table_driven_lsc'"
        "           AND type = 'SERVER_PREFS');");
-  
+
   /* Set the database version to 250. */
 
   set_db_version (250);

@@ -331,7 +331,7 @@ batch_start (int max)
 /**
  * @brief Check an SQL batch.
  *
- * @para[in]  b  Batch.
+ * @param[in]  b  Batch.
  *
  * @return 1 init b->str, 0 continue as normal.
  */
@@ -365,7 +365,7 @@ batch_check (batch_t *b)
 /**
  * @brief End and free an SQL batch.
  *
- * @para[in]  b  Batch.
+ * @param[in]  b  Batch.
  */
 void
 batch_end (batch_t *b)
@@ -414,7 +414,7 @@ insert_vt_refs (const nvti_t *nvti, int rebuild, batch_t *batch)
                                 rebuild ? "_rebuild" : "");
       else
         comma = 1;
-                               
+
       g_string_append_printf (batch->sql,
                               // Newline in case it gets logged.
                               "%s\n ('%s', '%s', '%s', '%s')",
@@ -1594,7 +1594,7 @@ nvti_from_vt (element_t vt)
                 = element_child (severity, "origin");
               severity_date
                 = element_child (severity, "date");
-              
+
               if (severity_date) {
                 gchar *text;
 
@@ -2016,7 +2016,7 @@ init_nvt_severity_iterator (iterator_t* iterator, const char *oid)
  * @brief Gets the type from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The type of the severity.
  */
 DEF_ACCESS (nvt_severity_iterator_type, 0)
@@ -2025,7 +2025,7 @@ DEF_ACCESS (nvt_severity_iterator_type, 0)
  * @brief Gets the origin from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The origin of the severity.
  */
 DEF_ACCESS (nvt_severity_iterator_origin, 1);
@@ -2034,7 +2034,7 @@ DEF_ACCESS (nvt_severity_iterator_origin, 1);
  * @brief Gets the date from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The date of the severity in ISO time format.
  */
 DEF_ACCESS (nvt_severity_iterator_date, 2);
@@ -2043,7 +2043,7 @@ DEF_ACCESS (nvt_severity_iterator_date, 2);
  * @brief Gets the score from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The score of the severity.
  */
 double
@@ -2056,7 +2056,7 @@ nvt_severity_iterator_score (iterator_t *iterator)
  * @brief Gets the value from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The value of the severity in ISO time format.
  */
 DEF_ACCESS (nvt_severity_iterator_value, 4);
