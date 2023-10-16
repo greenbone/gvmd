@@ -15611,7 +15611,7 @@ lookup_nvti (const gchar *nvt)
 static void
 update_nvti_cache ()
 {
-  iterator_t nvts;
+  iterator_t nvts, prefs;
 
   nvtis_free (nvti_cache);
 
@@ -15631,6 +15631,10 @@ update_nvti_cache ()
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
 
+  init_iterator (&prefs,
+                 "SELECT pref_id, pref_nvt, pref_name, value"
+                 " FROM nvt_preferences;");
+
   while (next (&nvts))
     {
       nvti_t *nvti;
@@ -15642,6 +15646,18 @@ update_nvti_cache ()
           nvti_set_oid (nvti, iterator_string (&nvts, 0));
 
           nvtis_add (nvti_cache, nvti);
+
+          while (next (&prefs))
+            if (iterator_string (&prefs, 1)
+                && (strcmp (iterator_string (&prefs, 1),
+                            iterator_string (&nvts, 0))
+                    == 0))
+              nvti_add_pref (nvti,
+                             nvtpref_new (iterator_int (&prefs, 0),
+                                          iterator_string (&prefs, 2),
+                                          iterator_string (&prefs, 3),
+                                          NULL));
+          iterator_rewind (&prefs);
         }
 
       if (iterator_null (&nvts, 2))
@@ -15654,6 +15670,7 @@ update_nvti_cache ()
     }
 
   cleanup_iterator (&nvts);
+  cleanup_iterator (&prefs);
 
   malloc_trim (0);
 }
