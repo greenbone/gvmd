@@ -9233,9 +9233,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       descr = result_iterator_delta_description (results);
       severity = result_iterator_delta_severity (results);
       severity_double = result_iterator_delta_severity_double (results);
-      //TODO use original severity
-      original_severity = result_iterator_delta_severity (results);
-      original_level = result_iterator_delta_level (results);
+      original_severity = result_iterator_delta_original_severity (results);
+      original_level = result_iterator_delta_original_level (results);
       qod = result_iterator_delta_qod (results);
       qod_type = result_iterator_delta_qod_type (results);
       result = result_iterator_delta_result (results);

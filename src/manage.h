@@ -1533,6 +1533,18 @@ result_iterator_delta_severity (iterator_t*);
 double
 result_iterator_delta_severity_double (iterator_t*);
 
+const char*
+result_iterator_delta_level (iterator_t*);
+
+const char *
+result_iterator_delta_original_severity (iterator_t*);
+
+double
+result_iterator_delta_original_severity_double (iterator_t*);
+
+const char*
+result_iterator_delta_original_level (iterator_t*);
+
 const char *
 result_iterator_delta_qod (iterator_t*);
 
@@ -1568,9 +1580,6 @@ result_iterator_delta_nvt_version (iterator_t*);
 
 result_t
 result_iterator_delta_result (iterator_t*);
-
-const char *
-result_iterator_delta_level (iterator_t*);
 
 int
 result_iterator_delta_may_have_notes (iterator_t*);
