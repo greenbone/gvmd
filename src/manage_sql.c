@@ -22272,9 +22272,6 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "delta_nvt_version", NULL, KEYWORD_TYPE_STRING },                       \
     { "result2_id", NULL, KEYWORD_TYPE_INTEGER },                             \
-    { "severity_to_type (results.severity)",                                  \
-      "original_type",                                                        \
-      KEYWORD_TYPE_STRING },                                                  \
     { "(SELECT CASE"                                                          \
       "        WHEN EXISTS (SELECT * FROM notes"                              \
       "                     WHERE (result = result2_id"                       \
@@ -22298,7 +22295,8 @@ where_qod (int min_qod)
       { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                     \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-      { "delta_hostname", NULL, KEYWORD_TYPE_STRING },  
+      { "delta_hostname", NULL, KEYWORD_TYPE_STRING },                        \
+      { "delta_new_severity", NULL, KEYWORD_TYPE_DOUBLE },
 
 /**
  * @brief Delta result iterator columns.
@@ -23565,7 +23563,7 @@ result_iterator_delta_description (iterator_t* iterator)
  * @return delta severity if any, else NULL.
  */
 const char *
-result_iterator_delta_severity (iterator_t* iterator)
+result_iterator_delta_original_severity (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
@@ -23579,12 +23577,40 @@ result_iterator_delta_severity (iterator_t* iterator)
  * @return delta severity (double) if any, else 0.
  */
 double
-result_iterator_delta_severity_double (iterator_t* iterator)
+result_iterator_delta_original_severity_double (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
 }
 
+/**
+ * @brief Get the severity/threat level from a delta result iterator.
+ *
+ * This is the the original level.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The threat level of the delta result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_delta_original_level (iterator_t* iterator)
+{
+  double severity;
+  const char* ret;
+
+  if (iterator->done)
+    return "";
+
+  /* new_severity */
+  if (iterator_null (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2))
+    return "";
+
+  severity = iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
+
+  ret = severity_to_level (severity, 0);
+  return ret ? ret : "";
+}
 
 /**
  * @brief Get delta qod from a result iterator.
@@ -23756,20 +23782,6 @@ result_iterator_delta_result (iterator_t* iterator)
 }
 
 /**
- * @brief Get delta level from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return delta level if any, else NULL.
- */
-const char *
-result_iterator_delta_level (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 15);
-}
-
-/**
  * @brief Get whether there are notes for the delta result from the iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -23780,7 +23792,7 @@ int
 result_iterator_delta_may_have_notes (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 16);
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 15);
 }
 
 /**
@@ -23794,7 +23806,7 @@ int
 result_iterator_delta_may_have_overrides (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 17);
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 16);
 }
 
 /**
@@ -23808,7 +23820,7 @@ int
 result_iterator_delta_may_have_tickets (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 18);
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 17);
 }
 
 /**
@@ -23822,7 +23834,65 @@ const char *
 result_iterator_delta_hostname (iterator_t* iterator)
 {
   if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 18);
+}
+
+
+/**
+ * @brief Get delta severity from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity if any, else NULL.
+ */
+const char *
+result_iterator_delta_severity (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
   return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+}
+
+/**
+ * @brief Get delta severity (double) from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity (double) if any, else 0.
+ */
+double
+result_iterator_delta_severity_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+}
+
+/**
+ * @brief Get the severity/threat level from a delta result iterator.
+ *
+ * This is the the overridden level.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The threat level of the delta result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_delta_level (iterator_t* iterator)
+{
+  double severity;
+  const char* ret;
+
+  if (iterator->done)
+    return "";
+
+  /* new_severity */
+  if (iterator_null (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19))
+    return "";
+
+  severity = iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+
+  ret = severity_to_level (severity, 0);
+  return ret ? ret : "";
 }
 
 
@@ -27429,7 +27499,8 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "  r1.path,"
     "  r2.path) AS state,"
     " r2.description AS delta_description,"
-    " r2.new_severity AS delta_severity,"
+    " r2.new_severity AS delta_new_severity,"
+    " r2.severity AS delta_severity,"    
     " r2.qod AS delta_qod,"
     " r2.qod_type AS delta_qod_type,"
     " r2.uuid AS delta_uuid,"
