@@ -870,6 +870,19 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
+  sql ("CREATE OR REPLACE FUNCTION normalize_port ("
+       "  port text)"
+       "RETURNS text AS $$ "
+       "BEGIN"
+       "  CASE"
+       "  WHEN port = 'package'"
+       "  THEN RETURN 'general/tcp';"
+       "  ELSE RETURN port;"
+       "  END CASE;" 
+       "END;"
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
   /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
