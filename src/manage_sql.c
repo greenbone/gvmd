@@ -15633,7 +15633,8 @@ update_nvti_cache ()
 
   init_iterator (&prefs,
                  "SELECT pref_id, pref_nvt, pref_name, value"
-                 " FROM nvt_preferences;");
+                 " FROM nvt_preferences"
+                 " WHERE NOT (pref_type = 'entry' AND pref_name = 'Timeout')");
 
   while (next (&nvts))
     {
