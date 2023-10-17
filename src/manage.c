@@ -5661,67 +5661,11 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *refs_str, *tags_str, *buffer, *nvt_tags;
+      GString *refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
 
       DEF (family);
-      DEF (tag);
-
-#undef DEF
-
-      nvt_tags = g_string_new (tag_text);
-      g_free (tag_text);
-
-      /* Add the elements that are expected as part of the pipe-separated tag list
-       * via API although internally already explicitly stored. Once the API is
-       * extended to have these elements explicitly, they do not need to be
-       * added to this tag string anymore. */
-      if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|summary=%s",
-                               nvt_iterator_summary (nvts));
-          else
-            xml_string_append (nvt_tags, "summary=%s",
-                               nvt_iterator_summary (nvts));
-        }
-      if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|insight=%s",
-                               nvt_iterator_insight (nvts));
-          else
-            xml_string_append (nvt_tags, "insight=%s",
-                               nvt_iterator_insight (nvts));
-        }
-      if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|affected=%s",
-                               nvt_iterator_affected (nvts));
-          else
-            xml_string_append (nvt_tags, "affected=%s",
-                               nvt_iterator_affected (nvts));
-        }
-      if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|impact=%s",
-                               nvt_iterator_impact (nvts));
-          else
-            xml_string_append (nvt_tags, "impact=%s",
-                               nvt_iterator_impact (nvts));
-        }
-      if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|vuldetect=%s",
-                               nvt_iterator_detection (nvts));
-          else
-            xml_string_append (nvt_tags, "vuldetect=%s",
-                               nvt_iterator_detection (nvts));
-        }
 
       refs_str = g_string_new ("");
 
@@ -5826,6 +5770,64 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
       if (lean == 0)
         {
           char *default_timeout;
+          GString *nvt_tags;
+
+          DEF (tag);
+
+#undef DEF
+
+          nvt_tags = g_string_new (tag_text);
+          g_free (tag_text);
+
+          /* Add the elements that are expected as part of the pipe-separated tag list
+           * via API although internally already explicitly stored. Once the API is
+           * extended to have these elements explicitly, they do not need to be
+           * added to this tag string anymore. */
+          if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|summary=%s",
+                                   nvt_iterator_summary (nvts));
+              else
+                xml_string_append (nvt_tags, "summary=%s",
+                                   nvt_iterator_summary (nvts));
+            }
+          if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|insight=%s",
+                                   nvt_iterator_insight (nvts));
+              else
+                xml_string_append (nvt_tags, "insight=%s",
+                                   nvt_iterator_insight (nvts));
+            }
+          if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|affected=%s",
+                                   nvt_iterator_affected (nvts));
+              else
+                xml_string_append (nvt_tags, "affected=%s",
+                                   nvt_iterator_affected (nvts));
+            }
+          if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|impact=%s",
+                                   nvt_iterator_impact (nvts));
+              else
+                xml_string_append (nvt_tags, "impact=%s",
+                                   nvt_iterator_impact (nvts));
+            }
+          if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|vuldetect=%s",
+                                   nvt_iterator_detection (nvts));
+              else
+                xml_string_append (nvt_tags, "vuldetect=%s",
+                                   nvt_iterator_detection (nvts));
+            }
 
           default_timeout = nvt_default_timeout (oid);
           g_string_append_printf (buffer,
@@ -5858,6 +5860,8 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   refs_str->str,
                                   nvt_tags->str);
           free (default_timeout);
+
+          g_string_free (nvt_tags, 1);
         }
 
       g_string_append_printf (buffer,
@@ -5894,7 +5898,6 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                               "</severities>");
 
       g_free (family_text);
-      g_string_free (nvt_tags, 1);
       g_string_free (refs_str, 1);
       if (tags_str)
         g_string_free (tags_str, 1);
