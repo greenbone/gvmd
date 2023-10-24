@@ -5834,7 +5834,6 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   "<modification_time>%s</modification_time>"
                                   "<category>%d</category>"
                                   "<family>%s</family>"
-                                  "<cvss_base>%s</cvss_base>"
                                   "<qod>"
                                   "<value>%s</value>"
                                   "<type>%s</type>"
@@ -5850,9 +5849,6 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   : "",
                                   nvt_iterator_category (nvts),
                                   family_text,
-                                  nvt_iterator_cvss_base (nvts)
-                                  ? nvt_iterator_cvss_base (nvts)
-                                  : "",
                                   nvt_iterator_qod (nvts),
                                   nvt_iterator_qod_type (nvts),
                                   refs_str->str,
@@ -5861,7 +5857,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
         }
 
       g_string_append_printf (buffer,
-                              "<severities score=\"%s\">",
+                              "<cvss_base>%s</cvss_base>",
                               nvt_iterator_cvss_base (nvts)
                               ? nvt_iterator_cvss_base (nvts)
                               : "");
@@ -5869,6 +5865,12 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
       if (lean == 0)
         {
           iterator_t severities;
+
+          g_string_append_printf (buffer,
+                                  "<severities score=\"%s\">",
+                                  nvt_iterator_cvss_base (nvts)
+                                  ? nvt_iterator_cvss_base (nvts)
+                                  : "");
 
           init_nvt_severity_iterator (&severities, oid);
           while (next (&severities))
@@ -5888,10 +5890,10 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                  nvt_severity_iterator_value (&severities));
             }
           cleanup_iterator (&severities);
-        }
 
-      g_string_append_printf (buffer,
-                              "</severities>");
+          g_string_append_printf (buffer,
+                                  "</severities>");
+        }
 
       g_free (family_text);
       g_string_free (nvt_tags, 1);
