@@ -288,6 +288,11 @@ typedef struct
  */
 #define GET_ITERATOR_COLUMN_COUNT 10
 
+/**
+ * @brief Delta results columns offset for result iterator.
+ */
+#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 37
+
 
 /* Variables */
 
