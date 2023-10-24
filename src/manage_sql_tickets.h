@@ -24,10 +24,10 @@
 /**
  * @brief SQL to check if a result may have tickets.
  */
-#define TICKET_SQL_RESULT_MAY_HAVE_TICKETS                                     \
+#define TICKET_SQL_RESULT_MAY_HAVE_TICKETS(result_col)                         \
  "(SELECT EXISTS (SELECT * FROM tickets"                                       \
  "                WHERE id IN (SELECT ticket FROM ticket_results"              \
- "                             WHERE result = results.id"                      \
+ "                             WHERE result = " result_col                     \
  "                             AND result_location"                            \
  "                                 = " G_STRINGIFY (LOCATION_TABLE) ")))"
 
