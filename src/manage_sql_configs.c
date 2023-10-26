@@ -1762,7 +1762,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s:0:entry:Timeout'"
+                     " AND name != '%s:0:entry:timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
@@ -1782,7 +1782,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%:0:entry:Timeout'"
+                   " AND name NOT %s '%%:0:entry:timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
