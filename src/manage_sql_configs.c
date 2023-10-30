@@ -1958,7 +1958,7 @@ nvt_preference_count (const char *oid)
 {
   gchar *quoted_oid = sql_quote (oid);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE NOT (pref_type = 'entry' AND pref_name = 'Timeout')"
+                     " WHERE NOT (pref_type = 'entry' AND pref_name = 'timeout')"
                      "   AND pref_nvt = '%s';",
                      quoted_oid);
   g_free (quoted_oid);
