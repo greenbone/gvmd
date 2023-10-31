@@ -3142,6 +3142,19 @@ gvmd (int argc, char** argv, char *env[])
         break;
       case -2:
         g_critical ("%s: database is wrong version", __func__);
+        g_critical ("%s: Your database is too old for this version of gvmd.",
+                    __func__);
+        g_critical ("%s: Please migrate to the current data model.", __func__);
+        g_critical ("%s: Use a command like this: gvmd --migrate", __func__);
+        log_config_free ();
+        gvm_close_sentry ();
+        exit (EXIT_FAILURE);
+        break;
+      case -5:
+        g_critical ("%s: database is wrong version", __func__);
+        g_critical ("%s: Your database is too new for this version of gvmd.",
+                    __func__);
+        g_critical ("%s: Please upgrade gvmd to a newer version.", __func__);
         log_config_free ();
         gvm_close_sentry ();
         exit (EXIT_FAILURE);
