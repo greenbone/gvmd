@@ -26843,8 +26843,8 @@ extern buffer_size_t from_client_end;
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -4 max_ips_per_target out of range, -5 database is too new.
  */
 int
 init_gmp (GSList *log_config, const db_conn_info_t *database,

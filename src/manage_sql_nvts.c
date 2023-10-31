@@ -2390,7 +2390,7 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
  * @param[in]  update  0 rebuild, else update.
  *
  * @return 0 success, -1 error, -1 no osp update socket, -2 could not connect
- *         to osp update socket -3 failed to get scanner version
+ *         to osp update socket, -3 failed to get scanner version
  */
 int
 update_or_rebuild_nvts (int update)
@@ -2456,8 +2456,9 @@ update_or_rebuild_nvts (int update)
  * @param[in]  database    Location of manage database.
  *
  * @return 0 success, 1 VT integrity check failed, -1 error,
- *         -2 database is wrong version,
- *         -3 database needs to be initialised from server, -5 sync active.
+ *         -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new, -6 sync active.
  */
 int
 manage_rebuild (GSList *log_config, const db_conn_info_t *database)
@@ -2471,7 +2472,7 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     {
       case 1:
         printf ("A feed sync is already running.\n");
-        return -5;
+        return -6;
       case -1:
         printf ("Error getting sync lock.\n");
         return -1;
@@ -2525,8 +2526,9 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -3 database needs to be initialised from server, -5 sync active.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new, -6 sync active.
  */
 int
 manage_dump_vt_verification (GSList *log_config,
@@ -2540,7 +2542,7 @@ manage_dump_vt_verification (GSList *log_config,
     {
       case 1:
         printf ("A feed sync is already running.\n");
-        return -5;
+        return -6;
       case -1:
         printf ("Error getting sync lock.\n");
         return -1;

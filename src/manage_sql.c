@@ -922,8 +922,9 @@ cert_check_time ()
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Database.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -3 database needs to be initialised from server.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new.
  */
 int
 manage_option_setup (GSList *log_config, const db_conn_info_t *database)
@@ -945,6 +946,14 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database)
         break;
       case -2:
         fprintf (stderr, "Database is wrong version.\n");
+        fprintf (stderr, "Your database is too old for this version of gvmd.\n");
+        fprintf (stderr, "Please migrate to the current data model.\n");
+        fprintf (stderr, "Use a command like this: gvmd --migrate\n");
+        return ret;
+      case -5:
+        fprintf (stderr, "Database is wrong version.\n");
+        fprintf (stderr, "Your database is too new for this version of gvmd.\n");
+        fprintf (stderr, "Please upgrade gvmd to a newer version.\n");
         return ret;
       case -3:
         fprintf (stderr, "Database must be initialised.\n");
@@ -6303,8 +6312,8 @@ encrypt_all_auth_settings (gboolean decrypt_flag)
  * @param[in] database      Location of manage database.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_encrypt_all_credentials (GSList *log_config,
@@ -6344,8 +6353,8 @@ manage_encrypt_all_credentials (GSList *log_config,
  * @param[in] database      Location of manage database.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_decrypt_all_credentials (GSList *log_config,
@@ -6684,8 +6693,8 @@ check_alerts ()
  * @param[in]  database    Location of manage database.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
@@ -16036,7 +16045,7 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 /**
  * @brief Ensure that the databases are the right versions.
  *
- * @return 0 success, -1 error, -2 database is wrong version.
+ * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
  */
 static int
 check_db_versions ()
@@ -16053,14 +16062,20 @@ check_db_versions ()
       if (strcmp (database_version,
                   G_STRINGIFY (GVMD_DATABASE_VERSION)))
         {
+          int existing;
+
           g_message ("%s: database version of database: %s",
                      __func__,
                      database_version);
           g_message ("%s: database version supported by manager: %s",
                      __func__,
                      G_STRINGIFY (GVMD_DATABASE_VERSION));
+
+          existing = atoi (database_version);
+
           g_free (database_version);
-          return -2;
+
+          return GVMD_DATABASE_VERSION > existing ? -2 : -5;
         }
       g_free (database_version);
     }
@@ -16070,15 +16085,22 @@ check_db_versions ()
   scap_db_version = manage_scap_db_version ();
   if (scap_db_version == -1)
     g_message ("No SCAP database found");
-  else if (scap_db_version != manage_scap_db_supported_version ())
+  else
     {
-      g_message ("%s: database version of SCAP database: %i",
-                 __func__,
-                 scap_db_version);
-      g_message ("%s: SCAP database version supported by manager: %s",
-                 __func__,
-                 G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
-      return -2;
+      int supported;
+      
+      supported = manage_scap_db_supported_version ();
+      if (scap_db_version != supported)
+        {
+          g_message ("%s: database version of SCAP database: %i",
+                     __func__,
+                     scap_db_version);
+          g_message ("%s: SCAP database version supported by manager: %s",
+                     __func__,
+                     G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
+
+          return supported > scap_db_version ? -2 : -5;
+        }
     }
 
   /* Check CERT database version. */
@@ -16086,15 +16108,22 @@ check_db_versions ()
   cert_db_version = manage_cert_db_version ();
   if (cert_db_version == -1)
     g_message ("No CERT database found");
-  else if (cert_db_version != manage_cert_db_supported_version ())
+  else
     {
-      g_message ("%s: database version of CERT database: %i",
-                 __func__,
-                 cert_db_version);
-      g_message ("%s: CERT database version supported by manager: %s",
-                 __func__,
-                 G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
-      return -2;
+      int supported;
+
+      supported = manage_cert_db_supported_version ();
+      if (cert_db_version != supported)
+        {
+          g_message ("%s: database version of CERT database: %i",
+                     __func__,
+                     cert_db_version);
+          g_message ("%s: CERT database version supported by manager: %s",
+                     __func__,
+                     G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
+
+          return supported > cert_db_version ? -2 : -5;
+        }
     }
   return 0;
 }
@@ -16757,8 +16786,8 @@ cleanup_tables ()
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -4 max_ips_per_target out of range, -5 database is too new.
  */
 static int
 init_manage_internal (GSList *log_config,
@@ -16913,8 +16942,9 @@ init_manage_internal (GSList *log_config,
  *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server, -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range,
+ *         -5 database is too new.
  */
 int
 init_manage (GSList *log_config, const db_conn_info_t *database,
@@ -16946,8 +16976,9 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server, -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range,
+ *         -5 database is too new.
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
@@ -40183,8 +40214,8 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
  * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server.
+ * @return 0 success, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -5 database is too new.
  */
 int
 manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -40367,8 +40398,8 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  uuid        UUID of scanner.
  *
  * @return 0 success, 2 failed to find scanner, 3 scanner can't be deleted,
- *         -1 error.  -2 database is wrong version, -3 database needs to be
- *         initialised from server.
+ *         -1 error.  -2 database is too old, -3 database needs to be
+ *         initialised from server, -5 database is too new.
  */
 int
 manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -40439,8 +40470,8 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
  *
  * @return 0 success, , 1 failed to find scanner, 2 scanner with new name
  *         exists, 3 scanner_id required, 4 invalid value, 99 permission
- *         denied, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server.
+ *         denied, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -5 database is too new.
  */
 int
 manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -40665,8 +40696,8 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  uuid        UUID of scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
- *         -1 error.  -2 database is wrong version, -3 database needs to be
- *         initialised from server.
+ *         -1 error, -2 database is too old, -3 database needs to be
+ *         initialised from server, -5 database is too new.
  */
 int
 manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -52750,8 +52781,8 @@ manage_default_ca_cert ()
  * @param[in]  role_name   Role of user.  Admin if NULL.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_create_user (GSList *log_config, const db_conn_info_t *database,
@@ -52844,8 +52875,8 @@ manage_create_user (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  inheritor_name  Name of user that inherits user's resources.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks, -1 error.
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_delete_user (GSList *log_config, const db_conn_info_t *database,
@@ -57792,8 +57823,8 @@ delete_permissions_cache_for_user (user_t user)
  * @param[in]  name        Name of optimization.
  *
  * @return 0 success, 1 error in name, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_optimize (GSList *log_config, const db_conn_info_t *database,
