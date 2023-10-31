@@ -109,10 +109,12 @@ create_port_list_element_start (gmp_parser_t *gmp_parser, const gchar *name,
  * @param[out] name          Address for name.
  * @param[out] comment       Address for comment.
  * @param[out] ranges        Address for port ranges.
+ * @param[out] deprecated    Address for deprecation status.
  */
 void
 parse_port_list_entity (entity_t port_list, const char **port_list_id,
-                        char **name, char **comment, array_t **ranges)
+                        char **name, char **comment, array_t **ranges,
+                        char **deprecated)
 {
   entity_t entity, port_ranges;
 
@@ -128,6 +130,14 @@ parse_port_list_entity (entity_t port_list, const char **port_list_id,
   entity = entity_child (port_list, "comment");
   if (entity)
     *comment = entity_text (entity);
+
+  if (deprecated)
+    {
+      *deprecated = NULL;
+      entity = entity_child (port_list, "deprecated");
+      if (entity)
+        *deprecated = entity_text (entity);
+    }
 
   /* Collect port ranges. */
 
@@ -207,7 +217,7 @@ create_port_list_run (gmp_parser_t *gmp_parser, GError **error)
       /* Get the port_list data from the XML. */
 
       parse_port_list_entity (port_list, &port_list_id, &import_name,
-                              &comment, &ranges);
+                              &comment, &ranges, NULL);
 
       /* Check data, then create port list. */
 

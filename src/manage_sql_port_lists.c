@@ -2516,8 +2516,8 @@ migrate_predefined_port_lists ()
 /**
  * @brief Check if a port list has been updated in the feed.
  *
- * @param[in]  path       Full path to port list XML in feed.
  * @param[in]  port_list  Port List.
+ * @param[in]  path       Full path to port list XML in feed.
  *
  * @return 1 if updated in feed, else 0.
  */
@@ -2546,21 +2546,60 @@ port_list_updated_in_feed (port_list_t port_list, const gchar *path)
 }
 
 /**
+ * @brief Check if a deprecated port list has been updated in the feed.
+ *
+ * @param[in]  port_list_id   Port list UUID.
+ * @param[in]  path           Full path to port list XML in feed.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+deprecated_port_list_id_updated_in_feed (const char *port_list_id,
+                                         const gchar *path)
+{
+  gchar *quoted_uuid;
+  GStatBuf state;
+  int last_update;
+
+  quoted_uuid = sql_quote (port_list_id);
+  last_update = sql_int ("SELECT modification_time FROM deprecated_feed_data"
+                         " WHERE type = 'port_list' AND uuid = '%s';",
+                         quoted_uuid);
+  g_free (quoted_uuid);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed port_list file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Update a port list from an XML file.
  *
  * @param[in]  port_list    Existing port list.
  * @param[in]  name         New name.
  * @param[in]  comment      New comment.
  * @param[in]  ranges       New port ranges.
+ * @param[in]  deprecated   Deprecation status.
  */
 void
 update_port_list (port_list_t port_list, const gchar *name,
                   const gchar *comment,
-                  array_t *ranges /* range_t */)
+                  array_t *ranges /* range_t */,
+                  const char *deprecated)
 {
   gchar *quoted_name, *quoted_comment;
   int index;
   range_t *range;
+  char *port_list_id;
 
   sql_begin_immediate ();
 
@@ -2585,7 +2624,30 @@ update_port_list (port_list_t port_list, const gchar *name,
   while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
     insert_port_range (port_list, range->type, range->start, range->end);
 
+  /* Handle deprecation status */
+
+  port_list_id = resource_uuid ("port_list", port_list);
+  if (deprecated && atoi (deprecated))
+    {
+      if (resource_id_deprecated ("port_list", port_list_id) == 0)
+        {
+          g_info ("Port list %s is now deprecated.",
+                  port_list_id);
+        }
+      set_resource_id_deprecated ("port_list", port_list_id, TRUE);
+    }
+  else
+    {
+      if (resource_id_deprecated ("port_list", port_list_id))
+        {
+          set_resource_id_deprecated ("port_list", port_list_id, FALSE);
+          g_info ("Deprecation of port list %s has been revoked.",
+                  port_list_id);
+        }
+    }
+
   sql_commit ();
+  free (port_list_id);
 }
 
 /**

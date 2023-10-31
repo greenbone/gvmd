@@ -4322,8 +4322,8 @@ migrate_predefined_configs ()
 /**
  * @brief Check if a config has been updated in the feed.
  *
- * @param[in]  path    Full path to config XML in feed.
  * @param[in]  config  Config.
+ * @param[in]  path    Full path to config XML in feed.
  *
  * @return 1 if updated in feed, else 0.
  */
@@ -4352,6 +4352,42 @@ config_updated_in_feed (config_t config, const gchar *path)
 }
 
 /**
+ * @brief Check if a deprecated config has been updated in the feed.
+ *
+ * @param[in]  config_id  Config UUID.
+ * @param[in]  path       Full path to Config XML in feed.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+deprecated_config_id_updated_in_feed (const char *config_id,
+                                      const gchar *path)
+{
+  gchar *quoted_uuid;
+  GStatBuf state;
+  int last_update;
+
+  quoted_uuid = sql_quote (config_id);
+  last_update = sql_int ("SELECT modification_time FROM deprecated_feed_data"
+                         " WHERE type = 'config' AND uuid = '%s';",
+                         quoted_uuid);
+  g_free (quoted_uuid);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed config file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Update a config from an XML file.
  *
  * @param[in]  config       Existing config.
@@ -4361,15 +4397,17 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  all_selector  Whether to use "all" selector instead of selectors.
  * @param[in]  selectors     New NVT selectors.
  * @param[in]  preferences   New preferences.
+ * @param[in]  deprecated    Deprecation status.
  */
 void
 update_config (config_t config, const gchar *name,
                const gchar *comment, const gchar *usage_type,
                int all_selector,
                const array_t* selectors /* nvt_selector_t. */,
-               const array_t* preferences /* preference_t. */)
+               const array_t* preferences /* preference_t. */,
+               const gchar *deprecated)
 {
-  gchar *quoted_name, *quoted_comment, *actual_usage_type;
+  gchar *quoted_name, *quoted_comment, *actual_usage_type, *config_id;
 
   sql_begin_immediate ();
 
@@ -4450,6 +4488,29 @@ update_config (config_t config, const gchar *name,
        "           WHERE name = 'table_driven_lsc'"
        "           AND type = 'SERVER_PREFS');",
        config);
+
+  /* Handle deprecation status */
+
+  config_id = resource_uuid ("config", config);
+  if (deprecated && atoi (deprecated))
+    {
+      if (resource_id_deprecated ("config", config_id) == 0)
+        {
+          g_info ("Config %s is now deprecated.",
+                  config_id);
+        }
+      set_resource_id_deprecated ("config", config_id, TRUE);
+    }
+  else
+    {
+      if (resource_id_deprecated ("config", config_id))
+        {
+          set_resource_id_deprecated ("config", config_id, FALSE);
+          g_info ("Deprecation of config %s has been revoked.",
+                  config_id);
+        }
+    }
+  g_free (config_id);
 
   sql_commit ();
 }

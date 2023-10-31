@@ -4129,13 +4129,15 @@ delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
  * @param[in]  files            New files.
  * @param[in]  params           New params.
  * @param[in]  params_options   Options for new params.
+ * @param[in]  deprecated       New deprecation status.
  */
 void
-update_report_format (report_format_t report_format, const gchar *report_id, const gchar *name,
+update_report_format (report_format_t report_format, const gchar *report_id,
+                      const gchar *name,
                       const gchar *content_type, const gchar *extension,
                       const gchar *summary, const gchar *description,
                       const gchar *signature, array_t *files, array_t *params,
-                      array_t *params_options)
+                      array_t *params_options, const char *deprecated)
 {
   int ret;
   gchar *quoted_name, *quoted_content_type, *quoted_extension, *quoted_summary;
@@ -4205,14 +4207,35 @@ update_report_format (report_format_t report_format, const gchar *report_id, con
 
   save_report_format_files (report_id, files, NULL);
 
+  /* Handle deprecation status */
+
+  if (deprecated && atoi (deprecated))
+    {
+      if (resource_id_deprecated ("report_format", report_id) == 0)
+        {
+          g_info ("Report format %s is now deprecated.",
+                  report_id);
+        }
+      set_resource_id_deprecated ("report_format", report_id, TRUE);
+    }
+  else
+    {
+      if (resource_id_deprecated ("report_format", report_id))
+        {
+          set_resource_id_deprecated ("report_format", report_id, FALSE);
+          g_info ("Deprecation of report format %s has been revoked.",
+                  report_id);
+        }
+    }
+
   sql_commit ();
 }
 
 /**
  * @brief Check if a report format has been updated in the feed.
  *
- * @param[in]  path           Full path to report format XML in feed.
  * @param[in]  report_format  Report Format.
+ * @param[in]  path           Full path to report format XML in feed.
  *
  * @return 1 if updated in feed, else 0.
  */
@@ -4225,6 +4248,42 @@ report_format_updated_in_feed (report_format_t report_format, const gchar *path)
   last_update = sql_int ("SELECT modification_time FROM report_formats"
                          " WHERE id = %llu;",
                          report_format);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed report_format file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
+ * @brief Check if a deprecated report format has been updated in the feed.
+ *
+ * @param[in]  report_format_id  Report Format UUID.
+ * @param[in]  path              Full path to report format XML in feed.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+deprecated_report_format_id_updated_in_feed (const char *report_format_id,
+                                             const gchar *path)
+{
+  gchar *quoted_uuid;
+  GStatBuf state;
+  int last_update;
+
+  quoted_uuid = sql_quote (report_format_id);
+  last_update = sql_int ("SELECT modification_time FROM deprecated_feed_data"
+                         " WHERE type = 'report_format' AND uuid = '%s';",
+                         quoted_uuid);
+  g_free (quoted_uuid);
 
   if (g_stat (path, &state))
     {

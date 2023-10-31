@@ -391,6 +391,7 @@ update_report_format_from_file (report_format_t report_format,
   entity_t entity;
   array_t *files, *params, *params_options;
   char *name, *content_type, *extension, *summary, *description, *signature;
+  char *deprecated;
   const char *report_format_id;
 
   g_debug ("%s: updating %s", __func__, path);
@@ -405,13 +406,13 @@ update_report_format_from_file (report_format_t report_format,
   parse_report_format_entity (entity, &report_format_id, &name,
                               &content_type, &extension, &summary,
                               &description, &signature, &files, &params,
-                              &params_options);
+                              &params_options, &deprecated);
 
   /* Update the report format. */
 
   update_report_format (report_format, report_format_id, name, content_type,
                         extension, summary, description, signature, files,
-                        params, params_options);
+                        params, params_options, deprecated);
 
   /* Cleanup. */
 
@@ -482,6 +483,7 @@ create_report_format_from_file (const gchar *path)
   entity_t report_format;
   array_t *files, *params, *params_options;
   char *name, *content_type, *extension, *summary, *description, *signature;
+  char *deprecated;
   const char *report_format_id;
   report_format_t new_report_format;
 
@@ -497,7 +499,17 @@ create_report_format_from_file (const gchar *path)
   parse_report_format_entity (report_format, &report_format_id, &name,
                               &content_type, &extension, &summary,
                               &description, &signature, &files, &params,
-                              &params_options);
+                              &params_options, &deprecated);
+
+  /* Handle deprecation status */
+
+  if (deprecated && atoi (deprecated))
+    {
+      g_debug ("Skipping import of deprecated report format %s.",
+               report_format_id);
+      set_resource_id_deprecated ("report_format", report_format_id, TRUE);
+      return 0;
+    }
 
   /* Create the report format. */
 
@@ -625,6 +637,24 @@ should_sync_report_format_from_path (const char *path,
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
+
+  if (resource_id_deprecated ("report_format", uuid))
+    {
+      find_report_format_no_acl (uuid, report_format);
+      
+      if (rebuild)
+        return 1;
+
+      full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
+      if (deprecated_report_format_id_updated_in_feed (uuid, full_path))
+        {
+          g_free (full_path);
+          return 1;
+        }
+      g_free (full_path);
+      return 0;
+    }
+
   if (find_report_format_no_acl (uuid, report_format) == 0
       && *report_format)
     {
@@ -639,6 +669,7 @@ should_sync_report_format_from_path (const char *path,
 
       if (report_format_updated_in_feed (*report_format, full_path))
         {
+          g_free (full_path);
           return 1;
         }
 

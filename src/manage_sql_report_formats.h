@@ -71,10 +71,13 @@ void
 update_report_format (report_format_t, const gchar *, const gchar *,
                       const gchar *, const gchar *, const gchar *,
                       const gchar *, const gchar *, array_t *, array_t *,
-                      array_t *);
+                      array_t *, const gchar *);
 
 int
 report_format_updated_in_feed (report_format_t, const gchar *);
+
+int
+deprecated_report_format_id_updated_in_feed (const char*, const gchar *);
 
 int
 migrate_predefined_report_formats ();
