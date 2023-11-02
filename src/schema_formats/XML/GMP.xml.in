@@ -1946,6 +1946,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>apps</e>
             <e>ssl_certs</e>
             <any><e>host</e></any>
+            <e>tls_certificates</e>
             <e>timestamp</e>
             <e>scan_start</e>
             <e>scan_end</e>
@@ -2811,6 +2812,124 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>extra</name>
             <summary>Extra info (NVT CVSS for closed CVE results)</summary>
             <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>tls_certificates</name>
+        <summary>List of TLS certificates found with the scan</summary>
+        <pattern>
+          <any><e>tls_certificate</e></any>
+        </pattern>
+        <ele>
+          <name>tls_certificate</name>
+          <summary>TLS certificate found with the scan</summary>
+          <pattern>
+            <e>name</e>
+            <e>certificate</e>
+            <e>sha256_fingerprint</e>
+            <e>md5_fingerprint</e>
+            <e>valid</e>
+            <e>activation_time</e>
+            <e>expiration_time</e>
+            <e>subject_dn</e>
+            <e>issuer_dn</e>
+            <e>serial</e>
+            <e>host</e>
+            <e>ports</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the TLS certificate</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>certificate</name>
+            <summary>The Base64 encoded certificate data</summary>
+            <pattern>
+              <attrib>
+                <name>format</name>
+                <summary>The format of the certificate</summary>
+                <type>
+                  <alts>
+                    <alt>DER</alt>
+                    <alt>PEM</alt>
+                    <alt>unknown</alt>
+                  </alts>
+                </type>
+                <required>1</required>
+              </attrib>
+            </pattern>
+          </ele>
+          <ele>
+            <name>sha256_fingerprint</name>
+            <summary>The SHA256 fingerprint of the certificate</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>md5_fingerprint</name>
+            <summary>The MD5 fingerprint of the certificate</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>valid</name>
+            <summary>Whether the certificate is currently valid</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>activation_time</name>
+            <summary>Time before which the certificate is not valid</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+          <ele>
+            <name>expiration_time</name>
+            <summary>Time after which the certificate is not valid</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+          <ele>
+            <name>subject_dn</name>
+            <summary>Distinguished name (DN) of the certificate subject</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>issuer_dn</name>
+            <summary>Distinguished name (DN) of the certificate issuer</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>serial</name>
+            <summary>Hexadecimal serial number of the certificate</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>host</name>
+            <summary>Host where the certificate was found</summary>
+            <pattern>
+              <e>ip</e>
+              <e>hostname</e>
+            </pattern>
+            <ele>
+              <name>ip</name>
+              <summary>IP address of the host</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>hostname</name>
+              <summary>If available, the hostname from host details</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>ports</name>
+            <summary>List of ports where the certificate was found</summary>
+            <pattern>
+              <any><e>port</e></any>
+            </pattern>
+            <ele>
+              <name>port</name>
+              <summary>Port where the certificate was found</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>           
           </ele>
         </ele>
       </ele>
