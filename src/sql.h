@@ -129,6 +129,9 @@ sql_commit ();
 void
 sql_rollback ();
 
+int
+sql_table_lock_wait (const char *, int);
+
 /* Iterators. */
 
 /* These functions are for "internal" use.  They may only be accessed by code

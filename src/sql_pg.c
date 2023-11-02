@@ -602,6 +602,27 @@ sql_rollback ()
   sql ("ROLLBACK;");
 }
 
+/**
+ * Try to lock a table, timing out after a given time.
+ *
+ * @param[in]  table         The table to lock.
+ * @param[in]  lock_timeout  The lock timeout in milliseconds, 0 for unlimited.
+ * 
+ * @return 1 if locked, 0 if failed / timed out.
+ */
+int
+sql_table_lock_wait (const char *table, int lock_timeout)
+{
+  int old_lock_timeout = sql_int ("SHOW lock_timeout;");
+  sql ("SET LOCAL lock_timeout = %d;", lock_timeout);
+  
+  // This requires the gvmd functions to be defined first.
+  int ret = sql_int ("SELECT try_exclusive_lock_wait ('%s');", table);
+  
+  sql ("SET LOCAL lock_timeout = %d;", old_lock_timeout);
+  return ret;
+}
+
 
 /* Iterators. */
 
