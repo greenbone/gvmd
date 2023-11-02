@@ -93,12 +93,12 @@
  *        LOCK TABLE .. IN ACCESS EXLUSIVE MODE NOWAIT
  *        statements.
  */
-#define LOCK_RETRIES 16
+#define LOCK_RETRIES 64
 
 /**
- * @brief Time of delay between two lock retries.
+ * @brief Timeout for trying to acquire a lock in milliseconds.
  */
-#define LOCK_RETRY_DELAY 2
+#define LOCK_TIMEOUT 500
 
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
@@ -25528,11 +25528,10 @@ delete_report (const char *report_id, int dummy)
    * If the report is running already then delete_report_internal will
    * ROLLBACK. */
   lock_retries = LOCK_RETRIES;
-  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+  lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
-      sleep(LOCK_RETRY_DELAY);
-      lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+      lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
       lock_retries--;
     }
   if (lock_ret == 0)
@@ -31264,11 +31263,10 @@ delete_task_lock (task_t task, int ultimate)
    * If the task is already active then delete_report (via delete_task)
    * will fail and rollback. */
   lock_retries = LOCK_RETRIES;
-  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+  lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
-      sleep(LOCK_RETRY_DELAY);
-      lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+      lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
       lock_retries--;
     }
   if (lock_ret == 0)
@@ -31444,11 +31442,10 @@ request_delete_task_uuid (const char *task_id, int ultimate)
                * If the task is running already then delete_task will lead to
                * ROLLBACK. */
               lock_retries = LOCK_RETRIES;
-              lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+              lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
               while ((lock_ret == 0) && (lock_retries > 0))
                 {
-                  sleep(LOCK_RETRY_DELAY);
-                  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+                  lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
                   lock_retries--;
                 }
               if (lock_ret == 0)
