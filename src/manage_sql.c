@@ -26968,12 +26968,12 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
     return -1;
 
   init_iterator (&tls_certs,
-                "SELECT rhd.value, rhd.name, rhd.source_name"
-                " FROM report_host_details AS rhd"
-                " WHERE rhd.report_host = %llu"
-                "   AND (source_description = 'SSL/TLS Certificate'"
-                "        OR source_description = 'SSL Certificate')",
-                report_host);
+                 "SELECT rhd.value, rhd.name, rhd.source_name"
+                 " FROM report_host_details AS rhd"
+                 " WHERE rhd.report_host = %llu"
+                 "   AND (source_description = 'SSL/TLS Certificate'"
+                 "        OR source_description = 'SSL Certificate')",
+                 report_host);
   
   while (next (&tls_certs)) 
     {
@@ -27096,12 +27096,12 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       free (hostname);
     
       init_iterator (&ports,
-                  "SELECT value FROM report_host_details"
-                  " WHERE report_host = %llu"
-                  "   AND name = 'SSLInfo'"
-                  "   AND value LIKE '%%:%%:%s'",
-                  report_host,
-                  quoted_scanner_fpr);
+                     "SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     "   AND name = 'SSLInfo'"
+                     "   AND value LIKE '%%:%%:%s'",
+                     report_host,
+                     quoted_scanner_fpr);
      
       PRINT (stream, "<ports>");
 
