@@ -156,6 +156,7 @@ params_options_free (array_t *params_options)
  * @param[out] files             Address for files.
  * @param[out] params            Address for params.
  * @param[out] params_options    Address for param options.
+ * @param[out] deprecated        Address for deprecation status.
  */
 void
 parse_report_format_entity (entity_t report_format,
@@ -163,7 +164,8 @@ parse_report_format_entity (entity_t report_format,
                             char **content_type, char **extension,
                             char **summary, char **description,
                             char **signature, array_t **files,
-                            array_t **params, array_t **params_options)
+                            array_t **params, array_t **params_options,
+                            char **deprecated)
 {
   entity_t file, param_entity;
   entities_t children;
@@ -177,6 +179,8 @@ parse_report_format_entity (entity_t report_format,
   *summary = child_or_null (report_format, "summary");
   *description = child_or_null (report_format, "description");
   *signature = child_or_null (report_format, "signature");
+  if (deprecated)
+    *deprecated = child_or_null (report_format, "deprecated");
 
   *files = make_array ();
   *params = make_array ();
@@ -367,7 +371,7 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
       parse_report_format_entity (report_format, &report_format_id,
                                   &import_name, &content_type, &extension,
                                   &summary, &description, &signature, &files,
-                                  &params, &params_options);
+                                  &params, &params_options, NULL);
 
       /* Check data, then create report format. */
 

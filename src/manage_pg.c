@@ -1993,6 +1993,13 @@ create_tables ()
        "  type TEXT,"
        "  value TEXT);");
 
+  sql ("CREATE TABLE IF NOT EXISTS deprecated_feed_data"
+       " (id SERIAL PRIMARY KEY,"
+       "  type TEXT,"
+       "  uuid TEXT,"
+       "  modification_time INTEGER,"
+       "  UNIQUE (type, uuid));");
+
   sql ("CREATE TABLE IF NOT EXISTS filters"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

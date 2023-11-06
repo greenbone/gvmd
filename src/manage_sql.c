@@ -4749,6 +4749,63 @@ manage_trash_resource_name (const char *type, const char *uuid, char **name)
 }
 
 /**
+ * @brief Check if a resource has been marked as deprecated.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource_id  UUID of the resource.
+ *
+ * @return 1 if deprecated, else 0.
+ */
+int
+resource_id_deprecated (const char *type, const char *resource_id)
+{
+  int ret;
+  gchar *quoted_type = sql_quote (type);
+  gchar *quoted_uuid = sql_quote (resource_id);
+
+  ret = sql_int ("SELECT count(*) FROM deprecated_feed_data"
+                 " WHERE type = '%s' AND uuid = '%s';",
+                 quoted_type, quoted_uuid);
+
+  g_free (quoted_type);
+  g_free (quoted_uuid);
+
+  return ret != 0;
+}
+
+/**
+ * @brief Mark whether resource is deprecated.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource_id  UUID of the resource.
+ * @param[in]  deprecated   Whether the resource is deprecated.
+ */
+void
+set_resource_id_deprecated (const char *type, const char *resource_id,
+                            gboolean deprecated)
+{
+  gchar *quoted_type = sql_quote (type);
+  gchar *quoted_uuid = sql_quote (resource_id);
+
+  if (deprecated)
+    {
+      sql ("INSERT INTO deprecated_feed_data (type, uuid, modification_time)"
+           " VALUES ('%s', '%s', m_now ())"
+           " ON CONFLICT (uuid, type)"
+           " DO UPDATE SET modification_time = m_now ()",
+           quoted_type, quoted_uuid);
+    }
+  else
+    {
+      sql ("DELETE FROM deprecated_feed_data"
+           " WHERE type = '%s' AND uuid = '%s'",
+           quoted_type, quoted_uuid);
+    }
+  g_free (quoted_type);
+  g_free (quoted_uuid);
+}
+
+/**
  * @brief Get the UUID of a resource.
  *
  * @param[in]  type      Type.

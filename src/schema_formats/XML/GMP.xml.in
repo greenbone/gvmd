@@ -7459,6 +7459,7 @@ END:VCALENDAR
           <o><e>preferences</e></o>
           <o><e>nvt_selectors</e></o>
           <e>predefined</e>
+          <o><e>deprecated</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -7836,6 +7837,11 @@ END:VCALENDAR
         <ele>
           <name>predefined</name>
           <summary>Whether the config was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>deprecated</name>
+          <summary>Whether the config is deprecated</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
@@ -14910,6 +14916,7 @@ END:VCALENDAR
           <o><e>port_ranges</e></o>
           <o><e>targets</e></o>
           <e>predefined</e>
+          <o><e>deprecated</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -15112,6 +15119,11 @@ END:VCALENDAR
         <ele>
           <name>predefined</name>
           <summary>Whether the port list was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>deprecated</name>
+          <summary>Whether the port list is deprecated</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
@@ -16522,6 +16534,7 @@ END:VCALENDAR
           <e>trust</e>
           <e>active</e>
           <e>predefined</e>
+          <o><e>deprecated</e></o>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -16778,11 +16791,11 @@ END:VCALENDAR
               <required>1</required>
             </attrib>
             <e>time</e>
-			<alts>
-			  <alt>yes</alt>
-			  <alt>no</alt>
-			  <alt>unknown</alt>
-			</alts>
+            <alts>
+              <alt>yes</alt>
+              <alt>no</alt>
+              <alt>unknown</alt>
+            </alts>
           </pattern>
           <ele>
             <name>time</name>
@@ -16798,6 +16811,11 @@ END:VCALENDAR
         <ele>
           <name>predefined</name>
           <summary>Whether the report format was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>deprecated</name>
+          <summary>Whether the report format is deprecated</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
       </ele>

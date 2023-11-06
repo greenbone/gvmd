@@ -182,6 +182,7 @@ attr_or_null (entity_t entity, const gchar *name)
  * @param[out] all_selector          True if ALL_SELECTOR was present.
  * @param[out] import_nvt_selectors  Address for selectors.
  * @param[out] import_preferences    Address for preferences.
+ * @param[out] deprecated            Address for deprecation status.
  *
  * @return 0 success, 1 preference did no exist, -1 preference without ID.
  */
@@ -190,7 +191,8 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                      char **comment, char **usage_type,
                      int *all_selector,
                      array_t **import_nvt_selectors,
-                     array_t **import_preferences)
+                     array_t **import_preferences,
+                     char **deprecated)
 {
   entity_t entity, preferences, nvt_selectors;
 
@@ -215,6 +217,14 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
         *usage_type = entity_text (entity);
       else
         *usage_type = NULL;
+    }
+
+  if (deprecated)
+    {
+      *deprecated = NULL;
+      entity = entity_child (config, "deprecated");
+      if (entity)
+        *deprecated = entity_text (entity);
     }
 
   /* Collect NVT selectors. */
@@ -416,7 +426,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       if (parse_config_entity (config, NULL, &import_name, &comment,
                                NULL, &all_selector, &import_nvt_selectors,
-                               &import_preferences))
+                               &import_preferences, NULL))
         {
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("create_config",

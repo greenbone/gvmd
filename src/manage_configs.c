@@ -141,7 +141,7 @@ update_config_from_file (config_t config, const gchar *path)
 {
   entity_t entity;
   array_t *nvt_selectors, *preferences;
-  char *comment, *name, *usage_type;
+  char *comment, *name, *usage_type, *deprecated;
   const char *config_id;
   int all_selector;
 
@@ -156,7 +156,7 @@ update_config_from_file (config_t config, const gchar *path)
 
   switch (parse_config_entity (entity, &config_id, &name, &comment,
                                &usage_type, &all_selector, &nvt_selectors,
-                               &preferences))
+                               &preferences, &deprecated))
     {
       case 0:
         break;
@@ -174,7 +174,7 @@ update_config_from_file (config_t config, const gchar *path)
   /* Update the config. */
 
   update_config (config, name, comment, usage_type, all_selector,
-                 nvt_selectors, preferences);
+                 nvt_selectors, preferences, deprecated);
 
   /* Cleanup. */
 
@@ -197,7 +197,7 @@ create_config_from_file (const gchar *path)
 {
   entity_t config;
   array_t *nvt_selectors, *preferences;
-  char *created_name, *comment, *name, *usage_type;
+  char *created_name, *comment, *name, *usage_type, *deprecated;
   const char *config_id;
   config_t new_config;
   int all_selector;
@@ -213,7 +213,7 @@ create_config_from_file (const gchar *path)
 
   switch (parse_config_entity (config, &config_id, &name, &comment,
                                &usage_type, &all_selector, &nvt_selectors,
-                               &preferences))
+                               &preferences, &deprecated))
     {
       case 0:
         break;
@@ -226,6 +226,16 @@ create_config_from_file (const gchar *path)
         free_entity (config);
         g_warning ("%s: Failed to parse entity", __func__);
         return -1;
+    }
+
+  /* Handle deprecation status */
+
+  if (deprecated && atoi (deprecated))
+    {
+      g_debug ("Skipping import of deprecated config %s.",
+               config_id);
+      set_resource_id_deprecated ("config", config_id, TRUE);
+      return 0;
     }
 
   /* Create the config. */
@@ -329,11 +339,37 @@ should_sync_config_from_path (const char *path, gboolean rebuild,
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
+
+  if (resource_id_deprecated ("config", uuid))
+    {
+      find_config_no_acl (uuid, config);
+      
+      if (rebuild)
+        {
+          g_free (uuid);
+          return 1;
+        }
+
+      full_path = g_build_filename (feed_dir_configs (), path, NULL);
+      if (deprecated_config_id_updated_in_feed (uuid, full_path))
+        {
+          g_free (uuid);
+          g_free (full_path);
+          return 1;
+        }
+      g_free (uuid);
+      g_free (full_path);
+      return 0;
+    }
+
   if (find_config_no_acl (uuid, config) == 0
       && *config)
     {
       if (rebuild)
-        return 1;
+        {
+          g_free (uuid);
+          return 1;
+        }
 
       full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
@@ -343,6 +379,7 @@ should_sync_config_from_path (const char *path, gboolean rebuild,
 
       if (config_updated_in_feed (*config, full_path))
         {
+          g_free (full_path);
           return 1;
         }
 
