@@ -4774,7 +4774,7 @@ resource_id_deprecated (const char *type, const char *resource_id)
 }
 
 /**
- * @brief Mark whether resource as deprecated.
+ * @brief Mark whether resource is deprecated.
  *
  * @param[in]  type         Resource type.
  * @param[in]  resource_id  UUID of the resource.

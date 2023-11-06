@@ -643,7 +643,10 @@ should_sync_report_format_from_path (const char *path,
       find_report_format_no_acl (uuid, report_format);
       
       if (rebuild)
-        return 1;
+        {
+          g_free (uuid);
+          return 1;
+        }
 
       full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
       if (deprecated_report_format_id_updated_in_feed (uuid, full_path))
@@ -651,6 +654,7 @@ should_sync_report_format_from_path (const char *path,
           g_free (full_path);
           return 1;
         }
+      g_free (uuid);
       g_free (full_path);
       return 0;
     }
@@ -659,7 +663,10 @@ should_sync_report_format_from_path (const char *path,
       && *report_format)
     {
       if (rebuild)
-        return 1;
+        {
+          g_free (uuid);
+          return 1;
+        }
 
       full_path = g_build_filename (feed_dir_report_formats (), path, NULL);
 

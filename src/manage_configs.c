@@ -345,14 +345,19 @@ should_sync_config_from_path (const char *path, gboolean rebuild,
       find_config_no_acl (uuid, config);
       
       if (rebuild)
-        return 1;
+        {
+          g_free (uuid);
+          return 1;
+        }
 
       full_path = g_build_filename (feed_dir_configs (), path, NULL);
       if (deprecated_config_id_updated_in_feed (uuid, full_path))
         {
+          g_free (uuid);
           g_free (full_path);
           return 1;
         }
+      g_free (uuid);
       g_free (full_path);
       return 0;
     }
@@ -361,7 +366,10 @@ should_sync_config_from_path (const char *path, gboolean rebuild,
       && *config)
     {
       if (rebuild)
-        return 1;
+        {
+          g_free (uuid);
+          return 1;
+        }
 
       full_path = g_build_filename (feed_dir_configs (), path, NULL);
 
