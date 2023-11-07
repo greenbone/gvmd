@@ -569,7 +569,7 @@ manage_create_sql_functions ()
        "   user_zone text;"
        " BEGIN"
        "   user_zone :="
-       "     coalesce ((SELECT current_setting ('gvmd.tz_override')),"
+       "     coalesce (NULLIF((SELECT current_setting ('gvmd.tz_override')), ''),"
        "               (SELECT timezone FROM users"
        "                WHERE id = gvmd_user ()));"
        " RETURN iso_time (seconds, user_zone);"
