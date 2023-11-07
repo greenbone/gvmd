@@ -41,7 +41,7 @@ create_config_element_text (const gchar *, gsize);
 
 int
 parse_config_entity (entity_t, const char **, char **, char **,
-                     char **, int *, array_t **, array_t **);
+                     char **, int *, array_t **, array_t **, char **);
 
 /* modify_config */
 

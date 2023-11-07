@@ -11773,6 +11773,12 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
         }
       SEND_GET_COMMON (config, &get_configs_data->get, &configs);
 
+      if (resource_id_deprecated ("config",
+                                  get_iterator_uuid (&configs)))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<deprecated>1</deprecated>");
+        }
+
       /** @todo This should really be an nvt_selector_t. */
       selector = config_iterator_nvt_selector (&configs);
       config = get_iterator_resource (&configs);
@@ -14046,6 +14052,12 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
       SEND_GET_COMMON (port_list, &get_port_lists_data->get,
                         &port_lists);
 
+      if (resource_id_deprecated ("port_list",
+                                  get_iterator_uuid (&port_lists)))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<deprecated>1</deprecated>");
+        }
+
       SENDF_TO_CLIENT_OR_FAIL ("<port_count>"
                                "<all>%i</all>"
                                "<tcp>%i</tcp>"
@@ -14925,6 +14937,12 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
                  (get_iterator_resource (&report_formats))
               : report_format_predefined
                  (get_iterator_resource (&report_formats)));
+
+          if (resource_id_deprecated ("report_format",
+                                      get_iterator_uuid (&report_formats)))
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<deprecated>1</deprecated>");
+            }
 
           if (get_report_formats_data->alerts)
             {

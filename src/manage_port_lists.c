@@ -115,7 +115,7 @@ create_port_list_from_file (const gchar *path)
 {
   entity_t port_list;
   array_t *ranges;
-  char *comment, *name;
+  char *comment, *name, *deprecated;
   const char *port_list_id;
   port_list_t new_port_list;
 
@@ -129,7 +129,17 @@ create_port_list_from_file (const gchar *path)
   /* Parse the data out of the entity. */
 
   parse_port_list_entity (port_list, &port_list_id, &name, &comment,
-                          &ranges);
+                          &ranges, &deprecated);
+
+  /* Handle deprecation status */
+
+  if (deprecated && atoi (deprecated))
+    {
+      g_debug ("Skipping import of deprecated port list %s.",
+               port_list_id);
+      set_resource_id_deprecated ("port_list", port_list_id, TRUE);
+      return 0;
+    }
 
   /* Create the port_list. */
 
@@ -207,7 +217,7 @@ update_port_list_from_file (port_list_t port_list, const gchar *path)
 {
   entity_t entity;
   array_t *ranges;
-  char *comment, *name;
+  char *comment, *name, *deprecated;
   const char *port_list_id;
 
   g_debug ("%s: updating %s", __func__, path);
@@ -219,11 +229,12 @@ update_port_list_from_file (port_list_t port_list, const gchar *path)
 
   /* Parse the data out of the entity. */
 
-  parse_port_list_entity (entity, &port_list_id, &name, &comment, &ranges);
+  parse_port_list_entity (entity, &port_list_id, &name, &comment, &ranges,
+                          &deprecated);
 
   /* Update the port list. */
 
-  update_port_list (port_list, name, comment, ranges);
+  update_port_list (port_list, name, comment, ranges, deprecated);
 
   /* Cleanup. */
 
@@ -265,11 +276,36 @@ should_sync_port_list_from_path (const char *path, gboolean rebuild,
   uuid = g_strdup_printf ("%s-%s-%s-%s-%s",
                           split[1], split[2], split[3], split[4], split[5]);
   g_strfreev (split);
+
+  if (resource_id_deprecated ("port_list", uuid))
+    {
+      find_port_list_no_acl (uuid, port_list);
+      
+      if (rebuild)
+        {
+          return 1;
+        }
+
+      full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
+      if (deprecated_port_list_id_updated_in_feed (uuid, full_path))
+        {
+          g_free (uuid);
+          g_free (full_path);
+          return 1;
+        }
+      g_free (uuid);
+      g_free (full_path);
+      return 0;
+    }
+
   if (find_port_list_no_acl (uuid, port_list) == 0
       && *port_list)
     {
       if (rebuild)
-        return 1;
+        {
+          g_free (uuid);
+          return 1;
+        }
 
       full_path = g_build_filename (feed_dir_port_lists (), path, NULL);
 
@@ -279,6 +315,7 @@ should_sync_port_list_from_path (const char *path, gboolean rebuild,
 
       if (port_list_updated_in_feed (*port_list, full_path))
         {
+          g_free (full_path);
           return 1;
         }
 
