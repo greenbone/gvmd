@@ -25511,7 +25511,8 @@ delete_report_internal (report_t report)
  * @param[in]  report_id  UUID of report.
  * @param[in]  dummy      Dummy arg to match other delete functions.
  *
- * @return 0 success, 2 failed to find report, 99 permission denied, -1 error.
+ * @return 0 success, 2 failed to find report, 3 reports table is locked,
+ *         99 permission denied, -1 error.
  */
 int
 delete_report (const char *report_id, int dummy)
@@ -25537,7 +25538,7 @@ delete_report (const char *report_id, int dummy)
   if (lock_ret == 0)
     {
       sql_rollback ();
-      return -1;
+      return 3;
     }
 
   if (acl_user_may ("delete_report") == 0)
@@ -31245,7 +31246,8 @@ copy_task (const char* name, const char* comment, const char *task_id,
  * @param[in]  task      The task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 on success, 1 if task is hidden, -1 on error.
+ * @return 0 on success, 1 if task is hidden, 2 if reports table is locked,
+ *         -1 on error.
  */
 static int
 delete_task_lock (task_t task, int ultimate)
@@ -31272,13 +31274,13 @@ delete_task_lock (task_t task, int ultimate)
   if (lock_ret == 0)
     {
       sql_rollback ();
-      return -1;
+      return 2;
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
     {
       sql_rollback ();
-      return -1;
+      return 1;
     }
 
   ret = delete_task (task, ultimate);
@@ -31299,6 +31301,7 @@ delete_task_lock (task_t task, int ultimate)
  * @param[in]  task_pointer  A pointer to the task.
  *
  * @return 0 if deleted, 1 if delete requested, 2 if task is hidden,
+ *         3 if reports table is locked,
  *         -1 if error, -5 if scanner is down.
  */
 int
@@ -31351,8 +31354,8 @@ request_delete_task (task_t* task_pointer)
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 deleted, 1 delete requested, 2 task is hidden, 3 failed to find
- *         task, 99 permission denied, -1 error, -5 scanner is down, -7 no CA
- *         cert.
+ *         task, 4 reports table locked, 99 permission denied,
+ *         -1 error, -5 scanner is down, -7 no CA cert.
  */
 int
 request_delete_task_uuid (const char *task_id, int ultimate)
@@ -31451,7 +31454,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
               if (lock_ret == 0)
                 {
                   sql_rollback ();
-                  return -1;
+                  return 4;
                 }
             }
 
