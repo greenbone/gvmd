@@ -18618,7 +18618,70 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (PERMISSION, permission, "Permission");
       CASE_DELETE (PORT_LIST, port_list, "Port list");
       CASE_DELETE (PORT_RANGE, port_range, "Port range");
-      CASE_DELETE (REPORT, report, "Report");
+
+      case CLIENT_DELETE_REPORT:
+        if (delete_report_data->report_id)
+          {
+            switch (delete_report (delete_report_data->report_id,
+                                   delete_report_data->ultimate))
+              {
+                case 0:    /* Deleted. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
+                  log_event ("report", "Report",
+                             delete_report_data->report_id,
+                             "deleted");
+                  break;
+                case 2:  /* Failed to find report. */
+                  if (send_find_error_to_client
+                       ("delete_report", "report",
+                        delete_report_data->report_id,
+                        gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                case 3:
+                  SENDF_TO_CLIENT_OR_FAIL(
+                    "<delete_report_response"
+                    " status=\"%s\""
+                    " status_text=\"%s\"/>",
+                    STATUS_ERROR_BUSY,
+                    "Reports database is busy. Please try again later.");
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_report",
+                                      "Permission denied"));
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                    (XML_INTERNAL_ERROR ("delete_report"));
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                default:   /* Programming error. */
+                  assert (0);
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_report",
+                              "A report_id attribute is required"));
+        delete_report_data_reset (delete_report_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
       CASE_DELETE (ROLE, role, "Role");
       CASE_DELETE (SCANNER, scanner, "Scanner");
@@ -18657,6 +18720,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  break;
+                case 4:
+                  SENDF_TO_CLIENT_OR_FAIL(
+                    "<delete_task_response"
+                    " status=\"%s\""
+                    " status_text=\"%s\"/>",
+                    STATUS_ERROR_BUSY,
+                    "Reports database is busy. Please try again later.");
+                  log_event_fail ("task", "Task", delete_task_data->task_id,
+                                  "deleted");
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -21926,6 +21999,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         error_send_to_client (error);
                         return;
                       }
+                    log_event_fail ("task", "Task", NULL, "created");
+                    break;
+                  case 3:
+                    SENDF_TO_CLIENT_OR_FAIL(
+                      "<create_task_response"
+                      " status=\"%s\""
+                      " status_text=\"%s\"/>",
+                      STATUS_ERROR_BUSY,
+                      "Reports database is busy. Please try again later.");
                     log_event_fail ("task", "Task", NULL, "created");
                     break;
                   case 99:
