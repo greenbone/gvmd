@@ -21284,15 +21284,16 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   current_scanner_task = task;
   global_current_report = report;
-  set_task_run_status (task, TASK_STATUS_DONE);
-  current_scanner_task = 0;
-  global_current_report = 0;
+  set_task_run_status (task, TASK_STATUS_PROCESSING);
 
   if (in_assets_int)
     {
       create_asset_report (*report_id, "");
     }
 
+  set_task_run_status (task, TASK_STATUS_DONE);
+  current_scanner_task = 0;
+  global_current_report = 0;
   gvm_close_sentry ();
   exit (EXIT_SUCCESS);
   return 0;
