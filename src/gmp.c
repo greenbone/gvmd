@@ -22001,15 +22001,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       }
                     log_event_fail ("task", "Task", NULL, "created");
                     break;
-                  case 3:
-                    SENDF_TO_CLIENT_OR_FAIL(
-                      "<create_task_response"
-                      " status=\"%s\""
-                      " status_text=\"%s\"/>",
-                      STATUS_ERROR_BUSY,
-                      "Reports database is busy. Please try again later.");
-                    log_event_fail ("task", "Task", NULL, "created");
-                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_task",
