@@ -31246,7 +31246,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
  * @param[in]  task      The task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 on success, 1 if task is hidden, 2 if reports table is locked,
+ * @return 0 on success, 1 if task is hidden, 3 if reports table is locked,
  *         -1 on error.
  */
 static int
@@ -31274,7 +31274,7 @@ delete_task_lock (task_t task, int ultimate)
   if (lock_ret == 0)
     {
       sql_rollback ();
-      return 2;
+      return 3;
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
