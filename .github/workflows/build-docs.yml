@@ -3,6 +3,8 @@ name: 'Build Documentation'
 on:
   push:
     branches: [ main, stable, oldstable ]
+  pull_request:
+    branches: [ main, stable, oldstable ]
 
 jobs:
   generate-doc-and-upload-coverage:
@@ -10,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     container: greenbone/doxygen
     steps:
+      - name: Install gvmd doc dependencies
+        run: |
+          apt update
+          apt install --no-install-recommends -y xmltoman xsltproc
+          rm -rf /var/lib/apt/lists/*
       - name: Run the c lang coverage action
         uses: greenbone/actions/doc-coverage-clang@v3
 
