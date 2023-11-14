@@ -15,7 +15,7 @@ jobs:
       - name: Install gvmd doc dependencies
         run: |
           apt update
-          apt install --no-install-recommends -y pkgconf xmltoman xsltproc
+          apt install --no-install-recommends -y graphviz pkgconf xmltoman xsltproc
       - name: Run the c lang coverage action
         uses: greenbone/actions/doc-coverage-clang@v3
 
