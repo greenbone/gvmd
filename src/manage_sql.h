@@ -248,9 +248,12 @@ typedef struct
  *
  * @param[in]  prefix  Column prefix.
  */
+// FIX takes CPEs from 9s to 7s
 #define GET_ITERATOR_COLUMNS_STRING                                \
-  "id, uuid, name, comment, iso_time (creation_time),"             \
-  " iso_time (modification_time), creation_time AS created,"       \
+  "id, uuid, name, comment," \
+  " iso_time (creation_time, (SELECT user_zone FROM iterator_user_zone LIMIT 1), (SELECT user_offset FROM iterator_user_offset LIMIT 1)),"             \
+  " iso_time (modification_time, (SELECT user_zone FROM iterator_user_zone LIMIT 1), (SELECT user_offset FROM iterator_user_offset LIMIT 1))," \
+  " creation_time AS created,"       \
   " modification_time AS modified"
 
 /**
@@ -263,8 +266,8 @@ typedef struct
   { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
   { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
   { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
-  { " iso_time (" prefix "creation_time)", NULL, KEYWORD_TYPE_STRING },     \
-  { " iso_time (" prefix "modification_time)", NULL, KEYWORD_TYPE_STRING }, \
+  { " iso_time (" prefix "creation_time, (SELECT user_zone FROM iterator_user_zone LIMIT 1), (SELECT user_offset FROM iterator_user_offset LIMIT 1))", NULL, KEYWORD_TYPE_STRING },     \
+  { " iso_time (" prefix "modification_time, (SELECT user_zone FROM iterator_user_zone LIMIT 1), (SELECT user_offset FROM iterator_user_offset LIMIT 1))", NULL, KEYWORD_TYPE_STRING }, \
   { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
   { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
 

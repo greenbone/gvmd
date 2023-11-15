@@ -4998,6 +4998,33 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
         with_clause = g_strdup_printf ("WITH %s", extra_with);
     }
 
+
+  extra_with = " iterator_user_zone"
+    " AS (SELECT coalesce (NULLIF ((SELECT current_setting ('gvmd.tz_override')),"
+    "                              ''),"
+    "                      (SELECT timezone FROM users"
+    "                       WHERE id = gvmd_user ()))"
+    "            AS user_zone),"
+    " iterator_user_offset"
+    " AS (SELECT age (now () AT TIME ZONE (SELECT user_zone"
+    "                                      FROM iterator_user_zone"
+    "                                      LIMIT 1),"
+    "                 now () AT TIME ZONE 'UTC')"
+    "            AS user_offset)";
+  if (extra_with)
+    {
+      if (with_clause)
+        {
+          gchar *old_with;
+
+          old_with = with_clause;
+          with_clause = g_strdup_printf ("%s, %s", old_with, extra_with);
+          g_free (old_with);
+        }
+      else
+        with_clause = g_strdup_printf ("WITH %s", extra_with);
+    }
+
   g_free (owner_filter);
   array_free (permissions);
 
