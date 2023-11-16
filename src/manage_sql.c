@@ -14281,10 +14281,24 @@ manage_test_alert (const char *alert_id, gchar **script_message)
     return -1;
   task_uuid (task, &task_id);
   report = make_report (task, report_id, TASK_STATUS_DONE);
-  result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
+
+  result = make_result (task, "127.0.0.1", "localhost", "23/tcp",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.",
                         NULL);
+  if (result)
+    report_add_result (report, result);
+  
+
+  result = make_result (
+              task, "127.0.0.1", "localhost", "general/tcp",
+              "1.3.6.1.4.1.25623.1.0.103823", "Alarm",
+              "IP,Host,Port,SSL/TLS-Version,Ciphers,Application-CPE\n"
+              "127.0.0.1,localhost,443,TLSv1.1;TLSv1.2",
+              NULL);
+  if (result)
+    report_add_result (report, result);
+
   now = time (NULL);
   if (strlen (ctime_r (&now, now_string)) == 0)
     {
@@ -14297,8 +14311,25 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   set_task_start_time_ctime (task, g_strdup (clean));
   set_scan_start_time_ctime (report, g_strdup (clean));
   set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
-  if (result)
-    report_add_result (report, result);
+
+  insert_report_host_detail (report,
+                             "127.0.0.1",
+                             "nvt",
+                             "1.3.6.1.4.1.25623.1.0.108577",
+                             "",
+                             "App",
+                             "cpe:/a:openbsd:openssh:8.9p1",
+                             "0123456789ABCDEF0123456789ABCDEF");
+
+  insert_report_host_detail (report,
+                             "127.0.0.1",
+                             "nvt",
+                             "1.3.6.1.4.1.25623.1.0.10330",
+                             "Host Details",
+                             "best_os_cpe",
+                             "cpe:/o:canonical:ubuntu_linux:22.04",
+                             "123456789ABCDEF0123456789ABCDEF0");
+
   set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
   set_scan_end_time_ctime (report, clean);
   g_free (clean);
