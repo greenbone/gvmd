@@ -8040,9 +8040,14 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
       if (include_notes_details == 0)
         {
-          const char *text = note_iterator_text (notes);
-          gchar *excerpt = utf8_substring (text, 0,
-                                           setting_excerpt_size_int ());
+          gchar *excerpt, *creation, *modification;
+          const char *text;
+
+          text = note_iterator_text (notes);
+          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+          creation = get_iterator_creation_time (notes);
+          modification = get_iterator_modification_time (notes);
+
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
@@ -8063,8 +8068,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
                                     note_iterator_nvt_type (notes),
-                                    get_iterator_creation_time (notes),
-                                    get_iterator_modification_time (notes),
+                                    creation,
+                                    modification,
                                     note_iterator_active (notes),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -8072,6 +8077,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                       && (uuid_task == NULL))
                                      || (note_iterator_result (notes)
                                          && (uuid_result == NULL))));
+          g_free (creation);
+          g_free (modification);
 
           if (tag_count)
             {
@@ -8092,6 +8099,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           int trash_task;
           time_t end_time;
           iterator_t tags;
+          gchar *creation, *modification;
 
           if (uuid_task)
             {
@@ -8105,6 +8113,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             }
 
           end_time = note_iterator_end_time (notes);
+          creation = get_iterator_creation_time (notes);
+          modification = get_iterator_modification_time (notes);
 
           /* This must match send_get_common. */
           buffer_xml_append_printf
@@ -8132,8 +8142,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
             note_iterator_nvt_type (notes),
-            get_iterator_creation_time (notes),
-            get_iterator_modification_time (notes),
+            creation,
+            modification,
             note_iterator_active (notes),
             end_time > 1 ? iso_time (&end_time) : "",
             note_iterator_text (notes),
@@ -8150,6 +8160,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              || (note_iterator_result (notes) && (uuid_result == NULL))));
 
           free (name_task);
+          g_free (creation);
+          g_free (modification);
 
           if (include_result && uuid_result && note_iterator_result (notes))
             {
@@ -8304,9 +8316,14 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
       if (include_overrides_details == 0)
         {
-          const char *text = override_iterator_text (overrides);
-          gchar *excerpt = utf8_substring (text, 0,
-                                           setting_excerpt_size_int ());
+          gchar *excerpt, *creation, *modification;
+          const char *text;
+
+          text = override_iterator_text (overrides);
+          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+          creation = get_iterator_creation_time (overrides);
+          modification = get_iterator_modification_time (overrides);
+
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
@@ -8331,8 +8348,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
                                     override_iterator_nvt_type (overrides),
-                                    get_iterator_creation_time (overrides),
-                                    get_iterator_modification_time (overrides),
+                                    creation,
+                                    modification,
                                     override_iterator_active (overrides),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -8348,6 +8365,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                       && (uuid_task == NULL))
                                      || (override_iterator_result (overrides)
                                          && (uuid_result == NULL))));
+
+          g_free (creation);
+          g_free (modification);
 
           if (tag_count)
             {
@@ -8368,6 +8388,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           int trash_task;
           time_t end_time;
           iterator_t tags;
+          gchar *creation, *modification;
 
           if (uuid_task)
             {
@@ -8381,6 +8402,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             }
 
           end_time = override_iterator_end_time (overrides);
+          creation = get_iterator_creation_time (overrides);
+          modification = get_iterator_modification_time (overrides);
 
           /* This must match send_get_common. */
           buffer_xml_append_printf
@@ -8411,8 +8434,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
             override_iterator_nvt_type (overrides),
-            get_iterator_creation_time (overrides),
-            get_iterator_modification_time (overrides),
+            creation,
+            modification,
             override_iterator_active (overrides),
             end_time > 1 ? iso_time (&end_time) : "",
             override_iterator_text (overrides),
@@ -8433,6 +8456,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
              || (override_iterator_result (overrides) && (uuid_result == NULL))));
 
           free (name_task);
+          g_free (creation);
+          g_free (modification);
 
           if (include_result && uuid_result
               && override_iterator_result (overrides))
@@ -9212,7 +9237,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int changed, int cert_loaded, int lean, int use_delta_fields)
 {
 
-  const char *descr, *name, *comment, *creation_time;
+  const char *descr, *name, *comment;
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
@@ -9221,6 +9246,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   result_t result;
   report_t report;
   task_t selected_task;
+  gchar *creation_time;
   
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
@@ -9238,7 +9264,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       qod = result_iterator_delta_qod (results);
       qod_type = result_iterator_delta_qod_type (results);
       result = result_iterator_delta_result (results);
-      creation_time = result_iterator_delta_creation_time (results);
+      creation_time = (gchar *) result_iterator_delta_creation_time (results); // FIX
       result_id = result_iterator_delta_uuid (results);
       path = result_iterator_delta_path (results);
       report = result_iterator_delta_report (results);
@@ -9323,9 +9349,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               comment);
 
   if (creation_time)
-    buffer_xml_append_printf (buffer,
-                              "<creation_time>%s</creation_time>",
-                              creation_time);
+    {
+      buffer_xml_append_printf (buffer,
+                                "<creation_time>%s</creation_time>",
+                                creation_time);
+      g_free (creation_time);
+    }
 
   if (include_details)
     {
@@ -11536,7 +11565,7 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
           while (next (&identifiers))
             {
               const char *source_type;
-              gchar *name;
+              gchar *name, *creation, *modification;
 
               source_type = host_identifier_iterator_source_type
                               (&identifiers);
@@ -11545,6 +11574,9 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
                                     (&identifiers));
               else
                 name = NULL;
+
+              creation = get_iterator_creation_time (&identifiers);
+              modification = get_iterator_modification_time (&identifiers);
 
               xml_string_append (result,
                                  "<identifier id=\"%s\">"
@@ -11561,8 +11593,8 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
                                  get_iterator_uuid (&identifiers),
                                  get_iterator_name (&identifiers),
                                  host_identifier_iterator_value (&identifiers),
-                                 get_iterator_creation_time (&identifiers),
-                                 get_iterator_modification_time (&identifiers),
+                                 creation,
+                                 modification,
                                  host_identifier_iterator_source_id
                                   (&identifiers),
                                  source_type,
@@ -11573,6 +11605,8 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
                                  name ? name : "");
 
               g_free (name);
+              g_free (creation);
+              g_free (modification);
 
               if (strcmp (get_iterator_name (&identifiers), "OS") == 0)
                 xml_string_append (result,
@@ -14593,6 +14627,10 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       if (get_reports_data->alert_id == NULL)
         {
           task_t task;
+          gchar *creation, *modification;
+
+          creation = get_iterator_creation_time (&reports);
+          modification = get_iterator_modification_time (&reports);
 
           /* Send the standard elements.  Should match send_get_common. */
           buffer_xml_append_printf
@@ -14615,12 +14653,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
              get_iterator_comment (&reports)
               ? get_iterator_comment (&reports)
               : "",
-             get_iterator_creation_time (&reports)
-              ? get_iterator_creation_time (&reports)
-              : "",
-             get_iterator_modification_time (&reports)
-              ? get_iterator_modification_time (&reports)
-              : "");
+             creation ? creation : "",
+             modification ? creation : "");
+
+          g_free (creation);
+          g_free (modification);
+
           /* Send short task and report format info */
           report_task (report, &task);
           if (task)
@@ -17892,6 +17930,10 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
   while (next (&vulns))
     {
       time_t oldest, newest;
+      gchar *creation, *modification;
+
+      creation = get_iterator_creation_time (&vulns);
+      modification = get_iterator_modification_time (&vulns);
 
       count ++;
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
@@ -17904,10 +17946,13 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
                                vuln_iterator_type (&vulns),
-                               get_iterator_creation_time (&vulns),
-                               get_iterator_modification_time (&vulns),
+                               creation,
+                               modification,
                                vuln_iterator_severity (&vulns),
                                vuln_iterator_qod (&vulns));
+
+      g_free (creation);
+      g_free (modification);
 
       // results for the vulnerability
       oldest = vuln_iterator_oldest (&vulns);

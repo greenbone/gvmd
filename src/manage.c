@@ -5771,6 +5771,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
         {
           char *default_timeout;
           GString *nvt_tags;
+          gchar *creation, *modification;
 
           DEF (tag);
 
@@ -5830,6 +5831,9 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
             }
 
           default_timeout = nvt_default_timeout (oid);
+          creation = get_iterator_creation_time (nvts);
+          modification = get_iterator_modification_time (nvts);
+
           g_string_append_printf (buffer,
                                   "<default_timeout>%s</default_timeout>"
                                   "<creation_time>%s</creation_time>"
@@ -5843,19 +5847,18 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   "<refs>%s</refs>"
                                   "<tags>%s</tags>",
                                   default_timeout ? default_timeout : "",
-                                  get_iterator_creation_time (nvts)
-                                  ? get_iterator_creation_time (nvts)
-                                  : "",
-                                  get_iterator_modification_time (nvts)
-                                  ? get_iterator_modification_time (nvts)
-                                  : "",
+                                  creation ? creation : "",
+                                  modification ? modification : "",
                                   nvt_iterator_category (nvts),
                                   family_text,
                                   nvt_iterator_qod (nvts),
                                   nvt_iterator_qod_type (nvts),
                                   refs_str->str,
                                   nvt_tags->str);
+
           free (default_timeout);
+          g_free (creation);
+          g_free (modification);
 
           g_string_free (nvt_tags, 1);
         }
