@@ -66,10 +66,10 @@ get_iterator_name (iterator_t*);
 const char*
 get_iterator_comment (iterator_t*);
 
-const char*
+gchar*
 get_iterator_creation_time (iterator_t*);
 
-const char*
+gchar*
 get_iterator_modification_time (iterator_t*);
 
 const char*

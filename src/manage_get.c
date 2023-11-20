@@ -154,18 +154,46 @@ get_iterator_comment (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Creation time of the resource or NULL if iteration is complete.
+ * @return Creation time, or NULL if iteration is complete. Caller must free.
  */
-DEF_ACCESS (get_iterator_creation_time, 4);
+gchar *
+get_iterator_creation_time (iterator_t* iterator)
+{
+  time_t epoch;
+  char *iso;
+
+  if (iterator->done) return NULL;
+
+  epoch = iterator_int64 (iterator, 4);
+  iso = iso_time (&epoch);
+  if (iso)
+    // iso points to static memory.
+    return g_strdup (iso);
+  return g_strdup("ERR");
+}
 
 /**
  * @brief Get the modification time of the resource from a GET iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Modification time of the resource or NULL if iteration is complete.
+ * @return Modification time, or NULL if iteration is complete. Caller must free.
  */
-DEF_ACCESS (get_iterator_modification_time, 5);
+gchar *
+get_iterator_modification_time (iterator_t* iterator)
+{
+  time_t epoch;
+  char *iso;
+
+  if (iterator->done) return NULL;
+
+  epoch = iterator_int64 (iterator, 5);
+  iso = iso_time (&epoch);
+  if (iso)
+    // iso points to static memory.
+    return g_strdup (iso);
+  return g_strdup("ERR");
+}
 
 /**
  * @brief Get the owner name of the resource from a GET iterator.
