@@ -21658,8 +21658,8 @@ report_add_results_array (report_t report, GArray *results)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "iso_time (creation_time)", "name", KEYWORD_TYPE_STRING },              \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },                \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
+   { "creation_time", NULL, KEYWORD_TYPE_STRING },                           \
+   { "modification_time", NULL, KEYWORD_TYPE_STRING },                       \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
@@ -50006,8 +50006,8 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
 
   if (host)
     init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, iso_time (creation_time),"
-                   "       iso_time (modification_time), creation_time,"
+                   "SELECT id, uuid, name, comment, creation_time,"
+                   "       modification_time, creation_time,"
                    "       modification_time, owner, owner, value,"
                    "       source_type, source_id, source_data,"
                    "       (CASE WHEN source_type LIKE 'Report%%'"
@@ -50019,8 +50019,8 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    " FROM host_identifiers"
                    " WHERE host = %llu"
                    " UNION"
-                   " SELECT id, uuid, name, comment, iso_time (creation_time),"
-                   "        iso_time (modification_time), creation_time,"
+                   " SELECT id, uuid, name, comment, creation_time,"
+                   "        modification_time, creation_time,"
                    "        modification_time, owner, owner,"
                    "        (SELECT name FROM oss WHERE id = os),"
                    "        source_type, source_id, source_data,"
@@ -50040,8 +50040,8 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, iso_time (creation_time),"
-                   "       iso_time (modification_time), creation_time,"
+                   "SELECT id, uuid, name, comment, creation_time,"
+                   "       modification_time, creation_time,"
                    "       modification_time, owner, owner, value,"
                    "       source_type, source_id, source_data, 0, '', ''"
                    " FROM host_identifiers"
@@ -50691,8 +50691,8 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
 {
   assert (os);
   init_iterator (iterator,
-                 "SELECT id, uuid, name, comment, iso_time (creation_time),"
-                 "       iso_time (modification_time), creation_time,"
+                 "SELECT id, uuid, name, comment, creation_time,"
+                 "       modification_time, creation_time,"
                  "       modification_time, owner, owner,"
                  "       (SELECT round (CAST (severity AS numeric), 1)"
                  "        FROM host_max_severities"
@@ -55046,8 +55046,8 @@ user_resources_in_use (user_t user,
    { "uuid", "uuid", KEYWORD_TYPE_STRING },                                  \
    { "name", "name", KEYWORD_TYPE_STRING },                                  \
    { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },                \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
+   { "creation_time", NULL, KEYWORD_TYPE_STRING },                           \
+   { "modification_time", NULL, KEYWORD_TYPE_STRING },                       \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "cast (null AS text)", "_owner", KEYWORD_TYPE_INTEGER },                \
