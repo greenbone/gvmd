@@ -316,8 +316,12 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
   const char *tag_type;
   iterator_t tags;
   int tag_count;
+  gchar *creation, *modification;
 
   buffer = g_string_new ("");
+
+  creation = get_iterator_creation_time (iterator);
+  modification = get_iterator_modification_time (iterator);
 
   buffer_xml_append_printf (buffer,
                             "<%s id=\"%s\">"
@@ -342,14 +346,13 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             get_iterator_comment (iterator)
                             ? get_iterator_comment (iterator)
                             : "",
-                            get_iterator_creation_time (iterator)
-                            ? get_iterator_creation_time (iterator)
-                            : "",
-                            get_iterator_modification_time (iterator)
-                            ? get_iterator_modification_time (iterator)
-                            : "",
+                            creation ? creation : "",
+                            modification ? modification : "",
                             writable,
                             in_use);
+
+  g_free (creation);
+  g_free (modification);
 
   if (/* The user is the owner. */
       (current_credentials.username
