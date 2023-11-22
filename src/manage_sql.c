@@ -21658,8 +21658,8 @@ report_add_results_array (report_t report, GArray *results)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "iso_time (creation_time)", "name", KEYWORD_TYPE_STRING },              \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "creation_time", NULL, KEYWORD_TYPE_STRING },                           \
-   { "modification_time", NULL, KEYWORD_TYPE_STRING },                       \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
@@ -22383,10 +22383,10 @@ where_qod (int min_qod)
     { "delta_qod_type", NULL, KEYWORD_TYPE_STRING },                          \
     { "delta_date",                                                           \
       "delta_creation_time",                                                  \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "delta_date",                                                           \
       "delta_modification_time",                                              \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "delta_task", NULL, KEYWORD_TYPE_INTEGER },                             \
     { "delta_report", NULL, KEYWORD_TYPE_INTEGER },                           \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -55064,8 +55064,8 @@ user_resources_in_use (user_t user,
    { "uuid", "uuid", KEYWORD_TYPE_STRING },                                  \
    { "name", "name", KEYWORD_TYPE_STRING },                                  \
    { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-   { "creation_time", NULL, KEYWORD_TYPE_STRING },                           \
-   { "modification_time", NULL, KEYWORD_TYPE_STRING },                       \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "cast (null AS text)", "_owner", KEYWORD_TYPE_INTEGER },                \
