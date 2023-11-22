@@ -2599,8 +2599,8 @@ report_format_trust (report_format_t report_format)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
    { "name", NULL, KEYWORD_TYPE_STRING },                               \
    { "''", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "creation_time", NULL, KEYWORD_TYPE_STRING },                      \
-   { "modification_time", NULL, KEYWORD_TYPE_STRING },                  \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                 \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },           \
    {                                                                    \
@@ -2630,8 +2630,8 @@ report_format_trust (report_format_t report_format)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
    { "name", NULL, KEYWORD_TYPE_STRING },                               \
    { "''", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "creation_time", NULL, KEYWORD_TYPE_STRING },                      \
-   { "modification_time", NULL, KEYWORD_TYPE_STRING },                  \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                 \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },           \
    {                                                                    \
