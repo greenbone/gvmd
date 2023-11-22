@@ -1563,7 +1563,7 @@ result_iterator_delta_qod_type (iterator_t*);
 gchar *
 result_iterator_delta_creation_time (iterator_t*);
 
-const char *
+gchar *
 result_iterator_delta_modification_time (iterator_t*);
 
 task_t
