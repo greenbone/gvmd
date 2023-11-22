@@ -22384,7 +22384,7 @@ where_qod (int min_qod)
     { "delta_date",                                                           \
       "delta_creation_time",                                                  \
       KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (delta_date, opts.user_zone)",                               \
+    { "delta_date",                                                           \
       "delta_modification_time",                                              \
       KEYWORD_TYPE_STRING },                                                  \
     { "delta_task", NULL, KEYWORD_TYPE_INTEGER },                             \
@@ -23821,13 +23821,22 @@ result_iterator_delta_creation_time (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return delta modification time if any, else NULL.
+ * @return Time, or NULL if iteration is complete. Caller must free.
  */
-const char *
+gchar *
 result_iterator_delta_modification_time (iterator_t* iterator)
 {
-  if (iterator->done) return 0;
-  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
+  time_t epoch;
+  char *iso;
+
+  if (iterator->done) return NULL;
+
+  epoch = iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
+  iso = iso_time (&epoch);
+  if (iso)
+    // iso points to static memory.
+    return g_strdup (iso);
+  return g_strdup("ERR");
 }
 
 /**
