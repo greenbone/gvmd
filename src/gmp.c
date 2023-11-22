@@ -9264,7 +9264,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       qod = result_iterator_delta_qod (results);
       qod_type = result_iterator_delta_qod_type (results);
       result = result_iterator_delta_result (results);
-      creation_time = (gchar *) result_iterator_delta_creation_time (results); // FIX
+      creation_time = result_iterator_delta_creation_time (results);
       result_id = result_iterator_delta_uuid (results);
       path = result_iterator_delta_path (results);
       report = result_iterator_delta_report (results);

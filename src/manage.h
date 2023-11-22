@@ -1560,7 +1560,7 @@ result_iterator_delta_uuid (iterator_t*);
 const char *
 result_iterator_delta_qod_type (iterator_t*);
 
-const char *
+gchar *
 result_iterator_delta_creation_time (iterator_t*);
 
 const char *
