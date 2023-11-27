@@ -22074,10 +22074,10 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "creation_time",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "modification_time",                                                    \
       KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
@@ -22223,10 +22223,10 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "creation_time",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "modification_time",                                                    \
       KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
@@ -22484,6 +22484,43 @@ where_qod (int min_qod)
   }
 
 /**
+ * @brief Get ID and zone of the current user.
+ *
+ * @param[out]  user_zone  Location for newly allocated user zone.
+ *
+ * @return User ID.
+ */
+user_t
+manage_current_user_info (gchar **user_zone)
+{
+  user_t user_id;
+
+  if (current_credentials.uuid)
+    {
+      user_id = sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s';",
+                             current_credentials.uuid);
+      if (user_id > 0)
+        *user_zone = sql_string ("SELECT"
+                                 " coalesce ((SELECT current_setting"
+                                 "                    ('gvmd.tz_override')),"
+                                 "           (SELECT timezone FROM users"
+                                 "            WHERE id = %llu));",
+                                 user_id);
+      else
+        *user_zone = g_strdup ("UTC");
+    }
+  else
+    {
+      user_id = 0;
+      *user_zone = sql_string ("SELECT"
+                               " coalesce ((SELECT current_setting"
+                               "                    ('gvmd.tz_override')),"
+                               "           'UTC');");
+    }
+  return user_id;
+}
+
+/**
  * @brief Generate the extra_tables string for a result iterator.
  *
  * @param[in]  override  Whether to apply overrides.
@@ -22497,28 +22534,7 @@ result_iterator_opts_table (int override, int dynamic)
   user_t user_id;
   gchar *user_zone, *quoted_user_zone, *ret;
 
-  if (current_credentials.uuid)
-    {
-      user_id = sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s';",
-                             current_credentials.uuid);
-      if (user_id > 0)
-        user_zone = sql_string ("SELECT"
-                                " coalesce ((SELECT current_setting"
-                                "                    ('gvmd.tz_override')),"
-                                "           (SELECT timezone FROM users"
-                                "            WHERE id = %llu));",
-                                user_id);
-      else
-        user_zone = g_strdup ("UTC");
-    }
-  else
-    {
-      user_id = 0;
-      user_zone = sql_string ("SELECT"
-                              " coalesce ((SELECT current_setting"
-                              "                    ('gvmd.tz_override')),"
-                              "           'UTC');");
-    }
+  user_id = manage_current_user_info (&user_zone);
 
   quoted_user_zone = sql_quote ("user_zone");
   g_free (user_zone);

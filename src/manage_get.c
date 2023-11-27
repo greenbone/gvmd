@@ -157,7 +157,7 @@ get_iterator_comment (iterator_t* iterator)
  * @return Creation time, or NULL if iteration is complete. Caller must free.
  */
 gchar *
-get_iterator_creation_time (iterator_t* iterator)
+get_iterator_creation_time (iterator_t* iterator, const gchar *zone)
 {
   time_t epoch;
   char *iso;
@@ -165,7 +165,7 @@ get_iterator_creation_time (iterator_t* iterator)
   if (iterator->done) return NULL;
 
   epoch = iterator_int64 (iterator, 4);
-  iso = iso_time (&epoch);
+  iso = iso_time_tz (&epoch, zone, NULL);
   if (iso)
     // iso points to static memory.
     return g_strdup (iso);

@@ -8045,7 +8045,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
           text = note_iterator_text (notes);
           excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
-          creation = get_iterator_creation_time (notes);
+          creation = get_iterator_creation_time (notes, NULL);
           modification = get_iterator_modification_time (notes);
 
           /* This must match send_get_common. */
@@ -8113,7 +8113,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             }
 
           end_time = note_iterator_end_time (notes);
-          creation = get_iterator_creation_time (notes);
+          creation = get_iterator_creation_time (notes, NULL);
           modification = get_iterator_modification_time (notes);
 
           /* This must match send_get_common. */
@@ -8321,7 +8321,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
           text = override_iterator_text (overrides);
           excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
-          creation = get_iterator_creation_time (overrides);
+          creation = get_iterator_creation_time (overrides, NULL);
           modification = get_iterator_modification_time (overrides);
 
           /* This must match send_get_common. */
@@ -8402,7 +8402,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             }
 
           end_time = override_iterator_end_time (overrides);
-          creation = get_iterator_creation_time (overrides);
+          creation = get_iterator_creation_time (overrides, NULL);
           modification = get_iterator_modification_time (overrides);
 
           /* This must match send_get_common. */
@@ -9236,17 +9236,15 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     const char *delta_state, iterator_t *delta_results,
                     int changed, int cert_loaded, int lean, int use_delta_fields)
 {
-
   const char *descr, *name, *comment;
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
   double severity_double;
-  gchar *nl_descr, *nl_descr_escaped;
+  gchar *nl_descr, *nl_descr_escaped, *creation_time, *user_zone;
   result_t result;
   report_t report;
   task_t selected_task;
-  gchar *creation_time;
   
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
@@ -9254,6 +9252,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   port = result_iterator_port (results);
   asset_id = NULL;
 
+  manage_current_user_info (&user_zone);
   if (use_delta_fields)
     {
       descr = result_iterator_delta_description (results);
@@ -9282,7 +9281,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       qod = result_iterator_qod (results);
       qod_type = result_iterator_qod_type (results);
       result = result_iterator_result (results);
-      creation_time = get_iterator_creation_time (results);
+      creation_time = get_iterator_creation_time (results, user_zone);
       result_id = get_iterator_uuid (results);
       path = result_iterator_path (results);
       report = result_iterator_report (results);
@@ -9290,7 +9289,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (host)
         asset_id = result_iterator_asset_host_id (results);
     }
-
+  g_free (user_zone);
 
   if (descr)
     {
@@ -11575,7 +11574,7 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
               else
                 name = NULL;
 
-              creation = get_iterator_creation_time (&identifiers);
+              creation = get_iterator_creation_time (&identifiers, NULL);
               modification = get_iterator_modification_time (&identifiers);
 
               xml_string_append (result,
@@ -14629,7 +14628,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
           task_t task;
           gchar *creation, *modification;
 
-          creation = get_iterator_creation_time (&reports);
+          creation = get_iterator_creation_time (&reports, NULL);
           modification = get_iterator_modification_time (&reports);
 
           /* Send the standard elements.  Should match send_get_common. */
@@ -17932,7 +17931,7 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
       time_t oldest, newest;
       gchar *creation, *modification;
 
-      creation = get_iterator_creation_time (&vulns);
+      creation = get_iterator_creation_time (&vulns, NULL);
       modification = get_iterator_modification_time (&vulns);
 
       count ++;

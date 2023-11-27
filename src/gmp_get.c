@@ -320,7 +320,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 
   buffer = g_string_new ("");
 
-  creation = get_iterator_creation_time (iterator);
+  creation = get_iterator_creation_time (iterator, NULL);
   modification = get_iterator_modification_time (iterator);
 
   buffer_xml_append_printf (buffer,

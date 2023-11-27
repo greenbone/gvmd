@@ -3430,6 +3430,9 @@ manage_default_ca_cert ();
 
 /* Users. */
 
+user_t
+manage_current_user_info (gchar **);
+
 gboolean
 find_user_by_name_with_permission (const char *, user_t *, const char *);
 

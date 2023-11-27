@@ -67,7 +67,7 @@ const char*
 get_iterator_comment (iterator_t*);
 
 gchar*
-get_iterator_creation_time (iterator_t*);
+get_iterator_creation_time (iterator_t*, const gchar*);
 
 gchar*
 get_iterator_modification_time (iterator_t*);

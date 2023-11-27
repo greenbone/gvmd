@@ -5831,7 +5831,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
             }
 
           default_timeout = nvt_default_timeout (oid);
-          creation = get_iterator_creation_time (nvts);
+          creation = get_iterator_creation_time (nvts, NULL);
           modification = get_iterator_modification_time (nvts);
 
           g_string_append_printf (buffer,
