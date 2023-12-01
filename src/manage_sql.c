@@ -53774,7 +53774,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       real_inheritor_id = user_uuid (inheritor);
 
       /* Only the current user, owned users or global users may inherit. */
-      if (strcmp (real_inheritor_id, current_credentials.uuid)
+      if (current_credentials.uuid
+          && strcmp (current_credentials.uuid, "")
+          && strcmp (real_inheritor_id, current_credentials.uuid)
           && sql_int ("SELECT NOT (" ACL_IS_GLOBAL () ")"
                       " FROM users WHERE id = %llu",
                       inheritor)
