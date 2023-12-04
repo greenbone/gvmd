@@ -455,9 +455,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <xsl:apply-templates select="filter_keywords"/>
           <xsl:if test="description">
             <div style="margin-left: 10px; padding: 0 0 3px 5px;">
-              <i>
-                <b>More Details</b>
-              </i>
+              <i>More Details</i>
               <div style="margin-left: 10px; padding-left: 10px;">
                 <xsl:value-of select="normalize-space(description)"/>
               </div>
@@ -507,6 +505,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </xsl:call-template>
                 </xsl:for-each>
               </ul>
+              <xsl:if test="$new-line-element/description">
+                <div style="margin-left: 20px; padding: 0 0 3px 5px;">
+                  <i>More Details</i>
+                  <div style="margin-left: 10px; padding-left: 10px;">
+                    <xsl:value-of select="normalize-space($new-line-element/description)"/>
+                  </div>
+                </div>
+              </xsl:if>
             </xsl:when>
             <xsl:otherwise>
               <xsl:variable name="global-element"
