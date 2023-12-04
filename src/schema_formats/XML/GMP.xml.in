@@ -520,12 +520,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         Whether the certificate is valid, expired or not active yet
       </summary>
       <pattern>
-		<alts>
-		  <alt>expired</alt>
-		  <alt>inactive</alt>
-		  <alt>unknown</alt>
-		  <alt>valid</alt>
-		</alts>
+        <alts>
+          <alt>expired</alt>
+          <alt>inactive</alt>
+          <alt>unknown</alt>
+          <alt>valid</alt>
+	</alts>
       </pattern>
     </ele>
     <ele>
