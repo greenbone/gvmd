@@ -453,6 +453,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <xsl:value-of select="normalize-space(summary)"/>.
           </xsl:if>
           <xsl:apply-templates select="filter_keywords"/>
+          <xsl:if test="description">
+            <div style="margin-left: 10px; padding: 0 0 3px 5px;">
+              <i>
+                <b>More Details</b>
+              </i>
+              <div style="margin-left: 10px; padding-left: 10px;">
+                <xsl:value-of select="normalize-space(description)"/>
+              </div>
+            </div>
+          </xsl:if>
         </li>
       </xsl:when>
       <xsl:when test="name() = 'c'">
