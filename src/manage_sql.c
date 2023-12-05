@@ -22032,6 +22032,63 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 }
 
 /**
+ * @brief Return SQL WHERE for restricting a SELECT to compliance levels.
+ *
+ * @param[in]  levels  String describing compliance levels to include in 
+ *                     report (for example, "yniu" for "yes, "no", "incomplete"
+ *                     and "undefined").  All levels if NULL.
+ *
+ * @return WHERE clause for compliance levels if one is required, else NULL.
+ */
+static gchar*
+where_compliance_levels (const char *levels)
+{
+  int count;
+  GString *levels_sql;
+
+  if (levels == NULL)
+    return NULL;
+
+  levels_sql = g_string_new ("");
+  count = 0;
+
+  g_string_append_printf (levels_sql,
+    " AND coalesce("
+    "  lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)')),"
+    "  'undefined') IN (");
+
+  if (strchr (levels, 'y'))
+    {
+      g_string_append (levels_sql, "'yes'");
+      count++;
+    }
+  if (strchr (levels, 'n'))
+    {
+      g_string_append (levels_sql, count ? ", 'no'" : "'no'");
+      count++;
+    }
+  if (strchr (levels, 'i'))
+    {
+      g_string_append (levels_sql, count ? ", 'incomplete'" : "'incomplete'");
+      count++;
+    }
+  if (strchr (levels, 'u'))
+    {
+      g_string_append (levels_sql, count ? ", 'undefined'" : "'undefined'");
+      count++;
+    }
+  g_string_append (levels_sql, ")");
+
+  if (count == 4)
+    {
+      /* All compliance levels selected, so no restriction is necessary. */
+      g_string_free (levels_sql, TRUE);
+      return NULL;
+    }
+  return g_string_free (levels_sql, FALSE);
+}
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to a minimum QoD.
  *
  * @param[in]  min_qod  Minimum value for QoD.
@@ -22061,7 +22118,7 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", NULL }
+    "path", "compliant", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -22173,6 +22230,10 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
       "task",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
+      "         'undefined')",                                                \
+      "compliant",                                                            \
       KEYWORD_TYPE_STRING },
 
 /**
@@ -22348,6 +22409,10 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "nvts.tag",                                                             \
       NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
+      "         'undefined')",                                                \
+      "compliant",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
 
 /**
@@ -22599,8 +22664,9 @@ results_extra_where (int trash, report_t report, const gchar* host,
 {
   gchar *extra_where;
   int min_qod;
-  gchar *levels;
+  gchar *levels, *compliance_levels;
   gchar *report_clause, *host_clause, *min_qod_clause;
+  gchar *compliance_levels_clause;
   GString *levels_clause;
   gchar *new_severity_sql;
 
@@ -22609,6 +22675,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
     levels = g_strdup ("hmlgdf");
+  compliance_levels = filter_term_value (filter, "compliance_levels");
 
   // Build clause fragments
 
@@ -22637,19 +22704,24 @@ results_extra_where (int trash, report_t report, const gchar* host,
                                      given_new_severity_sql
                                       ? given_new_severity_sql
                                       : new_severity_sql);
+
+  compliance_levels_clause = where_compliance_levels (compliance_levels);
+
   g_free (levels);
   g_free (new_severity_sql);
 
-  extra_where = g_strdup_printf("%s%s%s%s",
+  extra_where = g_strdup_printf("%s%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
-                                min_qod_clause ? min_qod_clause : "");
+                                min_qod_clause ? min_qod_clause : "",
+                                compliance_levels_clause ?: "");
 
   g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);
   g_free (report_clause);
   g_free (host_clause);
+  g_free (compliance_levels_clause);
 
   return extra_where;
 }
@@ -23606,7 +23678,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -23620,7 +23692,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
