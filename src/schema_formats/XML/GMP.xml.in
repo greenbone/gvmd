@@ -59,6 +59,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>text</pattern>
   </type>
   <type>
+    <name>compliance_levels</name>
+    <summary>A string selecting compliance levels that may include the characters y, n, i and u</summary>
+    <description>
+      The meanings of the letters for each level are: "y" for "yes" (compliant),
+      "n" for "no" (not compliant), "i" for "incomplete" and "u" for "undefined"
+      (without compliance information). 
+    </description>
+    <pattern>xsd:token { pattern = "y?n?i?u?" }</pattern>
+  </type>
+  <type>
     <name>ctime</name>
     <summary>A date and time, in the C `ctime' format</summary>
     <description>
@@ -15536,6 +15546,11 @@ END:VCALENDAR
             <summary>Whether to apply Overrides</summary>
           </option>
           <option>
+            <name>compliance_levels</name>
+            <type>compliance_levels</type>
+            <summary>Compliance levels to select</summary>
+          </option>
+          <option>
             <name>delta_states</name>
             <type>delta_states</type>
             <summary>States to select in a delta report</summary>
@@ -15604,6 +15619,18 @@ END:VCALENDAR
             <name>owner</name>
             <type>name</type>
             <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>compliant</name>
+            <type>
+              <alts>
+                <alt>yes</alt>
+                <alt>no</alt>
+                <alt>incomplete</alt>
+                <alt>undefined</alt>
+              </alts>
+            </type>
+            <summary>Compliance status</summary>
           </column>
           <column>
             <name>host</name>
@@ -17058,6 +17085,11 @@ END:VCALENDAR
             <summary>Whether to apply Overrides</summary>
           </option>
           <option>
+            <name>compliance_levels</name>
+            <type>compliance_levels</type>
+            <summary>Compliance levels to select</summary>
+          </option>
+          <option>
             <name>levels</name>
             <type>levels</type>
             <summary>Severity levels to select</summary>
@@ -17121,6 +17153,18 @@ END:VCALENDAR
             <name>owner</name>
             <type>name</type>
             <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>compliant</name>
+            <type>
+              <alts>
+                <alt>yes</alt>
+                <alt>no</alt>
+                <alt>incomplete</alt>
+                <alt>undefined</alt>
+              </alts>
+            </type>
+            <summary>Compliance status</summary>
           </column>
           <column>
             <name>host</name>
