@@ -23161,6 +23161,21 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 }
 
 /**
+ * @brief Initialise a result iterator not limited to report or host.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_result_get_iterator (iterator, get, 0, NULL, NULL);
+}
+
+/**
  * @brief Count the number of results.
  *
  * @param[in]  get     GET params.
@@ -38860,6 +38875,21 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 }
 
 /**
+ * @brief Initialise a note iterator not limited to result, task or NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_note_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_note_iterator (iterator, get, 0, 0, 0);
+}
+
+/**
  * @brief Get the NVT OID from a note iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -40114,6 +40144,21 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
   g_free (result_clause);
 
   return ret;
+}
+
+/**
+ * @brief Initialise an override iterator not limited to result, task or NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_override_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_override_iterator (iterator, get, 0, 0, 0);
 }
 
 /**
@@ -50422,6 +50467,45 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
 }
 
 /**
+ * @brief Initialise a host iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (hosts) };
+  int ret;
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            NULL,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
+  return ret;
+}
+
+/**
  * @brief Get the writable status from an asset iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -50657,6 +50741,48 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  0);
 
   g_free (extra_tables);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise an OS iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (oss) };
+  int ret;
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 NULL,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 0);
 
   return ret;
 }
