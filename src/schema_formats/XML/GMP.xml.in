@@ -17033,6 +17033,148 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_resource_names</name>
+    <summary>Get one or many names and IDs for items of given type</summary>
+    <description>
+      The client uses the get_resource_names command to get the 
+      names and IDs for items of the given type.
+    </description>
+    <pattern>
+      <attrib>
+        <name>type</name>
+        <summary>
+        Type must be one of ALERT, FILTER, GROUP, NOTE, OVERRIDE, PERMISSION, PORT_LIST,
+        REPORT, REPORT_FORMAT, ROLE, CONFIG, SCANNER, SCHEDULE, TARGET, TASK, OS, RESULT
+        TLS_CERTIFICATE, USER, CPE, CVE, NVT, CERT_BUND_ADV, DFN_CERT_ADV, HOST, CREDENTIAL,
+        CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, HOST, NVT, or OS</summary>
+        <type>text</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>resource_id</name>
+        <summary>ID of single resource to get.</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>type</e>
+        <any><e>resource</e></any>
+      </pattern>
+      <ele>
+        <name>type</name>
+        <summary>The type of the resource</summary>
+        <pattern><t>type</t></pattern>        
+      </ele>
+      <ele>
+        <name>resource</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>integer</type>
+            <summary>A unique number identifying the resource, if available</summary>
+          </attrib>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the resource</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all resource names for operating systems</summary>
+      <request>
+        <get_resource_names type="os" filter="first=1, rows=-1"/>
+      </request>
+      <response>
+        <get_resource_names_response status_text="OK" status="200">
+          <type>os</type>
+          <resource id="5b6b6aef-b320-42ca-899f-3161ee2a4195">
+            <name>cpe:/h:hp:jetdirect</name>
+          </resource>
+          <resource id="5be25864-9249-431e-8a91-039e334371ad">
+            <name>cpe:/o:canonical:ubuntu_linux:18.04</name>
+          </resource>
+          <resource id="89ccbfe3-9bbb-4c99-b4c7-fb85ca021093">
+            <name>cpe:/o:canonical:ubuntu_linux:8.04</name>
+          </resource>
+          <resource id="f2fa6833-fe34-4e04-a60c-6c5dc1ed0fcf">
+            <name>cpe:/o:debian:debian_linux</name>
+          </resource>
+          <resource id="d29f3e4e-07e0-4eb6-b040-5e179f890784">
+            <name>cpe:/o:debian:debian_linux:8</name>
+          </resource>
+          <resource id="2aa54229-0041-492f-8c81-df0289563512">
+            <name>cpe:/o:debian:debian_linux:9</name>
+          </resource>
+          <resource id="39ff8a64-54c2-405d-8e95-7b086e9a3eca">
+            <name>cpe:/o:linux:kernel</name>
+          </resource>
+          <resource id="19c091f0-a687-4dc3-b482-7d191ead4bb3">
+            <name>cpe:/o:microsoft:windows</name>
+          </resource>
+        </get_resource_names_response>
+      </response>
+    </example>  
+  </command>
+  <command>
     <name>get_results</name>
     <summary>Get results</summary>
     <description>
