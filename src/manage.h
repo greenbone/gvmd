@@ -1412,6 +1412,8 @@ result_count (const get_data_t *, report_t, const char*);
 int
 init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
+int
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);                         
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1910,6 +1912,9 @@ int
 init_nvt_info_iterator (iterator_t*, get_data_t*, const char*);
 
 int
+init_nvt_info_iterator_all (iterator_t*, get_data_t*);
+
+int
 nvt_info_count (const get_data_t *);
 
 int
@@ -2331,6 +2336,9 @@ int
 init_asset_host_iterator (iterator_t *, const get_data_t *);
 
 int
+init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get);
+
+int
 asset_iterator_writable (iterator_t *);
 
 int
@@ -2344,6 +2352,9 @@ asset_host_count (const get_data_t *);
 
 int
 init_asset_os_iterator (iterator_t *, const get_data_t *);
+
+int
+init_resource_names_os_iterator (iterator_t *, get_data_t *);
 
 const char*
 asset_os_iterator_title (iterator_t *);
@@ -2435,6 +2446,9 @@ note_count (const get_data_t *, nvt_t, result_t, task_t);
 int
 init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
 
+int
+init_note_iterator_all (iterator_t* iterator, get_data_t *get);
+
 const char*
 note_iterator_nvt_oid (iterator_t*);
 
@@ -2508,6 +2522,9 @@ override_count (const get_data_t *, nvt_t, result_t, task_t);
 int
 init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
+
+int
+init_override_iterator_all (iterator_t* iterator, get_data_t *get);                        
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
@@ -3264,6 +3281,9 @@ int
 init_cpe_info_iterator (iterator_t*, get_data_t*, const char*);
 
 int
+init_cpe_info_iterator_all (iterator_t*, get_data_t*);
+
+int
 cpe_info_count (const get_data_t *get);
 
 const char*
@@ -3310,6 +3330,10 @@ cve_info_iterator_products (iterator_t*);
 int
 init_cve_info_iterator (iterator_t*, get_data_t*, const char*);
 
+
+int
+init_cve_info_iterator_all (iterator_t*, get_data_t*);
+
 int
 cve_info_count (const get_data_t *get);
 
@@ -3324,6 +3348,9 @@ manage_cert_loaded ();
 
 int
 init_cert_bund_adv_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+init_cert_bund_adv_info_iterator_all (iterator_t*, get_data_t*);
 
 int
 cert_bund_adv_info_count (const get_data_t *get);
@@ -3353,6 +3380,9 @@ nvt_cert_bund_adv_iterator_name (iterator_t*);
 
 int
 init_dfn_cert_adv_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+init_dfn_cert_adv_info_iterator_all (iterator_t*, get_data_t*);
 
 int
 dfn_cert_adv_info_count (const get_data_t *get);
