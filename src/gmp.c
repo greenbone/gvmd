@@ -5293,18 +5293,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                attribute_names,
                                attribute_values);
             set_client_state (CLIENT_GET_LICENSE);
-          }
-        else if (strcasecmp ("GET_RESOURCE_NAMES", element_name) == 0)
-          {
-            const gchar* typebuf;
-            get_data_parse_attributes (&get_resource_names_data->get, "resource",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "type", &typebuf))
-              get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
-            set_client_state (CLIENT_GET_RESOURCE_NAMES);
-          }          
+          }      
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5548,6 +5537,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
+        else if (strcasecmp ("GET_RESOURCE_NAMES", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_resource_names_data->get, "resource",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_RESOURCE_NAMES);
+          }             
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
