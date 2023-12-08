@@ -17043,10 +17043,10 @@ END:VCALENDAR
       <attrib>
         <name>type</name>
         <summary>
-        Type must be one of ALERT, FILTER, GROUP, NOTE, OVERRIDE, PERMISSION, PORT_LIST,
-        REPORT, REPORT_FORMAT, ROLE, CONFIG, SCANNER, SCHEDULE, TARGET, TASK, OS, RESULT
-        TLS_CERTIFICATE, USER, CPE, CVE, NVT, CERT_BUND_ADV, DFN_CERT_ADV, HOST, CREDENTIAL,
-        CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, HOST, NVT, or OS</summary>
+        Type must be one of ALERT, CERT_BUND_ADV, CONFIG, CPE, CREDENTIAL, CVE,
+        DFN_CERT_ADV, FILTER, GROUP, HOST, NOTE, NVT, OS, OVERRIDE, PERMISSION,
+        PORT_LIST, REPORT_FORMAT, REPORT, RESULT, ROLE, SCANNER, SCHEDULE, TARGET,
+        TASK, TLS_CERTIFICATE or USER</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
