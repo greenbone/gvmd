@@ -530,12 +530,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         Whether the certificate is valid, expired or not active yet
       </summary>
       <pattern>
-		<alts>
-		  <alt>expired</alt>
-		  <alt>inactive</alt>
-		  <alt>unknown</alt>
-		  <alt>valid</alt>
-		</alts>
+        <alts>
+          <alt>expired</alt>
+          <alt>inactive</alt>
+          <alt>unknown</alt>
+          <alt>valid</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -628,7 +628,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </pattern>
         <ele>
           <name>value</name>
-	  <summary>The value of the QoD</summary>
+          <summary>The value of the QoD</summary>
           <pattern><t>integer</t></pattern>
         </ele>
         <ele>
@@ -2064,10 +2064,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>order</name>
             <summary>Sort order of field</summary>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -2147,12 +2147,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filter</name>
           <summary>Level filter</summary>
           <pattern>
-			<alts>
-			  <alt>High</alt>
-			  <alt>Medium</alt>
-			  <alt>Low</alt>
-			  <alt>Log</alt>
-			</alts>
+            <alts>
+              <alt>High</alt>
+              <alt>Medium</alt>
+              <alt>Low</alt>
+              <alt>Log</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -3626,10 +3626,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>usage_type</name>
       <summary>Usage type (scan or policy) for the config. Can overwrite the one in get_configs_response</summary>
       <pattern>
-		<alts>
-		  <alt>scan</alt>
-		  <alt>policy</alt>
-		</alts>
+        <alts>
+          <alt>scan</alt>
+          <alt>policy</alt>
+        </alts>
       </pattern>
     </ele>
     <response>
@@ -3817,10 +3817,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-		<alts>
-		  <alt>md5</alt>
-		  <alt>sha1</alt>
-		</alts>
+        <alts>
+          <alt>md5</alt>
+          <alt>sha1</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -3833,10 +3833,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-		  <alts>
-			<alt>aes</alt>
-			<alt>des</alt>
-		  </alts>
+          <alts>
+            <alt>aes</alt>
+            <alt>des</alt>
+          </alts>
         </pattern>
       </ele>
       <ele>
@@ -3851,15 +3851,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>type</name>
       <summary>The type of credential to create</summary>
       <pattern>
-		<alts>
-		  <alt>cc</alt>
-		  <alt>pgp</alt>
-		  <alt>pw</alt>
-		  <alt>smime</alt>
-		  <alt>snmp</alt>
-		  <alt>up</alt>
-		  <alt>usk</alt>
-		</alts>
+        <alts>
+          <alt>cc</alt>
+          <alt>pgp</alt>
+          <alt>pw</alt>
+          <alt>smime</alt>
+          <alt>snmp</alt>
+          <alt>up</alt>
+          <alt>usk</alt>
+        </alts>
       </pattern>
     </ele>
     <response>
@@ -5593,10 +5593,10 @@ END:VCALENDAR
       <name>usage_type</name>
       <summary>Usage type for the task (scan or audit), defaulting to scan</summary>
       <pattern>
-		<alts>
-		  <alt>scan</alt>
-		  <alt>audit</alt>
-		</alts>
+        <alts>
+          <alt>scan</alt>
+          <alt>audit</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -7538,20 +7538,20 @@ END:VCALENDAR
           <name>type</name>
           <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
           <pattern>
-			<alts>
-			  <alt>0</alt>
-			  <alt>1</alt>
-			</alts>
+            <alts>
+              <alt>0</alt>
+              <alt>1</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
           <name>usage_type</name>
           <summary>The usage type of the config (scan or policy)</summary>
           <pattern>
-			<alts>
-			  <alt>scan</alt>
-			  <alt>policy</alt>
-			</alts>
+            <alts>
+              <alt>scan</alt>
+              <alt>policy</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -7929,10 +7929,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -9164,10 +9164,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -9984,10 +9984,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -10406,15 +10406,15 @@ END:VCALENDAR
           <name>type</name>
           <summary>The type of the credential</summary>
           <pattern>
-			<alts>
-			  <alt>cc</alt>
-			  <alt>pgp</alt>
-			  <alt>pw</alt>
-			  <alt>smime</alt>
-			  <alt>snmp</alt>
-			  <alt>up</alt>
-			  <alt>usk</alt>
-			</alts>
+            <alts>
+              <alt>cc</alt>
+              <alt>pgp</alt>
+              <alt>pw</alt>
+              <alt>smime</alt>
+              <alt>snmp</alt>
+              <alt>up</alt>
+              <alt>usk</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -10434,13 +10434,13 @@ END:VCALENDAR
             <name>format</name>
             <summary>Format as used in the command</summary>
             <pattern>
-			  <alts>
-				<alt>key</alt>
-				<alt>rpm</alt>
-				<alt>deb</alt>
-				<alt>exe</alt>
-				<alt>pem</alt>
-			  </alts>
+              <alts>
+                <alt>key</alt>
+                <alt>rpm</alt>
+                <alt>deb</alt>
+                <alt>exe</alt>
+                <alt>pem</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -10448,10 +10448,10 @@ END:VCALENDAR
           <name>auth_algorithm</name>
           <summary>The SNMP authentication algorithm</summary>
           <pattern>
-			<alts>
-			  <alt>md5</alt>
-			  <alt>sha1</alt>
-			</alts>
+            <alts>
+              <alt>md5</alt>
+              <alt>sha1</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -10463,10 +10463,10 @@ END:VCALENDAR
             <name>algorithm</name>
             <summary>The SNMP privacy algorithm</summary>
             <pattern>
-			  <alts>
-				<alt>aes</alt>
-				<alt>des</alt>
-			  </alts>
+              <alts>
+                <alt>aes</alt>
+                <alt>des</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -10635,10 +10635,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -16054,12 +16054,12 @@ END:VCALENDAR
           <name>filter</name>
           <summary>A severity level that is included in the report</summary>
           <pattern>
-			<alts>
-			  <alt>High</alt>
-			  <alt>Medium</alt>
-			  <alt>Low</alt>
-			  <alt>Log</alt>
-			</alts>
+            <alts>
+              <alt>High</alt>
+              <alt>Medium</alt>
+              <alt>Low</alt>
+              <alt>Log</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -16731,14 +16731,14 @@ END:VCALENDAR
               <o><e>min</e></o>
               <o><e>max</e></o>
               <o><e>options</e></o>
-			  <alts>
-				<alt>boolean</alt>
-				<alt>integer</alt>
-				<alt>selection</alt>
-				<alt>string</alt>
-				<alt>text</alt>
-				<alt>report_format_list</alt>
-			  </alts>
+              <alts>
+                <alt>boolean</alt>
+                <alt>integer</alt>
+                <alt>selection</alt>
+                <alt>string</alt>
+                <alt>text</alt>
+                <alt>report_format_list</alt>
+              </alts>
             </pattern>
             <ele>
               <name>min</name>
@@ -21176,10 +21176,10 @@ END:VCALENDAR
           <name>usage_type</name>
           <summary>The usage type of the task (scan or audit)</summary>
           <pattern>
-			<alts>
-			  <alt>scan</alt>
-			  <alt>audit</alt>
-			</alts>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -21836,97 +21836,97 @@ END:VCALENDAR
         </get_tasks>
       </request>
       <response>
-		<get_tasks_response status="200" status_text="OK">
-		  <apply_overrides>0</apply_overrides>
-		  <task id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
-			<owner>
-			  <name>m</name>
-			</owner>
-			<name>Container Example</name>
-			<comment>This task provides for uploading reports</comment>
-			<creation_time>2019-08-13T12:28:43+02:00</creation_time>
-			<modification_time>
-			2019-08-13T12:28:44+02:00</modification_time>
-			<writable>1</writable>
-			<in_use>0</in_use>
-			<permissions>
-			  <permission>
-				<name>Everything</name>
-			  </permission>
-			</permissions>
-			<alterable>0</alterable>
-			<usage_type>scan</usage_type>
-			<config id="">
-			  <name></name>
-			  <type>-1</type>
-			  <trash>0</trash>
-			</config>
-			<target id="">
-			  <name></name>
-			  <trash>0</trash>
-			</target>
-			<hosts_ordering></hosts_ordering>
-			<scanner id=''>
-			  <name></name>
-			  <type>0</type>
-			  <trash>0</trash>
-			</scanner>
-			<status>Done</status>
-			<progress>-1</progress>
-			<report_count>1
-			<finished>1</finished></report_count>
-			<trend></trend>
+        <get_tasks_response status="200" status_text="OK">
+          <apply_overrides>0</apply_overrides>
+          <task id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
+            <owner>
+              <name>m</name>
+            </owner>
+            <name>Container Example</name>
+            <comment>This task provides for uploading reports</comment>
+            <creation_time>2019-08-13T12:28:43+02:00</creation_time>
+            <modification_time>
+            2019-08-13T12:28:44+02:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <alterable>0</alterable>
+            <usage_type>scan</usage_type>
+            <config id="">
+              <name></name>
+              <type>-1</type>
+              <trash>0</trash>
+            </config>
+            <target id="">
+              <name></name>
+              <trash>0</trash>
+            </target>
+            <hosts_ordering></hosts_ordering>
+            <scanner id=''>
+              <name></name>
+              <type>0</type>
+              <trash>0</trash>
+            </scanner>
+            <status>Done</status>
+            <progress>-1</progress>
+            <report_count>1
+            <finished>1</finished></report_count>
+            <trend></trend>
             <schedule id="">
               <name></name>
               <trash>0</trash>
             </schedule>
-			<last_report>
-			  <report id="5496f417-9b3b-4582-b450-c05ca99009d8">
-				<timestamp>2019-08-13T12:29:25+02:00</timestamp>
-				<scan_start>2019-04-24T14:26:01+02:00</scan_start>
-				<scan_end>2019-04-24T14:50:59+02:00</scan_end>
-				<result_count>
-				  <hole>1</hole>
-				  <info>0</info>
-				  <log>77</log>
-				  <warning>8</warning>
-				  <false_positive>0</false_positive>
-				</result_count>
-				<severity>9.0</severity>
-			  </report>
-			</last_report>
-			<observers></observers>
-			<preferences>
-			  <preference>
-				<name>Maximum concurrently executed NVTs per host</name>
-				<scanner_name>max_checks</scanner_name>
-				<value>4</value>
-			  </preference>
-            <truncated>...</truncated>
-			</preferences>
-		  </task>
-		  <filters id="">
-			<term>apply_overrides=0 min_qod=70
-			uuid=f404781f-6d2b-420c-b7a1-0d3f27f1a43b first=1 rows=10
-			sort=name</term>
-			<keywords>
-			  <keyword>
-				<column>apply_overrides</column>
-				<relation>=</relation>
-				<value>0</value>
-			  </keyword>
+            <last_report>
+              <report id="5496f417-9b3b-4582-b450-c05ca99009d8">
+                <timestamp>2019-08-13T12:29:25+02:00</timestamp>
+                <scan_start>2019-04-24T14:26:01+02:00</scan_start>
+                <scan_end>2019-04-24T14:50:59+02:00</scan_end>
+                <result_count>
+                  <hole>1</hole>
+                  <info>0</info>
+                  <log>77</log>
+                  <warning>8</warning>
+                  <false_positive>0</false_positive>
+                </result_count>
+                <severity>9.0</severity>
+              </report>
+            </last_report>
+            <observers></observers>
+            <preferences>
+              <preference>
+                <name>Maximum concurrently executed NVTs per host</name>
+                <scanner_name>max_checks</scanner_name>
+                <value>4</value>
+              </preference>
               <truncated>...</truncated>
-			</keywords>
-		  </filters>
-		  <sort>
-			<field>name
-			<order>ascending</order></field>
-		  </sort>
-		  <tasks start="1" max="10" />
-		  <task_count>21
-		  <filtered>1</filtered>
-		  <page>1</page></task_count>
-		</get_tasks_response>
+            </preferences>
+          </task>
+          <filters id="">
+            <term>apply_overrides=0 min_qod=70
+            uuid=f404781f-6d2b-420c-b7a1-0d3f27f1a43b first=1 rows=10
+            sort=name</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name
+            <order>ascending</order></field>
+          </sort>
+          <tasks start="1" max="10" />
+          <task_count>21
+          <filtered>1</filtered>
+          <page>1</page></task_count>
+        </get_tasks_response>
       </response>
     </example>
   </command>
@@ -22922,11 +22922,11 @@ END:VCALENDAR
             <name>source</name>
             <summary>Authentication source</summary>
             <pattern>
-			  <alts>
-				<alt>file</alt>
-				<alt>ldap_connect</alt>
-				<alt>radius_connect</alt>
-			  </alts>
+              <alts>
+                <alt>file</alt>
+                <alt>ldap_connect</alt>
+                <alt>radius_connect</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -25106,10 +25106,10 @@ END:VCALENDAR
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-		<alts>
-		  <alt>md5</alt>
-		  <alt>sha1</alt>
-		</alts>
+        <alts>
+          <alt>md5</alt>
+          <alt>sha1</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -25122,10 +25122,10 @@ END:VCALENDAR
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-		  <alts>
-			<alt>aes</alt>
-			<alt>des</alt>
-		  </alts>
+          <alts>
+            <alt>aes</alt>
+            <alt>des</alt>
+          </alts>
         </pattern>
       </ele>
       <ele>
@@ -26895,8 +26895,8 @@ END:VCALENDAR
           <summary>If 0 then password is left alone, otherwise password is modified</summary>
           <type>boolean</type>
         </attrib>
-	    text
- 	  </pattern>
+        text
+       </pattern>
     </ele>
     <ele>
       <name>role</name>
@@ -26912,20 +26912,20 @@ END:VCALENDAR
     <ele>
       <name>sources</name>
       <summary>List of authentication sources for this user (if omitted, no changes)</summary>
-	  <pattern>
-		<any><e>source</e></any>
-	  </pattern>
-	  <ele>
-		<name>source</name>
-		<summary>Authentication source</summary>
-		<pattern>
-		  <alts>
-			<alt>file</alt>
-			<alt>ldap_connect</alt>
-			<alt>radius_connect</alt>
-		  </alts>
-		</pattern>
-	  </ele>
+      <pattern>
+        <any><e>source</e></any>
+      </pattern>
+      <ele>
+        <name>source</name>
+        <summary>Authentication source</summary>
+        <pattern>
+          <alts>
+            <alt>file</alt>
+            <alt>ldap_connect</alt>
+            <alt>radius_connect</alt>
+          </alts>
+        </pattern>
+      </ele>
     </ele>
     <response>
       <pattern>
