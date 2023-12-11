@@ -1117,15 +1117,14 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
         {
           gchar *clause;
           clause
-           = g_strdup_printf ("OR EXISTS"
-                              " (SELECT id FROM %spermissions_subject"
-                              "  WHERE resource = %ss%s.id"
-                              "  AND resource_type = '%s'"
+           = g_strdup_printf ("OR %ss%s.id IN"
+                              " (SELECT resource FROM %spermissions_subject"
+                              "  WHERE resource_type = '%s'"
                               "  AND resource_location = %i"
                               "  AND (%s))",
-                              with_prefix ? with_prefix : "",
                               type,
                               get->trash && strcmp (type, "task") ? "_trash" : "",
+                              with_prefix ? with_prefix : "",
                               type,
                               get->trash ? LOCATION_TRASH : LOCATION_TABLE,
                               permission_or->str);
@@ -1133,26 +1132,24 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
           if (strcmp (type, "report") == 0)
             permission_clause
              = g_strdup_printf ("%s"
-                                " OR EXISTS"
-                                " (SELECT id FROM %spermissions_subject"
-                                "  WHERE resource = reports%s.task"
-                                "  AND resource_type = 'task'"
+                                " OR reports%s.task IN"
+                                " (SELECT resource FROM %spermissions_subject"
+                                "  WHERE resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
-                                with_prefix ? with_prefix : "",
                                 get->trash ? "_trash" : "",
+                                with_prefix ? with_prefix : "",
                                 permission_or->str);
           else if (strcmp (type, "result") == 0)
             permission_clause
              = g_strdup_printf ("%s"
-                                " OR EXISTS"
+                                " OR results%s.task IN"
                                 " (SELECT id FROM %spermissions_subject"
-                                "  WHERE resource = results%s.task"
-                                "  AND resource_type = 'task'"
+                                "  WHERE resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
-                                with_prefix ? with_prefix : "",
                                 get->trash ? "_trash" : "",
+                                with_prefix ? with_prefix : "",
                                 permission_or->str);
 
           if ((strcmp (type, "report") == 0)
