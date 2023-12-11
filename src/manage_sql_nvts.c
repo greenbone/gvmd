@@ -636,6 +636,21 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 }
 
 /**
+ * @brief Initialise an NVT iterator not limited to a name.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find NVT, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_nvt_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_nvt_info_iterator(iterator, get, NULL);
+}
+
+/**
  * @brief Get NVT iterator SELECT columns.
  *
  * @return SELECT columns

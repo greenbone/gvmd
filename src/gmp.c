@@ -98,6 +98,7 @@
 #include "manage_acl.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#include "manage_tls_certificates.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
@@ -2023,6 +2024,29 @@ get_report_formats_data_reset (get_report_formats_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_resource_names command.
+ */
+typedef struct
+{
+  char *type;         ///< Requested type.
+  get_data_t get;     ///< Get Args.
+} get_resource_names_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_resource_names_data_reset (get_resource_names_data_t *data)
+{
+  free (data->type);
+  get_data_reset (&data->get);
+
+  memset (data, 0, sizeof (get_resource_names_data_t));
+}
+
+/**
  * @brief Command data for the get_results command.
  */
 typedef struct
@@ -3329,6 +3353,7 @@ typedef union
   get_preferences_data_t get_preferences;             ///< get_preferences
   get_reports_data_t get_reports;                     ///< get_reports
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
+  get_resource_names_data_t get_resource_names;       ///< get_resource_names
   get_results_data_t get_results;                     ///< get_results
   get_roles_data_t get_roles;                         ///< get_roles
   get_schedules_data_t get_schedules;                 ///< get_schedules
@@ -3718,6 +3743,12 @@ static get_reports_data_t *get_reports_data
  */
 static get_report_formats_data_t *get_report_formats_data
  = &(command_data.get_report_formats);
+
+/**
+ * @brief Parser callback data for GET_RESOURCE_NAMES.
+ */
+static get_resource_names_data_t *get_resource_names_data
+ = &(command_data.get_resource_names);
 
 /**
  * @brief Parser callback data for GET_RESULTS.
@@ -4310,6 +4341,7 @@ typedef enum
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_FORMATS,
+  CLIENT_GET_RESOURCE_NAMES,
   CLIENT_GET_RESULTS,
   CLIENT_GET_ROLES,
   CLIENT_GET_SCANNERS,
@@ -5261,7 +5293,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                attribute_names,
                                attribute_values);
             set_client_state (CLIENT_GET_LICENSE);
-          }
+          }      
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5505,6 +5537,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
+        else if (strcasecmp ("GET_RESOURCE_NAMES", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_resource_names_data->get, "resource",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_RESOURCE_NAMES);
+          }             
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -15198,6 +15241,309 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Assign resource iterator with an init iterator based on the type 
+ * in the get command data.
+ *
+ * @param[in]  resource_names_data   data for get_resource_names command.
+ * @param[out] iterator              address of iterator function pointer.
+ * 
+ * @return 1 if type is invalid, else 0.
+ */
+int
+select_resource_iterator (get_resource_names_data_t *resource_names_data, 
+                          int (**iterator) (iterator_t*, get_data_t *))
+{
+    if (g_strcmp0 ("cpe", resource_names_data->type) == 0)
+    {
+      *iterator = init_cpe_info_iterator_all;
+    }
+  else if (g_strcmp0 ("cve", resource_names_data->type) == 0)
+    {
+      *iterator = init_cve_info_iterator_all;
+    }
+  else if (g_strcmp0 ("nvt", resource_names_data->type) == 0)
+    {
+      *iterator = init_nvt_info_iterator_all;
+    }
+  else if (g_strcmp0 ("cert_bund_adv", resource_names_data->type) == 0)
+    {
+      *iterator = init_cert_bund_adv_info_iterator_all;
+    }
+  else if (g_strcmp0 ("dfn_cert_adv", resource_names_data->type) == 0)
+    {
+      *iterator = init_dfn_cert_adv_info_iterator_all;
+    }
+  else if (g_strcmp0 ("host", resource_names_data->type) == 0)
+    {
+      *iterator = init_resource_names_host_iterator;
+    }
+  else if (g_strcmp0 ("os", resource_names_data->type) == 0)
+    {
+      *iterator = init_resource_names_os_iterator;
+    }
+  else if (g_strcmp0 ("result", resource_names_data->type) == 0)
+    {
+      *iterator = init_result_get_iterator_all;
+    }
+  else if (g_strcmp0 ("alert", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_alert_iterator;
+    }
+  else if (g_strcmp0 ("credential", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_credential_iterator;
+    }
+  else if (g_strcmp0 ("filter", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_filter_iterator;
+    }
+  else if (g_strcmp0 ("group", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_group_iterator;
+    }                
+  else if (g_strcmp0 ("note", resource_names_data->type) == 0)
+    {
+      *iterator = init_note_iterator_all;
+    }
+  else if (g_strcmp0 ("override", resource_names_data->type) == 0)
+    {
+      *iterator = init_override_iterator_all;
+    }                
+  else if (g_strcmp0 ("permission", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_permission_iterator;
+    }                
+  else if (g_strcmp0 ("port_list", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_port_list_iterator;
+    }                
+  else if (g_strcmp0 ("report", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+    }                
+  else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_format_iterator;
+    }                
+  else if (g_strcmp0 ("role", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_role_iterator;
+    }                
+  else if (g_strcmp0 ("config", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
+    }                
+  else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
+    }                
+  else if (g_strcmp0 ("schedule", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_schedule_iterator;
+    }                
+  else if (g_strcmp0 ("target", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_target_iterator;
+    }                
+  else if (g_strcmp0 ("task", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
+    } 
+  else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
+    } 
+  else if (g_strcmp0 ("user", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_user_iterator;
+    }         
+  else
+    {
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Handle end of GET_RESOURCE_NAMES element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
+{
+  iterator_t resource;
+  int ret;
+  int (*init_resource_iterator) (iterator_t*, get_data_t *);
+
+  if (get_resource_names_data->type == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_resource_names",
+                          "No type specified."));
+      get_resource_names_data_reset (get_resource_names_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0) 
+          ||(g_strcmp0 ("os", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_assets") == 0))
+      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
+          && (acl_user_may ("get_results") == 0))
+      || ((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+          && (acl_user_may ("get_reports") == 0))
+      || (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("cve", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("nvt", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
+          && (acl_user_may ("get_info") == 0)))
+      {
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_resource_names",
+                             "Permission denied"));
+        get_resource_names_data_reset (get_resource_names_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+      }
+
+  if (((g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
+        || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
+      && (manage_cert_loaded () == 0))
+    {
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_resource_names",
+                           "The CERT database is required"));
+        get_resource_names_data_reset (get_resource_names_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+    }
+
+  if (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
+        || (g_strcmp0 ("cve", get_resource_names_data->type) == 0))
+      && (manage_scap_loaded () == 0))
+    {
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_resource_names",
+                           "The SCAP database is required"));
+        get_resource_names_data_reset (get_resource_names_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+    }    
+
+  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
+    {
+      if (send_find_error_to_client ("get_resource_names", "type",
+                                     get_resource_names_data->type, gmp_parser))
+        {
+          error_send_to_client (error);
+        }
+      get_resource_names_data_reset (get_resource_names_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    };
+
+  ret = init_resource_iterator (&resource, &get_resource_names_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+        case 1:
+          if (send_find_error_to_client ("get_resource_names", "type",
+                                         get_resource_names_data->type,
+                                         gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;          
+        case 2:
+          if (send_find_error_to_client
+               ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
+                gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;
+        case -1:
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_INTERNAL_ERROR ("get_resource_names"));
+          break;
+        }
+      get_resource_names_data_reset (get_resource_names_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+  
+  SEND_GET_START ("resource_name");
+  SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>", get_resource_names_data->type);
+
+  while (next (&resource))
+    {
+      if ((g_strcmp0 ("task", get_resource_names_data->type) == 0 
+           && g_strcmp0 ("audit", task_iterator_usage_type(&resource)) == 0)
+          || (g_strcmp0 ("config", get_resource_names_data->type) == 0 
+           && g_strcmp0 ("policy", config_iterator_usage_type(&resource)) == 0))
+      {
+        continue;
+      }
+
+      GString *result;
+      result = g_string_new ("");
+      
+      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0) 
+        {
+            buffer_xml_append_printf (result,
+                                      "<resource id=\"%s\">"
+                                      "<name>%s</name>",
+                                      get_iterator_uuid (&resource)
+                                        ? get_iterator_uuid (&resource)
+                                        : "",
+                                      tls_certificate_iterator_subject_dn (&resource)
+                                        ? tls_certificate_iterator_subject_dn (&resource)
+                                        : "");          
+        } 
+      else if (g_strcmp0 ("override", get_resource_names_data->type) == 0)
+        {
+            buffer_xml_append_printf (result,
+                                        "<resource id=\"%s\">"
+                                        "<name>%s</name>",
+                                        get_iterator_uuid (&resource)
+                                          ? get_iterator_uuid (&resource)
+                                          : "",
+                                        override_iterator_nvt_name (&resource)
+                                          ? override_iterator_nvt_name (&resource)
+                                          : "");          
+        }
+      else 
+        {
+            buffer_xml_append_printf (result,
+                                        "<resource id=\"%s\">"
+                                        "<name>%s</name>",
+                                        get_iterator_uuid (&resource)
+                                          ? get_iterator_uuid (&resource)
+                                          : "",
+                                        get_iterator_name (&resource)
+                                          ? get_iterator_name (&resource)
+                                          : "");
+
+        }
+
+      g_string_append_printf (result, "</resource>");
+      SEND_TO_CLIENT_OR_FAIL (result->str);
+      g_string_free (result, TRUE);
+    }
+
+  SEND_TO_CLIENT_OR_FAIL ("</get_resource_names_response>");
+  cleanup_iterator (&resource);
+  get_resource_names_data_reset (get_resource_names_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
  * @brief Handle end of GET_RESULTS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -19155,6 +19501,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
         break;
+
+      case CLIENT_GET_RESOURCE_NAMES:
+        handle_get_resource_names (gmp_parser, error);
+        break;        
 
       case CLIENT_GET_RESULTS:
         handle_get_results (gmp_parser, error);

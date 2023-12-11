@@ -531,6 +531,22 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 }
 
 /**
+ * @brief Initialise a CPE info iterator not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cpe_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_cpe_info_iterator (iterator, get, NULL);
+}
+
+/**
  * @brief Get the title from a CPE iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -758,6 +774,22 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 }
 
 /**
+ * @brief Initialise a CVE info iterator not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cve_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_cve_info_iterator (iterator, get, NULL);
+}
+
+/**
  * @brief Get the CVSS attack vector for this CVE.
  *
  * @param[in]  iterator  Iterator.
@@ -885,6 +917,22 @@ init_cert_bund_adv_info_iterator (iterator_t* iterator, get_data_t *get,
                            FALSE);
   g_free (clause);
   return ret;
+}
+
+/**
+ * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator not 
+ *        limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cert_bund_adv_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_cert_bund_adv_info_iterator (iterator, get, NULL);
 }
 
 /**
@@ -1093,6 +1141,22 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
                            FALSE);
   g_free (clause);
   return ret;
+}
+
+/**
+ * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator 
+ *        not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_dfn_cert_adv_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_dfn_cert_adv_info_iterator (iterator, get, NULL);
 }
 
 /**
