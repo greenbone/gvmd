@@ -257,7 +257,13 @@ static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
-vulns_extra_where ();
+vulns_extra_where (int);
+
+static gchar*
+vuln_iterator_opts_from_filter (const char*);
+
+static gchar*
+vuln_iterator_extra_with_from_filter ();
 
 static int
 task_last_report_any_status (task_t, report_t *);
@@ -17660,15 +17666,17 @@ resource_count (const char *type, const get_data_t *get)
   static const char *filter_columns[] = { "owner", NULL };
   static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
   get_data_t count_get;
-  gchar *extra_where;
+  gchar *extra_where, *extra_with, *extra_tables;
   int rc;
 
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
   if (type_owned (type))
-    count_get.filter = "rows=-1 first=1 permission=any owner=any";
+    count_get.filter = "rows=-1 first=1 permission=any owner=any min_qod=0";
   else
-    count_get.filter = "rows=-1 first=1 permission=any";
+    count_get.filter = "rows=-1 first=1 permission=any min_qod=0";
+
+  extra_with = extra_tables = NULL;
 
   if (strcasecmp (type, "config") == 0)
     {
@@ -17693,25 +17701,29 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "vuln") == 0)
     {
-      extra_where = g_strdup (" AND vuln_results_exist"
-                              "      (vulns.uuid,"
-                              "       cast (null AS integer),"
-                              "       cast (null AS integer),"
-                              "       cast (null AS text))");
+      extra_where = vulns_extra_where (filter_term_min_qod (count_get.filter));
+      extra_with = vuln_iterator_extra_with_from_filter (count_get.filter);
+      extra_tables = vuln_iterator_opts_from_filter (count_get.filter);
     }
   else
     extra_where = NULL;
 
-  rc = count (get->subtype ? get->subtype : type,
-              &count_get,
-              type_owned (type) ? select_columns : NULL,
-              type_owned (type) ? select_columns : NULL,
-              type_owned (type) ? filter_columns : NULL,
-              0, NULL,
-              extra_where,
-              type_owned (type));
+  rc = count2 (get->subtype ? get->subtype : type,
+               &count_get,
+               type_owned (type) ? select_columns : NULL,
+               type_owned (type) ? select_columns : NULL,
+               NULL,
+               NULL,
+               type_owned (type) ? filter_columns : NULL,
+               0,
+               extra_tables,
+               extra_where,
+               extra_with,
+               type_owned (type));
 
   g_free (extra_where);
+  g_free (extra_with);
+  g_free (extra_tables);
   return rc;
 }
 
@@ -55254,7 +55266,7 @@ user_resources_in_use (user_t user,
    { "''", "owner", KEYWORD_TYPE_STRING },                                   \
    /* Type specific columns */                                               \
    {                                                                         \
-     "vuln_results (uuid, opts.task, opts.report, opts.host)",               \
+     "vuln_results.result_count",                                            \
      "results",                                                              \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
@@ -55276,19 +55288,108 @@ user_resources_in_use (user_t user,
      "type", NULL, KEYWORD_TYPE_INTEGER                                      \
    },                                                                        \
    {                                                                         \
-     "(SELECT min (date) FROM results"                                       \
-     VULN_RESULTS_WHERE ")",                                                 \
+     "vuln_results.oldest",                                                  \
      "oldest",                                                               \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(SELECT max (date) FROM results"                                       \
-     VULN_RESULTS_WHERE ")",                                                 \
+     "vuln_results.newest",                                                  \
      "newest",                                                               \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
+
+/**
+ * @brief Generate the extra_with string for a vuln iterator.
+ *
+ * @param[in]  task_id    UUID of the task to limit vulns to.
+ * @param[in]  report_id  UUID of the report to limit vulns to.
+ * @param[in]  host       IP address of the task to limit vulns to.
+ * @param[in]  min_qod    Minimum QoD.
+ *
+ * @return Newly allocated string with the extra_with clause.
+ */
+static gchar*
+vuln_iterator_extra_with (const gchar *task_id, const gchar *report_id,
+                          const gchar *host)
+{
+  GString *ret;
+
+  ret = g_string_new ("");
+
+  g_string_append_printf (ret,
+                          "vuln_results AS ("
+                          " SELECT nvt, count(*) as result_count,"
+                          "  min(date) AS oldest, max(date) AS newest"
+                          "  FROM results"
+                          "  WHERE severity != " G_STRINGIFY (SEVERITY_ERROR)
+                          "    AND (" ACL_USER_OWNS ()
+                          "         OR results.task IN"
+                          "            (SELECT task FROM permissions_get_tasks"
+                          "              WHERE \"user\" ="
+                          "                (SELECT users.id FROM users WHERE"
+                          "                 uuid = '%s')"
+                          "                AND has_permission))",
+                          current_credentials.uuid,
+                          current_credentials.uuid);
+
+  if (task_id && strcmp (task_id, ""))
+    {
+      task_t task = 0;
+      find_task_with_permission (task_id, &task, "get_tasks");
+      g_string_append_printf (ret, " AND results.task = %llu", task);
+    }
+
+  if (report_id && strcmp (report_id, ""))
+    {
+      report_t report = 0;
+      find_report_with_permission (task_id, &report, "get_reports");
+      g_string_append_printf (ret, " AND results.report = %llu", report);
+    }
+
+  if (host && strcmp (host, ""))
+    {
+      gchar *quoted_host = sql_quote (host);
+      g_string_append_printf (ret, " AND results.host = '%s'", quoted_host);
+      g_free (quoted_host);
+    }
+
+  g_string_append (ret, " GROUP BY nvt)");
+
+  return g_string_free (ret, FALSE);
+}
+
+/**
+ * @brief Generate the extra_with string for a vuln iterator using a filter.
+ *
+ * @param[in]  filter     The filter term to use.
+ *
+ * @return Newly allocated string with the extra_with clause.
+ */
+static gchar*
+vuln_iterator_extra_with_from_filter (const gchar *filter)
+{
+  gchar *task_id, *report_id, *host;
+  gchar *ret;
+
+  if (filter)
+    {
+      task_id = filter_term_value (filter, "task_id");
+      report_id = filter_term_value (filter, "report_id");
+      host = filter_term_value (filter, "host");
+    }
+  else
+    task_id = report_id = host = NULL;
+
+  ret = vuln_iterator_extra_with (task_id, report_id, host);
+
+  g_free (task_id);
+  g_free (report_id);
+  g_free (host);
+
+  return ret;
+}
 
 /**
  * @brief Generate the extra_tables string for a vuln iterator.
@@ -55306,7 +55407,8 @@ vuln_iterator_opts_table (const gchar *task_id, const gchar *report_id,
 {
   GString *ret;
 
-  ret = g_string_new (", (SELECT");
+  ret = g_string_new (" JOIN vuln_results ON vuln_results.nvt = vulns.uuid,"
+                      " (SELECT");
 
   if (task_id && strcmp (task_id, ""))
     {
@@ -55394,7 +55496,7 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
 {
   int ret;
   gchar *filter;
-  gchar *extra_tables, *extra_where;
+  gchar *extra_with, *extra_tables, *extra_where;
   static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
   static column_t select_columns[] = VULN_ITERATOR_COLUMNS;
 
@@ -55413,28 +55515,35 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
   else
     filter = NULL;
 
+  extra_with
+    = vuln_iterator_extra_with_from_filter (filter ? filter : get->filter);
+
   extra_tables
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
-    = vulns_extra_where ();
+    = vulns_extra_where (filter_term_min_qod (filter ? filter : get->filter));
 
-  ret = init_get_iterator2 (iterator,
-                            "vuln",
-                            get,
-                            select_columns,
-                            NULL, /* trash_select_columns */
-                            NULL, /* where_columns */
-                            NULL, /* trash_where_columns */
-                            filter_columns,
-                            0     /* distinct */,
-                            extra_tables, /* extra_tables */
-                            extra_where,  /* extra_where */
-                            NULL, /* extra_where_single */
-                            0,    /* owned */
-                            0,    /* ignore_id */
-                            NULL);/* extra_order */
+  ret = init_get_iterator2_with (iterator,
+                                 "vuln",
+                                 get,
+                                 select_columns,
+                                 NULL, /* trash_select_columns */
+                                 NULL, /* where_columns */
+                                 NULL, /* trash_where_columns */
+                                 filter_columns,
+                                 0     /* distinct */,
+                                 extra_tables, /* extra_tables */
+                                 extra_where,  /* extra_where */
+                                 NULL, /* extra_where_single */
+                                 0,    /* owned */
+                                 0,    /* ignore_id */
+                                 NULL, /* extra_order */
+                                 extra_with,
+                                 0,    /* acl_with_optional */
+                                 0);   /* assume_permitted */
 
+  g_free (extra_with);
   g_free (extra_tables);
   g_free (extra_where);
 
@@ -55552,7 +55661,7 @@ vuln_count (const get_data_t *get)
   gchar *filter;
   static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = VULN_ITERATOR_COLUMNS;
-  gchar *extra_tables, *extra_where;
+  gchar *extra_with, *extra_tables, *extra_where;
   int ret;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
@@ -55570,16 +55679,21 @@ vuln_count (const get_data_t *get)
   else
     filter = NULL;
 
+  extra_with
+    = vuln_iterator_extra_with_from_filter (filter ? filter : get->filter);
+
   extra_tables
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
-    = vulns_extra_where ();
+    = vulns_extra_where (filter_term_min_qod (filter ? filter : get->filter));
 
-  ret = count ("vuln", get, columns, NULL /*trash_columns*/, filter_columns, 0,
-               extra_tables, extra_where, FALSE);
+  ret = count2 ("vuln", get, columns, NULL /*trash_columns*/, NULL, NULL,
+                filter_columns, 0, extra_tables, extra_where, extra_with,
+                FALSE);
 
   g_free (filter);
+  g_free (extra_with);
   g_free (extra_tables);
   g_free (extra_where);
 
@@ -55592,11 +55706,10 @@ vuln_count (const get_data_t *get)
  * @return WHERE clause.
  */
 static gchar*
-vulns_extra_where ()
+vulns_extra_where (int min_qod)
 {
-  return g_strdup (" AND vuln_results_exist (uuid, opts.task, opts.report,"
-                   "                         opts.host)"
-                   " AND (qod >= opts.min_qod)");
+  return g_strdup_printf (" AND (vulns.qod >= %d)",
+                          min_qod);
 }
 
 /**
@@ -57581,7 +57694,7 @@ type_extra_where (const char *type, int trash, const char *filter,
     }
   else if (strcasecmp (type, "VULN") == 0)
     {
-      extra_where = vulns_extra_where ();
+      extra_where = vulns_extra_where (filter_term_min_qod (filter));
     }
   else
     extra_where = g_strdup ("");
@@ -57596,9 +57709,13 @@ type_extra_where (const char *type, int trash, const char *filter,
  *
  * @return The extra WITH clauses.
  */
-static const char *
-type_extra_with (const char *type)
+static gchar *
+type_extra_with (const char *type, const char *filter)
 {
+  if (strcasecmp (type, "VULN") == 0)
+    {
+      return vuln_iterator_extra_with_from_filter(filter);
+    }
   return NULL;
 }
 
@@ -57631,7 +57748,7 @@ type_build_select (const char *type, const char *columns_str,
   int first, max;
   gchar *owned_clause, *owner_filter;
   array_t *permissions;
-  const char *extra_with;
+  gchar *extra_with;
 
   column_t *select_columns, *where_columns;
   const char **filter_columns;
@@ -57716,7 +57833,7 @@ type_build_select (const char *type, const char *columns_str,
                                           sql_select_limit (max),
                                           first);
 
-  extra_with = type_extra_with (type);
+  extra_with = type_extra_with (type, filter ? filter : get->filter);
 
   if (extra_with)
     {
@@ -57762,6 +57879,7 @@ type_build_select (const char *type, const char *columns_str,
   g_free (from_table);
   g_free (opts_table);
   g_free (owned_clause);
+  g_free (extra_with);
   g_free (extra_where);
   g_free (pagination_clauses);
 
