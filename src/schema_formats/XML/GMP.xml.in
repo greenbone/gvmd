@@ -530,12 +530,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         Whether the certificate is valid, expired or not active yet
       </summary>
       <pattern>
-		<alts>
-		  <alt>expired</alt>
-		  <alt>inactive</alt>
-		  <alt>unknown</alt>
-		  <alt>valid</alt>
-		</alts>
+        <alts>
+          <alt>expired</alt>
+          <alt>inactive</alt>
+          <alt>unknown</alt>
+          <alt>valid</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -628,7 +628,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </pattern>
         <ele>
           <name>value</name>
-	  <summary>The value of the QoD</summary>
+          <summary>The value of the QoD</summary>
           <pattern><t>integer</t></pattern>
         </ele>
         <ele>
@@ -2064,10 +2064,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <name>order</name>
             <summary>Sort order of field</summary>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -2147,12 +2147,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filter</name>
           <summary>Level filter</summary>
           <pattern>
-			<alts>
-			  <alt>High</alt>
-			  <alt>Medium</alt>
-			  <alt>Low</alt>
-			  <alt>Log</alt>
-			</alts>
+            <alts>
+              <alt>High</alt>
+              <alt>Medium</alt>
+              <alt>Low</alt>
+              <alt>Log</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -3626,10 +3626,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>usage_type</name>
       <summary>Usage type (scan or policy) for the config. Can overwrite the one in get_configs_response</summary>
       <pattern>
-		<alts>
-		  <alt>scan</alt>
-		  <alt>policy</alt>
-		</alts>
+        <alts>
+          <alt>scan</alt>
+          <alt>policy</alt>
+        </alts>
       </pattern>
     </ele>
     <response>
@@ -3817,10 +3817,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-		<alts>
-		  <alt>md5</alt>
-		  <alt>sha1</alt>
-		</alts>
+        <alts>
+          <alt>md5</alt>
+          <alt>sha1</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -3833,10 +3833,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-		  <alts>
-			<alt>aes</alt>
-			<alt>des</alt>
-		  </alts>
+          <alts>
+            <alt>aes</alt>
+            <alt>des</alt>
+          </alts>
         </pattern>
       </ele>
       <ele>
@@ -3851,15 +3851,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>type</name>
       <summary>The type of credential to create</summary>
       <pattern>
-		<alts>
-		  <alt>cc</alt>
-		  <alt>pgp</alt>
-		  <alt>pw</alt>
-		  <alt>smime</alt>
-		  <alt>snmp</alt>
-		  <alt>up</alt>
-		  <alt>usk</alt>
-		</alts>
+        <alts>
+          <alt>cc</alt>
+          <alt>pgp</alt>
+          <alt>pw</alt>
+          <alt>smime</alt>
+          <alt>snmp</alt>
+          <alt>up</alt>
+          <alt>usk</alt>
+        </alts>
       </pattern>
     </ele>
     <response>
@@ -5593,10 +5593,10 @@ END:VCALENDAR
       <name>usage_type</name>
       <summary>Usage type for the task (scan or audit), defaulting to scan</summary>
       <pattern>
-		<alts>
-		  <alt>scan</alt>
-		  <alt>audit</alt>
-		</alts>
+        <alts>
+          <alt>scan</alt>
+          <alt>audit</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -6039,6 +6039,58 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>delete_alert</name>
+    <summary>Delete an alert</summary>
+    <description>
+      <p>
+        The client uses the delete_alert command to delete an existing
+        alert.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>alert_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an alert</summary>
+      <request>
+        <delete_alert alert_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_alert>
+      </request>
+      <response>
+        <delete_alert_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_asset</name>
     <summary>Delete an asset</summary>
     <description>
@@ -6145,58 +6197,6 @@ END:VCALENDAR
       </request>
       <response>
         <delete_config_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>delete_alert</name>
-    <summary>Delete an alert</summary>
-    <description>
-      <p>
-        The client uses the delete_alert command to delete an existing
-        alert.
-      </p>
-      <p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>alert_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Delete an alert</summary>
-      <request>
-        <delete_alert alert_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_alert>
-      </request>
-      <response>
-        <delete_alert_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -6458,51 +6458,6 @@ END:VCALENDAR
     </example>
   </command>
   <command>
-    <name>delete_report</name>
-    <summary>Delete a report</summary>
-    <description>
-      <p>
-        The client uses the delete_report command to delete an existing report.
-      </p>
-      <p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>report_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Delete a report</summary>
-      <request>
-        <delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_report>
-      </request>
-      <response>
-        <delete_report_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>delete_permission</name>
     <summary>Delete a permission</summary>
     <description>
@@ -6648,6 +6603,51 @@ END:VCALENDAR
       </request>
       <response>
         <delete_port_range_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_report</name>
+    <summary>Delete a report</summary>
+    <description>
+      <p>
+        The client uses the delete_report command to delete an existing report.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a report</summary>
+      <request>
+        <delete_report report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_report>
+      </request>
+      <response>
+        <delete_report_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -7248,807 +7248,6 @@ END:VCALENDAR
       </request>
       <response>
         <empty_trashcan_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_configs</name>
-    <summary>Get one or many configs</summary>
-    <description>
-      The client uses the get_configs command to get config information.
-      If the command sent by the client was valid, the manager will
-      reply with a list of configs to the client.
-    </description>
-    <pattern>
-      <attrib>
-        <name>config_id</name>
-        <summary>ID of single config to get</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filter</name>
-        <summary>Filter term to use to filter query</summary>
-        <type>text</type>
-        <filter_keywords>
-          <option>
-            <name>first</name>
-            <type>integer</type>
-            <summary>
-              Index of the first item returned, starting at 1 (e.g. first=5
-              starts at the 5th item)
-            </summary>
-          </option>
-          <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
-            <name>sort</name>
-            <type>text</type>
-            <summary>Column to sort by in ascending order</summary>
-          </option>
-          <option>
-            <name>sort-reverse</name>
-            <type>text</type>
-            <summary>Column to sort by in descending order</summary>
-          </option>
-          <column>
-            <name>tag</name>
-            <type>text</type>
-            <summary>
-              Name and optional "=" separted value of an attached tag
-              (e.g. "mytag" or "mytag=myvalue")
-            </summary>
-          </column>
-          <column>
-            <name>tag_id</name>
-            <type>UUID</type>
-            <summary>
-              UUID of an attached tag
-            </summary>
-          </column>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Unique ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name</summary>
-          </column>
-          <column>
-            <name>comment</name>
-            <type>text</type>
-            <summary>Comment text</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
-          <column>
-            <name>nvt_selector</name>
-            <type>uuid</type>
-            <summary>NVT selector UUID</summary>
-          </column>
-          <column>
-            <name>families_total</name>
-            <type>integer</type>
-            <summary>Total number of selected NVT families</summary>
-          </column>
-          <column>
-            <name>nvts_total</name>
-            <type>integer</type>
-            <summary>Total number of selected NVTs</summary>
-          </column>
-          <column>
-            <name>families_trend</name>
-            <type>boolean</type>
-            <summary>Whether new NVT families will be added</summary>
-          </column>
-          <column>
-            <name>nvts_trend</name>
-            <type>boolean</type>
-            <summary>Whether new NVTs will be added</summary>
-          </column>
-          <column>
-            <name>usage_type</name>
-            <type>
-              <alts>
-                <alt>scan</alt>
-                <alt>policy</alt>
-              </alts>
-            </type>
-            <summary>Usage type</summary>
-          </column>
-          <column>
-            <name>predefined</name>
-            <type>boolean</type>
-            <summary>Whether the config was created from the feed</summary>
-          </column>
-        </filter_keywords>
-      </attrib>
-      <attrib>
-        <name>filt_id</name>
-        <summary>ID of filter to use to filter query</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>trash</name>
-        <summary>Whether to get the trashcan configs instead</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>details</name>
-        <summary>Whether to get config families, preferences and nvt selectors</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>families</name>
-        <summary>Whether to include the families if no details are requested</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>preferences</name>
-        <summary>Whether to include the preferences if no details are requested</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>tasks</name>
-        <summary>Whether to get tasks using this config</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>usage_type</name>
-        <summary>Optional usage type to limit the configs to. Affects total count unlike filter</summary>
-        <type>
-          <alts>
-            <alt>policy</alt>
-            <alt>scan</alt>
-            <alt></alt>
-          </alts>
-        </type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>config</e></any>
-        <e>filters</e>
-        <e>sort</e>
-        <e>configs</e>
-        <e>config_count</e>
-      </pattern>
-      <ele>
-        <name>config</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>family_count</e>
-          <e>nvt_count</e>
-          <e>type</e>
-          <e>usage_type</e>
-          <e>max_nvt_count</e>
-          <e>known_nvt_count</e>
-          <o><e>scanner</e></o>
-          <e>in_use</e>
-          <e>writable</e>
-          <e>permissions</e>
-          <o><e>user_tags</e></o>
-          <e>tasks</e>
-          <o><e>families</e></o>
-          <o><e>preferences</e></o>
-          <o><e>nvt_selectors</e></o>
-          <e>predefined</e>
-          <o><e>deprecated</e></o>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the config</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>The name of the config</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>comment</name>
-          <summary>The comment on the config</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Creation time of the config</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Last time the config was modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>family_count</name>
-          <summary>The number of families selected by the config</summary>
-          <pattern>
-            <t>integer</t>
-            <e>growing</e>
-          </pattern>
-          <ele>
-            <name>growing</name>
-            <summary>
-              Whether new families are automatically added to the
-              config
-            </summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>nvt_count</name>
-          <summary>The number of NVTs selected by the config</summary>
-          <pattern>
-            <t>integer</t>
-            <e>growing</e>
-          </pattern>
-          <ele>
-            <name>growing</name>
-            <summary>
-              Whether new NVTs are automatically added to the config
-            </summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
-          <pattern>
-			<alts>
-			  <alt>0</alt>
-			  <alt>1</alt>
-			</alts>
-          </pattern>
-        </ele>
-        <ele>
-          <name>usage_type</name>
-          <summary>The usage type of the config (scan or policy)</summary>
-          <pattern>
-			<alts>
-			  <alt>scan</alt>
-			  <alt>policy</alt>
-			</alts>
-          </pattern>
-        </ele>
-        <ele>
-          <name>max_nvt_count</name>
-          <summary>Total number of NVTs in the families selected by the config</summary>
-          <pattern>
-            <t>integer</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>known_nvt_count</name>
-          <summary>Total number of known NVTs selected by the config</summary>
-          <pattern>
-            <t>integer</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>scanner</name>
-          <summary>The scanner used by the config if it is an OSP one</summary>
-          <pattern>
-            <t>text</t>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <summary>UUID of the scanner</summary>
-              <required>1</required>
-            </attrib>
-            <e>trash</e>
-          </pattern>
-          <ele>
-            <name>trash</name>
-            <summary>Whether the scanner is in the trashcan</summary>
-            <pattern>
-              <t>boolean</t>
-            </pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether any tasks are using the config</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <summary>
-            Whether any tasks are using the config, including trashcan tasks
-          </summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>Permissions that the current user has on the target</summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the config</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>tasks</name>
-          <summary>All tasks using the config</summary>
-          <pattern>
-            <any><e>task</e></any>
-          </pattern>
-          <ele>
-            <name>task</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the task</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the task</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>families</name>
-          <summary>All families selected by the config</summary>
-          <pattern>
-            <any><e>family</e></any>
-          </pattern>
-          <ele>
-            <name>family</name>
-            <pattern>
-              <e>name</e>
-              <e>nvt_count</e>
-              <e>max_nvt_count</e>
-              <e>growing</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the family</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>type</name>
-              <summary>The type of the config. 0 = OpenVAS scanner, 1 = OSP Scanner</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>nvt_count</name>
-              <summary>The number of NVTs selected in the family</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>max_nvt_count</name>
-              <summary>The total number of NVTs in the family</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>growing</name>
-              <summary>
-                Whether new NVTs in the family are automatically added to the selection
-              </summary>
-              <pattern><t>boolean</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>preferences</name>
-          <summary>Preferences for all NVTs selected by the config</summary>
-          <pattern>
-            <any><e>preference</e></any>
-          </pattern>
-          <ele>
-            <name>preference</name>
-            <pattern>
-              <e>nvt</e>
-              <e>name</e>
-              <e>id</e>
-              <e>type</e>
-              <e>value</e>
-              <e>default</e>
-              <any><e>alt</e></any>
-            </pattern>
-            <ele>
-              <name>nvt</name>
-              <summary>NVT to which preference applies</summary>
-              <pattern>
-                <attrib>
-                  <name>oid</name>
-                  <type>oid</type>
-                  <required>1</required>
-                </attrib>
-                <e>name</e>
-              </pattern>
-              <ele>
-                <name>name</name>
-                <summary>The name of the NVT</summary>
-                <pattern><t>name</t></pattern>
-              </ele>
-            </ele>
-            <ele>
-              <name>name</name>
-              <summary>The compact name of the preference as used by the scanner</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>id</name>
-              <summary>The ID of the preference</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>type</name>
-              <summary>The type of the preference</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>The value of the preference</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>default</name>
-              <summary>The default value of the preference</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>alt</name>
-              <summary>An alternate value for the preference</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>nvt_selectors</name>
-          <summary>All NVT selectors of the config</summary>
-          <pattern>
-            <any><e>nvt_selector</e></any>
-          </pattern>
-          <ele>
-            <name>nvt_selector</name>
-            <summary>An NVT selector</summary>
-            <pattern>
-              <e>name</e>
-              <e>include</e>
-              <e>type</e>
-              <e>family_or_nvt</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the selector</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>include</name>
-              <summary>Whether the selector is an include selector</summary>
-              <pattern>
-                <t>boolean</t>
-              </pattern>
-            </ele>
-            <ele>
-              <name>type</name>
-              <summary>Selector type: 0 = all, 1 = family, 2 = NVT</summary>
-              <pattern>
-                <t>integer</t>
-              </pattern>
-            </ele>
-            <ele>
-              <name>family_or_nvt</name>
-              <summary>Name of the family or OID of the NVT</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>predefined</name>
-          <summary>Whether the config was predefined by the feed</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>deprecated</name>
-          <summary>Whether the config is deprecated</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>UUID of filter if any, else 0</summary>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <o><e>name</e></o>
-          <e>keywords</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>Filter name, if applicable</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>keywords</name>
-          <summary>Filter broken down into keywords</summary>
-          <pattern><any><e>keyword</e></any></pattern>
-          <ele>
-            <name>keyword</name>
-            <pattern>
-              <e>column</e>
-              <e>relation</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>column</name>
-              <summary>Column prefix</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>relation</name>
-              <summary>Relation operator</summary>
-              <pattern>
-                <alts>
-                  <alt>=</alt>
-                  <alt>:</alt>
-                  <alt>~</alt>
-                  <alt>&gt;</alt>
-                  <alt>&lt;</alt>
-                </alts>
-              </pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>The filter text</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern>
-          text
-          <e>field</e>
-        </pattern>
-        <ele>
-          <name>field</name>
-          <pattern>
-            <e>order</e>
-          </pattern>
-          <ele>
-            <name>order</name>
-            <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
-            </pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>configs</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <summary>First config</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <summary>Maximum number of configs</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>config_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-        <ele>
-          <name>filtered</name>
-          <summary>Number of configs after filtering</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>page</name>
-          <summary>Number of configs on current page</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get one or many configs</summary>
-      <request>
-        <get_configs></get_configs>
-      </request>
-      <response>
-        <get_configs_response status="200" status_text="OK">
-          <config id="daba56c8-73ec-11df-a475-002264764cea">
-            <name>Full and fast</name>
-            <comment>All NVT's; optimized by using previously collected information.</comment>
-            <creation_time>2012-11-23T10:44:00+01:00</creation_time>
-            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
-            <family_count>
-              4
-              <growing>1</growing>
-            </family_count>
-            <nvt_count>
-              12
-              <growing>1</growing>
-            </nvt_count>
-            <in_use>1</in_use>
-            <writable>0</writable>
-          </config>
-          <truncated>...</truncated>
-        </get_configs_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get a single config, including preference, family lists and tasks using this config</summary>
-      <request>
-        <get_configs config_id="daba56c8-73ec-11df-a475-002264764cea" preferences="1" families="1" tasks="1">
-        </get_configs>
-      </request>
-      <response>
-        <get_configs_response status="200" status_text="OK">
-          <config id="daba56c8-73ec-11df-a475-002264764cea">
-            <name>Full and fast</name>
-            <comment>All NVT's; optimized by using previously collected information.</comment>
-            <family_count>
-              4
-              <growing>1</growing>
-            </family_count>
-            <nvt_count>
-              12
-              <growing>1</growing>
-            </nvt_count>
-            <in_use>1</in_use>
-            <tasks>
-              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
-                <name>Web Servers</name>
-              </task>
-              <truncated>...</truncated>
-            </tasks>
-            <families>
-              <family>
-                <name>Credentials</name>
-                <nvt_count>8</nvt_count>
-                <max_nvt_count>8</max_nvt_count>
-                <growing>1</growing>
-              </family>
-              <truncated>...</truncated>
-            </families>
-            <preferences>
-              <preference>
-                <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
-                  <name>Services</name>
-                </nvt>
-                <id>1</id>
-                <name>Network connection timeout :</name>
-                <type>entry</type>
-                <value>5</value>
-              </preference>
-              <truncated>...</truncated>
-            </preferences>
-          </config>
-          <truncated>...</truncated>
-        </get_configs_response>
       </response>
     </example>
   </command>
@@ -9164,10 +8363,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -9984,10 +9183,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -10091,6 +9290,807 @@ END:VCALENDAR
             </tasks>
           </asset>
         </get_assets_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_configs</name>
+    <summary>Get one or many configs</summary>
+    <description>
+      The client uses the get_configs command to get config information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of configs to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>config_id</name>
+        <summary>ID of single config to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>nvt_selector</name>
+            <type>uuid</type>
+            <summary>NVT selector UUID</summary>
+          </column>
+          <column>
+            <name>families_total</name>
+            <type>integer</type>
+            <summary>Total number of selected NVT families</summary>
+          </column>
+          <column>
+            <name>nvts_total</name>
+            <type>integer</type>
+            <summary>Total number of selected NVTs</summary>
+          </column>
+          <column>
+            <name>families_trend</name>
+            <type>boolean</type>
+            <summary>Whether new NVT families will be added</summary>
+          </column>
+          <column>
+            <name>nvts_trend</name>
+            <type>boolean</type>
+            <summary>Whether new NVTs will be added</summary>
+          </column>
+          <column>
+            <name>usage_type</name>
+            <type>
+              <alts>
+                <alt>scan</alt>
+                <alt>policy</alt>
+              </alts>
+            </type>
+            <summary>Usage type</summary>
+          </column>
+          <column>
+            <name>predefined</name>
+            <type>boolean</type>
+            <summary>Whether the config was created from the feed</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan configs instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to get config families, preferences and nvt selectors</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>families</name>
+        <summary>Whether to include the families if no details are requested</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>preferences</name>
+        <summary>Whether to include the preferences if no details are requested</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>tasks</name>
+        <summary>Whether to get tasks using this config</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit the configs to. Affects total count unlike filter</summary>
+        <type>
+          <alts>
+            <alt>policy</alt>
+            <alt>scan</alt>
+            <alt></alt>
+          </alts>
+        </type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>config</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>configs</e>
+        <e>config_count</e>
+      </pattern>
+      <ele>
+        <name>config</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>family_count</e>
+          <e>nvt_count</e>
+          <e>type</e>
+          <e>usage_type</e>
+          <e>max_nvt_count</e>
+          <e>known_nvt_count</e>
+          <o><e>scanner</e></o>
+          <e>in_use</e>
+          <e>writable</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>tasks</e>
+          <o><e>families</e></o>
+          <o><e>preferences</e></o>
+          <o><e>nvt_selectors</e></o>
+          <e>predefined</e>
+          <o><e>deprecated</e></o>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the config</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the config</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the config</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the config</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last time the config was modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>family_count</name>
+          <summary>The number of families selected by the config</summary>
+          <pattern>
+            <t>integer</t>
+            <e>growing</e>
+          </pattern>
+          <ele>
+            <name>growing</name>
+            <summary>
+              Whether new families are automatically added to the
+              config
+            </summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>nvt_count</name>
+          <summary>The number of NVTs selected by the config</summary>
+          <pattern>
+            <t>integer</t>
+            <e>growing</e>
+          </pattern>
+          <ele>
+            <name>growing</name>
+            <summary>
+              Whether new NVTs are automatically added to the config
+            </summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the config (0 = OpenVAS, 1 OSP)</summary>
+          <pattern>
+            <alts>
+              <alt>0</alt>
+              <alt>1</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>usage_type</name>
+          <summary>The usage type of the config (scan or policy)</summary>
+          <pattern>
+            <alts>
+              <alt>scan</alt>
+              <alt>policy</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>max_nvt_count</name>
+          <summary>Total number of NVTs in the families selected by the config</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>known_nvt_count</name>
+          <summary>Total number of known NVTs selected by the config</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>scanner</name>
+          <summary>The scanner used by the config if it is an OSP one</summary>
+          <pattern>
+            <t>text</t>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID of the scanner</summary>
+              <required>1</required>
+            </attrib>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the scanner is in the trashcan</summary>
+            <pattern>
+              <t>boolean</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the config</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>
+            Whether any tasks are using the config, including trashcan tasks
+          </summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the target</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the config</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>All tasks using the config</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>families</name>
+          <summary>All families selected by the config</summary>
+          <pattern>
+            <any><e>family</e></any>
+          </pattern>
+          <ele>
+            <name>family</name>
+            <pattern>
+              <e>name</e>
+              <e>nvt_count</e>
+              <e>max_nvt_count</e>
+              <e>growing</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the family</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The type of the config. 0 = OpenVAS scanner, 1 = OSP Scanner</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>nvt_count</name>
+              <summary>The number of NVTs selected in the family</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>max_nvt_count</name>
+              <summary>The total number of NVTs in the family</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>growing</name>
+              <summary>
+                Whether new NVTs in the family are automatically added to the selection
+              </summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>preferences</name>
+          <summary>Preferences for all NVTs selected by the config</summary>
+          <pattern>
+            <any><e>preference</e></any>
+          </pattern>
+          <ele>
+            <name>preference</name>
+            <pattern>
+              <e>nvt</e>
+              <e>name</e>
+              <e>id</e>
+              <e>type</e>
+              <e>value</e>
+              <e>default</e>
+              <any><e>alt</e></any>
+            </pattern>
+            <ele>
+              <name>nvt</name>
+              <summary>NVT to which preference applies</summary>
+              <pattern>
+                <attrib>
+                  <name>oid</name>
+                  <type>oid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name of the NVT</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>The compact name of the preference as used by the scanner</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>id</name>
+              <summary>The ID of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The type of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The value of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default</name>
+              <summary>The default value of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>alt</name>
+              <summary>An alternate value for the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>nvt_selectors</name>
+          <summary>All NVT selectors of the config</summary>
+          <pattern>
+            <any><e>nvt_selector</e></any>
+          </pattern>
+          <ele>
+            <name>nvt_selector</name>
+            <summary>An NVT selector</summary>
+            <pattern>
+              <e>name</e>
+              <e>include</e>
+              <e>type</e>
+              <e>family_or_nvt</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the selector</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>include</name>
+              <summary>Whether the selector is an include selector</summary>
+              <pattern>
+                <t>boolean</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>Selector type: 0 = all, 1 = family, 2 = NVT</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>family_or_nvt</name>
+              <summary>Name of the family or OID of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the config was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>deprecated</name>
+          <summary>Whether the config is deprecated</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>configs</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First config</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of configs</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>config_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of configs after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of configs on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get one or many configs</summary>
+      <request>
+        <get_configs></get_configs>
+      </request>
+      <response>
+        <get_configs_response status="200" status_text="OK">
+          <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <name>Full and fast</name>
+            <comment>All NVT's; optimized by using previously collected information.</comment>
+            <creation_time>2012-11-23T10:44:00+01:00</creation_time>
+            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
+            <family_count>
+              4
+              <growing>1</growing>
+            </family_count>
+            <nvt_count>
+              12
+              <growing>1</growing>
+            </nvt_count>
+            <in_use>1</in_use>
+            <writable>0</writable>
+          </config>
+          <truncated>...</truncated>
+        </get_configs_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single config, including preference, family lists and tasks using this config</summary>
+      <request>
+        <get_configs config_id="daba56c8-73ec-11df-a475-002264764cea" preferences="1" families="1" tasks="1">
+        </get_configs>
+      </request>
+      <response>
+        <get_configs_response status="200" status_text="OK">
+          <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <name>Full and fast</name>
+            <comment>All NVT's; optimized by using previously collected information.</comment>
+            <family_count>
+              4
+              <growing>1</growing>
+            </family_count>
+            <nvt_count>
+              12
+              <growing>1</growing>
+            </nvt_count>
+            <in_use>1</in_use>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>Web Servers</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+            <families>
+              <family>
+                <name>Credentials</name>
+                <nvt_count>8</nvt_count>
+                <max_nvt_count>8</max_nvt_count>
+                <growing>1</growing>
+              </family>
+              <truncated>...</truncated>
+            </families>
+            <preferences>
+              <preference>
+                <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
+                  <name>Services</name>
+                </nvt>
+                <id>1</id>
+                <name>Network connection timeout :</name>
+                <type>entry</type>
+                <value>5</value>
+              </preference>
+              <truncated>...</truncated>
+            </preferences>
+          </config>
+          <truncated>...</truncated>
+        </get_configs_response>
       </response>
     </example>
   </command>
@@ -10406,15 +10406,15 @@ END:VCALENDAR
           <name>type</name>
           <summary>The type of the credential</summary>
           <pattern>
-			<alts>
-			  <alt>cc</alt>
-			  <alt>pgp</alt>
-			  <alt>pw</alt>
-			  <alt>smime</alt>
-			  <alt>snmp</alt>
-			  <alt>up</alt>
-			  <alt>usk</alt>
-			</alts>
+            <alts>
+              <alt>cc</alt>
+              <alt>pgp</alt>
+              <alt>pw</alt>
+              <alt>smime</alt>
+              <alt>snmp</alt>
+              <alt>up</alt>
+              <alt>usk</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -10434,13 +10434,13 @@ END:VCALENDAR
             <name>format</name>
             <summary>Format as used in the command</summary>
             <pattern>
-			  <alts>
-				<alt>key</alt>
-				<alt>rpm</alt>
-				<alt>deb</alt>
-				<alt>exe</alt>
-				<alt>pem</alt>
-			  </alts>
+              <alts>
+                <alt>key</alt>
+                <alt>rpm</alt>
+                <alt>deb</alt>
+                <alt>exe</alt>
+                <alt>pem</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -10448,10 +10448,10 @@ END:VCALENDAR
           <name>auth_algorithm</name>
           <summary>The SNMP authentication algorithm</summary>
           <pattern>
-			<alts>
-			  <alt>md5</alt>
-			  <alt>sha1</alt>
-			</alts>
+            <alts>
+              <alt>md5</alt>
+              <alt>sha1</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -10463,10 +10463,10 @@ END:VCALENDAR
             <name>algorithm</name>
             <summary>The SNMP privacy algorithm</summary>
             <pattern>
-			  <alts>
-				<alt>aes</alt>
-				<alt>des</alt>
-			  </alts>
+              <alts>
+                <alt>aes</alt>
+                <alt>des</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -10635,10 +10635,10 @@ END:VCALENDAR
           <ele>
             <name>order</name>
             <pattern>
-			  <alts>
-				<alt>ascending</alt>
-				<alt>descending</alt>
-			  </alts>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
             </pattern>
           </ele>
         </ele>
@@ -12755,6 +12755,211 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_license</name>
+    <summary>Get the current license</summary>
+    <description>
+      <p>
+        The client uses the get_license command to get the current license.
+      </p>
+      <p>
+        This command is only available if gvmd is built with the licensing
+        library (libtheia).
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>license</e>
+      </pattern>
+      <ele>
+        <name>license</name>
+        <summary>The license information</summary>
+        <pattern>
+          <e>status</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>status</name>
+          <summary>Status of the license</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content</name>
+          <summary>The main content of the license file</summary>
+          <pattern>
+            <e>meta</e>
+            <e>appliance</e>
+            <e>keys</e>
+            <e>signatures</e>
+          </pattern>
+          <ele>
+            <name>meta</name>
+            <summary>License metadata</summary>
+            <pattern>
+              <e>version</e>
+              <e>id</e>
+              <e>comment</e>
+              <e>type</e>
+              <e>customer_name</e>
+              <e>created</e>
+              <e>begins</e>
+              <e>expires</e>
+            </pattern>
+            <ele>
+              <name>version</name>
+              <summary>Version of the license file schema</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>id</name>
+              <summary>Unique Identifier of the license</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Short comment summarizing the license</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>License type, e.g. &quot;trial&quot; or &quot;commercial&quot;</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>customer_name</name>
+              <summary>Name of the customer the license is issued for</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>created</name>
+              <summary>Time the license was created</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>begins</name>
+              <summary>Time after which the license is valid</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>expires</name>
+              <summary>Time the license expires</summary>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>appliance</name>
+            <summary>Hardware and appliance information</summary>
+            <pattern>
+              <e>model</e>
+              <e>model_type</e>
+            </pattern>
+            <ele>
+              <name>model</name>
+              <summary>Appliance model, e.g. "one"</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>model_type</name>
+              <summary>Appliance model type, e.g. "virtual" or "hardware"</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>sensor</name>
+              <summary>Whether the license is applied to a sensor or not</summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>keys</name>
+            <summary>Base64 encoded access keys, e.g. feed keys</summary>
+            <pattern>
+              <any><e>key</e></any>
+            </pattern>
+            <ele>
+              <name>key</name>
+              <summary>A Base64 encoded access key</summary>
+              <pattern>
+                <attrib>
+                  <name>name</name>
+                  <summary>Name of the key</summary>
+                  <type>text</type>
+                </attrib>
+                <t>text</t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>signatures</name>
+            <summary>Signatures of the license</summary>
+            <pattern>
+              <any><e>signature</e></any>
+            </pattern>
+            <ele>
+              <name>signature</name>
+              <summary>A signature info item</summary>
+              <pattern>
+                <attrib>
+                  <name>name</name>
+                  <summary>Name of the signature</summary>
+                  <type>text</type>
+                </attrib>
+                <t>text</t>
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the current license</summary>
+      <request>
+        <get_license>
+        </get_license>
+      </request>
+      <response>
+        <get_license_response status="200" status_text="OK">
+          <license>
+            <status>active</status>
+            <content>
+              <meta>
+                <id>4711</id>
+                <version>1.0.0</version>
+                <comment>Test License</comment>
+                <type>trial</type>
+                <customer_name>Jane Doe</customer_name>
+                <created>2021-08-27T06:05:21Z</created>
+                <begins>2021-08-27T07:05:21Z</begins>
+                <expires>2021-09-04T07:05:21Z</expires>
+              </meta>
+              <appliance>
+                <model>trial</model>
+                <model_type>virtual</model_type>
+                <sensor>0</sensor>
+              </appliance>
+              <keys>
+                <key name="feed">*base64 GSF key*</key>
+              </keys>
+              <signatures>
+                <signature name="license">*base64 signature*</signature>
+              </signatures>
+            </content>
+          </license>
+        </get_license_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_notes</name>
     <summary>Get one or many notes</summary>
     <description>
@@ -13116,18 +13321,20 @@ END:VCALENDAR
     </example>
   </command>
   <command>
-    <name>get_license</name>
-    <summary>Get the current license</summary>
+    <name>get_nvt_families</name>
+    <summary>Get a list of all NVT families</summary>
     <description>
       <p>
-        The client uses the get_license command to get the current license.
-      </p>
-      <p>
-        This command is only available if gvmd is built with the licensing
-        library (libtheia).
+        The client uses the get_nvt_families command to get NVT family
+        information.  If the command sent by the client was valid, the
+        manager will reply with a list of NVT families to the client.
       </p>
     </description>
     <pattern>
+      <attrib>
+        <name>sort_order</name>
+        <type>sort_order</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -13141,182 +13348,49 @@ END:VCALENDAR
           <type>text</type>
           <required>1</required>
         </attrib>
-        <e>license</e>
+        <e>families</e>
       </pattern>
       <ele>
-        <name>license</name>
-        <summary>The license information</summary>
-        <pattern>
-          <e>status</e>
-          <e>content</e>
-        </pattern>
+        <name>families</name>
+        <pattern><any><e>family</e></any></pattern>
         <ele>
-          <name>status</name>
-          <summary>Status of the license</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>content</name>
-          <summary>The main content of the license file</summary>
+          <name>family</name>
           <pattern>
-            <e>meta</e>
-            <e>appliance</e>
-            <e>keys</e>
-            <e>signatures</e>
+            <e>name</e>
+            <e>max_nvt_count</e>
           </pattern>
           <ele>
-            <name>meta</name>
-            <summary>License metadata</summary>
-            <pattern>
-              <e>version</e>
-              <e>id</e>
-              <e>comment</e>
-              <e>type</e>
-              <e>customer_name</e>
-              <e>created</e>
-              <e>begins</e>
-              <e>expires</e>
-            </pattern>
-            <ele>
-              <name>version</name>
-              <summary>Version of the license file schema</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>id</name>
-              <summary>Unique Identifier of the license</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Short comment summarizing the license</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>type</name>
-              <summary>License type, e.g. &quot;trial&quot; or &quot;commercial&quot;</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>customer_name</name>
-              <summary>Name of the customer the license is issued for</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>created</name>
-              <summary>Time the license was created</summary>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>begins</name>
-              <summary>Time after which the license is valid</summary>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
-            <ele>
-              <name>expires</name>
-              <summary>Time the license expires</summary>
-              <pattern><t>iso_time</t></pattern>
-            </ele>
+            <name>name</name>
+            <summary>The name of the family</summary>
+            <pattern><t>name</t></pattern>
           </ele>
           <ele>
-            <name>appliance</name>
-            <summary>Hardware and appliance information</summary>
-            <pattern>
-              <e>model</e>
-              <e>model_type</e>
-            </pattern>
-            <ele>
-              <name>model</name>
-              <summary>Appliance model, e.g. "one"</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>model_type</name>
-              <summary>Appliance model type, e.g. "virtual" or "hardware"</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>sensor</name>
-              <summary>Whether the license is applied to a sensor or not</summary>
-              <pattern><t>boolean</t></pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>keys</name>
-            <summary>Base64 encoded access keys, e.g. feed keys</summary>
-            <pattern>
-              <any><e>key</e></any>
-            </pattern>
-            <ele>
-              <name>key</name>
-              <summary>A Base64 encoded access key</summary>
-              <pattern>
-                <attrib>
-                  <name>name</name>
-                  <summary>Name of the key</summary>
-                  <type>text</type>
-                </attrib>
-                <t>text</t>
-              </pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>signatures</name>
-            <summary>Signatures of the license</summary>
-            <pattern>
-              <any><e>signature</e></any>
-            </pattern>
-            <ele>
-              <name>signature</name>
-              <summary>A signature info item</summary>
-              <pattern>
-                <attrib>
-                  <name>name</name>
-                  <summary>Name of the signature</summary>
-                  <type>text</type>
-                </attrib>
-                <t>text</t>
-              </pattern>
-            </ele>
+            <name>max_nvt_count</name>
+            <summary>The number of NVTs in the family</summary>
+            <pattern><t>integer</t></pattern>
           </ele>
         </ele>
       </ele>
     </response>
     <example>
-      <summary>Get the current license</summary>
+      <summary>Get the NVT families</summary>
       <request>
-        <get_license>
-        </get_license>
+        <get_nvt_families></get_nvt_families>
       </request>
       <response>
-        <get_license_response status="200" status_text="OK">
-          <license>
-            <status>active</status>
-            <content>
-              <meta>
-                <id>4711</id>
-                <version>1.0.0</version>
-                <comment>Test License</comment>
-                <type>trial</type>
-                <customer_name>Jane Doe</customer_name>
-                <created>2021-08-27T06:05:21Z</created>
-                <begins>2021-08-27T07:05:21Z</begins>
-                <expires>2021-09-04T07:05:21Z</expires>
-              </meta>
-              <appliance>
-                <model>trial</model>
-                <model_type>virtual</model_type>
-                <sensor>0</sensor>
-              </appliance>
-              <keys>
-                <key name="feed">*base64 GSF key*</key>
-              </keys>
-              <signatures>
-                <signature name="license">*base64 signature*</signature>
-              </signatures>
-            </content>
-          </license>
-        </get_license_response>
+        <get_nvt_families_response status="200" status_text="OK">
+          <families>
+            <family>
+              <name>Credentials</name>
+              <max_nvt_count>8</max_nvt_count>
+            </family>
+            <family>
+              <name>Port scanners</name>
+              <max_nvt_count>12</max_nvt_count>
+            </family>
+            <truncated>...</truncated>
+          </families>
+        </get_nvt_families_response>
       </response>
     </example>
   </command>
@@ -13783,80 +13857,6 @@ END:VCALENDAR
             <name>Services</name>
           </nvt>
         </get_nvts_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_nvt_families</name>
-    <summary>Get a list of all NVT families</summary>
-    <description>
-      <p>
-        The client uses the get_nvt_families command to get NVT family
-        information.  If the command sent by the client was valid, the
-        manager will reply with a list of NVT families to the client.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <e>families</e>
-      </pattern>
-      <ele>
-        <name>families</name>
-        <pattern><any><e>family</e></any></pattern>
-        <ele>
-          <name>family</name>
-          <pattern>
-            <e>name</e>
-            <e>max_nvt_count</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the family</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-          <ele>
-            <name>max_nvt_count</name>
-            <summary>The number of NVTs in the family</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get the NVT families</summary>
-      <request>
-        <get_nvt_families></get_nvt_families>
-      </request>
-      <response>
-        <get_nvt_families_response status="200" status_text="OK">
-          <families>
-            <family>
-              <name>Credentials</name>
-              <max_nvt_count>8</max_nvt_count>
-            </family>
-            <family>
-              <name>Port scanners</name>
-              <max_nvt_count>12</max_nvt_count>
-            </family>
-            <truncated>...</truncated>
-          </families>
-        </get_nvt_families_response>
       </response>
     </example>
   </command>
@@ -15476,6 +15476,676 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_formats</name>
+    <summary>Get one or many report formats</summary>
+    <description>
+      <p>
+        The client uses the get_report_formats command to get report format
+        information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_format_id</name>
+        <summary>ID of single report format to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>extension</name>
+            <type>text</type>
+            <summary>File extension of the report format</summary>
+          </column>
+          <column>
+            <name>content_type</name>
+            <type>text</type>
+            <summary>Content type of the report format</summary>
+          </column>
+          <column>
+            <name>summary</name>
+            <type>text</type>
+            <summary>Short summary of the report format</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the report format</summary>
+          </column>
+          <column>
+            <name>trust</name>
+            <type>boolean</type>
+            <summary>Whether the report format is trusted</summary>
+          </column>
+          <column>
+            <name>trust_time</name>
+            <type>iso_time</type>
+            <summary>Time the report format was last verified</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the report format is active</summary>
+          </column>
+          <column>
+            <name>predefined</name>
+            <type>boolean</type>
+            <summary>Whether the report format was created from the feed</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan report formats instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>alerts</name>
+        <summary>Whether to include alerts that use the report format</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>params</name>
+        <summary>Whether to include report format parameters</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Include report format file, signature and parameters</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>report_format</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>report_formats</e>
+        <e>report_format_count</e>
+      </pattern>
+      <ele>
+        <name>report_format</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>extension</e>
+          <e>content_type</e>
+          <e>summary</e>
+          <e>description</e>
+          <o><e>alerts</e></o>
+          <o>
+            <g>
+              <any><e>file</e></any>
+              <e>signature</e>
+            </g>
+          </o>
+          <e>trust</e>
+          <e>active</e>
+          <e>predefined</e>
+          <o><e>deprecated</e></o>
+          <any><e>param</e></any>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report format</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the report format</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the report format is global or in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any alerts are using the report format</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the report format
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the report format</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>summary</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>extension</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>alerts</name>
+          <summary>Alerts using the report format</summary>
+          <pattern>
+            <any><e>alert</e></any>
+          </pattern>
+          <ele>
+            <name>alert</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the alert</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the alert</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the permission</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>param</name>
+          <pattern>
+            <e>name</e>
+            <e>type</e>
+            <e>value</e>
+            <e>default</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the param</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The type of the param</summary>
+            <pattern>
+              <o><e>min</e></o>
+              <o><e>max</e></o>
+              <o><e>options</e></o>
+              <alts>
+                <alt>boolean</alt>
+                <alt>integer</alt>
+                <alt>selection</alt>
+                <alt>string</alt>
+                <alt>text</alt>
+                <alt>report_format_list</alt>
+              </alts>
+            </pattern>
+            <ele>
+              <name>min</name>
+              <summary>Minimum</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>max</name>
+              <summary>Maximum</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>options</name>
+              <summary>Selection options</summary>
+              <pattern><any><e>option</e></any></pattern>
+              <ele>
+                <name>option</name>
+                <summary>Option value</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>The value of the param</summary>
+            <pattern>
+              <any><e>report_format</e></any>
+            </pattern>
+            <ele>
+              <name>report_format</name>
+              <summary>Report format info if type is report_format_list</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the report format if available</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>default</name>
+            <summary>The fallback value of the param</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>file</name>
+          <summary>One of the files used to generate the report</summary>
+          <pattern>
+            <attrib>
+              <name>name</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+            <t>base64</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>signature</name>
+          <summary>The report format signature</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>trust</name>
+          <summary>Whether signature verification succeeded</summary>
+          <pattern>
+            <attrib>
+              <name>name</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+            <e>time</e>
+            <alts>
+              <alt>yes</alt>
+              <alt>no</alt>
+              <alt>unknown</alt>
+            </alts>
+          </pattern>
+          <ele>
+            <name>time</name>
+            <summary>The time the trust was checked</summary>
+            <pattern><t>iso_time</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the report format is active</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>predefined</name>
+          <summary>Whether the report format was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>deprecated</name>
+          <summary>Whether the report format is deprecated</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_formats</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report format</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report formats</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_format_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report formats after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report formats on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get information about a report format</summary>
+      <request>
+        <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+        </get_report_formats>
+      </request>
+      <response>
+        <get_report_formats_response status="200" status_text="OK">
+          <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <name>HTML</name>
+            <creation_time>2013-01-31T16:46:32+01:00</creation_time>
+            <modification_time>2013-01-31T16:46:32+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <extension>html</extension>
+            <content_type>text/html</content_type>
+            <summary>Single page HTML report.</summary>
+            <description>
+              A single HTML page listing results of a scan.  Style information
+              <truncated>...</truncated>
+            </description>
+            <trust>
+              no
+              <time>Thu Dec  2 13:22:26 2010</time>
+            </trust>
+            <active>1</active>
+          </report_format>
+          <truncated> ... </truncated>
+        </get_report_formats_response>
+      </response>
+    </example>
+    <example>
+      <summary>Export a report format</summary>
+      <request>
+        <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
+                            details="1">
+        </get_report_formats>
+      </request>
+      <response>
+        <get_report_formats_response status="200" status_text="OK">
+          <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <name>HTML</name>
+            <comment></comment>
+            <creation_time>2013-01-18T18:23:53+01:00</creation_time>
+            <modification_time>2013-01-18T18:24:10+01:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <extension>html</extension>
+            <content_type>text/html</content_type>
+            <summary>Single page HTML report.</summary>
+            <description>
+              A single HTML page listing results of a scan.  Style information
+              <truncated>...</truncated>
+            </description>
+            <file name="HTML.xsl">
+              PD9ldD4K
+              <truncated>...</truncated>
+            </file>
+            <file name="generate">
+              IyEvAk
+              <truncated>...</truncated>
+            </file>
+            <signature></signature>
+          </report_format>
+          <truncated>...</truncated>
+        </get_report_formats_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_reports</name>
     <summary>Get one or many reports</summary>
     <description>
@@ -16054,12 +16724,12 @@ END:VCALENDAR
           <name>filter</name>
           <summary>A severity level that is included in the report</summary>
           <pattern>
-			<alts>
-			  <alt>High</alt>
-			  <alt>Medium</alt>
-			  <alt>Low</alt>
-			  <alt>Log</alt>
-			</alts>
+            <alts>
+              <alt>High</alt>
+              <alt>Medium</alt>
+              <alt>Low</alt>
+              <alt>Log</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -16359,676 +17029,6 @@ END:VCALENDAR
             </report>
           </report>
         </get_reports_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_report_formats</name>
-    <summary>Get one or many report formats</summary>
-    <description>
-      <p>
-        The client uses the get_report_formats command to get report format
-        information.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>report_format_id</name>
-        <summary>ID of single report format to get</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filter</name>
-        <summary>Filter term to use to filter query</summary>
-        <type>text</type>
-        <filter_keywords>
-          <option>
-            <name>first</name>
-            <type>integer</type>
-            <summary>
-              Index of the first item returned, starting at 1 (e.g. first=5
-              starts at the 5th item)
-            </summary>
-          </option>
-          <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
-            <name>sort</name>
-            <type>text</type>
-            <summary>Column to sort by in ascending order</summary>
-          </option>
-          <option>
-            <name>sort-reverse</name>
-            <type>text</type>
-            <summary>Column to sort by in descending order</summary>
-          </option>
-          <column>
-            <name>tag</name>
-            <type>text</type>
-            <summary>
-              Name and optional "=" separted value of an attached tag
-              (e.g. "mytag" or "mytag=myvalue")
-            </summary>
-          </column>
-          <column>
-            <name>tag_id</name>
-            <type>UUID</type>
-            <summary>
-              UUID of an attached tag
-            </summary>
-          </column>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Unique ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
-          <column>
-            <name>extension</name>
-            <type>text</type>
-            <summary>File extension of the report format</summary>
-          </column>
-          <column>
-            <name>content_type</name>
-            <type>text</type>
-            <summary>Content type of the report format</summary>
-          </column>
-          <column>
-            <name>summary</name>
-            <type>text</type>
-            <summary>Short summary of the report format</summary>
-          </column>
-          <column>
-            <name>description</name>
-            <type>text</type>
-            <summary>Description of the report format</summary>
-          </column>
-          <column>
-            <name>trust</name>
-            <type>boolean</type>
-            <summary>Whether the report format is trusted</summary>
-          </column>
-          <column>
-            <name>trust_time</name>
-            <type>iso_time</type>
-            <summary>Time the report format was last verified</summary>
-          </column>
-          <column>
-            <name>active</name>
-            <type>boolean</type>
-            <summary>Whether the report format is active</summary>
-          </column>
-          <column>
-            <name>predefined</name>
-            <type>boolean</type>
-            <summary>Whether the report format was created from the feed</summary>
-          </column>
-        </filter_keywords>
-      </attrib>
-      <attrib>
-        <name>filt_id</name>
-        <summary>ID of filter to use to filter query</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>trash</name>
-        <summary>Whether to get the trashcan report formats instead</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>alerts</name>
-        <summary>Whether to include alerts that use the report format</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>params</name>
-        <summary>Whether to include report format parameters</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>details</name>
-        <summary>Include report format file, signature and parameters</summary>
-        <type>boolean</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>report_format</e></any>
-        <e>filters</e>
-        <e>sort</e>
-        <e>report_formats</e>
-        <e>report_format_count</e>
-      </pattern>
-      <ele>
-        <name>report_format</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>permissions</e>
-          <o><e>user_tags</e></o>
-          <e>extension</e>
-          <e>content_type</e>
-          <e>summary</e>
-          <e>description</e>
-          <o><e>alerts</e></o>
-          <o>
-            <g>
-              <any><e>file</e></any>
-              <e>signature</e>
-            </g>
-          </o>
-          <e>trust</e>
-          <e>active</e>
-          <e>predefined</e>
-          <o><e>deprecated</e></o>
-          <any><e>param</e></any>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the report format</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>The name of the report format</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <summary>Whether the report format is global or in use</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether any alerts are using the report format</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>
-            Permissions that the current user has on the report format
-          </summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the report format</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>summary</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>description</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>extension</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>content_type</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>alerts</name>
-          <summary>Alerts using the report format</summary>
-          <pattern>
-            <any><e>alert</e></any>
-          </pattern>
-          <ele>
-            <name>alert</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the alert</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the alert</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the permission</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>param</name>
-          <pattern>
-            <e>name</e>
-            <e>type</e>
-            <e>value</e>
-            <e>default</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the param</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-          <ele>
-            <name>type</name>
-            <summary>The type of the param</summary>
-            <pattern>
-              <o><e>min</e></o>
-              <o><e>max</e></o>
-              <o><e>options</e></o>
-			  <alts>
-				<alt>boolean</alt>
-				<alt>integer</alt>
-				<alt>selection</alt>
-				<alt>string</alt>
-				<alt>text</alt>
-				<alt>report_format_list</alt>
-			  </alts>
-            </pattern>
-            <ele>
-              <name>min</name>
-              <summary>Minimum</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>max</name>
-              <summary>Maximum</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>options</name>
-              <summary>Selection options</summary>
-              <pattern><any><e>option</e></any></pattern>
-              <ele>
-                <name>option</name>
-                <summary>Option value</summary>
-                <pattern>text</pattern>
-              </ele>
-            </ele>
-          </ele>
-          <ele>
-            <name>value</name>
-            <summary>The value of the param</summary>
-            <pattern>
-              <any><e>report_format</e></any>
-            </pattern>
-            <ele>
-              <name>report_format</name>
-              <summary>Report format info if type is report_format_list</summary>
-              <pattern>
-                <attrib>
-                  <name>id</name>
-                  <type>uuid</type>
-                  <required>1</required>
-                </attrib>
-                <e>name</e>
-              </pattern>
-              <ele>
-                <name>name</name>
-                <summary>Name of the report format if available</summary>
-                <pattern>text</pattern>
-              </ele>
-            </ele>
-          </ele>
-          <ele>
-            <name>default</name>
-            <summary>The fallback value of the param</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>file</name>
-          <summary>One of the files used to generate the report</summary>
-          <pattern>
-            <attrib>
-              <name>name</name>
-              <type>text</type>
-              <required>1</required>
-            </attrib>
-            <t>base64</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>signature</name>
-          <summary>The report format signature</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>trust</name>
-          <summary>Whether signature verification succeeded</summary>
-          <pattern>
-            <attrib>
-              <name>name</name>
-              <type>text</type>
-              <required>1</required>
-            </attrib>
-            <e>time</e>
-            <alts>
-              <alt>yes</alt>
-              <alt>no</alt>
-              <alt>unknown</alt>
-            </alts>
-          </pattern>
-          <ele>
-            <name>time</name>
-            <summary>The time the trust was checked</summary>
-            <pattern><t>iso_time</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>active</name>
-          <summary>Whether the report format is active</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>predefined</name>
-          <summary>Whether the report format was predefined by the feed</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>deprecated</name>
-          <summary>Whether the report format is deprecated</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>UUID of filter if any, else 0</summary>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <o><e>name</e></o>
-          <e>keywords</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>Filter name, if applicable</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>keywords</name>
-          <summary>Filter broken down into keywords</summary>
-          <pattern><any><e>keyword</e></any></pattern>
-          <ele>
-            <name>keyword</name>
-            <pattern>
-              <e>column</e>
-              <e>relation</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>column</name>
-              <summary>Column prefix</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>relation</name>
-              <summary>Relation operator</summary>
-              <pattern>
-                <alts>
-                  <alt>=</alt>
-                  <alt>:</alt>
-                  <alt>~</alt>
-                  <alt>&gt;</alt>
-                  <alt>&lt;</alt>
-                </alts>
-              </pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>The filter text</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern>
-          text
-          <e>field</e>
-        </pattern>
-        <ele>
-          <name>field</name>
-          <pattern>
-            <e>order</e>
-          </pattern>
-          <ele>
-            <name>order</name>
-            <pattern>
-              <alts>
-                <alt>ascending</alt>
-                <alt>descending</alt>
-              </alts>
-            </pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>report_formats</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <summary>First report format</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <summary>Maximum number of report formats</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>report_format_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-        <ele>
-          <name>filtered</name>
-          <summary>Number of report formats after filtering</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>page</name>
-          <summary>Number of report formats on current page</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get information about a report format</summary>
-      <request>
-        <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
-        </get_report_formats>
-      </request>
-      <response>
-        <get_report_formats_response status="200" status_text="OK">
-          <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
-            <name>HTML</name>
-            <creation_time>2013-01-31T16:46:32+01:00</creation_time>
-            <modification_time>2013-01-31T16:46:32+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <extension>html</extension>
-            <content_type>text/html</content_type>
-            <summary>Single page HTML report.</summary>
-            <description>
-              A single HTML page listing results of a scan.  Style information
-              <truncated>...</truncated>
-            </description>
-            <trust>
-              no
-              <time>Thu Dec  2 13:22:26 2010</time>
-            </trust>
-            <active>1</active>
-          </report_format>
-          <truncated> ... </truncated>
-        </get_report_formats_response>
-      </response>
-    </example>
-    <example>
-      <summary>Export a report format</summary>
-      <request>
-        <get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
-                            details="1">
-        </get_report_formats>
-      </request>
-      <response>
-        <get_report_formats_response status="200" status_text="OK">
-          <report_format id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
-            <name>HTML</name>
-            <comment></comment>
-            <creation_time>2013-01-18T18:23:53+01:00</creation_time>
-            <modification_time>2013-01-18T18:24:10+01:00</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <extension>html</extension>
-            <content_type>text/html</content_type>
-            <summary>Single page HTML report.</summary>
-            <description>
-              A single HTML page listing results of a scan.  Style information
-              <truncated>...</truncated>
-            </description>
-            <file name="HTML.xsl">
-              PD9ldD4K
-              <truncated>...</truncated>
-            </file>
-            <file name="generate">
-              IyEvAk
-              <truncated>...</truncated>
-            </file>
-            <signature></signature>
-          </report_format>
-          <truncated>...</truncated>
-        </get_report_formats_response>
       </response>
     </example>
   </command>
@@ -21176,10 +21176,10 @@ END:VCALENDAR
           <name>usage_type</name>
           <summary>The usage type of the task (scan or audit)</summary>
           <pattern>
-			<alts>
-			  <alt>scan</alt>
-			  <alt>audit</alt>
-			</alts>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+            </alts>
           </pattern>
         </ele>
         <ele>
@@ -21836,97 +21836,97 @@ END:VCALENDAR
         </get_tasks>
       </request>
       <response>
-		<get_tasks_response status="200" status_text="OK">
-		  <apply_overrides>0</apply_overrides>
-		  <task id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
-			<owner>
-			  <name>m</name>
-			</owner>
-			<name>Container Example</name>
-			<comment>This task provides for uploading reports</comment>
-			<creation_time>2019-08-13T12:28:43+02:00</creation_time>
-			<modification_time>
-			2019-08-13T12:28:44+02:00</modification_time>
-			<writable>1</writable>
-			<in_use>0</in_use>
-			<permissions>
-			  <permission>
-				<name>Everything</name>
-			  </permission>
-			</permissions>
-			<alterable>0</alterable>
-			<usage_type>scan</usage_type>
-			<config id="">
-			  <name></name>
-			  <type>-1</type>
-			  <trash>0</trash>
-			</config>
-			<target id="">
-			  <name></name>
-			  <trash>0</trash>
-			</target>
-			<hosts_ordering></hosts_ordering>
-			<scanner id=''>
-			  <name></name>
-			  <type>0</type>
-			  <trash>0</trash>
-			</scanner>
-			<status>Done</status>
-			<progress>-1</progress>
-			<report_count>1
-			<finished>1</finished></report_count>
-			<trend></trend>
+        <get_tasks_response status="200" status_text="OK">
+          <apply_overrides>0</apply_overrides>
+          <task id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
+            <owner>
+              <name>m</name>
+            </owner>
+            <name>Container Example</name>
+            <comment>This task provides for uploading reports</comment>
+            <creation_time>2019-08-13T12:28:43+02:00</creation_time>
+            <modification_time>
+            2019-08-13T12:28:44+02:00</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <alterable>0</alterable>
+            <usage_type>scan</usage_type>
+            <config id="">
+              <name></name>
+              <type>-1</type>
+              <trash>0</trash>
+            </config>
+            <target id="">
+              <name></name>
+              <trash>0</trash>
+            </target>
+            <hosts_ordering></hosts_ordering>
+            <scanner id=''>
+              <name></name>
+              <type>0</type>
+              <trash>0</trash>
+            </scanner>
+            <status>Done</status>
+            <progress>-1</progress>
+            <report_count>1
+            <finished>1</finished></report_count>
+            <trend></trend>
             <schedule id="">
               <name></name>
               <trash>0</trash>
             </schedule>
-			<last_report>
-			  <report id="5496f417-9b3b-4582-b450-c05ca99009d8">
-				<timestamp>2019-08-13T12:29:25+02:00</timestamp>
-				<scan_start>2019-04-24T14:26:01+02:00</scan_start>
-				<scan_end>2019-04-24T14:50:59+02:00</scan_end>
-				<result_count>
-				  <hole>1</hole>
-				  <info>0</info>
-				  <log>77</log>
-				  <warning>8</warning>
-				  <false_positive>0</false_positive>
-				</result_count>
-				<severity>9.0</severity>
-			  </report>
-			</last_report>
-			<observers></observers>
-			<preferences>
-			  <preference>
-				<name>Maximum concurrently executed NVTs per host</name>
-				<scanner_name>max_checks</scanner_name>
-				<value>4</value>
-			  </preference>
-            <truncated>...</truncated>
-			</preferences>
-		  </task>
-		  <filters id="">
-			<term>apply_overrides=0 min_qod=70
-			uuid=f404781f-6d2b-420c-b7a1-0d3f27f1a43b first=1 rows=10
-			sort=name</term>
-			<keywords>
-			  <keyword>
-				<column>apply_overrides</column>
-				<relation>=</relation>
-				<value>0</value>
-			  </keyword>
+            <last_report>
+              <report id="5496f417-9b3b-4582-b450-c05ca99009d8">
+                <timestamp>2019-08-13T12:29:25+02:00</timestamp>
+                <scan_start>2019-04-24T14:26:01+02:00</scan_start>
+                <scan_end>2019-04-24T14:50:59+02:00</scan_end>
+                <result_count>
+                  <hole>1</hole>
+                  <info>0</info>
+                  <log>77</log>
+                  <warning>8</warning>
+                  <false_positive>0</false_positive>
+                </result_count>
+                <severity>9.0</severity>
+              </report>
+            </last_report>
+            <observers></observers>
+            <preferences>
+              <preference>
+                <name>Maximum concurrently executed NVTs per host</name>
+                <scanner_name>max_checks</scanner_name>
+                <value>4</value>
+              </preference>
               <truncated>...</truncated>
-			</keywords>
-		  </filters>
-		  <sort>
-			<field>name
-			<order>ascending</order></field>
-		  </sort>
-		  <tasks start="1" max="10" />
-		  <task_count>21
-		  <filtered>1</filtered>
-		  <page>1</page></task_count>
-		</get_tasks_response>
+            </preferences>
+          </task>
+          <filters id="">
+            <term>apply_overrides=0 min_qod=70
+            uuid=f404781f-6d2b-420c-b7a1-0d3f27f1a43b first=1 rows=10
+            sort=name</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name
+            <order>ascending</order></field>
+          </sort>
+          <tasks start="1" max="10" />
+          <task_count>21
+          <filtered>1</filtered>
+          <page>1</page></task_count>
+        </get_tasks_response>
       </response>
     </example>
   </command>
@@ -22572,498 +22572,6 @@ END:VCALENDAR
             <page>2</page>
           </ticket_count>
         </get_tickets_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_users</name>
-    <summary>Get one or many users</summary>
-    <description>
-      <p>
-        The client uses the "get_users" command to retrieve the list of user
-        accounts on the Scanner.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>user_id</name>
-        <summary>ID of single user to get</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filter</name>
-        <summary>Filter term to use to filter query</summary>
-        <type>text</type>
-        <filter_keywords>
-          <option>
-            <name>first</name>
-            <type>integer</type>
-            <summary>
-              Index of the first item returned, starting at 1 (e.g. first=5
-              starts at the 5th item)
-            </summary>
-          </option>
-          <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
-            <name>sort</name>
-            <type>text</type>
-            <summary>Column to sort by in ascending order</summary>
-          </option>
-          <option>
-            <name>sort-reverse</name>
-            <type>text</type>
-            <summary>Column to sort by in descending order</summary>
-          </option>
-          <column>
-            <name>tag</name>
-            <type>text</type>
-            <summary>
-              Name and optional "=" separted value of an attached tag
-              (e.g. "mytag" or "mytag=myvalue")
-            </summary>
-          </column>
-          <column>
-            <name>tag_id</name>
-            <type>UUID</type>
-            <summary>
-              UUID of an attached tag
-            </summary>
-          </column>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Unique ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name</summary>
-          </column>
-          <column>
-            <name>comment</name>
-            <type>text</type>
-            <summary>Comment text</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
-          <column>
-            <name>method</name>
-            <type>text</type>
-            <summary>Methods allowed for authentication</summary>
-          </column>
-          <column>
-            <name>roles</name>
-            <type>text</type>
-            <summary>Comma-separated list of roles</summary>
-          </column>
-          <column>
-            <name>groups</name>
-            <type>text</type>
-            <summary>Comma-separated list of groups</summary>
-          </column>
-          <column>
-            <name>hosts</name>
-            <type>text</type>
-            <summary>List of host that are either allowed of forbidden</summary>
-          </column>
-        </filter_keywords>
-      </attrib>
-      <attrib>
-        <name>filt_id</name>
-        <summary>ID of filter to use to filter query</summary>
-        <type>uuid</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>user</e></any>
-        <e>filters</e>
-        <e>sort</e>
-        <e>users</e>
-        <e>user_count</e>
-      </pattern>
-      <ele>
-        <name>user</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>ID of user</summary>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <any><e>role</e></any>
-          <e>groups</e>
-          <e>hosts</e>
-          <e>permissions</e>
-          <o><e>user_tags</e></o>
-          <e>sources</e>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the user</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>The name of the user</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>comment</name>
-          <summary>The comment on the user</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Creation time of the user</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Last time the user was modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <summary>Whether the user is writable</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether this user is currently in use</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>role</name>
-          <summary>The role of the user</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-            <o><e>permissions</e></o>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>Name of role</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-          <ele>
-            <name>permissions</name>
-            <summary>Permissions the user has on the role</summary>
-            <pattern></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>groups</name>
-          <summary>The groups the user belongs to</summary>
-          <pattern>
-            <e>group</e>
-          </pattern>
-          <ele>
-            <name>group</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of group</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the group</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>hosts</name>
-          <summary>Host access rule for the user</summary>
-          <pattern>
-            <attrib>
-              <name>allow</name>
-              <summary>0 forbidden, 1 allowed, 2 all allowed, 3 custom</summary>
-              <type>
-                <alts>
-                  <alt>0</alt>
-                  <alt>1</alt>
-                  <alt>2</alt>
-                  <alt>3</alt>
-                </alts>
-              </type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>
-            Permissions that the current user has on the user
-          </summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the user</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>sources</name>
-          <summary>Sources allowed for authentication for this user</summary>
-          <pattern>
-            <any><e>source</e></any>
-          </pattern>
-          <ele>
-            <name>source</name>
-            <summary>Authentication source</summary>
-            <pattern>
-			  <alts>
-				<alt>file</alt>
-				<alt>ldap_connect</alt>
-				<alt>radius_connect</alt>
-			  </alts>
-            </pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>UUID of filter if any, else 0</summary>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <o><e>name</e></o>
-          <e>keywords</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>Filter name, if applicable</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>keywords</name>
-          <summary>Filter broken down into keywords</summary>
-          <pattern><any><e>keyword</e></any></pattern>
-          <ele>
-            <name>keyword</name>
-            <pattern>
-              <e>column</e>
-              <e>relation</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>column</name>
-              <summary>Column prefix</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>relation</name>
-              <summary>Relation operator</summary>
-              <pattern>
-                <alts>
-                  <alt>=</alt>
-                  <alt>:</alt>
-                  <alt>~</alt>
-                  <alt>&gt;</alt>
-                  <alt>&lt;</alt>
-                </alts>
-              </pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>The filter text</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern>
-          text
-          <e>field</e>
-        </pattern>
-        <ele>
-          <name>field</name>
-          <pattern>
-            <e>order</e>
-          </pattern>
-          <ele>
-            <name>order</name>
-            <pattern>
-              <alts>
-                <alt>ascending</alt>
-                <alt>descending</alt>
-              </alts>
-            </pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>users</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <summary>First user</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <summary>Maximum number of users</summary>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>user_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-        <ele>
-          <name>filtered</name>
-          <summary>Number of users after filtering</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>page</name>
-          <summary>Number of users on current page</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get the users</summary>
-      <request>
-        <get_users></get_users>
-      </request>
-      <response>
-        <get_users_response status="200" status_text="OK">
-          <user>
-            <name>foobar</name>
-            <role id="8d453140-b74d-11e2-b0be-406186ea4fc5">
-              <name>User</name>
-            </role>
-            <hosts allow="2"></hosts>
-            <sources><source>file</source></sources>
-          </user>
-        </get_users_response>
       </response>
     </example>
   </command>
@@ -23777,6 +23285,498 @@ END:VCALENDAR
             <page>1</page>
           </tls_certificate_count>
         </get_tls_certificates_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_users</name>
+    <summary>Get one or many users</summary>
+    <description>
+      <p>
+        The client uses the "get_users" command to retrieve the list of user
+        accounts on the Scanner.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>user_id</name>
+        <summary>ID of single user to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>method</name>
+            <type>text</type>
+            <summary>Methods allowed for authentication</summary>
+          </column>
+          <column>
+            <name>roles</name>
+            <type>text</type>
+            <summary>Comma-separated list of roles</summary>
+          </column>
+          <column>
+            <name>groups</name>
+            <type>text</type>
+            <summary>Comma-separated list of groups</summary>
+          </column>
+          <column>
+            <name>hosts</name>
+            <type>text</type>
+            <summary>List of host that are either allowed of forbidden</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>user</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>users</e>
+        <e>user_count</e>
+      </pattern>
+      <ele>
+        <name>user</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of user</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <any><e>role</e></any>
+          <e>groups</e>
+          <e>hosts</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>sources</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the user</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the user</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the user</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the user</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last time the user was modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the user is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether this user is currently in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>role</name>
+          <summary>The role of the user</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of role</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the role</summary>
+            <pattern></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>groups</name>
+          <summary>The groups the user belongs to</summary>
+          <pattern>
+            <e>group</e>
+          </pattern>
+          <ele>
+            <name>group</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of group</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the group</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>Host access rule for the user</summary>
+          <pattern>
+            <attrib>
+              <name>allow</name>
+              <summary>0 forbidden, 1 allowed, 2 all allowed, 3 custom</summary>
+              <type>
+                <alts>
+                  <alt>0</alt>
+                  <alt>1</alt>
+                  <alt>2</alt>
+                  <alt>3</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the user
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the user</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>sources</name>
+          <summary>Sources allowed for authentication for this user</summary>
+          <pattern>
+            <any><e>source</e></any>
+          </pattern>
+          <ele>
+            <name>source</name>
+            <summary>Authentication source</summary>
+            <pattern>
+              <alts>
+                <alt>file</alt>
+                <alt>ldap_connect</alt>
+                <alt>radius_connect</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>users</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First user</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of users</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>user_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of users after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of users on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the users</summary>
+      <request>
+        <get_users></get_users>
+      </request>
+      <response>
+        <get_users_response status="200" status_text="OK">
+          <user>
+            <name>foobar</name>
+            <role id="8d453140-b74d-11e2-b0be-406186ea4fc5">
+              <name>User</name>
+            </role>
+            <hosts allow="2"></hosts>
+            <sources><source>file</source></sources>
+          </user>
+        </get_users_response>
       </response>
     </example>
   </command>
@@ -25106,10 +25106,10 @@ END:VCALENDAR
       <name>auth_algorithm</name>
       <summary>Authentication algorithm for SNMP, either md5 or sha1</summary>
       <pattern>
-		<alts>
-		  <alt>md5</alt>
-		  <alt>sha1</alt>
-		</alts>
+        <alts>
+          <alt>md5</alt>
+          <alt>sha1</alt>
+        </alts>
       </pattern>
     </ele>
     <ele>
@@ -25122,10 +25122,10 @@ END:VCALENDAR
         <name>algorithm</name>
         <summary>The SNMP privacy algorithm, either aes or des</summary>
         <pattern>
-		  <alts>
-			<alt>aes</alt>
-			<alt>des</alt>
-		  </alts>
+          <alts>
+            <alt>aes</alt>
+            <alt>des</alt>
+          </alts>
         </pattern>
       </ele>
       <ele>
@@ -26151,6 +26151,117 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>modify_tag</name>
+    <summary>Modify a tag</summary>
+    <description>
+      <p>
+        The client uses the modify_tag command to change an existing tag.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tag_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>resources</e></o>
+      <o><e>value</e></o>
+      <o><e>comment</e></o>
+      <o><e>active</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A full tag name consisting of namespace and predicate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>resources</name>
+      <summary>Identifies the resources the tag is to be attached to</summary>
+      <pattern>
+        <attrib>
+          <name>action</name>
+          <type>
+            <alts>
+              <alt></alt>
+              <alt>add</alt>
+              <alt>set</alt>
+              <alt>remove</alt>
+            </alts>
+          </type>
+          <summary>Whether to add or remove resources instead of overwriting</summary>
+          <required>0</required>
+        </attrib>
+        <attrib>
+          <name>filter</name>
+          <type>text</type>
+          <summary>Filter term to select resources the tag is to be attached to</summary>
+          <required>0</required>
+        </attrib>
+        <any><e>resource</e></any>
+        <e>type</e>
+      </pattern>
+      <ele>
+        <name>resource</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of a resource the tag is to be attached to</summary>
+            <type>uuid</type>
+            <required>0</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>GMP type of the resources the tag is to be attached to</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>value</name>
+      <summary>Value associated with the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment to add to the tag</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the tag is active</summary>
+      <pattern>boolean</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Deactivate a tag</summary>
+      <request>
+        <modify_tag tag_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <active>0</active>
+        </modify_tag>
+      </request>
+      <response>
+        <modify_tag_response status="200"
+                             status_text="OK">
+        </modify_tag_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_target</name>
     <summary>Modify an existing target</summary>
     <description>
@@ -26364,117 +26475,6 @@ END:VCALENDAR
       <response>
         <modify_target_response status="200" status_text="OK">
         </modify_target_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>modify_tag</name>
-    <summary>Modify a tag</summary>
-    <description>
-      <p>
-        The client uses the modify_tag command to change an existing tag.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>tag_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <o><e>name</e></o>
-      <o><e>resources</e></o>
-      <o><e>value</e></o>
-      <o><e>comment</e></o>
-      <o><e>active</e></o>
-    </pattern>
-    <ele>
-      <name>name</name>
-      <summary>A full tag name consisting of namespace and predicate</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>resources</name>
-      <summary>Identifies the resources the tag is to be attached to</summary>
-      <pattern>
-        <attrib>
-          <name>action</name>
-          <type>
-            <alts>
-              <alt></alt>
-              <alt>add</alt>
-              <alt>set</alt>
-              <alt>remove</alt>
-            </alts>
-          </type>
-          <summary>Whether to add or remove resources instead of overwriting</summary>
-          <required>0</required>
-        </attrib>
-        <attrib>
-          <name>filter</name>
-          <type>text</type>
-          <summary>Filter term to select resources the tag is to be attached to</summary>
-          <required>0</required>
-        </attrib>
-        <any><e>resource</e></any>
-        <e>type</e>
-      </pattern>
-      <ele>
-        <name>resource</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <summary>ID of a resource the tag is to be attached to</summary>
-            <type>uuid</type>
-            <required>0</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>type</name>
-        <summary>GMP type of the resources the tag is to be attached to</summary>
-        <pattern>text</pattern>
-      </ele>
-    </ele>
-    <ele>
-      <name>value</name>
-      <summary>Value associated with the tag</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>comment</name>
-      <summary>Comment to add to the tag</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>active</name>
-      <summary>Whether the tag is active</summary>
-      <pattern>boolean</pattern>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Deactivate a tag</summary>
-      <request>
-        <modify_tag tag_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-          <active>0</active>
-        </modify_tag>
-      </request>
-      <response>
-        <modify_tag_response status="200"
-                             status_text="OK">
-        </modify_tag_response>
       </response>
     </example>
   </command>
@@ -26895,8 +26895,8 @@ END:VCALENDAR
           <summary>If 0 then password is left alone, otherwise password is modified</summary>
           <type>boolean</type>
         </attrib>
-	    text
- 	  </pattern>
+        text
+       </pattern>
     </ele>
     <ele>
       <name>role</name>
@@ -26912,20 +26912,20 @@ END:VCALENDAR
     <ele>
       <name>sources</name>
       <summary>List of authentication sources for this user (if omitted, no changes)</summary>
-	  <pattern>
-		<any><e>source</e></any>
-	  </pattern>
-	  <ele>
-		<name>source</name>
-		<summary>Authentication source</summary>
-		<pattern>
-		  <alts>
-			<alt>file</alt>
-			<alt>ldap_connect</alt>
-			<alt>radius_connect</alt>
-		  </alts>
-		</pattern>
-	  </ele>
+      <pattern>
+        <any><e>source</e></any>
+      </pattern>
+      <ele>
+        <name>source</name>
+        <summary>Authentication source</summary>
+        <pattern>
+          <alts>
+            <alt>file</alt>
+            <alt>ldap_connect</alt>
+            <alt>radius_connect</alt>
+          </alts>
+        </pattern>
+      </ele>
     </ele>
     <response>
       <pattern>

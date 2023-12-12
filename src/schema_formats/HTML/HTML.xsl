@@ -117,6 +117,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template name="description-more-details">
+    <xsl:param name="descr"/>
+    <xsl:choose>
+      <xsl:when test="(count($descr/*) = 0) and (string-length(normalize-space($descr/text())) &gt; 0)">
+        <div><xsl:value-of select="$descr/text()"/></div>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:for-each select="$descr/*">
+          <xsl:choose>
+            <xsl:when test="name()='p'">
+              <div><xsl:value-of select="text()"/></div>
+            </xsl:when>
+            <xsl:when test="name()='l'">
+              <div>
+                <xsl:value-of select="lh"/>
+                <ul>
+                  <xsl:for-each select="li">
+                    <li><xsl:value-of select="text()"/></li>
+                  </xsl:for-each>
+                </ul>
+                <xsl:value-of select="lf"/>
+              </div>
+            </xsl:when>
+          </xsl:choose>
+        </xsl:for-each>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <!-- Called within a PRE. -->
   <xsl:template name="print-space">
     <xsl:param name="count">1</xsl:param>
@@ -453,6 +482,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <xsl:value-of select="normalize-space(summary)"/>.
           </xsl:if>
           <xsl:apply-templates select="filter_keywords"/>
+          <xsl:if test="description">
+            <div style="margin-left: 10px; padding: 0 0 3px 5px;">
+              <i>More Details</i>
+              <div style="margin-left: 10px; padding-left: 10px;">
+                <xsl:call-template name="description-more-details">
+                  <xsl:with-param name="descr" select="description"/>
+                </xsl:call-template>
+              </div>
+            </div>
+          </xsl:if>
         </li>
       </xsl:when>
       <xsl:when test="name() = 'c'">
@@ -497,6 +536,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </xsl:call-template>
                 </xsl:for-each>
               </ul>
+              <xsl:if test="$new-line-element/description">
+                <div style="margin-left: 20px; padding: 0 0 3px 5px;">
+                  <i>More Details</i>
+                  <div style="margin-left: 10px; padding-left: 10px;">
+                    <xsl:call-template name="description-more-details">
+                      <xsl:with-param name="descr" select="$new-line-element/description"/>
+                    </xsl:call-template>
+                  </div>
+                </div>
+              </xsl:if>
             </xsl:when>
             <xsl:otherwise>
               <xsl:variable name="global-element"
