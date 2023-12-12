@@ -154,22 +154,13 @@ get_iterator_comment (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Creation time, or NULL if iteration is complete. Caller must free.
+ * @return Creation time, or 0 if iteration is complete.
  */
-gchar *
+time_t
 get_iterator_creation_time (iterator_t* iterator)
 {
-  time_t epoch;
-  char *iso;
-
-  if (iterator->done) return NULL;
-
-  epoch = iterator_int64 (iterator, 4);
-  iso = iso_time (&epoch);
-  if (iso)
-    // iso points to static memory.
-    return g_strdup (iso);
-  return g_strdup("ERR");
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 4);
 }
 
 /**
@@ -177,22 +168,13 @@ get_iterator_creation_time (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Modification time, or NULL if iteration is complete. Caller must free.
+ * @return Modification time, or 0 if iteration is complete.
  */
-gchar *
+time_t
 get_iterator_modification_time (iterator_t* iterator)
 {
-  time_t epoch;
-  char *iso;
-
-  if (iterator->done) return NULL;
-
-  epoch = iterator_int64 (iterator, 5);
-  iso = iso_time (&epoch);
-  if (iso)
-    // iso points to static memory.
-    return g_strdup (iso);
-  return g_strdup("ERR");
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 5);
 }
 
 /**

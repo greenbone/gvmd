@@ -23885,22 +23885,13 @@ result_iterator_delta_qod_type (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Time, or NULL if iteration is complete. Caller must free.
+ * @return Time, or 0 if iteration is complete.
  */
-gchar *
+time_t
 result_iterator_delta_creation_time (iterator_t* iterator)
 {
-  time_t epoch;
-  char *iso;
-
-  if (iterator->done) return NULL;
-
-  epoch = iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 6);
-  iso = iso_time (&epoch);
-  if (iso)
-    // iso points to static memory.
-    return g_strdup (iso);
-  return g_strdup("ERR");
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 6);
 }
 
 /**
@@ -23908,22 +23899,13 @@ result_iterator_delta_creation_time (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Time, or NULL if iteration is complete. Caller must free.
+ * @return Time, or 0 if iteration is complete.
  */
-gchar *
+time_t
 result_iterator_delta_modification_time (iterator_t* iterator)
 {
-  time_t epoch;
-  char *iso;
-
-  if (iterator->done) return NULL;
-
-  epoch = iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
-  iso = iso_time (&epoch);
-  if (iso)
-    // iso points to static memory.
-    return g_strdup (iso);
-  return g_strdup("ERR");
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
 }
 
 /**

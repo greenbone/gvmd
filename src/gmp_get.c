@@ -316,23 +316,14 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
   const char *tag_type;
   iterator_t tags;
   int tag_count;
-  gchar *creation, *modification;
 
   buffer = g_string_new ("");
-
-  creation = get_iterator_creation_time (iterator);
-  modification = get_iterator_modification_time (iterator);
 
   buffer_xml_append_printf (buffer,
                             "<%s id=\"%s\">"
                             "<owner><name>%s</name></owner>"
                             "<name>%s</name>"
-                            "<comment>%s</comment>"
-                            "<creation_time>%s</creation_time>"
-                            "<modification_time>%s</modification_time>"
-                            "<writable>%i</writable>"
-                            "<in_use>%i</in_use>"
-                            "<permissions>",
+                            "<comment>%s</comment>",
                             type,
                             get_iterator_uuid (iterator)
                             ? get_iterator_uuid (iterator)
@@ -345,14 +336,20 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             : "",
                             get_iterator_comment (iterator)
                             ? get_iterator_comment (iterator)
-                            : "",
-                            creation ? creation : "",
-                            modification ? modification : "",
+                            : "");
+
+  buffer_xml_append_printf (buffer,
+                            "<creation_time>%s</creation_time>",
+                            iso_if_time (get_iterator_creation_time (iterator)));
+
+  buffer_xml_append_printf (buffer,
+                            "<modification_time>%s</modification_time>"
+                            "<writable>%i</writable>"
+                            "<in_use>%i</in_use>"
+                            "<permissions>",
+                            iso_if_time (get_iterator_modification_time (iterator)),
                             writable,
                             in_use);
-
-  g_free (creation);
-  g_free (modification);
 
   if (/* The user is the owner. */
       (current_credentials.username

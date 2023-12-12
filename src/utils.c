@@ -483,7 +483,7 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
 /**
  * @brief Create an ISO time from seconds since epoch.
  *
- * @param[in]  epoch_time  Time in seconds from epoch.
+ * @param[in]  epoch_time  Pointer to time in seconds from epoch.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
@@ -496,7 +496,7 @@ iso_time (time_t *epoch_time)
 /**
  * @brief Create an ISO time from seconds since epoch, given a timezone.
  *
- * @param[in]  epoch_time  Time in seconds from epoch.
+ * @param[in]  epoch_time  Pointer to time in seconds from epoch.
  * @param[in]  zone        Timezone.
  * @param[out] abbrev      Timezone abbreviation.
  *
@@ -541,6 +541,22 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
 
   g_free (tz);
   return ret;
+}
+
+/**
+ * @brief Create an ISO time from seconds since epoch, with a 0 check.
+ *
+ * @param[in]  epoch_time  Time in seconds from epoch.
+ *
+ * @return ISO time string in static memory.  If epoch_time is 0 then string is empty.
+ */
+char *
+iso_if_time (time_t epoch_time)
+{
+  static char *empty = "";
+  if (epoch_time)
+    return iso_time (&epoch_time);
+  return empty;
 }
 
 
