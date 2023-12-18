@@ -50136,8 +50136,8 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
   if (host)
     init_iterator (iterator,
                    "SELECT id, uuid, name, comment, creation_time,"
-                   "       modification_time, creation_time,"
-                   "       modification_time, owner, owner, value,"
+                   "       modification_time, creation_time AS created,"
+                   "       modification_time AS modified, owner, owner, value,"
                    "       source_type, source_id, source_data,"
                    "       (CASE WHEN source_type LIKE 'Report%%'"
                    "        THEN NOT EXISTS (SELECT * FROM reports"
@@ -50149,8 +50149,8 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    " WHERE host = %llu"
                    " UNION"
                    " SELECT id, uuid, name, comment, creation_time,"
-                   "        modification_time, creation_time,"
-                   "        modification_time, owner, owner,"
+                   "        modification_time, creation_time AS created,"
+                   "        modification_time AS modified, owner, owner,"
                    "        (SELECT name FROM oss WHERE id = os),"
                    "        source_type, source_id, source_data,"
                    "        (CASE WHEN source_type LIKE 'Report%%'"
@@ -50170,8 +50170,8 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
   else
     init_iterator (iterator,
                    "SELECT id, uuid, name, comment, creation_time,"
-                   "       modification_time, creation_time,"
-                   "       modification_time, owner, owner, value,"
+                   "       modification_time, creation_time AS created,"
+                   "       modification_time AS modified, owner, owner, value,"
                    "       source_type, source_id, source_data, 0, '', ''"
                    " FROM host_identifiers"
                    " ORDER BY %s %s;",
