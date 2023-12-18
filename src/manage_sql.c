@@ -22145,10 +22145,10 @@ where_qod (int min_qod)
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
     { "date",                                                                 \
       "creation_time",                                                        \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "date",                                                                 \
       "modification_time",                                                    \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -22298,10 +22298,10 @@ where_qod (int min_qod)
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
     { "date",                                                                 \
       "creation_time",                                                        \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "date",                                                                 \
       "modification_time",                                                    \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -38521,8 +38521,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
      KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                     \
-   { "notes.creation_time", NULL, KEYWORD_TYPE_STRING },                   \
-   { "notes.modification_time", NULL, KEYWORD_TYPE_STRING },               \
+   { "notes.creation_time", NULL, KEYWORD_TYPE_INTEGER },                  \
+   { "notes.modification_time", NULL, KEYWORD_TYPE_INTEGER },              \
    { "notes.creation_time", "created", KEYWORD_TYPE_INTEGER },             \
    { "notes.modification_time", "modified", KEYWORD_TYPE_INTEGER },        \
    { "(SELECT name FROM users WHERE users.id = notes.owner)",              \
@@ -38576,8 +38576,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
    { "notes_trash.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                           \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                           \
-   { "notes_trash.creation_time", NULL, KEYWORD_TYPE_STRING },                   \
-   { "notes_trash.modification_time", NULL, KEYWORD_TYPE_STRING },               \
+   { "notes_trash.creation_time", NULL, KEYWORD_TYPE_INTEGER },                  \
+   { "notes_trash.modification_time", NULL, KEYWORD_TYPE_INTEGER },              \
    { "notes_trash.creation_time", "created", KEYWORD_TYPE_INTEGER },             \
    { "notes_trash.modification_time", "modified", KEYWORD_TYPE_INTEGER },        \
    { "(SELECT name FROM users WHERE users.id = notes_trash.owner)",              \
@@ -39758,8 +39758,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
      KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
-   { "overrides.creation_time", NULL, KEYWORD_TYPE_STRING },                \
-   { "overrides.modification_time", NULL, KEYWORD_TYPE_STRING },            \
+   { "overrides.creation_time", NULL, KEYWORD_TYPE_INTEGER },               \
+   { "overrides.modification_time", NULL, KEYWORD_TYPE_INTEGER },           \
    { "overrides.creation_time", "created", KEYWORD_TYPE_INTEGER },          \
    { "overrides.modification_time", "modified", KEYWORD_TYPE_INTEGER },     \
    {                                                                        \
@@ -39828,10 +39828,10 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
    { "overrides_trash.creation_time",                                       \
      NULL,                                                                  \
-     KEYWORD_TYPE_STRING },                                                 \
+     KEYWORD_TYPE_INTEGER },                                                \
    { "overrides_trash.modification_time",                                   \
      NULL,                                                                  \
-     KEYWORD_TYPE_STRING },                                                 \
+     KEYWORD_TYPE_INTEGER },                                                \
    { "overrides_trash.creation_time",                                       \
      "created",                                                             \
      KEYWORD_TYPE_INTEGER },                                                \
