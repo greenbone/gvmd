@@ -22143,10 +22143,10 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "creation_time",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "modification_time",                                                    \
       KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
@@ -22296,10 +22296,10 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "creation_time",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "modification_time",                                                    \
       KEYWORD_TYPE_STRING },                                                  \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
