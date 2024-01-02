@@ -16956,147 +16956,163 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           snmp_credential = target_iterator_snmp_credential (&targets);
           ssh_elevate_credential
             = target_iterator_ssh_elevate_credential (&targets);
-          ssh_credential_available = 1;
-          if (get_targets_data->get.trash
-              && target_iterator_ssh_trash (&targets))
-            {
-              ssh_name = trash_credential_name (ssh_credential);
-              ssh_uuid = trash_credential_uuid (ssh_credential);
-              ssh_credential_available
-                = trash_credential_readable (ssh_credential);
-            }
-          else if (ssh_credential)
-            {
-              credential_t found;
 
-              ssh_name = credential_name (ssh_credential);
-              ssh_uuid = credential_uuid (ssh_credential);
-              if (find_credential_with_permission
-                    (ssh_uuid,
-                     &found,
-                     "get_credentials"))
-                abort ();
-              ssh_credential_available = (found > 0);
+          ssh_credential_available = 1;
+          if (ssh_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_ssh_trash (&targets))
+                {
+                  ssh_name = trash_credential_name (ssh_credential);
+                  ssh_uuid = trash_credential_uuid (ssh_credential);
+                  ssh_credential_available
+                    = trash_credential_readable (ssh_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  ssh_name = credential_name (ssh_credential);
+                  ssh_uuid = credential_uuid (ssh_credential);
+                  if (find_credential_with_permission (ssh_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  ssh_credential_available = (found > 0);
+                }
             }
           else
             {
               ssh_name = NULL;
               ssh_uuid = NULL;
             }
-          smb_credential_available = 1;
-          if (get_targets_data->get.trash
-              && target_iterator_smb_trash (&targets))
-            {
-              smb_name = trash_credential_name (smb_credential);
-              smb_uuid = trash_credential_uuid (smb_credential);
-              smb_credential_available
-                = trash_credential_readable (smb_credential);
-            }
-          else if (smb_credential)
-            {
-              credential_t found;
 
-              smb_name = credential_name (smb_credential);
-              smb_uuid = credential_uuid (smb_credential);
-              if (find_credential_with_permission
-                    (smb_uuid,
-                     &found,
-                     "get_credentials"))
-                abort ();
-              smb_credential_available = (found > 0);
+          smb_credential_available = 1;
+          if (smb_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_smb_trash (&targets))
+                {
+                  smb_name = trash_credential_name (smb_credential);
+                  smb_uuid = trash_credential_uuid (smb_credential);
+                  smb_credential_available
+                    = trash_credential_readable (smb_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  smb_name = credential_name (smb_credential);
+                  smb_uuid = credential_uuid (smb_credential);
+                  if (find_credential_with_permission (smb_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  smb_credential_available = (found > 0);
+                }
             }
           else
             {
               smb_name = NULL;
               smb_uuid = NULL;
             }
-          esxi_credential_available = 1;
-          if (get_targets_data->get.trash
-              && target_iterator_esxi_trash (&targets))
-            {
-              esxi_name
-                = trash_credential_name (esxi_credential);
-              esxi_uuid
-                = trash_credential_uuid (esxi_credential);
-              esxi_credential_available
-                = trash_credential_readable (esxi_credential);
-            }
-          else if (esxi_credential)
-            {
-              credential_t found;
 
-              esxi_name = credential_name (esxi_credential);
-              esxi_uuid = credential_uuid (esxi_credential);
-              if (find_credential_with_permission
-                    (esxi_uuid,
-                     &found,
-                     "get_credentials"))
-                abort ();
-              esxi_credential_available = (found > 0);
+          esxi_credential_available = 1;
+          if (esxi_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_esxi_trash (&targets))
+                {
+                  esxi_name
+                    = trash_credential_name (esxi_credential);
+                  esxi_uuid
+                    = trash_credential_uuid (esxi_credential);
+                  esxi_credential_available
+                    = trash_credential_readable (esxi_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  esxi_name = credential_name (esxi_credential);
+                  esxi_uuid = credential_uuid (esxi_credential);
+                  if (find_credential_with_permission (esxi_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  esxi_credential_available = (found > 0);
+                }
             }
           else
             {
               esxi_name = NULL;
               esxi_uuid = NULL;
             }
-          snmp_credential_available = 1;
-          if (get_targets_data->get.trash
-              && target_iterator_snmp_trash (&targets))
-            {
-              snmp_name
-                = trash_credential_name (snmp_credential);
-              snmp_uuid
-                = trash_credential_uuid (snmp_credential);
-              snmp_credential_available
-                = trash_credential_readable (snmp_credential);
-            }
-          else if (snmp_credential)
-            {
-              credential_t found;
 
-              snmp_name = credential_name (snmp_credential);
-              snmp_uuid = credential_uuid (snmp_credential);
-              if (find_credential_with_permission
-                    (snmp_uuid,
-                     &found,
-                     "get_credentials"))
-                abort ();
-              snmp_credential_available = (found > 0);
+          snmp_credential_available = 1;
+          if (snmp_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_snmp_trash (&targets))
+                {
+                  snmp_name
+                    = trash_credential_name (snmp_credential);
+                  snmp_uuid
+                    = trash_credential_uuid (snmp_credential);
+                  snmp_credential_available
+                    = trash_credential_readable (snmp_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  snmp_name = credential_name (snmp_credential);
+                  snmp_uuid = credential_uuid (snmp_credential);
+                  if (find_credential_with_permission (snmp_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  snmp_credential_available = (found > 0);
+                }
             }
           else
             {
               snmp_name = NULL;
               snmp_uuid = NULL;
             }
-          ssh_elevate_credential_available = 1;
-          if (get_targets_data->get.trash
-              && target_iterator_ssh_elevate_trash (&targets))
-            {
-              ssh_elevate_name
-                = trash_credential_name (ssh_elevate_credential);
-              ssh_elevate_uuid
-                = trash_credential_uuid (ssh_elevate_credential);
-              ssh_elevate_credential_available
-                = trash_credential_readable (ssh_elevate_credential);
-            }
-          else if (ssh_elevate_credential)
-            {
-              credential_t found;
 
-              ssh_elevate_name = credential_name (ssh_elevate_credential);
-              ssh_elevate_uuid = credential_uuid (ssh_elevate_credential);
-              if (find_credential_with_permission
-                    (ssh_elevate_uuid,
-                     &found,
-                     "get_credentials"))
-                abort ();
-              ssh_elevate_credential_available = (found > 0);
+          ssh_elevate_credential_available = 1;
+          if (ssh_elevate_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_ssh_elevate_trash (&targets))
+                {
+                  ssh_elevate_name
+                    = trash_credential_name (ssh_elevate_credential);
+                  ssh_elevate_uuid
+                    = trash_credential_uuid (ssh_elevate_credential);
+                  ssh_elevate_credential_available
+                    = trash_credential_readable (ssh_elevate_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  ssh_elevate_name = credential_name (ssh_elevate_credential);
+                  ssh_elevate_uuid = credential_uuid (ssh_elevate_credential);
+                  if (find_credential_with_permission (ssh_elevate_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  ssh_elevate_credential_available = (found > 0);
+                }
             }
           else
             {
               ssh_elevate_name = NULL;
               ssh_elevate_uuid = NULL;
             }
+
           port_list_uuid = target_iterator_port_list_uuid (&targets);
           port_list_name = target_iterator_port_list_name (&targets);
           port_list_trash = target_iterator_port_list_trash (&targets);
