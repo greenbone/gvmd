@@ -56,7 +56,7 @@ char *
 iso_time_tz (time_t *, const char *, const char **);
 
 char *
-iso_if_time (time_t);
+iso_if_time (time_t epoch_time);
 
 /**
  * @brief Lockfile.
