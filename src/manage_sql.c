@@ -36788,114 +36788,69 @@ delete_credential (const char *credential_id, int ultimate)
 /**
  * @brief LSC Credential iterator columns.
  */
-#define CREDENTIAL_ITERATOR_COLUMNS                                           \
+#define CREDENTIAL_ITERATOR_COLUMNS_TABLE(table)                              \
  {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials),                                        \
+   GET_ITERATOR_COLUMNS (table),                                              \
    /* public generic data */                                                  \
    { "type", NULL, KEYWORD_TYPE_STRING },                                     \
    { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
    /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'username')",             \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'username')",               \
      "login",                                                                 \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'certificate')",          \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'certificate')",            \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'auth_algorithm')",       \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'auth_algorithm')",         \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'privacy_algorithm')",      \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'public_key')",           \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'public_key')",             \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'secret')",               \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'secret')",                 \
      "secret",                                                                \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'password')",             \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'password')",               \
      "password",                                                              \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'private_key')",          \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'private_key')",            \
      "private_key",                                                           \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'community')",            \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'community')",              \
      "community",                                                             \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_password')",     \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'privacy_password')",       \
      "privacy_password",                                                      \
      KEYWORD_TYPE_STRING },                                                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
+ * @brief LSC Credential iterator columns.
+ */
+#define CREDENTIAL_ITERATOR_COLUMNS                      \
+CREDENTIAL_ITERATOR_COLUMNS_TABLE("credentials")
+
+/**
  * @brief LSC Credential iterator columns for trash case.
  */
-#define CREDENTIAL_ITERATOR_TRASH_COLUMNS                                     \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials_trash),                                  \
-   /* public generic data */                                                  \
-   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
-   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
-   /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'username')",       \
-     "login",                                                                 \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'certificate')",    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     "   AND type = 'auth_algorithm')",                                       \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     "   AND type = 'privacy_algorithm')",                                    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials_trash.id AND type = 'public_key')",     \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   /* private data */                                                         \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'secret')",         \
-     "secret",                                                                \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'password')",       \
-     "password",                                                              \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'private_key')",    \
-     "private_key",                                                           \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'community')",      \
-     "community",                                                             \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     " AND type = 'privacy_password')",                                       \
-     "privacy_password",                                                      \
-     KEYWORD_TYPE_STRING },                                                   \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
+#define CREDENTIAL_ITERATOR_TRASH_COLUMNS                \
+CREDENTIAL_ITERATOR_COLUMNS_TABLE("credentials_trash")
 
 /**
  * @brief Count number of LSC Credentials.
