@@ -12124,8 +12124,9 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
   INIT_GET (credential, Credential);
 
-  ret = init_credential_iterator (&credentials,
-                                  &get_credentials_data->get);
+  ret = init_credential_iterator_format (&credentials,
+                                         &get_credentials_data->get,
+                                         format);
   if (ret)
     {
       switch (ret)
