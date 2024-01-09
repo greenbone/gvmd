@@ -36812,6 +36812,7 @@ delete_credential (const char *credential_id, int ultimate)
      " WHERE credential = " table ".id AND type = 'privacy_algorithm')",      \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
+   /* Only one used by credential_iterator_formats_xml (excl login, type) */  \
    { "(SELECT value FROM " table "_data"                                      \
      " WHERE credential = " table ".id AND type = 'public_key')",             \
      NULL,                                                                    \
