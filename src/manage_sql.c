@@ -37671,34 +37671,32 @@ credential_iterator_format_available (iterator_t* iterator,
 {
   const char *type, *login, *private_key;
 
+  if (format == CREDENTIAL_FORMAT_NONE)
+    return TRUE;
+
+  if (format == CREDENTIAL_FORMAT_ERROR)
+    return FALSE;
+
   type = credential_iterator_type (iterator);
   login = credential_iterator_login (iterator);
+
+  if (format == CREDENTIAL_FORMAT_EXE
+      && strcasecmp (type, "up") == 0)
+    return validate_credential_username_for_format (login, format);
+
+  if (format == CREDENTIAL_FORMAT_PEM
+      && strcasecmp (type, "cc") == 0)
+    return validate_credential_username_for_format (login, format);
+
   private_key = credential_iterator_private_key (iterator);
 
-  switch (format)
-    {
-      case CREDENTIAL_FORMAT_NONE:
-        return TRUE;
-      case CREDENTIAL_FORMAT_KEY:
-      case CREDENTIAL_FORMAT_RPM:
-      case CREDENTIAL_FORMAT_DEB:
-        if (strcasecmp (type, "usk") == 0 && private_key)
-          return validate_credential_username_for_format (login, format);
-        else
-          return FALSE;
-      case CREDENTIAL_FORMAT_EXE:
-        if (strcasecmp (type, "up") == 0)
-          return validate_credential_username_for_format (login, format);
-        else
-          return FALSE;
-      case CREDENTIAL_FORMAT_PEM:
-        if (strcasecmp (type, "cc") == 0)
-          return validate_credential_username_for_format (login, format);
-        else
-          return FALSE;
-      case CREDENTIAL_FORMAT_ERROR:
-        return FALSE;
-    }
+  if ((format == CREDENTIAL_FORMAT_KEY
+       || format == CREDENTIAL_FORMAT_RPM
+       || format == CREDENTIAL_FORMAT_DEB)
+      && strcasecmp (type, "usk") == 0
+      && private_key)
+    return validate_credential_username_for_format (login, format);
+
   return FALSE;
 }
 
