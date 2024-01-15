@@ -13126,6 +13126,8 @@ END:VCALENDAR
       <attrib>
         <name>result</name>
         <type>boolean</type>
+        <summary>Whether to include the associated result</summary>
+        <description>Requires "details" to be true.</description>
       </attrib>
     </pattern>
     <response>
