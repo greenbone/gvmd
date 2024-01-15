@@ -13957,7 +13957,7 @@ END:VCALENDAR
           <column>
             <name>nvt</name>
             <type>oid</type>
-            <summary>OID of the NVT the Override applies to</summary>
+            <summary>Name of the NVT the Override applies to</summary>
           </column>
           <column>
             <name>text</name>
@@ -13967,7 +13967,7 @@ END:VCALENDAR
           <column>
             <name>nvt_id</name>
             <type>oid</type>
-            <summary>Alias of nvt</summary>
+            <summary>OID of the NVT the Override applies to</summary>
           </column>
           <column>
             <name>task_name</name>
@@ -14027,20 +14027,15 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>nvt_oid</name>
-        <type>oid</type>
-      </attrib>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
         <name>details</name>
+        <summary>Whether to include full details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
         <name>result</name>
         <type>boolean</type>
+        <summary>Whether to include the associated result</summary>
+        <description>Requires "details" to be true.</description>
       </attrib>
     </pattern>
     <response>
