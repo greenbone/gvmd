@@ -3225,6 +3225,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>event</e>
       <e>method</e>
       <e>filter</e>
+      <o><e>active</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -3327,6 +3328,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether to alert will be active</summary>
+      <pattern>
+        <t>boolean</t>
       </pattern>
     </ele>
     <response>
