@@ -13120,6 +13120,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>details</name>
+        <summary>Whether to include full details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
