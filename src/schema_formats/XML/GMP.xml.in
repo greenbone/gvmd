@@ -13111,14 +13111,6 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>nvt_oid</name>
-        <type>oid</type>
-      </attrib>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
         <name>details</name>
         <summary>Whether to include full details</summary>
         <type>boolean</type>
