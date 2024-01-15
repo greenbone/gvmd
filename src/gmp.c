@@ -13514,7 +13514,6 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
     }
   get_notes_data_reset (get_notes_data);
   set_client_state (CLIENT_AUTHENTIC);
-
 }
 
 /**
