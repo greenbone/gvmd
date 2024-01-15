@@ -263,12 +263,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <!-- RNC preamble. -->
 
   <xsl:template name="rnc-preamble">
-    <h2 id="rnc_preamble">4 RNC Preamble</h2>
-    <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-      <pre>
-        <xsl:call-template name="preamble"/>
-      </pre>
-    </div>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'rnc_preamble'"/>
+        <xsl:with-param name="text" select="'4 RNC Preamble'"/>
+      </xsl:call-template>
+      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+        <pre>
+          <xsl:call-template name="preamble"/>
+        </pre>
+      </div>
+    </details>
   </xsl:template>
 
   <!-- Types. -->
@@ -284,11 +289,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </tr>
   </xsl:template>
 
+  <xsl:template name="details-summary">
+    <xsl:param name="id"/>
+    <xsl:param name="text"/>
+    <summary id="$id"
+             style="margin-block-start: .83em; margin-block-end: .83em;">
+      <h2 style="display: inline; cursor: pointer;"><xsl:value-of select="$text"/></h2>
+    </summary>
+  </xsl:template>
+
   <xsl:template name="type-summary">
-    <h2 id="type_summary">1 Summary of Data Types</h2>
-    <table id="index">
-    <xsl:apply-templates select="type" mode="index"/>
-    </table>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'type_summary'"/>
+        <xsl:with-param name="text" select="'1 Summary of Data Types'"/>
+      </xsl:call-template>
+      <table id="index">
+        <xsl:apply-templates select="type" mode="index"/>
+      </table>
+    </details>
   </xsl:template>
 
   <xsl:template match="type" mode="details">
@@ -325,8 +344,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="type-details">
-    <h2 id="type_details">5 Data Type Details</h2>
-    <xsl:apply-templates select="type" mode="details"/>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'type_details'"/>
+        <xsl:with-param name="text" select="'5 Data Type Details'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="type" mode="details"/>
+    </details>
   </xsl:template>
 
   <!-- Elements. -->
@@ -343,15 +367,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="element-summary">
-    <h2 id="element_summary">2 Summary of Elements</h2>
-    <table id="index">
-    <xsl:apply-templates select="element" mode="index"/>
-    </table>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'element_summary'"/>
+        <xsl:with-param name="text" select="'2 Summary of Elements'"/>
+      </xsl:call-template>
+      <table id="index">
+        <xsl:apply-templates select="element" mode="index"/>
+      </table>
+    </details>
   </xsl:template>
 
   <xsl:template name="element-details">
-    <h2 id="element_details">6 Element Details</h2>
-    <xsl:apply-templates select="element"/>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'element_details'"/>
+        <xsl:with-param name="text" select="'6 Element Details'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="element"/>
+    </details>
   </xsl:template>
 
   <xsl:template match="element">
@@ -691,15 +725,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="command-summary">
-    <h2 id="command_summary">3 Summary of Commands</h2>
-    <table id="index">
-    <xsl:apply-templates select="command" mode="index"/>
-    </table>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'command_summary'"/>
+        <xsl:with-param name="text" select="'3 Summary of Commands'"/>
+      </xsl:call-template>
+      <table id="index">
+        <xsl:apply-templates select="command" mode="index"/>
+      </table>
+    </details>
   </xsl:template>
 
   <xsl:template name="command-details">
-    <h2 id="command_details">7 Command Details</h2>
-    <xsl:apply-templates select="command"/>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'command_details'"/>
+        <xsl:with-param name="text" select="'7 Command Details'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="command"/>
+    </details>
   </xsl:template>
 
   <!-- Filter keywords -->
@@ -749,11 +793,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="changes">
-    <h2 id="changes">
-      8 Compatibility Changes in Version
-      <xsl:value-of select="/protocol/version"/>
-    </h2>
-    <xsl:apply-templates select="change[version=/protocol/version]"/>
+    <details>
+      <xsl:call-template name="details-summary">
+        <xsl:with-param name="id" select="'changes'"/>
+        <xsl:with-param name="text">
+          <xsl:value-of select="'8 Compatibility Changes in Version '"/>
+          <xsl:value-of select="/protocol/version"/>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:apply-templates select="change[version=/protocol/version]"/>
+    </details>
   </xsl:template>
 
   <!-- Deprecation Warnings. -->
@@ -822,31 +871,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <xsl:if test="summary">
                   <p><xsl:value-of select="normalize-space(summary)"/>.</p>
                 </xsl:if>
-
-                <h2 id="contents">Contents</h2>
-                <ol>
-                  <li><a href="#type_summary">Summary of Data Types</a></li>
-                  <li><a href="#element_summary">Summary of Elements</a></li>
-                  <li><a href="#command_summary">Summary of Commands</a></li>
-                  <li><a href="#rnc_preamble">RNC Preamble</a></li>
-                  <li><a href="#type_details">Data Type Details</a></li>
-                  <li><a href="#element_details">Element Details</a></li>
-                  <li><a href="#command_details">Command Details</a></li>
-                  <li>
-                    <a href="#changes">
-                      Compatibility Changes in Version
-                      <xsl:value-of select="/protocol/version"/>
-                    </a>
-                  </li>
-                  <xsl:if test="deprecation[version=/protocol/version]">
-                    <li>
-                      <a href="#deprecations">
-                        Deprecation Warnings for Version
-                        <xsl:value-of select="/protocol/version"/>
-                      </a>
-                    </li>
-                  </xsl:if>
-                </ol>
 
                 <xsl:call-template name="type-summary"/>
                 <xsl:call-template name="element-summary"/>
