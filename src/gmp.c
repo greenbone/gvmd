@@ -5555,6 +5555,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               get_reports_data->ignore_pagination = 0;
 
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_reports_data->report_get,
+                                    "usage_type",
+                                    attribute);
+              }
+
             set_client_state (CLIENT_GET_REPORTS);
           }
         else if (strcasecmp ("GET_REPORT_CONFIGS", element_name) == 0)
@@ -14818,7 +14826,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       || (strlen (get_reports_data->report_get.id) == 0))
     {
       int overrides, min_qod;
-      gchar *filter, *levels;
+      gchar *filter, *levels, *compliance_levels;
       get_data_t * get;
 
       /* For simplicity, use a fixed result filter when filtering
@@ -14840,13 +14848,22 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
       levels = filter_term_value (filter ? filter : get->filter, "levels");
+      compliance_levels = filter_term_value (filter 
+                                                ? filter 
+                                                : get->filter,
+                                             "compliance_levels");
       g_free (filter);
 
       /* Setup result filter from overrides. */
       get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%i levels=%s",
-                           overrides, min_qod, levels ? levels : "hmlgdf");
+        = g_strdup_printf 
+            ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
+             overrides, 
+             min_qod, 
+             levels ? levels : "hmlgdf", 
+             compliance_levels ? compliance_levels : "yniu");
       g_free (levels);
+      g_free (compliance_levels);
     }
 
   ret = init_report_iterator (&reports, &get_reports_data->report_get);
@@ -16252,6 +16269,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* result_hosts_only */
                                       NULL, /* min_qod */
                                       NULL, /* levels */
+                                      NULL, /* compliance_levels */
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
@@ -18266,7 +18284,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   report_compliance_by_uuid (last_report_id,
                                              &compliance_yes,
                                              &compliance_no,
-                                             &compliance_incomplete);
+                                             &compliance_incomplete,
+                                             NULL);
 
                   last_report
                     = g_strdup_printf ("<last_report>"
