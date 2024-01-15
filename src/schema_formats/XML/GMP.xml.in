@@ -17255,11 +17255,6 @@ END:VCALENDAR
             <type>text</type>
             <summary>Column to sort by in descending order</summary>
           </option>
-          <option>
-            <name>timezone</name>
-            <type>text</type>
-            <summary>The timezone to use for the report</summary>
-          </option>
           <column>
             <name>compliant</name>
             <type>
