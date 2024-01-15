@@ -17203,29 +17203,6 @@ END:VCALENDAR
         <type>text</type>
         <filter_keywords>
           <option>
-            <name>first</name>
-            <type>integer</type>
-            <summary>
-              Index of the first item returned, starting at 1 (e.g. first=5
-              starts at the 5th item)
-            </summary>
-          </option>
-          <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
-            <name>sort</name>
-            <type>text</type>
-            <summary>Column to sort by in ascending order</summary>
-          </option>
-          <option>
-            <name>sort-reverse</name>
-            <type>text</type>
-            <summary>Column to sort by in descending order</summary>
-          </option>
-          <option>
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
@@ -17234,6 +17211,14 @@ END:VCALENDAR
             <name>compliance_levels</name>
             <type>compliance_levels</type>
             <summary>Compliance levels to select</summary>
+          </option>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
           </option>
           <option>
             <name>levels</name>
@@ -17256,50 +17241,25 @@ END:VCALENDAR
             <summary>Whether to include Override descriptions in the report</summary>
           </option>
           <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
             <name>timezone</name>
             <type>text</type>
             <summary>The timezone to use for the report</summary>
           </option>
-          <column>
-            <name>tag</name>
-            <type>text</type>
-            <summary>
-              Name and optional "=" separted value of an attached tag
-              (e.g. "mytag" or "mytag=myvalue")
-            </summary>
-          </column>
-          <column>
-            <name>tag_id</name>
-            <type>UUID</type>
-            <summary>
-              UUID of an attached tag
-            </summary>
-          </column>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Unique ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name of the NVT</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
           <column>
             <name>compliant</name>
             <type>
@@ -17311,6 +17271,31 @@ END:VCALENDAR
               </alts>
             </type>
             <summary>Compliance status</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>cve</name>
+            <type>text</type>
+            <summary>List of CVEs of the result</summary>
+          </column>
+          <column>
+            <name>cvss_base</name>
+            <type>severity</type>
+            <summary>CVSS base score of the NVT that generated the result</summary>
+          </column>
+          <column>
+            <name>date</name>
+            <type>iso_time</type>
+            <summary>Time the result was generated</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the result</summary>
           </column>
           <column>
             <name>host</name>
@@ -17328,9 +17313,14 @@ END:VCALENDAR
             <summary>Port and protocol of the result</summary>
           </column>
           <column>
-            <name>path</name>
-            <type>text</type>
-            <summary>The local path on the host, e.g. a file location</summary>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name of the NVT</summary>
           </column>
           <column>
             <name>nvt</name>
@@ -17338,44 +17328,9 @@ END:VCALENDAR
             <summary>Unique ID of the test that produced the result</summary>
           </column>
           <column>
-            <name>type</name>
-            <type>threat</type>
-            <summary>Severity type of the result with overrides</summary>
-          </column>
-          <column>
-            <name>original_type</name>
-            <type>threat</type>
-            <summary>Original severity type of the result</summary>
-          </column>
-          <column>
-            <name>description</name>
-            <type>text</type>
-            <summary>Description of the result</summary>
-          </column>
-          <column>
-            <name>task</name>
-            <type>text</type>
-            <summary>Name of the task</summary>
-          </column>
-          <column>
-            <name>report</name>
-            <type>number</type>
-            <summary>Internal ID of the report</summary>
-          </column>
-          <column>
-            <name>cvss_base</name>
-            <type>severity</type>
-            <summary>CVSS base score of the NVT that generated the result</summary>
-          </column>
-          <column>
             <name>nvt_version</name>
             <type>text</type>
             <summary>Version of the NVT that generated the result</summary>
-          </column>
-          <column>
-            <name>severity</name>
-            <type>severity</type>
-            <summary>Severity of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -17383,24 +17338,19 @@ END:VCALENDAR
             <summary>Original severity of the result</summary>
           </column>
           <column>
-            <name>vulnerability</name>
+            <name>original_type</name>
+            <type>threat</type>
+            <summary>Original severity type of the result</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>path</name>
             <type>text</type>
-            <summary>Name of the NVT that generated result</summary>
-          </column>
-          <column>
-            <name>date</name>
-            <type>iso_time</type>
-            <summary>Time the result was generated</summary>
-          </column>
-          <column>
-            <name>report_id</name>
-            <type>uuid</type>
-            <summary>UUID of the report</summary>
-          </column>
-          <column>
-            <name>solution_type</name>
-            <type>text</type>
-            <summary>Solution type of the result</summary>
+            <summary>The local path on the host, e.g. a file location</summary>
           </column>
           <column>
             <name>qod</name>
@@ -17413,14 +17363,64 @@ END:VCALENDAR
             <summary>QoD type of the result</summary>
           </column>
           <column>
+            <name>report</name>
+            <type>number</type>
+            <summary>Internal ID of the report</summary>
+          </column>
+          <column>
+            <name>report_id</name>
+            <type>uuid</type>
+            <summary>UUID of the report</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the result with overrides</summary>
+          </column>
+          <column>
+            <name>solution_type</name>
+            <type>text</type>
+            <summary>Solution type of the result</summary>
+          </column>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>task</name>
+            <type>text</type>
+            <summary>Name of the task</summary>
+          </column>
+          <column>
             <name>task_id</name>
             <type>uuid</type>
             <summary>UUID of the task</summary>
           </column>
           <column>
-            <name>cve</name>
+            <name>type</name>
+            <type>threat</type>
+            <summary>Severity type of the result with overrides</summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>vulnerability</name>
             <type>text</type>
-            <summary>List of CVEs of the result</summary>
+            <summary>Name of the NVT that generated result</summary>
           </column>
         </filter_keywords>
       </attrib>
