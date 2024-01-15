@@ -5001,7 +5001,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>ca_pub</name>
-      <summary>Certificate of CA to verify scanner certificate.</summary>
+      <summary>Certificate of CA to verify scanner certificate</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -5090,7 +5090,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>icalendar</name>
-      <summary>iCalendar text containing the time data. Replaces first_time, duration and period.</summary>
+      <summary>iCalendar text containing the time data. Replaces first_time, duration and period</summary>
       <pattern>
         text
       </pattern>
@@ -7299,8 +7299,10 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>sort_field</name>
-        <summary>The column to sort the aggregated rows by.
-        With a subgroup column, groups will be sorted by the group_column first.</summary>
+        <summary>The column to sort the aggregated rows by</summary>
+        <description>
+          With a subgroup column, groups will be sorted by the group_column first.
+        </description>
         <type>text</type>
       </attrib>
       <attrib>
@@ -7369,8 +7371,10 @@ END:VCALENDAR
       <pattern>
         <attrib>
           <name>field</name>
-          <summary>The column to sort the aggregated rows by.
-          With a subgroup column, groups will be sorted by the group_column first</summary>
+          <summary>The column to sort the aggregated rows by</summary>
+          <description>
+            With a subgroup column, groups will be sorted by the group_column first.
+          </description>
           <type>text</type>
         </attrib>
         <attrib>
@@ -7553,7 +7557,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>text</name>
-            <summary>The value of a simple text column.</summary>
+            <summary>The value of a simple text column</summary>
             <pattern>
               <attrib>
                 <name>name</name>
@@ -16613,7 +16617,7 @@ END:VCALENDAR
         <name>details</name>
         <summary>
           Whether to get the details of the reports including the
-          results, hosts, ports etc.
+          results, hosts, ports etc
         </summary>
         <type>boolean</type>
       </attrib>
@@ -16662,7 +16666,7 @@ END:VCALENDAR
         <name>ignore_pagination</name>
         <summary>
           Whether to ignore info used to split the report into pages
-          like the filter terms "first" and "rows".
+          like the filter terms "first" and "rows"
         </summary>
         <type>boolean</type>
       </attrib>
@@ -17052,7 +17056,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>resource_id</name>
-        <summary>ID of single resource to get.</summary>
+        <summary>ID of single resource to get</summary>
         <type>text</type>
       </attrib>
       <attrib>
@@ -18983,7 +18987,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>icalendar</name>
-          <summary>iCalendar text containing the time data.</summary>
+          <summary>iCalendar text containing the time data</summary>
           <pattern>
             text
           </pattern>
@@ -20955,7 +20959,7 @@ END:VCALENDAR
         <name>ignore_pagination</name>
         <summary>
           Whether to ignore info used to split the report into pages
-          like the filter terms "first" and "rows".
+          like the filter terms "first" and "rows"
         </summary>
         <type>boolean</type>
       </attrib>
@@ -21373,12 +21377,12 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>icalendar</name>
-            <summary>iCalendar text containing the time data.</summary>
+            <summary>iCalendar text containing the time data</summary>
             <pattern><t>iso_time</t></pattern>
           </ele>
           <ele>
             <name>timezone</name>
-            <summary>The timezone the schedule will follow.</summary>
+            <summary>The timezone the schedule will follow</summary>
             <pattern>text</pattern>
           </ele>
         </ele>
@@ -26054,7 +26058,7 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>icalendar</name>
-      <summary>iCalendar text containing the time data. Replaces first_time, duration and period.</summary>
+      <summary>iCalendar text containing the time data. Replaces first_time, duration and period</summary>
       <pattern>
         text
       </pattern>
