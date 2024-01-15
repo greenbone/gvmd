@@ -20058,6 +20058,11 @@ END:VCALENDAR
         <summary>Whether to include list of tasks that use the target</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include port range and tag info</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -20103,7 +20108,7 @@ END:VCALENDAR
           <e>snmp_credential</e>
           <e>ssh_elevate_credential</e>
           <e>permissions</e>
-          <e>port_range</e>
+          <o><e>port_range</e></o>
           <e>port_list</e>
           <e>alive_tests</e>
           <e>reverse_lookup_only</e>
