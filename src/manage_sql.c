@@ -28299,6 +28299,172 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 }
 
 /**
+ * @brief Print the XML for a report's host to a file stream.
+ * @param[in]  stream                   File stream to write to.
+ * @param[in]  hosts                    Host iterator.
+ * @param[in]  host                     Single host to iterate over.
+ *                                        All hosts if NULL.
+ * @param[in]  usage_type               Report usage type.
+ * @param[in]  lean                     Whether to return lean report.
+ * @param[in]  host_summary_buffer      Host sumary buffer.
+ * @param[in]  f_host_ports             Hashtable for host ports.
+ * @param[in]  f_host_holes             Hashtable for host holes.
+ * @param[in]  f_host_warnings          Hashtable for host host warnings.
+ * @param[in]  f_host_infos             Hashtable for host infos.
+ * @param[in]  f_host_logs              Hashtable for host logs.
+ * @param[in]  f_host_false_positives   Hashtable for host false positives.
+ * @param[in]  f_host_compliant         Hashtable for host compliant results.
+ * @param[in]  f_host_notcompliant      Hashtable for host non compliant results.
+ * @param[in]  f_host_incomplete        Hashtable for host incomplete resuls.
+ * @param[in]  f_host_undefined         Hashtable for host undefined results.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_host_xml (FILE *stream,
+                       iterator_t *hosts,
+                       const char *host,
+                       gchar *usage_type,
+                       int lean,
+                       GString *host_summary_buffer,
+                       GHashTable *f_host_ports,
+                       GHashTable *f_host_holes,
+                       GHashTable *f_host_warnings,
+                       GHashTable *f_host_infos,
+                       GHashTable *f_host_logs,
+                       GHashTable *f_host_false_positives,
+                       GHashTable *f_host_compliant,
+                       GHashTable *f_host_notcompliant,
+                       GHashTable *f_host_incomplete,
+                       GHashTable *f_host_undefined)
+{
+  const char *current_host;
+  int ports_count;
+
+  current_host = host_iterator_host (hosts);
+
+  ports_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (f_host_ports, current_host));
+
+  host_summary_append (host_summary_buffer,
+                       host ? host : host_iterator_host (hosts),
+                       host_iterator_start_time (hosts),
+                       host_iterator_end_time (hosts));
+  PRINT (stream,
+          "<host>"
+          "<ip>%s</ip>",
+          host ? host : host_iterator_host (hosts));
+
+  if (host_iterator_asset_uuid (hosts)
+      && strlen (host_iterator_asset_uuid (hosts)))
+    PRINT (stream,
+            "<asset asset_id=\"%s\"/>",
+            host_iterator_asset_uuid (hosts));
+  else if (lean == 0)
+    PRINT (stream,
+            "<asset asset_id=\"\"/>");
+
+  if (strcmp (usage_type, "audit"))
+    {
+      int holes_count, warnings_count, infos_count;
+      int logs_count, false_positives_count;
+
+      holes_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_holes, current_host));
+      warnings_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_warnings, current_host));
+      infos_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_infos, current_host));
+      logs_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_logs, current_host));
+      false_positives_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_false_positives,
+                                    current_host));
+
+      PRINT (stream,
+            "<start>%s</start>"
+            "<end>%s</end>"
+            "<port_count><page>%d</page></port_count>"
+            "<result_count>"
+            "<page>%d</page>"
+            "<hole><page>%d</page></hole>"
+            "<warning><page>%d</page></warning>"
+            "<info><page>%d</page></info>"
+            "<log><page>%d</page></log>"
+            "<false_positive><page>%d</page></false_positive>"
+            "</result_count>",
+            host_iterator_start_time (hosts),
+            host_iterator_end_time (hosts)
+              ? host_iterator_end_time (hosts)
+              : "",
+            ports_count,
+            (holes_count + warnings_count + infos_count
+              + logs_count + false_positives_count),
+            holes_count,
+            warnings_count,
+            infos_count,
+            logs_count,
+            false_positives_count);
+    }
+  else
+    {
+      int yes_count, no_count, incomplete_count, undefined_count;
+
+      yes_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup (f_host_compliant, current_host));
+      no_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup (f_host_notcompliant, current_host));
+      incomplete_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup (f_host_incomplete, current_host));
+      undefined_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup (f_host_undefined, current_host));
+
+      PRINT (stream,
+            "<start>%s</start>"
+            "<end>%s</end>"
+            "<port_count><page>%d</page></port_count>"
+            "<compliance_count>"
+            "<page>%d</page>"
+            "<yes><page>%d</page></yes>"
+            "<no><page>%d</page></no>"
+            "<incomplete><page>%d</page></incomplete>"
+            "<undefined><page>%d</page></undefined>"
+            "</compliance_count>",
+            host_iterator_start_time (hosts),
+            host_iterator_end_time (hosts)
+              ? host_iterator_end_time (hosts)
+              : "",
+            ports_count,
+            (yes_count + no_count + incomplete_count + undefined_count),
+            yes_count,
+            no_count,
+            incomplete_count,
+            undefined_count);
+    }
+
+  if (print_report_host_details_xml
+        (host_iterator_report_host (hosts), stream, lean))
+    {
+      return -1;
+    }
+
+  PRINT (stream,
+          "</host>");
+
+  return 0;
+}
+
+/**
  * @brief Init delta iterators for print_report_xml.
  *
  * @param[in]  report         The report.
@@ -30808,128 +30974,23 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             }
           if (present)
             {
-              const char *current_host;
-              int ports_count;
-                       
-              current_host = host_iterator_host (&hosts);
-
-              ports_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_ports, current_host));
               
-
-              host_summary_append (host_summary_buffer,
-                                   result_host,
-                                   host_iterator_start_time (&hosts),
-                                   host_iterator_end_time (&hosts));
-              PRINT (out,
-                     "<host>"
-                     "<ip>%s</ip>",
-                     result_host);
-
-              if (host_iterator_asset_uuid (&hosts)
-                  && strlen (host_iterator_asset_uuid (&hosts)))
-                PRINT (out,
-                       "<asset asset_id=\"%s\"/>",
-                       host_iterator_asset_uuid (&hosts));
-              else if (lean == 0)
-                PRINT (out,
-                       "<asset asset_id=\"\"/>");
-
-              if (strcmp (tsk_usage_type, "audit"))
-                {
-                  int holes_count, warnings_count, infos_count;
-                  int logs_count, false_positives_count;
-
-                  holes_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_holes, current_host));
-                  warnings_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_warnings, current_host));
-                  infos_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_infos, current_host));
-                  logs_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_logs, current_host));
-                  false_positives_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_false_positives, 
-                                               current_host));
-
-                  PRINT (out,
-                        "<start>%s</start>"
-                        "<end>%s</end>"
-                        "<port_count><page>%d</page></port_count>"
-                        "<result_count>"
-                        "<page>%d</page>"
-                        "<hole><page>%d</page></hole>"
-                        "<warning><page>%d</page></warning>"
-                        "<info><page>%d</page></info>"
-                        "<log><page>%d</page></log>"
-                        "<false_positive><page>%d</page></false_positive>"
-                        "</result_count>",
-                        host_iterator_start_time (&hosts),
-                        host_iterator_end_time (&hosts)
-                          ? host_iterator_end_time (&hosts)
-                          : "",
-                        ports_count,
-                        (holes_count + warnings_count + infos_count
-                          + logs_count + false_positives_count),
-                        holes_count,
-                        warnings_count,
-                        infos_count,
-                        logs_count,
-                        false_positives_count);
-                } 
-              else
-                {
-                  int yes_count, no_count, incomplete_count, undefined_count;
-
-                  yes_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_compliant, 
-                                               current_host));
-                  no_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_notcompliant,
-                                               current_host));
-                  incomplete_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_incomplete,
-                                               current_host));
-                  undefined_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup ( f_host_undefined,
-                                               current_host));
-
-                  PRINT (out,
-                        "<start>%s</start>"
-                        "<end>%s</end>"
-                        "<port_count><page>%d</page></port_count>"
-                        "<compliance_count>"
-                        "<page>%d</page>"
-                        "<yes><page>%d</page></yes>"
-                        "<no><page>%d</page></no>"
-                        "<incomplete><page>%d</page></incomplete>"
-                        "<undefined><page>%d</page></undefined>"
-                        "</compliance_count>",
-                        host_iterator_start_time (&hosts),
-                        host_iterator_end_time (&hosts)
-                          ? host_iterator_end_time (&hosts)
-                          : "",
-                        ports_count,
-                        (yes_count + no_count 
-                          + incomplete_count + undefined_count),
-                        yes_count,
-                        no_count,
-                        incomplete_count,
-                        undefined_count);
-                }
-
-              if (print_report_host_details_xml
-                   (host_iterator_report_host (&hosts), out, lean))
+              if (print_report_host_xml (out,
+                                         &hosts,
+                                         result_host,
+                                         tsk_usage_type,
+                                         lean,
+                                         host_summary_buffer,
+                                         f_host_ports,
+                                         f_host_holes,
+                                         f_host_warnings,
+                                         f_host_infos,
+                                         f_host_logs,
+                                         f_host_false_positives,
+                                         f_host_compliant,
+                                         f_host_notcompliant,
+                                         f_host_incomplete,
+                                         f_host_undefined))
                 {
                   tz_revert (zone, tz, old_tz_override);
                   if (host_summary_buffer)
@@ -30953,9 +31014,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                     }                  
                   return -1;
                 }
-
-              PRINT (out,
-                     "</host>");
             }
           cleanup_iterator (&hosts);
         }
@@ -30966,122 +31024,23 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
-          const char *current_host;
-          int ports_count;
 
-          current_host = host_iterator_host (&hosts);
-
-          ports_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_ports, current_host));
-
-          host_summary_append (host_summary_buffer,
-                               host_iterator_host (&hosts),
-                               host_iterator_start_time (&hosts),
-                               host_iterator_end_time (&hosts));
-          PRINT (out,
-                 "<host>"
-                 "<ip>%s</ip>",
-                 host_iterator_host (&hosts));
-
-          if (host_iterator_asset_uuid (&hosts)
-              && strlen (host_iterator_asset_uuid (&hosts)))
-            PRINT (out,
-                   "<asset asset_id=\"%s\"/>",
-                   host_iterator_asset_uuid (&hosts));
-          else if (lean == 0)
-            PRINT (out,
-                   "<asset asset_id=\"\"/>");
-
-          if (strcmp (tsk_usage_type, "audit"))
-            {
-              int holes_count, warnings_count, infos_count;
-              int logs_count, false_positives_count;
-
-              holes_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_holes, current_host));
-              warnings_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_warnings, current_host));
-              infos_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_infos, current_host));
-              logs_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_logs, current_host));
-              false_positives_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_false_positives, current_host));
-
-              PRINT (out,
-                    "<start>%s</start>"
-                    "<end>%s</end>"
-                    "<port_count><page>%d</page></port_count>"
-                    "<result_count>"
-                    "<page>%d</page>"
-                    "<hole><page>%d</page></hole>"
-                    "<warning><page>%d</page></warning>"
-                    "<info><page>%d</page></info>"
-                    "<log><page>%d</page></log>"
-                    "<false_positive><page>%d</page></false_positive>"
-                    "</result_count>",
-                    host_iterator_start_time (&hosts),
-                    host_iterator_end_time (&hosts)
-                      ? host_iterator_end_time (&hosts)
-                      : "",
-                    ports_count,
-                    (holes_count + warnings_count + infos_count
-                      + logs_count + false_positives_count),
-                    holes_count,
-                    warnings_count,
-                    infos_count,
-                    logs_count,
-                    false_positives_count);
-            }
-          else 
-            {
-              int yes_count, no_count, incomplete_count, undefined_count;
-
-              yes_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_compliant, current_host));
-              no_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_notcompliant, current_host));
-              incomplete_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_incomplete, current_host));
-              undefined_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_undefined, current_host));
-
-              PRINT (out,
-                    "<start>%s</start>"
-                    "<end>%s</end>"
-                    "<port_count><page>%d</page></port_count>"
-                    "<compliance_count>"
-                    "<page>%d</page>"
-                    "<yes><page>%d</page></yes>"
-                    "<no><page>%d</page></no>"
-                    "<incomplete><page>%d</page></incomplete>"
-                    "<undefined><page>%d</page></undefined>"
-                    "</compliance_count>",
-                    host_iterator_start_time (&hosts),
-                    host_iterator_end_time (&hosts)
-                      ? host_iterator_end_time (&hosts)
-                      : "",
-                    ports_count,
-                    (yes_count + no_count 
-                        + incomplete_count + undefined_count),
-                    yes_count,
-                    no_count,
-                    incomplete_count,
-                    undefined_count);              
-            }
-
-          if (print_report_host_details_xml
-               (host_iterator_report_host (&hosts), out, lean))
+          if (print_report_host_xml (out,
+                                     &hosts,
+                                     NULL,
+                                     tsk_usage_type,
+                                     lean,
+                                     host_summary_buffer,
+                                     f_host_ports,
+                                     f_host_holes,
+                                     f_host_warnings,
+                                     f_host_infos,
+                                     f_host_logs,
+                                     f_host_false_positives,
+                                     f_host_compliant,
+                                     f_host_notcompliant,
+                                     f_host_incomplete,
+                                     f_host_undefined))
             {
               tz_revert (zone, tz, old_tz_override);
               if (host_summary_buffer)
@@ -31105,9 +31064,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 }
               return -1;
             }
-
-          PRINT (out,
-                 "</host>");
         }
       cleanup_iterator (&hosts);
     }
