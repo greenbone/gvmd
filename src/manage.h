@@ -1556,6 +1556,9 @@ gchar **
 result_iterator_dfn_certs (iterator_t*);
 
 const char *
+result_iterator_compliance (iterator_t*);
+
+const char *
 result_iterator_delta_state (iterator_t*);
 
 const char *
@@ -1566,6 +1569,9 @@ result_iterator_delta_severity (iterator_t*);
 
 double
 result_iterator_delta_severity_double (iterator_t*);
+
+const char *
+result_iterator_delta_compliance (iterator_t*);
 
 const char*
 result_iterator_delta_level (iterator_t*);
