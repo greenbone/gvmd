@@ -3062,7 +3062,7 @@ check_cert_db_version ()
  *
  * @return 0 success, -1 error.
  */
-static int
+static void
 update_cert_timestamp ()
 {
   GError *error;
@@ -3082,7 +3082,7 @@ update_cert_timestamp ()
           g_warning ("%s: Failed to get timestamp: %s",
                      __func__,
                      error->message);
-          return -1;
+          stamp = time(NULL);
         }
     }
   else
@@ -3093,7 +3093,7 @@ update_cert_timestamp ()
                      __func__,
                      timestamp);
           g_free (timestamp);
-          return -1;
+          stamp = time(NULL);
         }
 
       timestamp[8] = '\0';
@@ -3101,14 +3101,12 @@ update_cert_timestamp ()
       stamp = parse_feed_timestamp (timestamp);
       g_free (timestamp);
       if (stamp == 0)
-        return -1;
+        stamp = time(NULL);
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
   sql ("UPDATE cert.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
-
-  return 0;
 }
 
 /**
@@ -3276,14 +3274,14 @@ sync_cert ()
 
   g_debug ("%s: update timestamp", __func__);
 
-  if (update_cert_timestamp ())
-    goto fail;
+  update_cert_timestamp ();
 
   g_info ("%s: Updating CERT info succeeded.", __func__);
 
   return 0;
 
  fail:
+  update_cert_timestamp ();
   return -1;
 }
 
@@ -3333,7 +3331,7 @@ check_scap_db_version ()
  *
  * @return 0 success, -1 error.
  */
-static int
+static void
 update_scap_timestamp ()
 {
   GError *error;
@@ -3353,7 +3351,7 @@ update_scap_timestamp ()
           g_warning ("%s: Failed to get timestamp: %s",
                      __func__,
                      error->message);
-          return -1;
+          stamp = time(NULL);
         }
     }
   else
@@ -3364,7 +3362,7 @@ update_scap_timestamp ()
                      __func__,
                      timestamp);
           g_free (timestamp);
-          return -1;
+          stamp = time(NULL);
         }
 
       timestamp[8] = '\0';
@@ -3372,14 +3370,12 @@ update_scap_timestamp ()
       stamp = parse_feed_timestamp (timestamp);
       g_free (timestamp);
       if (stamp == 0)
-        return -1;
+        stamp = time(NULL);
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
   sql ("UPDATE scap2.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
-
-  return 0;
 }
 
 /**
@@ -3436,8 +3432,7 @@ update_scap_end ()
 
   g_debug ("%s: update timestamp", __func__);
 
-  if (update_scap_timestamp ())
-    return -1;
+  update_scap_timestamp ();
 
   /* Replace the real scap schema with the new one. */
 
@@ -3657,13 +3652,19 @@ update_scap (gboolean reset_scap_db)
   setproctitle ("Syncing SCAP: Updating CPEs");
 
   if (update_scap_cpes () == -1)
-    return -1;
+    {
+      update_scap_timestamp ();
+      return -1;
+    }
 
   g_debug ("%s: update cves", __func__);
   setproctitle ("Syncing SCAP: Updating CVEs");
 
   if (update_scap_cves () == -1)
-    return -1;
+    {
+      update_scap_timestamp ();
+      return -1;
+    }
 
   g_debug ("%s: updating user defined data", __func__);
 
