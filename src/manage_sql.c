@@ -21799,7 +21799,7 @@ report_add_results_array (report_t report, GArray *results)
    "low_per_host", "medium_per_host", "high_per_host", "duration",             \
    "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
    "compliance_yes", "compliance_no", "compliance_incomplete",                 \
-   "compliance_status", NULL }
+   "compliant", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -21954,7 +21954,7 @@ report_add_results_array (report_t report, GArray *results)
    },                                                                        \
    {                                                                         \
      "compliance_status (id)",                                               \
-     "compliance_status",                                                    \
+     "compliant",                                                            \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
@@ -22081,7 +22081,7 @@ reports_extra_where (int trash, const gchar *filter, const char *usage_type)
     usage_type_clause = NULL;
 
   if (filter)
-    compliance_filter = filter_term_value(filter, "compliant");
+    compliance_filter = filter_term_value(filter, "report_compliance_levels");
 
   compliance_clause = where_compliance_status (compliance_filter ?: "yniu");
   
@@ -22811,11 +22811,16 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-      { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                     \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-      { "delta_hostname", NULL, KEYWORD_TYPE_STRING },                        \
-      { "delta_new_severity", NULL, KEYWORD_TYPE_DOUBLE },
+    { "delta_hostname", NULL, KEYWORD_TYPE_STRING },                          \
+    { "delta_new_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
+    { "coalesce(lower(substring(comparison.delta_description,"                \
+      "          '^Compliant:[\\s]*([A-Z_]*)')),"                             \
+      "         'undefined')",                                                \
+      "compliant",                                                            \
+      KEYWORD_TYPE_STRING },
 
 /**
  * @brief Delta result iterator columns.
@@ -24538,6 +24543,20 @@ result_iterator_delta_severity_double (iterator_t* iterator)
 }
 
 /**
+ * @brief Get delta compliance from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta compliance if any, else NULL.
+ */
+const char *
+result_iterator_delta_compliance (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 20);
+}
+
+/**
  * @brief Get the severity/threat level from a delta result iterator.
  *
  * This is the the overridden level.
@@ -25890,6 +25909,38 @@ report_counts_id_full (report_t report, int* holes, int* infos,
   return 0;
 }
 
+/**
+ * @brief Get the compliance state from compliance counts.
+ *
+ * @param[in]  yes_count         Compliant results count.
+ * @param[in]  no_count          Incompliant results count.
+ * @param[in]  incomplete_count  Incomplete results count.
+ * @param[in]  undefined_count   Undefined results count.
+ *
+ * @return 0 on success, -1 on error.
+ */
+const char *
+report_compliance_from_counts (const int* yes_count,
+                               const int* no_count,
+                               const int* incomplete_count,
+                               const int* undefined_count)
+{
+  if (no_count && *no_count > 0)
+    {
+      return "no";
+    }
+  else if (incomplete_count && *incomplete_count > 0)
+    {
+      return "incomplete";
+    }
+  else if (yes_count && *yes_count > 0)
+    {
+      return "yes";
+    }
+
+  return "undefined";
+}
+
 
 /**
  * @brief Get the compliance filtered counts for a report.
@@ -25902,7 +25953,6 @@ report_counts_id_full (report_t report, int* holes, int* infos,
  *                                       after filtering.
  * @param[out]  f_compliance_undefined   Undefined results count 
  *                                       after filtering.
- * @param[out]  f_compliance         Compliance state after filtering
  *
  * @return 0 on success, -1 on error.
  */
@@ -25912,8 +25962,7 @@ report_compliance_f_counts (report_t report,
                             int* f_compliance_yes, 
                             int* f_compliance_no, 
                             int* f_compliance_incomplete, 
-                            int* f_compliance_undefined,
-                            char** f_compliance_status)
+                            int* f_compliance_undefined)
 {
   if (report == 0)
     return -1;
@@ -25970,26 +26019,6 @@ report_compliance_f_counts (report_t report,
 
   cleanup_iterator (&results);
 
-  if (f_compliance_status)
-    {
-      if (no_count > 0) 
-        {
-          *f_compliance_status = "not compliant";
-        } 
-      else if (incomplete_count > 0) 
-        {
-          *f_compliance_status = "incomplete";
-        } 
-      else if (yes_count > 0) 
-        {
-          *f_compliance_status = "compliant";
-        } 
-      else 
-        {
-          *f_compliance_status = "undefined";
-        }      
-    }
-
   return 0;
 }
 
@@ -26002,7 +26031,6 @@ report_compliance_f_counts (report_t report,
  * @param[out]  compliance_no           Incompliant results count.
  * @param[out]  compliance_incomplete   Incomplete results count.
  * @param[out]  compliance_undefined    Undefined results count.
- * @param[out]  f_compliance            Compliance state.
  *
  * @return 0 on success, -1 on error.
  */
@@ -26012,8 +26040,7 @@ report_compliance_counts (report_t report,
                           int* compliance_yes, 
                           int* compliance_no,
                           int* compliance_incomplete, 
-                          int* compliance_undefined,
-                          char** compliance_status)
+                          int* compliance_undefined)
 {
   if (report == 0)
     return -1;
@@ -26023,19 +26050,6 @@ report_compliance_counts (report_t report,
                              compliance_no, 
                              compliance_incomplete,
                              compliance_undefined);
-
-  if (compliance_status)
-    {
-      if (compliance_no && *compliance_no > 0) {
-        *compliance_status = "not compliant";
-      } else if (compliance_incomplete && *compliance_incomplete > 0) {
-        *compliance_status = "incomplete";
-      } else if (compliance_yes && *compliance_yes > 0) {
-        *compliance_status = "compliant";
-      } else {
-        *compliance_status = "undefined";
-      }      
-    }
 
   return 0;
 }
@@ -28439,7 +28453,8 @@ print_report_host_xml (FILE *stream,
             "<no><page>%d</page></no>"
             "<incomplete><page>%d</page></incomplete>"
             "<undefined><page>%d</page></undefined>"
-            "</compliance_count>",
+            "</compliance_count>"
+            "<host_compliance>%s</host_compliance>",
             host_iterator_start_time (hosts),
             host_iterator_end_time (hosts)
               ? host_iterator_end_time (hosts)
@@ -28449,7 +28464,11 @@ print_report_host_xml (FILE *stream,
             yes_count,
             no_count,
             incomplete_count,
-            undefined_count);
+            undefined_count,
+            report_compliance_from_counts (&yes_count,
+                                           &no_count,
+                                           &incomplete_count,
+                                           &undefined_count));
     }
 
   if (print_report_host_details_xml
@@ -29766,7 +29785,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int compliance_incomplete, compliance_undefined;
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
-  char *compliance_status, *f_compliance_status;
   int total_compliance_count, f_compliance_count;
 
   int delta_reports_version = 0;
@@ -30416,8 +30434,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (strcmp (tsk_usage_type, "audit") == 0)
     {
       report_compliance_counts (report, get, &compliance_yes, &compliance_no,
-                                &compliance_incomplete, &compliance_undefined,
-                                &compliance_status);
+                                &compliance_incomplete, &compliance_undefined);
 
       total_compliance_count = compliance_yes 
                                + compliance_no 
@@ -30434,8 +30451,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                       &f_compliance_yes,
                                       &f_compliance_no, 
                                       &f_compliance_incomplete,
-                                      &f_compliance_undefined,
-                                      &f_compliance_status);
+                                      &f_compliance_undefined);
           
           f_compliance_count = f_compliance_yes 
                                + f_compliance_no
@@ -30888,30 +30904,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       else
         {
           if (count_filtered)
-            {
-              f_compliance_count = f_compliance_yes 
-                                  + f_compliance_no
-                                  + f_compliance_incomplete
-                                  + f_compliance_undefined;
-                                   
-              if (f_compliance_no > 0) 
-                {
-                  f_compliance_status = "not compliant";
-                } 
-              else if (f_compliance_incomplete > 0) 
-                {
-                  f_compliance_status = "incomplete";
-                } 
-              else if (f_compliance_yes > 0) 
-                {
-                  f_compliance_status = "compliant";
-                } 
-              else 
-                {
-                  f_compliance_status = "undefined";
-                }      
-            }
-
+            f_compliance_count = f_compliance_yes
+                                 + f_compliance_no
+                                 + f_compliance_incomplete
+                                 + f_compliance_undefined;
           PRINT (out,
               "<compliance_count>"
               "%i"
@@ -30939,8 +30935,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "<full>%s</full>"
                 "<filtered>%s</filtered>"
                 "</compliance>",
-                compliance_status,
-                f_compliance_status);
+                report_compliance_from_counts (&compliance_yes,
+                                               &compliance_no,
+                                               &compliance_incomplete,
+                                               &compliance_undefined),
+                report_compliance_from_counts (&f_compliance_yes,
+                                               &f_compliance_no,
+                                               &f_compliance_incomplete,
+                                               &f_compliance_undefined));
         }
     }
 
