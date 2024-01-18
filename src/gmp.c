@@ -9391,6 +9391,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  const char *compliance;
   double severity_double;
   gchar *nl_descr, *nl_descr_escaped;
   result_t result;
@@ -9421,6 +9422,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_delta_hostname (results);
       if (host)
         asset_id = result_iterator_delta_host_asset_id (results);
+      compliance = result_iterator_delta_compliance (results);
     }
   else
     {
@@ -9439,6 +9441,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_hostname (results);
       if (host)
         asset_id = result_iterator_asset_host_id (results);
+      compliance = result_iterator_compliance (results);
     }
 
 
@@ -9692,6 +9695,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<original_severity>%s</original_severity>",
                               original_level,
                               original_severity);
+
+  buffer_xml_append_printf (buffer, "<compliance>%s</compliance>", compliance);
 
   if (include_notes
       && use_delta_fields 
