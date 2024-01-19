@@ -3095,13 +3095,15 @@ update_cert_timestamp ()
           g_free (timestamp);
           stamp = time(NULL);
         }
-
-      timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __func__, timestamp);
-      stamp = parse_feed_timestamp (timestamp);
-      g_free (timestamp);
-      if (stamp == 0)
-        stamp = time(NULL);
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
@@ -3364,13 +3366,15 @@ update_scap_timestamp ()
           g_free (timestamp);
           stamp = time(NULL);
         }
-
-      timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __func__, timestamp);
-      stamp = parse_feed_timestamp (timestamp);
-      g_free (timestamp);
-      if (stamp == 0)
-        stamp = time(NULL);
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
