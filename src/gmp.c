@@ -8439,7 +8439,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<in_use>0</in_use>"
             "<active>%i</active>"
             "<end_time>%s</end_time>"
-            "<text excerpt=\"%s\">%s</text>"
+            "<text excerpt=\"0\">%s</text>"
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<threat>%s</threat>"
@@ -8458,7 +8458,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             get_iterator_modification_time (overrides),
             override_iterator_active (overrides),
             end_time > 1 ? iso_time (&end_time) : "",
-            "0",
             override_iterator_text (overrides),
             override_iterator_hosts (overrides)
              ? override_iterator_hosts (overrides) : "",
