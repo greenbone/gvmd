@@ -22164,11 +22164,14 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   overrides = filter_term_apply_overrides (filter ? filter : get->filter);
   min_qod = filter_term_min_qod (filter ? filter : get->filter);
 
-  free (filter);
-
   extra_tables = report_iterator_opts_table (overrides, min_qod);
   usage_type = get_data_get_extra (get, "usage_type");
-  extra_where = reports_extra_where (get->trash, get->filter, usage_type);
+
+  extra_where = reports_extra_where (get->trash, 
+                                     filter ? filter : get->filter,
+                                     usage_type);
+
+  free (filter);
 
   ret = init_get_iterator2 (iterator,
                             "report",
