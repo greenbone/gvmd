@@ -58823,7 +58823,7 @@ type_extra_where (const char *type, int trash, const char *filter,
       else
         usage_type = NULL;
       
-      extra_where = reports_extra_where (trash, NULL, usage_type);
+      extra_where = reports_extra_where (trash, filter, usage_type);
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {
