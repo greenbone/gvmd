@@ -498,6 +498,9 @@ setting_value (const char *, char **);
 int
 valid_type (const char *);
 
+int
+valid_subtype (const char *);
+
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,
                               const gchar *);
