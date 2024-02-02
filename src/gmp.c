@@ -15914,7 +15914,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+      get_data_set_extra (&resource_names_data->get, 
+                          "usage_type",
+                          g_strdup ("scan"));
     }                
+  else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+      get_data_set_extra (&resource_names_data->get, 
+                          "usage_type",
+                          g_strdup ("audit"));
+    }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
@@ -15990,7 +16000,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
        && (acl_user_may ("get_assets") == 0))
       || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
           && (acl_user_may ("get_results") == 0))
-      || ((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+      || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
           && (acl_user_may ("get_reports") == 0))
       || (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cve", get_resource_names_data->type) == 0)
@@ -22510,8 +22521,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "RESOURCES requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (create_tag_data->resource_type)
-                     == 0)
+          else if (valid_db_resource_type (create_tag_data->resource_type) == 0
+                    && valid_subtype (create_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "TYPE in RESOURCES must be"
@@ -25263,7 +25274,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "name must be at least one"
                                 " character long or omitted completely"));
           else if (modify_tag_data->resource_type &&
-                   valid_db_resource_type (modify_tag_data->resource_type) == 0)
+                   valid_db_resource_type (modify_tag_data->resource_type) == 0
+                   && valid_subtype (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE in RESOURCES must be"

@@ -3971,6 +3971,19 @@ valid_type (const char* type)
 }
 
 /**
+ * @brief Check whether a resource subtype name is valid.
+ *
+ * @param[in]  subtype  Subtype of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+valid_subtype (const char* type)
+{
+  return (strcasecmp (type, "audit_report") == 0);
+}
+
+/**
  * @brief Return DB name of type.
  *
  * @param[in]  type  Database or pretty name.
@@ -4064,6 +4077,19 @@ type_is_info_subtype (const char *type)
           && strcasecmp (type, "cert_bund_adv")
           && strcasecmp (type, "dfn_cert_adv"))
          == 0;
+}
+
+/**
+ * @brief Check whether a resource type is a report subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_report_subtype (const char *type)
+{
+  return (strcasecmp (type, "audit_report") == 0);
 }
 
 /**
@@ -48249,14 +48275,18 @@ create_filter (const char *name, const char *comment, const char *type,
                const char *term, filter_t* filter)
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *clean_term;
+  const char *db_type;
 
   assert (current_credentials.uuid);
 
   if (type && strlen (type))
     {
-      type = type_db_name (type);
-      if (type == NULL || !valid_type (type))
+      db_type = type_db_name (type);
+      if ((db_type == NULL || !valid_type (db_type)) && !valid_subtype (type))
+      {
         return 2;
+      }
+      type = valid_subtype (type) ? type : db_type;
     }
 
   sql_begin_immediate ();
@@ -48851,13 +48881,18 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
   filter_t filter;
+  const char *db_type;
 
   if (filter_id == NULL)
     return 4;
 
-  type = type_db_name (type);
-  if (type && !((strcmp (type, "") == 0) || valid_type (type)))
-    return 3;
+  db_type = type_db_name (type);
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type))) 
+    {
+      if (!valid_subtype (type))
+        return 3;
+    }
+  type = valid_subtype (type) ? type : db_type;
 
   sql_begin_immediate ();
 
@@ -53481,6 +53516,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
+      else if (strcmp (uuid, "45414da7-55f0-44c1-abbb-6b7d1126fbdf") == 0)
+        setting_name = g_strdup ("Audit Reports Filter");
       else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
         setting_name = g_strdup ("Configs Filter");
       else if (strcmp (uuid, "186a5ac8-fe5a-4fb1-aa22-44031fb339f3") == 0)
@@ -53602,6 +53639,10 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* Reports dashboard settings */
       else if (strcmp (uuid, "e599bb6b-b95a-4bb2-a6bb-fe8ac69bc071") == 0)
         setting_name = g_strdup ("Reports Top Dashboard Configuration");
+
+      /* Audit Reports dashboard settings */
+      else if (strcmp (uuid, "8083d77b-05bb-4b17-ab39-c81175cb512c") == 0)
+        setting_name = g_strdup ("Audit Reports Top Dashboard Configuration");      
 
       /* Results dashboard settings */
       else if (strcmp (uuid, "0b8ae70d-d8fc-4418-8a72-e65ac8d2828e") == 0)
@@ -57267,6 +57308,11 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     resource_permission = g_strdup ("get_info");
   else if (type_is_asset_subtype (type))
     resource_permission = g_strdup ("get_assets");
+  else if (type_is_report_subtype (type)) 
+  {
+    resource_permission = g_strdup ("get_reports");
+    type = g_strdup("report");
+  }
   else
     resource_permission = g_strdup_printf ("get_%ss", type);
 
@@ -57330,6 +57376,13 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
     }
   else
     {
+      if (strcasecmp (type, "audit_report") == 0)
+        {
+          type = g_strdup ("report");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+        }
+
       gchar *columns;
 
       columns = g_strdup_printf ("%ss.id, %ss.uuid", type, type);
@@ -57359,6 +57412,8 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             sql_rollback ();
             g_free (resources_get.filter);
             g_free (resources_get.type);
+            if (resources_get.extra_params)
+              g_hash_table_destroy (resources_get.extra_params);
             return -1;
         }
     }
@@ -57366,6 +57421,8 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
+  if (resources_get.extra_params)
+    g_hash_table_destroy (resources_get.extra_params);
 
   ret = 2;
   while (next (&resources))
@@ -57476,6 +57533,15 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
     }
   else
     {
+      if (strcasecmp (type, "audit_report") == 0)
+        {
+          type = g_strdup ("report");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get,
+                              "usage_type",
+                              g_strdup ("audit"));
+        }
+
       gchar *columns;
 
       columns = g_strdup_printf ("%ss.id", type);
@@ -57495,6 +57561,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             sql_rollback ();
             g_free (resources_get.filter);
             g_free (resources_get.type);
+            if (resources_get.extra_params)
+              g_hash_table_destroy (resources_get.extra_params);           
             return -1;
         }
     }
@@ -57502,6 +57570,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
+  if (resources_get.extra_params)
+      g_hash_table_destroy (resources_get.extra_params);  
 
   ret = 2;
   while (next (&resources))
@@ -57618,9 +57688,12 @@ create_tag (const char * name, const char * comment, const char * value,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      g_free (lc_resource_type);
-      sql_rollback ();
-      return -1;
+      if (!valid_subtype (lc_resource_type)) 
+        {
+          g_free (lc_resource_type);
+          sql_rollback ();
+          return -1;          
+        }
     }
 
   quoted_name = sql_insert (name);
@@ -57850,8 +57923,11 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      sql_rollback ();
-      return -1;
+      if (!valid_subtype (lc_resource_type))
+        {
+          sql_rollback ();
+          return -1;          
+        }
     }
 
   quoted_resource_type = sql_insert (lc_resource_type);
