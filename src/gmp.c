@@ -15940,7 +15940,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
-    }                
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("policy", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("policy"));
+    }
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
@@ -15956,7 +15966,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
-    } 
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("audit", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("audit"));
+    }
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
@@ -16008,7 +16028,13 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
            || (g_strcmp0 ("nvt", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
-          && (acl_user_may ("get_info") == 0)))
+          && (acl_user_may ("get_info") == 0))
+      || (((g_strcmp0 ("config", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("policy", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_configs") == 0))
+      || (((g_strcmp0 ("task", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("audit", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_tasks") == 0)))
       {
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_resource_names",
@@ -16092,14 +16118,6 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
 
   while (next (&resource))
     {
-      if ((g_strcmp0 ("task", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("audit", task_iterator_usage_type(&resource)) == 0)
-          || (g_strcmp0 ("config", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("policy", config_iterator_usage_type(&resource)) == 0))
-      {
-        continue;
-      }
-
       GString *result;
       result = g_string_new ("");
       
