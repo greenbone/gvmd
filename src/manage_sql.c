@@ -3982,7 +3982,9 @@ valid_type (const char* type)
 int
 valid_subtype (const char* type)
 {
-  return (strcasecmp (type, "audit_report") == 0);
+  return (strcasecmp (type, "audit_report") == 0)
+         || (strcasecmp (type, "audit") == 0)
+         || (strcasecmp (type, "policy") == 0);
 }
 
 /**
@@ -4092,6 +4094,32 @@ static int
 type_is_report_subtype (const char *type)
 {
   return (strcasecmp (type, "audit_report") == 0);
+}
+
+/**
+ * @brief Check whether a resource type is a task subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_task_subtype (const char *type)
+{
+  return (strcasecmp (type, "audit") == 0);
+}
+
+/**
+ * @brief Check whether a resource type is a config subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_config_subtype (const char *type)
+{
+  return (strcasecmp (type, "policy") == 0);
 }
 
 /**
@@ -56892,10 +56920,20 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
   else if (type_is_asset_subtype (type))
     resource_permission = g_strdup ("get_assets");
   else if (type_is_report_subtype (type)) 
-  {
-    resource_permission = g_strdup ("get_reports");
-    type = g_strdup("report");
-  }
+    {
+      resource_permission = g_strdup ("get_reports");
+      type = g_strdup("report");
+    }
+  else if (type_is_task_subtype (type))
+    {
+      resource_permission = g_strdup ("get_tasks");
+      type = g_strdup("task");
+    }
+  else if (type_is_config_subtype (type))
+    {
+      resource_permission = g_strdup ("get_configs");
+      type = g_strdup("config");
+    }
   else
     resource_permission = g_strdup_printf ("get_%ss", type);
 
@@ -56966,6 +57004,26 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
         }
       else if (strcasecmp (type, "report") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      else if (strcasecmp (type, "task") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      else if (strcasecmp (type, "audit") == 0)
+        {
+          type = g_strdup ("task");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+        }
+      else if (strcasecmp (type, "policy") == 0)
+        {
+          type = g_strdup ("config");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("policy"));
+        }
+      else if (strcasecmp (type, "config") == 0)
         {
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
         }
@@ -57129,6 +57187,26 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
                               g_strdup ("audit"));
         }
       else if (strcasecmp (type, "report") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      else if (strcasecmp (type, "task") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      else if (strcasecmp (type, "audit") == 0)
+        {
+          type = g_strdup ("task");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+        }
+      else if (strcasecmp (type, "policy") == 0)
+        {
+          type = g_strdup ("config");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("policy"));
+        }
+      else if (strcasecmp (type, "config") == 0)
         {
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
         }
