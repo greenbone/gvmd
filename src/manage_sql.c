@@ -57382,6 +57382,10 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
           resources_get.type = g_strdup (type);
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
         }
+      else if (strcasecmp (type, "report") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
 
       gchar *columns;
 
