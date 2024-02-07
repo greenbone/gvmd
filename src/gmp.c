@@ -17423,7 +17423,13 @@ get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
     }
   g_free (task_schedule_xml);
 
-  SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN (1, "</task>");
+  if (send_to_client ("</task>",
+                      gmp_parser->client_writer,
+                      gmp_parser->client_writer_data))
+    {
+      error_send_to_client (error);
+      return 1;
+    }
 
   return 0;
 }
