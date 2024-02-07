@@ -17477,8 +17477,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
   while (1)
     {
-      task_t index;
-
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
       if (ret == 1)
@@ -17489,10 +17487,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
-      index = get_iterator_resource (&tasks);
-
       if (get_tasks_data->schedules_only)
         {
+          task_t index;
           gchar *task_schedule_xml;
 
           SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -17500,6 +17497,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                    get_iterator_uuid (&tasks),
                                    get_iterator_name (&tasks));
 
+          index = get_iterator_resource (&tasks);
           task_schedule_xml = get_task_schedule_xml (index);
           SEND_TO_CLIENT_OR_FAIL (task_schedule_xml);
           g_free (task_schedule_xml);
@@ -17509,6 +17507,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
       else
         {
+          task_t index;
           target_t target;
           scanner_t scanner;
           const char *first_report_id, *last_report_id;
@@ -17538,6 +17537,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
           gchar *assets_min_qod;
 
+          index = get_iterator_resource (&tasks);
           target = task_target (index);
 
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
