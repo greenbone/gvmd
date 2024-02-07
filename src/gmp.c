@@ -17478,34 +17478,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       task_t index;
-      gchar *progress_xml;
       target_t target;
-      scanner_t scanner;
-      const char *first_report_id, *last_report_id;
-      char *config_name, *config_uuid;
-      gchar *config_name_escaped;
-      char *task_target_uuid, *task_target_name;
-      gchar *task_target_name_escaped;
       gchar *task_schedule_xml;
-      char *task_scanner_uuid, *task_scanner_name;
-      gchar *task_scanner_name_escaped;
-      gchar *last_report;
-      gchar *second_last_report_id;
-      gchar *current_report;
-      report_t running_report;
-      char *owner, *observers;
-      int target_in_trash, scanner_in_trash;
-      int holes = 0, infos = 0, logs = 0, warnings = 0;
-      int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-      int false_positives = 0, task_scanner_type;
-      int target_available, config_available;
-      int scanner_available;
-      double severity = 0, severity_2 = 0;
-      gchar *response;
-      iterator_t alerts, groups, roles;
-      gchar *in_assets, *max_checks, *max_hosts;
-      gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
-      gchar *assets_min_qod;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -17537,6 +17511,33 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
       else
         {
+          scanner_t scanner;
+          const char *first_report_id, *last_report_id;
+          char *config_name, *config_uuid;
+          gchar *progress_xml;
+          gchar *config_name_escaped;
+          char *task_target_uuid, *task_target_name;
+          gchar *task_target_name_escaped;
+          char *task_scanner_uuid, *task_scanner_name;
+          gchar *task_scanner_name_escaped;
+          gchar *last_report;
+          gchar *second_last_report_id;
+          gchar *current_report;
+          report_t running_report;
+          char *owner, *observers;
+          int target_in_trash, scanner_in_trash;
+          int holes = 0, infos = 0, logs = 0, warnings = 0;
+          int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
+          int false_positives = 0, task_scanner_type;
+          int target_available, config_available;
+          int scanner_available;
+          double severity = 0, severity_2 = 0;
+          gchar *response;
+          iterator_t alerts, groups, roles;
+          gchar *in_assets, *max_checks, *max_hosts;
+          gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
+          gchar *assets_min_qod;
+
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
           target_in_trash = task_target_in_trash (index);
           if ((target == 0)
