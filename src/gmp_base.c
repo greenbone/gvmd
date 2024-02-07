@@ -135,6 +135,36 @@ send_to_client (const char* msg,
 }
 
 /**
+ * @brief Send a response message to the client.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  format       Format string.
+ *
+ * @return TRUE if error, else FALSE.
+ */
+gboolean
+sendf_to_client (gmp_parser_t *parser, const char *format, ...)
+{
+  if (format)
+    {
+      va_list args;
+      gchar *msg;
+
+      va_start (args, format);
+      msg = g_markup_vprintf_escaped (format, args);
+      va_end (args);
+
+      if (parser->client_writer (msg, parser->client_writer_data))
+        {
+          g_free (msg);
+          return TRUE;
+        }
+      g_free (msg);
+    }
+  return FALSE;
+}
+
+/**
  * @brief Send an XML find error response message to the client.
  *
  * @param[in]  command      Command name.
