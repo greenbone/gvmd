@@ -17394,6 +17394,45 @@ get_task_schedule_xml (task_t task)
  *
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
+ * @param[in]  tasks        Task iterator.
+ *
+ * @return 1 if error, else 0.
+ */
+static int
+get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
+                               GError **error,
+                               iterator_t *tasks)
+{
+  task_t index;
+  gchar *task_schedule_xml;
+
+  SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN (1,
+                                       "<task id=\"%s\">"
+                                       "<name>%s</name>",
+                                       get_iterator_uuid (tasks),
+                                       get_iterator_name (tasks));
+
+  index = get_iterator_resource (tasks);
+  task_schedule_xml = get_task_schedule_xml (index);
+  if (send_to_client (task_schedule_xml,
+                      gmp_parser->client_writer,
+                      gmp_parser->client_writer_data))
+    {
+      error_send_to_client (error);
+      return 1;
+    }
+  g_free (task_schedule_xml);
+
+  SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN (1, "</task>");
+
+  return 0;
+}
+
+/**
+ * @brief Handle end of GET_TASKS element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
  */
 static void
 handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
@@ -17489,21 +17528,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
       if (get_tasks_data->schedules_only)
         {
-          task_t index;
-          gchar *task_schedule_xml;
-
-          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                   "<name>%s</name>",
-                                   get_iterator_uuid (&tasks),
-                                   get_iterator_name (&tasks));
-
-          index = get_iterator_resource (&tasks);
-          task_schedule_xml = get_task_schedule_xml (index);
-          SEND_TO_CLIENT_OR_FAIL (task_schedule_xml);
-          g_free (task_schedule_xml);
-
-          SENDF_TO_CLIENT_OR_FAIL ("</task>");
-
+          if (get_tasks_send_schedules_only (gmp_parser, error, &tasks))
+            return;
         }
       else
         {
