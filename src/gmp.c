@@ -17478,7 +17478,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   while (1)
     {
       task_t index;
-      target_t target;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -17491,7 +17490,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
 
       index = get_iterator_resource (&tasks);
-      target = task_target (index);
 
       if (get_tasks_data->schedules_only)
         {
@@ -17511,6 +17509,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
       else
         {
+          target_t target;
           scanner_t scanner;
           const char *first_report_id, *last_report_id;
           char *config_name, *config_uuid;
@@ -17538,6 +17537,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           gchar *in_assets, *max_checks, *max_hosts;
           gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
           gchar *assets_min_qod;
+
+          target = task_target (index);
 
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
           target_in_trash = task_target_in_trash (index);
