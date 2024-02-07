@@ -17479,7 +17479,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
     {
       task_t index;
       target_t target;
-      gchar *task_schedule_xml;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -17494,15 +17493,16 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       index = get_iterator_resource (&tasks);
       target = task_target (index);
 
-      task_schedule_xml = get_task_schedule_xml (index);
-
       if (get_tasks_data->schedules_only)
         {
+          gchar *task_schedule_xml;
+
           SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
                                    "<name>%s</name>",
                                    get_iterator_uuid (&tasks),
                                    get_iterator_name (&tasks));
 
+          task_schedule_xml = get_task_schedule_xml (index);
           SEND_TO_CLIENT_OR_FAIL (task_schedule_xml);
           g_free (task_schedule_xml);
 
@@ -17515,6 +17515,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           const char *first_report_id, *last_report_id;
           char *config_name, *config_uuid;
           gchar *progress_xml;
+          gchar *task_schedule_xml;
           gchar *config_name_escaped;
           char *task_target_uuid, *task_target_name;
           gchar *task_target_name_escaped;
@@ -17855,6 +17856,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             = task_scanner_name
                 ? g_markup_escape_text (task_scanner_name, -1)
                 : NULL;
+
+          task_schedule_xml = get_task_schedule_xml (index);
 
           response = g_strdup_printf
                       ("<alterable>%i</alterable>"
