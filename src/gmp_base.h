@@ -51,7 +51,7 @@ sendf_to_client (gmp_parser_t *, GError **, const char *format, ...);
 
 gboolean
 send_find_error_to_client (const char *, const char *, const char *,
-                           gmp_parser_t *);
+                           gmp_parser_t *, GError **);
 
 void
 error_send_to_client (GError **);

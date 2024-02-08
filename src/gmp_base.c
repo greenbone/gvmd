@@ -172,12 +172,14 @@ sendf_to_client (gmp_parser_t *parser, GError **error, const char *format, ...)
  * @param[in]  type         Resource type.
  * @param[in]  id           Resource ID.
  * @param[in]  gmp_parser   GMP Parser.
+ * @param[in]  error        Error.
  *
  * @return TRUE if out of space in to_client, else FALSE.
  */
 gboolean
-send_find_error_to_client (const char* command, const char* type,
-                           const char* id, gmp_parser_t *gmp_parser)
+send_find_error_to_client (const char *command, const char *type,
+                           const char *id, gmp_parser_t *gmp_parser,
+                           GError **error)
 {
   gchar *msg;
   gboolean ret;
@@ -188,6 +190,8 @@ send_find_error_to_client (const char* command, const char* type,
                                  command, type, id);
   ret = send_to_client (msg, gmp_parser->client_writer,
                         gmp_parser->client_writer_data);
+  if (ret)
+    error_send_to_client (error);
   g_free (msg);
   return ret;
 }

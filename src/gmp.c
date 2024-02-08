@@ -10871,11 +10871,8 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                  ("delete_" G_STRINGIFY (type),                             \
                   G_STRINGIFY (type),                                       \
                   delete_ ## type ## _data-> type ## _id,                   \
-                  gmp_parser))                                              \
-              {                                                             \
-                error_send_to_client (error);                               \
-                return;                                                     \
-              }                                                             \
+                  gmp_parser, error))                                       \
+              return;                                                       \
             log_event_fail (G_STRINGIFY(type), capital,                     \
                             delete_ ## type ## _data-> type ## _id,         \
                             "deleted");                                     \
@@ -11187,20 +11184,14 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_alerts", "alert",
                                            get_alerts_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_alerts", "filter", get_alerts_data->get.filt_id,
-                   gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -11543,11 +11534,8 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     {
-      if (send_find_error_to_client ("get_assets", "type",
-                                     get_assets_data->type, gmp_parser))
-        {
-          error_send_to_client (error);
-        }
+      send_find_error_to_client ("get_assets", "type",
+                                 get_assets_data->type, gmp_parser, error);
       get_assets_data_reset (get_assets_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -11561,20 +11549,14 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
         case 1:
           if (send_find_error_to_client ("get_assets", "type",
                                          get_assets_data->type,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                                         gmp_parser, error))
+            return;
           break;
         case 2:
           if (send_find_error_to_client
               ("get_assets", "filter", get_assets_data->get.filt_id,
-               gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+               gmp_parser, error))
+            return;
           break;
         case -1:
           SEND_TO_CLIENT_OR_FAIL
@@ -11822,20 +11804,14 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
           case 1:
             if (send_find_error_to_client
                  ("get_configs", "config", get_configs_data->get.id,
-                  gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                  gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                  ("get_configs", "filter", get_configs_data->get.filt_id,
-                  gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                  gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_configs"));
@@ -12135,21 +12111,15 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_credentials",
                                            "credential",
                                            get_credentials_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client ("get_credentials",
                                            "filter",
                                            get_credentials_data->get.filt_id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -12870,20 +12840,14 @@ handle_get_filters (gmp_parser_t *gmp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_filters", "filter",
                                            get_filters_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_filters", "filter",
-                   get_filters_data->get.filt_id, gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   get_filters_data->get.filt_id, gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -12976,20 +12940,14 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_groups", "group",
                                            get_groups_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_groups", "filter", get_groups_data->get.filt_id,
-                   gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -13120,12 +13078,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       else
         {
           if (send_find_error_to_client ("get_info", "type",
-                                          get_info_data->type,
-                                          gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                                         get_info_data->type,
+                                         gmp_parser, error))
+            return;
           get_info_data_reset (get_info_data);
           set_client_state (CLIENT_AUTHENTIC);
           return;
@@ -13176,11 +13131,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     {
-      if (send_find_error_to_client ("get_info", "type",
-                                     get_info_data->type, gmp_parser))
-        {
-          error_send_to_client (error);
-        }
+      send_find_error_to_client ("get_info", "type",
+                                 get_info_data->type, gmp_parser, error);
       return;
     }
 
@@ -13197,20 +13149,15 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                          get_info_data->name
                                           ? get_info_data->name
                                           : get_info_data->get.id,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                                         gmp_parser,
+                                         error))
+            return;
           break;
         case 2:
           if (send_find_error_to_client
                ("get_info", "filter", get_info_data->get.filt_id,
-                gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                gmp_parser, error))
+            return;
           break;
         case -1:
           SEND_TO_CLIENT_OR_FAIL
@@ -13486,11 +13433,8 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_notes",
                                      "task", get_notes_data->task_id,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
     }
   else if (get_notes_data->nvt_oid
             && find_nvt (get_notes_data->nvt_oid, &nvt))
@@ -13499,11 +13443,8 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_notes", "NVT",
                                      get_notes_data->nvt_oid,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
     }
   else
     {
@@ -13522,20 +13463,14 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
               case 1:
                 if (send_find_error_to_client ("get_notes", "note",
                                                get_notes_data->get.id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 break;
               case 2:
                 if (send_find_error_to_client
                       ("get_notes", "filter",
-                       get_notes_data->get.filt_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                       get_notes_data->get.filt_id, gmp_parser, error))
+                  return;
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -13650,12 +13585,9 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
       else if (get_nvts_data->nvt_oid && nvt == 0)
         {
           if (send_find_error_to_client ("get_nvts", "NVT",
-                                          get_nvts_data->nvt_oid,
-                                          gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                                         get_nvts_data->nvt_oid,
+                                         gmp_parser, error))
+            return;
         }
       else if (get_nvts_data->config_id
                 && get_nvts_data->preferences_config_id)
@@ -13673,11 +13605,8 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
         {
           if (send_find_error_to_client
                 ("get_nvts", "config", get_nvts_data->config_id,
-                gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                 gmp_parser, error))
+            return;
         }
       else if (get_nvts_data->preferences_config_id
                 && find_config_with_permission
@@ -13691,12 +13620,9 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
         {
           if (send_find_error_to_client
                 ("get_nvts", "config",
-                get_nvts_data->preferences_config_id,
-                gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                 get_nvts_data->preferences_config_id,
+                 gmp_parser, error))
+            return;
         }
       else
         {
@@ -13880,11 +13806,8 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_overrides", "task",
                                      get_overrides_data->task_id,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
     }
   else if (get_overrides_data->nvt_oid
             && find_nvt (get_overrides_data->nvt_oid, &nvt))
@@ -13893,11 +13816,8 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_overrides",
                                      "NVT", get_overrides_data->nvt_oid,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
     }
   else
     {
@@ -13917,20 +13837,14 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
               case 1:
                 if (send_find_error_to_client
                       ("get_overrides", "override",
-                       get_overrides_data->get.id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                       get_overrides_data->get.id, gmp_parser, error))
+                  return;
                 break;
               case 2:
                 if (send_find_error_to_client
                       ("get_overrides", "filter",
-                       get_overrides_data->get.filt_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                       get_overrides_data->get.filt_id, gmp_parser, error))
+                  return;
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -13990,20 +13904,15 @@ handle_get_permissions (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_permissions",
                                            "permission",
                                            get_permissions_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_permissions", "filter",
-                   get_permissions_data->get.filt_id, gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   get_permissions_data->get.filt_id, gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -14106,20 +14015,15 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_port_lists",
                                            "port_list",
                                            get_port_lists_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_port_lists", "filter",
-                   get_port_lists_data->get.filt_id, gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   get_port_lists_data->get.filt_id, gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -14270,11 +14174,8 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_preferences", "NVT",
                                      get_preferences_data->nvt_oid,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
     }
   else if (get_preferences_data->config_id
            && find_config_with_permission (get_preferences_data->config_id,
@@ -14285,11 +14186,8 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_preferences", "config",
                                      get_preferences_data->config_id,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
     }
   else
     {
@@ -14458,11 +14356,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_reports", "report format",
                                      get_reports_data->format_id,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
       get_reports_data_reset (get_reports_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14487,11 +14382,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
         {
           if (send_find_error_to_client ("get_reports", "filter",
                                          get_reports_data->get.filt_id,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                                         gmp_parser, error))
+            return;
           get_reports_data_reset (get_reports_data);
           set_client_state (CLIENT_AUTHENTIC);
           return;
@@ -14503,11 +14395,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_reports", "report",
                                      get_reports_data->report_id,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
       get_reports_data_reset (get_reports_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14519,11 +14408,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     {
       if (send_find_error_to_client ("get_reports", "report",
                                      get_reports_data->delta_report_id,
-                                     gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     gmp_parser, error))
+        return;
       get_reports_data_reset (get_reports_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
@@ -14627,20 +14513,14 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_reports", "report",
                                            get_reports_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_reports", "filter",
-                   get_reports_data->get.filt_id, gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   get_reports_data->get.filt_id, gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -14806,11 +14686,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                 case 1:
                   if (send_find_error_to_client
                         ("get_reports", "alert",
-                        get_reports_data->alert_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                         get_reports_data->alert_id, gmp_parser, error))
+                    return;
                   /* Close the connection with the client, as part of the
                     * response may have been sent before the error
                     * occurred. */
@@ -14824,11 +14701,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                 case 2:
                   if (send_find_error_to_client
                         ("get_reports", "filter",
-                        get_reports_data->get.filt_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                         get_reports_data->get.filt_id, gmp_parser, error))
+                    return;
                   /* This error always occurs before anything is sent
                     * to the client, so the connection can stay up. */
                   if (request_report == 0)
@@ -14887,11 +14761,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             {
               if (send_find_error_to_client
                     ("get_reports", "filter",
-                     get_reports_data->get.filt_id, gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                     get_reports_data->get.filt_id, gmp_parser, error))
+                return;
               /* This error always occurs before anything is sent
                 * to the client, so the connection can stay up. */
               if (request_report == 0)
@@ -14971,20 +14842,15 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
                 if (send_find_error_to_client ("get_report_formats",
                                                "report_format",
                                                get_report_formats_data->get.id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser,
+                                               error))
+                  return;
                 break;
               case 2:
                 if (send_find_error_to_client
                       ("get_report_formats", "filter",
-                       get_report_formats_data->get.filt_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                       get_report_formats_data->get.filt_id, gmp_parser, error))
+                  return;
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -15451,15 +15317,13 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
 
   if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
     {
-      if (send_find_error_to_client ("get_resource_names", "type",
-                                     get_resource_names_data->type, gmp_parser))
-        {
-          error_send_to_client (error);
-        }
+      send_find_error_to_client ("get_resource_names", "type",
+                                 get_resource_names_data->type, gmp_parser,
+                                 error);
       get_resource_names_data_reset (get_resource_names_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
-    };
+    }
 
   ret = init_resource_iterator (&resource, &get_resource_names_data->get);
   if (ret)
@@ -15469,20 +15333,14 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
         case 1:
           if (send_find_error_to_client ("get_resource_names", "type",
                                          get_resource_names_data->type,
-                                         gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                                         gmp_parser, error))
+            return;
           break;          
         case 2:
           if (send_find_error_to_client
                ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
-                gmp_parser))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                gmp_parser, error))
+            return;
           break;
         case -1:
           SEND_TO_CLIENT_OR_FAIL
@@ -15608,12 +15466,9 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
   else if (get_results_data->get.id && result == 0)
     {
       if (send_find_error_to_client ("get_results", "result",
-                                      get_results_data->get.id,
-                                      gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     get_results_data->get.id,
+                                     gmp_parser, error))
+        return;
     }
   else if (get_results_data->task_id
             && find_task_with_permission (get_results_data->task_id,
@@ -15623,12 +15478,9 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
   else if (get_results_data->task_id && task == 0)
     {
       if (send_find_error_to_client ("get_results", "task",
-                                      get_results_data->task_id,
-                                      gmp_parser))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                     get_results_data->task_id,
+                                     gmp_parser, error))
+        return;
     }
   else
     {
@@ -15801,21 +15653,15 @@ handle_get_roles (gmp_parser_t *gmp_parser, GError **error)
         {
           case 1:
             if (send_find_error_to_client ("get_roles", "role",
-                                            get_roles_data->get.id,
-                                            gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           get_roles_data->get.id,
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_roles", "filter", get_roles_data->get.filt_id,
-                  gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -15883,20 +15729,14 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
       case 1:
         if (send_find_error_to_client
              ("get_scanners", "scanners", get_scanners_data->get.id,
-              gmp_parser))
-          {
-            error_send_to_client (error);
-            break;
-          }
+              gmp_parser, error))
+          break;
         break;
       case 2:
         if (send_find_error_to_client
              ("get_scanners", "filter", get_scanners_data->get.filt_id,
-              gmp_parser))
-          {
-            error_send_to_client (error);
-            break;
-          }
+              gmp_parser, error))
+          break;
         break;
       case -1:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_scanners"));
@@ -16164,20 +16004,15 @@ handle_get_schedules (gmp_parser_t *gmp_parser, GError **error)
                 if (send_find_error_to_client ("get_schedules",
                                                "schedule",
                                                get_schedules_data->get.id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser,
+                                               error))
+                  return;
                 break;
               case 2:
                 if (send_find_error_to_client
                       ("get_schedules", "filter",
-                       get_schedules_data->get.filt_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                       get_schedules_data->get.filt_id, gmp_parser, error))
+                  return;
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -16292,11 +16127,8 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
           case 2:
             if (send_find_error_to_client ("create_schedule", "schedule",
                                            create_schedule_data->copy,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             log_event_fail ("schedule", "Schedule", NULL, "created");
             break;
           case 99:
@@ -16447,12 +16279,9 @@ handle_modify_schedule (gmp_parser_t *gmp_parser, GError **error)
         break;
       case 1:
         if (send_find_error_to_client ("modify_schedule", "schedule",
-                                        modify_schedule_data->schedule_id,
-                                        gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       modify_schedule_data->schedule_id,
+                                       gmp_parser, error))
+           return;
         log_event_fail ("schedule", "Schedule",
                         modify_schedule_data->schedule_id,
                         "modified");
@@ -16657,20 +16486,14 @@ handle_get_system_reports (gmp_parser_t *gmp_parser, GError **error)
         if (send_find_error_to_client ("get_system_reports",
                                        "system report",
                                        get_system_reports_data->name,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         break;
       case 2:
         if (send_find_error_to_client
               ("get_system_reports", "slave",
-               get_system_reports_data->slave_id, gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+               get_system_reports_data->slave_id, gmp_parser, error))
+          return;
         break;
       case 4:
         SEND_TO_CLIENT_OR_FAIL
@@ -16793,20 +16616,14 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
           case 1:
             if (send_find_error_to_client ("get_tags",
                                            "tag", get_tags_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_tags", "filter", get_tags_data->get.filt_id,
-                   gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   gmp_parser, error))
+              return;
             break;
           default:
             SEND_TO_CLIENT_OR_FAIL
@@ -16900,20 +16717,15 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 if (send_find_error_to_client ("get_targets",
                                                "target",
                                                get_targets_data->get.id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser,
+                                               error))
+                  return;
                 break;
               case 2:
                 if (send_find_error_to_client
                       ("get_targets", "filter",
-                       get_targets_data->get.filt_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                       get_targets_data->get.filt_id, gmp_parser, error))
+                  return;
                 break;
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -17474,20 +17286,15 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_tasks",
                                            "task",
                                            get_tasks_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_tasks", "filter", get_tasks_data->get.filt_id,
-                  gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -18167,20 +17974,15 @@ handle_get_users (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_users",
                                            "user",
                                            get_users_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_users", "filter", get_users_data->get.filt_id,
-                   gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -18317,20 +18119,15 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_vulns",
                                            "vuln",
                                            get_vulns_data->get.id,
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             break;
           case 2:
             if (send_find_error_to_client
                   ("get_vulns", "filter",
-                   get_vulns_data->get.filt_id, gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                   get_vulns_data->get.filt_id, gmp_parser, error))
+              return;
             break;
           case -1:
             SEND_TO_CLIENT_OR_FAIL
@@ -18435,11 +18232,9 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
           goto create_scanner_leave;
         case 2:
           if (send_find_error_to_client ("create_scanner", "scanner",
-                                         create_scanner_data->copy, gmp_parser))
-            {
-              error_send_to_client (error);
-              goto create_scanner_leave;
-            }
+                                         create_scanner_data->copy, gmp_parser,
+                                         error))
+            goto create_scanner_leave;
           log_event_fail ("scanner", "Scanner", NULL, "created");
           goto create_scanner_leave;
         case 98:
@@ -18531,11 +18326,8 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
       case 3:
         if (send_find_error_to_client ("create_scanner", "credential",
                                        create_scanner_data->credential_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
       case 4:
@@ -18618,11 +18410,8 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
       case 1:
         if (send_find_error_to_client ("modify_scanner", "scanner",
                                        modify_scanner_data->scanner_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -18648,11 +18437,8 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         if (send_find_error_to_client ("create_scanner", "credential",
                                        modify_scanner_data->credential_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -19018,11 +18804,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                      ("delete_asset",
                       "asset",
                       delete_asset_data->asset_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
+                      gmp_parser,
+                      error))
                     return;
-                  }
                 log_event_fail ("asset", "Asset",
                                 delete_asset_data->asset_id,
                                 "deleted");
@@ -19093,11 +18877,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client
                        ("delete_report", "report",
                         delete_report_data->report_id,
-                        gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        gmp_parser, error))
+                    return;
                   log_event_fail ("report", "Report",
                                   delete_report_data->report_id,
                                   "deleted");
@@ -19173,11 +18954,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:  /* Failed to find task. */
                   if (send_find_error_to_client
                        ("delete_task", "task", delete_task_data->task_id,
-                        gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        gmp_parser, error))
+                    return;
                   break;
                 case 4:
                   SENDF_TO_CLIENT_OR_FAIL(
@@ -19253,11 +19031,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                                delete_user_data->user_id
                                                 ? delete_user_data->user_id
                                                 : delete_user_data->name,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser,
+                                               error))
+                  return;
                 log_event_fail ("user", "User", delete_user_data->user_id,
                                 "deleted");
                 break;
@@ -19280,11 +19056,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 6:
                 if (send_find_error_to_client ("delete_user", "inheriting user",
                                                delete_user_data->inheritor_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 break;
               case 7:
                 SEND_TO_CLIENT_OR_FAIL
@@ -19757,11 +19530,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   assert (help_data->format);
                   if (send_find_error_to_client ("help", "schema_format",
-                                                 help_data->format, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 help_data->format, gmp_parser,
+                                                 error))
+                    return;
                   break;
                 default:
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("help"));
@@ -19927,11 +19698,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_alert", "alert",
                                                  create_alert_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("alert", "Alert", NULL, "created");
                   break;
                 case 99:
@@ -20023,11 +19791,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 3:
                     if (send_find_error_to_client ("create_alert", "filter",
                                                    create_alert_data->filter_id,
-                                                   gmp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                                                   gmp_parser, error))
+                      return;
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
                   case 4:
@@ -20377,11 +20142,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client ("create_credential",
                                                  "credential",
                                                  create_credential_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("credential", "Credential", NULL, "created");
                   break;
                 case 99:
@@ -20633,11 +20395,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_filter", "filter",
                                                  create_filter_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("filter", "Filter", NULL, "created");
                   break;
                 case 99:
@@ -20744,11 +20503,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_group", "group",
                                                  create_group_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("group", "Group", NULL, "created");
                   break;
                 case 4:
@@ -20866,11 +20622,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_note", "note",
                                                  create_note_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("note", "Note", NULL, "created");
                   break;
                 case 99:
@@ -20914,11 +20667,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_note", "task",
                                              create_note_data->task_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                                             gmp_parser, error))
+                return;
             }
           else if (create_note_data->result_id
                    && find_result_with_permission (create_note_data->result_id,
@@ -20929,11 +20679,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_note", "result",
                                              create_note_data->result_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                                             gmp_parser, error))
+                return;
             }
           else switch (create_note (create_note_data->active,
                                     create_note_data->nvt_oid,
@@ -20959,11 +20706,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("create_note", "nvt",
                                                create_note_data->nvt_oid,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
@@ -21030,11 +20774,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_override", "override",
                                                  create_override_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("override", "Override", NULL, "created");
                   break;
                 case 99:
@@ -21085,11 +20826,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_override", "task",
                                              create_override_data->task_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                                             gmp_parser, error))
+                return;
             }
           else if (create_override_data->result_id
                    && find_result_with_permission (create_override_data->result_id,
@@ -21100,11 +20838,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client ("create_override", "result",
                                              create_override_data->result_id,
-                                             gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                                             gmp_parser, error))
+                return;
             }
           else switch (create_override (create_override_data->active,
                                         create_override_data->nvt_oid,
@@ -21132,11 +20867,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("create_override", "nvt",
                                                create_override_data->nvt_oid,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
@@ -21211,11 +20943,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client ("create_permission",
                                                  "permission",
                                                  create_permission_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("permission", "Permission", NULL, "created");
                   break;
                 case 99:
@@ -21262,21 +20991,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client
                      ("create_permission", "subject",
-                      create_permission_data->subject_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      create_permission_data->subject_id, gmp_parser, error))
+                  return;
                 log_event_fail ("permission", "Permission", NULL, "created");
                 break;
               case 3:
                 if (send_find_error_to_client
                      ("create_permission", "resource",
-                      create_permission_data->resource_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      create_permission_data->resource_id, gmp_parser, error))
+                  return;
                 log_event_fail ("permission", "Permission", NULL, "created");
                 break;
               case 5:
@@ -21377,11 +21100,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("create_port_range", "port_range",
-                      create_port_range_data->port_list_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      create_port_range_data->port_list_id, gmp_parser, error))
+                  return;
                 log_event_fail ("port_range", "Port Range", NULL, "created");
                 break;
               case 4:
@@ -21484,11 +21204,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("report", "Report", NULL, "created");
                 if (send_find_error_to_client
                      ("create_report", "task",
-                      create_report_data->task_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      create_report_data->task_id, gmp_parser, error))
+                  return;
                 break;
               case -5:
                 SEND_TO_CLIENT_OR_FAIL
@@ -21759,11 +21476,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_role", "role",
                                                  create_role_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("role", "Role", NULL, "created");
                   break;
                 case 4:
@@ -21903,11 +21617,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_tag", "tag",
                                                  create_tag_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("tag", "Tag", NULL, "created");
                   break;
                 case 99:
@@ -21978,9 +21689,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 1:
                     if (send_find_error_to_client ("create_tag", "resource",
                                                    error_extra,
-                                                   gmp_parser))
+                                                   gmp_parser, error))
                       {
-                        error_send_to_client (error);
                         g_free (error_extra);
                         return;
                       }
@@ -22063,11 +21773,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_target", "target",
                                                  create_target_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   log_event_fail ("target", "Target", NULL, "created");
                   break;
                 case 99:
@@ -22126,11 +21833,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     create_target_data->ssh_credential_id
                       ? create_target_data->ssh_credential_id
                       : create_target_data->ssh_lsc_credential_id,
-                    gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                    gmp_parser, error))
+                return;
             }
           else if (create_target_data->ssh_elevate_credential_id
                    && find_credential_with_permission
@@ -22160,11 +21864,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     create_target_data->smb_credential_id
                       ? create_target_data->smb_credential_id
                       : create_target_data->smb_lsc_credential_id,
-                    gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                    gmp_parser, error))
+                return;
             }
           else if (create_target_data->esxi_credential_id
                    && find_credential_with_permission
@@ -22188,11 +21889,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     create_target_data->esxi_credential_id
                       ? create_target_data->esxi_credential_id
                       : create_target_data->esxi_lsc_credential_id,
-                    gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                    gmp_parser, error))
+                return;
             }
           else if (create_target_data->snmp_credential_id
                    && find_credential_with_permission
@@ -22206,11 +21904,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (send_find_error_to_client
                    ("create_target", "Credential",
                     create_target_data->snmp_credential_id,
-                    gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                    gmp_parser, error))
+                return;
             }
           /* Create target from host string. */
           else switch (create_target
@@ -22270,11 +21965,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("target", "Target", NULL, "created");
                 if (send_find_error_to_client
                      ("create_target", "port_list",
-                      create_target_data->port_list_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      create_target_data->port_list_id, gmp_parser, error))
+                  return;
                 break;
               case 7:
                 SEND_TO_CLIENT_OR_FAIL
@@ -22456,11 +22148,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   case 2:
                     if (send_find_error_to_client ("create_task", "task",
                                                    create_task_data->copy,
-                                                   gmp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                                                   gmp_parser, error))
+                      return;
                     log_event_fail ("task", "Task", NULL, "created");
                     break;
                   case 99:
@@ -22669,11 +22358,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 1:
                     if (send_find_error_to_client
-                         ("create_task", "group", fail_group_id, gmp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                        ("create_task", "group", fail_group_id, gmp_parser,
+                         error))
+                      return;
                     log_event_fail ("task", "Task", NULL, "created");
                     goto create_task_fail;
                   case -1:
@@ -22694,10 +22381,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           if (create_task_data->scanner_id && scanner == 0)
             {
-              if (send_find_error_to_client ("create_task", "scanner",
-                                             create_task_data->scanner_id,
-                                             gmp_parser))
-                error_send_to_client (error);
+              send_find_error_to_client ("create_task", "scanner",
+                                         create_task_data->scanner_id,
+                                         gmp_parser, error);
               goto create_task_fail;
             }
           if ((scanner == 0) || (scanner_type (scanner) != SCANNER_TYPE_CVE))
@@ -22711,10 +22397,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               if (config == 0)
                 {
-                  if (send_find_error_to_client ("create_task", "config",
-                                                 create_task_data->config_id,
-                                                 gmp_parser))
-                    error_send_to_client (error);
+                  send_find_error_to_client ("create_task", "config",
+                                             create_task_data->config_id,
+                                             gmp_parser, error);
                   goto create_task_fail;
                 }
 
@@ -22735,10 +22420,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           if (target == 0)
             {
-              if (send_find_error_to_client ("create_task", "target",
-                                             create_task_data->target_id,
-                                             gmp_parser))
-                error_send_to_client (error);
+              send_find_error_to_client ("create_task", "target",
+                                         create_task_data->target_id,
+                                         gmp_parser, error);
               goto create_task_fail;
             }
 
@@ -22862,12 +22546,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 2:
                   if (send_find_error_to_client ("create_user", "user",
                                                  create_user_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                    log_event_fail ("user", "User", NULL, "created");
+                                                 gmp_parser, error))
+                    return;
+                  log_event_fail ("user", "User", NULL, "created");
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -22917,20 +22598,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   }
                 case 1:
                   if (send_find_error_to_client
-                       ("create_user", "group", fail_group_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                       ("create_user", "group", fail_group_id, gmp_parser, error))
+                    return;
                   log_event_fail ("user", "User", NULL, "created");
                   break;
                 case 2:
                   if (send_find_error_to_client
-                       ("create_user", "role", fail_role_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                       ("create_user", "role", fail_role_id, gmp_parser, error))
+                    return;
                   log_event_fail ("user", "User", NULL, "created");
                   break;
                 case 3:
@@ -23077,11 +22752,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_alert", "alert",
                                                modify_alert_data->alert_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("alert", "Alert", modify_alert_data->alert_id,
                                 "modified");
                 break;
@@ -23102,11 +22774,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 4:
                 if (send_find_error_to_client ("modify_alert", "filter",
                                                modify_alert_data->filter_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("alert", "Alert", modify_alert_data->alert_id,
                                 "modified");
                 break;
@@ -23442,11 +23111,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_asset", "asset",
                                                modify_asset_data->asset_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("asset", "Asset", modify_asset_data->asset_id,
                                 "modified");
                 break;
@@ -23662,11 +23328,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_credential", "credential",
                       modify_credential_data->credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -23800,11 +23463,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_filter", "filter",
                                                modify_filter_data->filter_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("filter", "Filter",
                                 modify_filter_data->filter_id, "modified");
                 break;
@@ -23885,11 +23545,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_group", "group",
                                                modify_group_data->group_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("group", "Group",
                                 modify_group_data->group_id, "modified");
                 break;
@@ -24015,33 +23672,24 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 5:
                 if (send_find_error_to_client ("modify_note", "note",
                                                modify_note_data->note_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
               case 6:
                 if (send_find_error_to_client ("modify_note", "task",
                                                modify_note_data->task_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
               case 7:
                 if (send_find_error_to_client ("modify_note", "result",
                                                modify_note_data->result_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
@@ -24147,11 +23795,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 5:
                 if (send_find_error_to_client ("modify_override", "override",
                                                modify_override_data->override_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("override", "Override",
                                 modify_override_data->override_id,
                                 "modified");
@@ -24159,11 +23804,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 6:
                 if (send_find_error_to_client ("modify_override", "task",
                                                modify_override_data->task_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("override", "Override",
                                 modify_override_data->override_id,
                                 "modified");
@@ -24171,11 +23813,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 7:
                 if (send_find_error_to_client ("modify_override", "result",
                                                modify_override_data->result_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("override", "Override",
                                 modify_override_data->override_id,
                                 "modified");
@@ -24264,11 +23903,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 2:
                 if (send_find_error_to_client
                      ("modify_permission", "subject",
-                      modify_permission_data->subject_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      modify_permission_data->subject_id, gmp_parser, error))
+                  return;
                 log_event_fail ("permission", "Permission",
                                 modify_permission_data->permission_id,
                                 "modified");
@@ -24276,11 +23912,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("modify_permission", "resource",
-                      modify_permission_data->resource_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      modify_permission_data->resource_id, gmp_parser, error))
+                  return;
                 log_event_fail ("permission", "Permission",
                                 modify_permission_data->permission_id,
                                 "modified");
@@ -24382,11 +24015,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_port_list", "port_list",
                                                modify_port_list_data->port_list_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("port_list", "Port List",
                                 modify_port_list_data->port_list_id,
                                 "modified");
@@ -24451,11 +24081,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_report_format", "report_format",
                       modify_report_format_data->report_format_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 log_event_fail ("report_format", "Report Format",
                                 modify_report_format_data->report_format_id,
                                 "modified");
@@ -24472,11 +24099,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 if (send_find_error_to_client
                      ("modify_report_format", "report format param",
-                      modify_report_format_data->param_name, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      modify_report_format_data->param_name, gmp_parser, error))
+                  return;
                 log_event_fail ("report_format", "Report Format",
                                 modify_report_format_data->report_format_id,
                                 "modified");
@@ -24534,11 +24158,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_role", "role",
                                                modify_role_data->role_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("role", "Role",
                                 modify_role_data->role_id, "modified");
                 break;
@@ -24720,11 +24341,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 1:
                 if (send_find_error_to_client ("modify_tag", "tag",
                                                modify_tag_data->tag_id,
-                                               gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                                               gmp_parser, error))
+                  return;
                 log_event_fail ("tag", "Tag", modify_tag_data->tag_id,
                                 "modified");
                 break;
@@ -24746,10 +24364,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 break;
               case 4:
                 if (send_find_error_to_client ("modify_tag", "resource",
-                                                error_extra,
-                                                gmp_parser))
+                                               error_extra,
+                                               gmp_parser, error))
                   {
-                    error_send_to_client (error);
                     g_free (error_extra);
                     return;
                   }
@@ -24878,11 +24495,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "modified");
                 if (send_find_error_to_client
                      ("modify_target", "port_list",
-                      modify_target_data->port_list_id, gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      modify_target_data->port_list_id, gmp_parser, error))
+                  return;
                 break;
               case 7:
                 log_event_fail ("target", "Target",
@@ -24893,11 +24507,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       modify_target_data->ssh_credential_id
                         ? modify_target_data->ssh_credential_id
                         : modify_target_data->ssh_lsc_credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 break;
               case 8:
                 log_event_fail ("target", "Target",
@@ -24908,11 +24519,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       modify_target_data->smb_credential_id
                         ? modify_target_data->smb_credential_id
                         : modify_target_data->smb_lsc_credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 break;
               case 9:
                 log_event_fail ("target", "Target",
@@ -24920,11 +24528,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "modified");
                 if (send_find_error_to_client
                      ("modify_target", "target", modify_target_data->target_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 break;
               case 10:
                 SEND_TO_CLIENT_OR_FAIL
@@ -24987,11 +24592,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       modify_target_data->esxi_credential_id
                         ? modify_target_data->esxi_credential_id
                         : modify_target_data->esxi_lsc_credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 break;
               case 17:
                 log_event_fail ("target", "Target",
@@ -25000,11 +24602,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_target", "Credential",
                       modify_target_data->snmp_credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 break;
               case 18:
                 SEND_TO_CLIENT_OR_FAIL
@@ -25045,11 +24644,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 if (send_find_error_to_client
                      ("modify_target", "Credential",
                       modify_target_data->ssh_elevate_credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
+                      gmp_parser, error))
+                  return;
                 break;
               case 23:
                 SEND_TO_CLIENT_OR_FAIL
@@ -25170,11 +24766,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         case 1:
                           if (send_find_error_to_client ("modify_task", "Task",
                                                          modify_task_data->task_id,
-                                                         gmp_parser))
-                            {
-                              error_send_to_client (error);
-                              return;
-                            }
+                                                         gmp_parser, error))
+                            return;
                           break;
                         default:
                         case -1:
@@ -25198,11 +24791,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         case 1:
                           if (send_find_error_to_client ("modify_task", "Task",
                                                          modify_task_data->task_id,
-                                                         gmp_parser))
-                            {
-                              error_send_to_client (error);
-                              return;
-                            }
+                                                         gmp_parser, error))
+                            return;
                           break;
                         default:
                         case -1:
@@ -25249,11 +24839,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   if (send_find_error_to_client ("modify_task", "Task",
                                                  modify_task_data->task_id,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   break;
                 case 2:
                   SEND_TO_CLIENT_OR_FAIL
@@ -25264,20 +24851,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:
                   if (send_find_error_to_client
                        ("modify_task", "scanner",
-                        modify_task_data->scanner_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        modify_task_data->scanner_id, gmp_parser, error))
+                    return;
                   break;
                 case 4:
                   if (send_find_error_to_client
                        ("modify_task", "config",
-                        modify_task_data->config_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        modify_task_data->config_id, gmp_parser, error))
+                    return;
                   break;
                 case 5:
                   SEND_TO_CLIENT_OR_FAIL
@@ -25296,11 +24877,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
                 case 8:
                   if (send_find_error_to_client ("modify_task", "alert",
-                                                 fail_alert_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 fail_alert_id, gmp_parser,
+                                                 error))
+                    return;
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");
@@ -25316,11 +24895,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
                 case 10:
                   if (send_find_error_to_client ("modify_task", "group",
-                                                 fail_group_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 fail_group_id, gmp_parser,
+                                                 error))
+                    return;
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");
@@ -25328,11 +24905,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 11:
                   if (send_find_error_to_client
                        ("modify_task", "schedule",
-                        modify_task_data->schedule_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        modify_task_data->schedule_id, gmp_parser, error))
+                    return;
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");
@@ -25340,11 +24914,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 12:
                   if (send_find_error_to_client
                        ("modify_task", "target",
-                        modify_task_data->target_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        modify_task_data->target_id, gmp_parser, error))
+                    return;
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");
@@ -25487,21 +25058,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 1:
                     if (send_find_error_to_client
-                         ("modify_user", "group", fail_group_id, gmp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                         ("modify_user", "group", fail_group_id, gmp_parser,
+                          error))
+                      return;
                     break;
                   case 2:
                     if (send_find_error_to_client
                          ("modify_user", "user",
                           modify_user_data->user_id ?: modify_user_data->name,
-                          gmp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                          gmp_parser, error))
+                      return;
                     break;
                   case 3:
                     SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
@@ -25515,11 +25081,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     break;
                   case 5:
                     if (send_find_error_to_client
-                         ("modify_user", "role", fail_role_id, gmp_parser))
-                      {
-                        error_send_to_client (error);
-                        return;
-                      }
+                         ("modify_user", "role", fail_role_id, gmp_parser,
+                          error))
+                      return;
                     break;
                   case 6:
                     SEND_TO_CLIENT_OR_FAIL
@@ -25618,23 +25182,19 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               break;
             case 2:
               if (send_find_error_to_client ("move_task",
-                                              "Task",
-                                              move_task_data->task_id,
-                                              gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                                             "Task",
+                                             move_task_data->task_id,
+                                             gmp_parser,
+                                             error))
+                return;
               break;
             case 3:
               if (send_find_error_to_client ("move_task",
-                                              "Slave",
-                                              move_task_data->slave_id,
-                                              gmp_parser))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                                             "Slave",
+                                             move_task_data->slave_id,
+                                             gmp_parser,
+                                             error))
+                return;
               break;
             case 4:
               SEND_TO_CLIENT_OR_FAIL
@@ -25692,11 +25252,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   if (send_find_error_to_client
                        ("test_alert", "alert", test_alert_data->alert_id,
-                        gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        gmp_parser, error))
+                    return;
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -25784,11 +25341,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
                 case 2:
                   if (send_find_error_to_client ("restore", "resource",
-                                                 restore_data->id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 restore_data->id, gmp_parser,
+                                                 error))
+                    return;
                   break;
                 case 3:
                   SEND_TO_CLIENT_OR_FAIL
@@ -25882,11 +25437,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client
                        ("resume_task", "task", resume_task_data->task_id,
-                        gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        gmp_parser, error))
+                    return;
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26136,11 +25688,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("start_task", "task",
                                                  start_task_data->task_id,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26232,11 +25781,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task", "task",
                                                  stop_task_data->task_id,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                                                 gmp_parser, error))
+                    return;
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26275,11 +25821,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   if (send_find_error_to_client
                        ("verify_report_format", "report format",
                         verify_report_format_data->report_format_id,
-                        gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        gmp_parser, error))
+                    return;
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26317,11 +25860,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 1:
                   if (send_find_error_to_client
                        ("verify_scanner", "scanner",
-                        verify_scanner_data->scanner_id, gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
+                        verify_scanner_data->scanner_id, gmp_parser, error))
+                    return;
                   break;
                 case 2:
                   SEND_TO_CLIENT_OR_FAIL

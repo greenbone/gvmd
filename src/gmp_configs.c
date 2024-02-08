@@ -572,11 +572,8 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
           case 2:
             if (send_find_error_to_client ("create_config", "config",
                                            entity_text (copy),
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             log_event_fail ("config", "Config", NULL, "created");
             break;
           case 99:
@@ -1042,11 +1039,9 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
         if (send_find_error_to_client ("modify_config",
                                        "config",
                                        config_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser,
+                                       error))
+          return;
         log_event_fail ("config", "Scan Config", config_id, "modified");
         return;
       default:
