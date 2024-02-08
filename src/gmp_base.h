@@ -44,10 +44,10 @@ void
 buffer_xml_append_printf (GString *, const char *, ...);
 
 gboolean
-send_to_client (const char *, int (*) (const char *, void *), void *);
+send_to_client (gmp_parser_t *, GError **, const char *);
 
 gboolean
-sendf_to_client (gmp_parser_t *, GError **, const char *format, ...);
+sendf_to_client (gmp_parser_t *, GError **, const char *, ...);
 
 gboolean
 send_find_error_to_client (const char *, const char *, const char *,
@@ -73,11 +73,9 @@ internal_error_send_to_client (GError **);
   do                                                                  \
     {                                                                 \
       gchar *msg = g_markup_printf_escaped (format, ##args);          \
-      if (send_to_client (msg, gmp_parser->client_writer,             \
-                          gmp_parser->client_writer_data))            \
+      if (send_to_client (gmp_parser, error, msg))                    \
         {                                                             \
           g_free (msg);                                               \
-          error_send_to_client (error);                               \
           return err_ret;                                             \
         }                                                             \
       g_free (msg);                                                   \
@@ -97,11 +95,9 @@ internal_error_send_to_client (GError **);
   do                                                         \
     {                                                        \
       gchar *msg = g_markup_printf_escaped (format, ##args); \
-      if (send_to_client (msg, gmp_parser->client_writer,    \
-                          gmp_parser->client_writer_data))   \
+      if (send_to_client (gmp_parser, error, msg))           \
         {                                                    \
           g_free (msg);                                      \
-          error_send_to_client (error);                      \
           return;                                            \
         }                                                    \
       g_free (msg);                                          \
@@ -119,12 +115,8 @@ internal_error_send_to_client (GError **);
 #define SEND_TO_CLIENT_OR_FAIL(msg)                        \
   do                                                       \
     {                                                      \
-      if (send_to_client (msg, gmp_parser->client_writer,  \
-                          gmp_parser->client_writer_data)) \
-        {                                                  \
-          error_send_to_client (error);                    \
-          return;                                          \
-        }                                                  \
+      if (send_to_client (gmp_parser, error, msg))         \
+        return;                                            \
     }                                                      \
   while (0)
 

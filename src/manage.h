@@ -1639,9 +1639,6 @@ manage_report (report_t, report_t, const get_data_t *, report_format_t,
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     int, int, int, int, int, int,
-                    gboolean (*) (const char *,
-                                  int (*) (const char*, void*),
-                                  void*),
                     int (*) (const char *, void*), void *, const char *,
                     const gchar *);
 

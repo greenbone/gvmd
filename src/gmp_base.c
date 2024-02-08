@@ -125,12 +125,16 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
  * @return TRUE if send to client failed, else FALSE.
  */
 gboolean
-send_to_client (const char* msg,
-                int (*user_send_to_client) (const char*, void*),
-                void* user_send_to_client_data)
+send_to_client (gmp_parser_t *parser, GError** error, const char* msg)
 {
-  if (user_send_to_client && msg)
-    return user_send_to_client (msg, user_send_to_client_data);
+  if (parser
+      && parser->client_writer
+      && msg
+      && parser->client_writer (msg, parser->client_writer_data))
+    {
+      error_send_to_client (error);
+      return TRUE;
+    }
   return FALSE;
 }
 
@@ -138,6 +142,7 @@ send_to_client (const char* msg,
  * @brief Send a response message to the client.
  *
  * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error.
  * @param[in]  format       Format string.
  *
  * @return TRUE if error, else FALSE.
@@ -188,10 +193,7 @@ send_find_error_to_client (const char *command, const char *type,
                                  STATUS_ERROR_MISSING
                                  "\" status_text=\"Failed to find %s '%s'\"/>",
                                  command, type, id);
-  ret = send_to_client (msg, gmp_parser->client_writer,
-                        gmp_parser->client_writer_data);
-  if (ret)
-    error_send_to_client (error);
+  ret = send_to_client (gmp_parser, error, msg);
   g_free (msg);
   return ret;
 }

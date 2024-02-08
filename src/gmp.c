@@ -4664,9 +4664,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               GError **error)
 {
   gmp_parser_t *gmp_parser = (gmp_parser_t*) user_data;
-  int (*write_to_client) (const char *, void*)
-    = (int (*) (const char *, void*)) gmp_parser->client_writer;
-  void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
   g_debug ("   XML  start: %s (%i)", element_name, client_state);
 
@@ -4683,11 +4680,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
             if (send_to_client
-                 (XML_ERROR_SYNTAX ("gmp",
+                 (gmp_parser,
+                  error,
+                  XML_ERROR_SYNTAX ("gmp",
                                     "Only command GET_VERSION is"
-                                    " allowed before AUTHENTICATE"),
-                  write_to_client,
-                  write_to_client_data))
+                                    " allowed before AUTHENTICATE")))
               {
                 error_send_to_client (error);
                 return;
@@ -5980,13 +5977,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else
           {
-            if (send_to_client (XML_ERROR_SYNTAX ("gmp", "Bogus command name"),
-                                write_to_client,
-                                write_to_client_data))
-              {
-                error_send_to_client (error);
-                return;
-              }
+            if (send_to_client (gmp_parser, error,
+                                XML_ERROR_SYNTAX ("gmp", "Bogus command name")))
+              return;
             g_set_error (error,
                          G_MARKUP_ERROR,
                          G_MARKUP_ERROR_UNKNOWN_ELEMENT,
@@ -7918,23 +7911,21 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
  * @param[in]  skip_cert_refs        If true, exclude CERT refs.
  * @param[in]  skip_tags             If true, exclude tags.
  * @param[in]  lean                  If true, send fewer details.
- * @param[in]  write_to_client       Function to write to client.
- * @param[in]  write_to_client_data  Argument to \p write_to_client.
+ * @param[in]  gmp_parser            GMP Parser.
+ * @param[in]  error                 Error.
  *
  * @return TRUE if out of space in to_client buffer, else FALSE.
  */
 static gboolean
 send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
           const char *timeout, config_t config, int skip_cert_refs,
-          int skip_tags, int lean,
-          int (*write_to_client) (const char *, void*),
-          void* write_to_client_data)
+          int skip_tags, int lean, gmp_parser_t *gmp_parser, GError **error)
 {
   gchar *msg;
 
   msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
                      0, skip_cert_refs, skip_tags, lean);
-  if (send_to_client (msg, write_to_client, write_to_client_data))
+  if (send_to_client (gmp_parser, error, msg))
     {
       g_free (msg);
       return TRUE;
@@ -11581,14 +11572,10 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       asset = get_iterator_resource (&assets);
       /* Assets are currently always writable. */
       if (send_get_common ("asset", &get_assets_data->get, &assets,
-                           gmp_parser->client_writer,
-                           gmp_parser->client_writer_data,
+                           gmp_parser, error,
                            asset_iterator_writable (&assets),
                            asset_iterator_in_use (&assets)))
-        {
-          error_send_to_client (error);
-          return;
-        }
+        return;
 
       result = g_string_new ("");
 
@@ -13179,12 +13166,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
 
       /* Info's are currently always read only */
       if (send_get_common ("info", &get_info_data->get, &info,
-                           gmp_parser->client_writer,
-                           gmp_parser->client_writer_data, 0, 0))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                           gmp_parser, error, 0, 0))
+        return;
 
       SENDF_TO_CLIENT_OR_FAIL ("<update_time>%s</update_time>",
                                update_time);
@@ -13355,11 +13338,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
           if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0, 0,
-                        gmp_parser->client_writer,
-                        gmp_parser->client_writer_data))
+                        gmp_parser, error))
             {
               cleanup_iterator (&info);
-              error_send_to_client (error);
               return;
             }
         }
@@ -13679,12 +13660,11 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                               get_nvts_data->skip_cert_refs,
                               get_nvts_data->skip_tags,
                               get_nvts_data->lean,
-                              gmp_parser->client_writer,
-                              gmp_parser->client_writer_data))
+                              gmp_parser,
+                              error))
                   {
                     free (timeout);
                     cleanup_iterator (&nvts);
-                    error_send_to_client (error);
                     return;
                   }
                 free (timeout);
@@ -13695,11 +13675,9 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             while (next (&nvts))
               {
                 if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0,
-                              gmp_parser->client_writer,
-                              gmp_parser->client_writer_data))
+                              gmp_parser, error))
                   {
                     cleanup_iterator (&nvts);
-                    error_send_to_client (error);
                     return;
                   }
                 SEND_TO_CLIENT_OR_FAIL ("</nvt>");
@@ -14670,7 +14648,6 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 && strcmp
                                     (get_reports_data->format_id,
                                       "5057e5cc-b825-11e4-9d0e-28d24461215b"),
-                                send_to_client,
                                 gmp_parser->client_writer,
                                 gmp_parser->client_writer_data,
                                 get_reports_data->alert_id,
@@ -15611,21 +15588,14 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
 
           if (send_get_end ("result", &get_results_data->get, count, filtered,
                             resource_count ("result", &get_results_data->get),
-                            gmp_parser->client_writer,
-                            gmp_parser->client_writer_data))
-            {
-              error_send_to_client (error);
-              return;
-            }
+                            gmp_parser, error))
+            return;
         }
       else if (send_get_end_no_counts ("result",
                                        &get_results_data->get,
-                                       gmp_parser->client_writer,
-                                       gmp_parser->client_writer_data))
-        {
-          error_send_to_client (error);
-          return;
-        }
+                                       gmp_parser,
+                                       error))
+        return;
     }
 
   get_results_data_reset (get_results_data);
@@ -17228,22 +17198,12 @@ get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
 
   index = get_iterator_resource (tasks);
   task_schedule_xml = get_task_schedule_xml (index);
-  if (send_to_client (task_schedule_xml,
-                      gmp_parser->client_writer,
-                      gmp_parser->client_writer_data))
-    {
-      error_send_to_client (error);
-      return 1;
-    }
+  if (send_to_client (gmp_parser, error, task_schedule_xml))
+    return 1;
   g_free (task_schedule_xml);
 
-  if (send_to_client ("</task>",
-                      gmp_parser->client_writer,
-                      gmp_parser->client_writer_data))
-    {
-      error_send_to_client (error);
-      return 1;
-    }
+  if (send_to_client (gmp_parser, error, "</task>"))
+    return 1;
 
   return 0;
 }
@@ -17774,13 +17734,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (task_scanner_uuid);
           g_free (task_scanner_name);
           g_free (task_scanner_name_escaped);
-          if (send_to_client (response,
-                              gmp_parser->client_writer,
-                              gmp_parser->client_writer_data))
+          if (send_to_client (gmp_parser, error, response))
             {
               g_free (response);
               cleanup_iterator (&tasks);
-              error_send_to_client (error);
               cleanup_iterator (&tasks);
               return;
             }
@@ -18653,9 +18610,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             GError **error)
 {
   gmp_parser_t *gmp_parser = (gmp_parser_t*) user_data;
-  int (*write_to_client) (const char *, void*)
-    = (int (*) (const char *, void*)) gmp_parser->client_writer;
-  void* write_to_client_data = (void*) gmp_parser->client_writer_data;
 
   g_debug ("   XML    end: %s", element_name);
 
@@ -19498,13 +19452,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             gchar *base64;
 
                             base64 = g_base64_encode ((guchar*) output, output_len);
-                            if (send_to_client (base64,
-                                                write_to_client,
-                                                write_to_client_data))
+                            if (send_to_client (gmp_parser, error, base64))
                               {
                                 g_free (output);
                                 g_free (base64);
-                                error_send_to_client (error);
                                 return;
                               }
                             g_free (base64);
@@ -19512,12 +19463,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         else
                           {
                             /* Special case the XML schema, bah. */
-                            if (send_to_client (output,
-                                                write_to_client,
-                                                write_to_client_data))
+                            if (send_to_client (gmp_parser, error, output))
                               {
                                 g_free (output);
-                                error_send_to_client (error);
                                 return;
                               }
                           }
@@ -25292,10 +25240,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                "</test_alert_response>",
                                script_message);
 
-                      if (send_to_client (msg, gmp_parser->client_writer,
-                                          gmp_parser->client_writer_data))
+                      if (send_to_client (gmp_parser, error, msg))
                         {
-                          error_send_to_client (error);
                           g_free (msg);
                           return;
                         }
@@ -25396,12 +25342,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             "</resume_task_response>",
                             report_id);
                     free (report_id);
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
+                    if (send_to_client (gmp_parser, error, msg))
                       {
                         g_free (msg);
-                        error_send_to_client (error);
                         return;
                       }
                     g_free (msg);
@@ -25543,13 +25486,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             response ? "<response>" : "",
                             response ? response : "",
                             response ? "</response>" : "");
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
+                    if (send_to_client (gmp_parser, error, msg))
                       {
                         g_free (msg);
                         g_free (response);
-                        error_send_to_client (error);
                         return;
                       }
                     g_free (msg);
@@ -25584,12 +25524,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             command_error ? command_error : "Internal Error");
                     if (command_error)
                       g_free (command_error);
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
+                    if (send_to_client (gmp_parser, error, msg))
                       {
                         g_free (msg);
-                        error_send_to_client (error);
                         return;
                       }
                     g_free (msg);
@@ -25664,12 +25601,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                             "</start_task_response>",
                             report_id ?: "0");
                     g_free (report_id);
-                    if (send_to_client (msg,
-                                        write_to_client,
-                                        write_to_client_data))
+                    if (send_to_client (gmp_parser, error, msg))
                       {
                         g_free (msg);
-                        error_send_to_client (error);
                         return;
                       }
                     g_free (msg);

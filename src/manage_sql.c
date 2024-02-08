@@ -30378,10 +30378,7 @@ manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
                     int notes_details, int overrides_details, int result_tags,
                     int ignore_pagination, int lean, int base64,
-                    gboolean (*send) (const char *,
-                                      int (*) (const char *, void*),
-                                      void*),
-                    int (*send_data_1) (const char *, void*), void *send_data_2,
+                    int (*send) (const char *, void*), void *send_data,
                     const char *alert_id,
                     const gchar* prefix)
 {
@@ -30492,7 +30489,7 @@ manage_send_report (report_t report, report_t delta_report,
       return -1;
     }
 
-  if (prefix && send (prefix, send_data_1, send_data_2))
+  if (prefix && send (prefix, send_data))
     {
       fclose (stream);
       g_warning ("%s: send prefix error", __func__);
@@ -30537,7 +30534,7 @@ manage_send_report (report_t report, report_t delta_report,
               chunk64 = g_base64_encode ((guchar*) chunk,
                                           MANAGE_SEND_REPORT_CHUNK_SIZE
                                           - left);
-              if (send (chunk64, send_data_1, send_data_2))
+              if (send (chunk64, send_data))
                 {
                   g_free (chunk64);
                   fclose (stream);
@@ -30550,7 +30547,7 @@ manage_send_report (report_t report, report_t delta_report,
           else
             {
               chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
-              if (send (chunk, send_data_1, send_data_2))
+              if (send (chunk, send_data))
                 {
                   fclose (stream);
                   g_warning ("%s: send error", __func__);
