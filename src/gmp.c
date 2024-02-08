@@ -17172,7 +17172,7 @@ get_task_schedule_xml (task_t task)
 
 
 /**
- * @brief Handle end of GET_TASKS element.
+ * @brief Send single task with schedules only, for GET_TASKS.
  *
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
@@ -17206,6 +17206,608 @@ get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
     return 1;
 
   return 0;
+}
+
+/**
+ * @brief Send single task for GET_TASKS.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  tasks        Task iterator.
+ *
+ * @return 1 if error, else 0.
+ */
+static int
+get_tasks_send_task (gmp_parser_t *gmp_parser,
+                     GError **error,
+                     iterator_t *tasks)
+{
+  task_t index;
+  target_t target;
+  scanner_t scanner;
+  const char *first_report_id, *last_report_id;
+  char *config_name, *config_uuid;
+  gchar *progress_xml;
+  gchar *task_schedule_xml;
+  gchar *config_name_escaped;
+  char *task_target_uuid, *task_target_name;
+  gchar *task_target_name_escaped;
+  char *task_scanner_uuid, *task_scanner_name;
+  gchar *task_scanner_name_escaped;
+  gchar *last_report;
+  gchar *second_last_report_id;
+  gchar *current_report;
+  report_t running_report;
+  char *owner, *observers;
+  int target_in_trash, scanner_in_trash;
+  int holes = 0, infos = 0, logs = 0, warnings = 0;
+  int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
+  int false_positives = 0, task_scanner_type;
+  int target_available, config_available;
+  int scanner_available;
+  double severity = 0, severity_2 = 0;
+  gchar *response;
+  iterator_t alerts, groups, roles;
+  gchar *in_assets, *max_checks, *max_hosts;
+  gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
+  gchar *assets_min_qod;
+
+  index = get_iterator_resource (&tasks);
+  target = task_target (index);
+
+  SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+  target_in_trash = task_target_in_trash (index);
+  if ((target == 0)
+      && (task_iterator_run_status (&tasks)
+          == TASK_STATUS_RUNNING))
+    {
+      progress_xml = g_strdup_printf
+                      ("%i",
+                      task_upload_progress (index));
+      running_report = 0;
+    }
+  else
+    {
+      int progress;
+
+      running_report = task_iterator_current_report (&tasks);
+      progress
+        = report_progress (running_report);
+      progress_xml
+        = g_strdup_printf ("%i", progress);
+    }
+
+  if (running_report)
+    {
+      gchar *timestamp;
+      char *scan_start, *scan_end, *current_report_id;
+
+      current_report_id = report_uuid (running_report);
+
+      if (report_timestamp (current_report_id, &timestamp))
+        g_error ("%s: GET_TASKS: error getting timestamp"
+                 " of report, aborting",
+                 __func__);
+
+      scan_start = scan_start_time_uuid (current_report_id),
+      scan_end = scan_end_time_uuid (current_report_id),
+
+      current_report = g_strdup_printf ("<current_report>"
+                                        "<report id=\"%s\">"
+                                        "<timestamp>"
+                                        "%s"
+                                        "</timestamp>"
+                                        "<scan_start>"
+                                        "%s"
+                                        "</scan_start>"
+                                        "<scan_end>"
+                                        "%s"
+                                        "</scan_end>"
+                                        "</report>"
+                                        "</current_report>",
+                                        current_report_id,
+                                        timestamp,
+                                        scan_start,
+                                        scan_end);
+      free (current_report_id);
+      free (scan_start);
+      free (scan_end);
+      g_free (timestamp);
+    }
+  else
+    current_report = g_strdup ("");
+
+  first_report_id = task_iterator_first_report (&tasks);
+  if (first_report_id && (get_tasks_data->get.trash == 0))
+    {
+      // TODO Could skip this count for tasks page.
+      if (report_counts (first_report_id,
+                         &holes_2, &infos_2, &logs,
+                         &warnings_2, &false_positives,
+                         &severity_2, apply_overrides, min_qod))
+        g_error ("%s: GET_TASKS: error getting counts for"
+                 " first report, aborting",
+                 __func__);
+    }
+
+  second_last_report_id = task_second_last_report_id (index);
+  if (second_last_report_id && (get_tasks_data->get.trash == 0))
+    {
+      /* If the first report is the second last report then skip
+        * doing the count again. */
+      if (((first_report_id == NULL)
+          || (strcmp (second_last_report_id, first_report_id)))
+          && report_counts (second_last_report_id,
+                            &holes_2, &infos_2,
+                            &logs, &warnings_2,
+                            &false_positives, &severity_2,
+                            apply_overrides, min_qod))
+        g_error ("%s: GET_TASKS: error getting counts for"
+                 " second report, aborting",
+                 __func__);
+    }
+
+  last_report_id = task_iterator_last_report (&tasks);
+  if (get_tasks_data->get.trash && last_report_id)
+    {
+      gchar *timestamp;
+      char *scan_start, *scan_end;
+
+      if (report_timestamp (last_report_id, &timestamp))
+        g_error ("%s: GET_TASKS: error getting timestamp for"
+                 " last report, aborting",
+                 __func__);
+
+      scan_start = scan_start_time_uuid (last_report_id);
+      scan_end = scan_end_time_uuid (last_report_id);
+
+      last_report = g_strdup_printf ("<last_report>"
+                                     "<report id=\"%s\">"
+                                     "<timestamp>%s</timestamp>"
+                                     "<scan_start>%s</scan_start>"
+                                     "<scan_end>%s</scan_end>"
+                                     "</report>"
+                                     "</last_report>",
+                                     last_report_id,
+                                     timestamp,
+                                     scan_start,
+                                     scan_end);
+
+      free (scan_start);
+      free (scan_end);
+      g_free (timestamp);
+    }
+  else if (last_report_id)
+    {
+      gchar *timestamp;
+      char *scan_start, *scan_end;
+
+      /* If the last report is the first report or the second
+        * last report, then reuse the counts from before. */
+      if ((first_report_id == NULL)
+          || (second_last_report_id == NULL)
+          || (strcmp (last_report_id, first_report_id)
+              && strcmp (last_report_id,
+                        second_last_report_id)))
+        {
+          if (report_counts
+              (last_report_id,
+                &holes, &infos, &logs,
+                &warnings, &false_positives, &severity,
+                apply_overrides, min_qod))
+            g_error ("%s: GET_TASKS: error getting counts for"
+                     " last report, aborting",
+                     __func__);
+        }
+      else
+        {
+          holes = holes_2;
+          infos = infos_2;
+          warnings = warnings_2;
+          severity = severity_2;
+        }
+
+      if (report_timestamp (last_report_id, &timestamp))
+        g_error ("%s: GET_TASKS: error getting timestamp for"
+                 " last report, aborting",
+                 __func__);
+
+      scan_start = scan_start_time_uuid (last_report_id);
+      scan_end = scan_end_time_uuid (last_report_id);
+
+      if (strcmp (task_iterator_usage_type (&tasks), "audit") == 0)
+        {
+          int compliance_yes, compliance_no, compliance_incomplete;
+
+          report_compliance_by_uuid (last_report_id,
+                                     &compliance_yes,
+                                     &compliance_no,
+                                     &compliance_incomplete);
+
+          last_report
+            = g_strdup_printf ("<last_report>"
+                               "<report id=\"%s\">"
+                               "<timestamp>%s</timestamp>"
+                               "<scan_start>%s</scan_start>"
+                               "<scan_end>%s</scan_end>"
+                               "<compliance_count>"
+                               "<yes>%d</yes>"
+                               "<no>%d</no>"
+                               "<incomplete>%d</incomplete>"
+                               "</compliance_count>"
+                               "</report>"
+                               "</last_report>",
+                               last_report_id,
+                               timestamp,
+                               scan_start,
+                               scan_end,
+                               compliance_yes,
+                               compliance_no,
+                               compliance_incomplete);
+        }
+      else
+        last_report
+            = g_strdup_printf ("<last_report>"
+                               "<report id=\"%s\">"
+                               "<timestamp>%s</timestamp>"
+                               "<scan_start>%s</scan_start>"
+                               "<scan_end>%s</scan_end>"
+                               "<result_count>"
+                               "<hole>%i</hole>"
+                               "<info>%i</info>"
+                               "<log>%i</log>"
+                               "<warning>%i</warning>"
+                               "<false_positive>"
+                               "%i"
+                               "</false_positive>"
+                               "</result_count>"
+                               "<severity>"
+                               "%1.1f"
+                               "</severity>"
+                               "</report>"
+                               "</last_report>",
+                               last_report_id,
+                               timestamp,
+                               scan_start,
+                               scan_end,
+                               holes,
+                               infos,
+                               logs,
+                               warnings,
+                               false_positives,
+                               severity);
+      free (scan_start);
+      free (scan_end);
+      g_free (timestamp);
+    }
+  else
+    last_report = g_strdup ("");
+
+  g_free (second_last_report_id);
+
+  owner = task_owner_name (index);
+  observers = task_observers (index);
+  config_name = task_config_name (index);
+  config_uuid = task_config_uuid (index);
+  target_available = 1;
+  if (target_in_trash)
+    {
+      task_target_uuid = trash_target_uuid (target);
+      task_target_name = trash_target_name (target);
+      target_available = trash_target_readable (target);
+    }
+  else if (target)
+    {
+      target_t found;
+      task_target_uuid = target_uuid (target);
+      task_target_name = target_name (target);
+      if (find_target_with_permission (task_target_uuid,
+                                        &found,
+                                        "get_targets"))
+        g_error ("%s: GET_TASKS: error finding task target,"
+                 " aborting",
+                 __func__);
+      target_available = (found > 0);
+    }
+  else
+    {
+      task_target_uuid = NULL;
+      task_target_name = NULL;
+    }
+  config_available = 1;
+  if (task_config_in_trash (index))
+    config_available = trash_config_readable_uuid (config_uuid);
+  else if (config_uuid)
+    {
+      config_t found;
+      if (find_config_with_permission (config_uuid,
+                                      &found,
+                                      "get_configs"))
+        g_error ("%s: GET_TASKS: error finding task config,"
+                 " aborting",
+                 __func__);
+      config_available = (found > 0);
+    }
+  scanner_available = 1;
+  scanner = task_iterator_scanner (&tasks);
+  if (scanner)
+    {
+      scanner_in_trash = task_scanner_in_trash (index);
+
+      task_scanner_uuid = scanner_uuid (scanner);
+      task_scanner_name = scanner_name (scanner);
+      task_scanner_type = scanner_type (scanner);
+      if (scanner_in_trash)
+        scanner_available = trash_scanner_readable (scanner);
+      else
+        {
+          scanner_t found;
+
+          if (find_scanner_with_permission
+              (task_scanner_uuid, &found, "get_scanners"))
+            g_error ("%s: GET_TASKS: error finding"
+                     " task scanner, aborting",
+                     __func__);
+          scanner_available = (found > 0);
+        }
+    }
+  else
+    {
+      /* Container tasks have no associated scanner. */
+      task_scanner_uuid = g_strdup ("");
+      task_scanner_name = g_strdup ("");
+      task_scanner_type = 0;
+      scanner_in_trash = 0;
+    }
+
+  config_name_escaped
+    = config_name
+        ? g_markup_escape_text (config_name, -1)
+        : NULL;
+  task_target_name_escaped
+    = task_target_name
+        ? g_markup_escape_text (task_target_name, -1)
+        : NULL;
+  task_scanner_name_escaped
+    = task_scanner_name
+        ? g_markup_escape_text (task_scanner_name, -1)
+        : NULL;
+
+  task_schedule_xml = get_task_schedule_xml (index);
+
+  response = g_strdup_printf
+              ("<alterable>%i</alterable>"
+               "<usage_type>%s</usage_type>"
+               "<config id=\"%s\">"
+               "<name>%s</name>"
+               "<trash>%i</trash>"
+               "%s"
+               "</config>"
+               "<target id=\"%s\">"
+               "<name>%s</name>"
+               "<trash>%i</trash>"
+               "%s"
+               "</target>"
+               "<hosts_ordering>%s</hosts_ordering>"
+               "<scanner id='%s'>"
+               "<name>%s</name>"
+               "<type>%d</type>"
+               "<trash>%i</trash>"
+               "%s"
+               "</scanner>"
+               "<status>%s</status>"
+               "<progress>%s</progress>"
+               "<report_count>"
+               "%u<finished>%u</finished>"
+               "</report_count>"
+               "<trend>%s</trend>"
+               "%s" // Schedule XML
+               "%s%s",
+               get_tasks_data->get.trash
+                ? 0
+                : task_alterable (index),
+               task_iterator_usage_type (&tasks),
+               config_uuid ?: "",
+               config_name_escaped ?: "",
+               task_config_in_trash (index),
+               config_available ? "" : "<permissions/>",
+               task_target_uuid ?: "",
+               task_target_name_escaped ?: "",
+               target_in_trash,
+               target_available ? "" : "<permissions/>",
+               task_iterator_hosts_ordering (&tasks)
+                ? task_iterator_hosts_ordering (&tasks)
+                : "",
+               task_scanner_uuid,
+               task_scanner_name_escaped,
+               task_scanner_type,
+               scanner_in_trash,
+               scanner_available ? "" : "<permissions/>",
+               task_iterator_run_status_name (&tasks),
+               progress_xml,
+               task_iterator_total_reports (&tasks),
+               task_iterator_finished_reports (&tasks),
+               get_tasks_data->get.trash
+                ? ""
+                : task_iterator_trend_counts
+                   (&tasks, holes, warnings, infos, severity,
+                    holes_2, warnings_2, infos_2, severity_2),
+               task_schedule_xml,
+               current_report,
+               last_report);
+  g_free (config_name);
+  g_free (config_uuid);
+  g_free (config_name_escaped);
+  free (task_target_name);
+  free (task_target_uuid);
+  g_free (task_target_name_escaped);
+  g_free (progress_xml);
+  g_free (current_report);
+  g_free (last_report);
+  g_free (task_schedule_xml);
+  g_free (task_scanner_uuid);
+  g_free (task_scanner_name);
+  g_free (task_scanner_name_escaped);
+  if (send_to_client (gmp_parser, error, response))
+    {
+      g_free (response);
+      cleanup_iterator (&tasks);
+      cleanup_iterator (&tasks);
+      return;
+    }
+  g_free (response);
+
+  SENDF_TO_CLIENT_OR_FAIL
+   ("<observers>%s",
+    ((owner == NULL)
+    || (strcmp (owner,
+                current_credentials.username)))
+      ? ""
+      : observers);
+  free (owner);
+  free (observers);
+
+  init_task_group_iterator (&groups, index);
+  while (next (&groups))
+    SENDF_TO_CLIENT_OR_FAIL
+     ("<group id=\"%s\">"
+      "<name>%s</name>"
+      "</group>",
+      task_group_iterator_uuid (&groups),
+      task_group_iterator_name (&groups));
+  cleanup_iterator (&groups);
+
+  init_task_role_iterator (&roles, index);
+  while (next (&roles))
+    SENDF_TO_CLIENT_OR_FAIL
+     ("<role id=\"%s\">"
+      "<name>%s</name>"
+      "</role>",
+      task_role_iterator_uuid (&roles),
+      task_role_iterator_name (&roles));
+  cleanup_iterator (&roles);
+
+  SENDF_TO_CLIENT_OR_FAIL ("</observers>");
+
+  init_task_alert_iterator (&alerts, index);
+  while (next (&alerts))
+    {
+      alert_t found;
+
+      if (find_alert_with_permission (task_alert_iterator_uuid
+                                      (&alerts),
+                                      &found,
+                                      "get_alerts"))
+        abort ();
+
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<alert id=\"%s\">"
+        "<name>%s</name>",
+        task_alert_iterator_uuid (&alerts),
+        task_alert_iterator_name (&alerts));
+
+      if (found)
+        SENDF_TO_CLIENT_OR_FAIL
+        ("</alert>");
+      else
+        SENDF_TO_CLIENT_OR_FAIL
+         ("<permissions/>"
+          "</alert>");
+    }
+  cleanup_iterator (&alerts);
+
+  if (get_tasks_data->get.details
+      || get_tasks_data->get.id)
+    {
+      SENDF_TO_CLIENT_OR_FAIL ("<average_duration>"
+                               "%d"
+                               "</average_duration>",
+                               task_average_scan_duration (index));
+    }
+
+  if (get_tasks_data->get.details)
+    {
+      /* The detailed version. */
+
+      SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
+                                task_result_count (index, min_qod));
+    }
+
+  in_assets = task_preference_value (index, "in_assets");
+  assets_apply_overrides = task_preference_value
+                            (index, "assets_apply_overrides");
+  assets_min_qod = task_preference_value (index, "assets_min_qod");
+  max_checks = task_preference_value (index, "max_checks");
+  max_hosts = task_preference_value (index, "max_hosts");
+  auto_delete = task_preference_value (index, "auto_delete");
+  auto_delete_data = task_preference_value (index, "auto_delete_data");
+
+  SENDF_TO_CLIENT_OR_FAIL
+   ("<preferences>"
+    "<preference>"
+    "<name>"
+    "Maximum concurrently executed NVTs per host"
+    "</name>"
+    "<scanner_name>max_checks</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "<preference>"
+    "<name>"
+    "Maximum concurrently scanned hosts"
+    "</name>"
+    "<scanner_name>max_hosts</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "<preference>"
+    "<name>"
+    "Add results to Asset Management"
+    "</name>"
+    "<scanner_name>in_assets</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "<preference>"
+    "<name>"
+    "Apply Overrides when adding Assets"
+    "</name>"
+    "<scanner_name>assets_apply_overrides</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "<preference>"
+    "<name>"
+    "Min QOD when adding Assets"
+    "</name>"
+    "<scanner_name>assets_min_qod</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "<preference>"
+    "<name>"
+    "Auto Delete Reports"
+    "</name>"
+    "<scanner_name>auto_delete</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "<preference>"
+    "<name>"
+    "Auto Delete Reports Data"
+    "</name>"
+    "<scanner_name>auto_delete_data</scanner_name>"
+    "<value>%s</value>"
+    "</preference>"
+    "</preferences>"
+    "</task>",
+    max_checks ? max_checks : "4",
+    max_hosts ? max_hosts : "20",
+    in_assets ? in_assets : "yes",
+    assets_apply_overrides ? assets_apply_overrides : "yes",
+    assets_min_qod
+      ? assets_min_qod
+      : G_STRINGIFY (MIN_QOD_DEFAULT),
+    auto_delete ? auto_delete : "0",
+    auto_delete_data ? auto_delete_data : "0");
+
+  g_free (in_assets);
+  g_free (max_checks);
+  g_free (max_hosts);
 }
 
 /**
@@ -17308,592 +17910,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
       else
         {
-          task_t index;
-          target_t target;
-          scanner_t scanner;
-          const char *first_report_id, *last_report_id;
-          char *config_name, *config_uuid;
-          gchar *progress_xml;
-          gchar *task_schedule_xml;
-          gchar *config_name_escaped;
-          char *task_target_uuid, *task_target_name;
-          gchar *task_target_name_escaped;
-          char *task_scanner_uuid, *task_scanner_name;
-          gchar *task_scanner_name_escaped;
-          gchar *last_report;
-          gchar *second_last_report_id;
-          gchar *current_report;
-          report_t running_report;
-          char *owner, *observers;
-          int target_in_trash, scanner_in_trash;
-          int holes = 0, infos = 0, logs = 0, warnings = 0;
-          int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-          int false_positives = 0, task_scanner_type;
-          int target_available, config_available;
-          int scanner_available;
-          double severity = 0, severity_2 = 0;
-          gchar *response;
-          iterator_t alerts, groups, roles;
-          gchar *in_assets, *max_checks, *max_hosts;
-          gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
-          gchar *assets_min_qod;
-
-          index = get_iterator_resource (&tasks);
-          target = task_target (index);
-
-          SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-          target_in_trash = task_target_in_trash (index);
-          if ((target == 0)
-              && (task_iterator_run_status (&tasks)
-                  == TASK_STATUS_RUNNING))
-            {
-              progress_xml = g_strdup_printf
-                              ("%i",
-                              task_upload_progress (index));
-              running_report = 0;
-            }
-          else
-            {
-              int progress;
-
-              running_report = task_iterator_current_report (&tasks);
-              progress
-                = report_progress (running_report);
-              progress_xml
-                = g_strdup_printf ("%i", progress);
-            }
-
-          if (running_report)
-            {
-              gchar *timestamp;
-              char *scan_start, *scan_end, *current_report_id;
-
-              current_report_id = report_uuid (running_report);
-
-              if (report_timestamp (current_report_id, &timestamp))
-                g_error ("%s: GET_TASKS: error getting timestamp"
-                         " of report, aborting",
-                         __func__);
-
-              scan_start = scan_start_time_uuid (current_report_id),
-              scan_end = scan_end_time_uuid (current_report_id),
-
-              current_report = g_strdup_printf ("<current_report>"
-                                                "<report id=\"%s\">"
-                                                "<timestamp>"
-                                                "%s"
-                                                "</timestamp>"
-                                                "<scan_start>"
-                                                "%s"
-                                                "</scan_start>"
-                                                "<scan_end>"
-                                                "%s"
-                                                "</scan_end>"
-                                                "</report>"
-                                                "</current_report>",
-                                                current_report_id,
-                                                timestamp,
-                                                scan_start,
-                                                scan_end);
-              free (current_report_id);
-              free (scan_start);
-              free (scan_end);
-              g_free (timestamp);
-            }
-          else
-            current_report = g_strdup ("");
-
-          first_report_id = task_iterator_first_report (&tasks);
-          if (first_report_id && (get_tasks_data->get.trash == 0))
-            {
-              // TODO Could skip this count for tasks page.
-              if (report_counts (first_report_id,
-                                 &holes_2, &infos_2, &logs,
-                                 &warnings_2, &false_positives,
-                                 &severity_2, apply_overrides, min_qod))
-                g_error ("%s: GET_TASKS: error getting counts for"
-                         " first report, aborting",
-                         __func__);
-            }
-
-          second_last_report_id = task_second_last_report_id (index);
-          if (second_last_report_id && (get_tasks_data->get.trash == 0))
-            {
-              /* If the first report is the second last report then skip
-                * doing the count again. */
-              if (((first_report_id == NULL)
-                  || (strcmp (second_last_report_id, first_report_id)))
-                  && report_counts (second_last_report_id,
-                                    &holes_2, &infos_2,
-                                    &logs, &warnings_2,
-                                    &false_positives, &severity_2,
-                                    apply_overrides, min_qod))
-                g_error ("%s: GET_TASKS: error getting counts for"
-                         " second report, aborting",
-                         __func__);
-            }
-
-          last_report_id = task_iterator_last_report (&tasks);
-          if (get_tasks_data->get.trash && last_report_id)
-            {
-              gchar *timestamp;
-              char *scan_start, *scan_end;
-
-              if (report_timestamp (last_report_id, &timestamp))
-                g_error ("%s: GET_TASKS: error getting timestamp for"
-                         " last report, aborting",
-                         __func__);
-
-              scan_start = scan_start_time_uuid (last_report_id);
-              scan_end = scan_end_time_uuid (last_report_id);
-
-              last_report = g_strdup_printf ("<last_report>"
-                                             "<report id=\"%s\">"
-                                             "<timestamp>%s</timestamp>"
-                                             "<scan_start>%s</scan_start>"
-                                             "<scan_end>%s</scan_end>"
-                                             "</report>"
-                                             "</last_report>",
-                                             last_report_id,
-                                             timestamp,
-                                             scan_start,
-                                             scan_end);
-
-              free (scan_start);
-              free (scan_end);
-              g_free (timestamp);
-            }
-          else if (last_report_id)
-            {
-              gchar *timestamp;
-              char *scan_start, *scan_end;
-
-              /* If the last report is the first report or the second
-                * last report, then reuse the counts from before. */
-              if ((first_report_id == NULL)
-                  || (second_last_report_id == NULL)
-                  || (strcmp (last_report_id, first_report_id)
-                      && strcmp (last_report_id,
-                                second_last_report_id)))
-                {
-                  if (report_counts
-                      (last_report_id,
-                        &holes, &infos, &logs,
-                        &warnings, &false_positives, &severity,
-                        apply_overrides, min_qod))
-                    g_error ("%s: GET_TASKS: error getting counts for"
-                             " last report, aborting",
-                             __func__);
-                }
-              else
-                {
-                  holes = holes_2;
-                  infos = infos_2;
-                  warnings = warnings_2;
-                  severity = severity_2;
-                }
-
-              if (report_timestamp (last_report_id, &timestamp))
-                g_error ("%s: GET_TASKS: error getting timestamp for"
-                         " last report, aborting",
-                         __func__);
-
-              scan_start = scan_start_time_uuid (last_report_id);
-              scan_end = scan_end_time_uuid (last_report_id);
-
-              if (strcmp (task_iterator_usage_type (&tasks), "audit") == 0)
-                {
-                  int compliance_yes, compliance_no, compliance_incomplete;
-
-                  report_compliance_by_uuid (last_report_id,
-                                             &compliance_yes,
-                                             &compliance_no,
-                                             &compliance_incomplete);
-
-                  last_report
-                    = g_strdup_printf ("<last_report>"
-                                       "<report id=\"%s\">"
-                                       "<timestamp>%s</timestamp>"
-                                       "<scan_start>%s</scan_start>"
-                                       "<scan_end>%s</scan_end>"
-                                       "<compliance_count>"
-                                       "<yes>%d</yes>"
-                                       "<no>%d</no>"
-                                       "<incomplete>%d</incomplete>"
-                                       "</compliance_count>"
-                                       "</report>"
-                                       "</last_report>",
-                                       last_report_id,
-                                       timestamp,
-                                       scan_start,
-                                       scan_end,
-                                       compliance_yes,
-                                       compliance_no,
-                                       compliance_incomplete);
-                }
-              else
-                last_report
-                    = g_strdup_printf ("<last_report>"
-                                       "<report id=\"%s\">"
-                                       "<timestamp>%s</timestamp>"
-                                       "<scan_start>%s</scan_start>"
-                                       "<scan_end>%s</scan_end>"
-                                       "<result_count>"
-                                       "<hole>%i</hole>"
-                                       "<info>%i</info>"
-                                       "<log>%i</log>"
-                                       "<warning>%i</warning>"
-                                       "<false_positive>"
-                                       "%i"
-                                       "</false_positive>"
-                                       "</result_count>"
-                                       "<severity>"
-                                       "%1.1f"
-                                       "</severity>"
-                                       "</report>"
-                                       "</last_report>",
-                                       last_report_id,
-                                       timestamp,
-                                       scan_start,
-                                       scan_end,
-                                       holes,
-                                       infos,
-                                       logs,
-                                       warnings,
-                                       false_positives,
-                                       severity);
-              free (scan_start);
-              free (scan_end);
-              g_free (timestamp);
-            }
-          else
-            last_report = g_strdup ("");
-
-          g_free (second_last_report_id);
-
-          owner = task_owner_name (index);
-          observers = task_observers (index);
-          config_name = task_config_name (index);
-          config_uuid = task_config_uuid (index);
-          target_available = 1;
-          if (target_in_trash)
-            {
-              task_target_uuid = trash_target_uuid (target);
-              task_target_name = trash_target_name (target);
-              target_available = trash_target_readable (target);
-            }
-          else if (target)
-            {
-              target_t found;
-              task_target_uuid = target_uuid (target);
-              task_target_name = target_name (target);
-              if (find_target_with_permission (task_target_uuid,
-                                                &found,
-                                                "get_targets"))
-                g_error ("%s: GET_TASKS: error finding task target,"
-                         " aborting",
-                         __func__);
-              target_available = (found > 0);
-            }
-          else
-            {
-              task_target_uuid = NULL;
-              task_target_name = NULL;
-            }
-          config_available = 1;
-          if (task_config_in_trash (index))
-            config_available = trash_config_readable_uuid (config_uuid);
-          else if (config_uuid)
-            {
-              config_t found;
-              if (find_config_with_permission (config_uuid,
-                                              &found,
-                                              "get_configs"))
-                g_error ("%s: GET_TASKS: error finding task config,"
-                         " aborting",
-                         __func__);
-              config_available = (found > 0);
-            }
-          scanner_available = 1;
-          scanner = task_iterator_scanner (&tasks);
-          if (scanner)
-            {
-              scanner_in_trash = task_scanner_in_trash (index);
-
-              task_scanner_uuid = scanner_uuid (scanner);
-              task_scanner_name = scanner_name (scanner);
-              task_scanner_type = scanner_type (scanner);
-              if (scanner_in_trash)
-                scanner_available = trash_scanner_readable (scanner);
-              else
-                {
-                  scanner_t found;
-
-                  if (find_scanner_with_permission
-                      (task_scanner_uuid, &found, "get_scanners"))
-                    g_error ("%s: GET_TASKS: error finding"
-                             " task scanner, aborting",
-                             __func__);
-                  scanner_available = (found > 0);
-                }
-            }
-          else
-            {
-              /* Container tasks have no associated scanner. */
-              task_scanner_uuid = g_strdup ("");
-              task_scanner_name = g_strdup ("");
-              task_scanner_type = 0;
-              scanner_in_trash = 0;
-            }
-
-          config_name_escaped
-            = config_name
-                ? g_markup_escape_text (config_name, -1)
-                : NULL;
-          task_target_name_escaped
-            = task_target_name
-                ? g_markup_escape_text (task_target_name, -1)
-                : NULL;
-          task_scanner_name_escaped
-            = task_scanner_name
-                ? g_markup_escape_text (task_scanner_name, -1)
-                : NULL;
-
-          task_schedule_xml = get_task_schedule_xml (index);
-
-          response = g_strdup_printf
-                      ("<alterable>%i</alterable>"
-                       "<usage_type>%s</usage_type>"
-                       "<config id=\"%s\">"
-                       "<name>%s</name>"
-                       "<trash>%i</trash>"
-                       "%s"
-                       "</config>"
-                       "<target id=\"%s\">"
-                       "<name>%s</name>"
-                       "<trash>%i</trash>"
-                       "%s"
-                       "</target>"
-                       "<hosts_ordering>%s</hosts_ordering>"
-                       "<scanner id='%s'>"
-                       "<name>%s</name>"
-                       "<type>%d</type>"
-                       "<trash>%i</trash>"
-                       "%s"
-                       "</scanner>"
-                       "<status>%s</status>"
-                       "<progress>%s</progress>"
-                       "<report_count>"
-                       "%u<finished>%u</finished>"
-                       "</report_count>"
-                       "<trend>%s</trend>"
-                       "%s" // Schedule XML
-                       "%s%s",
-                       get_tasks_data->get.trash
-                        ? 0
-                        : task_alterable (index),
-                       task_iterator_usage_type (&tasks),
-                       config_uuid ?: "",
-                       config_name_escaped ?: "",
-                       task_config_in_trash (index),
-                       config_available ? "" : "<permissions/>",
-                       task_target_uuid ?: "",
-                       task_target_name_escaped ?: "",
-                       target_in_trash,
-                       target_available ? "" : "<permissions/>",
-                       task_iterator_hosts_ordering (&tasks)
-                        ? task_iterator_hosts_ordering (&tasks)
-                        : "",
-                       task_scanner_uuid,
-                       task_scanner_name_escaped,
-                       task_scanner_type,
-                       scanner_in_trash,
-                       scanner_available ? "" : "<permissions/>",
-                       task_iterator_run_status_name (&tasks),
-                       progress_xml,
-                       task_iterator_total_reports (&tasks),
-                       task_iterator_finished_reports (&tasks),
-                       get_tasks_data->get.trash
-                        ? ""
-                        : task_iterator_trend_counts
-                           (&tasks, holes, warnings, infos, severity,
-                            holes_2, warnings_2, infos_2, severity_2),
-                       task_schedule_xml,
-                       current_report,
-                       last_report);
-          g_free (config_name);
-          g_free (config_uuid);
-          g_free (config_name_escaped);
-          free (task_target_name);
-          free (task_target_uuid);
-          g_free (task_target_name_escaped);
-          g_free (progress_xml);
-          g_free (current_report);
-          g_free (last_report);
-          g_free (task_schedule_xml);
-          g_free (task_scanner_uuid);
-          g_free (task_scanner_name);
-          g_free (task_scanner_name_escaped);
-          if (send_to_client (gmp_parser, error, response))
-            {
-              g_free (response);
-              cleanup_iterator (&tasks);
-              cleanup_iterator (&tasks);
-              return;
-            }
-          g_free (response);
-
-          SENDF_TO_CLIENT_OR_FAIL
-           ("<observers>%s",
-            ((owner == NULL)
-            || (strcmp (owner,
-                        current_credentials.username)))
-              ? ""
-              : observers);
-          free (owner);
-          free (observers);
-
-          init_task_group_iterator (&groups, index);
-          while (next (&groups))
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<group id=\"%s\">"
-              "<name>%s</name>"
-              "</group>",
-              task_group_iterator_uuid (&groups),
-              task_group_iterator_name (&groups));
-          cleanup_iterator (&groups);
-
-          init_task_role_iterator (&roles, index);
-          while (next (&roles))
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<role id=\"%s\">"
-              "<name>%s</name>"
-              "</role>",
-              task_role_iterator_uuid (&roles),
-              task_role_iterator_name (&roles));
-          cleanup_iterator (&roles);
-
-          SENDF_TO_CLIENT_OR_FAIL ("</observers>");
-
-          init_task_alert_iterator (&alerts, index);
-          while (next (&alerts))
-            {
-              alert_t found;
-
-              if (find_alert_with_permission (task_alert_iterator_uuid
-                                              (&alerts),
-                                              &found,
-                                              "get_alerts"))
-                abort ();
-
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<alert id=\"%s\">"
-                "<name>%s</name>",
-                task_alert_iterator_uuid (&alerts),
-                task_alert_iterator_name (&alerts));
-
-              if (found)
-                SENDF_TO_CLIENT_OR_FAIL
-                ("</alert>");
-              else
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<permissions/>"
-                  "</alert>");
-            }
-          cleanup_iterator (&alerts);
-
-          if (get_tasks_data->get.details
-              || get_tasks_data->get.id)
-            {
-              SENDF_TO_CLIENT_OR_FAIL ("<average_duration>"
-                                       "%d"
-                                       "</average_duration>",
-                                       task_average_scan_duration (index));
-            }
-
-          if (get_tasks_data->get.details)
-            {
-              /* The detailed version. */
-
-              SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
-                                        task_result_count (index, min_qod));
-            }
-
-          in_assets = task_preference_value (index, "in_assets");
-          assets_apply_overrides = task_preference_value
-                                    (index, "assets_apply_overrides");
-          assets_min_qod = task_preference_value (index, "assets_min_qod");
-          max_checks = task_preference_value (index, "max_checks");
-          max_hosts = task_preference_value (index, "max_hosts");
-          auto_delete = task_preference_value (index, "auto_delete");
-          auto_delete_data = task_preference_value (index, "auto_delete_data");
-
-          SENDF_TO_CLIENT_OR_FAIL
-           ("<preferences>"
-            "<preference>"
-            "<name>"
-            "Maximum concurrently executed NVTs per host"
-            "</name>"
-            "<scanner_name>max_checks</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Maximum concurrently scanned hosts"
-            "</name>"
-            "<scanner_name>max_hosts</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Add results to Asset Management"
-            "</name>"
-            "<scanner_name>in_assets</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Apply Overrides when adding Assets"
-            "</name>"
-            "<scanner_name>assets_apply_overrides</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Min QOD when adding Assets"
-            "</name>"
-            "<scanner_name>assets_min_qod</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Auto Delete Reports"
-            "</name>"
-            "<scanner_name>auto_delete</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "<preference>"
-            "<name>"
-            "Auto Delete Reports Data"
-            "</name>"
-            "<scanner_name>auto_delete_data</scanner_name>"
-            "<value>%s</value>"
-            "</preference>"
-            "</preferences>"
-            "</task>",
-            max_checks ? max_checks : "4",
-            max_hosts ? max_hosts : "20",
-            in_assets ? in_assets : "yes",
-            assets_apply_overrides ? assets_apply_overrides : "yes",
-            assets_min_qod
-              ? assets_min_qod
-              : G_STRINGIFY (MIN_QOD_DEFAULT),
-            auto_delete ? auto_delete : "0",
-            auto_delete_data ? auto_delete_data : "0");
-
-          g_free (in_assets);
-          g_free (max_checks);
-          g_free (max_hosts);
+          if (get_tasks_send_task (gmp_parser, error, &tasks))
+            return;
         }
 
       count++;
