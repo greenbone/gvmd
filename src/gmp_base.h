@@ -47,7 +47,7 @@ gboolean
 send_to_client (const char *, int (*) (const char *, void *), void *);
 
 gboolean
-sendf_to_client (gmp_parser_t *, const char *format, ...);
+sendf_to_client (gmp_parser_t *, GError **, const char *format, ...);
 
 gboolean
 send_find_error_to_client (const char *, const char *, const char *,

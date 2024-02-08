@@ -17407,14 +17407,12 @@ get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
   gchar *task_schedule_xml;
 
   if (sendf_to_client (gmp_parser,
+                       error,
                        "<task id=\"%s\">"
                        "<name>%s</name>",
                        get_iterator_uuid (tasks),
                        get_iterator_name (tasks)))
-    {
-      error_send_to_client (error);
-      return 1;
-    }
+    return 1;
 
   index = get_iterator_resource (tasks);
   task_schedule_xml = get_task_schedule_xml (index);

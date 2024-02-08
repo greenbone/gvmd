@@ -143,7 +143,7 @@ send_to_client (const char* msg,
  * @return TRUE if error, else FALSE.
  */
 gboolean
-sendf_to_client (gmp_parser_t *parser, const char *format, ...)
+sendf_to_client (gmp_parser_t *parser, GError **error, const char *format, ...)
 {
   if (format)
     {
@@ -157,6 +157,7 @@ sendf_to_client (gmp_parser_t *parser, const char *format, ...)
       if (parser->client_writer (msg, parser->client_writer_data))
         {
           g_free (msg);
+          error_send_to_client (error);
           return TRUE;
         }
       g_free (msg);
