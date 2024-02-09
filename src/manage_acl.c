@@ -1149,8 +1149,8 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
                                 "  AND resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
-                                get->trash ? "_trash" : "",
                                 with_prefix ? with_prefix : "",
+                                get->trash ? "_trash" : "",
                                 permission_or->str);
 
           if ((strcmp (type, "report") == 0)
