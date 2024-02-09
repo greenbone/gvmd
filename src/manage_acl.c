@@ -1143,9 +1143,10 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
           else if (strcmp (type, "result") == 0)
             permission_clause
              = g_strdup_printf ("%s"
-                                " OR results%s.task IN"
+                                " OR EXISTS"
                                 " (SELECT id FROM %spermissions_subject"
-                                "  WHERE resource_type = 'task'"
+                                "  WHERE resource = results%s.task"
+                                "  AND resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
                                 get->trash ? "_trash" : "",
