@@ -38,6 +38,7 @@ void
 create_port_list_element_text (const gchar *, gsize);
 
 void
-parse_port_list_entity (entity_t, const char **, char **, char **, array_t **);
+parse_port_list_entity (entity_t, const char **, char **, char **, array_t **,
+                        char **);
 
 #endif /* not _GVMD_GMP_PORT_LISTS_H */

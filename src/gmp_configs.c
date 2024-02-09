@@ -182,6 +182,7 @@ attr_or_null (entity_t entity, const gchar *name)
  * @param[out] all_selector          True if ALL_SELECTOR was present.
  * @param[out] import_nvt_selectors  Address for selectors.
  * @param[out] import_preferences    Address for preferences.
+ * @param[out] deprecated            Address for deprecation status.
  *
  * @return 0 success, 1 preference did no exist, -1 preference without ID.
  */
@@ -190,7 +191,8 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                      char **comment, char **usage_type,
                      int *all_selector,
                      array_t **import_nvt_selectors,
-                     array_t **import_preferences)
+                     array_t **import_preferences,
+                     char **deprecated)
 {
   entity_t entity, preferences, nvt_selectors;
 
@@ -215,6 +217,14 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
         *usage_type = entity_text (entity);
       else
         *usage_type = NULL;
+    }
+
+  if (deprecated)
+    {
+      *deprecated = NULL;
+      entity = entity_child (config, "deprecated");
+      if (entity)
+        *deprecated = entity_text (entity);
     }
 
   /* Collect NVT selectors. */
@@ -416,7 +426,7 @@ create_config_run (gmp_parser_t *gmp_parser, GError **error)
 
       if (parse_config_entity (config, NULL, &import_name, &comment,
                                NULL, &all_selector, &import_nvt_selectors,
-                               &import_preferences))
+                               &import_preferences, NULL))
         {
           SEND_TO_CLIENT_OR_FAIL
            (XML_ERROR_SYNTAX ("create_config",
@@ -691,13 +701,13 @@ modify_config_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 
 /**
  * @brief Handle basic, single-value fields of modify_config.
- * 
+ *
  * @param[in]  config       The config to modify.
  * @param[in]  name         The name to set or NULL to keep old value.
  * @param[in]  comment      The comment to set or NULL to keep old value.
  * @param[in]  gmp_parser   GMP parser.
  * @param[out] error        GError output.
- * 
+ *
  * @return 0 on success, -1 on error.
  */
 static int
@@ -736,7 +746,7 @@ modify_config_handle_basic_fields (config_t config,
  * @param[out] families_growing_all    Array of growing families with all VTs.
  * @param[out] families_growing_empty  Array of growing, empty families.
  * @param[out] families_static_all     Array of static families with all VTs.
- * 
+ *
  * @return 0 on success, -1 on error.
  */
 static int
@@ -788,7 +798,7 @@ modify_config_collect_selection_families (entities_t entities,
 
 /**
  * @brief Handles a family selection inside a modify_config command.
- * 
+ *
  * @param[in]  config                   The config to modify.
  * @param[in]  families_growing_all     Array of growing families with all VTs.
  * @param[in]  families_growing_empty   Array of growing, empty families.
@@ -796,7 +806,7 @@ modify_config_collect_selection_families (entities_t entities,
  * @param[in]  family_selection_growing 1 if families should grow, else 0.
  * @param[in]  gmp_parser               The GMP parser.
  * @param[out] error                    GError output.
- * 
+ *
  * @return 0 on success, -1 on error.
  */
 static int
@@ -939,7 +949,7 @@ modify_config_handle_nvt_selection (config_t config,
  * @param[in]  value      Value to set for the preference.
  * @param[in]  gmp_parser The GMP parser.
  * @param[out] error      GError output.
- * 
+ *
  * @return 0 on success, -1 on error.
  */
 static int
@@ -962,7 +972,7 @@ modify_config_handle_preference (config_t config,
         if (nvt_oid)
           {
             SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-              (-1, 
+              (-1,
                XML_ERROR_SYNTAX ("modify_config",
                                  "Empty radio value for preference %s"
                                  " of NVT %s"),
@@ -972,18 +982,18 @@ modify_config_handle_preference (config_t config,
         else
           {
             SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-              (-1, 
+              (-1,
                XML_ERROR_SYNTAX ("modify_config",
                                  "Empty radio value for preference %s"),
                nvt_oid);
           }
         return -1;
       case -1:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN 
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
           (-1, XML_INTERNAL_ERROR ("modify_config"));
         return -1;
       default:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN 
+        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
           (-1, XML_INTERNAL_ERROR ("modify_config"));
         return -1;
     }
@@ -1024,7 +1034,7 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
                                               "Permission denied"));
 
   // Find the config
-  switch (manage_modify_config_start (config_id, &config)) 
+  switch (manage_modify_config_start (config_id, &config))
     {
       case 0:
         break;

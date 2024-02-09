@@ -22,6 +22,9 @@ Check SecInfo alerts.
 \fB--client-watch-interval=\fINUMBER\fB\f1
 Check if client connection was closed every NUMBER seconds. 0 to disable. Defaults to 1 second.
 .TP
+\fB--create-encryption-key\f1
+Create a new credential encryption key, set it as the new default and exit. With no other options given, a 4096 bit RSA key is created. 
+.TP
 \fB--create-scanner=\fISCANNER\fB\f1
 Create global scanner SCANNER and exit.
 .TP
@@ -57,6 +60,12 @@ Do not restrict passwords to the policy.
 .TP
 \fB--disable-scheduling\f1
 Disable task scheduling.
+.TP
+\fB--encryption-key-length=\fILENGTH\fB\f1
+Set key length to LENGTH bits when creating a new RSA credential encryption key. Defaults to 4096. 
+.TP
+\fB--encryption-key-type=\fITYPE\fB\f1
+Use the key type TYPE when creating a new credential encryption key. Currently only RSA is supported. 
 .TP
 \fB--encrypt-all-credentials\f1
 (Re-)Encrypt all credentials.
@@ -128,7 +137,7 @@ Modify user's password and exit.
 Modify user's password and exit.
 .TP
 \fB--optimize=\fINAME\fB\f1
-Run an optimization: vacuum, add-feed-permissions, analyze, cleanup-config-prefs, cleanup-feed-permissions, cleanup-port-names, cleanup-report-formats, cleanup-result-nvts, cleanup-result-severities, cleanup-schedule-times, cleanup-sequences, migrate-relay-sensors, rebuild-report-cache or update-report-cache.
+Run an optimization: vacuum, add-feed-permissions, analyze, cleanup-config-prefs, cleanup-feed-permissions, cleanup-port-names, cleanup-report-formats, cleanup-result-nvts, cleanup-result-severities, cleanup-schedule-times, cleanup-sequences, cleanup-tls-certificate-encoding, migrate-relay-sensors, rebuild-report-cache or update-report-cache.
 .TP
 \fB--osp-vt-update=\fISCANNER-SOCKET\fB\f1
 Unix socket for OSP NVT update. Defaults to the path of the 'OpenVAS Default' scanner if it is an absolute path.
@@ -200,7 +209,7 @@ Listen on UNIX socket at FILENAME.
 User for --new-password.
 .TP
 \fB--value=\fIVALUE\fB\f1
-User for --new-password.
+Value for --modify-setting.
 .TP
 \fB--verbose\f1
 Has no effect. See INSTALL.md for logging config.

@@ -113,6 +113,11 @@
 #define SETTING_UUID_MAX_ROWS_PER_PAGE "76374a7a-0569-11e6-b6da-28d24461215b"
 
 /**
+ * @brief UUID of 'Note/Override Excerpt Size' setting.
+ */
+#define SETTING_UUID_EXCERPT_SIZE "9246a0f6-c6ad-44bc-86c2-557a527c8fb3"
+
+/**
  * @brief UUID of 'Default CA Cert' setting.
  */
 #define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
@@ -131,6 +136,12 @@
  * @brief UUID of 'Feed Import Roles' setting.
  */
 #define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
+
+/**
+ * @brief UUID of 'Delta Reports Version' setting.
+ */
+#define SETTING_UUID_DELTA_REPORTS_VERSION "985a0c05-2140-4e66-9989-ce9a0906a5a9"
+
 
 /**
  * @brief Trust constant for error.
@@ -276,6 +287,11 @@ typedef struct
  * @brief Number of columns for GET iterator.
  */
 #define GET_ITERATOR_COLUMN_COUNT 10
+
+/**
+ * @brief Delta results columns offset for result iterator.
+ */
+#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 38
 
 
 /* Variables */

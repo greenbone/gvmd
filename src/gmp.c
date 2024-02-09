@@ -98,6 +98,7 @@
 #include "manage_acl.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#include "manage_tls_certificates.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
@@ -138,7 +139,7 @@
 /** @todo Exported for manage_sql.c. */
 void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
-                    int, int, const char *, iterator_t *, int, int, int);
+                    int, int, const char *, iterator_t *, int, int, int, int);
 
 
 /* Helper functions. */
@@ -1821,9 +1822,12 @@ typedef struct
   char *preferences_config_id;  ///< ID of config to get preference values from.
   int details;           ///< Boolean.  Whether to include full NVT details.
   char *family;          ///< Name of family to which to limit NVT selection.
+  int lean;              ///< Boolean.  Whether to send fewer details.
   char *nvt_oid;         ///< Name of single NVT to get.
   int preference_count;  ///< Boolean.  Whether to include NVT preference count.
   int preferences;       ///< Boolean.  Whether to include NVT preferences.
+  int skip_cert_refs;    ///< Boolean.  Whether to exclude CERT refs.
+  int skip_tags;         ///< Boolean.  Whether to exclude tags.
   char *sort_field;      ///< Field to sort results on.
   int sort_order;        ///< Result sort order: 0 descending, else ascending.
   int timeout;           ///< Boolean.  Whether to include timeout preference.
@@ -2017,6 +2021,29 @@ get_report_formats_data_reset (get_report_formats_data_t *data)
 {
   get_data_reset (&data->get);
   memset (data, 0, sizeof (get_report_formats_data_t));
+}
+
+/**
+ * @brief Command data for the get_resource_names command.
+ */
+typedef struct
+{
+  char *type;         ///< Requested type.
+  get_data_t get;     ///< Get Args.
+} get_resource_names_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_resource_names_data_reset (get_resource_names_data_t *data)
+{
+  free (data->type);
+  get_data_reset (&data->get);
+
+  memset (data, 0, sizeof (get_resource_names_data_t));
 }
 
 /**
@@ -3326,6 +3353,7 @@ typedef union
   get_preferences_data_t get_preferences;             ///< get_preferences
   get_reports_data_t get_reports;                     ///< get_reports
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
+  get_resource_names_data_t get_resource_names;       ///< get_resource_names
   get_results_data_t get_results;                     ///< get_results
   get_roles_data_t get_roles;                         ///< get_roles
   get_schedules_data_t get_schedules;                 ///< get_schedules
@@ -3715,6 +3743,12 @@ static get_reports_data_t *get_reports_data
  */
 static get_report_formats_data_t *get_report_formats_data
  = &(command_data.get_report_formats);
+
+/**
+ * @brief Parser callback data for GET_RESOURCE_NAMES.
+ */
+static get_resource_names_data_t *get_resource_names_data
+ = &(command_data.get_resource_names);
 
 /**
  * @brief Parser callback data for GET_RESULTS.
@@ -4133,7 +4167,7 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
-  
+
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT_DETAILS,
@@ -4307,6 +4341,7 @@ typedef enum
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_FORMATS,
+  CLIENT_GET_RESOURCE_NAMES,
   CLIENT_GET_RESULTS,
   CLIENT_GET_ROLES,
   CLIENT_GET_SCANNERS,
@@ -5258,7 +5293,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                attribute_names,
                                attribute_values);
             set_client_state (CLIENT_GET_LICENSE);
-          }
+          }      
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5302,6 +5337,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "family",
                               &get_nvts_data->family);
             if (find_attribute (attribute_names, attribute_values,
+                                "lean", &attribute))
+              get_nvts_data->lean = strcmp (attribute, "0");
+            else
+              get_nvts_data->lean = 0;
+            if (find_attribute (attribute_names, attribute_values,
                                 "preferences", &attribute))
               get_nvts_data->preferences = strcmp (attribute, "0");
             else
@@ -5311,6 +5351,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_nvts_data->preference_count = strcmp (attribute, "0");
             else
               get_nvts_data->preference_count = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "skip_cert_refs", &attribute))
+              get_nvts_data->skip_cert_refs = strcmp (attribute, "0");
+            else
+              get_nvts_data->skip_cert_refs = 0;
+            if (find_attribute (attribute_names, attribute_values,
+                                "skip_tags", &attribute))
+              get_nvts_data->skip_tags = strcmp (attribute, "0");
+            else
+              get_nvts_data->skip_tags = 0;
             if (find_attribute (attribute_names, attribute_values,
                                 "timeout", &attribute))
               get_nvts_data->timeout = strcmp (attribute, "0");
@@ -5487,6 +5537,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
+        else if (strcasecmp ("GET_RESOURCE_NAMES", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_resource_names_data->get, "resource",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_RESOURCE_NAMES);
+          }             
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -7258,7 +7319,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (
               CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT);
           }
-       ELSE_READ_OVER; 
+       ELSE_READ_OVER;
      case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION_RESULT:
         if (strcasecmp ("DETAILS", element_name) == 0)
           {
@@ -7696,7 +7757,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
                                 attribute_names, attribute_values);
-	break;
+        break;
       case CLIENT_MODIFY_LICENSE:
         modify_license_element_start (gmp_parser, element_name,
                                       attribute_names, attribute_values);
@@ -7854,6 +7915,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
  * @param[in]  pref_count  Preference count.  Used if details is true.
  * @param[in]  timeout     Timeout.  Used if details is true.
  * @param[in]  config      Config, used if preferences is true.
+ * @param[in]  skip_cert_refs        If true, exclude CERT refs.
+ * @param[in]  skip_tags             If true, exclude tags.
+ * @param[in]  lean                  If true, send fewer details.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
@@ -7861,14 +7925,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
  */
 static gboolean
 send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
-          const char *timeout, config_t config,
+          const char *timeout, config_t config, int skip_cert_refs,
+          int skip_tags, int lean,
           int (*write_to_client) (const char *, void*),
           void* write_to_client_data)
 {
   gchar *msg;
 
   msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
-                     0);
+                     0, skip_cert_refs, skip_tags, lean);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
@@ -8019,7 +8084,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       if (include_notes_details == 0)
         {
           const char *text = note_iterator_text (notes);
-          gchar *excerpt = utf8_substring (text, 0, 60);
+          gchar *excerpt = utf8_substring (text, 0,
+                                           setting_excerpt_size_int ());
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
@@ -8158,7 +8224,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     NULL,
                                     0,
                                     -1,
-                                    0); /* Lean. */
+                                    0,  /* Lean. */
+                                    0); /* Delta fields. */
               cleanup_iterator (&results);
             }
           else
@@ -8178,7 +8245,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               while (next (&tags))
                 {
-                  buffer_xml_append_printf 
+                  buffer_xml_append_printf
                      (buffer,
                       "<tag id=\"%s\">"
                       "<name>%s</name>"
@@ -8281,7 +8348,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
       if (include_overrides_details == 0)
         {
           const char *text = override_iterator_text (overrides);
-          gchar *excerpt = utf8_substring (text, 0, 60);
+          gchar *excerpt = utf8_substring (text, 0,
+                                           setting_excerpt_size_int ());
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
@@ -8440,7 +8508,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     NULL,
                                     0,
                                     -1,
-                                    0); /* Lean. */
+                                    0,   /* Lean. */
+                                    0);  /* Delta fields. */
               cleanup_iterator (&results);
             }
           else
@@ -8461,7 +8530,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
               while (next (&tags))
                 {
-                  buffer_xml_append_printf 
+                  buffer_xml_append_printf
                      (buffer,
                       "<tag id=\"%s\">"
                       "<name>%s</name>"
@@ -9113,6 +9182,42 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
   buffer_xml_append_printf (buffer, "</nvt>");
 }
 
+/**
+ * @brief Append a diff of the two result descriptions to an XML buffer.
+ *
+ * @param[in]  buffer         Buffer.
+ * @param[in]  descr          First result description.
+ * @param[in]  delta_descr    Second result description.
+ *
+ */
+void
+buffer_diff(GString *buffer, const char *descr, const char *delta_descr) 
+{
+  
+  gchar *diff = strdiff (descr ? descr : "",
+                  delta_descr ? delta_descr : "");
+  if (diff)
+    {
+      gchar **split, *diff_xml;
+      /* Remove the leading filename lines. */
+      split = g_strsplit ((gchar*) diff, "\n", 3);
+      if (split[0] && split[1] && split[2])
+        diff_xml = xml_escape_text_truncated (split[2],
+                                              TRUNCATE_TEXT_LENGTH,
+                                              TRUNCATE_TEXT_SUFFIX);
+      else
+        diff_xml = xml_escape_text_truncated (diff,
+                                              TRUNCATE_TEXT_LENGTH,
+                                              TRUNCATE_TEXT_SUFFIX);
+      g_strfreev (split);
+      g_string_append_printf (buffer, "<diff>%s</diff>", diff_xml);
+      g_free (diff_xml);
+      g_free (diff);
+    }
+  else
+    g_string_append (buffer, "<diff>Error creating diff.</diff>");
+}
+
 /** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
@@ -9138,6 +9243,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  * @param[in]  cert_loaded            Whether the CERT db is loaded.  0 not loaded,
  *                                    -1 needs to be checked, else loaded.
  * @param[in]  lean                   Whether to include less info.
+ * @param[in]  use_delta_fields       Whether to use delta result fields.
  */
 void
 buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
@@ -9146,18 +9252,62 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int include_tags, int include_tags_details,
                     int include_details,
                     const char *delta_state, iterator_t *delta_results,
-                    int changed, int cert_loaded, int lean)
+                    int changed, int cert_loaded, int lean, int use_delta_fields)
 {
-  const char *descr = result_iterator_descr (results);
-  const char *name, *comment, *creation_time;
-  const char *port, *path;
-  const char *asset_id;
-  gchar *nl_descr, *nl_descr_escaped;
-  const char *qod = result_iterator_qod (results);
-  const char *qod_type = result_iterator_qod_type (results);
-  result_t result = result_iterator_result (results);
+
+  const char *descr, *name, *comment, *creation_time;
+  const char *severity, *original_severity, *original_level;
+  const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  double severity_double;
+  gchar *nl_descr, *nl_descr_escaped;
+  result_t result;
+  report_t report;
   task_t selected_task;
+  
+  comment = get_iterator_comment (results);
+  name = get_iterator_name (results);
+  host = result_iterator_host (results);
+  port = result_iterator_port (results);
+  asset_id = NULL;
+
+  if (use_delta_fields)
+    {
+      descr = result_iterator_delta_description (results);
+      severity = result_iterator_delta_severity (results);
+      severity_double = result_iterator_delta_severity_double (results);
+      original_severity = result_iterator_delta_original_severity (results);
+      original_level = result_iterator_delta_original_level (results);
+      qod = result_iterator_delta_qod (results);
+      qod_type = result_iterator_delta_qod_type (results);
+      result = result_iterator_delta_result (results);
+      creation_time = result_iterator_delta_creation_time (results);
+      result_id = result_iterator_delta_uuid (results);
+      path = result_iterator_delta_path (results);
+      report = result_iterator_delta_report (results);
+      hostname = result_iterator_delta_hostname (results);
+      if (host)
+        asset_id = result_iterator_delta_host_asset_id (results);
+    }
+  else
+    {
+      descr = result_iterator_descr (results);
+      severity = result_iterator_severity (results);
+      severity_double = result_iterator_severity_double (results);
+      original_severity = result_iterator_original_severity (results);
+      original_level = result_iterator_original_level (results);
+      qod = result_iterator_qod (results);
+      qod_type = result_iterator_qod_type (results);
+      result = result_iterator_result (results);
+      creation_time = get_iterator_creation_time (results);
+      result_id = get_iterator_uuid (results);
+      path = result_iterator_path (results);
+      report = result_iterator_report (results);
+      hostname = result_iterator_hostname (results);
+      if (host)
+        asset_id = result_iterator_asset_host_id (results);
+    }
+
 
   if (descr)
     {
@@ -9174,11 +9324,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf (buffer,
                             "<result id=\"%s\">",
-                            get_iterator_uuid (results));
+                            result_id);
 
   selected_task = task;
 
-  name = get_iterator_name (results);
   if (name)
     buffer_xml_append_printf (buffer,
                               "<name>%s</name>",
@@ -9187,28 +9336,35 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (lean == 0)
     {
       const char *owner_name, *modification_time;
+     
+      if (use_delta_fields)
+        {
+          owner_name = result_iterator_delta_owner_name (results);
+          modification_time = result_iterator_delta_modification_time (results);
+        }
+      else
+        {
+          owner_name = get_iterator_owner_name (results);
+          modification_time = get_iterator_modification_time (results);
+        }
 
-      owner_name = get_iterator_owner_name (results);
       if (owner_name)
         buffer_xml_append_printf (buffer,
                                   "<owner><name>%s</name></owner>",
                                   owner_name);
 
-      modification_time = get_iterator_modification_time (results);
       if (modification_time)
         buffer_xml_append_printf (buffer,
                                   "<modification_time>%s</modification_time>",
                                   modification_time);
     }
 
-  comment = get_iterator_comment (results);
   if (comment
       && (lean == 0 || strlen (comment)))
     buffer_xml_append_printf (buffer,
                               "<comment>%s</comment>",
                               comment);
 
-  creation_time = get_iterator_creation_time (results);
   if (creation_time)
     buffer_xml_append_printf (buffer,
                               "<creation_time>%s</creation_time>",
@@ -9218,13 +9374,23 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       char *result_report_id, *result_task_id, *result_task_name;
 
-      if (task == 0)
-        selected_task = result_iterator_task (results);
-
+      if(use_delta_fields)
+        {
+          if (task == 0)
+            selected_task = result_iterator_delta_task (results);
+          
+          result_task_name = task_name(result_iterator_delta_task (results));
+          result_report_id = report_uuid(result_iterator_delta_report (results));
+        }
+      else
+        {
+          if (task == 0)
+            selected_task = result_iterator_task (results);
+          
+          result_task_name = task_name (result_iterator_task (results));
+          result_report_id = report_uuid (result_iterator_report (results));
+        }
       task_uuid (selected_task, &result_task_id);
-      result_task_name = task_name (result_iterator_task (results));
-      result_report_id = report_uuid (result_iterator_report (results));
-
       buffer_xml_append_printf (buffer,
                                 "<report id=\"%s\"/>"
                                 "<task id=\"%s\"><name>%s</name></task>",
@@ -9254,7 +9420,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
               while (next (&tags))
                 {
-                  buffer_xml_append_printf 
+                  buffer_xml_append_printf
                      (buffer,
                       "<tag id=\"%s\">"
                       "<name>%s</name>"
@@ -9274,11 +9440,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         }
     }
 
-  port = result_iterator_port (results);
-  path = result_iterator_path (results);
 
   detect_oid = detect_ref = detect_cpe = detect_loc = detect_name = NULL;
-  if (result_detection_reference (result, result_iterator_report (results),
+
+  if (result_detection_reference (result,
+                                  report,
                                   result_iterator_host (results), port, path,
                                   &detect_oid, &detect_ref, &detect_cpe,
                                   &detect_loc, &detect_name)
@@ -9305,15 +9471,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   g_free (detect_loc);
   g_free (detect_name);
 
-  if (result_iterator_host (results))
-    asset_id = result_iterator_asset_host_id (results);
-  else
-    asset_id = NULL;
-
   buffer_xml_append_printf (buffer,
                             "<host>"
                             "%s",
-                            result_iterator_host (results) ?: "");
+                            host ?: "");
 
   if (asset_id && strlen (asset_id))
     buffer_xml_append_printf (buffer,
@@ -9326,7 +9487,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf (buffer,
                             "<hostname>%s</hostname>"
                             "</host>",
-                            result_iterator_hostname (results) ?: "");
+                            hostname ?: "");
 
   buffer_xml_append_printf (buffer,
                             "<port>%s</port>",
@@ -9342,18 +9503,31 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   results_xml_append_nvt (results, buffer, cert_loaded);
 
   if (lean == 0)
-    buffer_xml_append_printf
-     (buffer,
-      "<scan_nvt_version>%s</scan_nvt_version>"
-      "<threat>%s</threat>",
-      result_iterator_scan_nvt_version (results),
-      result_iterator_level (results));
+    {
+      const char *nvt_version, *level;
+      if (use_delta_fields)
+        {
+          nvt_version = result_iterator_delta_nvt_version (results); 
+          level = result_iterator_delta_level (results);
+        } 
+      else
+        {
+          nvt_version = result_iterator_scan_nvt_version (results);
+          level = result_iterator_level (results);
+        }     
+      buffer_xml_append_printf
+      (buffer,
+        "<scan_nvt_version>%s</scan_nvt_version>"
+        "<threat>%s</threat>",
+        nvt_version,
+        level);
+    }
 
   buffer_xml_append_printf
    (buffer,
     "<severity>%.1f</severity>"
     "<qod><value>%s</value>",
-    result_iterator_severity_double (results),
+    severity_double,
     qod ? qod : "");
 
   if (qod_type && strlen (qod_type))
@@ -9370,73 +9544,79 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (include_overrides && lean)
     {
       /* Only send the original severity if it has changed. */
-      if (strncmp (result_iterator_original_severity (results),
-                   result_iterator_severity (results),
-                   /* Avoid rounding differences. */
-                   3))
+      if (strncmp (original_severity,
+                    severity,          
+                    /* Avoid rounding differences. */
+                    3))
         buffer_xml_append_printf (buffer,
                                   "<original_severity>%s</original_severity>",
-                                  result_iterator_original_severity (results));
+                                  original_severity);
     }
   else if (include_overrides)
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>"
                               "<original_severity>%s</original_severity>",
-                              result_iterator_original_level (results),
-                              result_iterator_original_severity (results));
+                              original_level,
+                              original_severity);
 
   if (include_notes
-      && result_iterator_may_have_notes (results))
+      && use_delta_fields 
+         ? result_iterator_delta_may_have_notes (results)
+         : result_iterator_may_have_notes (results))
     buffer_result_notes_xml (buffer, result,
                              selected_task, include_notes_details, lean);
 
   if (include_overrides
-      && result_iterator_may_have_overrides (results))
+      && use_delta_fields 
+         ? result_iterator_delta_may_have_overrides (results) 
+         : result_iterator_may_have_overrides (results))
     buffer_result_overrides_xml (buffer, result,
                                  selected_task, include_overrides_details,
                                  lean);
 
-  if (delta_state || delta_results)
+  if (delta_state && use_delta_fields == 0)
     {
       g_string_append (buffer, "<delta>");
       if (delta_state)
         g_string_append_printf (buffer, "%s", delta_state);
-      if (changed && delta_results)
-        {
-          gchar *diff, *delta_nl_descr;
-          const char *delta_descr;
-          buffer_results_xml (buffer, delta_results, selected_task,
-                              include_notes, include_notes_details,
-                              include_overrides, include_overrides_details,
-                              include_tags, include_tags_details,
-                              include_details, delta_state, NULL, 0, -1, lean);
-          delta_descr = result_iterator_descr (delta_results);
-          delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
-                                       : NULL;
-          diff = strdiff (descr ? nl_descr : "",
-                          delta_descr ? delta_nl_descr : "");
-          g_free (delta_nl_descr);
-          if (diff)
-            {
-              gchar **split, *diff_xml;
-              /* Remove the leading filename lines. */
-              split = g_strsplit ((gchar*) diff, "\n", 3);
-              if (split[0] && split[1] && split[2])
-                diff_xml = xml_escape_text_truncated (split[2],
-                                                      TRUNCATE_TEXT_LENGTH,
-                                                      TRUNCATE_TEXT_SUFFIX);
-              else
-                diff_xml = xml_escape_text_truncated (diff,
-                                                      TRUNCATE_TEXT_LENGTH,
-                                                      TRUNCATE_TEXT_SUFFIX);
-              g_strfreev (split);
-              g_string_append_printf (buffer, "<diff>%s</diff>", diff_xml);
-              g_free (diff_xml);
-              g_free (diff);
-            }
-          else
-            g_string_append (buffer, "<diff>Error creating diff.</diff>");
-        }
+
+      if(delta_results) { 
+        /* delta reports version 1 */
+        if (changed)
+          {
+            gchar *delta_nl_descr;
+            const char *delta_descr;
+            buffer_results_xml (buffer, delta_results, selected_task,
+                                include_notes, include_notes_details,
+                                include_overrides, include_overrides_details,
+                                include_tags, include_tags_details,
+                                include_details, delta_state, NULL, 0, -1,
+                                lean, 0);
+            delta_descr = result_iterator_descr (delta_results);
+            delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
+                                        : NULL;
+            buffer_diff (buffer, nl_descr, delta_nl_descr);
+            g_free (delta_nl_descr);
+          }
+      } else {
+        /* delta reports version 2 */        
+        if (changed) 
+          {
+            gchar *delta_nl_descr;
+            const char *delta_descr;
+            buffer_results_xml (buffer, results, selected_task,
+                                include_notes, include_notes_details,
+                                include_overrides, include_overrides_details,
+                                include_tags, include_tags_details,
+                                include_details, delta_state, NULL, 0, -1,
+                                lean, 1);
+            delta_descr = result_iterator_delta_description (results);
+            delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
+                                        : NULL;
+            buffer_diff (buffer, delta_nl_descr, nl_descr);
+            g_free (delta_nl_descr);
+          }
+      }
 
       if (delta_results)
         {
@@ -9463,7 +9643,9 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
-  if (result_iterator_may_have_tickets (results))
+  if (use_delta_fields 
+      ? result_iterator_delta_may_have_tickets (results) 
+      : result_iterator_may_have_tickets (results))
     buffer_result_tickets_xml (buffer, result);
 
   g_string_append (buffer, "</result>");
@@ -11634,6 +11816,12 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
         }
       SEND_GET_COMMON (config, &get_configs_data->get, &configs);
 
+      if (resource_id_deprecated ("config",
+                                  get_iterator_uuid (&configs)))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<deprecated>1</deprecated>");
+        }
+
       /** @todo This should really be an nvt_selector_t. */
       selector = config_iterator_nvt_selector (&configs);
       config = get_iterator_resource (&configs);
@@ -13167,7 +13355,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                            dfn_cert_adv_info_iterator_cve_refs (&info));
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
-          if (send_nvt (&info, 1, 1, -1, NULL, 0,
+          if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0, 0,
                         gmp_parser->client_writer,
                         gmp_parser->client_writer_data))
             {
@@ -13376,6 +13564,24 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The preferences attribute"
                             " requires the details attribute"));
+      else if ((get_nvts_data->details == 0)
+                && get_nvts_data->skip_cert_refs)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "The skip_cert_refs attribute"
+                            " requires the details attribute"));
+      else if ((get_nvts_data->details == 0)
+                && get_nvts_data->skip_tags)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "The skip_tags attribute"
+                            " requires the details attribute"));
+      else if ((get_nvts_data->details == 0)
+               && get_nvts_data->lean)
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("get_nvts",
+                            "The lean attribute"
+                            " requires the details attribute"));
       else if (((get_nvts_data->details == 0)
                 || ((get_nvts_data->config_id == NULL)
                     && (get_nvts_data->preferences_config_id == NULL)))
@@ -13479,11 +13685,22 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
 
                 if (get_nvts_data->preference_count)
                   {
-                    const char *nvt_oid = nvt_iterator_oid (&nvts);
-                    pref_count = nvt_preference_count (nvt_oid);
+                    const char *nvt_oid;
+                    nvti_t *nvti;
+
+                    nvt_oid = nvt_iterator_oid (&nvts);
+
+                    nvti = lookup_nvti (nvt_oid);
+                    if (nvti)
+                      pref_count = nvti_pref_len (nvti);
+                    else
+                      pref_count = nvt_preference_count (nvt_oid);
                   }
                 if (send_nvt (&nvts, 1, get_nvts_data->preferences,
                               pref_count, timeout, config,
+                              get_nvts_data->skip_cert_refs,
+                              get_nvts_data->skip_tags,
+                              get_nvts_data->lean,
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -13499,7 +13716,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
           else
             while (next (&nvts))
               {
-                if (send_nvt (&nvts, 0, 0, -1, NULL, 0,
+                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0,
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -13877,6 +14094,12 @@ handle_get_port_lists (gmp_parser_t *gmp_parser, GError **error)
 
       SEND_GET_COMMON (port_list, &get_port_lists_data->get,
                         &port_lists);
+
+      if (resource_id_deprecated ("port_list",
+                                  get_iterator_uuid (&port_lists)))
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<deprecated>1</deprecated>");
+        }
 
       SENDF_TO_CLIENT_OR_FAIL ("<port_count>"
                                "<all>%i</all>"
@@ -14758,6 +14981,12 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
               : report_format_predefined
                  (get_iterator_resource (&report_formats)));
 
+          if (resource_id_deprecated ("report_format",
+                                      get_iterator_uuid (&report_formats)))
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<deprecated>1</deprecated>");
+            }
+
           if (get_report_formats_data->alerts)
             {
               iterator_t alerts;
@@ -14974,6 +15203,309 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Assign resource iterator with an init iterator based on the type 
+ * in the get command data.
+ *
+ * @param[in]  resource_names_data   data for get_resource_names command.
+ * @param[out] iterator              address of iterator function pointer.
+ * 
+ * @return 1 if type is invalid, else 0.
+ */
+int
+select_resource_iterator (get_resource_names_data_t *resource_names_data, 
+                          int (**iterator) (iterator_t*, get_data_t *))
+{
+    if (g_strcmp0 ("cpe", resource_names_data->type) == 0)
+    {
+      *iterator = init_cpe_info_iterator_all;
+    }
+  else if (g_strcmp0 ("cve", resource_names_data->type) == 0)
+    {
+      *iterator = init_cve_info_iterator_all;
+    }
+  else if (g_strcmp0 ("nvt", resource_names_data->type) == 0)
+    {
+      *iterator = init_nvt_info_iterator_all;
+    }
+  else if (g_strcmp0 ("cert_bund_adv", resource_names_data->type) == 0)
+    {
+      *iterator = init_cert_bund_adv_info_iterator_all;
+    }
+  else if (g_strcmp0 ("dfn_cert_adv", resource_names_data->type) == 0)
+    {
+      *iterator = init_dfn_cert_adv_info_iterator_all;
+    }
+  else if (g_strcmp0 ("host", resource_names_data->type) == 0)
+    {
+      *iterator = init_resource_names_host_iterator;
+    }
+  else if (g_strcmp0 ("os", resource_names_data->type) == 0)
+    {
+      *iterator = init_resource_names_os_iterator;
+    }
+  else if (g_strcmp0 ("result", resource_names_data->type) == 0)
+    {
+      *iterator = init_result_get_iterator_all;
+    }
+  else if (g_strcmp0 ("alert", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_alert_iterator;
+    }
+  else if (g_strcmp0 ("credential", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_credential_iterator;
+    }
+  else if (g_strcmp0 ("filter", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_filter_iterator;
+    }
+  else if (g_strcmp0 ("group", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_group_iterator;
+    }                
+  else if (g_strcmp0 ("note", resource_names_data->type) == 0)
+    {
+      *iterator = init_note_iterator_all;
+    }
+  else if (g_strcmp0 ("override", resource_names_data->type) == 0)
+    {
+      *iterator = init_override_iterator_all;
+    }                
+  else if (g_strcmp0 ("permission", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_permission_iterator;
+    }                
+  else if (g_strcmp0 ("port_list", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_port_list_iterator;
+    }                
+  else if (g_strcmp0 ("report", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+    }                
+  else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_format_iterator;
+    }                
+  else if (g_strcmp0 ("role", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_role_iterator;
+    }                
+  else if (g_strcmp0 ("config", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
+    }                
+  else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
+    }                
+  else if (g_strcmp0 ("schedule", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_schedule_iterator;
+    }                
+  else if (g_strcmp0 ("target", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_target_iterator;
+    }                
+  else if (g_strcmp0 ("task", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
+    } 
+  else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
+    } 
+  else if (g_strcmp0 ("user", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_user_iterator;
+    }         
+  else
+    {
+      return 1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Handle end of GET_RESOURCE_NAMES element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
+{
+  iterator_t resource;
+  int ret;
+  int (*init_resource_iterator) (iterator_t*, get_data_t *);
+
+  if (get_resource_names_data->type == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_resource_names",
+                          "No type specified."));
+      get_resource_names_data_reset (get_resource_names_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0) 
+          ||(g_strcmp0 ("os", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_assets") == 0))
+      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
+          && (acl_user_may ("get_results") == 0))
+      || ((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+          && (acl_user_may ("get_reports") == 0))
+      || (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("cve", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("nvt", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
+          && (acl_user_may ("get_info") == 0)))
+      {
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("get_resource_names",
+                             "Permission denied"));
+        get_resource_names_data_reset (get_resource_names_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+      }
+
+  if (((g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
+        || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
+      && (manage_cert_loaded () == 0))
+    {
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_resource_names",
+                           "The CERT database is required"));
+        get_resource_names_data_reset (get_resource_names_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+    }
+
+  if (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
+        || (g_strcmp0 ("cve", get_resource_names_data->type) == 0))
+      && (manage_scap_loaded () == 0))
+    {
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_resource_names",
+                           "The SCAP database is required"));
+        get_resource_names_data_reset (get_resource_names_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        return;
+    }    
+
+  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
+    {
+      if (send_find_error_to_client ("get_resource_names", "type",
+                                     get_resource_names_data->type, gmp_parser))
+        {
+          error_send_to_client (error);
+        }
+      get_resource_names_data_reset (get_resource_names_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    };
+
+  ret = init_resource_iterator (&resource, &get_resource_names_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+        case 1:
+          if (send_find_error_to_client ("get_resource_names", "type",
+                                         get_resource_names_data->type,
+                                         gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;          
+        case 2:
+          if (send_find_error_to_client
+               ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
+                gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          break;
+        case -1:
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_INTERNAL_ERROR ("get_resource_names"));
+          break;
+        }
+      get_resource_names_data_reset (get_resource_names_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+  
+  SEND_GET_START ("resource_name");
+  SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>", get_resource_names_data->type);
+
+  while (next (&resource))
+    {
+      if ((g_strcmp0 ("task", get_resource_names_data->type) == 0 
+           && g_strcmp0 ("audit", task_iterator_usage_type(&resource)) == 0)
+          || (g_strcmp0 ("config", get_resource_names_data->type) == 0 
+           && g_strcmp0 ("policy", config_iterator_usage_type(&resource)) == 0))
+      {
+        continue;
+      }
+
+      GString *result;
+      result = g_string_new ("");
+      
+      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0) 
+        {
+            buffer_xml_append_printf (result,
+                                      "<resource id=\"%s\">"
+                                      "<name>%s</name>",
+                                      get_iterator_uuid (&resource)
+                                        ? get_iterator_uuid (&resource)
+                                        : "",
+                                      tls_certificate_iterator_subject_dn (&resource)
+                                        ? tls_certificate_iterator_subject_dn (&resource)
+                                        : "");          
+        } 
+      else if (g_strcmp0 ("override", get_resource_names_data->type) == 0)
+        {
+            buffer_xml_append_printf (result,
+                                        "<resource id=\"%s\">"
+                                        "<name>%s</name>",
+                                        get_iterator_uuid (&resource)
+                                          ? get_iterator_uuid (&resource)
+                                          : "",
+                                        override_iterator_nvt_name (&resource)
+                                          ? override_iterator_nvt_name (&resource)
+                                          : "");          
+        }
+      else 
+        {
+            buffer_xml_append_printf (result,
+                                        "<resource id=\"%s\">"
+                                        "<name>%s</name>",
+                                        get_iterator_uuid (&resource)
+                                          ? get_iterator_uuid (&resource)
+                                          : "",
+                                        get_iterator_name (&resource)
+                                          ? get_iterator_name (&resource)
+                                          : "");
+
+        }
+
+      g_string_append_printf (result, "</resource>");
+      SEND_TO_CLIENT_OR_FAIL (result->str);
+      g_string_free (result, TRUE);
+    }
+
+  SEND_TO_CLIENT_OR_FAIL ("</get_resource_names_response>");
+  cleanup_iterator (&resource);
+  get_resource_names_data_reset (get_resource_names_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
  * @brief Handle end of GET_RESULTS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -15149,7 +15681,8 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                   NULL,
                                   0,
                                   -1,
-                                  0);   /* Lean. */
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
               SEND_TO_CLIENT_OR_FAIL (buffer->str);
               g_string_free (buffer, TRUE);
               count ++;
@@ -15767,7 +16300,7 @@ handle_create_schedule (gmp_parser_t *gmp_parser, GError **error)
               SEND_TO_CLIENT_OR_FAIL
                 ("</status_details>");
             }
-          SEND_TO_CLIENT_OR_FAIL 
+          SEND_TO_CLIENT_OR_FAIL
             ("</create_schedule_response>");
           log_event ("schedule", "Schedule", uuid, "created");
           free (uuid);
@@ -18431,7 +18964,70 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (PERMISSION, permission, "Permission");
       CASE_DELETE (PORT_LIST, port_list, "Port list");
       CASE_DELETE (PORT_RANGE, port_range, "Port range");
-      CASE_DELETE (REPORT, report, "Report");
+
+      case CLIENT_DELETE_REPORT:
+        if (delete_report_data->report_id)
+          {
+            switch (delete_report (delete_report_data->report_id,
+                                   delete_report_data->ultimate))
+              {
+                case 0:    /* Deleted. */
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_report"));
+                  log_event ("report", "Report",
+                             delete_report_data->report_id,
+                             "deleted");
+                  break;
+                case 2:  /* Failed to find report. */
+                  if (send_find_error_to_client
+                       ("delete_report", "report",
+                        delete_report_data->report_id,
+                        gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                case 3:
+                  SENDF_TO_CLIENT_OR_FAIL(
+                    "<delete_report_response"
+                    " status=\"%s\""
+                    " status_text=\"%s\"/>",
+                    STATUS_ERROR_BUSY,
+                    "Reports database is busy. Please try again later.");
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("delete_report",
+                                      "Permission denied"));
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                    (XML_INTERNAL_ERROR ("delete_report"));
+                  log_event_fail ("report", "Report",
+                                  delete_report_data->report_id,
+                                  "deleted");
+                  break;
+                default:   /* Programming error. */
+                  assert (0);
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("delete_report",
+                              "A report_id attribute is required"));
+        delete_report_data_reset (delete_report_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
       CASE_DELETE (ROLE, role, "Role");
       CASE_DELETE (SCANNER, scanner, "Scanner");
@@ -18470,6 +19066,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  break;
+                case 4:
+                  SENDF_TO_CLIENT_OR_FAIL(
+                    "<delete_task_response"
+                    " status=\"%s\""
+                    " status_text=\"%s\"/>",
+                    STATUS_ERROR_BUSY,
+                    "Reports database is busy. Please try again later.");
+                  log_event_fail ("task", "Task", delete_task_data->task_id,
+                                  "deleted");
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -18850,6 +19456,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
         break;
+
+      case CLIENT_GET_RESOURCE_NAMES:
+        handle_get_resource_names (gmp_parser, error);
+        break;        
 
       case CLIENT_GET_RESULTS:
         handle_get_results (gmp_parser, error);
@@ -19371,6 +19981,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                         "Error in SCP host"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 16:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Error in SCP port"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 17:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -19834,6 +20450,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Erroneous certificate"));
+                break;
+              case 18:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Cannot determine type for new credential"));
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
@@ -21255,7 +21876,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     log_event_fail ("tag", "Tag", NULL, "created");
                     break;
                   case 2:
-                    SEND_TO_CLIENT_OR_FAIL 
+                    SEND_TO_CLIENT_OR_FAIL
                       ("<create_tag_response"
                        " status=\"" STATUS_ERROR_MISSING "\""
                        " status_text=\"No resources found for filter\"/>");
@@ -21489,7 +22110,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->port_list_id,
                          create_target_data->port_range,
                          ssh_credential,
-			 ssh_elevate_credential,
+                         ssh_elevate_credential,
                          create_target_data->ssh_credential_id
                           ? create_target_data->ssh_port
                           : create_target_data->ssh_lsc_port,
@@ -22448,6 +23069,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "Error in SCP host"));
                 log_event_fail ("alert", "Alert", NULL, "modify");
                 break;
+              case 16:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_alert",
+                                    "Error in SCP port"));
+                log_event_fail ("alert", "Alert", NULL, "modify");
+                break;
               case 17:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
@@ -22805,7 +23432,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                         ldap_cacert = g_strdup (kvp->value);
                       else if (strcmp (kvp->key, "ldaps-only") == 0)
                         ldap_ldaps_only = (strcmp (kvp->value, "true") == 0);
-                      
+
                       setting = g_slist_next (setting);
                     }
 
@@ -24018,7 +24645,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("tag", "Tag", NULL, "modified");
                 break;
               case 5:
-                SEND_TO_CLIENT_OR_FAIL 
+                SEND_TO_CLIENT_OR_FAIL
                   ("<modify_tag_response"
                     " status=\"" STATUS_ERROR_MISSING "\""
                     " status_text=\"No resources found for filter\"/>");
@@ -26098,7 +26725,7 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                     create_report_data->result_detection_source_name)
               {
 
-                detection_detail_t *detail = 
+                detection_detail_t *detail =
                     (detection_detail_t*) g_malloc (sizeof (detection_detail_t));
                 if (detail)
                   {
@@ -26108,17 +26735,17 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
                     create_report_data->result_detection_location = NULL;
                     detail->source_oid = create_report_data->result_detection_source_oid;
                     create_report_data->result_detection_source_oid = NULL;
-                    detail->source_name = create_report_data->result_detection_source_name; 
+                    detail->source_name = create_report_data->result_detection_source_name;
                     create_report_data->result_detection_source_name = NULL;
                     array_add(create_report_data->result_detection, detail);
                   }
             }
 
- 
+
 
         }
         break;
-    
+
       APPEND (CLIENT_CREATE_REPORT_RR_H_DETAIL_NAME,
               &create_report_data->detail_name);
 
@@ -26639,8 +27266,8 @@ extern buffer_size_t from_client_end;
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -4 max_ips_per_target out of range, -5 database is too new.
  */
 int
 init_gmp (GSList *log_config, const db_conn_info_t *database,
@@ -26760,6 +27387,7 @@ process_gmp_client_input ()
       return err;
     }
   from_client_end = from_client_start = 0;
+
   return 0;
 }
 

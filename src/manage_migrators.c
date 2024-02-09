@@ -778,7 +778,7 @@ migrate_212_to_213 ()
       certificate = g_base64_decode (certificate_64, &certificate_size);
       creation_time = iterator_int64 (&tls_certs, 2);
 
-      get_certificate_info ((gchar*)certificate, 
+      get_certificate_info ((gchar*)certificate,
                             certificate_size,
                             NULL,   /* activation_time */
                             NULL,   /* expiration_time */
@@ -2922,7 +2922,7 @@ migrate_249_to_250 ()
        "           WHERE name = 'table_driven_lsc'"
        "           AND type = 'SERVER_PREFS');");
 
-  /* Disable the "table_based_lsc" scanner preference for all policies 
+  /* Disable the "table_based_lsc" scanner preference for all policies
    * in the trashcan. */
   sql ("INSERT INTO config_preferences_trash (config, type, name, value)"
        " SELECT id, 'SERVER_PREFS', 'table_driven_lsc', '0'"
@@ -2932,7 +2932,7 @@ migrate_249_to_250 ()
        "          (SELECT config FROM config_preferences_trash"
        "           WHERE name = 'table_driven_lsc'"
        "           AND type = 'SERVER_PREFS');");
-  
+
   /* Set the database version to 250. */
 
   set_db_version (250);
@@ -2971,7 +2971,7 @@ migrate_250_to_251 ()
       char *secret;
       char *quoted;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      crypt_ctx = lsc_crypt_new (OLD_ENCRYPTION_KEY_UID);
 
       sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
       secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", secret_key, NULL);
@@ -3058,7 +3058,6 @@ migrate_252_to_253 ()
   return 0;
 }
 
-
 /**
  * @brief Alter and update for migrate_253_to_254.
  *
@@ -3070,25 +3069,29 @@ migrate_253_to_254_alter (int trash)
   sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_nvt text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_nvt = substring (name, '^([^:]*)');",
+       " SET pref_nvt = substring (name, '^([^:]*)')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 
   sql ("ALTER TABLE config_preferences%s ADD COLUMN pref_id integer;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_id = CAST (substring (name, '^[^:]*:([^:]*)') AS integer);",
+       " SET pref_id = CAST (substring (name, '^[^:]*:([0-9]+)') AS integer)"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 
   sql ("ALTER table config_preferences%s ADD COLUMN pref_type text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_type = substring (name, '^[^:]*:[^:]*:([^:]*):');",
+       " SET pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 
   sql ("ALTER table config_preferences%s ADD COLUMN pref_name text;",
        trash ? "_trash" : "");
   sql ("UPDATE config_preferences%s"
-       " SET pref_name = substring (name, '^[^:]*:[^:]*:[^:]*:(.*)');",
+       " SET pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';",
        trash ? "_trash" : "");
 }
 
@@ -3124,6 +3127,54 @@ migrate_253_to_254 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 254 to version 255.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_254_to_255 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 254. */
+
+  if (manage_db_version () != 254)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE nvt_preferences ADD COLUMN pref_nvt text;");
+  sql ("UPDATE nvt_preferences"
+       " SET pref_nvt = substring (name, '^([^:]*)')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
+
+  sql ("ALTER TABLE nvt_preferences ADD COLUMN pref_id integer;");
+  sql ("UPDATE nvt_preferences"
+       " SET pref_id = CAST (substring (name, '^[^:]*:([0-9]+)') AS integer)"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
+
+  sql ("ALTER table nvt_preferences ADD COLUMN pref_type text;");
+  sql ("UPDATE nvt_preferences"
+       " SET pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
+
+  sql ("ALTER table nvt_preferences ADD COLUMN pref_name text;");
+  sql ("UPDATE nvt_preferences"
+       " SET pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+       " WHERE name ~ '^[^:]*:[0-9]+:[^:]*:.*';");
+
+  /* Set the database version to 255. */
+
+  set_db_version (255);
+
+  sql_commit ();
+
+  return 0;
+}
 
 #undef UPDATE_DASHBOARD_SETTINGS
 
@@ -3185,6 +3236,7 @@ static migrator_t database_migrators[] = {
   {252, migrate_251_to_252},
   {253, migrate_252_to_253},
   {254, migrate_253_to_254},
+  {255, migrate_254_to_255},
   /* End marker. */
   {-1, NULL}};
 

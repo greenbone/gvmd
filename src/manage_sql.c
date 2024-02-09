@@ -93,12 +93,12 @@
  *        LOCK TABLE .. IN ACCESS EXLUSIVE MODE NOWAIT
  *        statements.
  */
-#define LOCK_RETRIES 16
+#define LOCK_RETRIES 64
 
 /**
- * @brief Time of delay between two lock retries.
+ * @brief Timeout for trying to acquire a lock in milliseconds.
  */
-#define LOCK_RETRY_DELAY 2
+#define LOCK_TIMEOUT 500
 
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
@@ -257,7 +257,13 @@ static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
-vulns_extra_where ();
+vulns_extra_where (int);
+
+static gchar*
+vuln_iterator_opts_from_filter (const char*);
+
+static gchar*
+vuln_iterator_extra_with_from_filter ();
 
 static int
 task_last_report_any_status (task_t, report_t *);
@@ -331,6 +337,9 @@ setting_dynamic_severity_int ();
 
 static char *
 setting_timezone ();
+
+static int
+setting_delta_reports_version_int ();
 
 static double
 task_severity_double (task_t, int, int, int);
@@ -919,8 +928,9 @@ cert_check_time ()
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Database.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -3 database needs to be initialised from server.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new.
  */
 int
 manage_option_setup (GSList *log_config, const db_conn_info_t *database)
@@ -942,6 +952,14 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database)
         break;
       case -2:
         fprintf (stderr, "Database is wrong version.\n");
+        fprintf (stderr, "Your database is too old for this version of gvmd.\n");
+        fprintf (stderr, "Please migrate to the current data model.\n");
+        fprintf (stderr, "Use a command like this: gvmd --migrate\n");
+        return ret;
+      case -5:
+        fprintf (stderr, "Database is wrong version.\n");
+        fprintf (stderr, "Your database is too new for this version of gvmd.\n");
+        fprintf (stderr, "Please upgrade gvmd to a newer version.\n");
         return ret;
       case -3:
         fprintf (stderr, "Database must be initialised.\n");
@@ -2041,7 +2059,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     return;
 
   split = split_filter (filter);
-  
+
   point = (keyword_t**) split->pdata;
   if (first)
     {
@@ -2140,8 +2158,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
             }
           point++;
         }
-      *search_phrase = g_strchomp (phrase->str);
-      g_string_free (phrase, FALSE);
+      *search_phrase = g_strchomp (g_string_free (phrase, FALSE));
     }
 
   if (result_hosts_only)
@@ -2584,7 +2601,8 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("Queued", keyword->string) == NULL)
       && (strstr ("Stop Requested", keyword->string) == NULL)
       && (strstr ("Stopped", keyword->string) == NULL)
-      && (strstr ("Interrupted", keyword->string) == NULL))
+      && (strstr ("Interrupted", keyword->string) == NULL)
+      && (strstr ("Processing", keyword->string) == NULL))
     return 0;
   return 1;
 }
@@ -4746,6 +4764,63 @@ manage_trash_resource_name (const char *type, const char *uuid, char **name)
 }
 
 /**
+ * @brief Check if a resource has been marked as deprecated.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource_id  UUID of the resource.
+ *
+ * @return 1 if deprecated, else 0.
+ */
+int
+resource_id_deprecated (const char *type, const char *resource_id)
+{
+  int ret;
+  gchar *quoted_type = sql_quote (type);
+  gchar *quoted_uuid = sql_quote (resource_id);
+
+  ret = sql_int ("SELECT count(*) FROM deprecated_feed_data"
+                 " WHERE type = '%s' AND uuid = '%s';",
+                 quoted_type, quoted_uuid);
+
+  g_free (quoted_type);
+  g_free (quoted_uuid);
+
+  return ret != 0;
+}
+
+/**
+ * @brief Mark whether resource is deprecated.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource_id  UUID of the resource.
+ * @param[in]  deprecated   Whether the resource is deprecated.
+ */
+void
+set_resource_id_deprecated (const char *type, const char *resource_id,
+                            gboolean deprecated)
+{
+  gchar *quoted_type = sql_quote (type);
+  gchar *quoted_uuid = sql_quote (resource_id);
+
+  if (deprecated)
+    {
+      sql ("INSERT INTO deprecated_feed_data (type, uuid, modification_time)"
+           " VALUES ('%s', '%s', m_now ())"
+           " ON CONFLICT (uuid, type)"
+           " DO UPDATE SET modification_time = m_now ()",
+           quoted_type, quoted_uuid);
+    }
+  else
+    {
+      sql ("DELETE FROM deprecated_feed_data"
+           " WHERE type = '%s' AND uuid = '%s'",
+           quoted_type, quoted_uuid);
+    }
+  g_free (quoted_type);
+  g_free (quoted_uuid);
+}
+
+/**
  * @brief Get the UUID of a resource.
  *
  * @param[in]  type      Type.
@@ -6041,9 +6116,18 @@ encrypt_all_credentials (gboolean decrypt_flag)
                  "  AND type = 'password'),"
                  " (SELECT value FROM credentials_data"
                  "  WHERE credential = credentials.id"
-                 "  AND type = 'private_key')"
+                 "  AND type = 'private_key'),"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'community'),"
+                 " (SELECT value FROM credentials_data"
+                 "  WHERE credential = credentials.id"
+                 "  AND type = 'privacy_password')"
                  " FROM credentials");
-  iterator.crypt_ctx = lsc_crypt_new ();
+
+  char *encryption_key_uid = current_encryption_key_uid (TRUE);
+  iterator.crypt_ctx = lsc_crypt_new (encryption_key_uid);
+  free (encryption_key_uid);
 
   sql_begin_immediate ();
 
@@ -6051,7 +6135,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
   while (next (&iterator))
     {
       long long int rowid;
-      const char *secret, *password, *privkey;
+      const char *secret, *password, *privkey, *community, *privacy_password;
 
       ntotal++;
       if (!(ntotal % 10))
@@ -6061,9 +6145,11 @@ encrypt_all_credentials (gboolean decrypt_flag)
       secret   = iterator_string (&iterator, 1);
       password = iterator_string (&iterator, 2);
       privkey  = iterator_string (&iterator, 3);
+      community        = iterator_string (&iterator, 4);
+      privacy_password = iterator_string (&iterator, 5);
 
       /* If there is no secret, password or private key, skip the row.  */
-      if (!secret && !password && !privkey)
+      if (!secret && !password && !privkey && !privacy_password)
         continue;
 
       if (secret)
@@ -6071,9 +6157,13 @@ encrypt_all_credentials (gboolean decrypt_flag)
           lsc_crypt_flush (iterator.crypt_ctx);
           password = lsc_crypt_get_password (iterator.crypt_ctx, secret);
           privkey  = lsc_crypt_get_private_key (iterator.crypt_ctx, secret);
+          community        = lsc_crypt_decrypt (iterator.crypt_ctx,
+                                                secret, "community");
+          privacy_password = lsc_crypt_decrypt (iterator.crypt_ctx,
+                                                secret, "privacy_password");
 
-          /* If there is no password or private key, skip the row.  */
-          if (!password && !privkey)
+          /* If there is none of the expected secrets, skip the row.  */
+          if (!password && !privkey && !community && !privacy_password)
             continue;
 
           nreencrypted++;
@@ -6090,6 +6180,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
         {
           set_credential_data (rowid, "password", password);
           set_credential_data (rowid, "private_key", privkey);
+          set_credential_data (rowid, "community", community);
+          set_credential_data (rowid, "privacy_password", privacy_password);
           set_credential_data (rowid, "secret", NULL);
           sql ("UPDATE credentials SET"
                " modification_time = m_now ()"
@@ -6098,18 +6190,32 @@ encrypt_all_credentials (gboolean decrypt_flag)
         }
       else
         {
+          GHashTable *plaintext_hashtable;
           char *encblob;
 
-          if (password && privkey)
-            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
-                                         "password", password,
-                                         "private_key", privkey, NULL);
-          else if (password)
-            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
-                                         "password", password, NULL);
-          else
-            encblob = lsc_crypt_encrypt (iterator.crypt_ctx,
-                                         "private_key", privkey, NULL);
+          plaintext_hashtable
+            = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
+
+          if (password)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "password",
+                                 g_strdup (password));
+          if (privkey)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "private_key",
+                                 g_strdup (privkey));
+          if (community)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "community",
+                                 g_strdup (community));
+          if (privacy_password)
+            g_hash_table_insert (plaintext_hashtable,
+                                 "privacy_password",
+                                 g_strdup (privacy_password));
+
+          encblob = lsc_crypt_encrypt_hashtable (iterator.crypt_ctx,
+                                                 plaintext_hashtable);
+          g_hash_table_destroy (plaintext_hashtable);
 
           if (!encblob)
             {
@@ -6119,6 +6225,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
             }
           set_credential_data (rowid, "password", NULL);
           set_credential_data (rowid, "private_key", NULL);
+          set_credential_data (rowid, "community", NULL);
+          set_credential_data (rowid, "privacy_password", NULL);
           set_credential_data (rowid, "secret", encblob);
           sql ("UPDATE credentials SET"
                " modification_time = m_now ()"
@@ -6140,18 +6248,78 @@ encrypt_all_credentials (gboolean decrypt_flag)
 }
 
 /**
- * @brief Encrypt or re-encrypt all credentials
+ * @brief Encrypt, re-encrypt or decrypt all auth settings.
  *
- * All plaintext credentials in the credentials table are
- * encrypted, all already encrypted credentials are encrypted again
+ * All plaintext settings in the meta table are
+ * encrypted, all already encrypted settings are encrypted again
  * using the latest key.
+ *
+ * @param[in] decrypt_flag  If true decrypt all settings.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+encrypt_all_auth_settings (gboolean decrypt_flag)
+{
+  unsigned long ntotal, nencrypted, nreencrypted, ndecrypted;
+  char *radius_key = NULL;
+  gboolean radius_key_encrypted;
+  ntotal = ndecrypted = nencrypted = nreencrypted = 0;
+
+  sql_begin_immediate ();
+
+  radius_key = get_radius_key (&radius_key_encrypted);
+  if (radius_key && strcmp (radius_key, ""))
+    {
+      ntotal ++;
+
+      if (decrypt_flag)
+        {
+          if (radius_key_encrypted)
+            ndecrypted ++;
+        }
+      else
+        {
+          if (radius_key_encrypted)
+            nreencrypted ++;
+          else
+            nencrypted ++;
+        }
+
+      set_radius_key (radius_key, decrypt_flag == FALSE);
+    }
+  free (radius_key);
+
+  sql_commit ();
+
+  if (ntotal)
+    {
+      if (decrypt_flag)
+        g_message ("%lu out of %lu auth settings decrypted",
+                  ndecrypted, ntotal);
+      else
+        g_message ("%lu out of %lu auth settings encrypted and %lu re-encrypted",
+                  nencrypted, ntotal, nreencrypted);
+    }
+  else
+    g_message ("No auth settings to encrypt or decrypt");
+
+  return 0;
+}
+
+/**
+ * @brief Encrypt or re-encrypt all credentials and auth settings
+ *
+ * All plaintext credentials and auth settings are
+ * encrypted, all already encrypted credentials and auth settings
+ * are encrypted again using the latest key.
  *
  * @param[in] log_config    Log configuration.
  * @param[in] database      Location of manage database.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_encrypt_all_credentials (GSList *log_config,
@@ -6167,6 +6335,14 @@ manage_encrypt_all_credentials (GSList *log_config,
 
   ret = encrypt_all_credentials (FALSE);
   if (ret)
+    {
+      printf ("Encryption failed.\n");
+      manage_option_cleanup ();
+      return ret;
+    }
+
+  ret = encrypt_all_auth_settings (FALSE);
+  if (ret)
     printf ("Encryption failed.\n");
   else
     printf ("Encryption succeeded.\n");
@@ -6177,14 +6353,14 @@ manage_encrypt_all_credentials (GSList *log_config,
 }
 
 /**
- * @brief Decrypt all credentials
+ * @brief Decrypt all credentials and auth settings
  *
  * @param[in] log_config    Log configuration.
  * @param[in] database      Location of manage database.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_decrypt_all_credentials (GSList *log_config,
@@ -6200,6 +6376,14 @@ manage_decrypt_all_credentials (GSList *log_config,
 
   ret = encrypt_all_credentials (TRUE);
   if (ret)
+    {
+      printf ("Decryption failed.\n");
+      manage_option_cleanup ();
+      return ret;
+    }
+
+  ret = encrypt_all_auth_settings (TRUE);
+  if (ret)
     printf ("Decryption failed.\n");
   else
     printf ("Decryption succeeded.\n");
@@ -6208,6 +6392,69 @@ manage_decrypt_all_credentials (GSList *log_config,
 
   return ret;
 }
+
+/**
+ * @brief Gets the UID of the currently configured encryption key.
+ *
+ * @param[in]  with_fallback  If TRUE, set and return old key UID if
+ *                            the key UID is undefined.
+ *
+ * @return The encryption key UID.
+ */
+char *
+current_encryption_key_uid (gboolean with_fallback)
+{
+  char *key_uid = sql_string ("SELECT value FROM meta"
+                              " WHERE name = 'encryption_key_uid';");
+
+  if (key_uid)
+    return key_uid;
+
+  if (!with_fallback)
+    return NULL;
+
+  // Check if an old, fixed UID key exists
+  lsc_crypt_ctx_t ctx = lsc_crypt_new (OLD_ENCRYPTION_KEY_UID);
+  if (lsc_crypt_enckey_exists (ctx))
+    {
+      lsc_crypt_flush(ctx);
+      set_current_encryption_key_uid (OLD_ENCRYPTION_KEY_UID);
+      return strdup (OLD_ENCRYPTION_KEY_UID);
+    }
+  lsc_crypt_flush(ctx);
+
+  // Generate a new key UID
+  time_t now = time(NULL);
+  gchar *generated_uid
+    = g_strdup_printf (ENCRYPTION_KEY_UID_TEMPLATE, iso_time (&now));
+  set_current_encryption_key_uid (generated_uid);
+  key_uid = strdup (generated_uid);
+  g_free (generated_uid);
+  return key_uid;
+}
+
+
+/**
+ * @brief Sets the database field defining the encryption key UID.
+ *
+ * Note: This does not have any effects on any already created
+ *       encryption contexts that may be using the old UID.
+ *
+ * @param[in]  new_uid  The new UID to set.
+ */
+void
+set_current_encryption_key_uid (const char *new_uid)
+{
+  gchar *quoted_new_uid = sql_quote (new_uid);
+
+  sql ("INSERT INTO meta (name, value)"
+       " VALUES ('encryption_key_uid', '%s')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+       quoted_new_uid);
+
+  g_free (quoted_new_uid);
+}
+
 
 
 /* Collation. */
@@ -6452,8 +6699,8 @@ check_alerts ()
  * @param[in]  database    Location of manage database.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
@@ -6722,7 +6969,7 @@ validate_alert_event_data (gchar *name, gchar* data, event_t event)
  * @param[in]  data            The data.
  * @param[in]  for_modify      Whether to return error codes for modify_alert.
  *
- * @return 0 valid, 2 or 6: validation of email address failed, 
+ * @return 0 valid, 2 or 6: validation of email address failed,
  *         7 or 9 subject too long, 8 or 10 message too long,
  *         60 recipient credential not found, 61 invalid recipient credential
  *         type, -1 error. When for_modify is 0, the first code is returned,
@@ -6784,8 +7031,9 @@ validate_email_data (alert_method_t method, const gchar *name, gchar **data,
  * @param[in]  name            Name of data.
  * @param[in]  data            The data.
  *
- * @return 0 valid, 15 error in SCP host, 17 failed to find report format for
- *         SCP method, 18 error in SCP credential, 19 error in SCP path,
+ * @return 0 valid, 15 error in SCP host, 16 error in SCP port,
+ *         17 failed to find report format for SCP method,
+ *         18 error in SCP credential, 19 error in SCP path,
  *         -1 error.
  */
 static int
@@ -6841,6 +7089,16 @@ validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
           && (type != HOST_TYPE_IPV6)
           && (type != HOST_TYPE_NAME))
         return 15;
+    }
+
+  if (method == ALERT_METHOD_SCP
+      && strcmp (name, "scp_port") == 0)
+    {
+      int port;
+
+      port = atoi (*data);
+      if (port <= 0 || port > 65535)
+        return 16;
     }
 
   if (method == ALERT_METHOD_SCP
@@ -7047,7 +7305,16 @@ validate_tippingpoint_data (alert_method_t method, const gchar *name,
 
       if (strcmp (name, "tp_sms_tls_certificate") == 0)
         {
-          // TODO: Check certificate, return 52 on failure
+          // Check certificate, return 52 on failure
+          int ret;
+          gnutls_x509_crt_fmt_t crt_fmt;
+
+          ret = get_certificate_info (*data, strlen(*data), NULL, NULL, NULL,
+                                      NULL, NULL, NULL, NULL, &crt_fmt);
+          if (ret || crt_fmt != GNUTLS_X509_FMT_PEM)
+            {
+              return 52;
+            }
         }
 
       if (strcmp (name, "tp_sms_tls_workaround") == 0)
@@ -7191,8 +7458,9 @@ check_alert_params (event_t event, alert_condition_t condition,
  *         5 unexpected condition data name, 6 syntax error in condition data,
  *         7 email subject too long, 8 email message too long, 9 failed to find
  *         filter for condition, 12 error in Send host, 13 error in Send port,
- *         14 failed to find report format for Send method, 15 error in
- *         SCP host, 17 failed to find report format for SCP method, 18 error
+ *         14 failed to find report format for Send method,
+ *         15 error in SCP host, 16 error in SCP port,
+ *         17 failed to find report format for SCP method, 18 error
  *         in SCP credential, 19 error in SCP path, 20 method does not match
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
@@ -7534,8 +7802,9 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *         7 unexpected condition data name, 8 syntax error in condition data,
  *         9 email subject too long, 10 email message too long, 11 failed to
  *         find filter for condition, 12 error in Send host, 13 error in Send
- *         port, 14 failed to find report format for Send method, 15 error in
- *         SCP host, 17 failed to find report format for SCP method, 18 error
+ *         port, 14 failed to find report format for Send method,
+ *         15 error in SCP host, 16 error in SCP port,
+ *         17 failed to find report format for SCP method, 18 error
  *         in SCP credential, 19 error in SCP path, 20 method does not match
  *         event, 21 condition does not match event, 31 unexpected event data
  *         name, 32 syntax error in event data, 40 invalid SMB credential
@@ -8899,7 +9168,7 @@ email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
     }
 
   // End of message
-  if (fprintf (encrypted_file, 
+  if (fprintf (encrypted_file,
                "\n") < 0)
     {
       g_warning ("%s: output error at end of message", __func__);
@@ -9438,7 +9707,7 @@ alert_script_exec (const char *alert_id, const char *command_args,
                 init_sentry ();
                 cleanup_manage_process (FALSE);
 
-                setproctitle ("gvmd: Running alert script");
+                setproctitle ("Running alert script");
 
                 if (setgroups (0,NULL))
                   {
@@ -9920,6 +10189,7 @@ send_to_host (const char *host, const char *port,
  * @param[in]  password     Password or passphrase of private key.
  * @param[in]  private_key  Private key or NULL for password-only auth.
  * @param[in]  host         Address of host.
+ * @param[in]  port         SSH Port of host.
  * @param[in]  path         Destination filename with path.
  * @param[in]  known_hosts  Content for known_hosts file.
  * @param[in]  report       Report that should be sent.
@@ -9931,7 +10201,8 @@ send_to_host (const char *host, const char *port,
 static int
 scp_to_host (const char *username, const char *password,
              const char *private_key,
-             const char *host, const char *path, const char *known_hosts,
+             const char *host, int port,
+             const char *path, const char *known_hosts,
              const char *report, int report_size, gchar **script_message)
 {
   const char *alert_id = "2db07698-ec49-11e5-bcff-28d24461215b";
@@ -9941,9 +10212,10 @@ scp_to_host (const char *username, const char *password,
   gchar *clean_known_hosts, *command_args;
   int ret;
 
-  g_debug ("scp to host: %s@%s:%s", username, host, path);
+  g_debug ("scp to host: %s@%s:%d:%s", username, host, port, path);
 
-  if (password == NULL || username == NULL || host == NULL || path == NULL)
+  if (password == NULL || username == NULL || host == NULL || path == NULL
+      || port <= 0 || port > 65535)
     return -1;
 
   if (known_hosts == NULL)
@@ -9980,9 +10252,10 @@ scp_to_host (const char *username, const char *password,
   clean_path = g_shell_quote (path);
   clean_known_hosts = g_shell_quote (known_hosts);
   clean_private_key_path = g_shell_quote (private_key_path);
-  command_args = g_strdup_printf ("%s %s %s %s %s",
+  command_args = g_strdup_printf ("%s %s %d %s %s %s",
                                   clean_username,
                                   clean_host,
+                                  port,
                                   clean_path,
                                   clean_known_hosts,
                                   clean_private_key_path);
@@ -10018,6 +10291,7 @@ scp_to_host (const char *username, const char *password,
  * @param[in]  username       Username.
  * @param[in]  share_path     Name/address of host and name of the share.
  * @param[in]  file_path      Destination filename with path inside the share.
+ * @param[in]  max_protocol   Max protocol.
  * @param[in]  report         Report that should be sent.
  * @param[in]  report_size    Size of the report.
  * @param[out] script_message Custom error message of the alert script.
@@ -10247,7 +10521,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 init_sentry ();
                 cleanup_manage_process (FALSE);
 
-                setproctitle ("gvmd: Sending to Sourcefire");
+                setproctitle ("Sending to Sourcefire");
 
                 if (setgroups (0,NULL))
                   {
@@ -10576,7 +10850,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
               {
                 /* Child.  Drop privileges, run command, exit. */
                 init_sentry ();
-                setproctitle ("gvmd: Sending to Verinice");
+                setproctitle ("Sending to Verinice");
 
                 cleanup_manage_process (FALSE);
 
@@ -11525,7 +11799,7 @@ scp_alert_path_print (const gchar *message, task_t task)
 
                 memset(&time_string, 0, 9);
                 current_time = time (NULL);
-                
+
                 if (localtime_r (&current_time, &tm) == NULL)
                   {
                     g_warning ("%s: localtime failed, aborting",
@@ -11832,6 +12106,7 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
                            get_data_t **alert_filter_get,
                            filter_t *filter_return)
 {
+  char *ignore_pagination;
   char *filt_id;
   filter_t filter;
 
@@ -11870,6 +12145,14 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
     }
   else
     (*alert_filter_get) = NULL;
+
+  ignore_pagination = alert_data (alert, "method",
+                                  "composer_ignore_pagination");
+  if (ignore_pagination)
+    {
+      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
+      g_free (ignore_pagination);
+    }
 
   /* Adjust filter for report composer.
    *
@@ -12321,7 +12604,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                           get_delta_report
                                             (alert, task, report),
                                           alert_filter_get
-                                            ? alert_filter_get 
+                                            ? alert_filter_get
                                             : get,
                                           report_format,
                                           notes_details,
@@ -12972,6 +13255,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           credential_t credential;
           char *credential_id;
           char *private_key, *password, *username, *host, *path, *known_hosts;
+          char *port_str;
+          int port;
           gchar *report_content, *alert_path;
           gsize content_length;
           report_format_t report_format;
@@ -13013,6 +13298,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                             "private_key");
 
                   host = alert_data (alert, "method", "scp_host");
+                  port_str = alert_data (alert, "method", "scp_port");
+                  if (port_str)
+                    port = atoi (port_str);
+                  else
+                    port = 22;
                   path = alert_data (alert, "method", "scp_path");
                   known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
@@ -13020,7 +13310,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   free (path);
 
                   ret = scp_to_host (username, password, private_key,
-                                     host, alert_path, known_hosts,
+                                     host, port, alert_path, known_hosts,
                                      message, strlen (message),
                                      script_message);
 
@@ -13029,6 +13319,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   free (password);
                   free (username);
                   free (host);
+                  free (port_str);
                   g_free (alert_path);
                   free (known_hosts);
 
@@ -13073,6 +13364,11 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
 
               host = alert_data (alert, "method", "scp_host");
+              port_str = alert_data (alert, "method", "scp_port");
+              if (port_str)
+                port = atoi (port_str);
+              else
+                port = 22;
               path = alert_data (alert, "method", "scp_path");
               known_hosts = alert_data (alert, "method", "scp_known_hosts");
 
@@ -13080,7 +13376,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (path);
 
               ret = scp_to_host (username, password, private_key,
-                                 host, alert_path, known_hosts,
+                                 host, port, alert_path, known_hosts,
                                  report_content, content_length,
                                  script_message);
 
@@ -13088,6 +13384,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (password);
               free (username);
               free (host);
+              free (port_str);
               g_free (alert_path);
               free (known_hosts);
             }
@@ -13520,7 +13817,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           /* TLS certificate subject workaround setting */
-          tls_cert_workaround_str 
+          tls_cert_workaround_str
             = alert_data (alert, "method",
                           "tp_sms_tls_workaround");
           if (tls_cert_workaround_str)
@@ -13990,10 +14287,24 @@ manage_test_alert (const char *alert_id, gchar **script_message)
     return -1;
   task_uuid (task, &task_id);
   report = make_report (task, report_id, TASK_STATUS_DONE);
-  result = make_result (task, "127.0.0.1", "localhost", "telnet (23/tcp)",
+
+  result = make_result (task, "127.0.0.1", "localhost", "23/tcp",
                         "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
                         "A telnet server seems to be running on this port.",
                         NULL);
+  if (result)
+    report_add_result (report, result);
+  
+
+  result = make_result (
+              task, "127.0.0.1", "localhost", "general/tcp",
+              "1.3.6.1.4.1.25623.1.0.103823", "Alarm",
+              "IP,Host,Port,SSL/TLS-Version,Ciphers,Application-CPE\n"
+              "127.0.0.1,localhost,443,TLSv1.1;TLSv1.2",
+              NULL);
+  if (result)
+    report_add_result (report, result);
+
   now = time (NULL);
   if (strlen (ctime_r (&now, now_string)) == 0)
     {
@@ -14006,8 +14317,25 @@ manage_test_alert (const char *alert_id, gchar **script_message)
   set_task_start_time_ctime (task, g_strdup (clean));
   set_scan_start_time_ctime (report, g_strdup (clean));
   set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
-  if (result)
-    report_add_result (report, result);
+
+  insert_report_host_detail (report,
+                             "127.0.0.1",
+                             "nvt",
+                             "1.3.6.1.4.1.25623.1.0.108577",
+                             "",
+                             "App",
+                             "cpe:/a:openbsd:openssh:8.9p1",
+                             "0123456789ABCDEF0123456789ABCDEF");
+
+  insert_report_host_detail (report,
+                             "127.0.0.1",
+                             "nvt",
+                             "1.3.6.1.4.1.25623.1.0.10330",
+                             "Host Details",
+                             "best_os_cpe",
+                             "cpe:/o:canonical:ubuntu_linux:22.04",
+                             "123456789ABCDEF0123456789ABCDEF0");
+
   set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
   set_scan_end_time_ctime (report, clean);
   g_free (clean);
@@ -14198,7 +14526,7 @@ condition_met (task_t task, report_t report, alert_t alert,
               /* SecInfo event. */
 
               db_count = alert_secinfo_count (alert, filter_id);
- 
+
               if (db_count >= count)
                 return 1;
               break;
@@ -15208,7 +15536,8 @@ task_in_use (task_t task)
          || status == TASK_STATUS_RUNNING
          || status == TASK_STATUS_QUEUED
          || status == TASK_STATUS_STOP_REQUESTED
-         || status == TASK_STATUS_STOP_WAITING;
+         || status == TASK_STATUS_STOP_WAITING
+         || status == TASK_STATUS_PROCESSING;
 }
 
 /**
@@ -15385,7 +15714,7 @@ lookup_nvti (const gchar *nvt)
 static void
 update_nvti_cache ()
 {
-  iterator_t nvts;
+  iterator_t nvts, prefs;
 
   nvtis_free (nvti_cache);
 
@@ -15405,6 +15734,11 @@ update_nvti_cache ()
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
 
+  init_iterator (&prefs,
+                 "SELECT pref_id, pref_nvt, pref_name, value"
+                 " FROM nvt_preferences"
+                 " WHERE NOT (pref_type = 'entry' AND pref_name = 'timeout')");
+
   while (next (&nvts))
     {
       nvti_t *nvti;
@@ -15416,6 +15750,18 @@ update_nvti_cache ()
           nvti_set_oid (nvti, iterator_string (&nvts, 0));
 
           nvtis_add (nvti_cache, nvti);
+
+          while (next (&prefs))
+            if (iterator_string (&prefs, 1)
+                && (strcmp (iterator_string (&prefs, 1),
+                            iterator_string (&nvts, 0))
+                    == 0))
+              nvti_add_pref (nvti,
+                             nvtpref_new (iterator_int (&prefs, 0),
+                                          iterator_string (&prefs, 2),
+                                          iterator_string (&prefs, 3),
+                                          NULL));
+          iterator_rewind (&prefs);
         }
 
       if (iterator_null (&nvts, 2))
@@ -15428,6 +15774,7 @@ update_nvti_cache ()
     }
 
   cleanup_iterator (&nvts);
+  cleanup_iterator (&prefs);
 
   malloc_trim (0);
 }
@@ -15605,6 +15952,19 @@ check_db_settings ()
          "  '1');");
 
   if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '9246a0f6-c6ad-44bc-86c2-557a527c8fb3'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('9246a0f6-c6ad-44bc-86c2-557a527c8fb3', NULL,"
+         "  'Note/Override Excerpt Size',"
+         "  'The maximum length of notes and override text shown in' ||"
+         "  ' reports without enabling note/override details.',"
+         "  '%d');",
+         EXCERPT_SIZE_DEFAULT);
+
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '" SETTING_UUID_LSC_DEB_MAINTAINER "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -15625,6 +15985,17 @@ check_db_settings ()
          "  'Feed Import Roles',"
          "  'Roles given access to new resources from feed.',"
          "  '" ROLE_UUID_ADMIN "," ROLE_UUID_USER "');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_DELTA_REPORTS_VERSION "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_DELTA_REPORTS_VERSION "', NULL,"
+         "  'Delta Reports Version',"
+         "  'Version of the generation of the Delta Reports.',"
+         "  '2' );");
 }
 
 /**
@@ -15711,7 +16082,7 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 /**
  * @brief Ensure that the databases are the right versions.
  *
- * @return 0 success, -1 error, -2 database is wrong version.
+ * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
  */
 static int
 check_db_versions ()
@@ -15728,14 +16099,20 @@ check_db_versions ()
       if (strcmp (database_version,
                   G_STRINGIFY (GVMD_DATABASE_VERSION)))
         {
+          int existing;
+
           g_message ("%s: database version of database: %s",
                      __func__,
                      database_version);
           g_message ("%s: database version supported by manager: %s",
                      __func__,
                      G_STRINGIFY (GVMD_DATABASE_VERSION));
+
+          existing = atoi (database_version);
+
           g_free (database_version);
-          return -2;
+
+          return GVMD_DATABASE_VERSION > existing ? -2 : -5;
         }
       g_free (database_version);
     }
@@ -15745,15 +16122,22 @@ check_db_versions ()
   scap_db_version = manage_scap_db_version ();
   if (scap_db_version == -1)
     g_message ("No SCAP database found");
-  else if (scap_db_version != manage_scap_db_supported_version ())
+  else
     {
-      g_message ("%s: database version of SCAP database: %i",
-                 __func__,
-                 scap_db_version);
-      g_message ("%s: SCAP database version supported by manager: %s",
-                 __func__,
-                 G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
-      return -2;
+      int supported;
+      
+      supported = manage_scap_db_supported_version ();
+      if (scap_db_version != supported)
+        {
+          g_message ("%s: database version of SCAP database: %i",
+                     __func__,
+                     scap_db_version);
+          g_message ("%s: SCAP database version supported by manager: %s",
+                     __func__,
+                     G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
+
+          return supported > scap_db_version ? -2 : -5;
+        }
     }
 
   /* Check CERT database version. */
@@ -15761,15 +16145,22 @@ check_db_versions ()
   cert_db_version = manage_cert_db_version ();
   if (cert_db_version == -1)
     g_message ("No CERT database found");
-  else if (cert_db_version != manage_cert_db_supported_version ())
+  else
     {
-      g_message ("%s: database version of CERT database: %i",
-                 __func__,
-                 cert_db_version);
-      g_message ("%s: CERT database version supported by manager: %s",
-                 __func__,
-                 G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
-      return -2;
+      int supported;
+
+      supported = manage_cert_db_supported_version ();
+      if (cert_db_version != supported)
+        {
+          g_message ("%s: database version of CERT database: %i",
+                     __func__,
+                     cert_db_version);
+          g_message ("%s: CERT database version supported by manager: %s",
+                     __func__,
+                     G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
+
+          return supported > cert_db_version ? -2 : -5;
+        }
     }
   return 0;
 }
@@ -16305,6 +16696,7 @@ stop_active_tasks ()
           case TASK_STATUS_QUEUED:
           case TASK_STATUS_STOP_REQUESTED:
           case TASK_STATUS_STOP_WAITING:
+          case TASK_STATUS_PROCESSING:
             {
               task_t index = get_iterator_resource (&tasks);
               /* Set the current user, for event checks. */
@@ -16337,6 +16729,7 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_INTERRUPTED,
        TASK_STATUS_DELETE_REQUESTED,
@@ -16347,7 +16740,8 @@ stop_active_tasks ()
        TASK_STATUS_RUNNING,
        TASK_STATUS_QUEUED,
        TASK_STATUS_STOP_REQUESTED,
-       TASK_STATUS_STOP_WAITING);
+       TASK_STATUS_STOP_WAITING,
+       TASK_STATUS_PROCESSING);
 }
 
 /**
@@ -16429,8 +16823,8 @@ cleanup_tables ()
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -4 max_ips_per_target out of range, -5 database is too new.
  */
 static int
 init_manage_internal (GSList *log_config,
@@ -16585,8 +16979,9 @@ init_manage_internal (GSList *log_config,
  *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server, -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range,
+ *         -5 database is too new.
  */
 int
 init_manage (GSList *log_config, const db_conn_info_t *database,
@@ -16618,8 +17013,9 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server, -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range,
+ *         -5 database is too new.
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
@@ -16967,6 +17363,13 @@ credentials_setup (credentials_t *credentials)
                   " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                   credentials->uuid);
 
+  credentials->excerpt_size
+    = sql_int ("SELECT value FROM settings"
+                " WHERE name = 'Note/Override Excerpt Size'"
+                " AND " ACL_GLOBAL_OR_USER_OWNS ()
+                " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                credentials->uuid);
+
   return 0;
 }
 
@@ -17218,6 +17621,10 @@ authenticate (credentials_t* credentials)
           g_free (quoted_name);
           g_free (quoted_method);
 
+          if (credentials->uuid == NULL)
+            /* Can happen if user is deleted while logged in to GSA. */
+            return 1;
+
           if (credentials_setup (credentials))
             {
               free (credentials->uuid);
@@ -17237,8 +17644,6 @@ authenticate (credentials_t* credentials)
 
 /**
  * @brief Perform actions necessary at user logout
- *
- * @param[in]  username     Username.
  */
 void
 logout_user ()
@@ -17261,15 +17666,17 @@ resource_count (const char *type, const get_data_t *get)
   static const char *filter_columns[] = { "owner", NULL };
   static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
   get_data_t count_get;
-  gchar *extra_where;
+  gchar *extra_where, *extra_with, *extra_tables;
   int rc;
 
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
   if (type_owned (type))
-    count_get.filter = "rows=-1 first=1 permission=any owner=any";
+    count_get.filter = "rows=-1 first=1 permission=any owner=any min_qod=0";
   else
-    count_get.filter = "rows=-1 first=1 permission=any";
+    count_get.filter = "rows=-1 first=1 permission=any min_qod=0";
+
+  extra_with = extra_tables = NULL;
 
   if (strcasecmp (type, "config") == 0)
     {
@@ -17294,25 +17701,29 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "vuln") == 0)
     {
-      extra_where = g_strdup (" AND vuln_results_exist"
-                              "      (vulns.uuid,"
-                              "       cast (null AS integer),"
-                              "       cast (null AS integer),"
-                              "       cast (null AS text))");
+      extra_where = vulns_extra_where (filter_term_min_qod (count_get.filter));
+      extra_with = vuln_iterator_extra_with_from_filter (count_get.filter);
+      extra_tables = vuln_iterator_opts_from_filter (count_get.filter);
     }
   else
     extra_where = NULL;
 
-  rc = count (get->subtype ? get->subtype : type,
-              &count_get,
-              type_owned (type) ? select_columns : NULL,
-              type_owned (type) ? select_columns : NULL,
-              type_owned (type) ? filter_columns : NULL,
-              0, NULL,
-              extra_where,
-              type_owned (type));
+  rc = count2 (get->subtype ? get->subtype : type,
+               &count_get,
+               type_owned (type) ? select_columns : NULL,
+               type_owned (type) ? select_columns : NULL,
+               NULL,
+               NULL,
+               type_owned (type) ? filter_columns : NULL,
+               0,
+               extra_tables,
+               extra_where,
+               extra_with,
+               type_owned (type));
 
   g_free (extra_where);
+  g_free (extra_with);
+  g_free (extra_tables);
   return rc;
 }
 
@@ -17925,11 +18336,13 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_INTERRUPTED)
+      || run_status == TASK_STATUS_INTERRUPTED
+      || run_status == TASK_STATUS_PROCESSING)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
+                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -17945,7 +18358,8 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOPPED,
-                                     TASK_STATUS_INTERRUPTED);
+                                     TASK_STATUS_INTERRUPTED,
+                                     TASK_STATUS_PROCESSING);
     }
   return (report_t) 0;
 }
@@ -18660,13 +19074,12 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
       || task_target (task) == 0 /* Container task. */)
     return SEVERITY_MISSING;
 
-  sql_int64 (&report,
-             "SELECT id FROM reports"
-             "           WHERE reports.task = %llu"
-             "           AND reports.scan_run_status = %u"
-             "           ORDER BY reports.creation_time DESC"
-             "           LIMIT 1 OFFSET %d",
-             task, TASK_STATUS_DONE, offset);
+  report = sql_int64_0 ("SELECT id FROM reports"
+                        "           WHERE reports.task = %llu"
+                        "           AND reports.scan_run_status = %u"
+                        "           ORDER BY reports.creation_time DESC"
+                        "           LIMIT 1 OFFSET %d",
+                        task, TASK_STATUS_DONE, offset);
 
   return report_severity (report, overrides, min_qod);
 }
@@ -18917,15 +19330,7 @@ auto_delete_reports ()
 
   g_debug ("%s", __func__);
 
-  sql_begin_immediate ();
-
-  /* As in delete_report, this prevents other processes from getting the
-   * report ID. */
-  if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
-    {
-      sql_rollback ();
-      return;
-    }
+  GArray *reports_to_delete = g_array_new (TRUE, TRUE, sizeof(report_t));
 
   init_iterator (&tasks,
                  "SELECT id, name,"
@@ -18970,31 +19375,65 @@ auto_delete_reports ()
                      keep);
       while (next (&reports))
         {
-          int ret;
           report_t report;
 
           report = iterator_int64 (&reports, 0);
           assert (report);
 
-          g_debug ("%s: delete %llu", __func__, report);
-          ret = delete_report_internal (report);
-          if (ret == 2)
-            {
-              /* Report is in use. */
-              g_debug ("%s: %llu is in use", __func__, report);
-              continue;
-            }
-          if (ret)
-            {
-              g_warning ("%s: failed to delete %llu (%i)",
-                         __func__, report, ret);
-              sql_rollback ();
-            }
+          g_debug ("%s: %llu to be deleted", __func__, report);
+
+          g_array_append_val (reports_to_delete, report);
         }
       cleanup_iterator (&reports);
     }
   cleanup_iterator (&tasks);
-  sql_commit ();
+
+  for (int i = 0; i < reports_to_delete->len; i++)
+    {
+      int ret;
+      report_t report = g_array_index (reports_to_delete, report_t, i);
+
+      sql_begin_immediate ();
+
+      /* As in delete_report, this prevents other processes from getting the
+       * report ID. */
+      if (sql_int ("SELECT try_exclusive_lock('reports');") == 0)
+        {
+          g_debug ("%s: could not acquire lock on reports table", __func__);
+          sql_rollback ();
+          g_array_free (reports_to_delete, TRUE);
+          return;
+        }
+
+      /* Check if report still exists in case another process has deleted it
+       *  in the meantime. */
+      if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu",
+                    report) == 0)
+        {
+          g_debug ("%s: %llu no longer exists", __func__, report);
+          sql_rollback ();
+          continue;
+        }
+
+      g_debug ("%s: deleting report %llu", __func__, report);
+      ret = delete_report_internal (report);
+      if (ret == 2)
+        {
+          /* Report is in use. */
+          g_debug ("%s: %llu is in use", __func__, report);
+          sql_rollback ();
+          continue;
+        }
+      if (ret)
+        {
+          g_warning ("%s: failed to delete %llu (%i)",
+                      __func__, report, ret);
+          sql_rollback ();
+          continue;
+        }
+      sql_commit ();
+    }
+  g_array_free (reports_to_delete, TRUE);
 }
 
 
@@ -19114,6 +19553,7 @@ result_nvt_notice (const gchar *nvt)
  * @param[in]  severity     Result severity.
  * @param[in]  qod          Quality of detection.
  * @param[in]  path         Result path, e.g. file location of a product.
+ * @param[in]  hash_value   Hash value of the result.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
@@ -19123,16 +19563,19 @@ make_osp_result (task_t task, const char *host, const char *hostname,
                  const char *port, const char *severity, int qod,
                  const char *path, const char *hash_value)
 {
-  char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
-  char *quoted_port, *quoted_hostname, *quoted_path, *quoted_hash_value;
+  char *nvt_revision = NULL;
+  gchar *quoted_type, *quoted_desc, *quoted_nvt, *result_severity, *quoted_port;
+  gchar *quoted_host, *quoted_hostname, *quoted_path, *quoted_hash_value;
 
   assert (task);
   assert (type);
 
   quoted_hash_value = sql_quote(hash_value ?: "");
+  quoted_type = sql_quote (type ?: "");
   quoted_desc = sql_quote (description ?: "");
   quoted_nvt = sql_quote (nvt ?: "");
   quoted_port = sql_quote (port ?: "");
+  quoted_host = sql_quote (host ?: "");
   quoted_hostname = sql_quote (hostname ? hostname : "");
   quoted_path = sql_quote (path ? path : "");
 
@@ -19143,7 +19586,7 @@ make_osp_result (task_t task, const char *host, const char *hostname,
                                    " FROM nvts WHERE oid='%s'",
                                    quoted_nvt);
     }
-  
+
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -19171,14 +19614,17 @@ make_osp_result (task_t task, const char *host, const char *hostname,
        "         '%s', '%s', '%s', %d, '', '%s',"
        "         '%s', make_uuid (),"
        "         (SELECT id FROM result_nvts WHERE nvt = '%s'), '%s');",
-       task, host ?: "", quoted_hostname, quoted_port, quoted_nvt,
+       task, quoted_host, quoted_hostname, quoted_port, quoted_nvt,
        nvt_revision ?: "", result_severity ?: "0",
-       type, qod, quoted_desc, quoted_path, quoted_nvt, quoted_hash_value);
+       quoted_type, qod, quoted_desc, quoted_path, quoted_nvt,
+       quoted_hash_value);
   g_free (result_severity);
   g_free (nvt_revision);
+  g_free (quoted_type);
   g_free (quoted_desc);
   g_free (quoted_nvt);
   g_free (quoted_port);
+  g_free (quoted_host);
   g_free (quoted_hostname);
   g_free (quoted_path);
   g_free (quoted_hash_value);
@@ -19741,7 +20187,7 @@ result_detection_reference (result_t result, report_t report,
                      "      OR port LIKE '%%%s%%');",
                      report, quoted_host, *oid, quoted_location,
                      quoted_location);
-  
+
   if (*ref == NULL)
     goto detect_cleanup;
 
@@ -19832,7 +20278,7 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host)
                  " FROM scap.cves, scap.cpes, scap.affected_products,"
                  "      report_host_details"
                  " WHERE report_host_details.report_host = %llu"
-                 " AND cpes.name = report_host_details.value"
+                 " AND LOWER(cpes.name) = LOWER(report_host_details.value)"
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
@@ -20399,12 +20845,13 @@ host_detail_free (host_detail_t *detail)
  * @param[in]   s_desc      The detail's source description.
  * @param[in]   name        The detail's name.
  * @param[in]   value       The detail's value.
+ * @param[in]   hash_value  The detail's hash value.
  */
 void
 insert_report_host_detail (report_t report, const char *host,
                            const char *s_type, const char *s_name,
                            const char *s_desc, const char *name,
-                           const char *value, const char * hash_value)
+                           const char *value, const char *hash_value)
 {
   char *quoted_host, *quoted_source_name, *quoted_source_type;
   char *quoted_source_desc, *quoted_name, *quoted_value;
@@ -20625,7 +21072,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         }
     }
 
-  setproctitle ("gvmd: Importing results");
+  setproctitle ("Importing results");
 
   /* Add the results. */
 
@@ -20880,15 +21327,16 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   current_scanner_task = task;
   global_current_report = report;
-  set_task_run_status (task, TASK_STATUS_DONE);
-  current_scanner_task = 0;
-  global_current_report = 0;
+  set_task_run_status (task, TASK_STATUS_PROCESSING);
 
   if (in_assets_int)
     {
       create_asset_report (*report_id, "");
     }
 
+  set_task_run_status (task, TASK_STATUS_DONE);
+  current_scanner_task = 0;
+  global_current_report = 0;
   gvm_close_sentry ();
   exit (EXIT_SUCCESS);
   return 0;
@@ -20939,7 +21387,7 @@ report_task (report_t report, task_t *task)
 
 /**
  * @brief Get compliance counts for a report.
- * 
+ *
  * @param[in]  report_id              UUID of the report.
  * @param[out] compliance_yes         Number of "YES" results.
  * @param[out] compliance_no          Number of "NO" results.
@@ -20959,7 +21407,7 @@ report_compliance_by_uuid (const char *report_id,
 
   if (compliance_yes)
     {
-      *compliance_yes 
+      *compliance_yes
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
                    " AND description LIKE 'Compliant:%%YES%%';",
@@ -20968,7 +21416,7 @@ report_compliance_by_uuid (const char *report_id,
 
   if (compliance_no)
     {
-      *compliance_no 
+      *compliance_no
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
                    " AND description LIKE 'Compliant:%%NO%%';",
@@ -21151,7 +21599,7 @@ report_add_result (report_t report, result_t result)
 
 /**
  * @brief Add results from an array to a report.
- * 
+ *
  * @param[in]  report   The report to add the results to.
  * @param[in]  results  GArray containing the row ids of the results to add.
  */
@@ -21169,7 +21617,7 @@ report_add_results_array (report_t report, GArray *results)
     {
       result_t result;
       result = g_array_index (results, result_t, index);
-      
+
       if (index)
         g_string_append (array_sql, ", ");
       g_string_append_printf (array_sql, "%llu", result);
@@ -21186,7 +21634,7 @@ report_add_results_array (report_t report, GArray *results)
     {
       result_t result;
       result = g_array_index (results, result_t, index);
-      
+
       report_add_result_for_buffer (report, result);
     }
 
@@ -21596,6 +22044,63 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 }
 
 /**
+ * @brief Return SQL WHERE for restricting a SELECT to compliance levels.
+ *
+ * @param[in]  levels  String describing compliance levels to include in 
+ *                     report (for example, "yniu" for "yes, "no", "incomplete"
+ *                     and "undefined").  All levels if NULL.
+ *
+ * @return WHERE clause for compliance levels if one is required, else NULL.
+ */
+static gchar*
+where_compliance_levels (const char *levels)
+{
+  int count;
+  GString *levels_sql;
+
+  if (levels == NULL)
+    return NULL;
+
+  levels_sql = g_string_new ("");
+  count = 0;
+
+  g_string_append_printf (levels_sql,
+    " AND coalesce("
+    "  lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)')),"
+    "  'undefined') IN (");
+
+  if (strchr (levels, 'y'))
+    {
+      g_string_append (levels_sql, "'yes'");
+      count++;
+    }
+  if (strchr (levels, 'n'))
+    {
+      g_string_append (levels_sql, count ? ", 'no'" : "'no'");
+      count++;
+    }
+  if (strchr (levels, 'i'))
+    {
+      g_string_append (levels_sql, count ? ", 'incomplete'" : "'incomplete'");
+      count++;
+    }
+  if (strchr (levels, 'u'))
+    {
+      g_string_append (levels_sql, count ? ", 'undefined'" : "'undefined'");
+      count++;
+    }
+  g_string_append (levels_sql, ")");
+
+  if (count == 4)
+    {
+      /* All compliance levels selected, so no restriction is necessary. */
+      g_string_free (levels_sql, TRUE);
+      return NULL;
+    }
+  return g_string_free (levels_sql, FALSE);
+}
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to a minimum QoD.
  *
  * @param[in]  min_qod  Minimum value for QoD.
@@ -21625,7 +22130,7 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", NULL }
+    "path", "compliant", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -21732,11 +22237,15 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("results.id"),                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
       "task",                                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
+      "         'undefined')",                                                \
+      "compliant",                                                            \
       KEYWORD_TYPE_STRING },
 
 /**
@@ -21762,6 +22271,19 @@ where_qod (int min_qod)
       KEYWORD_TYPE_INTEGER },                                                 \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
+
+#define RESULT_HOSTNAME_SQL(hostname_col, host_col, report_col)               \
+      "(CASE WHEN (" hostname_col " IS NULL) "                                \
+      "           OR (" hostname_col " = '')"                                 \
+      " THEN (SELECT value FROM report_host_details"                          \
+      "       WHERE name = 'hostname'"                                        \
+      "         AND report_host = (SELECT id FROM report_hosts "              \
+      "                            WHERE report_hosts.host = " host_col       \
+      "                            AND"                                       \
+      "                            report_hosts.report = " report_col ")"     \
+      "       LIMIT 1)"                                                       \
+      " ELSE " hostname_col                                                   \
+      " END)"
 
 /**
  * @brief Result iterator columns.
@@ -21822,18 +22344,9 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "results.qod", "qod", KEYWORD_TYPE_INTEGER },                           \
     { "results.qod_type", NULL, KEYWORD_TYPE_STRING },                        \
-    { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
-      " THEN (SELECT value FROM report_host_details"                          \
-      "       WHERE name = 'hostname'"                                        \
-      "         AND report_host = (SELECT id FROM report_hosts"               \
-      "                            WHERE report_hosts.host=results.host"      \
-      "                            AND report_hosts.report = results.report)" \
-      "       LIMIT 1)"                                                       \
-      " ELSE hostname"                                                        \
-      " END)",                                                                \
-      "hostname",                                                             \
-      KEYWORD_TYPE_STRING                                                     \
-    },                                                                        \
+    {  RESULT_HOSTNAME_SQL("hostname", "results.host", "results.report"),     \
+       "hostname",                                                            \
+       KEYWORD_TYPE_STRING },                                                 \
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
@@ -21877,7 +22390,7 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS,                                     \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("results.id"),                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
     /* ^ 35 = 25 */                                                           \
@@ -21909,6 +22422,10 @@ where_qod (int min_qod)
     { "nvts.tag",                                                             \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
+    { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
+      "         'undefined')",                                                \
+      "compliant",                                                            \
+      KEYWORD_TYPE_STRING },                                                  \
 
 /**
  * @brief Result iterator columns.
@@ -21928,6 +22445,103 @@ where_qod (int min_qod)
     { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Delta result iterator columns.
+ */
+#define DELTA_RESULT_COLUMNS                                                  \
+    { "comparison.state", "delta_state", KEYWORD_TYPE_STRING },               \
+    { "comparison.delta_description", NULL, KEYWORD_TYPE_STRING },            \
+    { "comparison.delta_severity", NULL, KEYWORD_TYPE_DOUBLE },               \
+    { "comparison.delta_qod", NULL, KEYWORD_TYPE_INTEGER },                   \
+    { "comparison.delta_uuid", NULL, KEYWORD_TYPE_STRING },                   \
+    { "delta_qod_type", NULL, KEYWORD_TYPE_STRING },                          \
+    { " iso_time (delta_date, opts.user_zone)",                               \
+      "delta_creation_time",                                                  \
+      KEYWORD_TYPE_STRING },                                                  \
+    { " iso_time (delta_date, opts.user_zone)",                               \
+      "delta_modification_time",                                              \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "delta_task", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "delta_report", NULL, KEYWORD_TYPE_INTEGER },                           \
+    { "(SELECT name FROM users WHERE users.id = results.owner)",              \
+      "_owner",                                                               \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "delta_path", NULL, KEYWORD_TYPE_STRING },                              \
+    { "(SELECT CASE WHEN delta_host IS NULL"                                  \
+      "             THEN NULL"                                                \
+      "             ELSE (SELECT uuid FROM hosts"                             \
+      "                   WHERE id = (SELECT host FROM host_identifiers"      \
+      "                               WHERE source_type = 'Report Host'"      \
+      "                               AND name = 'ip'"                        \
+      "                               AND source_id"                          \
+      "                                   = (SELECT uuid"                     \
+      "                                      FROM reports"                    \
+      "                                      WHERE id = results.report)"      \
+      "                               AND value = delta_host"                 \
+      "                               LIMIT 1))"                              \
+      "             END)",                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "delta_nvt_version", NULL, KEYWORD_TYPE_STRING },                       \
+    { "result2_id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM notes"                              \
+      "                     WHERE (result = result2_id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = delta_task))"             \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "(SELECT CASE"                                                          \
+      "        WHEN EXISTS (SELECT * FROM overrides"                          \
+      "                     WHERE (result = result2_id"                       \
+      "                            OR (result = 0 AND nvt = results.nvt))"    \
+      "                     AND (task = 0 OR task = delta_task))"             \
+      "        THEN 1"                                                        \
+      "        ELSE 0"                                                        \
+      "        END)",                                                         \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+      { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                     \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+      { "delta_hostname", NULL, KEYWORD_TYPE_STRING },                        \
+      { "delta_new_severity", NULL, KEYWORD_TYPE_DOUBLE },
+
+/**
+ * @brief Delta result iterator columns.
+ */
+#define DELTA_RESULT_ITERATOR_COLUMNS                                         \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { SECINFO_SQL_RESULT_CERT_BUNDS,                                          \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { SECINFO_SQL_RESULT_DFN_CERTS,                                           \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    DELTA_RESULT_COLUMNS                                                      \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+  }
+
+/**
+ * @brief Result iterator columns, when CERT db is not loaded.
+ */
+#define DELTA_RESULT_ITERATOR_COLUMNS_NO_CERT                                 \
+  {                                                                           \
+    BASE_RESULT_ITERATOR_COLUMNS                                              \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "0",                                                                    \
+      NULL,                                                                   \
+      KEYWORD_TYPE_INTEGER },                                                 \
+      DELTA_RESULT_COLUMNS                                                    \
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
@@ -22062,8 +22676,9 @@ results_extra_where (int trash, report_t report, const gchar* host,
 {
   gchar *extra_where;
   int min_qod;
-  gchar *levels;
+  gchar *levels, *compliance_levels;
   gchar *report_clause, *host_clause, *min_qod_clause;
+  gchar *compliance_levels_clause;
   GString *levels_clause;
   gchar *new_severity_sql;
 
@@ -22072,6 +22687,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
     levels = g_strdup ("hmlgdf");
+  compliance_levels = filter_term_value (filter, "compliance_levels");
 
   // Build clause fragments
 
@@ -22100,19 +22716,24 @@ results_extra_where (int trash, report_t report, const gchar* host,
                                      given_new_severity_sql
                                       ? given_new_severity_sql
                                       : new_severity_sql);
+
+  compliance_levels_clause = where_compliance_levels (compliance_levels);
+
   g_free (levels);
   g_free (new_severity_sql);
 
-  extra_where = g_strdup_printf("%s%s%s%s",
+  extra_where = g_strdup_printf("%s%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
                                 levels_clause->str,
-                                min_qod_clause ? min_qod_clause : "");
+                                min_qod_clause ? min_qod_clause : "",
+                                compliance_levels_clause ?: "");
 
   g_free (min_qod_clause);
   g_string_free (levels_clause, TRUE);
   g_free (report_clause);
   g_free (host_clause);
+  g_free (compliance_levels_clause);
 
   return extra_where;
 }
@@ -22381,49 +23002,68 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @brief SQL for getting current severity.
  */
 #define CURRENT_SEVERITY_SQL                                            \
-  "coalesce ((CASE WHEN results.severity > " G_STRINGIFY (SEVERITY_LOG) \
-  "           THEN CAST (nvts.cvss_base AS double precision)"           \
-  "           ELSE results.severity"                                    \
+  "coalesce ((CASE WHEN %s.severity > " G_STRINGIFY (SEVERITY_LOG)      \
+  "           THEN CAST (%s.cvss_base AS double precision)"             \
+  "           ELSE %s.severity"                                         \
   "           END),"                                                    \
-  "          results.severity)"
+  "          %s.severity)"
 
 /**
  * @brief Get LATERAL clause for result iterator.
  *
  * @param[in]  apply_overrides   Whether to apply overrides.
  * @param[in]  dynamic_severity  Whether to use dynamic severity.
+ * @param[in]  nvts_table        NVTS table.
+ * @param[in]  results_table     Results table. 
  *
  * @return SQL clause for FROM.
  */
-static const gchar *
-result_iterator_lateral (int apply_overrides, int dynamic_severity)
+static gchar *
+result_iterator_lateral (int apply_overrides, 
+                         int dynamic_severity, 
+                         const char *results_table, 
+                         const char *nvts_table)
 {
   if (apply_overrides && dynamic_severity)
     /* Overrides, dynamic. */
-    return "(WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
-           " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
-           "                   WHERE result = results.id"
-           "                   AND result_overrides.user = opts.user_id"
-           "                   AND severity_matches_ov"
-           "                        ((SELECT curr_severity FROM curr LIMIT 1),"
-           "                         ov_old_severity)"
-           "                   LIMIT 1),"
-           "                  (SELECT curr_severity FROM curr LIMIT 1))"
-           " AS new_severity)";
+    return g_strdup_printf(
+      " (WITH curr AS (SELECT " CURRENT_SEVERITY_SQL " AS curr_severity)"
+      " SELECT coalesce ((SELECT ov_new_severity FROM result_overrides"
+      "                   WHERE result = %s.id"
+      "                   AND result_overrides.user = opts.user_id"
+      "                   AND severity_matches_ov"
+      "                        ((SELECT curr_severity FROM curr LIMIT 1),"
+      "                         ov_old_severity)"
+      "                   LIMIT 1),"
+      "                  (SELECT curr_severity FROM curr LIMIT 1))"
+      " AS new_severity)", 
+      results_table,
+      nvts_table,
+      results_table,
+      results_table, 
+      results_table);
+
   if (apply_overrides)
     /* Overrides, no dynamic. */
-    return "(SELECT new_severity"
-           " FROM result_new_severities_static"
-           " WHERE result_new_severities_static.result = results.id"
-           " AND result_new_severities_static.user = opts.user_id"
-           " LIMIT 1)";
+    return g_strdup_printf(
+      "(SELECT new_severity"
+      " FROM result_new_severities_static"
+      " WHERE result_new_severities_static.result = %s.id"
+      " AND result_new_severities_static.user = opts.user_id"
+      " LIMIT 1)",
+      results_table);
+
   if (dynamic_severity)
     /* No overrides, dynamic. */
-    return "(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)";
+    return g_strdup_printf("(SELECT " CURRENT_SEVERITY_SQL " AS new_severity)",
+                           results_table,
+                           nvts_table,
+                           results_table,
+                           results_table);
   /* No overrides, no dynamic.
    *
    * SELECT because results.severity gives syntax error. */
-  return "(SELECT results.severity AS new_severity)";
+  return g_strdup_printf("(SELECT %s.severity AS new_severity)", results_table);
 }
 
 /**
@@ -22447,7 +23087,8 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *extra_where_single, *opts_tables;
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single;
+  gchar *opts_tables, *lateral_clause;
   int apply_overrides, dynamic_severity;
   column_t *actual_columns;
 
@@ -22478,13 +23119,19 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
     actual_columns = columns_no_cert;
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+
+  lateral_clause = result_iterator_lateral (apply_overrides,
+                                            dynamic_severity,
+                                            "results",
+                                            "nvts");
+
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  result_iterator_lateral (apply_overrides,
-                                                           dynamic_severity));
+                                  lateral_clause);
   g_free (opts_tables);
+  g_free (lateral_clause);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
@@ -22526,6 +23173,21 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 }
 
 /**
+ * @brief Initialise a result iterator not limited to report or host.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find result, 2 failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_result_get_iterator (iterator, get, 0, NULL, NULL);
+}
+
+/**
  * @brief Count the number of results.
  *
  * @param[in]  get     GET params.
@@ -22541,7 +23203,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   static column_t columns_no_cert[] = RESULT_ITERATOR_COLUMNS_NO_CERT;
   int ret;
-  gchar *filter, *extra_tables, *extra_where, *opts_tables;
+  gchar *filter, *extra_tables, *extra_where, *opts_tables, *lateral_clause;
   int apply_overrides, dynamic_severity;
 
   if (report == -1)
@@ -22561,13 +23223,19 @@ result_count (const get_data_t *get, report_t report, const char* host)
   dynamic_severity = setting_dynamic_severity_int ();
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+
+  lateral_clause = result_iterator_lateral (apply_overrides, 
+                                            dynamic_severity,
+                                            "results",
+                                            "nvts");
+  
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  result_iterator_lateral (apply_overrides,
-                                                           dynamic_severity));
+                                  lateral_clause);
   g_free (opts_tables);
+  g_free (lateral_clause);
 
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
@@ -23037,7 +23705,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
 }
 
 /**
@@ -23051,7 +23719,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
 }
 
 /**
@@ -23095,6 +23763,375 @@ result_iterator_nvt_solution_method (iterator_t *iterator)
   /* When we used a cache this was never added to the cache. */
   return NULL;
 }
+
+/**
+ * @brief Get delta reports state from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta reports state if any, else NULL.
+ */
+const char *
+result_iterator_delta_state (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET);
+}
+
+/**
+ * @brief Get delta description from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta description if any, else NULL.
+ */
+const char *
+result_iterator_delta_description (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 1);
+}
+
+/**
+ * @brief Get delta severity from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity if any, else NULL.
+ */
+const char *
+result_iterator_delta_original_severity (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
+}
+
+/**
+ * @brief Get delta severity (double) from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity (double) if any, else 0.
+ */
+double
+result_iterator_delta_original_severity_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
+}
+
+/**
+ * @brief Get the severity/threat level from a delta result iterator.
+ *
+ * This is the the original level.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The threat level of the delta result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_delta_original_level (iterator_t* iterator)
+{
+  double severity;
+  const char* ret;
+
+  if (iterator->done)
+    return "";
+
+  /* new_severity */
+  if (iterator_null (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2))
+    return "";
+
+  severity = iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 2);
+
+  ret = severity_to_level (severity, 0);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get delta qod from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta qod if any, else NULL.
+ */
+const char *
+result_iterator_delta_qod (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 3);
+}
+
+/**
+ * @brief Get delta uuid from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta uuid if any, else NULL.
+ */
+const char *
+result_iterator_delta_uuid (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 4);
+}
+
+
+/**
+ * @brief Get delta qod type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta qod type if any, else NULL.
+ */
+const char *
+result_iterator_delta_qod_type (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 5);
+}
+
+/**
+ * @brief Get delta creation time from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta creation time if any, else NULL.
+ */
+const char *
+result_iterator_delta_creation_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 6);
+}
+
+/**
+ * @brief Get delta modification time from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta modification time if any, else NULL.
+ */
+const char *
+result_iterator_delta_modification_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
+}
+
+/**
+ * @brief Get delta task from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta task if any, else 0.
+ */
+task_t
+result_iterator_delta_task (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 8);
+}
+
+/**
+ * @brief Get delta report from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta report if any, else 0.
+ */
+report_t
+result_iterator_delta_report (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 9);
+}
+
+/**
+ * @brief Get delta owner from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta owner if any, else NULL.
+ */
+const char *
+result_iterator_delta_owner_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 10);
+}
+
+/**
+ * @brief Get delta path from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta path if any, else NULL.
+ */
+const char *
+result_iterator_delta_path (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 11);
+}
+
+/**
+ * @brief Get delta host asset id from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta host asset id if any, else NULL.
+ */
+const char *
+result_iterator_delta_host_asset_id (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 12);
+}
+
+/**
+ * @brief Get delta nvt version from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta nvt version if any, else NULL.
+ */
+const char *
+result_iterator_delta_nvt_version (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 13);
+}
+
+/**
+ * @brief Get delta result from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta result if any, else 0.
+ */
+result_t
+result_iterator_delta_result (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 14);
+}
+
+/**
+ * @brief Get whether there are notes for the delta result from the iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return whether there are notes.
+ */
+int
+result_iterator_delta_may_have_notes (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 15);
+}
+
+/**
+ * @brief Get whether there are overrides for the delta result from the iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return whether there are overrides.
+ */
+int
+result_iterator_delta_may_have_overrides (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 16);
+}
+
+/**
+ * @brief Get whether there are tickets for the delta result from the iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return whether there are tickets.
+ */
+int
+result_iterator_delta_may_have_tickets (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 17);
+}
+
+/**
+ * @brief Get delta hostname from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta hostname if any, else NULL.
+ */
+const char *
+result_iterator_delta_hostname (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 18);
+}
+
+
+/**
+ * @brief Get delta severity from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity if any, else NULL.
+ */
+const char *
+result_iterator_delta_severity (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+}
+
+/**
+ * @brief Get delta severity (double) from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta severity (double) if any, else 0.
+ */
+double
+result_iterator_delta_severity_double (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+}
+
+/**
+ * @brief Get the severity/threat level from a delta result iterator.
+ *
+ * This is the the overridden level.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The threat level of the delta result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_delta_level (iterator_t* iterator)
+{
+  double severity;
+  const char* ret;
+
+  if (iterator->done)
+    return "";
+
+  /* new_severity */
+  if (iterator_null (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19))
+    return "";
+
+  severity = iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+
+  ret = severity_to_level (severity, 0);
+  return ret ? ret : "";
+}
+
 
 /**
  * @brief Append an NVT's references to an XML string buffer.
@@ -24243,7 +25280,7 @@ cache_report_counts (report_t report, int override, int min_qod,
       if (i)
         {
           g_string_append_printf (insert, ";");
-          ret = sql_giveup (insert->str);
+          ret = sql_giveup ("%s", insert->str);
           if (ret)
             {
               g_string_free (insert, TRUE);
@@ -24461,6 +25498,9 @@ report_severity (report_t report, int overrides, int min_qod)
   double severity;
   iterator_t iterator;
 
+  if (report == 0)
+    return SEVERITY_MISSING;
+
   init_iterator (&iterator,
                  "SELECT max(severity)"
                  " FROM report_counts"
@@ -24602,7 +25642,8 @@ delete_report_internal (report_t report)
  * @param[in]  report_id  UUID of report.
  * @param[in]  dummy      Dummy arg to match other delete functions.
  *
- * @return 0 success, 2 failed to find report, 99 permission denied, -1 error.
+ * @return 0 success, 2 failed to find report, 3 reports table is locked,
+ *         99 permission denied, -1 error.
  */
 int
 delete_report (const char *report_id, int dummy)
@@ -24619,17 +25660,16 @@ delete_report (const char *report_id, int dummy)
    * If the report is running already then delete_report_internal will
    * ROLLBACK. */
   lock_retries = LOCK_RETRIES;
-  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+  lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
-      sleep(LOCK_RETRY_DELAY);
-      lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+      lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
       lock_retries--;
     }
   if (lock_ret == 0)
     {
       sql_rollback ();
-      return -1;
+      return 3;
     }
 
   if (acl_user_may ("delete_report") == 0)
@@ -24951,7 +25991,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 /** @todo Defined in gmp.c! */
 void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
                          int, int, int, int, const char *, iterator_t *,
-                         int, int, int);
+                         int, int, int, int);
 
 /**
  * @brief Comparison returns.
@@ -25331,7 +26371,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   /* This is the only case that uses 1. */
                                   1,  /* Whether result is "changed". */
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -25362,7 +26403,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   delta_results,
                                   0,
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -25393,7 +26435,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   delta_results,
                                   0,
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -25424,7 +26467,8 @@ compare_and_buffer_results (GString *buffer, iterator_t *results,
                                   delta_results,
                                   0,
                                   -1,
-                                  0);
+                                  0,  /* Lean. */
+                                  0); /* Delta fields. */
           }
         break;
 
@@ -26120,6 +27164,194 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream,
 }
 
 /**
+ * @brief Print the XML for a report host's TLS certificates to a file stream.
+ * @param[in]  report_host  The report host to get certificates from.
+ * @param[in]  host_ip      The IP address of the report host.
+ * @param[in]  stream       File stream to write to.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_host_tls_certificates_xml (report_host_t report_host, 
+                                        const char *host_ip,
+                                        FILE *stream)
+{
+
+  iterator_t tls_certs;
+  time_t activation_time, expiration_time;
+  gchar *md5_fingerprint, *sha256_fingerprint, *subject, *issuer, *serial;
+  gnutls_x509_crt_fmt_t certificate_format;
+
+  if (report_host == 0
+      || strcmp (host_ip, "") == 0)
+    return -1;
+
+  init_iterator (&tls_certs,
+                 "SELECT rhd.value, rhd.name, rhd.source_name"
+                 " FROM report_host_details AS rhd"
+                 " WHERE rhd.report_host = %llu"
+                 "   AND (source_description = 'SSL/TLS Certificate'"
+                 "        OR source_description = 'SSL Certificate')",
+                 report_host);
+  
+  while (next (&tls_certs)) 
+    {
+      const char *certificate_prefixed, *certificate_b64;
+      gsize certificate_size;
+      unsigned char *certificate;
+      const char *scanner_fpr_prefixed, *scanner_fpr;
+      gchar *quoted_scanner_fpr;
+      char *ssldetails;       
+      iterator_t ports;
+      gboolean valid;
+      time_t now;
+
+      certificate_prefixed = iterator_string (&tls_certs, 0);
+      certificate_b64 = g_strrstr (certificate_prefixed, ":") + 1;
+
+      certificate = g_base64_decode (certificate_b64, &certificate_size);
+
+      scanner_fpr_prefixed = iterator_string (&tls_certs, 1);
+      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":") + 1;
+
+      quoted_scanner_fpr = sql_quote (scanner_fpr);
+
+      activation_time = -1;
+      expiration_time = -1;
+      md5_fingerprint = NULL;
+      sha256_fingerprint = NULL;
+      subject = NULL;
+      issuer = NULL;
+      serial = NULL;
+      certificate_format = 0;
+
+      get_certificate_info ((gchar*)certificate,
+                            certificate_size,
+                            &activation_time,
+                            &expiration_time,
+                            &md5_fingerprint,
+                            &sha256_fingerprint,
+                            &subject,
+                            &issuer,
+                            &serial,
+                            &certificate_format);
+
+      if (sha256_fingerprint == NULL)
+        sha256_fingerprint = g_strdup (scanner_fpr);
+
+      ssldetails
+        = sql_string ("SELECT rhd.value"
+                      " FROM report_host_details AS rhd"
+                      " WHERE report_host = %llu"
+                      "   AND name = 'SSLDetails:%s'"
+                      " LIMIT 1;",
+                      report_host,
+                      quoted_scanner_fpr);
+
+      if (ssldetails)
+        parse_ssldetails (ssldetails,
+                          &activation_time,
+                          &expiration_time,
+                          &issuer,
+                          &serial);
+      else
+        g_warning ("%s: No SSLDetails found for fingerprint %s",
+                   __func__,
+                   scanner_fpr);
+
+      free (ssldetails);
+
+      now = time (NULL);
+
+      if((expiration_time >= now || expiration_time == -1) 
+         && (activation_time <= now || activation_time == -1))
+        {
+          valid = TRUE;
+        }
+      else
+        {
+          valid = FALSE;
+        }
+      char *hostname = sql_string ("SELECT value FROM report_host_details"
+                                   " WHERE report_host = %llu"
+                                   "   AND name = 'hostname'",
+                                   report_host);
+
+      PRINT (stream,
+        "<tls_certificate>"
+        "<name>%s</name>"
+        "<certificate format=\"%s\">%s</certificate>"
+        "<sha256_fingerprint>%s</sha256_fingerprint>"
+        "<md5_fingerprint>%s</md5_fingerprint>"
+        "<valid>%d</valid>"
+        "<activation_time>%s</activation_time>"
+        "<expiration_time>%s</expiration_time>"
+        "<subject_dn>%s</subject_dn>"
+        "<issuer_dn>%s</issuer_dn>"
+        "<serial>%s</serial>"
+        "<host><ip>%s</ip><hostname>%s</hostname></host>",
+        scanner_fpr,
+        tls_certificate_format_str (certificate_format),
+        certificate_b64,
+        sha256_fingerprint,
+        md5_fingerprint,
+        valid,
+        certificate_iso_time (activation_time),
+        certificate_iso_time (expiration_time),
+        subject,
+        issuer,
+        serial,
+        host_ip,
+        hostname ? hostname : "");
+
+
+      g_free (certificate);
+      g_free (md5_fingerprint);
+      g_free (sha256_fingerprint);
+      g_free (subject);
+      g_free (issuer);
+      g_free (serial);
+
+      free (hostname);
+    
+      init_iterator (&ports,
+                     "SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     "   AND name = 'SSLInfo'"
+                     "   AND value LIKE '%%:%%:%s'",
+                     report_host,
+                     quoted_scanner_fpr);
+     
+      PRINT (stream, "<ports>");
+
+      while (next (&ports))
+        {
+          const char *value;
+          gchar *port;
+
+          value = iterator_string (&ports, 0);
+          port = g_strndup (value, g_strrstr (value, ":") - value - 1);
+
+          PRINT (stream, "<port>%s</port>", port);
+
+          g_free (port);
+        }
+
+      PRINT (stream, "</ports>");
+
+      PRINT (stream, "</tls_certificate>");
+      
+      g_free (quoted_scanner_fpr);
+      cleanup_iterator (&ports);   
+    
+    }
+    cleanup_iterator (&tls_certs);
+
+  return 0;
+}
+
+
+/**
  * @brief Write report error message to file stream.
  *
  * @param[in]   stream      Stream to write to.
@@ -26588,6 +27820,199 @@ init_delta_iterators (report_t report, iterator_t *results, report_t delta,
 }
 
 /**
+ * @brief Init v2 delta iterator for print_report_xml.
+ *
+ * @param[in]  report         The report.
+ * @param[in]  results        Report result iterator.
+ * @param[in]  delta          Delta report.
+ * @param[in]  get            GET command data.
+ * @param[in]  term           Filter term.
+ * @param[out] sort_field     Sort field.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta, 
+                      const get_data_t *get, const char *term,
+                      const char *sort_field)
+{
+  int ret;
+  static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns_no_cert[] = DELTA_RESULT_ITERATOR_COLUMNS_NO_CERT;
+  static column_t columns[] = DELTA_RESULT_ITERATOR_COLUMNS;
+
+
+  gchar *filter, *extra_tables, *extra_where, *extra_where_single;
+  gchar *opts_tables, *extra_with, *lateral_clause, *with_lateral;
+  int apply_overrides, dynamic_severity;
+  column_t *actual_columns;
+
+  g_debug ("%s", __func__);
+
+  if (report == -1)
+    {
+      init_iterator (results, "SELECT NULL WHERE false;");
+      return 0;
+    }
+
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  apply_overrides
+    = filter_term_apply_overrides (filter ? filter : get->filter);
+  dynamic_severity = setting_dynamic_severity_int ();
+
+  if (manage_cert_loaded ())
+    actual_columns = columns;
+  else
+    actual_columns = columns_no_cert;
+
+  opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
+
+  lateral_clause = result_iterator_lateral (apply_overrides,
+                                            dynamic_severity,
+                                            "results",
+                                            "nvts");
+
+  extra_tables = g_strdup_printf (" JOIN comparison "
+                                  " ON results.id = COALESCE (result1_id,"
+                                  "                           result2_id)"
+                                  " LEFT OUTER JOIN nvts"
+                                  " ON results.nvt = nvts.oid %s,"
+                                  " LATERAL %s AS lateral_new_severity",
+                                  opts_tables,
+                                  lateral_clause);                                                         
+
+  g_free (lateral_clause);
+
+  extra_where = results_extra_where (get->trash, 0, NULL,
+                                     apply_overrides, dynamic_severity,
+                                     filter ? filter : get->filter,
+                                     NULL);
+
+  extra_where_single = results_extra_where (get->trash, 0, NULL,
+                                            apply_overrides,
+                                            dynamic_severity,
+                                            "min_qod=0",
+                                            NULL);
+
+  free (filter);
+
+  with_lateral = result_iterator_lateral (apply_overrides,
+                                          dynamic_severity,
+                                          "results",
+                                          "nvts_cols");
+
+  extra_with = g_strdup_printf(" comparison AS ("
+    " WITH r1 as (SELECT results.id, description, host, report, port,"
+    "              severity, nvt, results.qod, results.uuid, hostname," 
+    "              path, r1_lateral.new_severity as new_severity "
+    "       FROM results "
+    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid from nvts)"
+    "       AS nvts_cols"
+    "       ON nvts_cols.nvts_oid = results.nvt"
+    "       %s, LATERAL %s AS r1_lateral" 
+    "       WHERE report = %llu),"
+    " r2 as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
+    "        FROM results" 
+    "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid from nvts)"
+    "        AS nvts_cols" 
+    "        ON nvts_cols.nvts_oid = results.nvt" 
+    "        %s, LATERAL %s AS r2_lateral" 
+    "        WHERE report = %llu)"
+    " SELECT r1.id AS result1_id," 
+    " r2.id AS result2_id," 
+    " compare_results("
+    "  r1.description,"
+    "  r2.description,"
+    "  r1.new_severity::double precision,"
+    "  r2.new_severity::double precision,"
+    "  r1.qod::integer,"
+    "  r2.qod::integer,"
+       RESULT_HOSTNAME_SQL("r1.hostname", "r1.host", "r1.report")","
+       RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report")","
+    "  r1.path,"
+    "  r2.path) AS state,"
+    " r2.description AS delta_description,"
+    " r2.new_severity AS delta_new_severity,"
+    " r2.severity AS delta_severity,"    
+    " r2.qod AS delta_qod,"
+    " r2.qod_type AS delta_qod_type,"
+    " r2.uuid AS delta_uuid,"
+    " r2.date AS delta_date,"
+    " r2.task AS delta_task,"
+    " r2.report AS delta_report,"
+    " r2.owner AS delta_owner,"
+    " r2.path AS delta_path,"
+    " r2.host AS delta_host,"
+      RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
+      " AS delta_hostname,"
+    " r2.nvt_version AS delta_nvt_version"
+    " FROM r1"
+    " FULL OUTER JOIN r2"
+    " ON r1.host = r2.host"
+    " AND normalize_port(r1.port) = normalize_port(r2.port)" 
+    " AND r1.nvt = r2.nvt "
+    " AND (r1.new_severity = 0) = (r2.new_severity = 0)"
+    " AND (r1.description = r2.description"
+    "      OR NOT EXISTS (SELECT * FROM r2"
+    "                     WHERE r1.description = r2.description"
+    "                     AND r1.host = r2.host" 
+    "                     AND normalize_port(r1.port) = normalize_port(r2.port)"
+    "                     AND r1.nvt = r2.nvt"
+    "                     AND (r1.new_severity = 0) = (r2.new_severity = 0))"
+    "      OR NOT EXISTS (SELECT * FROM r1" 
+    "                     WHERE r1.description = r2.description"
+    "                     AND r1.host = r2.host" 
+    "                     AND normalize_port(r1.port) = normalize_port(r2.port)"
+    "                     AND r1.nvt = r2.nvt"
+    "                     AND (r1.new_severity = 0) = (r2.new_severity = 0)))"  
+    " )",
+    opts_tables,
+    with_lateral,
+    report,
+    opts_tables,
+    with_lateral,
+    delta);
+
+  ret = init_get_iterator2_with (results,
+                                "result",
+                                get,
+                                /* SELECT columns. */
+                                actual_columns,
+                                NULL,
+                                /* Filterable columns not in SELECT columns. */
+                                NULL,
+                                NULL,
+                                filter_columns,
+                                0,
+                                extra_tables,
+                                extra_where,
+                                extra_where_single,
+                                TRUE,
+                                report ? TRUE : FALSE,
+                                NULL,
+                                extra_with,
+                                0,
+                                0);
+  g_free (extra_tables);
+  g_free (extra_where);
+  g_free (extra_where_single);
+  g_free (with_lateral);
+  g_free (opts_tables);
+
+  g_debug ("%s: done", __func__);
+
+  return ret;
+}
+
+/**
  * @brief Print delta results for print_report_xml.
  *
  * @param[in]  out            File stream to write to.
@@ -26746,7 +28171,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     NULL,
                                     0,
                                     -1,
-                                    0);
+                                    0,  /* Lean. */
+                                    0); /* Delta fields. */
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -26793,7 +28219,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                                     NULL,
                                     0,
                                     -1,
-                                    0);
+                                    0,  /* Lean. */
+                                    0); /* Delta fields. */
                 if (fprintf (out, "%s", buffer->str) < 0)
                   return -1;
                 g_string_free (buffer, TRUE);
@@ -27306,6 +28733,135 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 }
 
 /**
+ * @brief Print v2 delta results for print_report_xml.
+ *
+ * @param[in]  out            File stream to write to.
+ * @param[in]  results        Report result iterator.
+ * @param[in]  delta_states   String describing delta states to include in count
+ *                            (for example, "sngc" Same, New, Gone and Changed).
+ *                            All levels if NULL.
+ * @param[in]  first_result   First result.
+ * @param[in]  max_results    Max results.
+ * @param[in]  task           The task.
+ * @param[in]  notes          Whether to include notes.
+ * @param[in]  notes_details  Whether to include note details.
+ * @param[in]  overrides          Whether to include overrides.
+ * @param[in]  overrides_details  Whether to include override details.
+ * @param[in]  sort_order         Sort order.
+ * @param[in]  sort_field         Sort field.
+ * @param[in]  result_hosts_only  Whether to only include hosts with results.
+ * @param[in]  orig_filtered_result_count  Result count.
+ * @param[in]  filtered_result_count       Result count.
+ * @param[in]  orig_f_holes   Result count.
+ * @param[in]  f_holes        Result count.
+ * @param[in]  orig_f_infos   Result count.
+ * @param[in]  f_infos        Result count.
+ * @param[in]  orig_f_logs    Result count.
+ * @param[in]  f_logs         Result count.
+ * @param[in]  orig_f_warnings  Result count.
+ * @param[in]  f_warnings       Result count.
+ * @param[in]  orig_f_false_positives  Result count.
+ * @param[in]  f_false_positives       Result count.
+ * @param[in]  result_hosts   Result hosts.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_v2_report_delta_xml (FILE *out, iterator_t *results,
+                        const char *delta_states,
+                        int first_result, int max_results, task_t task,
+                        int notes, int notes_details, int overrides,
+                        int overrides_details, int sort_order,
+                        const char *sort_field, int result_hosts_only,
+                        int *orig_filtered_result_count,
+                        int *filtered_result_count,
+                        int *orig_f_holes, int *f_holes,
+                        int *orig_f_infos, int *f_infos,
+                        int *orig_f_logs, int *f_logs,
+                        int *orig_f_warnings, int *f_warnings,
+                        int *orig_f_false_positives, int *f_false_positives,
+                        array_t *result_hosts)
+{
+  GString *buffer = g_string_new ("");
+
+  *orig_f_holes = *f_holes;
+  *orig_f_infos = *f_infos;
+  *orig_f_logs = *f_logs;
+  *orig_f_warnings = *f_warnings;
+  *orig_f_false_positives = *f_false_positives;
+  *orig_filtered_result_count = *filtered_result_count;
+
+  while (next (results)) {
+
+    const char *state = result_iterator_delta_state (results);
+
+    if (strchr (delta_states, state[0]) == NULL) continue;
+
+    const char *level;
+    /* Increase the result count. */
+    level = result_iterator_level (results);
+    (*orig_filtered_result_count)++;
+    (*filtered_result_count)++;
+    if (strcmp (level, "High") == 0)
+      {
+        (*orig_f_holes)++;
+        (*f_holes)++;
+      }
+    else if (strcmp (level, "Medium") == 0)
+      {
+        (*orig_f_warnings)++;
+        (*f_warnings)++;
+      }
+    else if (strcmp (level, "Low") == 0)
+      {
+        (*orig_f_infos)++;
+        (*f_infos)++;
+      }
+    else if (strcmp (level, "Log") == 0)
+      {
+        (*orig_f_logs)++;
+        (*f_logs)++;
+      }
+    else if (strcmp (level, "False Positive") == 0)
+      {
+        (*orig_f_false_positives)++;
+        (*f_false_positives)++;
+      }
+
+
+    buffer_results_xml (buffer,
+                        results,
+                        task,
+                        notes,
+                        notes_details,
+                        overrides,
+                        overrides_details,
+                        0,
+                        0,
+                        0,
+                        state,
+                        NULL,
+                        (strcmp (state, "changed") == 0), 
+                        -1,
+                        0,  /* Lean. */
+                        0); /* Delta fields. */
+ 
+    if (fprintf (out, "%s", buffer->str) < 0) 
+      {
+        g_string_free (buffer, TRUE);
+        return -1;
+      }
+    g_string_truncate (buffer, 0);
+  }
+  g_string_free (buffer, TRUE);
+  if (fprintf (out, "</results>") < 0)
+    {
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -27362,6 +28918,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_logs, *f_host_false_positives;
   task_status_t run_status;
 
+  int delta_reports_version = 0;
+
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
@@ -27409,12 +28967,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   assert (get);
 
-  if ((get->filt_id && strlen (get->filt_id) 
+  if ((get->filt_id && strlen (get->filt_id)
        && strcmp (get->filt_id, FILT_ID_NONE))
       || (get->filter && strlen (get->filter)))
     {
       term = NULL;
-      if (get->filt_id && strlen (get->filt_id) 
+      if (get->filt_id && strlen (get->filt_id)
           && strcmp (get->filt_id, FILT_ID_NONE))
         {
           term = filter_term (get->filt_id);
@@ -27446,6 +29004,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &notes, &overrides,
                                      &apply_overrides, &zone);
     }
+
+  if (delta) {
+    delta_reports_version = setting_delta_reports_version_int ();
+    g_debug ("%s: delta reports version %d", __func__, delta_reports_version);
+  }
 
   max_results = manage_max_rows (max_results);
 
@@ -27556,7 +29119,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
-  count_filtered = (delta == 0 && ignore_pagination && get->details);
+  count_filtered = (delta == 0 && ignore_pagination && get->details)
+                   || (delta_reports_version == 2);
 
   if (report)
     {
@@ -27637,7 +29201,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   term = clean;
 
   if (delta
-      && sort_field
+      && sort_field 
+      && (delta_reports_version == 1)
       /* These are all checked in result_cmp. */
       && strcmp (sort_field, "name")
       && strcmp (sort_field, "vulnerability")
@@ -27997,14 +29562,28 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (init_delta_iterators (report, &results, delta, &delta_results, get,
-                                term, sort_field))
+      if (delta_reports_version == 1) 
         {
+          if (init_delta_iterators (report, &results, delta, 
+                                    &delta_results, get, 
+                                    term, sort_field))
+            {
+              g_free (term);
+              g_hash_table_destroy (f_host_ports);
+              return -1;
+            }
           g_free (term);
-          g_hash_table_destroy (f_host_ports);
-          return -1;
+        } 
+      else 
+        {      
+          if (init_v2_delta_iterator (report, &results, delta,
+                                      get, term, sort_field))
+            {
+              g_free (term);
+              g_hash_table_destroy (f_host_ports);
+              return -1;
+            }
         }
-      g_free (term);
     }
   else if (get->details)
     {
@@ -28052,38 +29631,80 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (print_report_delta_xml (out, &results, &delta_results, delta_states,
-                                  ignore_pagination ? 1 : first_result,
-                                  ignore_pagination ? -1 : max_results,
-                                  task, notes,
-                                  notes_details, overrides, overrides_details,
-                                  sort_order, sort_field, result_hosts_only,
-                                  &orig_filtered_result_count,
-                                  &filtered_result_count,
-                                  &orig_f_holes, &f_holes,
-                                  &orig_f_infos, &f_infos,
-                                  &orig_f_logs, &f_logs,
-                                  &orig_f_warnings, &f_warnings,
-                                  &orig_f_false_positives, &f_false_positives,
-                                  result_hosts))
+      if (delta_reports_version == 1) 
         {
-          fclose (out);
-          g_free (sort_field);
-          g_free (levels);
-          g_free (search_phrase);
-          g_free (min_qod);
-          g_free (delta_states);
-          cleanup_iterator (&results);
-          cleanup_iterator (&delta_results);
-          tz_revert (zone, tz, old_tz_override);
-          g_hash_table_destroy (f_host_ports);
-          g_hash_table_destroy (f_host_holes);
-          g_hash_table_destroy (f_host_warnings);
-          g_hash_table_destroy (f_host_infos);
-          g_hash_table_destroy (f_host_logs);
-          g_hash_table_destroy (f_host_false_positives);
-
-          return -1;
+          if (print_report_delta_xml (out, &results, &delta_results, 
+                                      delta_states,
+                                      ignore_pagination ? 0 : first_result,
+                                      ignore_pagination ? -1 : max_results,
+                                      task, notes,
+                                      notes_details, overrides, 
+                                      overrides_details, sort_order,
+                                      sort_field, result_hosts_only,
+                                      &orig_filtered_result_count,
+                                      &filtered_result_count,
+                                      &orig_f_holes, &f_holes,
+                                      &orig_f_infos, &f_infos,
+                                      &orig_f_logs, &f_logs,
+                                      &orig_f_warnings, &f_warnings,
+                                      &orig_f_false_positives, 
+                                      &f_false_positives,
+                                      result_hosts))
+            {
+              fclose (out);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_qod);
+              g_free (delta_states);
+              cleanup_iterator (&results);
+              cleanup_iterator (&delta_results);
+              tz_revert (zone, tz, old_tz_override);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
+              return -1;
+            }
+        } 
+      else 
+        {
+          if (print_v2_report_delta_xml (out, &results, delta_states,
+                                        ignore_pagination ? 0 : first_result,
+                                        ignore_pagination ? -1 : max_results,
+                                        task, notes,
+                                        notes_details, overrides, 
+                                        overrides_details, sort_order, 
+                                        sort_field, result_hosts_only,
+                                        &orig_filtered_result_count,
+                                        &filtered_result_count,
+                                        &orig_f_holes, &f_holes,
+                                        &orig_f_infos, &f_infos,
+                                        &orig_f_logs, &f_logs,
+                                        &orig_f_warnings, &f_warnings,
+                                        &orig_f_false_positives, 
+                                        &f_false_positives,
+                                        result_hosts))
+            {
+              fclose (out);
+              g_free (sort_field);
+              g_free (levels);
+              g_free (search_phrase);
+              g_free (min_qod);
+              g_free (delta_states);
+              cleanup_iterator (&results);
+              cleanup_iterator (&delta_results);
+              tz_revert (zone, tz, old_tz_override);
+              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (f_host_holes);
+              g_hash_table_destroy (f_host_warnings);
+              g_hash_table_destroy (f_host_infos);
+              g_hash_table_destroy (f_host_logs);
+              g_hash_table_destroy (f_host_false_positives);
+              return -1;
+            }
         }
     }
   else if (get->details)
@@ -28112,7 +29733,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               NULL,
                               0,
                               cert_loaded,
-                              lean);
+                              lean,
+                              0); /* Delta fields. */
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
           if (result_hosts_only)
@@ -28174,7 +29796,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   if (get->details)
     cleanup_iterator (&results);
-  if (delta && get->details)
+  if (delta && get->details && delta_reports_version == 1)
     cleanup_iterator (&delta_results);
 
   /* Print result counts and severity. */
@@ -28262,7 +29884,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           iterator_t hosts;
           init_report_host_iterator (&hosts, report, result_host, 0);
           present = next (&hosts);
-          if (delta && (present == FALSE))
+          if (delta && (present == FALSE) && delta_reports_version == 1)
             {
               cleanup_iterator (&hosts);
               init_report_host_iterator (&hosts, delta, result_host, 0);
@@ -28359,7 +29981,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             }
           cleanup_iterator (&hosts);
         }
-      array_free (result_hosts);
     }
   else if (get->details)
     {
@@ -28463,6 +30084,66 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_hash_table_destroy (f_host_infos);
   g_hash_table_destroy (f_host_logs);
   g_hash_table_destroy (f_host_false_positives);
+
+
+  /* Print TLS certificates */
+
+   if (get->details && result_hosts_only)
+    {
+      gchar *result_host;
+      int index = 0;
+      PRINT (out, "<tls_certificates>");
+      while ((result_host = g_ptr_array_index (result_hosts, index++)))
+        {
+          gboolean present;
+          iterator_t hosts;
+          init_report_host_iterator (&hosts, report, result_host, 0);
+          present = next (&hosts);
+          if (present)
+            {
+              report_host_t report_host = host_iterator_report_host(&hosts);
+
+              if (print_report_host_tls_certificates_xml(report_host, 
+                                                         result_host,
+                                                         out))
+                {
+                  fclose (out);
+                  cleanup_iterator (&hosts);
+                  tz_revert (zone, tz, old_tz_override);
+                  return -1;
+                }
+            }
+          cleanup_iterator (&hosts);
+        }
+      PRINT (out, "</tls_certificates>");
+      array_free (result_hosts);
+    }
+  else if (get->details)
+    {
+      const char *host;
+      iterator_t hosts;
+      init_report_host_iterator (&hosts, report, NULL, 0);
+      
+      PRINT (out, "<tls_certificates>");
+      
+      while (next (&hosts))
+        {
+          report_host_t report_host = host_iterator_report_host(&hosts);
+          host = host_iterator_host (&hosts);
+
+          if (print_report_host_tls_certificates_xml(report_host, 
+                                                     host,
+                                                     out))
+            {
+              fclose (out);
+              cleanup_iterator (&hosts);
+              tz_revert (zone, tz, old_tz_override);
+              return -1;
+            }
+        }
+      cleanup_iterator (&hosts);
+      PRINT (out, "</tls_certificates>");
+    }
 
   end_time = scan_end_time (report);
   PRINT (out,
@@ -29001,15 +30682,14 @@ report_host_noticeable (report_t report, const gchar *host)
          && report_host_result_count (report_host) > 0;
 }
 
-/*
+/**
  * @brief Generate the hash value for the entity of the result and
  * check if osp result for report already exists
  *
  * @param[in]  report      Report.
  * @param[in]  task        Task.
  * @param[in]  r_entity    entity of the result.
- *
- * @param[out] hash_value  The generated hash value of r_entity.
+ * @param[out] entity_hash_value  The generated hash value of r_entity.
  *
  * @return     "1" if osp result already exists, else "0"
  */
@@ -29028,53 +30708,97 @@ check_osp_result_exists (report_t report, task_t task,
                "  WHERE report = %llu and hash_value = '%s');",
                report, *entity_hash_value))
     {
-      const char *type, *severity, *host, *hostname, *port;
-      const char *qod, *path;
-      gchar * desc;
+      const char *desc, *type, *severity, *host;
+      const char *hostname, *port, *qod, *path;
+      gchar *quoted_desc, *quoted_type, *quoted_host;
+      gchar *quoted_hostname, *quoted_port, *quoted_path;
+      double severity_double = 0.0;
+      int qod_int = QOD_DEFAULT;
 
       host = entity_attribute (r_entity, "host");
       hostname = entity_attribute (r_entity, "hostname");
       type = entity_attribute (r_entity, "type");
-      desc = sql_quote (entity_text (r_entity));
-      port = entity_attribute (r_entity, "port") ?: "";
+      desc = entity_text (r_entity);
+      port = entity_attribute (r_entity, "port");
       severity = entity_attribute (r_entity, "severity");
-      qod = entity_attribute (r_entity, "qod") ?: "";
-      path = entity_attribute (r_entity, "uri") ?: "";
+      qod = entity_attribute (r_entity, "qod");
+      path = entity_attribute (r_entity, "uri");
+
+      if (!qod)
+        {
+          qod_int = QOD_DEFAULT;
+        }
+      else
+        {
+          qod_int = atoi (qod);
+          if (qod_int <= 0 || qod_int > 100)
+            qod_int = QOD_DEFAULT;
+        }
+
+      if (!severity || !strcmp (severity, ""))
+        {
+          if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
+            severity_double = SEVERITY_ERROR;
+          else
+            {
+              g_debug ("%s: Result without severity", __func__);
+              return 0;
+            }
+        }
+      else
+        {
+          severity_double = strtod (severity, NULL);
+        }
+
+      quoted_host = sql_quote (host ?: "");
+      quoted_hostname = sql_quote (hostname ?: "");
+      quoted_type = sql_quote (type ?: "");
+      quoted_desc = sql_quote (desc ?: "");
+      quoted_port = sql_quote (port ?: "");
+      quoted_path = sql_quote (path ?: "");
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM results"
                    "   WHERE report = %llu and hash_value = '%s'"
                    "    and host = '%s' and hostname = '%s'"
                    "    and type = '%s' and description = '%s'"
-                   "    and port = '%s' and severity = %s"
-                   "    and qod = %s and path = '%s'"
+                   "    and port = '%s' and severity = %1.1f"
+                   "    and qod = %d and path = '%s'"
                    " );",
                    report, *entity_hash_value,
-                   host, hostname,
-		   type, desc,
-                   port, severity,
-		   qod, path))
+                   quoted_host, quoted_hostname,
+                   quoted_type, quoted_desc,
+                   quoted_port, severity_double,
+                   qod_int, quoted_path))
         {
           g_info ("Captured duplicate result, report: %llu hash_value: %s",
                    report, *entity_hash_value);
           g_debug ("Entity string: %s", entity_string->str);
           return_value = 1;
         }
-      g_free (desc);
+
+      g_free (quoted_host);
+      g_free (quoted_hostname);
+      g_free (quoted_type);
+      g_free (quoted_desc);
+      g_free (quoted_port);
+      g_free (quoted_path);
   }
   g_string_free(entity_string, TRUE);
   return return_value;
 }
 
-/*
- * @brief Generate the hash value for the report host detail and
- * check if the report host detail entry already exists
+/**
+ * @brief Check if host detail exists.
  *
  * @param[in]  report      Report.
- * @param[in]  task        Task.
- * @param[in]  r_entity    entity of the result.
- *
- * @param[out] hash_value  The generated hash value of r_entity.
+ * @param[in]  host        Host.
+ * @param[in]  s_type      Source type.
+ * @param[in]  s_name      Source name.
+ * @param[in]  s_desc      Source description.
+ * @param[in]  name        Name.
+ * @param[in]  value       Value.
+ * @param[out] detail_hash_value  The generated hash value.
  *
  * @return     "1" if osp result already exists, else "0"
  */
@@ -29100,24 +30824,34 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                "  WHERE report_host = %llu and hash_value = '%s');",
                report_host, *detail_hash_value))
     {
-      gchar *quoted_s_desc = sql_quote ((gchar*) s_desc);
+      gchar *quoted_host = sql_quote (host);
+      gchar *quoted_s_type = sql_quote (s_type);
+      gchar *quoted_s_name = sql_quote (s_name);
+      gchar *quoted_s_desc = sql_quote (s_desc);
+      gchar *quoted_name = sql_quote (name);
+      gchar *quoted_value = sql_quote (value);
 
       if (sql_int ("SELECT EXISTS"
                    " (SELECT * FROM report_host_details"
                    "   WHERE report_host = %llu and hash_value = '%s'"
-		   "   and source_type = '%s' and source_name = '%s'"
+                   "   and source_type = '%s' and source_name = '%s'"
                    "   and source_description = '%s'"
                    "   and  name = '%s' and value = '%s'"
                    " );",
-                   report_host, *detail_hash_value,  s_type, s_name,
-                   quoted_s_desc, name, value))
+                   report_host, *detail_hash_value, quoted_s_type,
+                   quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
         {
           g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
-                      report, *detail_hash_value);
+                  report, *detail_hash_value);
           g_debug ("Hash string: %s", hash_string);
           return_value = 1;
         }
+      g_free (quoted_host);
+      g_free (quoted_s_type);
+      g_free (quoted_s_name);
       g_free (quoted_s_desc);
+      g_free (quoted_name);
+      g_free (quoted_value);
     }
   g_free (hash_string);
   return return_value;
@@ -29296,11 +31030,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
   if (has_results)
     {
-      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;", 
+      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
            report);
       report_add_results_array (report, results_array);
     }
-  
+
 
  end_parse_osp_report:
   sql_commit ();
@@ -29643,7 +31377,8 @@ copy_task (const char* name, const char* comment, const char *task_id,
  * @param[in]  task      The task.
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
- * @return 0 on success, 1 if task is hidden, -1 on error.
+ * @return 0 on success, 1 if task is hidden, 3 if reports table is locked,
+ *         -1 on error.
  */
 static int
 delete_task_lock (task_t task, int ultimate)
@@ -29661,23 +31396,22 @@ delete_task_lock (task_t task, int ultimate)
    * If the task is already active then delete_report (via delete_task)
    * will fail and rollback. */
   lock_retries = LOCK_RETRIES;
-  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+  lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
-      sleep(LOCK_RETRY_DELAY);
-      lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+      lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
       lock_retries--;
     }
   if (lock_ret == 0)
     {
       sql_rollback ();
-      return -1;
+      return 3;
     }
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
     {
       sql_rollback ();
-      return -1;
+      return 1;
     }
 
   ret = delete_task (task, ultimate);
@@ -29698,6 +31432,7 @@ delete_task_lock (task_t task, int ultimate)
  * @param[in]  task_pointer  A pointer to the task.
  *
  * @return 0 if deleted, 1 if delete requested, 2 if task is hidden,
+ *         3 if reports table is locked,
  *         -1 if error, -5 if scanner is down.
  */
 int
@@ -29750,8 +31485,8 @@ request_delete_task (task_t* task_pointer)
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 deleted, 1 delete requested, 2 task is hidden, 3 failed to find
- *         task, 99 permission denied, -1 error, -5 scanner is down, -7 no CA
- *         cert.
+ *         task, 4 reports table locked, 99 permission denied,
+ *         -1 error, -5 scanner is down, -7 no CA cert.
  */
 int
 request_delete_task_uuid (const char *task_id, int ultimate)
@@ -29841,17 +31576,16 @@ request_delete_task_uuid (const char *task_id, int ultimate)
                * If the task is running already then delete_task will lead to
                * ROLLBACK. */
               lock_retries = LOCK_RETRIES;
-              lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+              lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
               while ((lock_ret == 0) && (lock_retries > 0))
                 {
-                  sleep(LOCK_RETRY_DELAY);
-                  lock_ret = sql_int ("SELECT try_exclusive_lock('reports');");
+                  lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
                   lock_retries--;
                 }
               if (lock_ret == 0)
                 {
                   sql_rollback ();
-                  return -1;
+                  return 4;
                 }
             }
 
@@ -32054,13 +33788,17 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  {                                                             \
    GET_ITERATOR_COLUMNS (targets),                             \
    { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
-   { "target_credential (id, 0, CAST ('ssh' AS text))",        \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('ssh' AS text))",                      \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "target_login_port (id, 0, CAST ('ssh' AS text))",        \
      "ssh_port",                                               \
      KEYWORD_TYPE_INTEGER },                                   \
-   { "target_credential (id, 0, CAST ('smb' AS text))",        \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('smb' AS text))",                      \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "port_list", NULL, KEYWORD_TYPE_INTEGER },                \
@@ -32083,15 +33821,21 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },      \
    { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },     \
    { "alive_test", NULL, KEYWORD_TYPE_INTEGER },               \
-   { "target_credential (id, 0, CAST ('esxi' AS text))",       \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('esxi' AS text))",                     \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "target_credential (id, 0, CAST ('snmp' AS text))",       \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('snmp' AS text))",                     \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "target_credential (id, 0, CAST ('elevate' AS text))",    \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('elevate' AS text))",                  \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
@@ -32101,40 +33845,45 @@ modify_target (const char *target_id, const char *name, const char *hosts,
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('ssh' AS text)))",     \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('ssh' AS text)))",            \
      "ssh_credential",                                         \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('smb' AS text)))",     \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('smb' AS text)))",            \
      "smb_credential",                                         \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('esxi' AS text)))",    \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('esxi' AS text)))",           \
      "esxi_credential",                                        \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('snmp' AS text)))",    \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('snmp' AS text)))",           \
      "snmp_credential",                                        \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
-     "       = target_credential (targets.id, 0,"              \
-     "                            CAST ('elevate' AS text)))", \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('elevate' AS text)))",        \
      "ssh_elevate_credential",                                 \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
@@ -33840,7 +35589,9 @@ check_db_encryption_key ()
   lsc_crypt_ctx_t crypt_ctx;
   gchar *secret;
 
-  crypt_ctx = lsc_crypt_new ();
+  char *encryption_key_uid = current_encryption_key_uid (TRUE);
+  crypt_ctx = lsc_crypt_new (encryption_key_uid);
+  free (encryption_key_uid);
   /* The encryption layer creates the key if it does not exist. */
   secret = lsc_crypt_encrypt (crypt_ctx, "dummy", "dummy", NULL);
   lsc_crypt_release (crypt_ctx);
@@ -34081,7 +35832,8 @@ validate_credential_username_for_format (const gchar *username,
  *         11 community missing, 12 auth algorithm missing,
  *         14 privacy algorithm missing,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
- *         17 invalid certificate, 99 permission denied, -1 error.
+ *         17 invalid certificate, 18 cannot determine type,
+ *         99 permission denied, -1 error.
  */
 int
 create_credential (const char* name, const char* comment, const char* login,
@@ -34158,7 +35910,7 @@ create_credential (const char* name, const char* comment, const char* login,
   else
     {
       g_warning ("%s: Cannot determine type of new credential", __func__);
-      return -1;
+      return 18;
     }
 
   /* Validate credential data */
@@ -34334,7 +36086,9 @@ create_credential (const char* name, const char* comment, const char* login,
       if (!disable_encrypted_credentials)
         {
           gchar *secret;
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "password", given_password,
                                       "private_key", key_private, NULL);
@@ -34373,7 +36127,9 @@ create_credential (const char* name, const char* comment, const char* login,
       if (!disable_encrypted_credentials)
         {
           gchar *secret;
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "community", community,
                                       "password", given_password,
@@ -34415,7 +36171,9 @@ create_credential (const char* name, const char* comment, const char* login,
 
       if (!disable_encrypted_credentials)
         {
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
           gchar *secret = lsc_crypt_encrypt (crypt_ctx,
                                              "password", given_password,
                                              NULL);
@@ -34476,7 +36234,9 @@ create_credential (const char* name, const char* comment, const char* login,
     if (!disable_encrypted_credentials)
       {
         gchar *secret;
-        crypt_ctx = lsc_crypt_new ();
+        char *encryption_key_uid = current_encryption_key_uid (TRUE);
+        crypt_ctx = lsc_crypt_new (encryption_key_uid);
+        free (encryption_key_uid);
         if (generated_private_key)
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "password", generated_password,
@@ -35292,7 +37052,9 @@ credential_encrypted_value (credential_t credential, const char* value_name)
       gchar *secret;
       const char* decrypted;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       secret = sql_string ("SELECT value FROM credentials_data"
                            " WHERE credential = %llu"
@@ -35423,7 +37185,9 @@ set_credential_password (credential_t credential, const char *password)
   if (!disable_encrypted_credentials)
     {
       gchar *encrypted_blob;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
                                           "password", password, NULL);
       if (!encrypted_blob)
@@ -35467,7 +37231,9 @@ set_credential_private_key (credential_t credential,
   if (!disable_encrypted_credentials)
     {
       gchar *encrypted_blob;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
                                           "private_key", private_key,
                                           "password", passphrase,
@@ -35530,7 +37296,9 @@ set_credential_snmp_secret (credential_t credential, const char* community,
   if (!disable_encrypted_credentials)
     {
       gchar *encrypted_blob;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
       encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
                                           "community", community,
                                           "password", password,
@@ -35655,7 +37423,11 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
     {
       /* This is an encrypted credential.  */
       if (!iterator->crypt_ctx)
-        iterator->crypt_ctx = lsc_crypt_new ();
+        {
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          iterator->crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+        }
 
       return lsc_crypt_decrypt (iterator->crypt_ctx, secret, type);
     }
@@ -37115,6 +38887,21 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 }
 
 /**
+ * @brief Initialise a note iterator not limited to result, task or NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_note_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_note_iterator (iterator, get, 0, 0, 0);
+}
+
+/**
  * @brief Get the NVT OID from a note iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -38372,6 +40159,21 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
 }
 
 /**
+ * @brief Initialise an override iterator not limited to result, task or NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_override_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_override_iterator (iterator, get, 0, 0, 0);
+}
+
+/**
  * @brief Get the NVT OID from a override iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -38573,8 +40375,8 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
  * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
  *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server.
+ * @return 0 success, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -5 database is too new.
  */
 int
 manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -38674,7 +40476,9 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
           lsc_crypt_ctx_t crypt_ctx;
           char *secret;
 
-          crypt_ctx = lsc_crypt_new ();
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
 
           secret = lsc_crypt_encrypt (crypt_ctx,
                                       "private_key", key_priv, NULL);
@@ -38755,8 +40559,8 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  uuid        UUID of scanner.
  *
  * @return 0 success, 2 failed to find scanner, 3 scanner can't be deleted,
- *         -1 error.  -2 database is wrong version, -3 database needs to be
- *         initialised from server.
+ *         -1 error.  -2 database is too old, -3 database needs to be
+ *         initialised from server, -5 database is too new.
  */
 int
 manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -38827,8 +40631,8 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
  *
  * @return 0 success, , 1 failed to find scanner, 2 scanner with new name
  *         exists, 3 scanner_id required, 4 invalid value, 99 permission
- *         denied, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server.
+ *         denied, -1 error, -2 database is too old, -3 database needs
+ *         to be initialised from server, -5 database is too new.
  */
 int
 manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -38978,7 +40782,9 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
               lsc_crypt_ctx_t crypt_ctx;
               char *secret;
 
-              crypt_ctx = lsc_crypt_new ();
+              char *encryption_key_uid = current_encryption_key_uid (TRUE);
+              crypt_ctx = lsc_crypt_new (encryption_key_uid);
+              free (encryption_key_uid);
 
               secret = lsc_crypt_encrypt (crypt_ctx,
                                           "private_key", key_priv, NULL);
@@ -39051,8 +40857,8 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  uuid        UUID of scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
- *         -1 error.  -2 database is wrong version, -3 database needs to be
- *         initialised from server.
+ *         -1 error, -2 database is too old, -3 database needs to be
+ *         initialised from server, -5 database is too new.
  */
 int
 manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -39808,8 +41614,11 @@ scanner_iterator_key_priv (iterator_t* iterator)
     {
       const char *secret;
       if (!iterator->crypt_ctx)
-        iterator->crypt_ctx = lsc_crypt_new ();
-
+        {
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          iterator->crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+        }
       secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
       private_key = lsc_crypt_get_private_key (iterator->crypt_ctx, secret);
     }
@@ -40136,7 +41945,9 @@ scanner_key_priv (scanner_t scanner)
     {
       gchar *secret;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       secret = sql_string ("SELECT value FROM credentials_data"
                            " WHERE credential"
@@ -40195,7 +42006,9 @@ scanner_password (scanner_t scanner)
     {
       gchar *secret;
       lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
+      char *encryption_key_uid = current_encryption_key_uid (TRUE);
+      crypt_ctx = lsc_crypt_new (encryption_key_uid);
+      free (encryption_key_uid);
 
       secret = sql_string ("SELECT credentials_data.value"
                            " FROM scanners, credentials_data"
@@ -44216,7 +46029,7 @@ add_feed_role_permissions (const char *type,
 
   roles_str = NULL;
   setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles_str);
-  
+
   if (roles_str == NULL || strlen (roles_str) == 0)
     {
       g_message ("%s: No feed import roles defined", __func__);
@@ -44435,7 +46248,7 @@ clean_feed_role_permissions (const char *type,
                      permission_resource,
                      sql_roles->str);
 
-      while (next (&permissions)) 
+      while (next (&permissions))
         {
           const char *role_id = iterator_string (&permissions, 0);
           const char *role_name = iterator_string (&permissions, 1);
@@ -47623,7 +49436,10 @@ hosts_set_identifiers (report_t report)
           GString *select;
 
           if (report_host_noticeable (report, ip) == 0)
-            continue;
+            {
+              host_index++;
+              continue;
+            }
 
           quoted_host_name = sql_quote (ip);
 
@@ -48568,6 +50384,8 @@ DEF_ACCESS (host_identifier_iterator_os_title,
 /**
  * @brief Extra WHERE clause for host assets.
  *
+ * @param[in]  filter  Filter term.
+ *
  * @return WHERE clause.
  */
 static gchar*
@@ -48657,6 +50475,45 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
 
   g_free (filter);
   g_free (extra_where);
+  return ret;
+}
+
+/**
+ * @brief Initialise a host iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (hosts) };
+  int ret;
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            NULL,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
   return ret;
 }
 
@@ -48896,6 +50753,48 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  0);
 
   g_free (extra_tables);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise an OS iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (oss) };
+  int ret;
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 NULL,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 0);
 
   return ret;
 }
@@ -49820,6 +51719,19 @@ setting_filter (const char *resource)
 }
 
 /**
+ * @brief Return the Note/Override Excerpt Size user setting as an int.
+ *
+ * @return The excerpt size.
+ */
+int
+setting_excerpt_size_int ()
+{
+  if (current_credentials.excerpt_size <= 0)
+    return EXCERPT_SIZE_DEFAULT;
+  return current_credentials.excerpt_size;
+}
+
+/**
  * @brief Return the Dynamic Severity user setting as an int.
  *
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
@@ -49858,6 +51770,21 @@ setting_auto_cache_rebuild_int ()
                   "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
                   "         '1');",
                   current_credentials.uuid);
+}
+
+/**
+ * @brief Return user setting as int.
+ *
+ * @return User setting.
+ */
+static int
+setting_delta_reports_version_int ()
+{
+  int version;
+
+  setting_value_int (SETTING_UUID_DELTA_REPORTS_VERSION, &version);
+
+  return version;
 }
 
 /**
@@ -50161,6 +52088,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
@@ -50271,6 +52199,12 @@ modify_setting (const gchar *uuid, const gchar *name,
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
           reports_clear_count_cache (current_credentials.uuid);
+        }
+
+      if (strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0)
+        {
+          /* Note/Override Excerpt Size */
+          current_credentials.excerpt_size = atoi (value);
         }
 
       if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
@@ -50725,6 +52659,9 @@ setting_name (const gchar *uuid)
     return "Feed Import Owner";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
     return "Feed Import Roles";
+  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+    return "Delta Reports Version";
+
   return NULL;
 }
 
@@ -50761,6 +52698,9 @@ setting_description (const gchar *uuid)
     return "User who is given ownership of new resources from feed.";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
     return "Roles given access to new resources from feed.";
+  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+    return "Version of the generation of the Delta Reports.";
+
   return NULL;
 }
 
@@ -50847,6 +52787,12 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       g_strfreev (split);
     }
 
+  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+    {
+      if (strcmp(value, "1") != 0 && strcmp(value, "2") != 0)
+        return 1;
+    }
+
   return 0;
 }
 
@@ -50931,7 +52877,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
-      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES))
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
+      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -50957,7 +52904,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
 
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
-          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0))
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
@@ -51075,8 +53023,8 @@ manage_default_ca_cert ()
  * @param[in]  role_name   Role of user.  Admin if NULL.
  *
  * @return 0 success, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_create_user (GSList *log_config, const db_conn_info_t *database,
@@ -51169,8 +53117,8 @@ manage_create_user (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  inheritor_name  Name of user that inherits user's resources.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks, -1 error.
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_delete_user (GSList *log_config, const db_conn_info_t *database,
@@ -51939,6 +53887,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
         case TASK_STATUS_QUEUED:
         case TASK_STATUS_STOP_REQUESTED:
         case TASK_STATUS_STOP_WAITING:
+        case TASK_STATUS_PROCESSING:
           {
             cleanup_iterator (&tasks);
             free (current_credentials.uuid);
@@ -52017,7 +53966,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       real_inheritor_id = user_uuid (inheritor);
 
       /* Only the current user, owned users or global users may inherit. */
-      if (strcmp (real_inheritor_id, current_credentials.uuid)
+      if (current_credentials.uuid
+          && strcmp (current_credentials.uuid, "")
+          && strcmp (real_inheritor_id, current_credentials.uuid)
           && sql_int ("SELECT NOT (" ACL_IS_GLOBAL () ")"
                       " FROM users WHERE id = %llu",
                       inheritor)
@@ -53315,7 +55266,7 @@ user_resources_in_use (user_t user,
    { "''", "owner", KEYWORD_TYPE_STRING },                                   \
    /* Type specific columns */                                               \
    {                                                                         \
-     "vuln_results (uuid, opts.task, opts.report, opts.host)",               \
+     "vuln_results.result_count",                                            \
      "results",                                                              \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
@@ -53337,19 +55288,108 @@ user_resources_in_use (user_t user,
      "type", NULL, KEYWORD_TYPE_INTEGER                                      \
    },                                                                        \
    {                                                                         \
-     "(SELECT min (date) FROM results"                                       \
-     VULN_RESULTS_WHERE ")",                                                 \
+     "vuln_results.oldest",                                                  \
      "oldest",                                                               \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(SELECT max (date) FROM results"                                       \
-     VULN_RESULTS_WHERE ")",                                                 \
+     "vuln_results.newest",                                                  \
      "newest",                                                               \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
+
+/**
+ * @brief Generate the extra_with string for a vuln iterator.
+ *
+ * @param[in]  task_id    UUID of the task to limit vulns to.
+ * @param[in]  report_id  UUID of the report to limit vulns to.
+ * @param[in]  host       IP address of the task to limit vulns to.
+ * @param[in]  min_qod    Minimum QoD.
+ *
+ * @return Newly allocated string with the extra_with clause.
+ */
+static gchar*
+vuln_iterator_extra_with (const gchar *task_id, const gchar *report_id,
+                          const gchar *host)
+{
+  GString *ret;
+
+  ret = g_string_new ("");
+
+  g_string_append_printf (ret,
+                          "vuln_results AS ("
+                          " SELECT nvt, count(*) as result_count,"
+                          "  min(date) AS oldest, max(date) AS newest"
+                          "  FROM results"
+                          "  WHERE severity != " G_STRINGIFY (SEVERITY_ERROR)
+                          "    AND (" ACL_USER_OWNS ()
+                          "         OR results.task IN"
+                          "            (SELECT task FROM permissions_get_tasks"
+                          "              WHERE \"user\" ="
+                          "                (SELECT users.id FROM users WHERE"
+                          "                 uuid = '%s')"
+                          "                AND has_permission))",
+                          current_credentials.uuid,
+                          current_credentials.uuid);
+
+  if (task_id && strcmp (task_id, ""))
+    {
+      task_t task = 0;
+      find_task_with_permission (task_id, &task, "get_tasks");
+      g_string_append_printf (ret, " AND results.task = %llu", task);
+    }
+
+  if (report_id && strcmp (report_id, ""))
+    {
+      report_t report = 0;
+      find_report_with_permission (task_id, &report, "get_reports");
+      g_string_append_printf (ret, " AND results.report = %llu", report);
+    }
+
+  if (host && strcmp (host, ""))
+    {
+      gchar *quoted_host = sql_quote (host);
+      g_string_append_printf (ret, " AND results.host = '%s'", quoted_host);
+      g_free (quoted_host);
+    }
+
+  g_string_append (ret, " GROUP BY nvt)");
+
+  return g_string_free (ret, FALSE);
+}
+
+/**
+ * @brief Generate the extra_with string for a vuln iterator using a filter.
+ *
+ * @param[in]  filter     The filter term to use.
+ *
+ * @return Newly allocated string with the extra_with clause.
+ */
+static gchar*
+vuln_iterator_extra_with_from_filter (const gchar *filter)
+{
+  gchar *task_id, *report_id, *host;
+  gchar *ret;
+
+  if (filter)
+    {
+      task_id = filter_term_value (filter, "task_id");
+      report_id = filter_term_value (filter, "report_id");
+      host = filter_term_value (filter, "host");
+    }
+  else
+    task_id = report_id = host = NULL;
+
+  ret = vuln_iterator_extra_with (task_id, report_id, host);
+
+  g_free (task_id);
+  g_free (report_id);
+  g_free (host);
+
+  return ret;
+}
 
 /**
  * @brief Generate the extra_tables string for a vuln iterator.
@@ -53367,7 +55407,8 @@ vuln_iterator_opts_table (const gchar *task_id, const gchar *report_id,
 {
   GString *ret;
 
-  ret = g_string_new (", (SELECT");
+  ret = g_string_new (" JOIN vuln_results ON vuln_results.nvt = vulns.uuid,"
+                      " (SELECT");
 
   if (task_id && strcmp (task_id, ""))
     {
@@ -53455,7 +55496,7 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
 {
   int ret;
   gchar *filter;
-  gchar *extra_tables, *extra_where;
+  gchar *extra_with, *extra_tables, *extra_where;
   static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
   static column_t select_columns[] = VULN_ITERATOR_COLUMNS;
 
@@ -53474,28 +55515,35 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
   else
     filter = NULL;
 
+  extra_with
+    = vuln_iterator_extra_with_from_filter (filter ? filter : get->filter);
+
   extra_tables
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
-    = vulns_extra_where ();
+    = vulns_extra_where (filter_term_min_qod (filter ? filter : get->filter));
 
-  ret = init_get_iterator2 (iterator,
-                            "vuln",
-                            get,
-                            select_columns,
-                            NULL, /* trash_select_columns */
-                            NULL, /* where_columns */
-                            NULL, /* trash_where_columns */
-                            filter_columns,
-                            0     /* distinct */,
-                            extra_tables, /* extra_tables */
-                            extra_where,  /* extra_where */
-                            NULL, /* extra_where_single */
-                            0,    /* owned */
-                            0,    /* ignore_id */
-                            NULL);/* extra_order */
+  ret = init_get_iterator2_with (iterator,
+                                 "vuln",
+                                 get,
+                                 select_columns,
+                                 NULL, /* trash_select_columns */
+                                 NULL, /* where_columns */
+                                 NULL, /* trash_where_columns */
+                                 filter_columns,
+                                 0     /* distinct */,
+                                 extra_tables, /* extra_tables */
+                                 extra_where,  /* extra_where */
+                                 NULL, /* extra_where_single */
+                                 0,    /* owned */
+                                 0,    /* ignore_id */
+                                 NULL, /* extra_order */
+                                 extra_with,
+                                 0,    /* acl_with_optional */
+                                 0);   /* assume_permitted */
 
+  g_free (extra_with);
   g_free (extra_tables);
   g_free (extra_where);
 
@@ -53613,7 +55661,7 @@ vuln_count (const get_data_t *get)
   gchar *filter;
   static const char *filter_columns[] = VULN_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = VULN_ITERATOR_COLUMNS;
-  gchar *extra_tables, *extra_where;
+  gchar *extra_with, *extra_tables, *extra_where;
   int ret;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
@@ -53631,16 +55679,21 @@ vuln_count (const get_data_t *get)
   else
     filter = NULL;
 
+  extra_with
+    = vuln_iterator_extra_with_from_filter (filter ? filter : get->filter);
+
   extra_tables
     = vuln_iterator_opts_from_filter (filter ? filter : get->filter);
 
   extra_where
-    = vulns_extra_where ();
+    = vulns_extra_where (filter_term_min_qod (filter ? filter : get->filter));
 
-  ret = count ("vuln", get, columns, NULL /*trash_columns*/, filter_columns, 0,
-               extra_tables, extra_where, FALSE);
+  ret = count2 ("vuln", get, columns, NULL /*trash_columns*/, NULL, NULL,
+                filter_columns, 0, extra_tables, extra_where, extra_with,
+                FALSE);
 
   g_free (filter);
+  g_free (extra_with);
   g_free (extra_tables);
   g_free (extra_where);
 
@@ -53653,11 +55706,10 @@ vuln_count (const get_data_t *get)
  * @return WHERE clause.
  */
 static gchar*
-vulns_extra_where ()
+vulns_extra_where (int min_qod)
 {
-  return g_strdup (" AND vuln_results_exist (uuid, opts.task, opts.report,"
-                   "                         opts.host)"
-                   " AND (qod >= opts.min_qod)");
+  return g_strdup_printf (" AND (vulns.qod >= %d)",
+                          min_qod);
 }
 
 /**
@@ -53774,6 +55826,102 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 }
 
 /**
+ * @brief Gets the current RADIUS secret key.
+ *
+ * @param[out] is_encrypted  Whether the key is encrypted. NULL to ignore.
+ *
+ * @return Freshly allocated RADIUS secret key.
+ */
+char *
+get_radius_key (gboolean *is_encrypted)
+{
+  gchar *key = NULL, *secret;
+
+  if (sql_int64_0 ("SELECT value FROM meta"
+                   " WHERE name = 'radius_key_is_unencrypted'"))
+    {
+      if (is_encrypted)
+        *is_encrypted = FALSE;
+      key = sql_string ("SELECT value FROM meta"
+                        " WHERE name = 'radius_key';");
+    }
+  else
+    {
+      if (is_encrypted)
+        *is_encrypted = TRUE;
+      secret = sql_string ("SELECT value FROM meta"
+                           " WHERE name = 'radius_key';");
+      if (!secret)
+        key = strdup ("");
+      else
+        {
+          const char *decrypted;
+          lsc_crypt_ctx_t crypt_ctx;
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+          decrypted = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
+          if (decrypted)
+            key = strdup (decrypted);
+          else
+            key = strdup ("");
+          lsc_crypt_release (crypt_ctx);
+          g_free (secret);
+        }
+    }
+
+  return key;
+}
+
+/**
+ * @brief Set RADIUS key.
+ *
+ * @param[in]  key        Secret key.
+ * @param[in]  encrypt    Whether to encrypt the key.
+ */
+void
+set_radius_key (const char *key, gboolean encrypt)
+{
+  char *quoted;
+  char *secret;
+  lsc_crypt_ctx_t crypt_ctx;
+  char *encryption_key_uid = current_encryption_key_uid (TRUE);
+  crypt_ctx = lsc_crypt_new (encryption_key_uid);
+  free (encryption_key_uid);
+
+  if (encrypt == FALSE)
+    {
+      quoted = sql_quote (key);
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('radius_key', '%s')"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+            quoted);
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('radius_key_is_unencrypted', '1')"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+    }
+  else
+    {
+      secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
+      if (secret)
+        {
+          quoted = sql_quote (secret);
+          sql ("INSERT INTO meta (name, value)"
+                " VALUES ('radius_key', '%s')"
+                " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+                quoted);
+          g_free (secret);
+          secret = NULL;
+          g_free (quoted);
+        }
+      lsc_crypt_release(crypt_ctx);
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('radius_key_is_unencrypted', '0')"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+    }
+}
+
+/**
  * @brief Get RADIUS info.
  *
  * @param[out]  enabled     Whether RADIUS is enabled.
@@ -53783,8 +55931,6 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 void
 manage_get_radius_info (int *enabled, char **host, char **key)
 {
-  char *secret;
-
   if (enabled)
     *enabled = radius_auth_enabled ();
 
@@ -53792,30 +55938,15 @@ manage_get_radius_info (int *enabled, char **host, char **key)
   if (!*host)
     *host = g_strdup ("127.0.0.1");
 
-  secret = sql_string ("SELECT value FROM meta WHERE name = 'radius_key';");
-  if (!secret)
-    *key = g_strdup ("");
-  else
-    {
-      const char *decrypted;
-      lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
-      decrypted = lsc_crypt_decrypt (crypt_ctx, secret, "secret_key");
-      if (decrypted)
-        *key = g_strdup (decrypted);
-      else
-        *key = g_strdup ("");
-      lsc_crypt_release (crypt_ctx);
-      g_free (secret);
-    }
+  *key = get_radius_key (NULL);
 }
 
 /**
  * @brief Set RADIUS info.
  *
- * @param[out]  enabled    Whether RADIUS is enabled. -1 to keep current value.
- * @param[out]  host       RADIUS host. NULL to keep current value.
- * @param[out]  key        Secret key.  NULL to keep current value.
+ * @param[in]  enabled    Whether RADIUS is enabled. -1 to keep current value.
+ * @param[in]  host       RADIUS host. NULL to keep current value.
+ * @param[in]  key        Secret key.  NULL to keep current value.
  */
 void
 manage_set_radius_info (int enabled, gchar *host, gchar *key)
@@ -53842,22 +55973,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 
   if (key && strlen (key))
     {
-      char *secret;
-      lsc_crypt_ctx_t crypt_ctx;
-      crypt_ctx = lsc_crypt_new ();
-
-      sql ("DELETE FROM meta WHERE name LIKE 'radius_key';");
-      secret = lsc_crypt_encrypt (crypt_ctx, "secret_key", key, NULL);
-      if (secret)
-        {
-          quoted = sql_quote (secret);
-          sql ("INSERT INTO meta (name, value) VALUES ('radius_key', '%s');",
-               quoted);
-          g_free (secret);
-	  secret = NULL;
-          g_free (quoted);
-        }
-      lsc_crypt_release(crypt_ctx);
+      set_radius_key (key, disable_encrypted_credentials == FALSE);
     }
 
   sql_commit ();
@@ -55578,7 +57694,7 @@ type_extra_where (const char *type, int trash, const char *filter,
     }
   else if (strcasecmp (type, "VULN") == 0)
     {
-      extra_where = vulns_extra_where ();
+      extra_where = vulns_extra_where (filter_term_min_qod (filter));
     }
   else
     extra_where = g_strdup ("");
@@ -55593,9 +57709,13 @@ type_extra_where (const char *type, int trash, const char *filter,
  *
  * @return The extra WITH clauses.
  */
-static const char *
-type_extra_with (const char *type)
+static gchar *
+type_extra_with (const char *type, const char *filter)
 {
+  if (strcasecmp (type, "VULN") == 0)
+    {
+      return vuln_iterator_extra_with_from_filter(filter);
+    }
   return NULL;
 }
 
@@ -55624,11 +57744,11 @@ type_build_select (const char *type, const char *columns_str,
 {
   gchar *filter, *with;
   gchar *from_table, *opts_table;
-  gchar *clause, *extra_where, *filter_order;
+  gchar *clause, *extra_where, *lateral_clause, *filter_order;
   int first, max;
   gchar *owned_clause, *owner_filter;
   array_t *permissions;
-  const char *extra_with;
+  gchar *extra_with;
 
   column_t *select_columns, *where_columns;
   const char **filter_columns;
@@ -55668,13 +57788,18 @@ type_build_select (const char *type, const char *columns_str,
 
       original = opts_table;
 
+      lateral_clause = result_iterator_lateral (overrides, 
+                                                dynamic, 
+                                                "results", 
+                                                "nvts");
+
       opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
                                     " ON results.nvt = nvts.oid %s,"
                                     " LATERAL %s AS lateral_new_severity",
                                     original,
-                                    result_iterator_lateral (overrides,
-                                                             dynamic));
+                                    lateral_clause);
       g_free (original);
+      g_free (lateral_clause);
     }
 
   // WHERE ... part
@@ -55708,7 +57833,7 @@ type_build_select (const char *type, const char *columns_str,
                                           sql_select_limit (max),
                                           first);
 
-  extra_with = type_extra_with (type);
+  extra_with = type_extra_with (type, filter ? filter : get->filter);
 
   if (extra_with)
     {
@@ -55754,6 +57879,7 @@ type_build_select (const char *type, const char *columns_str,
   g_free (from_table);
   g_free (opts_table);
   g_free (owned_clause);
+  g_free (extra_with);
   g_free (extra_where);
   g_free (pagination_clauses);
 
@@ -56047,8 +58173,8 @@ delete_permissions_cache_for_user (user_t user)
  * @param[in]  name        Name of optimization.
  *
  * @return 0 success, 1 error in name, -1 error,
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ *         -2 database is too old, -3 database needs to be initialised
+ *         from server, -5 database is too new.
  */
 int
 manage_optimize (GSList *log_config, const db_conn_info_t *database,
@@ -56367,6 +58493,22 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
           success_text = g_strdup_printf ("Optimized: cleanup-sequences."
                                           " Cleaned up id sequences.");
         }
+    }
+  else if (strcasecmp (name, "cleanup-tls-certificate-encoding") == 0)
+    {
+      int changes;
+      sql_begin_immediate ();
+
+      g_debug ("%s: Cleaning up encoding of TLS certificate DNs",
+               __func__);
+
+      changes = cleanup_tls_certificate_encoding ();
+
+      sql_commit ();
+
+      success_text = g_strdup_printf ("Optimized: Cleaned up encoding"
+                                      " of %d TLS certificate(s).",
+                                      changes);
     }
   else if (strcasecmp (name, "migrate-relay-sensors") == 0)
     {

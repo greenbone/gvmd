@@ -42,15 +42,6 @@
 #define G_LOG_DOMAIN "md  crypt"
 
 /**
- * @brief The name of the encryption key.
- *
- * Note that the code will use the "=" prefix flag to indicate an
- * exact search.  Thus when creating the key it should not have a
- * comment or email address part.
- */
-#define ENCRYPTION_KEY_UID "GVM Credential Encryption"
-
-/**
  * @brief The maximum size of an encrypted value
  *
  * To avoid excessive memory allocations we put a limit on the size of
@@ -94,7 +85,21 @@ struct lsc_crypt_ctx_s
   char *plaintext;             ///< Text to be encrypted.
   size_t plaintextlen;         ///< Length of text.
   struct namelist_s *namelist; ///< Info describing PLAINTEXT.
+  gchar *enckey_uid;           ///< Encryption key UID to use.
 };
+
+
+/* Key generation parameters  */
+
+/**
+ * @brief Key type.
+ */
+gchar *enckey_type = NULL;
+
+/**
+ * @brief Key length.
+ */
+int enckey_length = 0;
 
 
 /* Simple helper functions  */
@@ -166,6 +171,38 @@ get32 (const void *buffer)
 
 /* Local functions. */
 
+/**
+ * @brief Generate GnupgKeyParms element.
+ *
+ * @param enckey_uid  The Name-Real field.
+ *
+ * @return Element or NULL.
+ */
+static gchar*
+generate_parms_string (const char *enckey_uid)
+{
+  gchar *parms_string = NULL;
+
+  if (enckey_type == NULL || strcasecmp (enckey_type, "RSA") == 0)
+    {
+      parms_string = g_strdup_printf (
+          "<GnupgKeyParms format=\"internal\">\n"
+          "Key-Type: RSA\n"
+          "Key-Length: %d\n"
+          "Key-Usage: encrypt\n"
+          "Name-Real: %s\n"
+          "Expire-Date: 0\n"
+          "%%no-protection\n"
+          "%%no-ask-passphrase\n"
+          "</GnupgKeyParms>\n",
+          (enckey_length > 0) ? enckey_length
+                              : DEFAULT_ENCRYPTION_RSA_KEY_LENGTH,
+          enckey_uid
+        );
+    }
+  return parms_string;
+}
+
 
 /**
  * @brief Create the credential encryption key
@@ -179,16 +216,14 @@ get32 (const void *buffer)
 static int
 create_the_key (lsc_crypt_ctx_t ctx)
 {
-  const char parms[] =
-    "<GnupgKeyParms format=\"internal\">\n"
-    "Key-Type: RSA\n"
-    "Key-Length: 2048\n"
-    "Key-Usage: encrypt\n"
-    "Name-Real: " ENCRYPTION_KEY_UID "\n"
-    "Expire-Date: 0\n"
-    "%no-protection\n"
-    "%no-ask-passphrase\n"
-    "</GnupgKeyParms>\n";
+  if (ctx->enckey_uid == NULL || strcmp (ctx->enckey_uid, "") == 0)
+    {
+      log_gpgme (G_LOG_LEVEL_WARNING, 0,
+                 "encryption context has no key UID set");
+      return -1;
+    }
+
+  gchar *parms = generate_parms_string (ctx->enckey_uid);
   gpg_error_t err;
 
   log_gpgme (G_LOG_LEVEL_INFO, 0, "starting key generation ...");
@@ -196,11 +231,11 @@ create_the_key (lsc_crypt_ctx_t ctx)
   if (err)
     {
       log_gpgme(G_LOG_LEVEL_WARNING, err, "error creating OpenPGP key '%s'",
-                ENCRYPTION_KEY_UID);
+                ctx->enckey_uid);
       return -1;
     }
   log_gpgme (G_LOG_LEVEL_INFO, 0,
-             "OpenPGP key '%s' has been generated", ENCRYPTION_KEY_UID);
+             "OpenPGP key '%s' has been generated", ctx->enckey_uid);
   return 0;
 }
 
@@ -222,16 +257,25 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
   gpg_error_t err;
   int nfound, any_skipped;
   gpgme_key_t found, key;
+  gchar *enckey_filter;
 
+  if (ctx->enckey_uid == NULL || strcmp (ctx->enckey_uid, "") == 0)
+    {
+      log_gpgme (G_LOG_LEVEL_WARNING, 0,
+                 "encryption context has no key UID set");
+      return NULL;
+    }
  again:
   /* Search for the public key.  Note that the "=" prefix flag enables
      an exact search.  */
-  err = gpgme_op_keylist_start (ctx->encctx, "="ENCRYPTION_KEY_UID, 0);
+  enckey_filter = g_strdup_printf("=%s", ctx->enckey_uid);
+  err = gpgme_op_keylist_start (ctx->encctx, enckey_filter, 0);
+  g_free (enckey_filter);
   if (err)
     {
       log_gpgme (G_LOG_LEVEL_WARNING, err,
                  "error starting search for OpenPGP key '%s'",
-                 ENCRYPTION_KEY_UID);
+                 ctx->enckey_uid);
       return NULL;
     }
 
@@ -276,13 +320,17 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
     }
   else if (!found)
     {
-      static int genkey_tried;
+      static GHashTable *genkey_tried_uids = NULL;
+      if (genkey_tried_uids == NULL)
+        genkey_tried_uids = g_hash_table_new (g_str_hash, g_str_equal);
 
       /* Try to create the key if we have not seen any matching key at
          all and if this is the first time in this process' lifetime.  */
-      if (!any_skipped && !genkey_tried && !no_create)
+      if (!any_skipped
+          && !no_create
+          && !g_hash_table_contains (genkey_tried_uids, ctx->enckey_uid))
         {
-          genkey_tried = 1;
+          g_hash_table_add (genkey_tried_uids, g_strdup (ctx->enckey_uid));
           if (!create_the_key (ctx))
             goto again; /* Created - search again.  */
         }
@@ -296,7 +344,7 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
     {
       log_gpgme (G_LOG_LEVEL_MESSAGE, err,
                  "error searching for OpenPGP key '%s'",
-                 ENCRYPTION_KEY_UID);
+                 ctx->enckey_uid);
       gpgme_key_unref (found);
       found = NULL;
     }
@@ -476,19 +524,39 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
 /* API */
 
 /**
+ * @brief Sets the parameters for creating a new encryption key
+ *
+ * @param[in]  type   Type of the key.
+ * @param[in]  length Length of the key.
+ *
+ * @return 0.
+ */
+int
+lsc_crypt_enckey_parms_init (const char *type, int length)
+{
+  g_free (enckey_type);
+  enckey_type = type ? g_strdup (type) : NULL;
+  enckey_length = length;
+  return 0;
+}
+
+/**
  * @brief Return a new context for LSC encryption
  *
+ * @param[in]  enckey_uid  UID for key, or NULL.  Will be copied.
+
  * @return A new context object to be released with \ref
  *         lsc_crypt_release.
  */
 lsc_crypt_ctx_t
-lsc_crypt_new ()
+lsc_crypt_new (const char *enckey_uid)
 {
   char * path = g_build_filename (GVMD_STATE_DIR, "gnupg", NULL);
   lsc_crypt_ctx_t ctx;
 
   ctx = g_malloc0 (sizeof *ctx);
   ctx->encctx = gvm_init_gpgme_ctx_from_dir (path);
+  ctx->enckey_uid = enckey_uid ? g_strdup (enckey_uid) : NULL;
   g_free (path);
   if (!ctx->encctx)
     {
@@ -542,6 +610,103 @@ lsc_crypt_flush (lsc_crypt_ctx_t ctx)
   g_free (ctx->plaintext);
   ctx->plaintext = NULL;
 }
+
+/**
+ * @brief Checks if the encryption key defined by the context already exists
+ *
+ * @param[in] ctx        The context
+ *
+ * @return Whether the key exists
+ */
+gboolean
+lsc_crypt_enckey_exists (lsc_crypt_ctx_t ctx)
+{
+  gpgme_key_t key = find_the_key (ctx, TRUE);
+  return key != NULL;
+}
+
+/**
+ * @brief Creates the key for the given context if it does not already exists
+ *
+ * @param[in] ctx        The context
+ *
+ * @return 0 on success, 1 key already exits, -1 on other error.
+ */
+int
+lsc_crypt_create_enckey (lsc_crypt_ctx_t ctx)
+{
+  if (lsc_crypt_enckey_exists (ctx))
+    return 1;
+  if (create_the_key (ctx))
+    return -1;
+  return 0;
+}
+
+
+
+/**
+ * @brief Encrypt a list of name/value pairs
+ *
+ * @param[in] ctx   The context
+ * @param[in] data  The GHashTable containing the plain text data
+ *                  using the name as key, value as value.
+ *
+ * @return A pointer to a freshly allocated string in base64 encoding.
+ *         Caller must free.  On error NULL is returned.
+ */
+char *
+lsc_crypt_encrypt_hashtable (lsc_crypt_ctx_t ctx, GHashTable *data)
+{
+  GString *stringbuf;
+  char *plaintext;
+  size_t plaintextlen;
+  char *ciphertext;
+  char *name, *value;
+  size_t len;
+
+  if (!ctx || !data)
+    return NULL;
+
+  /* Assuming a 2048 bit RSA ssh private key in PEM encoding, a buffer
+     with an initial size of 2k should be large enough.  */
+  stringbuf = g_string_sized_new (2048);
+  GHashTableIter iter;
+  g_hash_table_iter_init (&iter, data);
+
+  while (g_hash_table_iter_next (&iter,
+                                 (gpointer*)(&name),
+                                 (gpointer*)(&value)))
+    {
+      if (!value)
+        value = "";
+      len = strlen (name);
+      if (len)  /* We skip pairs with an empty name. */
+        {
+          put32 (stringbuf, len);
+          g_string_append (stringbuf, name);
+          len = strlen (value);
+          if (len > MAX_VALUE_LENGTH)
+            {
+              g_warning ("%s: value for '%s' larger than our limit (%d)",
+                         G_STRFUNC, name, MAX_VALUE_LENGTH);
+              g_string_free (stringbuf, TRUE);
+              return NULL;
+            }
+          put32 (stringbuf, len);
+          g_string_append (stringbuf, value);
+        }
+    }
+
+  plaintextlen = stringbuf->len;
+  plaintext = g_string_free (stringbuf, FALSE);
+  g_assert (plaintextlen);
+
+  ciphertext = do_encrypt (ctx, plaintext, plaintextlen);
+  g_free (plaintext);
+
+  return ciphertext;
+}
+
 
 
 /**
@@ -603,9 +768,8 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
   while ((name = va_arg (arg_ptr, const char *)))
     ;
   va_end (arg_ptr);
-  plaintext = stringbuf->str;
   plaintextlen = stringbuf->len;
-  g_string_free (stringbuf, FALSE);
+  plaintext = g_string_free (stringbuf, FALSE);
   g_assert (plaintextlen);
 
   ciphertext = do_encrypt (ctx, plaintext, plaintextlen);

@@ -531,6 +531,22 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 }
 
 /**
+ * @brief Initialise a CPE info iterator not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cpe_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_cpe_info_iterator (iterator, get, NULL);
+}
+
+/**
  * @brief Get the title from a CPE iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -582,9 +598,9 @@ DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the XML details / raw data for a given CPE ID.
- * 
+ *
  * @param[in]  cpe_id  ID of the CPE to get the raw XML of.
- * 
+ *
  * @return newly allocated XML details string
  */
 char *
@@ -758,6 +774,22 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 }
 
 /**
+ * @brief Initialise a CVE info iterator not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cve_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_cve_info_iterator (iterator, get, NULL);
+}
+
+/**
  * @brief Get the CVSS attack vector for this CVE.
  *
  * @param[in]  iterator  Iterator.
@@ -888,6 +920,22 @@ init_cert_bund_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 }
 
 /**
+ * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator not 
+ *        limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cert_bund_adv_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_cert_bund_adv_info_iterator (iterator, get, NULL);
+}
+
+/**
  * @brief Count number of cert_bund_adv.
  *
  * @param[in]  get  GET params.
@@ -1001,7 +1049,7 @@ init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid)
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
-		 "                                   AND type = 'cve'))"
+                 "                                   AND type = 'cve'))"
                  " ORDER BY name DESC;",
                  oid);
 }
@@ -1093,6 +1141,22 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
                            FALSE);
   g_free (clause);
   return ret;
+}
+
+/**
+ * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator 
+ *        not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_dfn_cert_adv_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_dfn_cert_adv_info_iterator (iterator, get, NULL);
 }
 
 /**
@@ -1205,7 +1269,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
                  "              WHERE cve_name IN (SELECT ref_id"
                  "                                 FROM vt_refs"
                  "                                 WHERE vt_oid = '%s'"
-		 "                                   AND type = 'cve'))"
+                 "                                   AND type = 'cve'))"
                  " ORDER BY name DESC;",
                  oid);
 }
@@ -1860,6 +1924,13 @@ update_cert_bund_advisories (int last_cert_update)
 
 /* SCAP update: CPEs. */
 
+/**
+ * @brief Decode and SQL quote a CPE name.
+ *
+ * @param[in]  name  Name.
+ *
+ * @return Quoted name.
+ */
 static gchar *
 decode_and_quote_cpe_name (const char *name)
 {
@@ -1997,8 +2068,6 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
  *
  * @param[in]  inserts            Pointer to SQL buffer.
  * @param[in]  cpe_item           CPE item XML element.
- * @param[in]  item_metadata      Item's metadata element.
- * @param[in]  modification_time  Modification time of item.
  *
  * @return 0 success, -1 error.
  */
@@ -2493,7 +2562,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
   else
      cvss_is_v3 = TRUE;
-  
+
   if (cvss == NULL)
     base_metrics = NULL;
   else
@@ -2529,7 +2598,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
 
   if (score == NULL)
-    severity_dbl = 0;
+    severity_dbl = SEVERITY_MISSING;
   else
     severity_dbl = atof (element_text (score));
 
@@ -2993,7 +3062,7 @@ check_cert_db_version ()
  *
  * @return 0 success, -1 error.
  */
-static int
+static void
 update_cert_timestamp ()
 {
   GError *error;
@@ -3013,7 +3082,7 @@ update_cert_timestamp ()
           g_warning ("%s: Failed to get timestamp: %s",
                      __func__,
                      error->message);
-          return -1;
+          stamp = time(NULL);
         }
     }
   else
@@ -3024,22 +3093,22 @@ update_cert_timestamp ()
                      __func__,
                      timestamp);
           g_free (timestamp);
-          return -1;
+          stamp = time(NULL);
         }
-
-      timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __func__, timestamp);
-      stamp = parse_feed_timestamp (timestamp);
-      g_free (timestamp);
-      if (stamp == 0)
-        return -1;
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
   sql ("UPDATE cert.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
-
-  return 0;
 }
 
 /**
@@ -3207,14 +3276,14 @@ sync_cert ()
 
   g_debug ("%s: update timestamp", __func__);
 
-  if (update_cert_timestamp ())
-    goto fail;
+  update_cert_timestamp ();
 
   g_info ("%s: Updating CERT info succeeded.", __func__);
 
   return 0;
 
  fail:
+  update_cert_timestamp ();
   return -1;
 }
 
@@ -3228,7 +3297,7 @@ manage_sync_cert (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_cert,
-                "gvmd: Syncing CERT");
+                "Syncing CERT");
 }
 
 
@@ -3264,7 +3333,7 @@ check_scap_db_version ()
  *
  * @return 0 success, -1 error.
  */
-static int
+static void
 update_scap_timestamp ()
 {
   GError *error;
@@ -3284,7 +3353,7 @@ update_scap_timestamp ()
           g_warning ("%s: Failed to get timestamp: %s",
                      __func__,
                      error->message);
-          return -1;
+          stamp = time(NULL);
         }
     }
   else
@@ -3295,22 +3364,22 @@ update_scap_timestamp ()
                      __func__,
                      timestamp);
           g_free (timestamp);
-          return -1;
+          stamp = time(NULL);
         }
-
-      timestamp[8] = '\0';
-      g_debug ("%s: parsing: %s", __func__, timestamp);
-      stamp = parse_feed_timestamp (timestamp);
-      g_free (timestamp);
-      if (stamp == 0)
-        return -1;
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
   sql ("UPDATE scap2.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
-
-  return 0;
 }
 
 /**
@@ -3367,8 +3436,7 @@ update_scap_end ()
 
   g_debug ("%s: update timestamp", __func__);
 
-  if (update_scap_timestamp ())
-    return -1;
+  update_scap_timestamp ();
 
   /* Replace the real scap schema with the new one. */
 
@@ -3426,7 +3494,7 @@ update_scap_end ()
   sql ("ANALYZE scap.affected_products;");
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
-  setproctitle ("gvmd: Syncing SCAP: done");
+  setproctitle ("Syncing SCAP: done");
 
   return 0;
 }
@@ -3473,7 +3541,7 @@ try_load_csv ()
       /* Add the indexes and constraints, now that the data is ready. */
 
       g_debug ("%s: add indexes", __func__);
-      setproctitle ("gvmd: Syncing SCAP: Adding indexes");
+      setproctitle ("Syncing SCAP: Adding indexes");
 
       if (manage_db_init_indexes ("scap"))
         {
@@ -3482,7 +3550,7 @@ try_load_csv ()
         }
 
       g_debug ("%s: add constraints", __func__);
-      setproctitle ("gvmd: Syncing SCAP: Adding constraints");
+      setproctitle ("Syncing SCAP: Adding constraints");
 
       if (manage_db_add_constraints ("scap"))
         {
@@ -3535,7 +3603,7 @@ update_scap (gboolean reset_scap_db)
 
           if (last_scap_update == last_feed_update)
             {
-              setproctitle ("gvmd: Syncing SCAP: done");
+              setproctitle ("Syncing SCAP: done");
               return 0;
             }
 
@@ -3564,7 +3632,7 @@ update_scap (gboolean reset_scap_db)
   /* Add the indexes and constraints. */
 
   g_debug ("%s: add indexes", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Adding indexes");
+  setproctitle ("Syncing SCAP: Adding indexes");
 
   if (manage_db_init_indexes ("scap"))
     {
@@ -3585,16 +3653,22 @@ update_scap (gboolean reset_scap_db)
   g_info ("%s: Updating data from feed", __func__);
 
   g_debug ("%s: update cpes", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating CPEs");
+  setproctitle ("Syncing SCAP: Updating CPEs");
 
   if (update_scap_cpes () == -1)
-    return -1;
+    {
+      update_scap_timestamp ();
+      return -1;
+    }
 
   g_debug ("%s: update cves", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating CVEs");
+  setproctitle ("Syncing SCAP: Updating CVEs");
 
   if (update_scap_cves () == -1)
-    return -1;
+    {
+      update_scap_timestamp ();
+      return -1;
+    }
 
   g_debug ("%s: updating user defined data", __func__);
 
@@ -3602,12 +3676,12 @@ update_scap (gboolean reset_scap_db)
   /* Do calculations that need all data. */
 
   g_debug ("%s: update max cvss", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating max CVSS");
+  setproctitle ("Syncing SCAP: Updating max CVSS");
 
   update_scap_cvss ();
 
   g_debug ("%s: update placeholders", __func__);
-  setproctitle ("gvmd: Syncing SCAP: Updating placeholders");
+  setproctitle ("Syncing SCAP: Updating placeholders");
 
   update_scap_placeholders ();
 
@@ -3635,7 +3709,7 @@ manage_sync_scap (sigset_t *sigmask_current)
 {
   sync_secinfo (sigmask_current,
                 sync_scap,
-                "gvmd: Syncing SCAP");
+                "Syncing SCAP");
 }
 
 /**

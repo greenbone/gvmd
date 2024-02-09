@@ -11,7 +11,7 @@ jobs:
     container: greenbone/doxygen
     steps:
       - name: Run the c lang coverage action
-        uses: greenbone/actions/doc-coverage-clang@v2
+        uses: greenbone/actions/doc-coverage-clang@v3
 
   build-gmp-doc:
     name: Build GMP documentation
@@ -19,7 +19,7 @@ jobs:
     container: greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Generate GMP documentation (HTML)
         run: |
           mkdir build
@@ -27,7 +27,7 @@ jobs:
           cmake -DSKIP_SRC=1 ..
           make doc-gmp
       - name: Upload GMP documentation artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gmp.html
           path: build/doc/gmp.html

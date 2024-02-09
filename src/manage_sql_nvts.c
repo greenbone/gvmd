@@ -60,6 +60,16 @@ create_tables_nvt (const gchar *);
 /* NVT related global options */
 
 /**
+ * @brief Max number of rows inserted per statement.
+ */
+static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
+
+/**
+ * @brief Max number of rows inserted per statement.
+ */
+static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
+
+/**
  * @brief File socket for OSP NVT update.
  */
 static gchar *osp_vt_update_socket = NULL;
@@ -121,6 +131,34 @@ check_osp_vt_update_socket ()
 
 
 /* NVT's. */
+
+/**
+ * @brief Set the VT ref insert size.
+ *
+ * @param new_size  New size.
+ */
+void
+set_vt_ref_insert_size (int new_size)
+{
+  if (new_size < 0)
+    vt_ref_insert_size = 0;
+  else
+    vt_ref_insert_size = new_size;
+}
+
+/**
+ * @brief Set the VT severity insert size.
+ *
+ * @param new_size  New size.
+ */
+void
+set_vt_sev_insert_size (int new_size)
+{
+  if (new_size < 0)
+    vt_sev_insert_size = 0;
+  else
+    vt_sev_insert_size = new_size;
+}
 
 /**
  * @brief Ensures the sanity of nvts cache in DB.
@@ -264,56 +302,129 @@ find_nvt (const char* oid, nvt_t* nvt)
 }
 
 /**
+ * @brief SQL batch.
+ */
+typedef struct
+{
+  GString *sql;  ///< SQL buffer.
+  int max;       ///< Max number of inserts.
+  int size;      ///< Number of inserts.
+} batch_t;
+
+/**
+ * @brief Create an SQL batch.
+ *
+ * @param[in]  max  Max number of iterations.
+ *
+ * @return Freshly allocated batch.
+ */
+batch_t *
+batch_start (int max)
+{
+  batch_t *b;
+  b = g_malloc0 (sizeof (batch_t));
+  b->sql = g_string_new ("");
+  b->max = max;
+  return b;
+}
+
+/**
+ * @brief Check an SQL batch.
+ *
+ * @param[in]  b  Batch.
+ *
+ * @return 1 init b->str, 0 continue as normal.
+ */
+int
+batch_check (batch_t *b)
+{
+  b->size++;
+
+  if (b->size == 1)
+    // First time, caller must init sql.
+    return 1;
+
+  if (b->max == 0)
+    return 0;
+
+  if (b->size > b->max) {
+    sql ("%s", b->sql->str);
+
+    b->size = 1;
+
+    g_string_free (b->sql, TRUE);
+    b->sql = g_string_new ("");
+
+    // Batch just ran, caller must init sql again.
+    return 1;
+  }
+
+  return 0;
+}
+
+/**
+ * @brief End and free an SQL batch.
+ *
+ * @param[in]  b  Batch.
+ */
+void
+batch_end (batch_t *b)
+{
+  if (b->size > 0) {
+    g_string_append_printf (b->sql, ";");
+    sql ("%s", b->sql->str);
+  }
+  g_string_free (b->sql, TRUE);
+  g_free (b);
+}
+
+/**
  * @brief Insert vt_refs for an NVT.
  *
  * @param[in]  nvti       NVT Information.
  * @param[in]  rebuild    True if rebuilding.
+ * @param[in]  batch      Batch for inserts.
  */
 static void
-insert_vt_refs (const nvti_t *nvti, int rebuild)
+insert_vt_refs (const nvti_t *nvti, int rebuild, batch_t *batch)
 {
   int i;
-  GString *insert;
 
   if (rebuild == 0)
     sql ("DELETE FROM vt_refs%s where vt_oid = '%s';",
          rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
-  insert = NULL;
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
       vtref_t *ref;
       gchar *quoted_type, *quoted_id, *quoted_text;
+      int comma;
 
+      comma = 0;
       ref = nvti_vtref (nvti, i);
       quoted_type = sql_quote (vtref_type (ref));
       quoted_id = sql_quote (vtref_id (ref));
       quoted_text = sql_quote (vtref_text (ref) ? vtref_text (ref) : "");
 
-      if (i == 0) {
-        insert = g_string_new ("");
-        g_string_append_printf (insert,
+      if (batch_check (batch))
+        g_string_append_printf (batch->sql,
                                 "INSERT into vt_refs%s (vt_oid, type, ref_id, ref_text)"
                                 " VALUES",
                                 rebuild ? "_rebuild" : "");
-      }
-                               
-      g_string_append_printf (insert,
-                              "%s ('%s', '%s', '%s', '%s')",
-                              i == 0 ? "" : ",",
+      else
+        comma = 1;
+
+      g_string_append_printf (batch->sql,
+                              // Newline in case it gets logged.
+                              "%s\n ('%s', '%s', '%s', '%s')",
+                              comma ? "," : "",
                               nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
 
       g_free (quoted_type);
       g_free (quoted_id);
       g_free (quoted_text);
     }
-
-  if (insert) {
-    g_string_append_printf (insert, ";");
-    sql ("%s", insert->str);
-    g_string_free (insert, TRUE);
-  }
 }
 
 /**
@@ -321,11 +432,12 @@ insert_vt_refs (const nvti_t *nvti, int rebuild)
  *
  * @param[in]  nvti       NVT Information.
  * @param[in]  rebuild    True if rebuilding.
+ * @param[in]  batch      Batch for inserts.
  *
  * @return Highest severity.
  */
 static double
-insert_vt_severities (const nvti_t *nvti, int rebuild)
+insert_vt_severities (const nvti_t *nvti, int rebuild, batch_t *batch)
 {
   int i;
   double highest;
@@ -341,20 +453,32 @@ insert_vt_severities (const nvti_t *nvti, int rebuild)
     {
       vtseverity_t *severity;
       gchar *quoted_origin, *quoted_value;
+      int comma;
 
+      comma = 0;
       severity = nvti_vtseverity (nvti, i);
       quoted_origin = sql_quote (vtseverity_origin (severity) ?
                                  vtseverity_origin (severity) : "");
       quoted_value = sql_quote (vtseverity_value (severity) ?
                                  vtseverity_value (severity) : "");
 
-      sql ("INSERT into vt_severities%s (vt_oid, type, origin, date, score,"
-           "                             value)"
-           " VALUES ('%s', '%s', '%s', %i, %0.1f, '%s');",
-           rebuild ? "_rebuild" : "",
-           nvti_oid (nvti), vtseverity_type (severity),
-           quoted_origin, vtseverity_date (severity),
-           vtseverity_score (severity), quoted_value);
+      if (batch_check (batch))
+        g_string_append_printf (batch->sql,
+                                "INSERT into vt_severities%s (vt_oid, type, origin, date, score,"
+                                "                             value)"
+                                " VALUES",
+                                rebuild ? "_rebuild" : "");
+      else
+        comma = 1;
+
+      g_string_append_printf (batch->sql,
+                              // Newline in case it gets logged.
+                              "%s\n ('%s', '%s', '%s', %i, %0.1f, '%s')",
+                              comma ? "," : "",
+                              nvti_oid (nvti), vtseverity_type (severity),
+                              quoted_origin, vtseverity_date (severity),
+                              vtseverity_score (severity), quoted_value);
+
       if (vtseverity_score (severity) > highest)
         highest = vtseverity_score (severity);
 
@@ -370,11 +494,14 @@ insert_vt_severities (const nvti_t *nvti, int rebuild)
  *
  * Always called within a transaction.
  *
- * @param[in]  nvti       NVT Information.
- * @param[in]  rebuild    True if rebuilding.
+ * @param[in]  nvti           NVT Information.
+ * @param[in]  rebuild        True if rebuilding.
+ * @param[in]  vt_refs_batch  Batch for vt_refs.
+ * @param[in]  vt_sevs_batch  Batch for vt_severities.
  */
 static void
-insert_nvt (const nvti_t *nvti, int rebuild)
+insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
+            batch_t *vt_sevs_batch)
 {
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
@@ -424,9 +551,9 @@ insert_nvt (const nvti_t *nvti, int rebuild)
          rebuild ? "_rebuild" : "",
          nvti_oid (nvti));
 
-  insert_vt_refs(nvti, rebuild);
+  insert_vt_refs (nvti, rebuild, vt_refs_batch);
 
-  highest = insert_vt_severities(nvti, rebuild);
+  highest = insert_vt_severities (nvti, rebuild, vt_sevs_batch);
 
   sql ("INSERT into nvts%s (oid, name, summary, insight, affected,"
        " impact, cve, tag, category, family, cvss_base,"
@@ -506,6 +633,21 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 
   g_free (clause);
   return ret;
+}
+
+/**
+ * @brief Initialise an NVT iterator not limited to a name.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find NVT, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_nvt_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_nvt_info_iterator(iterator, get, NULL);
 }
 
 /**
@@ -1083,7 +1225,7 @@ char *
 nvt_default_timeout (const char* oid)
 {
   return sql_string ("SELECT value FROM nvt_preferences"
-                     " WHERE name = '%s:0:entry:Timeout'",
+                     " WHERE name = '%s:0:entry:timeout'",
                      oid);
 }
 
@@ -1162,7 +1304,10 @@ insert_nvt_preference (gpointer nvt_preference, gpointer rebuild)
     return;
 
   preference = (preference_t*) nvt_preference;
-  manage_nvt_preference_add (preference->name, preference->value, GPOINTER_TO_INT (rebuild));
+  manage_nvt_preference_add (preference->name, preference->value,
+                             preference->nvt_oid, preference->id,
+                             preference->type, preference->pref_name,
+                             GPOINTER_TO_INT (rebuild));
 }
 
 /**
@@ -1275,15 +1420,19 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
                                            id,
                                            type,
                                            text);
-              g_free (text);
 
               blank_control_chars (full_name);
               preference = g_malloc0 (sizeof (preference_t));
+              preference->free_strings = 1;
               preference->name = full_name;
               if (def)
                 preference->value = element_text (def);
               else
                 preference->value = g_strdup ("");
+              preference->nvt_oid = g_strdup (oid);
+              preference->id = g_strdup (id);
+              preference->type = g_strdup (type);
+              preference->pref_name = text;
               *preferences = g_list_prepend (*preferences, preference);
             }
 
@@ -1460,7 +1609,7 @@ nvti_from_vt (element_t vt)
                 = element_child (severity, "origin");
               severity_date
                 = element_child (severity, "date");
-              
+
               if (severity_date) {
                 gchar *text;
 
@@ -1598,6 +1747,7 @@ update_nvts_from_vts (element_t *get_vts_response,
   int count_modified_vts, count_new_vts;
   time_t feed_version_epoch;
   char *osp_vt_hash;
+  batch_t *vt_refs_batch, *vt_sevs_batch;
 
   count_modified_vts = 0;
   count_new_vts = 0;
@@ -1642,6 +1792,8 @@ update_nvts_from_vts (element_t *get_vts_response,
      * To solve both cases, we remove all nvt_preferences. */
     sql ("TRUNCATE nvt_preferences;");
 
+  vt_refs_batch = batch_start (vt_ref_insert_size);
+  vt_sevs_batch = batch_start (vt_sev_insert_size);
   vt = element_first_child (vts);
   while (vt)
     {
@@ -1655,7 +1807,7 @@ update_nvts_from_vts (element_t *get_vts_response,
       else
         count_modified_vts += 1;
 
-      insert_nvt (nvti, rebuild);
+      insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
 
       preferences = NULL;
       if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
@@ -1668,11 +1820,13 @@ update_nvts_from_vts (element_t *get_vts_response,
              rebuild ? "_rebuild" : "",
              nvti_oid (nvti));
       insert_nvt_preferences_list (preferences, rebuild);
-      g_list_free_full (preferences, g_free);
+      g_list_free_full (preferences, (GDestroyNotify) preference_free);
 
       nvti_free (nvti);
       vt = element_next (vt);
     }
+  batch_end (vt_refs_batch);
+  batch_end (vt_sevs_batch);
 
   if (rebuild) {
     sql ("DROP VIEW IF EXISTS results_autofp;");
@@ -1789,15 +1943,19 @@ check_preference_names (int trash, time_t modification_time)
                  " (SELECT substring (nvt_preferences.name,"
                  "                    '^([^:]*):') AS pref_nvt,"
                  "         CAST (substring (nvt_preferences.name,"
-                 "                          '^[^:]*:([^:]*):')"
+                 "                          '^[^:]*:([0-9]+):')"
                  "               AS integer) AS pref_id,"
-                 "          name AS new_name"
+                 "         name AS new_name,"
+                 "         substring (nvt_preferences.name,"
+                 "                    '^[^:]*:[0-9]+:[^:]*:(.*)')"
+                 "           AS new_pref_name"
                  "     FROM nvt_preferences"
-                 "    WHERE substr (name, 0, position (':' IN name))"
+                 "    WHERE nvt_preferences.name ~ '^[^:]*:[0-9]+:[^:]*:.*'"
+                 "      AND substr (name, 0, position (':' IN name))"
                  "          IN (SELECT oid FROM nvts"
                  "              WHERE modification_time > %ld))"
                  " SELECT c_prefs.id, c_prefs.name as old_name, new_name,"
-                 "        configs%s.uuid AS config_id"
+                 "        configs%s.uuid AS config_id, new_pref_name"
                  "  FROM config_preferences%s AS c_prefs"
                  "  JOIN new_pref_matches"
                  "    ON c_prefs.pref_nvt = new_pref_matches.pref_nvt"
@@ -1873,7 +2031,7 @@ init_nvt_severity_iterator (iterator_t* iterator, const char *oid)
  * @brief Gets the type from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The type of the severity.
  */
 DEF_ACCESS (nvt_severity_iterator_type, 0)
@@ -1882,7 +2040,7 @@ DEF_ACCESS (nvt_severity_iterator_type, 0)
  * @brief Gets the origin from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The origin of the severity.
  */
 DEF_ACCESS (nvt_severity_iterator_origin, 1);
@@ -1891,7 +2049,7 @@ DEF_ACCESS (nvt_severity_iterator_origin, 1);
  * @brief Gets the date from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The date of the severity in ISO time format.
  */
 DEF_ACCESS (nvt_severity_iterator_date, 2);
@@ -1900,7 +2058,7 @@ DEF_ACCESS (nvt_severity_iterator_date, 2);
  * @brief Gets the score from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The score of the severity.
  */
 double
@@ -1913,7 +2071,7 @@ nvt_severity_iterator_score (iterator_t *iterator)
  * @brief Gets the value from an NVT severity iterator.
  *
  * @param[in]  iterator  Iterator.
- * 
+ *
  * @return The value of the severity in ISO time format.
  */
 DEF_ACCESS (nvt_severity_iterator_value, 4);
@@ -2247,7 +2405,7 @@ manage_sync_nvts (int (*fork_update_nvt_cache) ())
  * @param[in]  update  0 rebuild, else update.
  *
  * @return 0 success, -1 error, -1 no osp update socket, -2 could not connect
- *         to osp update socket -3 failed to get scanner version
+ *         to osp update socket, -3 failed to get scanner version
  */
 int
 update_or_rebuild_nvts (int update)
@@ -2313,8 +2471,9 @@ update_or_rebuild_nvts (int update)
  * @param[in]  database    Location of manage database.
  *
  * @return 0 success, 1 VT integrity check failed, -1 error,
- *         -2 database is wrong version,
- *         -3 database needs to be initialised from server, -5 sync active.
+ *         -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new, -6 sync active.
  */
 int
 manage_rebuild (GSList *log_config, const db_conn_info_t *database)
@@ -2328,7 +2487,7 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     {
       case 1:
         printf ("A feed sync is already running.\n");
-        return -5;
+        return -6;
       case -1:
         printf ("Error getting sync lock.\n");
         return -1;
@@ -2382,8 +2541,9 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -3 database needs to be initialised from server, -5 sync active.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new, -6 sync active.
  */
 int
 manage_dump_vt_verification (GSList *log_config,
@@ -2397,7 +2557,7 @@ manage_dump_vt_verification (GSList *log_config,
     {
       case 1:
         printf ("A feed sync is already running.\n");
-        return -5;
+        return -6;
       case -1:
         printf ("Error getting sync lock.\n");
         return -1;

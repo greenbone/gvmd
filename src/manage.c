@@ -476,8 +476,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02x", buffer[i]);
             }
 
-          *md5_fingerprint = string->str;
-          g_string_free (string, FALSE);
+          *md5_fingerprint = g_string_free (string, FALSE);
         }
 
       if (sha256_fingerprint)
@@ -497,8 +496,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02X", buffer[i]);
             }
 
-          *sha256_fingerprint = string->str;
-          g_string_free (string, FALSE);
+          *sha256_fingerprint = g_string_free (string, FALSE);
         }
 
       if (subject)
@@ -541,8 +539,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
               g_string_append_printf (string, "%02X", buffer[i]);
             }
 
-          *serial = string->str;
-          g_string_free (string, FALSE);
+          *serial = g_string_free (string, FALSE);
         }
 
       gnutls_x509_crt_deinit (gnutls_cert);
@@ -930,6 +927,113 @@ severity_to_type (double severity)
       return NULL;
     }
 }
+
+
+
+/* Encryption key management. */
+
+/**
+ * @brief Creates a new encryption key and sets it as the new default.
+ *
+ * @param[in]  log_config  Logging configuration list.
+ * @param[in]  database    Connection info for manage database.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+manage_create_encryption_key (GSList *log_config,
+                              const db_conn_info_t *database)
+{
+  int ret = manage_option_setup (log_config, database);
+  if (ret)
+    {
+      printf ("Error setting up log config or database connection.");
+      g_warning ("Error setting up log config or database connection.");
+      return -1;
+    }
+
+  time_t now = time(NULL);
+  gchar *generated_uid
+    = g_strdup_printf (ENCRYPTION_KEY_UID_TEMPLATE, iso_time (&now));
+
+  lsc_crypt_ctx_t ctx = lsc_crypt_new (generated_uid);
+  switch (lsc_crypt_create_enckey (ctx))
+    {
+      case 0:
+        break;
+      case 1:
+        printf ("Credential encryption key '%s' already exists\n",
+                generated_uid);
+        g_warning ("%s: Credential encryption key '%s' already exists",
+                 __func__, generated_uid);
+
+        lsc_crypt_flush(ctx);
+        g_free (generated_uid);
+        manage_option_cleanup ();
+        return -1;
+      default:
+        printf ("Could not create credential encryption key '%s'\n",
+                generated_uid);
+        g_warning ("%s: Could not create credential encryption key '%s'",
+                 __func__, generated_uid);
+
+        lsc_crypt_flush(ctx);
+        g_free (generated_uid);
+        manage_option_cleanup ();
+        return -1;
+    }
+  set_current_encryption_key_uid (generated_uid);
+  printf ("Credential encryption key created: '%s'\n",
+          generated_uid);
+  g_message ("%s: Credential encryption key created: '%s'",
+             __func__, generated_uid);
+
+  lsc_crypt_flush(ctx);
+  g_free (generated_uid);
+  manage_option_cleanup ();
+  return 0;
+}
+
+/**
+ * @brief Sets the new default encryption key. The key must already exist.
+ *
+ * @param[in]  log_config  Logging configuration list.
+ * @param[in]  database    Connection info for manage database.
+ * @param[in]  uid         UID for key.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+manage_set_encryption_key (GSList *log_config,
+                           const db_conn_info_t *database,
+                           const char *uid)
+{
+  int ret = manage_option_setup (log_config, database);
+  if (ret)
+    {
+      printf ("Error setting up log config or database connection.\n");
+      g_warning ("Error setting up log config or database connection.");
+      return -1;
+    }
+
+  lsc_crypt_ctx_t ctx = lsc_crypt_new (uid);
+  if (! lsc_crypt_enckey_exists (ctx))
+    {
+      printf ("Credential encryption key '%s' not found\n", uid);
+      g_warning ("%s: Credential encryption key '%s' not found", __func__, uid);
+      lsc_crypt_flush(ctx);
+      manage_option_cleanup ();
+      return -1;
+    }
+
+  set_current_encryption_key_uid (uid);
+  printf ("Credential encryption key set to '%s'\n", uid);
+  g_message ("%s: Credential encryption key set to '%s'", __func__, uid);
+  lsc_crypt_flush(ctx);
+  manage_option_cleanup ();
+  return 0;
+}
+
 
 
 /* Credentials. */
@@ -1543,6 +1647,7 @@ run_status_name (task_status_t status)
         return "Stop Requested";
 
       case TASK_STATUS_STOPPED:          return "Stopped";
+      case TASK_STATUS_PROCESSING:       return "Processing";
       default:                           return "Interrupted";
     }
 }
@@ -1581,6 +1686,7 @@ run_status_name_internal (task_status_t status)
         return "Stop Waiting";
 
       case TASK_STATUS_STOPPED:          return "Stopped";
+      case TASK_STATUS_PROCESSING:       return "Processing";
       default:                           return "Interrupted";
     }
 }
@@ -2761,12 +2867,15 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       exit (-1);
     }
 
-  setproctitle ("gvmd: OSP: Handling scan %s", report_id);
+  setproctitle ("OSP: Handling scan %s", report_id);
 
   rc = handle_osp_scan (task, global_current_report, report_id);
   g_free (report_id);
   if (rc == 0)
     {
+      set_task_run_status (task, TASK_STATUS_PROCESSING);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_PROCESSING);
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
@@ -3110,7 +3219,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  setproctitle ("gvmd: CVE: Handling scan %s", report_id);
+  setproctitle ("CVE: Handling scan %s", report_id);
   g_free (report_id);
 
   hosts = target_hosts (target);
@@ -3446,7 +3555,7 @@ slave_get_relay (const char *original_host,
               else
                 {
                   // Consider relay not found if host or port is empty
-                  ret = 1; 
+                  ret = 1;
                 }
             }
           else
@@ -3793,6 +3902,7 @@ move_task (const char *task_id, const char *slave_id)
       case TASK_STATUS_DELETE_WAITING:
       case TASK_STATUS_DELETE_ULTIMATE_WAITING:
       case TASK_STATUS_REQUESTED:
+      case TASK_STATUS_PROCESSING:
         // Task cannot be stopped now
         return 5;
         break;
@@ -3884,6 +3994,7 @@ credential_full_type (const char* abbreviation)
  * @param[in]  end              The end time of the performance report.
  * @param[in]  titles           The end titles for the performance report.
  * @param[in]  performance_str  The performance string.
+ * @param[out] error            Error return.
  *
  * @return 0 if successful, 6 could not connect to scanner or failed to get
  *         performance report
@@ -4656,7 +4767,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
 
           /* Parent.  Wait for child, to check return. */
 
-          setproctitle ("gvmd: scheduler: waiting for %i", pid);
+          setproctitle ("scheduler: waiting for %i", pid);
 
           g_debug ("%s: %i fork_connectioned %i",
                    __func__, getpid (), pid);
@@ -4757,7 +4868,7 @@ scheduled_task_start (scheduled_task_t *scheduled_task,
 
   /* Start the task. */
 
-  setproctitle ("gvmd: scheduler: starting %s", scheduled_task->task_uuid);
+  setproctitle ("scheduler: starting %s", scheduled_task->task_uuid);
 
   auth_opts = gmp_authenticate_info_opts_defaults;
   auth_opts.username = scheduled_task->owner_name;
@@ -4848,7 +4959,7 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
 
   /* Stop the task. */
 
-  setproctitle ("gvmd: scheduler: stopping %s",
+  setproctitle ("scheduler: stopping %s",
             scheduled_task->task_uuid);
 
   auth_opts = gmp_authenticate_info_opts_defaults;
@@ -5010,12 +5121,12 @@ manage_sync (sigset_t *sigmask_current,
 
 /**
  * @brief Rebuild configs, port lists and report formats from feed.
- * 
+ *
  * @param[in]  types      Comma-separated lists of types to rebuild or "all".
  * @param[in]  log_config Logging configuration list.
  * @param[in]  database   Connection info for manage database.
  * @param[out] error_msg  Error message.
- * 
+ *
  * @return 0 success, -1 failed.
  */
 int
@@ -5053,7 +5164,7 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       while (*split_iter)
         {
           gchar *type = g_strstrip (*split_iter);
-          
+
           if (strcasecmp (type, "configs") == 0)
             sync_configs = TRUE;
           else if (strcasecmp (type, "port_lists") == 0)
@@ -5529,13 +5640,16 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @param[in]  timeout     Timeout.  Used if details is true.
  * @param[in]  config      Config, used if preferences is true.
  * @param[in]  close_tag   Whether to close the NVT tag or not.
+ * @param[in]  skip_cert_refs  Whether to exclude the CERT REFs.
+ * @param[in]  skip_tags       Whether to exclude the tags.
+ * @param[in]  lean            Whether to send fewer details.
  *
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
 get_nvt_xml (iterator_t *nvts, int details, int pref_count,
              int preferences, const char *timeout, config_t config,
-             int close_tag)
+             int close_tag, int skip_cert_refs, int skip_tags, int lean)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5547,72 +5661,19 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
   if (details)
     {
       int tag_count;
-      GString *refs_str, *tags_str, *buffer, *nvt_tags;
-      iterator_t cert_refs_iterator, tags, severities;
+      GString *refs_str, *tags_str, *buffer;
+      iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
-      char *default_timeout = nvt_default_timeout (oid);
 
       DEF (family);
-      DEF (tag);
-
-#undef DEF
-
-      nvt_tags = g_string_new (tag_text);
-      g_free (tag_text);
-
-      /* Add the elements that are expected as part of the pipe-separated tag list
-       * via API although internally already explicitly stored. Once the API is
-       * extended to have these elements explicitly, they do not need to be
-       * added to this tag string anymore. */
-      if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|summary=%s",
-                               nvt_iterator_summary (nvts));
-          else
-            xml_string_append (nvt_tags, "summary=%s",
-                               nvt_iterator_summary (nvts));
-        }
-      if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|insight=%s",
-                               nvt_iterator_insight (nvts));
-          else
-            xml_string_append (nvt_tags, "insight=%s",
-                               nvt_iterator_insight (nvts));
-        }
-      if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|affected=%s",
-                               nvt_iterator_affected (nvts));
-          else
-            xml_string_append (nvt_tags, "affected=%s",
-                               nvt_iterator_affected (nvts));
-        }
-      if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|impact=%s",
-                               nvt_iterator_impact (nvts));
-          else
-            xml_string_append (nvt_tags, "impact=%s",
-                               nvt_iterator_impact (nvts));
-        }
-      if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
-        {
-          if (nvt_tags->str)
-            xml_string_append (nvt_tags, "|vuldetect=%s",
-                               nvt_iterator_detection (nvts));
-          else
-            xml_string_append (nvt_tags, "vuldetect=%s",
-                               nvt_iterator_detection (nvts));
-        }
 
       refs_str = g_string_new ("");
 
-      if (manage_cert_loaded())
+      if (skip_cert_refs)
+        {
+          // Faster.
+        }
+      else if (manage_cert_loaded())
         {
           init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid);
           while (next (&cert_refs_iterator))
@@ -5642,12 +5703,17 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       xml_append_nvt_refs (refs_str, oid, NULL);
 
-      tags_str = g_string_new ("");
-      tag_count = resource_tag_count ("nvt",
-                                      get_iterator_resource (nvts),
-                                      1);
+      if (skip_tags)
+        tags_str = NULL;
+      else
+        {
+          tags_str = g_string_new ("");
+          tag_count = resource_tag_count ("nvt",
+                                          get_iterator_resource (nvts),
+                                          1);
+        }
 
-      if (tag_count)
+      if (tags_str && tag_count)
         {
           g_string_append_printf (tags_str,
                                   "<user_tags>"
@@ -5692,76 +5758,156 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
       g_string_append_printf (buffer,
                               "<nvt oid=\"%s\">"
                               "<name>%s</name>"
-                              "<creation_time>%s</creation_time>"
-                              "<modification_time>%s</modification_time>"
                               "%s" // user_tags
-                              "<category>%d</category>"
-                              "<family>%s</family>"
-                              "<cvss_base>%s</cvss_base>"
-                              "<severities score=\"%s\">",
+                              "<preference_count>%i</preference_count>"
+                              "<timeout>%s</timeout>",
                               oid,
                               name_text,
-                              get_iterator_creation_time (nvts)
-                               ? get_iterator_creation_time (nvts)
-                               : "",
-                              get_iterator_modification_time (nvts)
-                               ? get_iterator_modification_time (nvts)
-                               : "",
-                              tags_str->str,
-                              nvt_iterator_category (nvts),
-                              family_text,
-                              nvt_iterator_cvss_base (nvts)
-                               ? nvt_iterator_cvss_base (nvts)
-                               : "",
-                              nvt_iterator_cvss_base (nvts)
-                               ? nvt_iterator_cvss_base (nvts)
-                               : "");
+                              tags_str ? tags_str->str : "",
+                              pref_count,
+                              timeout ? timeout : "");
 
-      init_nvt_severity_iterator (&severities, oid);
-      while (next (&severities))
+      if (lean == 0)
         {
-          buffer_xml_append_printf
-              (buffer,
-               "<severity type=\"%s\">"
-               "<origin>%s</origin>"
-               "<date>%s</date>"
-               "<score>%0.1f</score>"
-               "<value>%s</value>"
-               "</severity>",
-               nvt_severity_iterator_type (&severities),
-               nvt_severity_iterator_origin (&severities),
-               nvt_severity_iterator_date (&severities),
-               nvt_severity_iterator_score (&severities),
-               nvt_severity_iterator_value (&severities));
+          char *default_timeout;
+          GString *nvt_tags;
+
+          DEF (tag);
+
+#undef DEF
+
+          nvt_tags = g_string_new (tag_text);
+          g_free (tag_text);
+
+          /* Add the elements that are expected as part of the pipe-separated tag list
+           * via API although internally already explicitly stored. Once the API is
+           * extended to have these elements explicitly, they do not need to be
+           * added to this tag string anymore. */
+          if (nvt_iterator_summary (nvts) && nvt_iterator_summary (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|summary=%s",
+                                   nvt_iterator_summary (nvts));
+              else
+                xml_string_append (nvt_tags, "summary=%s",
+                                   nvt_iterator_summary (nvts));
+            }
+          if (nvt_iterator_insight (nvts) && nvt_iterator_insight (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|insight=%s",
+                                   nvt_iterator_insight (nvts));
+              else
+                xml_string_append (nvt_tags, "insight=%s",
+                                   nvt_iterator_insight (nvts));
+            }
+          if (nvt_iterator_affected (nvts) && nvt_iterator_affected (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|affected=%s",
+                                   nvt_iterator_affected (nvts));
+              else
+                xml_string_append (nvt_tags, "affected=%s",
+                                   nvt_iterator_affected (nvts));
+            }
+          if (nvt_iterator_impact (nvts) && nvt_iterator_impact (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|impact=%s",
+                                   nvt_iterator_impact (nvts));
+              else
+                xml_string_append (nvt_tags, "impact=%s",
+                                   nvt_iterator_impact (nvts));
+            }
+          if (nvt_iterator_detection (nvts) && nvt_iterator_detection (nvts)[0])
+            {
+              if (nvt_tags->str)
+                xml_string_append (nvt_tags, "|vuldetect=%s",
+                                   nvt_iterator_detection (nvts));
+              else
+                xml_string_append (nvt_tags, "vuldetect=%s",
+                                   nvt_iterator_detection (nvts));
+            }
+
+          default_timeout = nvt_default_timeout (oid);
+          g_string_append_printf (buffer,
+                                  "<default_timeout>%s</default_timeout>"
+                                  "<creation_time>%s</creation_time>"
+                                  "<modification_time>%s</modification_time>"
+                                  "<category>%d</category>"
+                                  "<family>%s</family>"
+                                  "<qod>"
+                                  "<value>%s</value>"
+                                  "<type>%s</type>"
+                                  "</qod>"
+                                  "<refs>%s</refs>"
+                                  "<tags>%s</tags>",
+                                  default_timeout ? default_timeout : "",
+                                  get_iterator_creation_time (nvts)
+                                  ? get_iterator_creation_time (nvts)
+                                  : "",
+                                  get_iterator_modification_time (nvts)
+                                  ? get_iterator_modification_time (nvts)
+                                  : "",
+                                  nvt_iterator_category (nvts),
+                                  family_text,
+                                  nvt_iterator_qod (nvts),
+                                  nvt_iterator_qod_type (nvts),
+                                  refs_str->str,
+                                  nvt_tags->str);
+          free (default_timeout);
+
+          g_string_free (nvt_tags, 1);
         }
-      cleanup_iterator (&severities);
 
       g_string_append_printf (buffer,
-                              "</severities>"
-                              "<qod>"
-                              "<value>%s</value>"
-                              "<type>%s</type>"
-                              "</qod>"
-                              "<refs>%s</refs>"
-                              "<tags>%s</tags>"
-                              "<preference_count>%i</preference_count>"
-                              "<timeout>%s</timeout>"
-                              "<default_timeout>%s</default_timeout>",
-                              nvt_iterator_qod (nvts),
-                              nvt_iterator_qod_type (nvts),
-                              refs_str->str,
-                              nvt_tags->str,
-                              pref_count,
-                              timeout ? timeout : "",
-                              default_timeout ? default_timeout : "");
-      g_free (family_text);
-      g_string_free(nvt_tags, 1);
-      g_string_free(refs_str, 1);
-      g_string_free(tags_str, 1);
+                              "<cvss_base>%s</cvss_base>",
+                              nvt_iterator_cvss_base (nvts)
+                              ? nvt_iterator_cvss_base (nvts)
+                              : "");
 
-      if (nvt_iterator_solution (nvts) ||
-          nvt_iterator_solution_type (nvts) ||
-          nvt_iterator_solution_method (nvts))
+      if (lean == 0)
+        {
+          iterator_t severities;
+
+          g_string_append_printf (buffer,
+                                  "<severities score=\"%s\">",
+                                  nvt_iterator_cvss_base (nvts)
+                                  ? nvt_iterator_cvss_base (nvts)
+                                  : "");
+
+          init_nvt_severity_iterator (&severities, oid);
+          while (next (&severities))
+            {
+              buffer_xml_append_printf
+                (buffer,
+                 "<severity type=\"%s\">"
+                 "<origin>%s</origin>"
+                 "<date>%s</date>"
+                 "<score>%0.1f</score>"
+                 "<value>%s</value>"
+                 "</severity>",
+                 nvt_severity_iterator_type (&severities),
+                 nvt_severity_iterator_origin (&severities),
+                 nvt_severity_iterator_date (&severities),
+                 nvt_severity_iterator_score (&severities),
+                 nvt_severity_iterator_value (&severities));
+            }
+          cleanup_iterator (&severities);
+
+          g_string_append_printf (buffer,
+                                  "</severities>");
+        }
+
+      g_free (family_text);
+      g_string_free (refs_str, 1);
+      if (tags_str)
+        g_string_free (tags_str, 1);
+
+      if (lean == 0
+          && (nvt_iterator_solution (nvts)
+              || nvt_iterator_solution_type (nvts)
+              || nvt_iterator_solution_method (nvts)))
         {
           buffer_xml_append_printf (buffer, "<solution");
 
@@ -5780,11 +5926,14 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
             buffer_xml_append_printf (buffer, "/>");
         }
 
-
       if (preferences)
         {
           iterator_t prefs;
-          const char *nvt_oid = nvt_iterator_oid (nvts);
+          char *default_timeout;
+          const char *nvt_oid;
+
+          default_timeout = nvt_default_timeout (oid);
+          nvt_oid = nvt_iterator_oid (nvts);
 
           /* Send the preferences for the NVT. */
 
@@ -5801,11 +5950,11 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
           cleanup_iterator (&prefs);
 
           xml_string_append (buffer, "</preferences>");
+          free (default_timeout);
         }
 
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
       msg = g_string_free (buffer, FALSE);
-      free (default_timeout);
     }
   else
     {
@@ -5933,7 +6082,10 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
                                    1,    /* Include preferences. */
                                    NULL, /* Timeout. */
                                    0,    /* Config. */
-                                   1);   /* Close tag. */
+                                   1,    /* Close tag. */
+                                   0,    /* Skip CERT refs. */
+                                   0,    /* Skip tags. */
+                                   0);   /* Lean. */
 
           cleanup_iterator (&nvts);
         }

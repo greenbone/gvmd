@@ -66,8 +66,12 @@ migrate_predefined_port_lists ();
 int
 port_list_updated_in_feed (port_list_t, const gchar *);
 
+int
+deprecated_port_list_id_updated_in_feed (const char *, const gchar *);
+
 void
-update_port_list (port_list_t, const gchar *, const gchar *, array_t *);
+update_port_list (port_list_t, const gchar *, const gchar *, array_t *,
+                  const gchar *);
 
 void
 check_db_port_lists ();

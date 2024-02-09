@@ -20,7 +20,7 @@ cmake_minimum_required (VERSION 3.0)
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
 project (gvm
-         VERSION 22.5.0
+         VERSION 23.2.1
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -39,6 +39,9 @@ OPTION (ENABLE_COVERAGE "Enable support for coverage analysis" OFF)
 OPTION (DEBUG_FUNCTION_NAMES "Print function names on entry and exit" OFF)
 # the shell based scripts got replaced by https://github.com/greenbone/greenbone-feed-sync/
 OPTION (INSTALL_OLD_SYNC_SCRIPTS "Install shell based feed sync scripts" OFF)
+if (INSTALL_OLD_SYNC_SCRIPTS)
+  message (DEPRECATION "The version of greenbone-feed-sync included in gvmd is deprecated in favor of the newer Python version (https://github.com/greenbone/greenbone-feed-sync/) and will be removed in the next major version.")
+endif (INSTALL_OLD_SYNC_SCRIPTS)
 
 ## Retrieve git revision (at configure time)
 include (GetGit)
@@ -98,13 +101,13 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 254)
+set (GVMD_DATABASE_VERSION 255)
 
 set (GVMD_SCAP_DATABASE_VERSION 20)
 
 set (GVMD_CERT_DATABASE_VERSION 8)
 
-set (GMP_VERSION "22.4")
+set (GMP_VERSION "22.5")
 set (GMP_VERSION_FEED "22.04")
 
 if (SYSCONF_INSTALL_DIR)
@@ -303,6 +306,10 @@ install (FILES ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
          DESTINATION ${GVM_SYSCONF_DIR})
 
 # Schema formats.
+
+install (FILES src/schema_formats/rnc.xsl
+         DESTINATION ${GVMD_DATA_DIR}/global_schema_formats/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/rnc.xsl
                src/schema_formats/HTML/HTML.xsl

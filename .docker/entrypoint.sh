@@ -18,4 +18,5 @@
 
 #!/bin/bash
 
+. setup-mta
 exec gosu gvmd "$@"

@@ -305,6 +305,25 @@ response
           <xsl:with-param name="parent-name" select="$parent-name"/>
         </xsl:call-template>
       </xsl:when>
+      <xsl:when test="name()='alts'">
+        <xsl:for-each select="alt">
+          <xsl:choose>
+            <xsl:when test="following-sibling::alt and preceding-sibling::alt">
+              <xsl:text>|</xsl:text>
+              <xsl:value-of select="."/>
+            </xsl:when>
+            <xsl:when test="count (following-sibling::alt) = 0">
+              <xsl:text>|</xsl:text>
+              <xsl:value-of select="."/>
+              <xsl:text>" }</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>xsd:token { pattern = "</xsl:text>
+              <xsl:value-of select="."/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:for-each>
+      </xsl:when>
       <xsl:when test="name()='t'">
       </xsl:when>
       <xsl:otherwise>

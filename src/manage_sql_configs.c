@@ -871,14 +871,14 @@ nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
  *
  * @param[in]  config_id    UUID of the config to find.
  * @param[out] config_out   Row ID of the config or 0 if not found.
- * 
+ *
  * @return 0 success, 1 config not found, -1 error.
  */
 int
 manage_modify_config_start (const char *config_id, config_t *config_out)
 {
   sql_begin_immediate ();
-  
+
   if (find_config_with_permission (config_id, config_out, "modify_config"))
     {
       sql_rollback ();
@@ -889,7 +889,7 @@ manage_modify_config_start (const char *config_id, config_t *config_out)
       sql_rollback ();
       return 1;
     }
-  
+
   return 0;
 }
 
@@ -1696,16 +1696,29 @@ check_config_families ()
  *
  * @param[in]  name     The name of the preference.
  * @param[in]  value    The value of the preference.
- * @param[in]  rebuild  Whether a rebuild is happening.
+ * @param[in]  oid      The OID of the NVT.
+ * @param[in]  id       The ID of the preference.
+ * @param[in]  type     The pref_type of the preference.
+ * @param[in]  pref_name  The pref_name of the preference.
+ * @param[in]  rebuild    Whether a rebuild is happening.
  */
 void
-manage_nvt_preference_add (const char* name, const char* value, int rebuild)
+manage_nvt_preference_add (const char *name, const char *value,
+                           const char *oid, const char *id,
+                           const char *type, const char *pref_name,
+                           int rebuild)
 {
-  gchar* quoted_name = sql_quote (name);
-  gchar* quoted_value = sql_quote (value);
-
   if (strcmp (name, "port_range"))
     {
+      gchar *quoted_name, *quoted_value, *quoted_oid, *quoted_type;
+      gchar *quoted_pref_name;
+
+      quoted_name = sql_quote (name);
+      quoted_value = sql_quote (value);
+      quoted_oid = sql_quote (oid);
+      quoted_type = sql_quote (type);
+      quoted_pref_name = sql_quote (pref_name);
+
       if (rebuild == 0) {
         if (sql_int ("SELECT EXISTS"
                      "  (SELECT * FROM nvt_preferences"
@@ -1714,14 +1727,19 @@ manage_nvt_preference_add (const char* name, const char* value, int rebuild)
           sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
       }
 
-      sql ("INSERT into nvt_preferences%s (name, value)"
-           " VALUES ('%s', '%s');",
+      sql ("INSERT into nvt_preferences%s"
+           " (name, value, pref_nvt, pref_id, pref_type, pref_name)"
+           " VALUES ('%s', '%s', '%s', %i, '%s', '%s');",
            rebuild ? "_rebuild" : "",
-           quoted_name, quoted_value);
-    }
+           quoted_name, quoted_value, quoted_oid, atoi (id), quoted_type,
+           quoted_pref_name);
 
-  g_free (quoted_name);
-  g_free (quoted_value);
+      g_free (quoted_name);
+      g_free (quoted_value);
+      g_free (quoted_oid);
+      g_free (quoted_type);
+      g_free (quoted_pref_name);
+    }
 }
 
 /**
@@ -1744,7 +1762,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s:0:entry:Timeout'"
+                     " AND name != '%s:0:entry:timeout'"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
@@ -1764,7 +1782,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%:0:entry:Timeout'"
+                   " AND name NOT %s '%%:0:entry:timeout'"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
@@ -1940,10 +1958,8 @@ nvt_preference_count (const char *oid)
 {
   gchar *quoted_oid = sql_quote (oid);
   int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
-                     " WHERE name != '%s:0:entry:Timeout'"
-                     "   AND name %s '%s:%%';",
-                     quoted_oid,
-                     sql_ilike_op (),
+                     " WHERE NOT (pref_type = 'entry' AND pref_name = 'timeout')"
+                     "   AND pref_nvt = '%s';",
                      quoted_oid);
   g_free (quoted_oid);
   return ret;
@@ -4306,8 +4322,8 @@ migrate_predefined_configs ()
 /**
  * @brief Check if a config has been updated in the feed.
  *
- * @param[in]  path    Full path to config XML in feed.
  * @param[in]  config  Config.
+ * @param[in]  path    Full path to config XML in feed.
  *
  * @return 1 if updated in feed, else 0.
  */
@@ -4336,6 +4352,42 @@ config_updated_in_feed (config_t config, const gchar *path)
 }
 
 /**
+ * @brief Check if a deprecated config has been updated in the feed.
+ *
+ * @param[in]  config_id  Config UUID.
+ * @param[in]  path       Full path to Config XML in feed.
+ *
+ * @return 1 if updated in feed, else 0.
+ */
+int
+deprecated_config_id_updated_in_feed (const char *config_id,
+                                      const gchar *path)
+{
+  gchar *quoted_uuid;
+  GStatBuf state;
+  int last_update;
+
+  quoted_uuid = sql_quote (config_id);
+  last_update = sql_int ("SELECT modification_time FROM deprecated_feed_data"
+                         " WHERE type = 'config' AND uuid = '%s';",
+                         quoted_uuid);
+  g_free (quoted_uuid);
+
+  if (g_stat (path, &state))
+    {
+      g_warning ("%s: Failed to stat feed config file: %s",
+                 __func__,
+                 strerror (errno));
+      return 0;
+    }
+
+  if (state.st_mtime <= last_update)
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Update a config from an XML file.
  *
  * @param[in]  config       Existing config.
@@ -4345,15 +4397,17 @@ config_updated_in_feed (config_t config, const gchar *path)
  * @param[in]  all_selector  Whether to use "all" selector instead of selectors.
  * @param[in]  selectors     New NVT selectors.
  * @param[in]  preferences   New preferences.
+ * @param[in]  deprecated    Deprecation status.
  */
 void
 update_config (config_t config, const gchar *name,
                const gchar *comment, const gchar *usage_type,
                int all_selector,
                const array_t* selectors /* nvt_selector_t. */,
-               const array_t* preferences /* preference_t. */)
+               const array_t* preferences /* preference_t. */,
+               const gchar *deprecated)
 {
-  gchar *quoted_name, *quoted_comment, *actual_usage_type;
+  gchar *quoted_name, *quoted_comment, *actual_usage_type, *config_id;
 
   sql_begin_immediate ();
 
@@ -4434,6 +4488,29 @@ update_config (config_t config, const gchar *name,
        "           WHERE name = 'table_driven_lsc'"
        "           AND type = 'SERVER_PREFS');",
        config);
+
+  /* Handle deprecation status */
+
+  config_id = resource_uuid ("config", config);
+  if (deprecated && atoi (deprecated))
+    {
+      if (resource_id_deprecated ("config", config_id) == 0)
+        {
+          g_info ("Config %s is now deprecated.",
+                  config_id);
+        }
+      set_resource_id_deprecated ("config", config_id, TRUE);
+    }
+  else
+    {
+      if (resource_id_deprecated ("config", config_id))
+        {
+          set_resource_id_deprecated ("config", config_id, FALSE);
+          g_info ("Deprecation of config %s has been revoked.",
+                  config_id);
+        }
+    }
+  g_free (config_id);
 
   sql_commit ();
 }

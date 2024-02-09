@@ -72,7 +72,7 @@ Ensure (utils, parse_iso_time_tz_with_fallback_tz)
   assert_that (parse_iso_time_tz ("2020-01-01T01:02:03",
                                   "Australia/Adelaide"),
                is_equal_to (1577802723));
-  
+
   assert_that (parse_iso_time_tz ("2020-01-01T01:02:03",
                                   NULL),
                is_equal_to (1577840523));

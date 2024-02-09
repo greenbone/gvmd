@@ -26,14 +26,15 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.4)
-pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.4)
-pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.4)
-pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.4)
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.7)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.6)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.6)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.6)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBBSD REQUIRED libbsd)
 pkg_check_modules (LIBICAL REQUIRED libical>=1.00)
+pkg_check_modules (GPGME REQUIRED gpgme)
 
 message (STATUS "Looking for PostgreSQL...")
 find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
@@ -70,19 +71,22 @@ else (NOT XSLTPROC_EXECUTABLE)
   message (STATUS "Looking for xsltproc... ${XSLTPROC_EXECUTABLE}")
 endif (NOT XSLTPROC_EXECUTABLE)
 
-message (STATUS "Looking for gpgme...")
-find_library (GPGME gpgme)
-if (NOT GPGME)
-  message (SEND_ERROR "The gpgme library is required.")
-else (NOT GPGME)
-  message (STATUS "Looking for gpgme... ${GPGME}")
-  execute_process (COMMAND gpgme-config --cflags
-    OUTPUT_VARIABLE GPGME_CFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process (COMMAND gpgme-config --libs
-    OUTPUT_VARIABLE GPGME_LDFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif (NOT GPGME)
+if (NOT GPGME_FOUND)
+  # fallback for older gpgme versions without gpgme.pc file
+  message (STATUS "Looking for gpgme...")
+  find_library (GPGME gpgme)
+  if (NOT GPGME)
+    message (SEND_ERROR "The gpgme library is required.")
+  else (NOT GPGME)
+    message (STATUS "Looking for gpgme... ${GPGME}")
+    execute_process (COMMAND gpgme-config --cflags
+      OUTPUT_VARIABLE GPGME_CFLAGS
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process (COMMAND gpgme-config --libs
+      OUTPUT_VARIABLE GPGME_LDFLAGS
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif (NOT GPGME)
+endif (NOT GPGME_FOUND)
 
 if (WITH_LIBTHEIA)
   find_package(Theia 1.0.0 REQUIRED)

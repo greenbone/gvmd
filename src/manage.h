@@ -201,6 +201,7 @@ authenticate (credentials_t*);
 
 void
 logout_user ();
+
 
 /* Database. */
 
@@ -233,6 +234,21 @@ manage_encrypt_all_credentials (GSList *, const db_conn_info_t *);
 
 int
 manage_decrypt_all_credentials (GSList *, const db_conn_info_t *);
+
+int
+manage_create_encryption_key (GSList *log_config,
+                              const db_conn_info_t *database);
+
+int
+manage_set_encryption_key (GSList *log_config,
+                           const db_conn_info_t *database,
+                           const char*);
+
+char *
+current_encryption_key_uid (gboolean);
+
+void
+set_current_encryption_key_uid (const char *new_uid);
 
 void
 manage_session_set_timezone (const char *);
@@ -267,7 +283,8 @@ typedef enum
   /* 15 was removed (TASK_STATUS_STOP_REQUESTED_GIVEUP). */
   TASK_STATUS_DELETE_WAITING = 16,
   TASK_STATUS_DELETE_ULTIMATE_WAITING = 17,
-  TASK_STATUS_QUEUED = 18
+  TASK_STATUS_QUEUED = 18,
+  TASK_STATUS_PROCESSING = 19,
 } task_status_t;
 
 /**
@@ -389,6 +406,12 @@ type_is_scap (const char*);
 
 int
 delete_resource (const char *, const char *, int);
+
+int
+resource_id_deprecated (const char *, const char *);
+
+void
+set_resource_id_deprecated (const char *, const char *, gboolean);
 
 
 /* Events and Alerts. */
@@ -1081,6 +1104,7 @@ user_has_super (const char *, user_t);
  */
 #define LSC_FAMILY_LIST                            \
   "'AIX Local Security Checks',"                   \
+  " 'AlmaLinux Local Security Checks',"            \
   " 'Amazon Linux Local Security Checks',"         \
   " 'CentOS Local Security Checks',"               \
   " 'Citrix Xenserver Local Security Checks',"     \
@@ -1099,6 +1123,7 @@ user_has_super (const char *, user_t);
   " 'Oracle Linux Local Security Checks',"         \
   " 'Palo Alto PAN-OS Local Security Checks',"     \
   " 'Red Hat Local Security Checks',"              \
+  " 'Rocky Linux Local Security Checks',"          \
   " 'Slackware Local Security Checks',"            \
   " 'Solaris Local Security Checks',"              \
   " 'SuSE Local Security Checks',"                 \
@@ -1110,12 +1135,23 @@ user_has_super (const char *, user_t);
  * @brief Whole only families.
  */
 #define FAMILIES_WHOLE_ONLY                        \
-  { "CentOS Local Security Checks",                \
+  { "AIX Local Security Checks",                   \
+    "AlmaLinux Local Security Checks",             \
+    "Amazon Linux Local Security Checks",          \
+    "CentOS Local Security Checks",                \
     "Debian Local Security Checks",                \
     "Fedora Local Security Checks",                \
+    "FreeBSD Local Security Checks",               \
+    "Gentoo Local Security Checks",                \
+    "HP-UX Local Security Checks",                 \
     "Huawei EulerOS Local Security Checks",        \
+    "Mageia Linux Local Security Checks",          \
+    "Mandrake Local Security Checks",              \
     "Oracle Linux Local Security Checks",          \
     "Red Hat Local Security Checks",               \
+    "Rocky Linux Local Security Checks",           \
+    "Slackware Local Security Checks",             \
+    "Solaris Local Security Checks",               \
     "SuSE Local Security Checks",                  \
     "Ubuntu Local Security Checks",                \
     NULL }
@@ -1150,6 +1186,13 @@ result_detection_reference (result_t, report_t, const char *, const char *,
  * @brief Default min quality of detection percentage for filters.
  */
 #define MIN_QOD_DEFAULT 70
+
+/**
+ * @brief Default size to limit note and override text to in reports.
+ */
+#define EXCERPT_SIZE_DEFAULT 300
+
+
 
 void
 reports_clear_count_cache_for_override (override_t, int);
@@ -1369,6 +1412,8 @@ result_count (const get_data_t *, report_t, const char*);
 int
 init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
+int
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);                         
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1483,6 +1528,78 @@ result_iterator_cert_bunds (iterator_t*);
 
 gchar **
 result_iterator_dfn_certs (iterator_t*);
+
+const char *
+result_iterator_delta_state (iterator_t*);
+
+const char *
+result_iterator_delta_description (iterator_t*);
+
+const char *
+result_iterator_delta_severity (iterator_t*);
+
+double
+result_iterator_delta_severity_double (iterator_t*);
+
+const char*
+result_iterator_delta_level (iterator_t*);
+
+const char *
+result_iterator_delta_original_severity (iterator_t*);
+
+double
+result_iterator_delta_original_severity_double (iterator_t*);
+
+const char*
+result_iterator_delta_original_level (iterator_t*);
+
+const char *
+result_iterator_delta_qod (iterator_t*);
+
+const char *
+result_iterator_delta_uuid (iterator_t*);
+
+const char *
+result_iterator_delta_qod_type (iterator_t*);
+
+const char *
+result_iterator_delta_creation_time (iterator_t*);
+
+const char *
+result_iterator_delta_modification_time (iterator_t*);
+
+task_t
+result_iterator_delta_task (iterator_t*);
+
+report_t
+result_iterator_delta_report (iterator_t*);
+
+const char *
+result_iterator_delta_owner_name (iterator_t*);
+
+const char *
+result_iterator_delta_path (iterator_t*);
+
+const char *
+result_iterator_delta_host_asset_id (iterator_t*);
+
+const char *
+result_iterator_delta_nvt_version (iterator_t*);
+
+result_t
+result_iterator_delta_result (iterator_t*);
+
+int
+result_iterator_delta_may_have_notes (iterator_t*);
+
+int
+result_iterator_delta_may_have_overrides (iterator_t*);
+
+int
+result_iterator_delta_may_have_tickets (iterator_t*);
+
+const char *
+result_iterator_delta_hostname (iterator_t*);
 
 int
 cleanup_result_nvts ();
@@ -1795,6 +1912,9 @@ int
 init_nvt_info_iterator (iterator_t*, get_data_t*, const char*);
 
 int
+init_nvt_info_iterator_all (iterator_t*, get_data_t*);
+
+int
 nvt_info_count (const get_data_t *);
 
 int
@@ -1924,7 +2044,8 @@ nvt_selector_iterator_type (iterator_t*);
 /* NVT preferences. */
 
 void
-manage_nvt_preference_add (const char*, const char*, int);
+manage_nvt_preference_add (const char*, const char*, const char*, const char*,
+                           const char*, const char*, int);
 
 void
 manage_nvt_preferences_enable ();
@@ -1960,7 +2081,7 @@ void
 xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int, int, int, int);
 
 char*
 task_preference_value (task_t, const char *);
@@ -2215,6 +2336,9 @@ int
 init_asset_host_iterator (iterator_t *, const get_data_t *);
 
 int
+init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get);
+
+int
 asset_iterator_writable (iterator_t *);
 
 int
@@ -2228,6 +2352,9 @@ asset_host_count (const get_data_t *);
 
 int
 init_asset_os_iterator (iterator_t *, const get_data_t *);
+
+int
+init_resource_names_os_iterator (iterator_t *, get_data_t *);
 
 const char*
 asset_os_iterator_title (iterator_t *);
@@ -2319,6 +2446,9 @@ note_count (const get_data_t *, nvt_t, result_t, task_t);
 int
 init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
 
+int
+init_note_iterator_all (iterator_t* iterator, get_data_t *get);
+
 const char*
 note_iterator_nvt_oid (iterator_t*);
 
@@ -2392,6 +2522,9 @@ override_count (const get_data_t *, nvt_t, result_t, task_t);
 int
 init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
+
+int
+init_override_iterator_all (iterator_t* iterator, get_data_t *get);                        
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
@@ -3148,6 +3281,9 @@ int
 init_cpe_info_iterator (iterator_t*, get_data_t*, const char*);
 
 int
+init_cpe_info_iterator_all (iterator_t*, get_data_t*);
+
+int
 cpe_info_count (const get_data_t *get);
 
 const char*
@@ -3194,6 +3330,10 @@ cve_info_iterator_products (iterator_t*);
 int
 init_cve_info_iterator (iterator_t*, get_data_t*, const char*);
 
+
+int
+init_cve_info_iterator_all (iterator_t*, get_data_t*);
+
 int
 cve_info_count (const get_data_t *get);
 
@@ -3208,6 +3348,9 @@ manage_cert_loaded ();
 
 int
 init_cert_bund_adv_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+init_cert_bund_adv_info_iterator_all (iterator_t*, get_data_t*);
 
 int
 cert_bund_adv_info_count (const get_data_t *get);
@@ -3237,6 +3380,9 @@ nvt_cert_bund_adv_iterator_name (iterator_t*);
 
 int
 init_dfn_cert_adv_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+init_dfn_cert_adv_info_iterator_all (iterator_t*, get_data_t*);
 
 int
 dfn_cert_adv_info_count (const get_data_t *get);
@@ -3281,6 +3427,9 @@ setting_is_default_ca_cert (const gchar *);
 
 char *
 setting_filter (const char *);
+
+int
+setting_excerpt_size_int ();
 
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
@@ -3468,6 +3617,12 @@ manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **, int *);
 
 void
 manage_set_ldap_info (int, gchar *, gchar *, int, gchar *, int);
+
+char *
+get_radius_key (gboolean *);
+
+void
+set_radius_key (const char*, gboolean);
 
 void
 manage_get_radius_info (int *, char **, char **);

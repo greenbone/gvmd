@@ -600,7 +600,7 @@ accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
           init_sentry ();
           is_parent = 0;
 
-          setproctitle ("gvmd: Serving client");
+          setproctitle ("Serving client");
 
           /* Restore the sigmask that was blanked for pselect. */
           pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
@@ -736,7 +736,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
         /* Child.  Serve the scheduler GMP, then exit. */
 
         init_sentry ();
-        setproctitle ("gvmd: Serving GMP internally");
+        setproctitle ("Serving GMP internally");
 
         parent_client_socket = sockets[0];
 
@@ -834,7 +834,7 @@ fork_connection_internal (gvm_connection_t *client_connection,
 
         g_debug ("%s: %i forked %i", __func__, getpid (), pid);
 
-        setproctitle ("gvmd: Requesting GMP internally");
+        setproctitle ("Requesting GMP internally");
 
         /* This process is returned as the child of
          * fork_connection_for_scheduler so that the returned parent can wait
@@ -1105,7 +1105,7 @@ handle_sigabrt_simple (int signal)
 static int
 update_nvt_cache_osp (const gchar *update_socket)
 {
-  setproctitle ("gvmd: OSP: Updating NVT cache");
+  setproctitle ("OSP: Updating NVT cache");
 
   return manage_update_nvts_osp (update_socket);
 }
@@ -1121,7 +1121,7 @@ update_nvt_cache_osp (const gchar *update_socket)
 static int
 update_nvt_cache_retry ()
 {
-  setproctitle ("gvmd: Reloading NVTs");
+  setproctitle ("Reloading NVTs");
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
   setup_signal_handler (SIGCHLD, SIG_DFL, 0);
@@ -1216,7 +1216,7 @@ fork_update_nvt_cache ()
         /* Child.   */
 
         init_sentry ();
-        setproctitle ("gvmd: Updating NVT cache");
+        setproctitle ("Updating NVT cache");
 
         /* Clean up the process. */
 
@@ -1279,7 +1279,7 @@ fork_feed_sync ()
   int pid;
   sigset_t sigmask_all, sigmask_current;
   gboolean gvmd_data_feed_dirs_exist;
-  
+
   static gboolean disable_gvmd_data_feed_warning = FALSE;
 
   if (feed_version_check_in_progress)
@@ -1327,7 +1327,7 @@ fork_feed_sync ()
         /* Child.   */
 
         init_sentry ();
-        setproctitle ("gvmd: Synchronizing feed data");
+        setproctitle ("Synchronizing feed data");
 
         /* Clean up the process. */
 
@@ -1756,13 +1756,13 @@ manager_listen (const char *address_str_unix, const char *address_str_tls,
 }
 
 /**
- * @brief parse_authentication_goption_arg is used to parse authentication 
+ * @brief parse_authentication_goption_arg is used to parse authentication
  * parameter.
  *
  * @param[in] opt the parameter (e.g. --pepper).
  * @param[in] arg the value of the parameter.
  * @param[in] data the pointer of the data to set (unused).
- * @param[in] err used to set error string on failure. 
+ * @param[in] err used to set error string on failure.
  *
  * @return TRUE success, FALSE on failure.
  **/
@@ -1814,6 +1814,7 @@ parse_authentication_goption_arg (const gchar *opt, const gchar *arg,
  *
  * @param[in]  argc  The number of arguments in argv.
  * @param[in]  argv  The list of arguments to the program.
+ * @param[in]  env  The program's environment arguments.
  *
  * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
@@ -1824,12 +1825,16 @@ gvmd (int argc, char** argv, char *env[])
 
   static int auth_timeout = 15;
   static gboolean check_alerts = FALSE;
+  static gboolean create_encryption_key = FALSE;
   static gboolean migrate_database = FALSE;
   static gboolean encrypt_all_credentials = FALSE;
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
   static gboolean dump_vt_verification = FALSE;
+  static gchar *encryption_key_type = NULL;
+  static int encryption_key_length = 0;
+  static gchar *set_encryption_key = NULL;
   static gboolean get_roles = FALSE;
   static gboolean get_users = FALSE;
   static gboolean get_scanners = FALSE;
@@ -1886,6 +1891,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
+  static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
   static gchar *vt_verification_collation = NULL;
 
   GString *full_disable_commands = g_string_new ("");
@@ -1916,6 +1923,12 @@ gvmd (int argc, char** argv, char *env[])
           " 0 to disable. Defaults to "
           G_STRINGIFY (DEFAULT_CLIENT_WATCH_INTERVAL) " seconds.",
           "<number>" },
+        { "create-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
+          &create_encryption_key,
+          "Create a new credential encryption key, set it as the new default"
+          " and exit."
+          " With no other options given, a 4096 bit RSA key is created.",
+          NULL },
         { "create-scanner", '\0', 0, G_OPTION_ARG_STRING,
           &create_scanner,
           "Create global scanner <scanner> and exit.",
@@ -1977,6 +1990,17 @@ gvmd (int argc, char** argv, char *env[])
           &dump_vt_verification,
           "Dump the string the VTs verification hash is calculated from.",
           NULL },
+        { "encryption-key-length", '\0', 0, G_OPTION_ARG_INT,
+          &encryption_key_length,
+          "Set key length to <length> bits when creating a new RSA"
+          " credential encryption key. Defaults to "
+          G_STRINGIFY (DEFAULT_ENCRYPTION_KEY_LENGTH) ".",
+          "<length>" },
+        { "encryption-key-type", '\0', 0, G_OPTION_ARG_STRING,
+          &encryption_key_type,
+          "Use the key type <type> when creating a new credential"
+          " encryption key. Currently only RSA is supported.",
+          "<type>" },
         { "encrypt-all-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &encrypt_all_credentials,
           "(Re-)Encrypt all credentials.",
@@ -2011,6 +2035,10 @@ gvmd (int argc, char** argv, char *env[])
           &priorities,
           "Sets the GnuTLS priorities for the Manager socket.",
           "<priorities-string>" },
+        { "hashcount", '\0', 0, G_OPTION_ARG_CALLBACK,
+           parse_authentication_goption_arg,
+          "Use <hashcount> to enhance the computational cost of creating a password hash.",
+          "<hashcount>" },
         { "inheritor", '\0', 0, G_OPTION_ARG_STRING,
           &inheritor,
           "Have <username> inherit from deleted user.",
@@ -2078,7 +2106,8 @@ gvmd (int argc, char** argv, char *env[])
           " cleanup-config-prefs, cleanup-feed-permissions,"
           " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
           " cleanup-result-nvts, cleanup-result-severities,"
-          " cleanup-schedule-times, cleanup-sequences, migrate-relay-sensors,"
+          " cleanup-schedule-times, cleanup-sequences,"
+          " cleanup-tls-certificate-encoding, migrate-relay-sensors,"
           " rebuild-report-cache or update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
@@ -2090,6 +2119,10 @@ gvmd (int argc, char** argv, char *env[])
           &password,
           "Password, for --create-user.",
           "<password>" },
+        { "pepper", '\0', 0, G_OPTION_ARG_CALLBACK,
+           parse_authentication_goption_arg,
+          "Use <pepper> to statically enhance salt of password hashes (maximal 4 character).",
+          "<pepper>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING,
           &manager_port_string,
           "Use port number <number>.",
@@ -2178,6 +2211,11 @@ gvmd (int argc, char** argv, char *env[])
           "During CERT and SCAP sync, commit updates to the database every"
           " <number> items, 0 for unlimited, default: "
           G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
+        { "set-encryption-key", '\0', 0, G_OPTION_ARG_STRING,
+          &set_encryption_key,
+          "Set the encryption key with the given UID as the new default"
+          " and exit.",
+          "<uid>" },
         { "unix-socket", 'c', 0, G_OPTION_ARG_STRING,
           &manager_address_string_unix,
           "Listen on UNIX socket at <filename>.",
@@ -2198,18 +2236,20 @@ gvmd (int argc, char** argv, char *env[])
           &verify_scanner,
           "Verify scanner <scanner-uuid> and exit.",
           "<scanner-uuid>" },
-        { "pepper", '\0', 0, G_OPTION_ARG_CALLBACK,
-           parse_authentication_goption_arg,
-          "Use <pepper> to statically enhance salt of password hashes (maximal 4 character).",
-          "<pepper>" },
-        { "hashcount", '\0', 0, G_OPTION_ARG_CALLBACK,
-           parse_authentication_goption_arg,
-          "Use <hashcount> to enhance the computational cost of creating a password hash.",
-          "<hashcount>" },
         { "version", '\0', 0, G_OPTION_ARG_NONE,
           &print_version,
           "Print version and exit.",
           NULL },
+        { "vt-ref-insert-size", '\0', 0, G_OPTION_ARG_INT,
+          &vt_ref_insert_size,
+          "Max number of VT refs to insert per statement during VT update,"
+          " 0 for unlimited, default: "
+          G_STRINGIFY (VT_REF_INSERT_SIZE_DEFAULT), "<number>" },
+        { "vt-sev-insert-size", '\0', 0, G_OPTION_ARG_INT,
+          &vt_sev_insert_size,
+          "Max number of VT severities to insert per statement during VT update,"
+          " 0 for unlimited, default: "
+          G_STRINGIFY (VT_SEV_INSERT_SIZE_DEFAULT), "<number>" },
         { "vt-verification-collation", '\0', 0, G_OPTION_ARG_STRING,
           &vt_verification_collation,
           "Set collation for VT verification to <collation>, omit or leave"
@@ -2282,7 +2322,7 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Set feed lock path */
   set_feed_lock_path (feed_lock_path);
-  
+
   /* Set feed lock timeout */
   set_feed_lock_timeout (feed_lock_timeout);
 
@@ -2293,9 +2333,13 @@ gvmd (int argc, char** argv, char *env[])
   /* Set the connection auto retry */
   set_scanner_connection_retry (scanner_connection_retry);
 
-  /* Set SecInfo update commit size */
+  /* Set SQL sizes */
 
   set_secinfo_commit_size (secinfo_commit_size);
+
+  set_vt_ref_insert_size (vt_ref_insert_size);
+
+  set_vt_sev_insert_size (vt_sev_insert_size);
 
   /* Set VT verification collation override */
   set_vt_verification_collation (vt_verification_collation);
@@ -2336,7 +2380,7 @@ gvmd (int argc, char** argv, char *env[])
   /* Set process title. */
 
   setproctitle_init (argc, argv, env);
-  setproctitle ("gvmd: Initializing");
+  setproctitle ("Initializing");
 
   /* Setup initial signal handlers. */
 
@@ -2420,6 +2464,17 @@ gvmd (int argc, char** argv, char *env[])
         }
       else
         g_debug ("No default relay mapper found.");
+    }
+
+  /*
+   * Parameters for new credential encryption keys
+   */
+  if (lsc_crypt_enckey_parms_init (encryption_key_type,
+                                   encryption_key_length))
+    {
+      g_critical ("%s: failed to set encryption key parameters", __func__);
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
     }
 
   /**
@@ -2520,7 +2575,7 @@ gvmd (int argc, char** argv, char *env[])
           return EXIT_FAILURE;
         }
 
-      setproctitle ("gvmd: Migrating database");
+      setproctitle ("Migrating database");
 
       g_info ("   Migrating database.");
 
@@ -2605,7 +2660,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Optimizing");
+      setproctitle ("Optimizing");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2621,7 +2676,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: --rebuild");
+      setproctitle ("--rebuild");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2635,15 +2690,15 @@ gvmd (int argc, char** argv, char *env[])
         }
       return EXIT_SUCCESS;
     }
-  
+
   if (rebuild_gvmd_data)
     {
       int ret;
       gchar *error_msg;
-      
+
       error_msg = NULL;
 
-      setproctitle ("gvmd: --rebuild-gvmd-data");
+      setproctitle ("--rebuild-gvmd-data");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2668,7 +2723,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: --rebuild-scap");
+      setproctitle ("--rebuild-scap");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2682,13 +2737,13 @@ gvmd (int argc, char** argv, char *env[])
         }
       return EXIT_SUCCESS;
     }
-  
+
   if (dump_vt_verification)
     {
       int ret;
 
-      setproctitle ("gvmd: --dump-vt-verification");
-  
+      setproctitle ("--dump-vt-verification");
+
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
@@ -2710,7 +2765,7 @@ gvmd (int argc, char** argv, char *env[])
 
       /* Create the scanner and then exit. */
 
-      setproctitle ("gvmd: Creating scanner");
+      setproctitle ("Creating scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2762,7 +2817,7 @@ gvmd (int argc, char** argv, char *env[])
 
       /* Modify the scanner and then exit. */
 
-      setproctitle ("gvmd: Modifying scanner");
+      setproctitle ("Modifying scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2806,7 +2861,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Checking alerts");
+      setproctitle ("Checking alerts");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2818,11 +2873,42 @@ gvmd (int argc, char** argv, char *env[])
       return EXIT_SUCCESS;
     }
 
+  if (create_encryption_key)
+    {
+      int ret;
+      setproctitle ("Creating encryption key");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_create_encryption_key (log_config, &database);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (set_encryption_key)
+    {
+      int ret;
+      setproctitle ("Setting encryption key");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_set_encryption_key (log_config, &database,
+                                       set_encryption_key);
+      log_config_free ();
+      if (ret)
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
   if (create_user)
     {
       int ret;
 
-      setproctitle ("gvmd: Creating user");
+      setproctitle ("Creating user");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2839,7 +2925,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Deleting user");
+      setproctitle ("Deleting user");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2855,7 +2941,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Getting roles");
+      setproctitle ("Getting roles");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2871,7 +2957,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Getting users");
+      setproctitle ("Getting users");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2887,7 +2973,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Getting scanners");
+      setproctitle ("Getting scanners");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2903,7 +2989,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Deleting scanner");
+      setproctitle ("Deleting scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2919,7 +3005,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Verifying scanner");
+      setproctitle ("Verifying scanner");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2935,7 +3021,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Modifying user password");
+      setproctitle ("Modifying user password");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2951,7 +3037,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Modifying setting");
+      setproctitle ("Modifying setting");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2968,7 +3054,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Encrypting all credentials");
+      setproctitle ("Encrypting all credentials");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -2984,7 +3070,7 @@ gvmd (int argc, char** argv, char *env[])
     {
       int ret;
 
-      setproctitle ("gvmd: Decrypting all credentials");
+      setproctitle ("Decrypting all credentials");
 
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
@@ -3056,6 +3142,19 @@ gvmd (int argc, char** argv, char *env[])
         break;
       case -2:
         g_critical ("%s: database is wrong version", __func__);
+        g_critical ("%s: Your database is too old for this version of gvmd.",
+                    __func__);
+        g_critical ("%s: Please migrate to the current data model.", __func__);
+        g_critical ("%s: Use a command like this: gvmd --migrate", __func__);
+        log_config_free ();
+        gvm_close_sentry ();
+        exit (EXIT_FAILURE);
+        break;
+      case -5:
+        g_critical ("%s: database is wrong version", __func__);
+        g_critical ("%s: Your database is too new for this version of gvmd.",
+                    __func__);
+        g_critical ("%s: Please upgrade gvmd to a newer version.", __func__);
         log_config_free ();
         gvm_close_sentry ();
         exit (EXIT_FAILURE);
@@ -3235,7 +3334,7 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Enter the main forever-loop. */
 
-  setproctitle ("gvmd: Waiting for incoming connections");
+  setproctitle ("Waiting for incoming connections");
   serve_and_schedule ();
 
   gvm_close_sentry ();

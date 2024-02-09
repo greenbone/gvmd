@@ -43,6 +43,6 @@ params_options_free (array_t *);
 void
 parse_report_format_entity (entity_t, const char **, char **, char **,
                             char **, char **, char **, char **,
-                            array_t **, array_t **, array_t **);
+                            array_t **, array_t **, array_t **, char **);
 
 #endif /* not _GVMD_GMP_REPORT_FORMATS_H */

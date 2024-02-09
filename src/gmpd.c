@@ -78,6 +78,11 @@ buffer_size_t from_client_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
+ * @brief Flag for serve_gmp and gmpd_send_to_client.
+ */
+static int close_connection = 0;
+
+/**
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
@@ -90,8 +95,8 @@ buffer_size_t from_client_end = 0;
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
- * @return 0 success, -1 error, -2 database is wrong version,
- *         -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -4 max_ips_per_target out of range, -5 database is too new.
  */
 int
 init_gmpd (GSList *log_config, const db_conn_info_t *database,
@@ -455,9 +460,12 @@ int
 serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
            gchar **disable)
 {
-  int nfds, rc = 0;
+  int nfds, rc;
 
   g_debug ("   Serving GMP");
+
+  rc = 0;
+  close_connection = 0;
 
   /* Initialise the XML parser and the manage library. */
   init_gmp_process (database,
@@ -505,11 +513,15 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
       /** @todo Shutdown on failure (for example, if a read fails). */
 
       /* See whether to read from the client.  */
-      if (from_client_end < from_buffer_size)
+      if ((close_connection == 0)
+          && (from_client_end < from_buffer_size))
         FD_SET (client_connection->socket, &readfds);
+
       /* See whether to write to the client.  */
       if (to_client_start < to_client_end)
         FD_SET (client_connection->socket, &writefds);
+      else if (close_connection)
+        goto client_free;
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -559,13 +571,10 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
                 break;
               case -3:       /* End of file. */
                 g_debug ("   EOF reading from client");
-                if (client_connection->socket > 0
-                    && FD_ISSET (client_connection->socket, &writefds))
-                  /* Write rest of to_client to client, so that the client gets
-                   * any buffered output and the response to the error. */
-                  write_to_client (client_connection);
-                rc = 0;
-                goto client_free;
+                if (client_connection->socket > 0)
+                  /* Stop reading, but process rest of input and output. */
+                  close_connection = 1;
+                break;
               default:       /* Programming error. */
                 assert (0);
             }
@@ -613,6 +622,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
           switch (write_to_client (client_connection))
             {
               case  0:      /* Wrote everything in to_client. */
+                if (close_connection)
+                  goto client_free;
                 break;
               case -1:      /* Error. */
                 rc = -1;

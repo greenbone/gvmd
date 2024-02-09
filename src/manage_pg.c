@@ -195,7 +195,7 @@ manage_create_sql_functions ()
     return -1;
 
   /* Functions in C have been moved to the "pg-gvm" extension. */
-  
+
   /* Operators */
 
   sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
@@ -336,6 +336,18 @@ manage_create_sql_functions ()
        "   EXECUTE 'LOCK TABLE '"
        "           || quote_ident_split($1::text)"
        "           || ' IN ACCESS EXCLUSIVE MODE NOWAIT;';"
+       "   RETURN 1;"
+       " EXCEPTION WHEN lock_not_available THEN"
+       "   RETURN 0;"
+       " END;"
+       "$$ language 'plpgsql';");
+
+  sql ("CREATE OR REPLACE FUNCTION try_exclusive_lock_wait (regclass)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   EXECUTE 'LOCK TABLE '"
+       "           || quote_ident_split($1::text)"
+       "           || ' IN ACCESS EXCLUSIVE MODE;';"
        "   RETURN 1;"
        " EXCEPTION WHEN lock_not_available THEN"
        "   RETURN 0;"
@@ -569,7 +581,7 @@ manage_create_sql_functions ()
        "   user_zone text;"
        " BEGIN"
        "   user_zone :="
-       "     coalesce ((SELECT current_setting ('gvmd.tz_override')),"
+       "     coalesce (NULLIF((SELECT current_setting ('gvmd.tz_override')), ''),"
        "               (SELECT timezone FROM users"
        "                WHERE id = gvmd_user ()));"
        " RETURN iso_time (seconds, user_zone);"
@@ -836,6 +848,53 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " STABLE COST 1000;");
 
+  sql ("CREATE OR REPLACE FUNCTION compare_results ("
+       "  description1 text,"
+       "  description2 text,"
+       "  severity1 double precision,"
+       "  severity2 double precision,"
+       "  qod1 integer,"
+       "  qod2 integer,"
+       "  hostname1 text,"
+       "  hostname2 text,"
+       "  path1 text,"
+       "  path2 text)"
+       "RETURNS text AS $$ "
+       "BEGIN"
+       "  CASE"
+       "  WHEN description1 is null"
+       "       OR severity1 is null"
+       "       OR qod1 is null"
+       "  THEN RETURN 'gone';"
+       "  WHEN description2 is null"
+       "       OR severity2 is null"
+       "       OR qod2 is null"
+       "  THEN RETURN 'new';"
+       "  WHEN description1 != description2"
+       "       OR severity1 != severity2" 
+       "       OR qod1 != qod2"
+       "       OR hostname1 != hostname2"
+       "       OR path1 != path2"
+       "  THEN RETURN 'changed';"
+       "  ELSE RETURN 'same';"
+       "  END CASE;" 
+       "END;"
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
+  sql ("CREATE OR REPLACE FUNCTION normalize_port ("
+       "  port text)"
+       "RETURNS text AS $$ "
+       "BEGIN"
+       "  CASE"
+       "  WHEN port = 'package'"
+       "  THEN RETURN 'general/tcp';"
+       "  ELSE RETURN port;"
+       "  END CASE;" 
+       "END;"
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
   /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
@@ -976,7 +1035,7 @@ manage_create_sql_functions ()
            "         WHEN (SELECT scan_run_status FROM reports"
            "               WHERE reports.id = $1)"
            "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i,"
-           "                                         %i, %i, %i]))"
+           "                                         %i, %i, %i, %i]))"
            "         THEN true"
            "         ELSE false"
            "         END;"
@@ -988,7 +1047,8 @@ manage_create_sql_functions ()
            TASK_STATUS_STOP_REQUESTED,
            TASK_STATUS_STOPPED,
            TASK_STATUS_INTERRUPTED,
-           TASK_STATUS_QUEUED);
+           TASK_STATUS_QUEUED,
+           TASK_STATUS_PROCESSING);
 
       sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
            " RETURNS integer AS $$"
@@ -1391,6 +1451,8 @@ manage_create_sql_functions ()
        "         THEN 'Stopped'"
        "         WHEN $1 = %i"
        "         THEN 'Queued'"
+       "         WHEN $1 = %i"
+       "         THEN 'Processing'"
        "         ELSE 'Interrupted'"
        "         END;"
        "$$ LANGUAGE SQL"
@@ -1406,7 +1468,8 @@ manage_create_sql_functions ()
        TASK_STATUS_STOP_REQUESTED,
        TASK_STATUS_STOP_WAITING,
        TASK_STATUS_STOPPED,
-       TASK_STATUS_QUEUED);
+       TASK_STATUS_QUEUED,
+       TASK_STATUS_PROCESSING);
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
@@ -1749,6 +1812,8 @@ create_view_vulns ()
 
 /**
  * @brief Create NVT related tables.
+ *
+ * @param[in]  suffix  String to append to table names.
  */
 void
 create_tables_nvt (const gchar *suffix)
@@ -1774,6 +1839,10 @@ create_tables_nvt (const gchar *suffix)
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences%s"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"
+       "  pref_nvt text,"
+       "  pref_id integer,"
+       "  pref_type text,"
+       "  pref_name text,"
        "  value text);",
        suffix);
 
@@ -1935,6 +2004,13 @@ create_tables ()
        "  credential INTEGER REFERENCES credentials_trash (id) ON DELETE RESTRICT,"
        "  type TEXT,"
        "  value TEXT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS deprecated_feed_data"
+       " (id SERIAL PRIMARY KEY,"
+       "  type TEXT,"
+       "  uuid TEXT,"
+       "  modification_time INTEGER,"
+       "  UNIQUE (type, uuid));");
 
   sql ("CREATE TABLE IF NOT EXISTS filters"
        " (id SERIAL PRIMARY KEY,"
@@ -2878,6 +2954,9 @@ create_tables ()
 
   /* Create indexes. */
 
+  sql ("SELECT create_index ('config_preferences_by_config',"
+       "                     'config_preferences', 'config');");
+
   sql ("SELECT create_index ('host_details_by_host',"
        "                     'host_details', 'host');");
 
@@ -3006,7 +3085,7 @@ check_db_sequences ()
 
 /**
  * @brief Check if an extension is available and can be installed.
- * 
+ *
  * @param[in]  name  Name of the extension to check.
  *
  * @return TRUE extension is available, FALSE otherwise.
@@ -3079,7 +3158,7 @@ check_db_extensions ()
 
       // Switch to superuser role and try to install extensions.
       sql ("SET ROLE \"%s\";", DB_SUPERUSER_ROLE);
-      
+
       // Clean up old functions now in pg-gvm
       cleanup_old_sql_functions ();
 

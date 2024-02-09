@@ -89,9 +89,12 @@ migrate_predefined_configs ();
 int
 config_updated_in_feed (config_t, const gchar *);
 
+int
+deprecated_config_id_updated_in_feed (const char *, const gchar *);
+
 void
 update_config (config_t, const gchar *, const gchar *, const gchar *,
-               int, const array_t*, const array_t*);
+               int, const array_t*, const array_t*, const gchar *);
 
 void
 check_db_configs ();

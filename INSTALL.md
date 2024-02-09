@@ -265,7 +265,31 @@ The UUIDs of all created users can be found using
 ## Keeping the feeds up-to-date
 
 The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
-`greenbone-feed-sync` script regularely (e.g. via a cron entry):
+`greenbone-feed-sync` script regularly (e.g. via a cron entry).
+
+There are currently two synchronization methods available: The older
+shell-based one included in the gvmd repository and a newer Python-based one
+that also handles the VT synchronization.
+
+### Python-based sync tool
+
+The currently recommended way of synchronizing the gvmd data feeds is the
+Python tool "greenbone-feed-sync", which can be found at
+https://github.com/greenbone/greenbone-feed-sync together with instruction
+for its installation and usage.
+
+When upgrading to the new synchronization tool, the old script should be
+removed to avoid conflicts as both are named "greenbone-feed-sync".
+
+### Legacy shell script
+
+The legacy feed sync script is deprecated and will be removed in the next major
+release of gvmd.
+
+Therefore, installation of it is now disabled by default but can be enabled for
+backward compatibility with the CMake option `-DINSTALL_OLD_SYNC_SCRIPTS=ON`.
+
+The legacy script has to be run for each type of data:
 
     greenbone-feed-sync --type GVMD_DATA
     greenbone-feed-sync --type SCAP
@@ -274,7 +298,6 @@ The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling th
 Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
 and should be called after syncing the latter.
 You will need the `rsync` tool for a successful synchronization.
-
 
 ## Configure the default OSPD scanner socket path
 
@@ -414,6 +437,11 @@ supported values for `<name>` are:
   This cleans up id sequences that are likely to run out due to regular feed
   updates like the ids for config preferences.
 
+- `cleanup-tls-certificate-encoding`
+
+  This cleans up TLS certificates where the subject or issuer DN is not
+  valid UTF-8.
+
 - `migrate-relay-sensors`
 
   If relays are active, this can be used to make sure all sensor type
@@ -480,9 +508,12 @@ Look for the current key and remember its keyid. Then:
     gpg --homedir /var/lib/gvm/gvmd/gnupg --edit-key KEYID
 
 At the prompt enter `disable` followed by `save` and `quit`.
-Then create a new key and re-encrypt all passwords:
+Then start gvmd to create a new key:
 
-    gvmd --create-credentials-encryption-key
+    gvmd
+
+and finally re-encrypt all passwords:
+
     gvmd --encrypt-all-credentials
 
 No encryption: If for backward compatibility reasons encrypted credentials

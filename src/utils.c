@@ -570,7 +570,7 @@ lock_internal (lockfile_t *lockfile, const gchar *lockfile_name,
   if (name_is_full_path)
     full_name = g_strdup (lockfile_name);
   else
-    full_name = g_build_filename (GVMD_RUN_DIR, lockfile_name, NULL);
+    full_name = g_build_filename (GVMD_STATE_DIR, lockfile_name, NULL);
 
   old_umask = umask (0);
   fd = open (full_name, O_RDWR | O_CREAT,
