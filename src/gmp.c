@@ -17400,6 +17400,76 @@ get_last_report_xml (iterator_t *tasks, const char *last_report_id,
 }
 
 /**
+ * @brief Send observers XML.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  index  Task.
+ *
+ * @return 1 if error, else 0.
+ */
+static int
+get_tasks_send_observers (gmp_parser_t *gmp_parser,
+                          GError **error,
+                          task_t index)
+{
+  char *owner, *observers;
+  iterator_t groups, roles;
+
+  owner = task_owner_name (index);
+  observers = task_observers (index);
+
+  if (sendf_to_client (gmp_parser, error,
+                       "<observers>%s",
+                       ((owner == NULL)
+                       || (strcmp (owner,
+                                   current_credentials.username)))
+                         ? ""
+                         : observers))
+    {
+      free (owner);
+      free (observers);
+      return 1;
+    }
+  free (owner);
+  free (observers);
+
+  init_task_group_iterator (&groups, index);
+  while (next (&groups))
+    if (sendf_to_client (gmp_parser, error,
+                         "<group id=\"%s\">"
+                         "<name>%s</name>"
+                         "</group>",
+                         task_group_iterator_uuid (&groups),
+                         task_group_iterator_name (&groups)))
+      {
+        cleanup_iterator (&groups);
+        return 1;
+      }
+  cleanup_iterator (&groups);
+
+  init_task_role_iterator (&roles, index);
+  while (next (&roles))
+    if (sendf_to_client (gmp_parser, error,
+                         "<role id=\"%s\">"
+                         "<name>%s</name>"
+                         "</role>",
+                         task_role_iterator_uuid (&roles),
+                         task_role_iterator_name (&roles)))
+      {
+        cleanup_iterator (&roles);
+        return 1;
+      }
+  cleanup_iterator (&roles);
+
+  if (send_to_client (gmp_parser, error,
+                      "</observers>"))
+    return 1;
+
+  return 0;
+}
+
+/**
  * @brief Send single task for GET_TASKS.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -17433,7 +17503,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   gchar *second_last_report_id;
   gchar *current_report;
   report_t running_report;
-  char *owner, *observers;
   int target_in_trash, scanner_in_trash;
   int holes = 0, infos = 0, logs = 0, warnings = 0;
   int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
@@ -17442,7 +17511,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   int scanner_available;
   double severity = 0, severity_2 = 0;
   gchar *response;
-  iterator_t alerts, groups, roles;
+  iterator_t alerts;
   gchar *in_assets, *max_checks, *max_hosts;
   gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
   gchar *assets_min_qod;
@@ -17547,8 +17616,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
 
   g_free (second_last_report_id);
 
-  owner = task_owner_name (index);
-  observers = task_observers (index);
   config_name = task_config_name (index);
   config_uuid = task_config_uuid (index);
   target_available = 1;
@@ -17576,6 +17643,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
       task_target_uuid = NULL;
       task_target_name = NULL;
     }
+
   config_available = 1;
   if (task_config_in_trash (index))
     config_available = trash_config_readable_uuid (config_uuid);
@@ -17590,6 +17658,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                  __func__);
       config_available = (found > 0);
     }
+
   scanner_available = 1;
   scanner = task_iterator_scanner (tasks);
   if (scanner)
@@ -17718,49 +17787,9 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     }
   g_free (response);
 
-  if (sendf_to_client (gmp_parser, error,
-                       "<observers>%s",
-                       ((owner == NULL)
-                       || (strcmp (owner,
-                                   current_credentials.username)))
-                         ? ""
-                         : observers))
+  if (get_tasks_send_observers (gmp_parser, error, index))
     goto cleanup_exit;
-  free (owner);
-  free (observers);
 
-  init_task_group_iterator (&groups, index);
-  while (next (&groups))
-    if (sendf_to_client (gmp_parser, error,
-                         "<group id=\"%s\">"
-                         "<name>%s</name>"
-                         "</group>",
-                         task_group_iterator_uuid (&groups),
-                         task_group_iterator_name (&groups)))
-      {
-        cleanup_iterator (&groups);
-        goto cleanup_exit;
-      }
-  cleanup_iterator (&groups);
-
-  init_task_role_iterator (&roles, index);
-  while (next (&roles))
-    if (sendf_to_client (gmp_parser, error,
-                         "<role id=\"%s\">"
-                         "<name>%s</name>"
-                         "</role>",
-                         task_role_iterator_uuid (&roles),
-                         task_role_iterator_name (&roles)))
-      {
-        cleanup_iterator (&roles);
-        goto cleanup_exit;
-      }
-  cleanup_iterator (&roles);
-
-  if (send_to_client (gmp_parser, error,
-                      "</observers>"))
-    goto cleanup_exit;
-      
   init_task_alert_iterator (&alerts, index);
   while (next (&alerts))
     {
