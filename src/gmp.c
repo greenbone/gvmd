@@ -17270,24 +17270,19 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     return 1;
 
   target_in_trash = task_target_in_trash (index);
+
+  running_report = 0;
   if ((target == 0)
       && (task_iterator_run_status (tasks)
           == TASK_STATUS_RUNNING))
-    {
-      progress_xml = g_strdup_printf
-                      ("%i",
-                      task_upload_progress (index));
-      running_report = 0;
-    }
+    progress_xml = g_strdup_printf
+                    ("%i",
+                     task_upload_progress (index));
   else
     {
-      int progress;
-
       running_report = task_iterator_current_report (tasks);
-      progress
-        = report_progress (running_report);
       progress_xml
-        = g_strdup_printf ("%i", progress);
+        = g_strdup_printf ("%i", report_progress (running_report));
     }
 
   if (running_report)
