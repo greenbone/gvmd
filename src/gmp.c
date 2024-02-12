@@ -17209,6 +17209,61 @@ get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
 }
 
 /**
+ * @brief Get current report XML.
+ *
+ * @param[in]  running_report  Report.
+ *
+ * @return XMl.
+ */
+static gchar *
+get_current_report_xml (report_t running_report)
+{
+  gchar *current_report;
+
+  if (running_report)
+    {
+      gchar *timestamp;
+      char *scan_start, *scan_end, *current_report_id;
+
+      current_report_id = report_uuid (running_report);
+
+      if (report_timestamp (current_report_id, &timestamp))
+        g_error ("%s: GET_TASKS: error getting timestamp"
+                 " of report, aborting",
+                 __func__);
+
+      scan_start = scan_start_time_uuid (current_report_id),
+      scan_end = scan_end_time_uuid (current_report_id),
+
+      current_report = g_strdup_printf ("<current_report>"
+                                        "<report id=\"%s\">"
+                                        "<timestamp>"
+                                        "%s"
+                                        "</timestamp>"
+                                        "<scan_start>"
+                                        "%s"
+                                        "</scan_start>"
+                                        "<scan_end>"
+                                        "%s"
+                                        "</scan_end>"
+                                        "</report>"
+                                        "</current_report>",
+                                        current_report_id,
+                                        timestamp,
+                                        scan_start,
+                                        scan_end);
+      free (current_report_id);
+      free (scan_start);
+      free (scan_end);
+      g_free (timestamp);
+    }
+  else
+    current_report = g_strdup ("");
+
+  return current_report;
+}  
+
+/**
  * @brief Send single task for GET_TASKS.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -17285,45 +17340,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
         = g_strdup_printf ("%i", report_progress (running_report));
     }
 
-  if (running_report)
-    {
-      gchar *timestamp;
-      char *scan_start, *scan_end, *current_report_id;
-
-      current_report_id = report_uuid (running_report);
-
-      if (report_timestamp (current_report_id, &timestamp))
-        g_error ("%s: GET_TASKS: error getting timestamp"
-                 " of report, aborting",
-                 __func__);
-
-      scan_start = scan_start_time_uuid (current_report_id),
-      scan_end = scan_end_time_uuid (current_report_id),
-
-      current_report = g_strdup_printf ("<current_report>"
-                                        "<report id=\"%s\">"
-                                        "<timestamp>"
-                                        "%s"
-                                        "</timestamp>"
-                                        "<scan_start>"
-                                        "%s"
-                                        "</scan_start>"
-                                        "<scan_end>"
-                                        "%s"
-                                        "</scan_end>"
-                                        "</report>"
-                                        "</current_report>",
-                                        current_report_id,
-                                        timestamp,
-                                        scan_start,
-                                        scan_end);
-      free (current_report_id);
-      free (scan_start);
-      free (scan_end);
-      g_free (timestamp);
-    }
-  else
-    current_report = g_strdup ("");
+  current_report = get_current_report_xml (running_report);
 
   first_report_id = task_iterator_first_report (tasks);
   if (first_report_id && (get_tasks_data->get.trash == 0))
