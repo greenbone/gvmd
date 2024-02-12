@@ -17763,67 +17763,67 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   auto_delete_data = task_preference_value (index, "auto_delete_data");
 
   if (sendf_to_client (gmp_parser, error,
-   "<preferences>"
-    "<preference>"
-    "<name>"
-    "Maximum concurrently executed NVTs per host"
-    "</name>"
-    "<scanner_name>max_checks</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "<preference>"
-    "<name>"
-    "Maximum concurrently scanned hosts"
-    "</name>"
-    "<scanner_name>max_hosts</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "<preference>"
-    "<name>"
-    "Add results to Asset Management"
-    "</name>"
-    "<scanner_name>in_assets</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "<preference>"
-    "<name>"
-    "Apply Overrides when adding Assets"
-    "</name>"
-    "<scanner_name>assets_apply_overrides</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "<preference>"
-    "<name>"
-    "Min QOD when adding Assets"
-    "</name>"
-    "<scanner_name>assets_min_qod</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "<preference>"
-    "<name>"
-    "Auto Delete Reports"
-    "</name>"
-    "<scanner_name>auto_delete</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "<preference>"
-    "<name>"
-    "Auto Delete Reports Data"
-    "</name>"
-    "<scanner_name>auto_delete_data</scanner_name>"
-    "<value>%s</value>"
-    "</preference>"
-    "</preferences>"
-    "</task>",
-    max_checks ? max_checks : "4",
-    max_hosts ? max_hosts : "20",
-    in_assets ? in_assets : "yes",
-    assets_apply_overrides ? assets_apply_overrides : "yes",
-    assets_min_qod
-      ? assets_min_qod
-      : G_STRINGIFY (MIN_QOD_DEFAULT),
-    auto_delete ? auto_delete : "0",
-    auto_delete_data ? auto_delete_data : "0"))
+                       "<preferences>"
+                       "<preference>"
+                       "<name>"
+                       "Maximum concurrently executed NVTs per host"
+                       "</name>"
+                       "<scanner_name>max_checks</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "<preference>"
+                       "<name>"
+                       "Maximum concurrently scanned hosts"
+                       "</name>"
+                       "<scanner_name>max_hosts</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "<preference>"
+                       "<name>"
+                       "Add results to Asset Management"
+                       "</name>"
+                       "<scanner_name>in_assets</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "<preference>"
+                       "<name>"
+                       "Apply Overrides when adding Assets"
+                       "</name>"
+                       "<scanner_name>assets_apply_overrides</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "<preference>"
+                       "<name>"
+                       "Min QOD when adding Assets"
+                       "</name>"
+                       "<scanner_name>assets_min_qod</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "<preference>"
+                       "<name>"
+                       "Auto Delete Reports"
+                       "</name>"
+                       "<scanner_name>auto_delete</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "<preference>"
+                       "<name>"
+                       "Auto Delete Reports Data"
+                       "</name>"
+                       "<scanner_name>auto_delete_data</scanner_name>"
+                       "<value>%s</value>"
+                       "</preference>"
+                       "</preferences>"
+                       "</task>",
+                       max_checks ? max_checks : "4",
+                       max_hosts ? max_hosts : "20",
+                       in_assets ? in_assets : "yes",
+                       assets_apply_overrides ? assets_apply_overrides : "yes",
+                       assets_min_qod
+                       ? assets_min_qod
+                       : G_STRINGIFY (MIN_QOD_DEFAULT),
+                       auto_delete ? auto_delete : "0",
+                       auto_delete_data ? auto_delete_data : "0"))
     goto cleanup_exit;
 
   g_free (in_assets);
