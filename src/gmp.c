@@ -17264,6 +17264,142 @@ get_current_report_xml (report_t running_report)
 }  
 
 /**
+ * @brief Get last report XML.
+ *
+ * @param[in]  last_report_id  ID of last report.
+ *
+ * @return XMl.
+ */
+static gchar *
+get_last_report_xml_trash (const char *last_report_id)
+{
+  gchar *last_report, *timestamp;
+  char *scan_start, *scan_end;
+
+  if (report_timestamp (last_report_id, &timestamp))
+    g_error ("%s: GET_TASKS: error getting timestamp for"
+             " last report, aborting",
+             __func__);
+
+  scan_start = scan_start_time_uuid (last_report_id);
+  scan_end = scan_end_time_uuid (last_report_id);
+
+  last_report = g_strdup_printf ("<last_report>"
+                                 "<report id=\"%s\">"
+                                 "<timestamp>%s</timestamp>"
+                                 "<scan_start>%s</scan_start>"
+                                 "<scan_end>%s</scan_end>"
+                                 "</report>"
+                                 "</last_report>",
+                                 last_report_id,
+                                 timestamp,
+                                 scan_start,
+                                 scan_end);
+
+  free (scan_start);
+  free (scan_end);
+  g_free (timestamp);
+  return last_report;
+}
+
+/**
+ * @brief Get last report XML.
+ *
+ * @param[in]  tasks           Task iterator.
+ * @param[in]  last_report_id  ID of last report.
+ * @param[in]  holes           Count of holes.
+ * @param[in]  infos           Count of infos.
+ * @param[in]  logs            Count of logs.
+ * @param[in]  warnings        Count of warnings.
+ * @param[in]  severity        Severity.
+ *
+ * @return XMl.
+ */
+static gchar *
+get_last_report_xml (iterator_t *tasks, const char *last_report_id,
+                     int holes, int infos, int logs, int warnings,
+                     int false_positives, double severity)
+{
+  gchar *last_report, *timestamp;
+  char *scan_start, *scan_end;
+
+  if (report_timestamp (last_report_id, &timestamp))
+    g_error ("%s: GET_TASKS: error getting timestamp for"
+             " last report, aborting",
+             __func__);
+
+  scan_start = scan_start_time_uuid (last_report_id);
+  scan_end = scan_end_time_uuid (last_report_id);
+
+  if (strcmp (task_iterator_usage_type (tasks), "audit") == 0)
+    {
+      int compliance_yes, compliance_no, compliance_incomplete;
+
+      report_compliance_by_uuid (last_report_id,
+                                 &compliance_yes,
+                                 &compliance_no,
+                                 &compliance_incomplete);
+
+      last_report
+        = g_strdup_printf ("<last_report>"
+                           "<report id=\"%s\">"
+                           "<timestamp>%s</timestamp>"
+                           "<scan_start>%s</scan_start>"
+                           "<scan_end>%s</scan_end>"
+                           "<compliance_count>"
+                           "<yes>%d</yes>"
+                           "<no>%d</no>"
+                           "<incomplete>%d</incomplete>"
+                           "</compliance_count>"
+                           "</report>"
+                           "</last_report>",
+                           last_report_id,
+                           timestamp,
+                           scan_start,
+                           scan_end,
+                           compliance_yes,
+                           compliance_no,
+                           compliance_incomplete);
+    }
+  else
+    last_report
+      = g_strdup_printf ("<last_report>"
+                         "<report id=\"%s\">"
+                         "<timestamp>%s</timestamp>"
+                         "<scan_start>%s</scan_start>"
+                         "<scan_end>%s</scan_end>"
+                         "<result_count>"
+                         "<hole>%i</hole>"
+                         "<info>%i</info>"
+                         "<log>%i</log>"
+                         "<warning>%i</warning>"
+                         "<false_positive>"
+                         "%i"
+                         "</false_positive>"
+                         "</result_count>"
+                         "<severity>"
+                         "%1.1f"
+                         "</severity>"
+                         "</report>"
+                         "</last_report>",
+                         last_report_id,
+                         timestamp,
+                         scan_start,
+                         scan_end,
+                         holes,
+                         infos,
+                         logs,
+                         warnings,
+                         false_positives,
+                         severity);
+  free (scan_start);
+  free (scan_end);
+  g_free (timestamp);
+
+  return last_report;
+}
+
+/**
  * @brief Send single task for GET_TASKS.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -17374,49 +17510,19 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
 
   last_report_id = task_iterator_last_report (tasks);
   if (get_tasks_data->get.trash && last_report_id)
-    {
-      gchar *timestamp;
-      char *scan_start, *scan_end;
-
-      if (report_timestamp (last_report_id, &timestamp))
-        g_error ("%s: GET_TASKS: error getting timestamp for"
-                 " last report, aborting",
-                 __func__);
-
-      scan_start = scan_start_time_uuid (last_report_id);
-      scan_end = scan_end_time_uuid (last_report_id);
-
-      last_report = g_strdup_printf ("<last_report>"
-                                     "<report id=\"%s\">"
-                                     "<timestamp>%s</timestamp>"
-                                     "<scan_start>%s</scan_start>"
-                                     "<scan_end>%s</scan_end>"
-                                     "</report>"
-                                     "</last_report>",
-                                     last_report_id,
-                                     timestamp,
-                                     scan_start,
-                                     scan_end);
-
-      free (scan_start);
-      free (scan_end);
-      g_free (timestamp);
-    }
+    last_report = get_last_report_xml_trash (last_report_id);
   else if (last_report_id)
     {
-      gchar *timestamp;
-      char *scan_start, *scan_end;
-
       /* If the last report is the first report or the second
-        * last report, then reuse the counts from before. */
+       * last report, then reuse the counts from before. */
       if ((first_report_id == NULL)
           || (second_last_report_id == NULL)
           || (strcmp (last_report_id, first_report_id)
               && strcmp (last_report_id,
-                        second_last_report_id)))
+                         second_last_report_id)))
         {
           if (report_counts
-              (last_report_id,
+               (last_report_id,
                 &holes, &infos, &logs,
                 &warnings, &false_positives, &severity,
                 apply_overrides, min_qod))
@@ -17432,81 +17538,12 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
           severity = severity_2;
         }
 
-      if (report_timestamp (last_report_id, &timestamp))
-        g_error ("%s: GET_TASKS: error getting timestamp for"
-                 " last report, aborting",
-                 __func__);
-
-      scan_start = scan_start_time_uuid (last_report_id);
-      scan_end = scan_end_time_uuid (last_report_id);
-
-      if (strcmp (task_iterator_usage_type (tasks), "audit") == 0)
-        {
-          int compliance_yes, compliance_no, compliance_incomplete;
-
-          report_compliance_by_uuid (last_report_id,
-                                     &compliance_yes,
-                                     &compliance_no,
-                                     &compliance_incomplete);
-
-          last_report
-            = g_strdup_printf ("<last_report>"
-                               "<report id=\"%s\">"
-                               "<timestamp>%s</timestamp>"
-                               "<scan_start>%s</scan_start>"
-                               "<scan_end>%s</scan_end>"
-                               "<compliance_count>"
-                               "<yes>%d</yes>"
-                               "<no>%d</no>"
-                               "<incomplete>%d</incomplete>"
-                               "</compliance_count>"
-                               "</report>"
-                               "</last_report>",
-                               last_report_id,
-                               timestamp,
-                               scan_start,
-                               scan_end,
-                               compliance_yes,
-                               compliance_no,
-                               compliance_incomplete);
-        }
-      else
-        last_report
-            = g_strdup_printf ("<last_report>"
-                               "<report id=\"%s\">"
-                               "<timestamp>%s</timestamp>"
-                               "<scan_start>%s</scan_start>"
-                               "<scan_end>%s</scan_end>"
-                               "<result_count>"
-                               "<hole>%i</hole>"
-                               "<info>%i</info>"
-                               "<log>%i</log>"
-                               "<warning>%i</warning>"
-                               "<false_positive>"
-                               "%i"
-                               "</false_positive>"
-                               "</result_count>"
-                               "<severity>"
-                               "%1.1f"
-                               "</severity>"
-                               "</report>"
-                               "</last_report>",
-                               last_report_id,
-                               timestamp,
-                               scan_start,
-                               scan_end,
-                               holes,
-                               infos,
-                               logs,
-                               warnings,
-                               false_positives,
-                               severity);
-      free (scan_start);
-      free (scan_end);
-      g_free (timestamp);
+      last_report = get_last_report_xml (tasks, last_report_id, holes, infos,
+                                         logs, warnings, false_positives,
+                                         severity);
     }
   else
-    last_report = g_strdup ("");
+   last_report = g_strdup ("");
 
   g_free (second_last_report_id);
 
