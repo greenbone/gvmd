@@ -17614,14 +17614,17 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   gchar *current_report;
   report_t running_report;
   int target_in_trash, scanner_in_trash;
-  int holes = 0, infos = 0, logs = 0, warnings = 0;
-  int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-  int false_positives = 0, task_scanner_type;
+  int holes, infos, logs, warnings;
+  int holes_2, infos_2, warnings_2;
+  int false_positives, task_scanner_type;
   int target_available, config_available;
   int scanner_available;
-  double severity = 0, severity_2 = 0;
+  double severity, severity_2;
   gchar *response;
 
+  holes = infos = logs = warnings = false_positives = 0;
+  holes_2 = infos_2 = warnings_2 = 0;
+  severity = severity_2 = 0;
   index = get_iterator_resource (tasks);
   target = task_target (index);
 
