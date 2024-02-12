@@ -17510,6 +17510,76 @@ get_tasks_send_alerts (gmp_parser_t *gmp_parser, GError **error, task_t index)
 }
 
 /**
+ * @brief Send preferences.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  index        Task.
+ *
+ * @return 1 if error, else 0.
+ */
+static int
+get_tasks_send_prefs (gmp_parser_t *gmp_parser, GError **error, task_t index)
+{
+  gchar *in_assets, *max_checks, *max_hosts;
+  gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
+  gchar *assets_min_qod;
+
+  in_assets = task_preference_value (index, "in_assets");
+  assets_apply_overrides = task_preference_value
+                            (index, "assets_apply_overrides");
+  assets_min_qod = task_preference_value (index, "assets_min_qod");
+  max_checks = task_preference_value (index, "max_checks");
+  max_hosts = task_preference_value (index, "max_hosts");
+  auto_delete = task_preference_value (index, "auto_delete");
+  auto_delete_data = task_preference_value (index, "auto_delete_data");
+
+#define PREF(name, scanner_name)                  \
+  "<preference>"                                  \
+  "<name>" name "</name>"                         \
+  "<scanner_name>" scanner_name "</scanner_name>" \
+  "<value>%s</value>"                             \
+  "</preference>"
+
+  if (sendf_to_client (gmp_parser, error,
+                       "<preferences>"
+                       PREF("Maximum concurrently executed NVTs per host",
+                            "max_checks")
+                       PREF("Maximum concurrently scanned hosts",
+                            "max_hosts")
+                       PREF("Add results to Asset Management",
+                            "in_assets")
+                       PREF("Apply Overrides when adding Assets",
+                            "assets_apply_overrides")
+                       PREF("Min QOD when adding Assets",
+                            "assets_min_qod")
+                       PREF("Auto Delete Reports",
+                            "auto_delete")
+                       PREF("Auto Delete Reports Data",
+                            "auto_delete_data")
+                       "</preferences>"
+                       "</task>",
+                       max_checks ? max_checks : "4",
+                       max_hosts ? max_hosts : "20",
+                       in_assets ? in_assets : "yes",
+                       assets_apply_overrides ? assets_apply_overrides : "yes",
+                       assets_min_qod
+                        ? assets_min_qod
+                        : G_STRINGIFY (MIN_QOD_DEFAULT),
+                       auto_delete ? auto_delete : "0",
+                       auto_delete_data ? auto_delete_data : "0"))
+    return 1;
+
+#undef PREF
+
+  g_free (in_assets);
+  g_free (max_checks);
+  g_free (max_hosts);
+
+  return 0;
+}
+
+/**
  * @brief Send single task for GET_TASKS.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -17551,9 +17621,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   int scanner_available;
   double severity = 0, severity_2 = 0;
   gchar *response;
-  gchar *in_assets, *max_checks, *max_hosts;
-  gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
-  gchar *assets_min_qod;
 
   index = get_iterator_resource (tasks);
   target = task_target (index);
@@ -17848,56 +17915,9 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                           task_result_count (index, min_qod)))
     goto cleanup_exit;
 
-  in_assets = task_preference_value (index, "in_assets");
-  assets_apply_overrides = task_preference_value
-                            (index, "assets_apply_overrides");
-  assets_min_qod = task_preference_value (index, "assets_min_qod");
-  max_checks = task_preference_value (index, "max_checks");
-  max_hosts = task_preference_value (index, "max_hosts");
-  auto_delete = task_preference_value (index, "auto_delete");
-  auto_delete_data = task_preference_value (index, "auto_delete_data");
-
-#define PREF(name, scanner_name)                  \
-  "<preference>"                                  \
-  "<name>" name "</name>"                         \
-  "<scanner_name>" scanner_name "</scanner_name>" \
-  "<value>%s</value>"                             \
-  "</preference>"
-
-  if (sendf_to_client (gmp_parser, error,
-                       "<preferences>"
-                       PREF("Maximum concurrently executed NVTs per host",
-                            "max_checks")
-                       PREF("Maximum concurrently scanned hosts",
-                            "max_hosts")
-                       PREF("Add results to Asset Management",
-                            "in_assets")
-                       PREF("Apply Overrides when adding Assets",
-                            "assets_apply_overrides")
-                       PREF("Min QOD when adding Assets",
-                            "assets_min_qod")
-                       PREF("Auto Delete Reports",
-                            "auto_delete")
-                       PREF("Auto Delete Reports Data",
-                            "auto_delete_data")
-                       "</preferences>"
-                       "</task>",
-                       max_checks ? max_checks : "4",
-                       max_hosts ? max_hosts : "20",
-                       in_assets ? in_assets : "yes",
-                       assets_apply_overrides ? assets_apply_overrides : "yes",
-                       assets_min_qod
-                       ? assets_min_qod
-                       : G_STRINGIFY (MIN_QOD_DEFAULT),
-                       auto_delete ? auto_delete : "0",
-                       auto_delete_data ? auto_delete_data : "0"))
+  if (get_tasks_send_prefs (gmp_parser, error, index))
     goto cleanup_exit;
 
-#undef PREF
-
-  g_free (in_assets);
-  g_free (max_checks);
-  g_free (max_hosts);
   return 0;
 
  cleanup_exit:
