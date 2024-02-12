@@ -112,12 +112,12 @@ internal_error_send_to_client (GError **);
  *
  * @param[in]   msg    The message, a string.
  */
-#define SEND_TO_CLIENT_OR_FAIL(msg)                        \
-  do                                                       \
-    {                                                      \
-      if (send_to_client (gmp_parser, error, msg))         \
-        return;                                            \
-    }                                                      \
+#define SEND_TO_CLIENT_OR_FAIL(msg)                \
+  do                                               \
+    {                                              \
+      if (send_to_client (gmp_parser, error, msg)) \
+        return;                                    \
+    }                                              \
   while (0)
 
 void

@@ -69,17 +69,17 @@ send_get_start (gmp_parser_t *, GError **, const char *);
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_START(type)                               \
-  do                                                       \
-    {                                                      \
-      if (send_get_start (gmp_parser, error, type))        \
-        return;                                            \
-    }                                                      \
+#define SEND_GET_START(type)                        \
+  do                                                \
+    {                                               \
+      if (send_get_start (gmp_parser, error, type)) \
+        return;                                     \
+    }                                               \
   while (0)
 
 int
-send_get_common (const char *, get_data_t *, iterator_t *,
-                 gmp_parser_t *, GError **, int, int);
+send_get_common (const char *, get_data_t *, iterator_t *, gmp_parser_t *,
+                 GError **, int, int);
 
 /**
  * @brief Send common part of GET response to client, returning on fail.
@@ -92,8 +92,7 @@ send_get_common (const char *, get_data_t *, iterator_t *,
   do                                                                       \
     {                                                                      \
       if (send_get_common (                                                \
-            G_STRINGIFY (type), get, iterator,                             \
-            gmp_parser, error,                                             \
+            G_STRINGIFY (type), get, iterator, gmp_parser, error,          \
             (get)->trash                                                   \
               ? trash_##type##_writable (get_iterator_resource (iterator)) \
               : type##_writable (get_iterator_resource (iterator)),        \
@@ -116,8 +115,8 @@ send_get_common (const char *, get_data_t *, iterator_t *,
 #define SEND_GET_COMMON_NO_TRASH(type, get, iterator)                          \
   do                                                                           \
     {                                                                          \
-      if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
-                           gmp_parser, error,                                  \
+      if (send_get_common (G_STRINGIFY (type), get, iterator, gmp_parser,      \
+                           error,                                              \
                            type##_writable (get_iterator_resource (iterator)), \
                            type##_in_use (get_iterator_resource (iterator))))  \
         return;                                                                \
@@ -141,13 +140,13 @@ send_get_end_no_counts (const char *, get_data_t *, gmp_parser_t *, GError **);
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_END(type, get, count, filtered)                               \
-  do                                                                           \
-    {                                                                          \
-      if (send_get_end (type, get, count, filtered,                            \
-                        resource_count (type, get), gmp_parser, error))        \
-        return;                                                                \
-    }                                                                          \
+#define SEND_GET_END(type, get, count, filtered)                        \
+  do                                                                    \
+    {                                                                   \
+      if (send_get_end (type, get, count, filtered,                     \
+                        resource_count (type, get), gmp_parser, error)) \
+        return;                                                         \
+    }                                                                   \
   while (0)
 
 #endif /* not _GVMD_GMP_GET_H */
