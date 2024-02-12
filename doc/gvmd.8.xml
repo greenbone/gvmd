@@ -478,7 +478,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--value=<arg>VALUE</arg></opt></p>
       <optdesc>
-        <p>User for --new-password.</p>
+        <p>Value for --modify-setting.</p>
       </optdesc>
     </option>
     <option>
