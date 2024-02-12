@@ -1144,7 +1144,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
             permission_clause
              = g_strdup_printf ("%s"
                                 " OR results%s.task IN"
-                                " (SELECT id FROM %spermissions_subject"
+                                " (SELECT resource FROM %spermissions_subject"
                                 "  WHERE resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,
