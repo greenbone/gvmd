@@ -17214,13 +17214,17 @@ get_tasks_send_schedules_only (gmp_parser_t *gmp_parser,
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
  * @param[in]  tasks        Task iterator.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ * @param[in]  min_qod          Minimum QOD.
  *
  * @return 1 if error, else 0.
  */
 static int
 get_tasks_send_task (gmp_parser_t *gmp_parser,
                      GError **error,
-                     iterator_t *tasks)
+                     iterator_t *tasks,
+                     int apply_overrides,
+                     int min_qod)
 {
   task_t index;
   target_t target;
@@ -17252,13 +17256,22 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
   gchar *assets_min_qod;
 
-  index = get_iterator_resource (&tasks);
+  index = get_iterator_resource (tasks);
   target = task_target (index);
 
-  SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+  if (send_get_common ("task", &get_tasks_data->get, tasks,
+                       gmp_parser, error,
+                       get_tasks_data->get.trash
+                        ? trash_task_writable (index)
+                        : task_writable (index),
+                       get_tasks_data->get.trash
+                        ? trash_task_in_use (index)
+                        : task_in_use (index)))
+    return 1;
+
   target_in_trash = task_target_in_trash (index);
   if ((target == 0)
-      && (task_iterator_run_status (&tasks)
+      && (task_iterator_run_status (tasks)
           == TASK_STATUS_RUNNING))
     {
       progress_xml = g_strdup_printf
@@ -17270,7 +17283,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     {
       int progress;
 
-      running_report = task_iterator_current_report (&tasks);
+      running_report = task_iterator_current_report (tasks);
       progress
         = report_progress (running_report);
       progress_xml
@@ -17317,7 +17330,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   else
     current_report = g_strdup ("");
 
-  first_report_id = task_iterator_first_report (&tasks);
+  first_report_id = task_iterator_first_report (tasks);
   if (first_report_id && (get_tasks_data->get.trash == 0))
     {
       // TODO Could skip this count for tasks page.
@@ -17347,7 +17360,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                  __func__);
     }
 
-  last_report_id = task_iterator_last_report (&tasks);
+  last_report_id = task_iterator_last_report (tasks);
   if (get_tasks_data->get.trash && last_report_id)
     {
       gchar *timestamp;
@@ -17415,7 +17428,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
       scan_start = scan_start_time_uuid (last_report_id);
       scan_end = scan_end_time_uuid (last_report_id);
 
-      if (strcmp (task_iterator_usage_type (&tasks), "audit") == 0)
+      if (strcmp (task_iterator_usage_type (tasks), "audit") == 0)
         {
           int compliance_yes, compliance_no, compliance_incomplete;
 
@@ -17529,7 +17542,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
       config_available = (found > 0);
     }
   scanner_available = 1;
-  scanner = task_iterator_scanner (&tasks);
+  scanner = task_iterator_scanner (tasks);
   if (scanner)
     {
       scanner_in_trash = task_scanner_in_trash (index);
@@ -17606,7 +17619,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                get_tasks_data->get.trash
                 ? 0
                 : task_alterable (index),
-               task_iterator_usage_type (&tasks),
+               task_iterator_usage_type (tasks),
                config_uuid ?: "",
                config_name_escaped ?: "",
                task_config_in_trash (index),
@@ -17615,22 +17628,22 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                task_target_name_escaped ?: "",
                target_in_trash,
                target_available ? "" : "<permissions/>",
-               task_iterator_hosts_ordering (&tasks)
-                ? task_iterator_hosts_ordering (&tasks)
+               task_iterator_hosts_ordering (tasks)
+                ? task_iterator_hosts_ordering (tasks)
                 : "",
                task_scanner_uuid,
                task_scanner_name_escaped,
                task_scanner_type,
                scanner_in_trash,
                scanner_available ? "" : "<permissions/>",
-               task_iterator_run_status_name (&tasks),
+               task_iterator_run_status_name (tasks),
                progress_xml,
-               task_iterator_total_reports (&tasks),
-               task_iterator_finished_reports (&tasks),
+               task_iterator_total_reports (tasks),
+               task_iterator_finished_reports (tasks),
                get_tasks_data->get.trash
                 ? ""
                 : task_iterator_trend_counts
-                   (&tasks, holes, warnings, infos, severity,
+                   (tasks, holes, warnings, infos, severity,
                     holes_2, warnings_2, infos_2, severity_2),
                task_schedule_xml,
                current_report,
@@ -17651,44 +17664,54 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   if (send_to_client (gmp_parser, error, response))
     {
       g_free (response);
-      cleanup_iterator (&tasks);
-      cleanup_iterator (&tasks);
-      return;
+      cleanup_iterator (tasks);
+      return 1;
     }
   g_free (response);
 
-  SENDF_TO_CLIENT_OR_FAIL
-   ("<observers>%s",
-    ((owner == NULL)
-    || (strcmp (owner,
-                current_credentials.username)))
-      ? ""
-      : observers);
+  if (sendf_to_client (gmp_parser, error,
+                       "<observers>%s",
+                       ((owner == NULL)
+                       || (strcmp (owner,
+                                   current_credentials.username)))
+                         ? ""
+                         : observers))
+    goto cleanup_exit;
   free (owner);
   free (observers);
 
   init_task_group_iterator (&groups, index);
   while (next (&groups))
-    SENDF_TO_CLIENT_OR_FAIL
-     ("<group id=\"%s\">"
-      "<name>%s</name>"
-      "</group>",
-      task_group_iterator_uuid (&groups),
-      task_group_iterator_name (&groups));
+    if (sendf_to_client (gmp_parser, error,
+                         "<group id=\"%s\">"
+                         "<name>%s</name>"
+                         "</group>",
+                         task_group_iterator_uuid (&groups),
+                         task_group_iterator_name (&groups)))
+      {
+        cleanup_iterator (&groups);
+        goto cleanup_exit;
+      }
   cleanup_iterator (&groups);
 
   init_task_role_iterator (&roles, index);
   while (next (&roles))
-    SENDF_TO_CLIENT_OR_FAIL
-     ("<role id=\"%s\">"
-      "<name>%s</name>"
-      "</role>",
-      task_role_iterator_uuid (&roles),
-      task_role_iterator_name (&roles));
+    if (sendf_to_client (gmp_parser, error,
+                         "<role id=\"%s\">"
+                         "<name>%s</name>"
+                         "</role>",
+                         task_role_iterator_uuid (&roles),
+                         task_role_iterator_name (&roles)))
+      {
+        cleanup_iterator (&roles);
+        goto cleanup_exit;
+      }
   cleanup_iterator (&roles);
 
-  SENDF_TO_CLIENT_OR_FAIL ("</observers>");
-
+  if (send_to_client (gmp_parser, error,
+                      "</observers>"))
+    goto cleanup_exit;
+      
   init_task_alert_iterator (&alerts, index);
   while (next (&alerts))
     {
@@ -17700,38 +17723,35 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                                       "get_alerts"))
         abort ();
 
-      SENDF_TO_CLIENT_OR_FAIL
-       ("<alert id=\"%s\">"
-        "<name>%s</name>",
-        task_alert_iterator_uuid (&alerts),
-        task_alert_iterator_name (&alerts));
-
-      if (found)
-        SENDF_TO_CLIENT_OR_FAIL
-        ("</alert>");
-      else
-        SENDF_TO_CLIENT_OR_FAIL
-         ("<permissions/>"
-          "</alert>");
+      if (sendf_to_client (gmp_parser, error,
+                           "<alert id=\"%s\">"
+                           "<name>%s</name>",
+                           task_alert_iterator_uuid (&alerts),
+                           task_alert_iterator_name (&alerts))
+          || send_to_client (gmp_parser, error,
+                             found ? "</alert>" : "<permissions/></alert>"))
+        {
+          cleanup_iterator (&alerts);
+          goto cleanup_exit;
+        }
     }
   cleanup_iterator (&alerts);
 
+  if ((get_tasks_data->get.details
+       || get_tasks_data->get.id)
+      && sendf_to_client (gmp_parser, error,
+                          "<average_duration>"
+                          "%d"
+                          "</average_duration>",
+                          task_average_scan_duration (index)))
+    goto cleanup_exit;
+
   if (get_tasks_data->get.details
-      || get_tasks_data->get.id)
-    {
-      SENDF_TO_CLIENT_OR_FAIL ("<average_duration>"
-                               "%d"
-                               "</average_duration>",
-                               task_average_scan_duration (index));
-    }
-
-  if (get_tasks_data->get.details)
-    {
       /* The detailed version. */
-
-      SENDF_TO_CLIENT_OR_FAIL ("<result_count>%i</result_count>",
-                                task_result_count (index, min_qod));
-    }
+      && sendf_to_client (gmp_parser, error,
+                          "<result_count>%i</result_count>",
+                          task_result_count (index, min_qod)))
+    goto cleanup_exit;
 
   in_assets = task_preference_value (index, "in_assets");
   assets_apply_overrides = task_preference_value
@@ -17742,8 +17762,8 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   auto_delete = task_preference_value (index, "auto_delete");
   auto_delete_data = task_preference_value (index, "auto_delete_data");
 
-  SENDF_TO_CLIENT_OR_FAIL
-   ("<preferences>"
+  if (sendf_to_client (gmp_parser, error,
+   "<preferences>"
     "<preference>"
     "<name>"
     "Maximum concurrently executed NVTs per host"
@@ -17803,11 +17823,17 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
       ? assets_min_qod
       : G_STRINGIFY (MIN_QOD_DEFAULT),
     auto_delete ? auto_delete : "0",
-    auto_delete_data ? auto_delete_data : "0");
+    auto_delete_data ? auto_delete_data : "0"))
+    goto cleanup_exit;
 
   g_free (in_assets);
   g_free (max_checks);
   g_free (max_hosts);
+  return 0;
+
+ cleanup_exit:
+  cleanup_iterator (tasks);
+  return 1;
 }
 
 /**
@@ -17910,7 +17936,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
       else
         {
-          if (get_tasks_send_task (gmp_parser, error, &tasks))
+          if (get_tasks_send_task (gmp_parser, error, &tasks, apply_overrides,
+                                   min_qod))
             return;
         }
 
