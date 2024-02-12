@@ -17470,6 +17470,46 @@ get_tasks_send_observers (gmp_parser_t *gmp_parser,
 }
 
 /**
+ * @brief Send alerts XML.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * @param[in]  index        Task.
+ *
+ * @return 1 if error, else 0.
+ */
+static int
+get_tasks_send_alerts (gmp_parser_t *gmp_parser, GError **error, task_t index)
+{
+  iterator_t alerts;
+
+  init_task_alert_iterator (&alerts, index);
+  while (next (&alerts))
+    {
+      alert_t found;
+
+      if (find_alert_with_permission (task_alert_iterator_uuid (&alerts),
+                                      &found,
+                                      "get_alerts"))
+        abort ();
+
+      if (sendf_to_client (gmp_parser, error,
+                           "<alert id=\"%s\">"
+                           "<name>%s</name>",
+                           task_alert_iterator_uuid (&alerts),
+                           task_alert_iterator_name (&alerts))
+          || send_to_client (gmp_parser, error,
+                             found ? "</alert>" : "<permissions/></alert>"))
+        {
+          cleanup_iterator (&alerts);
+          return 1;
+        }
+    }
+  cleanup_iterator (&alerts);
+  return 0;
+}
+
+/**
  * @brief Send single task for GET_TASKS.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -17511,7 +17551,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   int scanner_available;
   double severity = 0, severity_2 = 0;
   gchar *response;
-  iterator_t alerts;
   gchar *in_assets, *max_checks, *max_hosts;
   gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
   gchar *assets_min_qod;
@@ -17790,30 +17829,8 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   if (get_tasks_send_observers (gmp_parser, error, index))
     goto cleanup_exit;
 
-  init_task_alert_iterator (&alerts, index);
-  while (next (&alerts))
-    {
-      alert_t found;
-
-      if (find_alert_with_permission (task_alert_iterator_uuid
-                                      (&alerts),
-                                      &found,
-                                      "get_alerts"))
-        abort ();
-
-      if (sendf_to_client (gmp_parser, error,
-                           "<alert id=\"%s\">"
-                           "<name>%s</name>",
-                           task_alert_iterator_uuid (&alerts),
-                           task_alert_iterator_name (&alerts))
-          || send_to_client (gmp_parser, error,
-                             found ? "</alert>" : "<permissions/></alert>"))
-        {
-          cleanup_iterator (&alerts);
-          goto cleanup_exit;
-        }
-    }
-  cleanup_iterator (&alerts);
+  if (get_tasks_send_alerts (gmp_parser, error, index))
+    goto cleanup_exit;
 
   if ((get_tasks_data->get.details
        || get_tasks_data->get.id)
