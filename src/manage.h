@@ -360,6 +360,16 @@ typedef resource_t scanner_t;
 typedef resource_t setting_t;
 typedef resource_t user_t;
 
+/**
+ * @brief Key info about a task.
+ */
+typedef struct
+{
+  int config_in_trash;    ///< Whether config is in trash;
+  gchar *config_name;     ///< Config name.
+  gchar *config_uuid;     ///< Config UUID.
+} task_info_t;
+
 
 /* GMP GET support.
  *
@@ -762,6 +772,12 @@ task_iterator_usage_type (iterator_t *);
 
 int
 task_uuid (task_t, char **);
+
+task_info_t *
+task_info (task_t);
+
+void
+task_info_free (task_info_t *);
 
 int
 task_in_trash (task_t);

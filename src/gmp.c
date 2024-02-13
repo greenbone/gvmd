@@ -17599,8 +17599,9 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   task_t index;
   target_t target;
   scanner_t scanner;
+  task_info_t *info;
   const char *first_report_id, *last_report_id;
-  char *config_name, *config_uuid, *task_target_uuid, *task_target_name;
+  char *task_target_uuid, *task_target_name;
   char *task_scanner_uuid, *task_scanner_name;
   gchar *progress_xml, *task_schedule_xml, *config_name_escaped;
   gchar *task_target_name_escaped, *task_scanner_name_escaped;
@@ -17714,8 +17715,10 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
 
   g_free (second_last_report_id);
 
-  config_name = task_config_name (index);
-  config_uuid = task_config_uuid (index);
+  info = task_info (index);
+  if (info == NULL)
+    goto cleanup_exit;
+
   target_available = 1;
   if (target_in_trash)
     {
@@ -17743,12 +17746,12 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     }
 
   config_available = 1;
-  if (task_config_in_trash (index))
-    config_available = trash_config_readable_uuid (config_uuid);
-  else if (config_uuid)
+  if (info->config_in_trash)
+    config_available = trash_config_readable_uuid (info->config_uuid);
+  else if (info->config_uuid)
     {
       config_t found;
-      if (find_config_with_permission (config_uuid,
+      if (find_config_with_permission (info->config_uuid,
                                       &found,
                                       "get_configs"))
         g_error ("%s: GET_TASKS: error finding task config,"
@@ -17790,8 +17793,8 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     }
 
   config_name_escaped
-    = config_name
-        ? g_markup_escape_text (config_name, -1)
+    = info->config_name
+        ? g_markup_escape_text (info->config_name, -1)
         : NULL;
   task_target_name_escaped
     = task_target_name
@@ -17836,9 +17839,9 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                 ? 0
                 : task_alterable (index),
                task_iterator_usage_type (tasks),
-               config_uuid ?: "",
+               info->config_uuid ?: "",
                config_name_escaped ?: "",
-               task_config_in_trash (index),
+               info->config_in_trash,
                config_available ? "" : "<permissions/>",
                task_target_uuid ?: "",
                task_target_name_escaped ?: "",
@@ -17864,8 +17867,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                task_schedule_xml,
                current_report,
                last_report);
-  g_free (config_name);
-  g_free (config_uuid);
+  task_info_free (info);
   g_free (config_name_escaped);
   free (task_target_name);
   free (task_target_uuid);

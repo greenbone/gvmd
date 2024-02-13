@@ -17797,6 +17797,56 @@ task_uuid (task_t task, char ** id)
 }
 
 /**
+ * @brief Return key info about a task, for GET_TASKS.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Info, or NULL on error.
+ */
+task_info_t *
+task_info (task_t task)
+{
+  task_info_t *info;
+
+  info = g_malloc0 (sizeof (task_info_t));
+
+  info->config_in_trash = task_config_in_trash (task);
+
+  if (info->config_in_trash)
+    info->config_name = sql_string ("SELECT name FROM configs_trash WHERE id ="
+                                    " (SELECT config FROM tasks WHERE id = %llu);",
+                                    task);
+  info->config_name = sql_string ("SELECT name FROM configs WHERE id ="
+                                  " (SELECT config FROM tasks WHERE id = %llu);",
+                                  task);
+
+  if (info->config_in_trash)
+    info->config_uuid = sql_string ("SELECT uuid FROM configs_trash WHERE id ="
+                                    " (SELECT config FROM tasks WHERE id = %llu);",
+                                    task);
+  info->config_uuid = sql_string ("SELECT uuid FROM configs WHERE id ="
+                                  " (SELECT config FROM tasks WHERE id = %llu);",
+                                  task);
+
+  return info;
+}
+
+/**
+ * @brief Free task info.
+ *
+ * @param[in]  info  Info.
+ */
+void
+task_info_free (task_info_t *info)
+{
+  if (info == NULL)
+    return;
+
+  g_free (info->config_name);
+  g_free (info->config_uuid);
+}
+
+/**
  * @brief Return whether a task is in the trashcan.
  *
  * @param[in]  task  Task.
