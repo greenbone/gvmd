@@ -17232,8 +17232,8 @@ get_current_report_xml (report_t running_report)
                  " of report, aborting",
                  __func__);
 
-      scan_start = scan_start_time_uuid (current_report_id),
-      scan_end = scan_end_time_uuid (current_report_id),
+      scan_start = scan_start_time_uuid (current_report_id);
+      scan_end = scan_end_time_uuid (current_report_id);
 
       current_report = g_strdup_printf ("<current_report>"
                                         "<report id=\"%s\">"
