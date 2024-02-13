@@ -17557,8 +17557,7 @@ get_tasks_send_prefs (gmp_parser_t *gmp_parser, GError **error, task_t index)
                             "auto_delete")
                        PREF("Auto Delete Reports Data",
                             "auto_delete_data")
-                       "</preferences>"
-                       "</task>",
+                       "</preferences>",
                        max_checks ? max_checks : "4",
                        max_hosts ? max_hosts : "20",
                        in_assets ? in_assets : "yes",
@@ -17909,6 +17908,9 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     goto cleanup_exit;
 
   if (get_tasks_send_prefs (gmp_parser, error, index))
+    goto cleanup_exit;
+
+  if (send_to_client (gmp_parser, error, "</task>"))
     goto cleanup_exit;
 
   return 0;
