@@ -69,6 +69,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>xsd:token { pattern = "y?n?i?u?" }</pattern>
   </type>
   <type>
+    <name>compliance_status</name>
+    <summary>A compliance status</summary>
+    <pattern>
+      xsd:token { pattern = "yes|no|incomplete|undefined" }
+    </pattern>
+  </type>  
+  <type>
     <name>ctime</name>
     <summary>A date and time, in the C `ctime' format</summary>
     <description>
@@ -1512,6 +1519,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>qod</e>
       <o><e>original_threat</e></o>
       <o><e>original_severity</e></o>
+      <e>compliance</e>
       <e>description</e>
       <o><e>delta</e></o>
       <o><e>detection</e></o>
@@ -1896,6 +1904,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern><t>severity</t></pattern>
     </ele>
     <ele>
+      <name>compliance</name>
+      <summary>Result compliance ("yes", "no", "incomplete" or "undefined")</summary>
+      <pattern><t>compliance_status</t></pattern>
+    </ele>    
+    <ele>
       <name>description</name>
       <summary>Description of the result</summary>
       <pattern>text</pattern>
@@ -2201,8 +2214,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>permissions</e>
             <o><e>user_tags</e></o>
             <e>scan_run_status</e>
-            <e>result_count</e>
-            <e>severity</e>
+            <o><e>result_count</e></o>
+            <o><e>compliance_count</e></o>
+            <o><e>severity</e></o>
+            <o><e>compliance</e></o>
             <e>task</e>
             <e>ports</e>
             <e>results</e>
@@ -2529,7 +2544,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>result_count</name>
-        <summary>Counts of results produced by scan</summary>
+        <summary>Counts of results produced by scan. Only for reports of a scan task</summary>
         <description>
           <p>
             The text contains the full count -- the total number of results
@@ -2637,6 +2652,114 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ele>
       </ele>
       <ele>
+        <name>compliance_count</name>
+        <summary>Counts of compliance results. Only for reports of an audit task.</summary>
+        <description>
+          <p>
+            The text contains the full count -- the total number of compliance results.
+          </p>
+        </description>
+        <pattern>
+          text
+          <e>full</e>
+          <e>filtered</e>
+          <e>yes</e>
+          <e>no</e>
+          <e>incomplete</e>
+          <e>undefined</e>
+        </pattern>
+        <ele>
+          <name>full</name>
+          <summary>Total number of compliance results</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of compliance results after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>yes</name>
+          <summary>
+            Number of "yes" results (compliant)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>no</name>
+          <summary>
+            Number of "no" results (not compliant)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>incomplete</name>
+          <summary>
+            Number of "incomplete" results (incomplete compliance)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>undefined</name>
+          <summary>
+            Number of "undefined" results (undefined compliance)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+      </ele>      
+      <ele>
         <name>severity</name>
         <pattern>
           <e>full</e>
@@ -2653,6 +2776,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Maximum severity of the report after filtering</summary>
         </ele>
       </ele>
+      <ele>
+        <name>compliance</name>
+        <pattern>
+          <e>full</e>
+          <e>filtered</e>
+        </pattern>
+        <ele>
+          <name>full</name>
+          <pattern><t>compliance_status</t></pattern>
+          <summary>Compliance of the full report ("yes", "no", "incomplete" or "undefined")</summary>
+        </ele>
+        <ele>
+          <name>filtered</name>
+          <pattern><t>compliance_status</t></pattern>
+          <summary>Compliance of the report after filtering ("yes", "no", "incomplete" or "undefined")</summary>
+        </ele>
+      </ele>      
       <ele>
         <name>task</name>
         <pattern>
@@ -2914,7 +3054,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>start</e>
           <e>end</e>
           <e>port_count</e>
-          <e>result_count</e>
+          <o><e>result_count</e></o>
+          <o><e>compliance_count</e></o>
+          <o><e>host_compliance</e></o>
           <any><e>detail</e></any>
         </pattern>
         <ele>
@@ -2957,7 +3099,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ele>
         <ele>
           <name>result_count</name>
-          <summary></summary>
+          <summary>Only for scan reports</summary>
           <pattern>
             <e>page</e>
             <e>hole</e>
@@ -3032,6 +3174,75 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </ele>
           </ele>
         </ele>
+        <ele>
+          <name>compliance_count</name>
+          <summary>Only for audit reports</summary>
+          <pattern>
+            <e>page</e>
+            <e>yes</e>
+            <e>no</e>
+            <e>incomplete</e>
+            <e>undefined</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Total number of results for current host on current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>yes</name>
+            <summary>Number of "yes" results (compliant)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>no</name>
+            <summary>Number of "no" results (not compliant)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>incomplete</name>
+            <summary>Number of "incomplete" results (incomplete compliance)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>undefined</name>
+            <summary>Number of "undefined" results (undefined compliance)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>          
+        </ele>
+        <ele>
+          <name>host_compliance</name>
+          <summary>Only for audit reports. Host compliance</summary>
+          <pattern><t>compliance_status</t></pattern>
+        </ele>               
         <ele>
           <name>detail</name>
           <summary>A detail associated with the host</summary>
@@ -17914,6 +18125,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Minimum QoD of the results</summary>
           </option>
+          <option>
+            <name>report_compliance_levels</name>
+            <type>compliance_levels</type>
+            <summary>report compliance level to select</summary>
+          </option>          
           <column>
             <name>tag</name>
             <type>text</type>
@@ -18059,6 +18275,26 @@ END:VCALENDAR
             <type>iso_time</type>
             <summary>Scan end time</summary>
           </column>
+          <column>
+            <name>compliance_yes</name>
+            <type>integer</type>
+            <summary>Number of compliance yes results</summary>
+          </column>
+          <column>
+            <name>compliance_no</name>
+            <type>integer</type>
+            <summary>Number of compliance no results</summary>
+          </column>
+          <column>
+            <name>compliance_incomplete</name>
+            <type>integer</type>
+            <summary>Number of compliance incomplete results</summary>
+          </column>
+          <column>
+            <name>compliant</name>
+            <type>compliance_status</type>
+            <summary>Compliance state of the report. Can be yes, no, incomplete or undefined</summary>
+          </column>                      
         </filter_keywords>
       </attrib>
       <attrib>
@@ -18128,6 +18364,17 @@ END:VCALENDAR
         </summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+          <name>usage_type</name>
+          <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
+          <type>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt></alt>
+            </alts>
+          </type>
+        </attrib>    
     </pattern>
     <response>
       <pattern>
@@ -22906,8 +23153,9 @@ END:VCALENDAR
               </attrib>
               <e>timestamp</e>
               <e>scan_end</e>
-              <e>result_count</e>
-              <e>severity</e>
+              <o><e>result_count</e></o>
+              <o><e>severity</e></o>
+              <o><e>compliance_count</e></o>
             </pattern>
             <ele>
               <name>timestamp</name>
@@ -22919,7 +23167,7 @@ END:VCALENDAR
             </ele>
             <ele>
               <name>result_count</name>
-              <summary>Result counts for this report</summary>
+              <summary>Result counts for this report. Only for scan tasks</summary>
               <pattern>
                 <e>false_positive</e>
                 <e>log</e>
@@ -22951,8 +23199,34 @@ END:VCALENDAR
             <ele>
               <name>severity</name>
               <pattern><t>severity</t></pattern>
-              <summary>Maximum severity of the report</summary>
+              <summary>Maximum severity of the report. Only for scan tasks</summary>
             </ele>
+            <ele>
+              <name>compliance_count</name>
+              <summary>Complaince counts. Only for audit tasks</summary>
+              <pattern>
+                <e>yes</e>
+                <e>no</e>
+                <e>incomplete</e>
+                <e>undefined</e>
+              </pattern>
+              <ele>
+                <name>yes</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>no</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>incomplete</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>undefined</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+            </ele>            
           </ele>
         </ele>
         <ele>
