@@ -2613,6 +2613,42 @@ create_tables ()
        " (result_nvt INTEGER,"
        "  report INTEGER);");
 
+  sql ("CREATE TABLE IF NOT EXISTS report_configs"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  report_format_id text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS report_configs_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  report_format_id text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS report_config_params"
+       " (id SERIAL PRIMARY KEY,"
+       "  report_config integer"
+       "    REFERENCES report_configs (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  value text,"
+       "  UNIQUE (report_config, name));");
+
+  sql ("CREATE TABLE IF NOT EXISTS report_config_params_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  report_config integer"
+       "    REFERENCES report_configs_trash (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  value text,"
+       "  UNIQUE (report_config, name));");
+
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
