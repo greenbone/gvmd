@@ -2009,7 +2009,6 @@ get_reports_data_reset (get_reports_data_t *data)
 typedef struct
 {
   get_data_t get;        ///< Get args.
-  int alerts;   ///< Boolean.  Whether to include alerts that use Report Config
 } get_report_configs_data_t;
 
 /**
@@ -5564,17 +5563,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_REPORT_CONFIGS", element_name) == 0)
           {
-            const gchar* attribute;
-
             get_data_parse_attributes (&get_report_configs_data->get,
                                        "report_config",
                                        attribute_names,
                                        attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "alerts", &attribute))
-              get_report_configs_data->alerts = strcmp (attribute, "0");
-            else
-              get_report_configs_data->alerts = 0;
 
             set_client_state (CLIENT_GET_REPORT_CONFIGS);
           }
