@@ -15738,11 +15738,6 @@ END:VCALENDAR
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>alerts</name>
-        <summary>Whether to include alerts that use the report config</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>details</name>
         <summary>Include report config details</summary>
         <type>boolean</type>
