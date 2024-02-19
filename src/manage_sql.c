@@ -17856,7 +17856,17 @@ task_info (task_t task, scanner_t scanner)
       info->config_uuid = config_uuid ? g_strdup (config_uuid) : NULL;
 
       if (scanner)
-        info->scanner_in_trash = task_scanner_in_trash (task);
+        {
+          info->scanner_in_trash = task_scanner_in_trash (task);
+          info->scanner_uuid = scanner_uuid (scanner);
+          info->scanner_name = scanner_name (scanner);
+          info->scanner_type = scanner_type (scanner);
+        }
+      else
+        {
+          /* Container tasks have no associated scanner. */
+        }
+
     }
   cleanup_iterator (&rows);
 

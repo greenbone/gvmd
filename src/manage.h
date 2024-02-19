@@ -369,6 +369,9 @@ typedef struct
   int scanner_in_trash;   ///< Whether scanner is in trash;
   gchar *config_name;     ///< Config name.
   gchar *config_uuid;     ///< Config UUID.
+  gchar *scanner_name;          ///< Scanner name.
+  gchar *scanner_uuid;          ///< Scanner UUID.
+  int scanner_type;             ///< Scanner type.
   gchar *second_last_report_id; ///< UUID of second last report.
 } task_info_t;
 

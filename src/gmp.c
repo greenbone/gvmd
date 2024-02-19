@@ -17602,12 +17602,11 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   task_info_t *info;
   const char *first_report_id, *last_report_id;
   char *task_target_uuid, *task_target_name;
-  char *task_scanner_uuid, *task_scanner_name;
   gchar *progress_xml, *task_schedule_xml, *config_name_escaped;
   gchar *task_target_name_escaped, *task_scanner_name_escaped;
   gchar *last_report, *current_report, *response;
   report_t running_report;
-  int target_in_trash, task_scanner_type;
+  int target_in_trash;
   int holes, infos, logs, warnings, holes_2, infos_2, warnings_2;
   int false_positives, target_available, config_available, scanner_available;
   double severity, severity_2;
@@ -17761,9 +17760,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   scanner_available = 1;
   if (scanner)
     {
-      task_scanner_uuid = scanner_uuid (scanner);
-      task_scanner_name = scanner_name (scanner);
-      task_scanner_type = scanner_type (scanner);
       if (info->scanner_in_trash)
         scanner_available = trash_scanner_readable (scanner);
       else
@@ -17771,19 +17767,12 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
           scanner_t found;
 
           if (find_scanner_with_permission
-              (task_scanner_uuid, &found, "get_scanners"))
+              (info->scanner_uuid, &found, "get_scanners"))
             g_error ("%s: GET_TASKS: error finding"
                      " task scanner, aborting",
                      __func__);
           scanner_available = (found > 0);
         }
-    }
-  else
-    {
-      /* Container tasks have no associated scanner. */
-      task_scanner_uuid = g_strdup ("");
-      task_scanner_name = g_strdup ("");
-      task_scanner_type = 0;
     }
 
   config_name_escaped
@@ -17795,8 +17784,8 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
         ? g_markup_escape_text (task_target_name, -1)
         : NULL;
   task_scanner_name_escaped
-    = task_scanner_name
-        ? g_markup_escape_text (task_scanner_name, -1)
+    = info->scanner_name
+        ? g_markup_escape_text (info->scanner_name, -1)
         : NULL;
 
   task_schedule_xml = get_task_schedule_xml (index);
@@ -17844,9 +17833,9 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                task_iterator_hosts_ordering (tasks)
                 ? task_iterator_hosts_ordering (tasks)
                 : "",
-               task_scanner_uuid,
-               task_scanner_name_escaped,
-               task_scanner_type,
+               info->scanner_uuid ?: "",
+               task_scanner_name_escaped ?: "",
+               info->scanner_type,
                info->scanner_in_trash,
                scanner_available ? "" : "<permissions/>",
                task_iterator_run_status_name (tasks),
@@ -17870,8 +17859,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   g_free (current_report);
   g_free (last_report);
   g_free (task_schedule_xml);
-  g_free (task_scanner_uuid);
-  g_free (task_scanner_name);
   g_free (task_scanner_name_escaped);
   if (send_to_client (gmp_parser, error, response))
     {
