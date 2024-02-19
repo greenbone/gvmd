@@ -17813,34 +17813,38 @@ task_info (task_t task)
 
   init_iterator (&rows,
                  "WITH tmp AS"
-                 "     (SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
+                 "     (SELECT config,"
+                 "             config_location = " G_STRINGIFY (LOCATION_TRASH)
                  "             AS config_in_trash"
                  "      FROM tasks WHERE id = %llu)"
-                 " SELECT config_in_trash FROM tmp;",
+                 " SELECT config_in_trash,"
+                 "        (CASE WHEN config_in_trash"
+                 "              THEN (SELECT name FROM configs_trash"
+                 "                    WHERE id = config)"
+                 "              ELSE (SELECT name FROM configs"
+                 "                    WHERE id = config)"
+                 "         END),"
+                 "        (CASE WHEN config_in_trash"
+                 "              THEN (SELECT uuid FROM configs_trash"
+                 "                    WHERE id = config)"
+                 "              ELSE (SELECT uuid FROM configs"
+                 "                    WHERE id = config)"
+                 "         END)"
+                 "        FROM tmp;",
                  task);
   if (next (&rows))
     {
+      const char *config_name, *config_uuid;
+
       info->config_in_trash = iterator_int (&rows, 0);
+
+      config_name = iterator_string (&rows, 1);
+      info->config_name = config_name ? g_strdup (config_name) : NULL;
+
+      config_uuid = iterator_string (&rows, 2);
+      info->config_uuid = config_uuid ? g_strdup (config_uuid) : NULL;
     }
   cleanup_iterator (&rows);
-
-  if (info->config_in_trash)
-    info->config_name = sql_string ("SELECT name FROM configs_trash WHERE id ="
-                                    " (SELECT config FROM tasks WHERE id = %llu);",
-                                    task);
-  else
-    info->config_name = sql_string ("SELECT name FROM configs WHERE id ="
-                                    " (SELECT config FROM tasks WHERE id = %llu);",
-                                    task);
-
-  if (info->config_in_trash)
-    info->config_uuid = sql_string ("SELECT uuid FROM configs_trash WHERE id ="
-                                    " (SELECT config FROM tasks WHERE id = %llu);",
-                                    task);
-  else
-    info->config_uuid = sql_string ("SELECT uuid FROM configs WHERE id ="
-                                    " (SELECT config FROM tasks WHERE id = %llu);",
-                                    task);
 
   return info;
 }
