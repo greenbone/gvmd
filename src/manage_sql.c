@@ -17810,7 +17810,9 @@ task_info (task_t task)
 
   info = g_malloc0 (sizeof (task_info_t));
 
-  info->config_in_trash = task_config_in_trash (task);
+  info->config_in_trash = sql_int ("SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
+                                   " FROM tasks WHERE id = %llu;",
+                                   task);
 
   if (info->config_in_trash)
     info->config_name = sql_string ("SELECT name FROM configs_trash WHERE id ="
