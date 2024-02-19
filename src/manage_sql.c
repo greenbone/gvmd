@@ -17818,17 +17818,19 @@ task_info (task_t task)
     info->config_name = sql_string ("SELECT name FROM configs_trash WHERE id ="
                                     " (SELECT config FROM tasks WHERE id = %llu);",
                                     task);
-  info->config_name = sql_string ("SELECT name FROM configs WHERE id ="
-                                  " (SELECT config FROM tasks WHERE id = %llu);",
-                                  task);
+  else
+    info->config_name = sql_string ("SELECT name FROM configs WHERE id ="
+                                    " (SELECT config FROM tasks WHERE id = %llu);",
+                                    task);
 
   if (info->config_in_trash)
     info->config_uuid = sql_string ("SELECT uuid FROM configs_trash WHERE id ="
                                     " (SELECT config FROM tasks WHERE id = %llu);",
                                     task);
-  info->config_uuid = sql_string ("SELECT uuid FROM configs WHERE id ="
-                                  " (SELECT config FROM tasks WHERE id = %llu);",
-                                  task);
+  else
+    info->config_uuid = sql_string ("SELECT uuid FROM configs WHERE id ="
+                                    " (SELECT config FROM tasks WHERE id = %llu);",
+                                    task);
 
   return info;
 }
