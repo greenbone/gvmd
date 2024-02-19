@@ -17607,7 +17607,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   gchar *task_target_name_escaped, *task_scanner_name_escaped;
   gchar *last_report, *current_report, *response;
   report_t running_report;
-  int target_in_trash, scanner_in_trash, task_scanner_type;
+  int target_in_trash, task_scanner_type;
   int holes, infos, logs, warnings, holes_2, infos_2, warnings_2;
   int false_positives, target_available, config_available, scanner_available;
   double severity, severity_2;
@@ -17659,7 +17659,8 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                  __func__);
     }
 
-  info = task_info (index);
+  scanner = task_iterator_scanner (tasks);
+  info = task_info (index, scanner);
   if (info == NULL)
     goto cleanup_exit;
 
@@ -17758,15 +17759,12 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     }
 
   scanner_available = 1;
-  scanner = task_iterator_scanner (tasks);
   if (scanner)
     {
-      scanner_in_trash = task_scanner_in_trash (index);
-
       task_scanner_uuid = scanner_uuid (scanner);
       task_scanner_name = scanner_name (scanner);
       task_scanner_type = scanner_type (scanner);
-      if (scanner_in_trash)
+      if (info->scanner_in_trash)
         scanner_available = trash_scanner_readable (scanner);
       else
         {
@@ -17786,7 +17784,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
       task_scanner_uuid = g_strdup ("");
       task_scanner_name = g_strdup ("");
       task_scanner_type = 0;
-      scanner_in_trash = 0;
     }
 
   config_name_escaped
@@ -17850,7 +17847,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                task_scanner_uuid,
                task_scanner_name_escaped,
                task_scanner_type,
-               scanner_in_trash,
+               info->scanner_in_trash,
                scanner_available ? "" : "<permissions/>",
                task_iterator_run_status_name (tasks),
                progress_xml,

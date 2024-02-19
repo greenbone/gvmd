@@ -366,6 +366,7 @@ typedef resource_t user_t;
 typedef struct
 {
   int config_in_trash;    ///< Whether config is in trash;
+  int scanner_in_trash;   ///< Whether scanner is in trash;
   gchar *config_name;     ///< Config name.
   gchar *config_uuid;     ///< Config UUID.
   gchar *second_last_report_id; ///< UUID of second last report.
@@ -775,7 +776,7 @@ int
 task_uuid (task_t, char **);
 
 task_info_t *
-task_info (task_t);
+task_info (task_t, scanner_t);
 
 void
 task_info_free (task_info_t *);

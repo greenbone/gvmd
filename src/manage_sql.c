@@ -17799,12 +17799,13 @@ task_uuid (task_t task, char ** id)
 /**
  * @brief Return key info about a task, for GET_TASKS.
  *
- * @param[in]  task  Task.
+ * @param[in]  task     Task.
+ * @param[in]  scanner  Task's scanner.
  *
  * @return Info, or NULL on error.
  */
 task_info_t *
-task_info (task_t task)
+task_info (task_t task, scanner_t scanner)
 {
   iterator_t rows;
   task_info_t *info;
@@ -17853,6 +17854,9 @@ task_info (task_t task)
 
       config_uuid = iterator_string (&rows, 2);
       info->config_uuid = config_uuid ? g_strdup (config_uuid) : NULL;
+
+      if (scanner)
+        info->scanner_in_trash = task_scanner_in_trash (task);
     }
   cleanup_iterator (&rows);
 
