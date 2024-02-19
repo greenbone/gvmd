@@ -2902,7 +2902,7 @@ int
 report_format_iterator_active (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return (iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7)
+  return (iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8)
           & REPORT_FORMAT_FLAG_ACTIVE) ? 1 : 0;
 }
 
@@ -2981,9 +2981,9 @@ report_format_alert_iterator_readable (iterator_t* iterator)
 }
 
 /**
- * @brief Initialise a Report Format alert iterator.
+ * @brief Initialise a Report Format config iterator.
  *
- * Iterates over all alerts that use the Report Format.
+ * Iterates over all report configs that use the Report Format.
  *
  * @param[in]  iterator          Iterator.
  * @param[in]  report_format     Report Format.

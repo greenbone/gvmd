@@ -16,6 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file manage_sql_report_configs.h
+ * @brief GVM management layer: Report configs SQL.
+ *
+ * SQL report config code for the GVM management layer.
+ */
+
 #ifndef _GVMD_MANAGE_SQL_REPORT_CONFIGS_H
 #define _GVMD_MANAGE_SQL_REPORT_CONFIGS_H
 
