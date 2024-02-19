@@ -17858,9 +17858,18 @@ task_info (task_t task, scanner_t scanner)
       if (scanner)
         {
           info->scanner_in_trash = task_scanner_in_trash (task);
-          info->scanner_uuid = scanner_uuid (scanner);
-          info->scanner_name = scanner_name (scanner);
-          info->scanner_type = scanner_type (scanner);
+          if (info->scanner_in_trash)
+            {
+              info->scanner_uuid = trash_scanner_uuid (scanner);
+              info->scanner_name = trash_scanner_name (scanner);
+              info->scanner_type = trash_scanner_type (scanner);
+            }
+          else
+            {
+              info->scanner_uuid = scanner_uuid (scanner);
+              info->scanner_name = scanner_name (scanner);
+              info->scanner_type = scanner_type (scanner);
+            }
         }
       else
         {
@@ -42177,6 +42186,26 @@ trash_scanner_uuid (scanner_t scanner)
 {
   return sql_string ("SELECT uuid FROM scanners_trash WHERE id = %llu;",
                      scanner);
+}
+
+/**
+ * @brief Return the type of a scanner in the trashcan.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Scanner type, -1 if not found;
+ */
+int
+trash_scanner_type (scanner_t scanner)
+{
+  int type;
+  char *str;
+  str = sql_string ("SELECT type FROM scanners_trash WHERE id = %llu;", scanner);
+  if (!str)
+    return -1;
+  type = atoi (str);
+  g_free (str);
+  return type;
 }
 
 /**
