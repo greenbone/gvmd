@@ -17806,13 +17806,23 @@ task_uuid (task_t task, char ** id)
 task_info_t *
 task_info (task_t task)
 {
+  iterator_t rows;
   task_info_t *info;
 
   info = g_malloc0 (sizeof (task_info_t));
 
-  info->config_in_trash = sql_int ("SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
-                                   " FROM tasks WHERE id = %llu;",
-                                   task);
+  init_iterator (&rows,
+                 "WITH tmp AS"
+                 "     (SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
+                 "             AS config_in_trash"
+                 "      FROM tasks WHERE id = %llu)"
+                 " SELECT config_in_trash FROM tmp;",
+                 task);
+  if (next (&rows))
+    {
+      info->config_in_trash = iterator_int (&rows, 0);
+    }
+  cleanup_iterator (&rows);
 
   if (info->config_in_trash)
     info->config_name = sql_string ("SELECT name FROM configs_trash WHERE id ="
