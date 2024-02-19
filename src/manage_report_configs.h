@@ -17,10 +17,10 @@
  */
 
 /**
- * @file manage_report_formats.c
- * @brief GVM management layer: Report formats.
+ * @file manage_report_configs.h
+ * @brief GVM management layer: Report configs.
  *
- * Non-SQL report format code for the GVM management layer.
+ * Non-SQL report config code for the GVM management layer.
  */
 
 #ifndef _GVMD_MANAGE_REPORT_CONFIGS_H

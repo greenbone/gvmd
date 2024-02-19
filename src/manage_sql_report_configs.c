@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_report_formats.c
+ * @file manage_sql_report_configs.c
  * @brief GVM management layer: Report configs SQL.
  *
  * SQL report config code for the GVM management layer.
@@ -45,14 +45,14 @@
  * @param[in]  name                 Name of new Report Config. NULL to copy
  *                                  from existing.
  * @param[in]  source_uuid          UUID of existing Report Config.
- * @param[out] new_report_format    New Report Config.
+ * @param[out] new_report_config    New Report Config.
  *
  * @return 0 success, 1 Report Config exists already, 2 failed to find existing
  *         Report Config, 99 permission denied, -1 error.
  */
 int
 copy_report_config (const char* name, const char* source_uuid,
-                    report_config_t* new_report_format)
+                    report_config_t* new_report_config)
 {
   report_format_t new, old;
   int ret;
@@ -70,18 +70,18 @@ copy_report_config (const char* name, const char* source_uuid,
       return ret;
     }
 
-  /* Copy report format parameters. */
+  /* Copy report config parameters. */
 
   sql ("INSERT INTO report_config_params "
        " (report_config, name, value)"
        " SELECT %llu, name, value"
-       "  FROM report_format_params WHERE report_format = %llu;",
+       "  FROM report_config_params WHERE report_config = %llu;",
        new,
        old);
 
   sql_commit ();
 
-  if (new_report_format) *new_report_format = new;
+  if (new_report_config) *new_report_config = new;
   return 0;
 }
 
@@ -268,10 +268,9 @@ create_report_config (const char *name, const char *comment,
  * @brief Modify a report config.
  * 
  * @param[in]   report_config_id  UUID of report config to modify.
- * @param[in]   name              Name of report config.
- * @param[in]   comment           Comment of report config.
+ * @param[in]   new_name          Name of report config.
+ * @param[in]   new_comment       Comment of report config.
  * @param[in]   params            Array of params.
- * @param[out]  report_config     Created report config.
  * @param[out]  error_message     Message for some errors like invalid params.
  *
  * @return 0 success,
@@ -301,7 +300,7 @@ modify_report_config (const char *report_config_id,
 
   report_config = 0;
   if (find_report_config_with_permission (report_config_id, &report_config,
-                                          "modify_report_format"))
+                                          "modify_report_config"))
     {
       sql_rollback ();
       return -1;
@@ -347,7 +346,7 @@ modify_report_config (const char *report_config_id,
                                    "               FROM report_configs"
                                    "               WHERE id = %llu)",
                                    report_config);
-      if (report_config == 0)
+      if (report_format == 0)
         {
           sql_rollback ();
           return 3;
@@ -567,7 +566,8 @@ delete_report_configs_user (user_t user)
  * @param[in]  report_config_id  UUID of resource.
  *
  * @return 0 success, 1 fail because resource is in use, 2 failed to find
- *         resource, 4 fail because resource with UUID exists, -1 error.
+ *         resource, 3 fail because resource with same name exists,
+ *         4 fail because resource with same UUID exists, -1 error.
  */
 int
 restore_report_config (const char *report_config_id)
@@ -643,7 +643,7 @@ restore_report_config (const char *report_config_id)
 }
 
 
-/* GET_REPORT_FORMATS */
+/* GET_REPORT_CONFIGS */
 
 /**
  * @brief Filter columns for Report Config iterator.
@@ -681,7 +681,7 @@ restore_report_config (const char *report_config_id)
    {                                                                        \
      "(SELECT id FROM report_formats"                                       \
      " WHERE report_formats.uuid = report_format_id)",                      \
-     "report_format",                                                       \
+     "report_format_rowid",                                                 \
      KEYWORD_TYPE_INTEGER,                                                  \
    },                                                                       \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
@@ -716,7 +716,7 @@ restore_report_config (const char *report_config_id)
    {                                                                        \
      "(SELECT id FROM report_formats"                                       \
      " WHERE report_formats.uuid = report_format_id)",                      \
-     "report_format",                                                       \
+     "report_format_rowid",                                                 \
      KEYWORD_TYPE_INTEGER,                                                  \
    },                                                                       \
  }
@@ -1072,6 +1072,7 @@ report_config_report_format (report_config_t report_config)
 int
 report_config_in_use (report_config_t report_config)
 {
+  // TODO: Check for alerts using the report config
   return 0;
 }
 
@@ -1085,6 +1086,7 @@ report_config_in_use (report_config_t report_config)
 int
 trash_report_config_in_use (report_config_t report_config)
 {
+  // TODO: Check for alerts using the report config
   return 0;
 }
 

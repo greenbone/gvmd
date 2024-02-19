@@ -16360,6 +16360,11 @@ END:VCALENDAR
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>report_configs</name>
+        <summary>Whether to include report configs that use the report format</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>details</name>
         <summary>Include report format file, signature and parameters</summary>
         <type>boolean</type>
@@ -16404,6 +16409,9 @@ END:VCALENDAR
           <e>summary</e>
           <e>description</e>
           <o><e>alerts</e></o>
+          <o><e>invisible_alerts</e></o>
+          <o><e>report_configs</e></o>
+          <o><e>invisible_report_configs</e></o>
           <o>
             <g>
               <any><e>file</e></any>
@@ -16563,6 +16571,46 @@ END:VCALENDAR
               <pattern></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>invisible_alerts</name>
+          <summary>Number of alerts only visible to other users</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>report_configs</name>
+          <summary>Report configs using the report format</summary>
+          <pattern>
+            <any><e>report_config</e></any>
+          </pattern>
+          <ele>
+            <name>report_config</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the report config</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the report config</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the report config</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>invisible_report_configs</name>
+          <summary>Number of report configs only visible to other users</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
         <ele>
           <name>param</name>
@@ -26518,7 +26566,7 @@ END:VCALENDAR
     <summary>Modify an existing report config</summary>
     <description>
       <p>
-        The client uses the create_report_config command to change an existing
+        The client uses the modify_report_config command to change an existing
         report config.
       </p>
     </description>
