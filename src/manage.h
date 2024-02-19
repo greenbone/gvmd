@@ -368,6 +368,7 @@ typedef struct
   int config_in_trash;    ///< Whether config is in trash;
   gchar *config_name;     ///< Config name.
   gchar *config_uuid;     ///< Config UUID.
+  gchar *second_last_report_id; ///< UUID of second last report.
 } task_info_t;
 
 

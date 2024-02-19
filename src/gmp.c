@@ -17605,7 +17605,7 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
   char *task_scanner_uuid, *task_scanner_name;
   gchar *progress_xml, *task_schedule_xml, *config_name_escaped;
   gchar *task_target_name_escaped, *task_scanner_name_escaped;
-  gchar *last_report, *second_last_report_id, *current_report, *response;
+  gchar *last_report, *current_report, *response;
   report_t running_report;
   int target_in_trash, scanner_in_trash, task_scanner_type;
   int holes, infos, logs, warnings, holes_2, infos_2, warnings_2;
@@ -17659,14 +17659,17 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
                  __func__);
     }
 
-  second_last_report_id = task_second_last_report_id (index);
-  if (second_last_report_id && (get_tasks_data->get.trash == 0))
+  info = task_info (index);
+  if (info == NULL)
+    goto cleanup_exit;
+
+  if (info->second_last_report_id && (get_tasks_data->get.trash == 0))
     {
       /* If the first report is the second last report then skip
         * doing the count again. */
       if (((first_report_id == NULL)
-          || (strcmp (second_last_report_id, first_report_id)))
-          && report_counts (second_last_report_id,
+          || (strcmp (info->second_last_report_id, first_report_id)))
+          && report_counts (info->second_last_report_id,
                             &holes_2, &infos_2,
                             &logs, &warnings_2,
                             &false_positives, &severity_2,
@@ -17684,10 +17687,10 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
       /* If the last report is the first report or the second
        * last report, then reuse the counts from before. */
       if ((first_report_id == NULL)
-          || (second_last_report_id == NULL)
+          || (info->second_last_report_id == NULL)
           || (strcmp (last_report_id, first_report_id)
               && strcmp (last_report_id,
-                         second_last_report_id)))
+                         info->second_last_report_id)))
         {
           if (report_counts
                (last_report_id,
@@ -17712,12 +17715,6 @@ get_tasks_send_task (gmp_parser_t *gmp_parser,
     }
   else
    last_report = g_strdup ("");
-
-  g_free (second_last_report_id);
-
-  info = task_info (index);
-  if (info == NULL)
-    goto cleanup_exit;
 
   target_available = 1;
   if (target_in_trash)

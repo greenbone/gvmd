@@ -17814,9 +17814,17 @@ task_info (task_t task)
   init_iterator (&rows,
                  "WITH tmp AS"
                  "     (SELECT config,"
+                 //
                  "             config_location = " G_STRINGIFY (LOCATION_TRASH)
-                 "             AS config_in_trash"
+                 "             AS config_in_trash,"
+                 //
+                 "             (SELECT uuid FROM reports"
+                 "              WHERE task = tasks.id"
+                 "              AND scan_run_status = %u"
+                 "              ORDER BY creation_time DESC LIMIT 1 OFFSET 1)"
+                 "             AS second_last_report_id"
                  "      FROM tasks WHERE id = %llu)"
+                 //
                  " SELECT config_in_trash,"
                  "        (CASE WHEN config_in_trash"
                  "              THEN (SELECT name FROM configs_trash"
@@ -17829,8 +17837,10 @@ task_info (task_t task)
                  "                    WHERE id = config)"
                  "              ELSE (SELECT uuid FROM configs"
                  "                    WHERE id = config)"
-                 "         END)"
+                 "         END),"
+                 "        second_last_report_id"
                  "        FROM tmp;",
+                 TASK_STATUS_DONE,
                  task);
   if (next (&rows))
     {
@@ -17862,6 +17872,7 @@ task_info_free (task_info_t *info)
 
   g_free (info->config_name);
   g_free (info->config_uuid);
+  g_free (info->second_last_report_id);
 }
 
 /**
