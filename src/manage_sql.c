@@ -17857,18 +17857,39 @@ task_info (task_t task, scanner_t scanner)
 
       if (scanner)
         {
-          info->scanner_in_trash = task_scanner_in_trash (task);
+          info->scanner_in_trash = sql_int ("SELECT scanner_location = " G_STRINGIFY (LOCATION_TRASH)
+                                            " FROM tasks WHERE id = %llu;", task);
           if (info->scanner_in_trash)
             {
-              info->scanner_uuid = trash_scanner_uuid (scanner);
-              info->scanner_name = trash_scanner_name (scanner);
-              info->scanner_type = trash_scanner_type (scanner);
+              char *str;
+
+              info->scanner_uuid = sql_string ("SELECT uuid FROM scanners_trash WHERE id = %llu;",
+                                               scanner);
+              info->scanner_name = sql_string ("SELECT name FROM scanners_trash WHERE id = %llu;",
+                                               scanner);
+
+              str = sql_string ("SELECT type FROM scanners_trash WHERE id = %llu;", scanner);
+              if (str)
+                info->scanner_type = atoi (str);
+              else
+                info->scanner_type = -1;
+              g_free (str);
             }
           else
             {
-              info->scanner_uuid = scanner_uuid (scanner);
-              info->scanner_name = scanner_name (scanner);
-              info->scanner_type = scanner_type (scanner);
+              char *str;
+
+              info->scanner_uuid = sql_string ("SELECT uuid FROM scanners WHERE id = %llu;",
+                                               scanner);
+              info->scanner_name = sql_string ("SELECT name FROM scanners WHERE id = %llu;",
+                                               scanner);
+
+              str = sql_string ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+              if (str)
+                info->scanner_type = atoi (str);
+              else
+                info->scanner_type = -1;
+              g_free (str);
             }
         }
       else
