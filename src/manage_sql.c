@@ -17823,23 +17823,59 @@ task_info (task_t task, scanner_t scanner)
                  "              WHERE task = tasks.id"
                  "              AND scan_run_status = %u"
                  "              ORDER BY creation_time DESC LIMIT 1 OFFSET 1)"
-                 "             AS second_last_report_id"
+                 "             AS second_last_report_id,"
+                 //
+                 "             scanner,"
+                 "             scanner_location = " G_STRINGIFY (LOCATION_TRASH)
+                 "             AS scanner_in_trash"
                  "      FROM tasks WHERE id = %llu)"
                  //
                  " SELECT config_in_trash,"
+                 //       1
                  "        (CASE WHEN config_in_trash"
                  "              THEN (SELECT name FROM configs_trash"
                  "                    WHERE id = config)"
                  "              ELSE (SELECT name FROM configs"
                  "                    WHERE id = config)"
                  "         END),"
+                 //       2
                  "        (CASE WHEN config_in_trash"
                  "              THEN (SELECT uuid FROM configs_trash"
                  "                    WHERE id = config)"
                  "              ELSE (SELECT uuid FROM configs"
                  "                    WHERE id = config)"
                  "         END),"
-                 "        second_last_report_id"
+                 //       3
+                 "        second_last_report_id,"
+                 //       4
+                 "        scanner_in_trash,"
+                 //       5
+                 "        (CASE WHEN scanner > 0 AND scanner_in_trash"
+                 "              THEN (SELECT name FROM scanners_trash"
+                 "                    WHERE id = scanner)"
+                 "              WHEN scanner > 0"
+                 "              THEN (SELECT name FROM scanners"
+                 "                    WHERE id = scanner)"
+                 "              ELSE NULL"
+                 "         END),"
+                 //       6
+                 "        (CASE WHEN scanner > 0 AND scanner_in_trash"
+                 "              THEN (SELECT uuid FROM scanners_trash"
+                 "                    WHERE id = scanner)"
+                 "              WHEN scanner > 0"
+                 "              THEN (SELECT uuid FROM scanners"
+                 "                    WHERE id = scanner)"
+                 "              ELSE NULL"
+                 "         END),"
+                 //       7
+                 "        (CASE WHEN scanner > 0 AND scanner_in_trash"
+                 "              THEN (SELECT type FROM scanners_trash"
+                 "                    WHERE id = scanner)"
+                 "              WHEN scanner > 0"
+                 "              THEN (SELECT type FROM scanners"
+                 "                    WHERE id = scanner)"
+                 "              ELSE NULL"
+                 "         END)"
                  "        FROM tmp;",
                  TASK_STATUS_DONE,
                  task);
@@ -17857,40 +17893,21 @@ task_info (task_t task, scanner_t scanner)
 
       if (scanner)
         {
-          info->scanner_in_trash = sql_int ("SELECT scanner_location = " G_STRINGIFY (LOCATION_TRASH)
-                                            " FROM tasks WHERE id = %llu;", task);
-          if (info->scanner_in_trash)
-            {
-              char *str;
+          const char *scanner_name, *scanner_uuid, *str;
 
-              info->scanner_uuid = sql_string ("SELECT uuid FROM scanners_trash WHERE id = %llu;",
-                                               scanner);
-              info->scanner_name = sql_string ("SELECT name FROM scanners_trash WHERE id = %llu;",
-                                               scanner);
+          info->scanner_in_trash = iterator_int (&rows, 4);
 
-              str = sql_string ("SELECT type FROM scanners_trash WHERE id = %llu;", scanner);
-              if (str)
-                info->scanner_type = atoi (str);
-              else
-                info->scanner_type = -1;
-              g_free (str);
-            }
+          scanner_name = iterator_string (&rows, 5);
+          info->scanner_name = scanner_name ? g_strdup (scanner_name) : NULL;
+
+          scanner_uuid = iterator_string (&rows, 6);
+          info->scanner_uuid = scanner_uuid ? g_strdup (scanner_uuid) : NULL;
+
+          str = iterator_string (&rows, 7);
+          if (str)
+            info->scanner_type = atoi (str);
           else
-            {
-              char *str;
-
-              info->scanner_uuid = sql_string ("SELECT uuid FROM scanners WHERE id = %llu;",
-                                               scanner);
-              info->scanner_name = sql_string ("SELECT name FROM scanners WHERE id = %llu;",
-                                               scanner);
-
-              str = sql_string ("SELECT type FROM scanners WHERE id = %llu;", scanner);
-              if (str)
-                info->scanner_type = atoi (str);
-              else
-                info->scanner_type = -1;
-              g_free (str);
-            }
+            info->scanner_type = -1;
         }
       else
         {
@@ -17917,6 +17934,8 @@ task_info_free (task_info_t *info)
   g_free (info->config_name);
   g_free (info->config_uuid);
   g_free (info->second_last_report_id);
+  g_free (info->scanner_name);
+  g_free (info->scanner_uuid);
 }
 
 /**
