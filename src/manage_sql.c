@@ -3937,6 +3937,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "permission") == 0)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "report") == 0)
+         || (strcasecmp (type, "report_config") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
          || (strcasecmp (type, "role") == 0)
@@ -3987,6 +3988,8 @@ type_db_name (const char* type)
     return "port_list";
   if (strcasecmp (type, "Report") == 0)
     return "report";
+  if (strcasecmp (type, "Report Config") == 0)
+    return "report_config";
   if (strcasecmp (type, "Report Format") == 0)
     return "report_format";
   if (strcasecmp (type, "Result") == 0)
