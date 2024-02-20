@@ -2037,7 +2037,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  levels         String describing threat levels (message types)
  *                             to include in count (for example, "hmlg" for
  *                             High, Medium, Low and loG). All levels if NULL.
- * @param[out]  comliance_levels   String describing compliance levels
+ * @param[out]  compliance_levels   String describing compliance levels
  *                             to include in count (for example, "yniu" for
  *                             "yes" (compliant), "n" for "no" (not compliant),
  *                             "i" for "incomplete" and "u" for "undefined" 
@@ -21992,22 +21992,22 @@ report_add_results_array (report_t report, GArray *results)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "compliance_count (id, 'YES')",                                         \
+     "report_compliance_count (id, 'YES')",                                  \
      "compliance_yes",                                                       \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "compliance_count (id, 'NO')",                                          \
+     "report_compliance_count (id, 'NO')",                                   \
      "compliance_no",                                                        \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "compliance_count (id, 'INCOMPLETE')",                                  \
+     "report_compliance_count (id, 'INCOMPLETE')",                           \
      "compliance_incomplete",                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "compliance_status (id)",                                               \
+     "report_compliance_status (id)",                                        \
      "compliant",                                                            \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
@@ -22055,7 +22055,8 @@ where_compliance_status (const char *compliance)
   compliance_sql = g_string_new ("");
   count = 0;
 
-  g_string_append_printf (compliance_sql, " AND compliance_status(reports.id) IN (");
+  g_string_append_printf (compliance_sql,
+    " AND report_compliance_status(reports.id) IN (");
 
   if (strchr (compliance, 'y'))
     {
@@ -22080,9 +22081,9 @@ where_compliance_status (const char *compliance)
 
   g_string_append (compliance_sql, ")");
 
-  if (count == 4)
+  if ((count == 4) || (count == 0))
     {
-      /* All compliance levels selected. */
+      /* All compliance levels or no valid ones selected. */
       g_string_free (compliance_sql, TRUE);
       return NULL;
     }
@@ -22422,9 +22423,9 @@ where_compliance_levels (const char *levels)
     }
   g_string_append (levels_sql, ")");
 
-  if (count == 4)
+  if ((count == 4) || (count == 0))
     {
-      /* All compliance levels selected, so no restriction is necessary. */
+      /* All compliance levels or none selected, so no restriction is necessary. */
       g_string_free (levels_sql, TRUE);
       return NULL;
     }

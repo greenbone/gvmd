@@ -895,7 +895,7 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
-  sql ("CREATE OR REPLACE FUNCTION compliance_status ("
+  sql ("CREATE OR REPLACE FUNCTION report_compliance_status ("
        "  report_id integer)"
        "RETURNS text AS $$ "
        "BEGIN"
@@ -918,7 +918,9 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
-  sql ("CREATE OR REPLACE FUNCTION compliance_count (report_id integer, compliance text)"
+  sql ("CREATE OR REPLACE FUNCTION report_compliance_count ("
+       "  report_id integer,"
+       "  compliance text)"
        " RETURNS integer AS $$"
        " DECLARE count integer := 0;"
        " BEGIN"
