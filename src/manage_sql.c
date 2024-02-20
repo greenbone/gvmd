@@ -17881,7 +17881,7 @@ task_info (task_t task, scanner_t scanner)
                  task);
   if (next (&rows))
     {
-      const char *config_name, *config_uuid;
+      const char *config_name, *config_uuid, *report_id;
 
       info->config_in_trash = iterator_int (&rows, 0);
 
@@ -17890,6 +17890,9 @@ task_info (task_t task, scanner_t scanner)
 
       config_uuid = iterator_string (&rows, 2);
       info->config_uuid = config_uuid ? g_strdup (config_uuid) : NULL;
+
+      report_id = iterator_string (&rows, 3);
+      info->second_last_report_id = report_id ? g_strdup (report_id) : NULL;
 
       if (scanner)
         {
