@@ -2101,6 +2101,9 @@ insert_scap_cpe_details (inserts_t *inserts, element_t cpe_item)
                           quoted_name,
                           quoted_details_xml);
 
+  g_free (quoted_name);
+  g_free (quoted_details_xml);
+
   inserts->current_chunk_size++;
 
   return 0;
@@ -2670,6 +2673,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   increment_transaction_size (transaction_size);
   g_free (quoted_summary);
   g_free (quoted_cvss_vector);
+  g_free (quoted_software);
 
   insert_cve_products (list, cve, time_published, time_modified,
                        hashed_cpes, transaction_size);
