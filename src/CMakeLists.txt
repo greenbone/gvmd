@@ -26,10 +26,10 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.7)
-pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.6)
-pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.6)
-pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.6)
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.8)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.8)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.8)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.8)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBBSD REQUIRED libbsd)
@@ -120,10 +120,12 @@ add_executable (manage-utils-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -132,7 +134,9 @@ add_executable (manage-utils-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (manage-utils-test manage-utils-test)
@@ -147,10 +151,12 @@ add_executable (manage-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -159,7 +165,9 @@ add_executable (manage-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (manage-test manage-test)
@@ -174,10 +182,12 @@ add_executable (manage-sql-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -186,7 +196,9 @@ add_executable (manage-sql-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (manage-sql-test manage-sql-test)
@@ -201,10 +213,12 @@ add_executable (gmp-tickets-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -213,7 +227,10 @@ add_executable (gmp-tickets-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tls_certificates.c)
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c
+                gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
 
@@ -227,10 +244,12 @@ add_executable (utils-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -239,7 +258,9 @@ add_executable (utils-test
                 lsc_user.c lsc_crypt.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (utils-test utils-test)
@@ -256,10 +277,12 @@ add_executable (gvmd
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -268,7 +291,9 @@ add_executable (gvmd
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 target_link_libraries (gvmd m

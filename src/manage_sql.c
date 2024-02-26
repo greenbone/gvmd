@@ -35,6 +35,7 @@
 #include "manage_tickets.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_port_lists.h"
+#include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
@@ -81,6 +82,7 @@
 #include <gvm/util/authutils.h>
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
+#include "manage_report_configs.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -468,6 +470,7 @@ command_t gmp_commands[]
     {"CREATE_PORT_LIST", "Create a port list."},
     {"CREATE_PORT_RANGE", "Create a port range in a port list."},
     {"CREATE_REPORT", "Create a report."},
+    {"CREATE_REPORT_CONFIG", "Create a report config."},
     {"CREATE_REPORT_FORMAT", "Create a report format."},
     {"CREATE_ROLE", "Create a role."},
     {"CREATE_SCANNER", "Create a scanner."},
@@ -490,6 +493,7 @@ command_t gmp_commands[]
     {"DELETE_PORT_LIST", "Delete a port list."},
     {"DELETE_PORT_RANGE", "Delete a port range."},
     {"DELETE_REPORT", "Delete a report."},
+    {"DELETE_REPORT_CONFIG", "Delete a report config."},
     {"DELETE_REPORT_FORMAT", "Delete a report format."},
     {"DELETE_ROLE", "Delete a role."},
     {"DELETE_SCANNER", "Delete a scanner."},
@@ -520,6 +524,7 @@ command_t gmp_commands[]
     {"GET_PORT_LISTS", "Get all port lists."},
     {"GET_PREFERENCES", "Get preferences for all available NVTs."},
     {"GET_REPORTS", "Get all reports."},
+    {"GET_REPORT_CONFIGS", "Get all report configs."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_RESULTS", "Get results."},
     {"GET_ROLES", "Get all roles."},
@@ -548,6 +553,7 @@ command_t gmp_commands[]
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PERMISSION", "Modify an existing permission."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},
+    {"MODIFY_REPORT_CONFIG", "Modify an existing report config."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
     {"MODIFY_ROLE", "Modify an existing role."},
     {"MODIFY_SCANNER", "Modify an existing scanner."},
@@ -3931,6 +3937,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "permission") == 0)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "report") == 0)
+         || (strcasecmp (type, "report_config") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
          || (strcasecmp (type, "role") == 0)
@@ -3981,6 +3988,8 @@ type_db_name (const char* type)
     return "port_list";
   if (strcasecmp (type, "Report") == 0)
     return "report";
+  if (strcasecmp (type, "Report Config") == 0)
+    return "report_config";
   if (strcasecmp (type, "Report Format") == 0)
     return "report_format";
   if (strcasecmp (type, "Result") == 0)
@@ -48106,6 +48115,11 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
+  /* Report Config. */
+  ret = restore_report_config (id);
+  if (ret != 2)
+    return ret;
+
   /* Report Format. */
   ret = restore_report_format (id);
   if (ret != 2)
@@ -49119,6 +49133,12 @@ manage_empty_trashcan ()
        "                                WHERE uuid = '%s'))"
        " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
        current_credentials.uuid);
+  sql ("DELETE FROM report_config_params_trash"
+       " WHERE report_config IN (SELECT id FROM report_configs_trash"
+       "                         WHERE owner = (SELECT id FROM users"
+       "                                        WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM report_configs_trash" WHERE_OWNER);
   sql ("DELETE FROM role_users_trash"
        " WHERE role IN (SELECT id from roles_trash"
        "                WHERE owner = (SELECT id FROM users"
@@ -52380,6 +52400,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Port Lists Filter");
       else if (strcmp (uuid, "48ae588e-9085-41bc-abcb-3d6389cf7237") == 0)
         setting_name = g_strdup ("Reports Filter");
+      else if (strcmp (uuid, "eca9738b-4339-4a3d-bd13-3c61173236ab") == 0)
+        setting_name = g_strdup ("Report Configs Filter");
       else if (strcmp (uuid, "249c7a55-065c-47fb-b453-78e11a665565") == 0)
         setting_name = g_strdup ("Report Formats Filter");
       else if (strcmp (uuid, "739ab810-163d-11e3-9af6-406186ea4fc5") == 0)
@@ -54088,6 +54110,11 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      sql ("UPDATE report_configs SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE report_configs_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
       /* Report Formats. */
 
       has_rows = inherit_report_formats (user, inheritor, &rows);
@@ -54420,6 +54447,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
+
+  /* Delete report configs */
+
+  delete_report_configs_user (user);
 
   /* Delete report formats. */
 
@@ -57325,6 +57356,8 @@ type_select_columns (const char *type)
     return port_list_select_columns ();
   if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
+  if (strcasecmp (type, "REPORT_CONFIG") == 0)
+    return report_config_select_columns ();
   if (strcasecmp (type, "REPORT_FORMAT") == 0)
     return report_format_select_columns ();
   if (strcasecmp (type, "RESULT") == 0)
@@ -57478,6 +57511,8 @@ type_filter_columns (const char *type)
       static const char *ret[] = REPORT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  if (strcasecmp (type, "REPORT_CONFIG") == 0)
+    return report_config_filter_columns ();
   if (strcasecmp (type, "REPORT_FORMAT") == 0)
     return report_format_filter_columns ();
   if (strcasecmp (type, "RESULT") == 0)

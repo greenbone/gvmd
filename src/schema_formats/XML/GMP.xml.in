@@ -4801,6 +4801,121 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </example>
   </command>
   <command>
+    <name>create_report_config</name>
+    <summary>Create a report config</summary>
+    <description>
+      <p>
+        The client uses the create_report_config command to create a new report
+        config.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <e>report_format</e>
+      <any><e>param</e></any>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the report config</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the report config</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing report config</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>report_format</name>
+      <summary>
+        The report format the config applies to. Must be configurable
+      </summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>param</name>
+      <summary>A parameter to pass to the report format</summary>
+      <pattern>
+        <e>name</e>
+        <e>value</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>Name of the parameter</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>value</name>
+        <summary>Value of the parameter</summary>
+        <pattern>
+          text
+          <attrib>
+            <name>use_default</name>
+            <type>boolean</type>
+            <summary>
+              Whether to use the default instead of the given value
+            </summary>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a report config</summary>
+      <request>
+        <create_report_config>
+          <name>Test config</name>
+          <report_format id="9e5e5deb-879e-4ecc-8be6-a71cd0875cdd"/>
+          <param>
+            <name>Node Distance</name>
+            <value>10</value>
+          </param>
+          <comment>Test comment</comment>
+        </create_report_config>
+      </request>
+      <response>
+        <create_report_config_response status="201"
+                                      status_text="OK, resource created"
+                                      id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_report_config_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>create_report_format</name>
     <summary>Create a report format</summary>
     <description>
@@ -6648,6 +6763,58 @@ END:VCALENDAR
       </request>
       <response>
         <delete_report_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_report_config</name>
+    <summary>Delete a report config</summary>
+    <description>
+      <p>
+        The client uses the delete_report_config command to delete an existing
+        report config.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_config_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a report config</summary>
+      <request>
+        <delete_report_config report_config_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_report_config>
+      </request>
+      <response>
+        <delete_report_config_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -15476,6 +15643,578 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_configs</name>
+    <summary>Get one or many report configs</summary>
+    <description>
+      <p>
+        The client uses the get_report_configs command to get report config
+        information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_config_id</name>
+        <summary>ID of single report config to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan report configs instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Include report config details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>report_config</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>report_configs</e>
+        <e>report_config_count</e>
+      </pattern>
+      <ele>
+        <name>report_config</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>report_format</e>
+          <o><e>orphan</e></o>
+          <o><e>alerts</e></o>
+          <any><e>param</e></any>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report config</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the report config</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment of the report config</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the report config is global or in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any alerts are using the report config</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the report config
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the report config</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>report_format</name>
+          <summary>Report format the config will provide params for</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID of the report format</summary>
+              <required>1</required>
+            </attrib>
+            <o><e>name</e></o>
+            <o><e>permissions</e></o>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the report format if it exists</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the report format</summary>
+            <pattern></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>orphan</name>
+          <summary>Whether the report format of the config is missing</summary>
+          <pattern>
+            <t>boolean</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>alerts</name>
+          <summary>Alerts using the report config</summary>
+          <pattern>
+            <any><e>alert</e></any>
+          </pattern>
+          <ele>
+            <name>alert</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the alert</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the alert</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the alert</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>param</name>
+          <pattern>
+            <e>name</e>
+            <e>type</e>
+            <e>value</e>
+            <e>default</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the param</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The type of the param</summary>
+            <pattern>
+              <o><e>min</e></o>
+              <o><e>max</e></o>
+              <o><e>options</e></o>
+              <alts>
+                <alt>boolean</alt>
+                <alt>integer</alt>
+                <alt>selection</alt>
+                <alt>string</alt>
+                <alt>text</alt>
+                <alt>report_format_list</alt>
+              </alts>
+            </pattern>
+            <ele>
+              <name>min</name>
+              <summary>Minimum</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>max</name>
+              <summary>Maximum</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>options</name>
+              <summary>Selection options</summary>
+              <pattern><any><e>option</e></any></pattern>
+              <ele>
+                <name>option</name>
+                <summary>Option value</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>The value of the param</summary>
+            <pattern>
+              <any><e>report_format</e></any>
+            </pattern>
+            <ele>
+              <name>report_format</name>
+              <summary>Report format info if type is report_format_list</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the report format if available</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>default</name>
+            <summary>The fallback value of the param</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>file</name>
+          <summary>One of the files used to generate the report</summary>
+          <pattern>
+            <attrib>
+              <name>name</name>
+              <type>text</type>
+              <required>1</required>
+            </attrib>
+            <t>base64</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>signature</name>
+          <summary>The report format signature</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_configs</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report config</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report configs</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_config_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report configs after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report configs on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get information about a report config</summary>
+      <request>
+        <get_report_configs report_config_id="c6bab6c3-2b82-4a19-837d-7537d5de2224">
+        </get_report_configs>
+      </request>
+      <response>
+        <get_report_configs_response status="200" status_text="OK">
+          <report_config id="c6bab6c3-2b82-4a19-837d-7537d5de2224">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <name>Test config</name>
+            <comment>Test comment</comment>
+            <creation_time>2024-01-23T09:43:03Z</creation_time>
+            <modification_time>2024-01-26T14:11:54Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <report_format id="9e5e5deb-879e-4ecc-8be6-a71cd0875cdd">
+              <name>Topology SVG</name>
+            </report_format>
+            <param using_default="0">
+              <name>Graph Type</name>
+              <type>selection</type>
+              <value>dot</value>
+              <default>twopi</default>
+              <options>
+                <option>circo</option>
+                <option>dot</option>
+                <option>twopi</option>
+              </options>
+            </param>
+            <param using_default="1">
+              <name>Node Distance</name>
+              <type>integer<min>1</min><max>20</max></type>
+              <value>8</value>
+              <default>8</default>
+            </param>
+          </report_config>
+          <truncated> ... </truncated>
+        </get_report_configs_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_formats</name>
     <summary>Get one or many report formats</summary>
     <description>
@@ -15621,6 +16360,11 @@ END:VCALENDAR
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>report_configs</name>
+        <summary>Whether to include report configs that use the report format</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>details</name>
         <summary>Include report format file, signature and parameters</summary>
         <type>boolean</type>
@@ -15665,6 +16409,9 @@ END:VCALENDAR
           <e>summary</e>
           <e>description</e>
           <o><e>alerts</e></o>
+          <o><e>invisible_alerts</e></o>
+          <o><e>report_configs</e></o>
+          <o><e>invisible_report_configs</e></o>
           <o>
             <g>
               <any><e>file</e></any>
@@ -15674,6 +16421,7 @@ END:VCALENDAR
           <e>trust</e>
           <e>active</e>
           <e>predefined</e>
+          <e>configurable</e>
           <o><e>deprecated</e></o>
           <any><e>param</e></any>
         </pattern>
@@ -15825,6 +16573,46 @@ END:VCALENDAR
           </ele>
         </ele>
         <ele>
+          <name>invisible_alerts</name>
+          <summary>Number of alerts only visible to other users</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>report_configs</name>
+          <summary>Report configs using the report format</summary>
+          <pattern>
+            <any><e>report_config</e></any>
+          </pattern>
+          <ele>
+            <name>report_config</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the report config</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the report config</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the report config</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>invisible_report_configs</name>
+          <summary>Number of report configs only visible to other users</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
           <name>param</name>
           <pattern>
             <e>name</e>
@@ -15951,6 +16739,11 @@ END:VCALENDAR
         <ele>
           <name>predefined</name>
           <summary>Whether the report format was predefined by the feed</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>configurable</name>
+          <summary>Whether the report format can be used with a report config</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
@@ -17045,8 +17838,8 @@ END:VCALENDAR
         <summary>
         Type must be one of ALERT, CERT_BUND_ADV, CONFIG, CPE, CREDENTIAL, CVE,
         DFN_CERT_ADV, FILTER, GROUP, HOST, NOTE, NVT, OS, OVERRIDE, PERMISSION,
-        PORT_LIST, REPORT_FORMAT, REPORT, RESULT, ROLE, SCANNER, SCHEDULE, TARGET,
-        TASK, TLS_CERTIFICATE or USER</summary>
+        PORT_LIST, REPORT_CONFIG, REPORT_FORMAT, REPORT, RESULT, ROLE, SCANNER,
+        SCHEDULE, TARGET, TASK, TLS_CERTIFICATE or USER</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -25765,6 +26558,98 @@ END:VCALENDAR
       <response>
         <modify_port_list_response status="200" status_text="OK">
         </modify_port_list_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_report_config</name>
+    <summary>Modify an existing report config</summary>
+    <description>
+      <p>
+        The client uses the modify_report_config command to change an existing
+        report config.
+      </p>
+    </description>
+    <pattern>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <any><e>param</e></any>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the report config. Omit to keep current one</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the report config. Omit to keep current one</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>param</name>
+      <summary>
+        A parameter to pass to the report format.
+        Omit params to keep current value
+      </summary>
+      <pattern>
+        <e>name</e>
+        <e>value</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>Name of the parameter</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>value</name>
+        <summary>Value of the parameter</summary>
+        <pattern>
+          text
+          <attrib>
+            <name>use_default</name>
+            <type>boolean</type>
+            <summary>
+              Whether to use the default instead of the given value
+            </summary>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Rename a report config and reset a param to default</summary>
+      <request>
+        <modify_report_config>
+          <name>Renamed config</name>
+          <param>
+            <name>Node Distance</name>
+            <value use_default="1"></value>
+          </param>
+        </modify_report_config>
+      </request>
+      <response>
+        <modify_report_config_response status="200" status_text="OK">
+        </modify_report_config_response>
       </response>
     </example>
   </command>
