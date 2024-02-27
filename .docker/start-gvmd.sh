@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#!/bin/sh
-
 [ -z "$USER" ] && USER="admin"
 [ -z "$PASSWORD" ] && PASSWORD="admin"
 [ -z "$GVMD_ARGS" ] && GVMD_ARGS="--listen-mode=666"
