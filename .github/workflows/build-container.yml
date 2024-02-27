@@ -60,10 +60,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Trigger libtheia container build
-        if: github.event_name != 'pull_request'
-        run: |
-          curl -X POST https://api.github.com/repos/greenbone/libtheia/actions/workflows/container.yml/dispatches \
-          -H "Accept: application/vnd.github.v3+json" \
-          -u greenbonebot:${{ secrets.GREENBONE_BOT_TOKEN }} \
-          -d '{"ref":"main"}'
