@@ -20,7 +20,7 @@
 [ -z "$PASSWORD" ] && PASSWORD="admin"
 [ -z "$GVMD_ARGS" ] && GVMD_ARGS="--listen-mode=666"
 [ -z "$GVMD_USER" ] && GVMD_USER="gvmd"
-[ -z "$PGRES_DATA"] && PGRES_DATA="/var/lib/postgresql"
+[ -z "$PGRES_DATA" ] && PGRES_DATA="/var/lib/postgresql"
 
 if [ -n "$GVM_CERTS" ] && [ "$GVM_CERTS" = true ]; then
     echo "Generating certs"
