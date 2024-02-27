@@ -44,7 +44,7 @@ gvmd --migrate || true
 gvmd --create-user=$USER --password=$PASSWORD || true
 
 # set the feed import owner
-uid=$(gvmd --get-users --verbose | grep $USER | awk '{print $2}')
+uid=$(gvmd --get-users --verbose | grep "^$USER " | awk '{print $2}')
 gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value "$uid"
 
 echo "starting gvmd"
