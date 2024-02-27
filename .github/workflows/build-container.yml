@@ -1,19 +1,6 @@
 name: Build Container Image Builds
 
 on:
-  push:
-    branches:
-      - main
-    tags: ["v*"]
-    paths:
-      - .github/workflows/build-container.yml
-      - .docker/build.Dockerfile
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/build-container.yml
-      - .docker/build.Dockerfile
   workflow_dispatch:
   repository_dispatch:
   schedule:
@@ -22,13 +9,16 @@ on:
 
 jobs:
   build-images:
+    strategy:
+      matrix:
+        build:
+          - stable
+          - edge
     name: "Build Images"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: greenbone/actions/is-latest-tag@v3
-        id: latest
       - name: Setup container meta information
         id: meta
         uses: docker/metadata-action@v5
@@ -39,30 +29,18 @@ jobs:
             org.opencontainers.image.base.name=greenbone/gvm-libs
           flavor: latest=false # no latest container tag for git tags
           tags: |
-            # use version, major.minor and major  for tags
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-
-            # use edge for default branch
-            type=edge
-
-            # set label for non-published pull request builds
-            type=ref,event=pr
-
-            # when a new git tag is created set stable and a latest tags
-            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
-            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=raw,value=latest,enable=${{ matrix.build == 'stable' }}
+            type=raw,value=stable,enable=${{ matrix.build == 'stable' }}
+            type=raw,value=edge,enable=${{ matrix.build == 'edge' }}
       - name: Set container build options
         id: container-opts
         run: |
-          if [[ "${{ github.ref_type }}" = 'tag' ]]; then
+          if [[ "${{ matrix.build }}" = 'stable' ]]; then
             echo "gvm-libs-version=oldstable" >> $GITHUB_OUTPUT
           else
             echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
           fi
       - name: Login to DockerHub
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -76,7 +54,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
           build-args: |
             GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
           file: .docker/build.Dockerfile
