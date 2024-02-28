@@ -1564,10 +1564,10 @@ result_iterator_delta_uuid (iterator_t*);
 const char *
 result_iterator_delta_qod_type (iterator_t*);
 
-const char *
+time_t
 result_iterator_delta_creation_time (iterator_t*);
 
-const char *
+time_t
 result_iterator_delta_modification_time (iterator_t*);
 
 task_t

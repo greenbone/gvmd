@@ -8162,31 +8162,41 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
       if (include_notes_details == 0)
         {
-          const char *text = note_iterator_text (notes);
-          gchar *excerpt = utf8_substring (text, 0,
-                                           setting_excerpt_size_int ());
+          gchar *excerpt;
+          const char *text;
+
+          text = note_iterator_text (notes);
+          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+
           /* This must match send_get_common. */
+
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "<type>%s</type>"
-                                    "</nvt>"
-                                    "<creation_time>%s</creation_time>"
-                                    "<modification_time>%s</modification_time>"
-                                    "<writable>1</writable>"
-                                    "<in_use>0</in_use>"
-                                    "<active>%i</active>"
-                                    "<text excerpt=\"%i\">%s</text>"
-                                    "<orphan>%i</orphan>",
+                                    "</nvt>",
                                     get_iterator_owner_name (notes)
                                      ? get_iterator_owner_name (notes)
                                      : "",
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
-                                    note_iterator_nvt_type (notes),
-                                    get_iterator_creation_time (notes),
-                                    get_iterator_modification_time (notes),
+                                    note_iterator_nvt_type (notes));
+
+          buffer_xml_append_printf (buffer,
+                                    "<creation_time>%s</creation_time>",
+                                    iso_if_time (get_iterator_creation_time (notes)));
+
+          buffer_xml_append_printf (buffer,
+                                    "<modification_time>%s</modification_time>",
+                                    iso_if_time (get_iterator_modification_time (notes)));
+
+          buffer_xml_append_printf (buffer,
+                                    "<writable>1</writable>"
+                                    "<in_use>0</in_use>"
+                                    "<active>%i</active>"
+                                    "<text excerpt=\"%i\">%s</text>"
+                                    "<orphan>%i</orphan>",
                                     note_iterator_active (notes),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -8229,15 +8239,33 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           end_time = note_iterator_end_time (notes);
 
           /* This must match send_get_common. */
+
           buffer_xml_append_printf
            (buffer,
             "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\">"
             "<name>%s</name>"
             "<type>%s</type>"
-            "</nvt>"
-            "<creation_time>%s</creation_time>"
-            "<modification_time>%s</modification_time>"
+            "</nvt>",
+            get_iterator_owner_name (notes)
+             ? get_iterator_owner_name (notes)
+             : "",
+            note_iterator_nvt_oid (notes),
+            note_iterator_nvt_name (notes),
+            note_iterator_nvt_type (notes));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<creation_time>%s</creation_time>",
+            iso_if_time (get_iterator_creation_time (notes)));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<modification_time>%s</modification_time>",
+            iso_if_time (get_iterator_modification_time (notes)));
+
+          buffer_xml_append_printf
+           (buffer,
             "<writable>1</writable>"
             "<in_use>0</in_use>"
             "<active>%i</active>"
@@ -8248,14 +8276,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<severity>%s</severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            get_iterator_owner_name (notes)
-             ? get_iterator_owner_name (notes)
-             : "",
-            note_iterator_nvt_oid (notes),
-            note_iterator_nvt_name (notes),
-            note_iterator_nvt_type (notes),
-            get_iterator_creation_time (notes),
-            get_iterator_modification_time (notes),
             note_iterator_active (notes),
             end_time > 1 ? iso_time (&end_time) : "",
             note_iterator_text (notes),
@@ -8426,18 +8446,36 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
       if (include_overrides_details == 0)
         {
-          const char *text = override_iterator_text (overrides);
-          gchar *excerpt = utf8_substring (text, 0,
-                                           setting_excerpt_size_int ());
+          gchar *excerpt;
+          const char *text;
+
+          text = override_iterator_text (overrides);
+          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+
           /* This must match send_get_common. */
+
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "<type>%s</type>"
-                                    "</nvt>"
-                                    "<creation_time>%s</creation_time>"
-                                    "<modification_time>%s</modification_time>"
+                                    "</nvt>",
+                                    get_iterator_owner_name (overrides)
+                                     ? get_iterator_owner_name (overrides)
+                                     : "",
+                                    override_iterator_nvt_oid (overrides),
+                                    override_iterator_nvt_name (overrides),
+                                    override_iterator_nvt_type (overrides));
+
+          buffer_xml_append_printf (buffer,
+                                    "<creation_time>%s</creation_time>",
+                                    iso_if_time (get_iterator_creation_time (overrides)));
+                                    
+          buffer_xml_append_printf (buffer,
+                                    "<modification_time>%s</modification_time>",
+                                    iso_if_time (get_iterator_modification_time (overrides)));
+
+          buffer_xml_append_printf (buffer,
                                     "<writable>1</writable>"
                                     "<in_use>0</in_use>"
                                     "<active>%i</active>"
@@ -8447,14 +8485,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<new_threat>%s</new_threat>"
                                     "<new_severity>%s</new_severity>"
                                     "<orphan>%i</orphan>",
-                                    get_iterator_owner_name (overrides)
-                                     ? get_iterator_owner_name (overrides)
-                                     : "",
-                                    override_iterator_nvt_oid (overrides),
-                                    override_iterator_nvt_name (overrides),
-                                    override_iterator_nvt_type (overrides),
-                                    get_iterator_creation_time (overrides),
-                                    get_iterator_modification_time (overrides),
                                     override_iterator_active (overrides),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -8505,15 +8535,33 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           end_time = override_iterator_end_time (overrides);
 
           /* This must match send_get_common. */
+
           buffer_xml_append_printf
            (buffer,
             "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\">"
             "<name>%s</name>"
             "<type>%s</type>"
-            "</nvt>"
-            "<creation_time>%s</creation_time>"
-            "<modification_time>%s</modification_time>"
+            "</nvt>",
+            get_iterator_owner_name (overrides)
+             ? get_iterator_owner_name (overrides)
+             : "",
+            override_iterator_nvt_oid (overrides),
+            override_iterator_nvt_name (overrides),
+            override_iterator_nvt_type (overrides));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<creation_time>%s</creation_time>",
+            iso_if_time (get_iterator_creation_time (overrides)));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<modification_time>%s</modification_time>",
+            iso_if_time (get_iterator_modification_time (overrides)));
+
+          buffer_xml_append_printf
+           (buffer,
             "<writable>1</writable>"
             "<in_use>0</in_use>"
             "<active>%i</active>"
@@ -8527,14 +8575,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<new_severity>%s</new_severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            get_iterator_owner_name (overrides)
-             ? get_iterator_owner_name (overrides)
-             : "",
-            override_iterator_nvt_oid (overrides),
-            override_iterator_nvt_name (overrides),
-            override_iterator_nvt_type (overrides),
-            get_iterator_creation_time (overrides),
-            get_iterator_modification_time (overrides),
             override_iterator_active (overrides),
             end_time > 1 ? iso_time (&end_time) : "",
             override_iterator_text (overrides),
@@ -9334,7 +9374,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int changed, int cert_loaded, int lean, int use_delta_fields)
 {
 
-  const char *descr, *name, *comment, *creation_time;
+  const char *descr, *name, *comment;
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
@@ -9343,6 +9383,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   result_t result;
   report_t report;
   task_t selected_task;
+  time_t creation_time;
   
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
@@ -9414,7 +9455,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (lean == 0)
     {
-      const char *owner_name, *modification_time;
+      const char *owner_name;
+      time_t modification_time;
      
       if (use_delta_fields)
         {
@@ -9435,7 +9477,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (modification_time)
         buffer_xml_append_printf (buffer,
                                   "<modification_time>%s</modification_time>",
-                                  modification_time);
+                                  iso_time (&modification_time) ?: "");
     }
 
   if (comment
@@ -9447,7 +9489,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (creation_time)
     buffer_xml_append_printf (buffer,
                               "<creation_time>%s</creation_time>",
-                              creation_time);
+                              iso_time (&creation_time) ?: "");
 
   if (include_details)
     {
@@ -11671,20 +11713,26 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
               xml_string_append (result,
                                  "<identifier id=\"%s\">"
                                  "<name>%s</name>"
-                                 "<value>%s</value>"
-                                 "<creation_time>%s</creation_time>"
-                                 "<modification_time>%s</modification_time>"
+                                 "<value>%s</value>",
+                                 get_iterator_uuid (&identifiers),
+                                 get_iterator_name (&identifiers),
+                                 host_identifier_iterator_value (&identifiers));
+
+              xml_string_append (result,
+                                 "<creation_time>%s</creation_time>",
+                                 iso_if_time (get_iterator_creation_time (&identifiers)));
+
+              xml_string_append (result,
+                                 "<modification_time>%s</modification_time>",
+                                 iso_if_time (get_iterator_modification_time (&identifiers)));
+
+              xml_string_append (result,
                                  "<source id=\"%s\">"
                                  "<type>%s</type>"
                                  "<data>%s</data>"
                                  "<deleted>%i</deleted>"
                                  "<name>%s</name>"
                                  "</source>",
-                                 get_iterator_uuid (&identifiers),
-                                 get_iterator_name (&identifiers),
-                                 host_identifier_iterator_value (&identifiers),
-                                 get_iterator_creation_time (&identifiers),
-                                 get_iterator_modification_time (&identifiers),
                                  host_identifier_iterator_source_id
                                   (&identifiers),
                                  source_type,
@@ -14717,17 +14765,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
           task_t task;
 
           /* Send the standard elements.  Should match send_get_common. */
+
           buffer_xml_append_printf
             (prefix,
              "<owner><name>%s</name></owner>"
              "<name>%s</name>"
-             "<comment>%s</comment>"
-             "<creation_time>%s</creation_time>"
-             "<modification_time>"
-             "%s"
-             "</modification_time>"
-             "<writable>0</writable>"
-             "<in_use>0</in_use>",
+             "<comment>%s</comment>",
              get_iterator_owner_name (&reports)
               ? get_iterator_owner_name (&reports)
               : "",
@@ -14736,13 +14779,20 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               : "",
              get_iterator_comment (&reports)
               ? get_iterator_comment (&reports)
-              : "",
-             get_iterator_creation_time (&reports)
-              ? get_iterator_creation_time (&reports)
-              : "",
-             get_iterator_modification_time (&reports)
-              ? get_iterator_modification_time (&reports)
               : "");
+
+          buffer_xml_append_printf
+            (prefix,
+             "<creation_time>%s</creation_time>",
+             iso_if_time (get_iterator_creation_time (&reports)));
+
+          buffer_xml_append_printf
+            (prefix,
+             "<modification_time>%s</modification_time>"
+             "<writable>0</writable>"
+             "<in_use>0</in_use>",
+             iso_if_time (get_iterator_modification_time (&reports)));
+
           /* Send short task and report format info */
           report_task (report, &task);
           if (task)
@@ -18627,16 +18677,19 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
       count ++;
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
                                "<name>%s</name>"
-                               "<type>%s</type>"
-                               "<creation_time>%s</creation_time>"
-                               "<modification_time>%s</modification_time>"
-                               "<severity>%1.1f</severity>"
-                               "<qod>%d</qod>",
+                               "<type>%s</type>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
-                               vuln_iterator_type (&vulns),
-                               get_iterator_creation_time (&vulns),
-                               get_iterator_modification_time (&vulns),
+                               vuln_iterator_type (&vulns));
+
+      SENDF_TO_CLIENT_OR_FAIL ("<creation_time>%s</creation_time>",
+                               iso_if_time (get_iterator_creation_time (&vulns)));
+
+      SENDF_TO_CLIENT_OR_FAIL ("<modification_time>%s</modification_time>",
+                               iso_if_time (get_iterator_modification_time (&vulns)));
+
+      SENDF_TO_CLIENT_OR_FAIL ("<severity>%1.1f</severity>"
+                               "<qod>%d</qod>",
                                vuln_iterator_severity (&vulns),
                                vuln_iterator_qod (&vulns));
 
