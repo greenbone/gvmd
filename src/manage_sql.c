@@ -329,9 +329,6 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
                             const char *);
 
 static int
-setting_value_int (const char *, int *);
-
-static int
 setting_auto_cache_rebuild_int ();
 
 static int
@@ -16005,6 +16002,19 @@ check_db_settings ()
          "  'Delta Reports Version',"
          "  'Version of the generation of the Delta Reports.',"
          "  '2' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "', NULL,"
+         "  'SecInfo SQL Buffer Threshold',"
+         "  'Buffer size threshold in MiB for running buffered SQL statements'"
+         "  || ' in SecInfo updates before the end of the file'"
+         "  || ' being processed.',"
+         "  '100' );");
 }
 
 /**
@@ -51978,7 +51988,7 @@ setting_value (const char *uuid, char **value)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 setting_value_int (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
@@ -52683,6 +52693,8 @@ setting_name (const gchar *uuid)
     return "Feed Import Roles";
   if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
     return "Delta Reports Version";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "SecInfo SQL Buffer Threshold";
 
   return NULL;
 }
@@ -52722,12 +52734,15 @@ setting_description (const gchar *uuid)
     return "Roles given access to new resources from feed.";
   if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
     return "Version of the generation of the Delta Reports.";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "Buffer size threshold in MiB for running buffered SQL statements"
+           " in SecInfo updates before the end of the file being processed.";
 
   return NULL;
 }
 
 /**
- * @brief Get the name of a setting.
+ * @brief Verify the value of a setting.
  *
  * @param[in]  uuid   UUID of setting.
  * @param[in]  value  Value of setting, to verify.
@@ -52815,6 +52830,19 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (user)
+        {
+          if (threshold < 0 || threshold > (INT_MAX / 1048576))
+            return 1;
+        }
+      else if (threshold < 0)
+        return 1;
+    }
+
   return 0;
 }
 
@@ -52870,6 +52898,15 @@ setting_normalise (const gchar *uuid, const gchar *value)
       return g_string_free (normalised, FALSE);
     }
 
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0)
+        return NULL;
+      return g_strdup_printf ("%i", threshold);
+    }
+
   return g_strdup (value);
 }
 
@@ -52900,7 +52937,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
-      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION))
+      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION)
+      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -52927,7 +52965,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0))
+          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
