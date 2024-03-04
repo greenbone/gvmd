@@ -91,12 +91,14 @@
 #include "gmp_license.h"
 #include "gmp_logout.h"
 #include "gmp_port_lists.h"
+#include "gmp_report_configs.h"
 #include "gmp_report_formats.h"
 #include "gmp_tickets.h"
 #include "gmp_tls_certificates.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_port_lists.h"
+#include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_tls_certificates.h"
 #include "utils.h"
@@ -2002,6 +2004,26 @@ get_reports_data_reset (get_reports_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_report_configs command.
+ */
+typedef struct
+{
+  get_data_t get;        ///< Get args.
+} get_report_configs_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_report_configs_data_reset (get_report_configs_data_t *data)
+{
+  get_data_reset (&data->get);
+  memset (data, 0, sizeof (get_report_configs_data_t));
+}
+
+/**
  * @brief Command data for the get_report_formats command.
  */
 typedef struct
@@ -2009,6 +2031,7 @@ typedef struct
   get_data_t get;        ///< Get args.
   int alerts;   ///< Boolean.  Whether to include alerts that use Report Format
   int params;            ///< Boolean.  Whether to include params.
+  int report_configs;    ///< Boolean.  Whether to include report configs.
 } get_report_formats_data_t;
 
 /**
@@ -3352,6 +3375,7 @@ typedef union
   get_port_lists_data_t get_port_lists;               ///< get_port_lists
   get_preferences_data_t get_preferences;             ///< get_preferences
   get_reports_data_t get_reports;                     ///< get_reports
+  get_report_configs_data_t get_report_configs;       ///< get_report_configs
   get_report_formats_data_t get_report_formats;       ///< get_report_formats
   get_resource_names_data_t get_resource_names;       ///< get_resource_names
   get_results_data_t get_results;                     ///< get_results
@@ -3739,6 +3763,12 @@ static get_reports_data_t *get_reports_data
  = &(command_data.get_reports);
 
 /**
+ * @brief Parser callback data for GET_REPORT_CONFIGS.
+ */
+static get_report_configs_data_t *get_report_configs_data
+ = &(command_data.get_report_configs);
+
+/**
  * @brief Parser callback data for GET_REPORT_FORMATS.
  */
 static get_report_formats_data_t *get_report_formats_data
@@ -4122,6 +4152,7 @@ typedef enum
   CLIENT_CREATE_PORT_RANGE_PORT_LIST,
   CLIENT_CREATE_PORT_RANGE_START,
   CLIENT_CREATE_PORT_RANGE_TYPE,
+  CLIENT_CREATE_REPORT_CONFIG,
   CLIENT_CREATE_REPORT_FORMAT,
   /* CREATE_REPORT. */
   CLIENT_CREATE_REPORT,
@@ -4307,6 +4338,7 @@ typedef enum
   CLIENT_DELETE_PORT_LIST,
   CLIENT_DELETE_PORT_RANGE,
   CLIENT_DELETE_REPORT,
+  CLIENT_DELETE_REPORT_CONFIG,
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_ROLE,
   CLIENT_DELETE_SCANNER,
@@ -4340,6 +4372,7 @@ typedef enum
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
+  CLIENT_GET_REPORT_CONFIGS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESOURCE_NAMES,
   CLIENT_GET_RESULTS,
@@ -4439,6 +4472,7 @@ typedef enum
   CLIENT_MODIFY_PORT_LIST,
   CLIENT_MODIFY_PORT_LIST_COMMENT,
   CLIENT_MODIFY_PORT_LIST_NAME,
+  CLIENT_MODIFY_REPORT_CONFIG,
   CLIENT_MODIFY_REPORT_FORMAT,
   CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
   CLIENT_MODIFY_REPORT_FORMAT_NAME,
@@ -4778,6 +4812,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_REPORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT);
+        else if (strcasecmp ("CREATE_REPORT_CONFIG", element_name) == 0)
+          {
+            create_report_config_start (gmp_parser, attribute_names,
+                                        attribute_values);
+            set_client_state (CLIENT_CREATE_REPORT_CONFIG);
+          }
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
           {
             create_report_format_start (gmp_parser, attribute_names,
@@ -4955,6 +4995,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "report_id",
                               &delete_report_data->report_id);
             set_client_state (CLIENT_DELETE_REPORT);
+          }
+        else if (strcasecmp ("DELETE_REPORT_CONFIG", element_name) == 0)
+          {
+            delete_start ("report_config", "Report Config",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_REPORT_CONFIG);
           }
         else if (strcasecmp ("DELETE_REPORT_FORMAT", element_name) == 0)
           {
@@ -5515,6 +5561,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORTS);
           }
+        else if (strcasecmp ("GET_REPORT_CONFIGS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_report_configs_data->get,
+                                       "report_config",
+                                       attribute_names,
+                                       attribute_values);
+
+            set_client_state (CLIENT_GET_REPORT_CONFIGS);
+          }
         else if (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5534,6 +5589,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_report_formats_data->params = strcmp (attribute, "0");
             else
               get_report_formats_data->params = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "report_configs", &attribute))
+              get_report_formats_data->report_configs = strcmp (attribute, "0");
+            else
+              get_report_formats_data->report_configs = 0;
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
@@ -5847,6 +5908,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               "permission_id",
                               &modify_permission_data->permission_id);
             set_client_state (CLIENT_MODIFY_PERMISSION);
+          }
+        else if (strcasecmp ("MODIFY_REPORT_CONFIG", element_name) == 0)
+          {
+            modify_report_config_start (gmp_parser, attribute_names,
+                                        attribute_values);
+            set_client_state (CLIENT_MODIFY_REPORT_CONFIG);
           }
         else if (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0)
           {
@@ -6354,6 +6421,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_PORT_LIST_COMMENT);
           }
         ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_REPORT_CONFIG:
+        modify_report_config_element_start (gmp_parser, element_name,
+                                            attribute_names,
+                                            attribute_values);
+        break;
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -7394,6 +7467,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_TASK_NAME);
         ELSE_READ_OVER;
 
+      case CLIENT_CREATE_REPORT_CONFIG:
+        create_report_config_element_start (gmp_parser, element_name,
+                                            attribute_names,
+                                            attribute_values);
+        break;
+
       case CLIENT_CREATE_REPORT_FORMAT:
         create_report_format_element_start (gmp_parser, element_name,
                                             attribute_names,
@@ -8083,31 +8162,41 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
       if (include_notes_details == 0)
         {
-          const char *text = note_iterator_text (notes);
-          gchar *excerpt = utf8_substring (text, 0,
-                                           setting_excerpt_size_int ());
+          gchar *excerpt;
+          const char *text;
+
+          text = note_iterator_text (notes);
+          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+
           /* This must match send_get_common. */
+
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "<type>%s</type>"
-                                    "</nvt>"
-                                    "<creation_time>%s</creation_time>"
-                                    "<modification_time>%s</modification_time>"
-                                    "<writable>1</writable>"
-                                    "<in_use>0</in_use>"
-                                    "<active>%i</active>"
-                                    "<text excerpt=\"%i\">%s</text>"
-                                    "<orphan>%i</orphan>",
+                                    "</nvt>",
                                     get_iterator_owner_name (notes)
                                      ? get_iterator_owner_name (notes)
                                      : "",
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
-                                    note_iterator_nvt_type (notes),
-                                    get_iterator_creation_time (notes),
-                                    get_iterator_modification_time (notes),
+                                    note_iterator_nvt_type (notes));
+
+          buffer_xml_append_printf (buffer,
+                                    "<creation_time>%s</creation_time>",
+                                    iso_if_time (get_iterator_creation_time (notes)));
+
+          buffer_xml_append_printf (buffer,
+                                    "<modification_time>%s</modification_time>",
+                                    iso_if_time (get_iterator_modification_time (notes)));
+
+          buffer_xml_append_printf (buffer,
+                                    "<writable>1</writable>"
+                                    "<in_use>0</in_use>"
+                                    "<active>%i</active>"
+                                    "<text excerpt=\"%i\">%s</text>"
+                                    "<orphan>%i</orphan>",
                                     note_iterator_active (notes),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -8150,15 +8239,33 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           end_time = note_iterator_end_time (notes);
 
           /* This must match send_get_common. */
+
           buffer_xml_append_printf
            (buffer,
             "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\">"
             "<name>%s</name>"
             "<type>%s</type>"
-            "</nvt>"
-            "<creation_time>%s</creation_time>"
-            "<modification_time>%s</modification_time>"
+            "</nvt>",
+            get_iterator_owner_name (notes)
+             ? get_iterator_owner_name (notes)
+             : "",
+            note_iterator_nvt_oid (notes),
+            note_iterator_nvt_name (notes),
+            note_iterator_nvt_type (notes));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<creation_time>%s</creation_time>",
+            iso_if_time (get_iterator_creation_time (notes)));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<modification_time>%s</modification_time>",
+            iso_if_time (get_iterator_modification_time (notes)));
+
+          buffer_xml_append_printf
+           (buffer,
             "<writable>1</writable>"
             "<in_use>0</in_use>"
             "<active>%i</active>"
@@ -8169,14 +8276,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<severity>%s</severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            get_iterator_owner_name (notes)
-             ? get_iterator_owner_name (notes)
-             : "",
-            note_iterator_nvt_oid (notes),
-            note_iterator_nvt_name (notes),
-            note_iterator_nvt_type (notes),
-            get_iterator_creation_time (notes),
-            get_iterator_modification_time (notes),
             note_iterator_active (notes),
             end_time > 1 ? iso_time (&end_time) : "",
             note_iterator_text (notes),
@@ -8347,18 +8446,36 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
       if (include_overrides_details == 0)
         {
-          const char *text = override_iterator_text (overrides);
-          gchar *excerpt = utf8_substring (text, 0,
-                                           setting_excerpt_size_int ());
+          gchar *excerpt;
+          const char *text;
+
+          text = override_iterator_text (overrides);
+          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+
           /* This must match send_get_common. */
+
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "<type>%s</type>"
-                                    "</nvt>"
-                                    "<creation_time>%s</creation_time>"
-                                    "<modification_time>%s</modification_time>"
+                                    "</nvt>",
+                                    get_iterator_owner_name (overrides)
+                                     ? get_iterator_owner_name (overrides)
+                                     : "",
+                                    override_iterator_nvt_oid (overrides),
+                                    override_iterator_nvt_name (overrides),
+                                    override_iterator_nvt_type (overrides));
+
+          buffer_xml_append_printf (buffer,
+                                    "<creation_time>%s</creation_time>",
+                                    iso_if_time (get_iterator_creation_time (overrides)));
+                                    
+          buffer_xml_append_printf (buffer,
+                                    "<modification_time>%s</modification_time>",
+                                    iso_if_time (get_iterator_modification_time (overrides)));
+
+          buffer_xml_append_printf (buffer,
                                     "<writable>1</writable>"
                                     "<in_use>0</in_use>"
                                     "<active>%i</active>"
@@ -8368,14 +8485,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<new_threat>%s</new_threat>"
                                     "<new_severity>%s</new_severity>"
                                     "<orphan>%i</orphan>",
-                                    get_iterator_owner_name (overrides)
-                                     ? get_iterator_owner_name (overrides)
-                                     : "",
-                                    override_iterator_nvt_oid (overrides),
-                                    override_iterator_nvt_name (overrides),
-                                    override_iterator_nvt_type (overrides),
-                                    get_iterator_creation_time (overrides),
-                                    get_iterator_modification_time (overrides),
                                     override_iterator_active (overrides),
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
@@ -8426,15 +8535,33 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           end_time = override_iterator_end_time (overrides);
 
           /* This must match send_get_common. */
+
           buffer_xml_append_printf
            (buffer,
             "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\">"
             "<name>%s</name>"
             "<type>%s</type>"
-            "</nvt>"
-            "<creation_time>%s</creation_time>"
-            "<modification_time>%s</modification_time>"
+            "</nvt>",
+            get_iterator_owner_name (overrides)
+             ? get_iterator_owner_name (overrides)
+             : "",
+            override_iterator_nvt_oid (overrides),
+            override_iterator_nvt_name (overrides),
+            override_iterator_nvt_type (overrides));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<creation_time>%s</creation_time>",
+            iso_if_time (get_iterator_creation_time (overrides)));
+
+          buffer_xml_append_printf
+           (buffer,
+            "<modification_time>%s</modification_time>",
+            iso_if_time (get_iterator_modification_time (overrides)));
+
+          buffer_xml_append_printf
+           (buffer,
             "<writable>1</writable>"
             "<in_use>0</in_use>"
             "<active>%i</active>"
@@ -8448,14 +8575,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<new_severity>%s</new_severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            get_iterator_owner_name (overrides)
-             ? get_iterator_owner_name (overrides)
-             : "",
-            override_iterator_nvt_oid (overrides),
-            override_iterator_nvt_name (overrides),
-            override_iterator_nvt_type (overrides),
-            get_iterator_creation_time (overrides),
-            get_iterator_modification_time (overrides),
             override_iterator_active (overrides),
             end_time > 1 ? iso_time (&end_time) : "",
             override_iterator_text (overrides),
@@ -9255,7 +9374,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int changed, int cert_loaded, int lean, int use_delta_fields)
 {
 
-  const char *descr, *name, *comment, *creation_time;
+  const char *descr, *name, *comment;
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
@@ -9264,6 +9383,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   result_t result;
   report_t report;
   task_t selected_task;
+  time_t creation_time;
   
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
@@ -9335,7 +9455,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (lean == 0)
     {
-      const char *owner_name, *modification_time;
+      const char *owner_name;
+      time_t modification_time;
      
       if (use_delta_fields)
         {
@@ -9356,7 +9477,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (modification_time)
         buffer_xml_append_printf (buffer,
                                   "<modification_time>%s</modification_time>",
-                                  modification_time);
+                                  iso_time (&modification_time) ?: "");
     }
 
   if (comment
@@ -9368,7 +9489,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (creation_time)
     buffer_xml_append_printf (buffer,
                               "<creation_time>%s</creation_time>",
-                              creation_time);
+                              iso_time (&creation_time) ?: "");
 
   if (include_details)
     {
@@ -11592,20 +11713,26 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
               xml_string_append (result,
                                  "<identifier id=\"%s\">"
                                  "<name>%s</name>"
-                                 "<value>%s</value>"
-                                 "<creation_time>%s</creation_time>"
-                                 "<modification_time>%s</modification_time>"
+                                 "<value>%s</value>",
+                                 get_iterator_uuid (&identifiers),
+                                 get_iterator_name (&identifiers),
+                                 host_identifier_iterator_value (&identifiers));
+
+              xml_string_append (result,
+                                 "<creation_time>%s</creation_time>",
+                                 iso_if_time (get_iterator_creation_time (&identifiers)));
+
+              xml_string_append (result,
+                                 "<modification_time>%s</modification_time>",
+                                 iso_if_time (get_iterator_modification_time (&identifiers)));
+
+              xml_string_append (result,
                                  "<source id=\"%s\">"
                                  "<type>%s</type>"
                                  "<data>%s</data>"
                                  "<deleted>%i</deleted>"
                                  "<name>%s</name>"
                                  "</source>",
-                                 get_iterator_uuid (&identifiers),
-                                 get_iterator_name (&identifiers),
-                                 host_identifier_iterator_value (&identifiers),
-                                 get_iterator_creation_time (&identifiers),
-                                 get_iterator_modification_time (&identifiers),
                                  host_identifier_iterator_source_id
                                   (&identifiers),
                                  source_type,
@@ -14638,17 +14765,12 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
           task_t task;
 
           /* Send the standard elements.  Should match send_get_common. */
+
           buffer_xml_append_printf
             (prefix,
              "<owner><name>%s</name></owner>"
              "<name>%s</name>"
-             "<comment>%s</comment>"
-             "<creation_time>%s</creation_time>"
-             "<modification_time>"
-             "%s"
-             "</modification_time>"
-             "<writable>0</writable>"
-             "<in_use>0</in_use>",
+             "<comment>%s</comment>",
              get_iterator_owner_name (&reports)
               ? get_iterator_owner_name (&reports)
               : "",
@@ -14657,13 +14779,20 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               : "",
              get_iterator_comment (&reports)
               ? get_iterator_comment (&reports)
-              : "",
-             get_iterator_creation_time (&reports)
-              ? get_iterator_creation_time (&reports)
-              : "",
-             get_iterator_modification_time (&reports)
-              ? get_iterator_modification_time (&reports)
               : "");
+
+          buffer_xml_append_printf
+            (prefix,
+             "<creation_time>%s</creation_time>",
+             iso_if_time (get_iterator_creation_time (&reports)));
+
+          buffer_xml_append_printf
+            (prefix,
+             "<modification_time>%s</modification_time>"
+             "<writable>0</writable>"
+             "<in_use>0</in_use>",
+             iso_if_time (get_iterator_modification_time (&reports)));
+
           /* Send short task and report format info */
           report_task (report, &task);
           if (task)
@@ -14887,6 +15016,266 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Print the params of a report config.
+ *
+ * @param[in]  gmp_parser     GMP parser.
+ * @param[out] error          Error parameter.
+ * @param[in]  report_config  The report config to print params of.
+ * @param[in]  trash          Whether to get report config from trash.
+ */
+static void
+print_report_config_params (gmp_parser_t *gmp_parser, GError **error,
+                            report_config_t report_config, int trash)
+{
+  iterator_t params;
+  init_report_config_param_iterator (&params, report_config, trash);
+  while (next (&params))
+    {
+      long long int min, max;
+      iterator_t options;
+
+      SENDF_TO_CLIENT_OR_FAIL
+        ("<param>"
+          "<name>%s</name>"
+          "<type>%s",
+         report_config_param_iterator_name (&params),
+         report_config_param_iterator_type_name (&params));
+
+      min = report_config_param_iterator_type_min (&params);
+      if (min > LLONG_MIN)
+        SENDF_TO_CLIENT_OR_FAIL ("<min>%lli</min>", min);
+
+      max = report_config_param_iterator_type_max (&params);
+      if (max < LLONG_MAX)
+        SENDF_TO_CLIENT_OR_FAIL ("<max>%lli</max>", max);
+
+      if (report_config_param_iterator_type (&params)
+          == REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST)
+        {
+          const char *value;
+          const char *fallback;
+          value = report_config_param_iterator_value (&params);
+          fallback = report_config_param_iterator_fallback_value
+                        (&params);
+
+          SENDF_TO_CLIENT_OR_FAIL
+            ("</type><value using_default=\"%d\">%s",
+              report_config_param_iterator_using_default (&params), 
+              value ? value : "");
+          if (value)
+            {
+              gchar **ids, **current_id;
+              ids = g_strsplit (value, ",", -1);
+              current_id = ids;
+              while (*current_id)
+                {
+                  report_format_t value_rf;
+                  gchar *name;
+                  find_report_format_with_permission
+                        (*current_id, &value_rf,
+                          "get_report_formats");
+                  name = value_rf ? report_format_name (value_rf)
+                                  : NULL;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<report_format id=\"%s\">"
+                      "<name>%s</name>"
+                      "</report_format>",
+                      *current_id,
+                      name ? name : "");
+
+                  g_free (name);
+                  current_id ++;
+                }
+              g_strfreev (ids);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL
+            ("</value><default>%s",
+              fallback ? fallback : "");
+          if (fallback)
+            {
+              gchar **ids, **current_id;
+              ids = g_strsplit (fallback, ",", -1);
+              current_id = ids;
+              while (*current_id)
+                {
+                  report_format_t value_rf;
+                  gchar *name;
+                  find_report_format_with_permission
+                        (*current_id, &value_rf,
+                          "get_report_formats");
+                  name = value_rf ? report_format_name (value_rf)
+                                  : NULL;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                    ("<report_format id=\"%s\">"
+                      "<name>%s</name>"
+                      "</report_format>",
+                      *current_id,
+                      name ? name : "");
+
+                  g_free (name);
+                  current_id ++;
+                }
+              g_strfreev (ids);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL
+            ("</default>");
+        }
+      else
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+            ("</type>"
+              "<value using_default=\"%d\">%s</value>"
+              "<default>%s</default>",
+              report_config_param_iterator_using_default (&params),
+              report_config_param_iterator_value (&params),
+              report_config_param_iterator_fallback_value (&params));
+        }
+
+      if (report_config_param_iterator_type (&params)
+          == REPORT_FORMAT_PARAM_TYPE_SELECTION)
+        {
+          SEND_TO_CLIENT_OR_FAIL ("<options>");
+          init_param_option_iterator
+            (&options,
+            report_config_param_iterator_format_param
+              (&params),
+            1,
+            NULL);
+          while (next (&options))
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<option>%s</option>",
+              param_option_iterator_value (&options));
+          cleanup_iterator (&options);
+          SEND_TO_CLIENT_OR_FAIL ("</options>");
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</param>");
+    }
+  cleanup_iterator (&params);
+}
+
+/**
+ * @brief Handle end of GET_REPORT_CONFIGS element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_report_configs (gmp_parser_t *gmp_parser, GError **error)
+{
+  iterator_t report_configs;
+  int count, filtered, ret, first;
+
+  INIT_GET (report_config, Report Config);
+
+  ret = init_report_config_iterator (&report_configs,
+                                      &get_report_configs_data->get);
+  if (ret)
+    {
+      switch (ret)
+        {
+          case 1:
+            if (send_find_error_to_client ("get_report_configs",
+                                            "report_config",
+                                            get_report_configs_data->get.id,
+                                            gmp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case 2:
+            if (send_find_error_to_client
+                  ("get_report_configs", "filter",
+                    get_report_configs_data->get.filt_id, gmp_parser))
+              {
+                error_send_to_client (error);
+                return;
+              }
+            break;
+          case -1:
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_INTERNAL_ERROR ("get_report_configs"));
+            break;
+        }
+      get_report_configs_data_reset (get_report_configs_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("report_config");
+  while (1)
+    {
+      int orphan;
+
+      ret = get_next (&report_configs,
+                      &get_report_configs_data->get, &first, &count,
+                      init_report_config_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          return;
+        }
+
+      SEND_GET_COMMON (report_config,
+                        &get_report_configs_data->get,
+                        &report_configs);
+
+      orphan = (report_config_iterator_report_format (&report_configs) == 0);
+
+      if (orphan)
+        {
+          SEND_TO_CLIENT_OR_FAIL ("<orphan>1</orphan>");
+        }
+      
+      SENDF_TO_CLIENT_OR_FAIL 
+        ("<report_format id=\"%s\">",
+          report_config_iterator_report_format_id (&report_configs)
+        );
+      
+      if (!orphan)
+        {
+          SENDF_TO_CLIENT_OR_FAIL 
+            ("<name>%s</name>",
+              report_config_iterator_report_format_name (&report_configs)
+            );
+            
+          if (report_config_iterator_report_format_readable (&report_configs) == 0)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
+            }
+        }
+      
+      SENDF_TO_CLIENT_OR_FAIL ("</report_format>");
+      
+      print_report_config_params (gmp_parser, error,
+                                  report_config_param_iterator_rowid (
+                                    &report_configs
+                                  ),
+                                  get_report_configs_data->get.trash);
+
+      SEND_TO_CLIENT_OR_FAIL ("</report_config>");
+      count++;
+    }
+
+  cleanup_iterator (&report_configs);
+  filtered = get_report_configs_data->get.id
+              ? 1
+              : report_config_count (&get_report_configs_data->get);
+  SEND_GET_END ("report_config", &get_report_configs_data->get,
+                count, filtered);
+
+  get_report_configs_data_reset (get_report_configs_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
  * @brief Handle end of GET_REPORT_FORMATS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -14970,7 +15359,8 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
             "<content_type>%s</content_type>"
             "<summary>%s</summary>"
             "<description>%s</description>"
-            "<predefined>%i</predefined>",
+            "<predefined>%i</predefined>"
+            "<configurable>%i</configurable>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
@@ -14979,7 +15369,8 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
               ? trash_report_format_predefined
                  (get_iterator_resource (&report_formats))
               : report_format_predefined
-                 (get_iterator_resource (&report_formats)));
+                 (get_iterator_resource (&report_formats)),
+            report_format_iterator_configurable (&report_formats));
 
           if (resource_id_deprecated ("report_format",
                                       get_iterator_uuid (&report_formats)))
@@ -14990,6 +15381,7 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
           if (get_report_formats_data->alerts)
             {
               iterator_t alerts;
+              int invisible_alerts = 0;
 
               SEND_TO_CLIENT_OR_FAIL ("<alerts>");
               init_report_format_alert_iterator (&alerts,
@@ -14998,22 +15390,61 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
               while (next (&alerts))
                 {
                   if (report_format_alert_iterator_readable (&alerts) == 0)
-                    /* Only show alerts the user may see. */
-                    continue;
+                    {
+                      /* Only show alerts the user may see. */
+                      invisible_alerts ++;
+                      continue;
+                    }
 
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<alert id=\"%s\">"
-                    "<name>%s</name>",
+                    "<name>%s</name>"
+                    "</alert>",
                     report_format_alert_iterator_uuid (&alerts),
                     report_format_alert_iterator_name (&alerts));
-                  if (report_format_alert_iterator_readable (&alerts))
-                    SEND_TO_CLIENT_OR_FAIL ("</alert>");
-                  else
-                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
-                                            "</alert>");
                 }
               cleanup_iterator (&alerts);
-              SEND_TO_CLIENT_OR_FAIL ("</alerts>");
+              SENDF_TO_CLIENT_OR_FAIL ("</alerts>"
+                                       "<invisible_alerts>"
+                                       "%d"
+                                       "</invisible_alerts>",
+                                       invisible_alerts);
+            }
+
+          if (get_report_formats_data->report_configs)
+            {
+              iterator_t report_configs;
+              int invisible_report_configs = 0;
+
+              SEND_TO_CLIENT_OR_FAIL ("<report_configs>");
+              init_report_format_report_config_iterator (&report_configs,
+                                                         get_iterator_uuid
+                                                           (&report_formats));
+              while (next (&report_configs))
+                {
+                  if (report_format_report_config_iterator_readable (
+                      &report_configs) == 0)
+                    {
+                      /* Only show report configs the user may see. */
+                      invisible_report_configs ++;
+                      continue;
+                    }
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<report_config id=\"%s\">"
+                    "<name>%s</name>"
+                    "</report_config>",
+                    report_format_report_config_iterator_uuid (
+                      &report_configs),
+                    report_format_report_config_iterator_name (
+                      &report_configs));
+                }
+              cleanup_iterator (&report_configs);
+              SENDF_TO_CLIENT_OR_FAIL ("</report_configs>"
+                                       "<invisible_report_configs>"
+                                       "%d"
+                                       "</invisible_report_configs>",
+                                       invisible_report_configs);
             }
 
           if (get_report_formats_data->params
@@ -15282,6 +15713,10 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+    }                
+  else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
     }                
   else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
     {
@@ -18242,16 +18677,19 @@ handle_get_vulns (gmp_parser_t *gmp_parser, GError **error)
       count ++;
       SENDF_TO_CLIENT_OR_FAIL ("<vuln id=\"%s\">"
                                "<name>%s</name>"
-                               "<type>%s</type>"
-                               "<creation_time>%s</creation_time>"
-                               "<modification_time>%s</modification_time>"
-                               "<severity>%1.1f</severity>"
-                               "<qod>%d</qod>",
+                               "<type>%s</type>",
                                get_iterator_uuid (&vulns),
                                get_iterator_name (&vulns),
-                               vuln_iterator_type (&vulns),
-                               get_iterator_creation_time (&vulns),
-                               get_iterator_modification_time (&vulns),
+                               vuln_iterator_type (&vulns));
+
+      SENDF_TO_CLIENT_OR_FAIL ("<creation_time>%s</creation_time>",
+                               iso_if_time (get_iterator_creation_time (&vulns)));
+
+      SENDF_TO_CLIENT_OR_FAIL ("<modification_time>%s</modification_time>",
+                               iso_if_time (get_iterator_modification_time (&vulns)));
+
+      SENDF_TO_CLIENT_OR_FAIL ("<severity>%1.1f</severity>"
+                               "<qod>%d</qod>",
                                vuln_iterator_severity (&vulns),
                                vuln_iterator_qod (&vulns));
 
@@ -19028,6 +19466,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_DELETE_REPORT_CONFIG:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
       CASE_DELETE (ROLE, role, "Role");
       CASE_DELETE (SCANNER, scanner, "Scanner");
@@ -19451,6 +19894,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_REPORTS:
         handle_get_reports (gmp_parser, error);
+        break;
+
+      case CLIENT_GET_REPORT_CONFIGS:
+        handle_get_report_configs (gmp_parser, error);
         break;
 
       case CLIENT_GET_REPORT_FORMATS:
@@ -21610,6 +22057,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT, TASK);
       CLOSE (CLIENT_CREATE_REPORT_TASK, COMMENT);
       CLOSE (CLIENT_CREATE_REPORT_TASK, NAME);
+
+      case CLIENT_CREATE_REPORT_CONFIG:
+        create_report_config_element_end (gmp_parser, error, element_name);
+        break;
 
       case CLIENT_CREATE_REPORT_FORMAT:
         if (create_report_format_element_end (gmp_parser, error, element_name))
@@ -24406,6 +24857,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, NAME);
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
 
+      case CLIENT_MODIFY_REPORT_CONFIG:
+        modify_report_config_element_end (gmp_parser, error, element_name);
+        break;
+
       case CLIENT_MODIFY_ROLE:
         {
           switch (modify_role
@@ -26339,6 +26794,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &modify_credential_data->privacy_password);
 
 
+      case CLIENT_MODIFY_REPORT_CONFIG:
+        modify_report_config_element_text (text, text_len);
+        break;
+
 
       APPEND (CLIENT_MODIFY_REPORT_FORMAT_ACTIVE,
               &modify_report_format_data->active);
@@ -26769,6 +27228,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_RR_H_START,
               &create_report_data->host_start);
+
+
+      case CLIENT_CREATE_REPORT_CONFIG:
+        create_report_config_element_text (text, text_len);
+        break;
 
 
       case CLIENT_CREATE_REPORT_FORMAT:
