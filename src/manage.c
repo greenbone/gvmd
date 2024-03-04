@@ -3167,7 +3167,7 @@ static int
 fork_cve_scan_handler (task_t task, target_t target)
 {
   int pid;
-  char *report_id, *hosts;
+  char *report_id, *hosts, *exclude_hosts;
   gvm_hosts_t *gvm_hosts;
   gvm_host_t *gvm_host;
 
@@ -3234,6 +3234,8 @@ fork_cve_scan_handler (task_t task, target_t target)
       exit (1);
     }
 
+  exclude_hosts = target_exclude_hosts (target);
+
   reset_task (task);
   set_task_start_time_epoch (task, time (NULL));
   set_scan_start_time_epoch (global_current_report, time (NULL));
@@ -3241,7 +3243,11 @@ fork_cve_scan_handler (task_t task, target_t target)
   /* Add the results. */
 
   gvm_hosts = gvm_hosts_new (hosts);
+  gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "");
+
   free (hosts);
+  free (exclude_hosts);
+
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
     if (cve_scan_host (task, global_current_report, gvm_host))
       {
