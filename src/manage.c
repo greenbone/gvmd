@@ -52,6 +52,7 @@
 #include "manage_acl.h"
 #include "manage_configs.h"
 #include "manage_port_lists.h"
+#include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
@@ -5829,11 +5830,18 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                    nvt_iterator_detection (nvts));
             }
 
+          g_string_append_printf (buffer,
+                                  "<creation_time>%s</creation_time>",
+                                  iso_if_time (get_iterator_creation_time (nvts)));
+
+          g_string_append_printf (buffer,
+                                  "<modification_time>%s</modification_time>",
+                                  iso_if_time (get_iterator_modification_time (nvts)));
+
           default_timeout = nvt_default_timeout (oid);
+
           g_string_append_printf (buffer,
                                   "<default_timeout>%s</default_timeout>"
-                                  "<creation_time>%s</creation_time>"
-                                  "<modification_time>%s</modification_time>"
                                   "<category>%d</category>"
                                   "<family>%s</family>"
                                   "<qod>"
@@ -5843,18 +5851,13 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   "<refs>%s</refs>"
                                   "<tags>%s</tags>",
                                   default_timeout ? default_timeout : "",
-                                  get_iterator_creation_time (nvts)
-                                  ? get_iterator_creation_time (nvts)
-                                  : "",
-                                  get_iterator_modification_time (nvts)
-                                  ? get_iterator_modification_time (nvts)
-                                  : "",
                                   nvt_iterator_category (nvts),
                                   family_text,
                                   nvt_iterator_qod (nvts),
                                   nvt_iterator_qod_type (nvts),
                                   refs_str->str,
                                   nvt_tags->str);
+
           free (default_timeout);
 
           g_string_free (nvt_tags, 1);
@@ -7536,6 +7539,8 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
+  if (strcasecmp (type, "report_config") == 0)
+    return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
   if (strcasecmp (type, "tls_certificate") == 0)

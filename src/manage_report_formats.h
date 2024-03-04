@@ -89,6 +89,10 @@ int
 report_format_active (report_format_t);
 
 int
+report_format_validate_param_value (report_format_t, report_format_param_t,
+                                    const char*, const char*, gchar **);
+
+int
 report_format_trust (report_format_t);
 
 int
@@ -133,6 +137,9 @@ report_format_iterator_summary (iterator_t *);
 time_t
 report_format_iterator_trust_time (iterator_t *);
 
+int
+report_format_iterator_configurable (iterator_t *);
+
 void
 init_report_format_alert_iterator (iterator_t*, report_format_t);
 
@@ -144,6 +151,18 @@ report_format_alert_iterator_uuid (iterator_t*);
 
 int
 report_format_alert_iterator_readable (iterator_t*);
+
+void
+init_report_format_report_config_iterator (iterator_t*, const char*);
+
+const char*
+report_format_report_config_iterator_name (iterator_t*);
+
+const char*
+report_format_report_config_iterator_uuid (iterator_t*);
+
+int
+report_format_report_config_iterator_readable (iterator_t*);
 
 /**
  * @brief A report format file iterator.

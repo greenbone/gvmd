@@ -20,7 +20,7 @@ cmake_minimum_required (VERSION 3.0)
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
 project (gvm
-         VERSION 23.3.1
+         VERSION 23.4.1
          LANGUAGES C)
 
 if (POLICY CMP0005)
