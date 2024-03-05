@@ -52834,12 +52834,7 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
     {
       int threshold;
       threshold = atoi (value);
-      if (user)
-        {
-          if (threshold < 0 || threshold > (INT_MAX / 1048576))
-            return 1;
-        }
-      else if (threshold < 0)
+      if (threshold < 0 || threshold > (INT_MAX / 1048576))
         return 1;
     }
 
