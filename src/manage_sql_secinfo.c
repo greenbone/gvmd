@@ -3375,38 +3375,15 @@ update_scap_placeholders ()
        "                                       WHERE cpe=cpes.id))"
        " WHERE cpes.title IS NULL;");
 }
-
+ 
 /**
- * @brief Finish scap update.
- *
- * @return 0 success, -1 error.
+ * @brief Update CERT data that depends on SCAP.
  */
-static int
-update_scap_end ()
+static void
+update_cert_data ()
 {
   int cert_db_version;
 
-  g_debug ("%s: update timestamp", __func__);
-
-  update_scap_timestamp ();
-
-  /* Replace the real scap schema with the new one. */
-
-  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
-               "               information_schema.schemata"
-               "               WHERE schema_name = 'scap');"))
-    {
-      sql ("ALTER SCHEMA scap RENAME TO scap3;");
-      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
-      sql ("DROP SCHEMA scap3 CASCADE;");
-      /* View 'vulns' contains references into the SCAP schema, so it is
-       * removed by the CASCADE. */
-      create_view_vulns ();
-    }
-  else
-    sql ("ALTER SCHEMA scap2 RENAME TO scap;");
-
-  /* Update CERT data that depends on SCAP. */
   cert_db_version = manage_cert_db_version();
 
   if (cert_db_version == -1)
@@ -3438,6 +3415,39 @@ update_scap_end ()
       update_cvss_dfn_cert (1, last_cert_update, last_scap_update);
       update_cvss_cert_bund (1, last_cert_update, last_scap_update);
     }
+}
+
+/**
+ * @brief Finish scap update.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_end ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  update_scap_timestamp ();
+
+  /* Replace the real scap schema with the new one. */
+
+  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+               "               information_schema.schemata"
+               "               WHERE schema_name = 'scap');"))
+    {
+      sql ("ALTER SCHEMA scap RENAME TO scap3;");
+      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+      sql ("DROP SCHEMA scap3 CASCADE;");
+      /* View 'vulns' contains references into the SCAP schema, so it is
+       * removed by the CASCADE. */
+      create_view_vulns ();
+    }
+  else
+    sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+
+  /* Update CERT data that depends on SCAP. */
+
+  update_cert_data ();
 
   /* Analyze. */
 
@@ -3449,6 +3459,46 @@ update_scap_end ()
   setproctitle ("Syncing SCAP: done");
 
   return 0;
+}
+
+/**
+ * @brief Abort scap update.
+ */
+static void
+abort_scap_update ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+               "               information_schema.schemata"
+               "               WHERE schema_name = 'scap');"))
+    {
+      update_scap_timestamp ();
+      sql ("UPDATE scap.meta SET value = "
+           "    (SELECT value from scap2.meta WHERE name = 'last_update')"
+           "  WHERE name = 'last_update';");
+      sql ("DROP SCHEMA scap2 CASCADE;");
+      /* View 'vulns' contains references into the SCAP schema, so it is
+       * removed by the CASCADE. */
+      create_view_vulns ();
+    }
+  else
+    {
+      /* reset scap2 schema */
+      manage_db_init ("scap");
+      manage_db_init_indexes ("scap");
+      manage_db_add_constraints ("scap");
+
+      update_scap_timestamp ();
+
+      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+    }
+
+  /* Update CERT data that depends on SCAP. */
+  update_cert_data ();
+
+  g_info ("%s: Updating SCAP data aborted", __func__);
+  setproctitle ("Syncing SCAP: aborted");
 }
 
 /**
@@ -3609,7 +3659,7 @@ update_scap (gboolean reset_scap_db)
 
   if (update_scap_cpes () == -1)
     {
-      update_scap_timestamp ();
+      abort_scap_update ();
       return -1;
     }
 
@@ -3618,7 +3668,7 @@ update_scap (gboolean reset_scap_db)
 
   if (update_scap_cves () == -1)
     {
-      update_scap_timestamp ();
+      abort_scap_update ();
       return -1;
     }
 
