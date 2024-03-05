@@ -2064,10 +2064,17 @@ update_scap_cpes_from_file (const gchar *path)
       case 2:
         g_warning ("%s: Could not open file '%s' for XML file iterator: %s",
                    __func__, path, strerror(errno));
+        xml_file_iterator_free (file_iterator);
+        return -1;
+      case 3:
+        g_warning ("%s: Could not create parser context for XML file iterator",
+                   __func__);
+        xml_file_iterator_free (file_iterator);
         return -1;
       default:
         g_warning ("%s: Could not initialize XML file iterator",
                    __func__);
+        xml_file_iterator_free (file_iterator);
         return -1;
     }
 
@@ -2148,13 +2155,21 @@ update_scap_cpes_from_file (const gchar *path)
                     __func__, error_message);
           g_free (error_message);
           error_message = NULL;
+          goto fail;
         }
     }
 
   inserts_run (&inserts, TRUE);
   sql_commit ();
+  sql_begin_immediate();
 
-  xml_file_iterator_rewind (file_iterator);
+  if (xml_file_iterator_rewind (file_iterator))
+    {
+      g_warning ("%s: Could not create parser context for XML file iterator"
+                 " for details.",
+                 __func__);
+      goto fail;
+    }
 
   // Extract and save details XML.
   inserts_init (&inserts,
@@ -2172,6 +2187,7 @@ update_scap_cpes_from_file (const gchar *path)
                 __func__, error_message);
       g_free (error_message);
       error_message = NULL;
+      goto fail;
     }
   while (cpe_item)
     {
@@ -2203,7 +2219,6 @@ update_scap_cpes_from_file (const gchar *path)
         }
     }
 
-  sql_begin_immediate();
   inserts_run (&inserts, TRUE);
   sql_commit();
   xml_file_iterator_free (file_iterator);
