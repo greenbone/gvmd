@@ -2370,8 +2370,7 @@ insert_cve_products (element_t list, resource_t cve,
           gchar *quoted_product, *product_decoded;
           gchar *product_tilde;
 
-          product_decoded = g_uri_unescape_string
-                             (element_text (product), NULL);
+          product_decoded = g_uri_unescape_string (product_text, NULL);
           product_tilde = string_replace (product_decoded,
                                           "~", "%7E", "%7e",
                                           NULL);
@@ -2641,12 +2640,13 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
 static int
 update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
 {
-  GError *error;
-  element_t element, entry;
-  gchar *xml, *full_path;
-  gsize xml_len;
+  gchar *error_message = NULL;
+  xml_file_iterator_t iterator;
+  element_t entry;
+  gchar *full_path;
   GStatBuf state;
   int transaction_size = 0;
+  int ret;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, xml_path, NULL);
 
@@ -2660,29 +2660,31 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
 
   g_info ("Updating %s", full_path);
 
-  error = NULL;
-  g_file_get_contents (full_path, &xml, &xml_len, &error);
-  if (error)
+  iterator = xml_file_iterator_new ();
+  ret = xml_file_iterator_init_from_file_path (iterator, full_path, 1);
+  switch (ret)
     {
-      g_warning ("%s: Failed to get contents: %s",
-                 __func__,
-                 error->message);
-      g_error_free (error);
-      g_free (full_path);
-      return -1;
+      case 0:
+        break;
+      case 2:
+        g_warning ("%s: Could not open file '%s' for XML file iterator: %s",
+                   __func__, full_path, strerror(errno));
+        xml_file_iterator_free (iterator);
+        return -1;
+      case 3:
+        g_warning ("%s: Could not create parser context for XML file iterator",
+                   __func__);
+        xml_file_iterator_free (iterator);
+        return -1;
+      default:
+        g_warning ("%s: Could not initialize XML file iterator",
+                   __func__);
+        xml_file_iterator_free (iterator);
+        return -1;
     }
-
-  if (parse_element (xml, &element))
-    {
-      g_free (xml);
-      g_warning ("%s: Failed to parse element", __func__);
-      g_free (full_path);
-      return -1;
-    }
-  g_free (xml);
 
   sql_begin_immediate ();
-  entry = element_first_child (element);
+  entry = xml_file_iterator_next (iterator, &error_message);
   while (entry)
     {
       if (strcmp (element_name (entry), "entry") == 0)
@@ -2692,28 +2694,40 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
           last_modified = element_child (entry, "vuln:last-modified-datetime");
           if (last_modified == NULL)
             {
-              g_warning ("%s: vuln:last-modified-datetime missing",
-                         __func__);
+              error_message = g_strdup ("vuln:last-modified-datetime missing");
               goto fail;
             }
 
           if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
                                      &transaction_size))
-            goto fail;
+            {
+              error_message = g_strdup ("Insert of CVE into database failed");
+              goto fail;
+            }
         }
-      entry = element_next (entry);
+
+      element_free (entry);
+      entry = xml_file_iterator_next (iterator, &error_message);
     }
 
-  element_free (element);
+  if (error_message)
+    goto fail;
+
+  xml_file_iterator_free (iterator);
   g_free (full_path);
   sql_commit ();
   return 0;
 
  fail:
-  element_free (element);
-  g_warning ("Update of CVEs failed at file '%s'",
-             full_path);
+  xml_file_iterator_free (iterator);
+  if (error_message)
+    g_warning ("Update of CVEs failed at file '%s': %s",
+              full_path, error_message);
+  else
+    g_warning ("Update of CVEs failed at file '%s'",
+              full_path);
   g_free (full_path);
+  g_free (error_message);
   sql_commit ();
   return -1;
 }
