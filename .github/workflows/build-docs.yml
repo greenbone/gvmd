@@ -16,7 +16,7 @@ jobs:
   build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:stable
+    container: gchr.io/greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
