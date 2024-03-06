@@ -100,7 +100,6 @@ RUN apt-get update && \
     texlive-fonts-recommended \
     texlive-latex-extra \
     wget \
-    xml-twig-tools \
     xmlstarlet \
     xsltproc \
     zip && \
