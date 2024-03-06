@@ -23,7 +23,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ github.repository }}-build
+          images: gchr.io/${{ github.repository }}-build
           labels: |
             org.opencontainers.image.vendor=Greenbone
             org.opencontainers.image.base.name=greenbone/gvm-libs
@@ -40,11 +40,12 @@ jobs:
           else
             echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
           fi
-      - name: Login to DockerHub
+      - name: Login to GitHub Docker registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+            registry: ghcr.io
+            username: ${{ secrets.GREENBONE_BOT }}
+            password: ${{ secrets.GREENBONE_BOT_PACKAGES_WRITE_TOKEN }}
       - run: echo "Build and push ${{ steps.meta.outputs.tags }}"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

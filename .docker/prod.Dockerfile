@@ -2,7 +2,7 @@ ARG VERSION=edge
 ARG GVM_LIBS_VERSION=oldstable
 ARG DEBIAN_FRONTEND=noninteractive
 
-FROM greenbone/gvmd-build:${VERSION} as builder
+FROM ghcr.io/greenbone/gvmd-build:${VERSION} as builder
 
 COPY . /source
 WORKDIR /source

@@ -22,7 +22,7 @@ jobs:
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:stable
+    container: gchr.io/greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:stable
+    container: gchr.io/greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
