@@ -23,7 +23,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: gchr.io/${{ github.repository }}-build
+          images: ${{ vars.IMAGE_REGISTRY }}/${{ github.repository }}-build
           labels: |
             org.opencontainers.image.vendor=Greenbone
             org.opencontainers.image.base.name=greenbone/gvm-libs
