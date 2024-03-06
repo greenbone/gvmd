@@ -54,6 +54,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          push: true
           build-args: |
             GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
           file: .docker/build.Dockerfile
