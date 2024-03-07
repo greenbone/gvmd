@@ -346,6 +346,8 @@ typedef resource_t tls_certificate_t;
 typedef resource_t result_t;
 typedef resource_t report_t;
 typedef resource_t report_host_t;
+typedef resource_t report_config_t;
+typedef resource_t report_config_param_t;
 typedef resource_t report_format_t;
 typedef resource_t report_format_param_t;
 typedef resource_t role_t;
@@ -1562,10 +1564,10 @@ result_iterator_delta_uuid (iterator_t*);
 const char *
 result_iterator_delta_qod_type (iterator_t*);
 
-const char *
+time_t
 result_iterator_delta_creation_time (iterator_t*);
 
-const char *
+time_t
 result_iterator_delta_modification_time (iterator_t*);
 
 task_t
@@ -3446,6 +3448,9 @@ setting_iterator_comment (iterator_t*);
 
 const char*
 setting_iterator_value (iterator_t*);
+
+int
+setting_value_int (const char *, int *);
 
 int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
