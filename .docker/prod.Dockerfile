@@ -1,8 +1,9 @@
 ARG VERSION=edge
 ARG GVM_LIBS_VERSION=oldstable
 ARG DEBIAN_FRONTEND=noninteractive
+ARG IMAGE_REGISTRY=ghcr.io
 
-FROM greenbone/gvmd-build:${VERSION} as builder
+FROM ${IMAGE_REGISTRY}/greenbone/gvmd-build:${VERSION} as builder
 
 COPY . /source
 WORKDIR /source
@@ -99,7 +100,6 @@ RUN apt-get update && \
     texlive-fonts-recommended \
     texlive-latex-extra \
     wget \
-    xml-twig-tools \
     xmlstarlet \
     xsltproc \
     zip && \
