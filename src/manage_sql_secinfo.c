@@ -3491,6 +3491,8 @@ abort_scap_update ()
       /* View 'vulns' contains references into the SCAP schema, so it is
        * removed by the CASCADE. */
       create_view_vulns ();
+      /* Update CERT data that depends on SCAP. */
+      update_cert_data ();
     }
   else
     {
@@ -3498,26 +3500,26 @@ abort_scap_update ()
       if (manage_db_init ("scap"))
         {
           g_warning ("%s: could not reset scap2 schema, db init failed", __func__);
-          return;
         }
-      if (manage_db_init_indexes ("scap"))
+      else if (manage_db_init_indexes ("scap"))
         {
           g_warning ("%s: could not reset scap2 schema, init indexes failed", __func__);
-          return;
         }
-      if (manage_db_add_constraints ("scap"))
+      else if (manage_db_add_constraints ("scap"))
         {
           g_warning ("%s: could not reset scap2 schema, add constrains failed", __func__);
-          return;
         }
 
-      update_scap_timestamp ();
-
-      sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+      if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+                   "               information_schema.schemata"
+                   "               WHERE schema_name = 'scap2');"))
+        {
+          update_scap_timestamp ();
+          sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+          /* Update CERT data that depends on SCAP. */
+          update_cert_data ();
+        }
     }
-
-  /* Update CERT data that depends on SCAP. */
-  update_cert_data ();
 
   g_info ("%s: Updating SCAP data aborted", __func__);
   setproctitle ("Syncing SCAP: aborted");
