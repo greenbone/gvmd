@@ -3450,6 +3450,9 @@ const char*
 setting_iterator_value (iterator_t*);
 
 int
+setting_value_int (const char *, int *);
+
+int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 int

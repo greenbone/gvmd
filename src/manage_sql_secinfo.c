@@ -51,6 +51,7 @@
 #include <gvm/base/gvm_sentry.h>
 #include <bsd/unistd.h>
 #include <gvm/util/fileutils.h>
+#include <gvm/util/xmlutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -62,7 +63,7 @@
 /* Static variables. */
 
 /**
- * @brief Maximum number of rows in an INSERT.
+ * @brief Maximum number of rows in a CPEs INSERT.
  */
 #define CPE_MAX_CHUNK_SIZE 10000
 
@@ -185,129 +186,20 @@ increment_transaction_size (int* current_size)
     }
 }
 
-/**
- * @brief Split a file.
- *
- * @param[in]  path  Path to file.
- * @param[in]  size  Approx size of split files.  In same format that
- *                   xml_split accepts, eg "200Kb".
- * @param[in]  tail  Text to replace last line of split files.
- *
- * @return Temp dir holding split files.
- */
-static const gchar *
-split_xml_file (gchar *path, const gchar *size, const gchar *tail)
-{
-  int ret;
-  static gchar dir[] = "/tmp/gvmd-split-xml-file-XXXXXX";
-  gchar *previous_dir, *command;
-
-  if (mkdtemp (dir) == NULL)
-    {
-      g_warning ("%s: Failed to make temp dir: %s",
-                 __func__,
-                 strerror (errno));
-      return NULL;
-    }
-
-  previous_dir = getcwd (NULL, 0);
-  if (previous_dir == NULL)
-    {
-      g_warning ("%s: Failed to getcwd: %s",
-                 __func__,
-                 strerror (errno));
-      return NULL;
-    }
-
-  if (chdir (dir))
-    {
-      g_warning ("%s: Failed to chdir: %s",
-                 __func__,
-                 strerror (errno));
-      g_free (previous_dir);
-      return NULL;
-    }
-
-  if (gvm_file_copy (path, "split.xml") == FALSE)
-    {
-      g_free (previous_dir);
-      return NULL;
-    }
-
-  /* xml_split will chop split.xml into files that are roughly 'size' big.
-   *
-   * The generated files are always put in the directory that holds
-   * split.xml, as follows:
-   *
-   * split.xml      Source XML.
-   * split-00.xml   Master generated XML.  No content, just includes other
-   *                files.  The include statements are wrapped in the
-   *                root element from split.xml.
-   * split-01.xml   Generated XML content.  Wrapped in an <xml_split:root>
-   *                element.
-   * split-02.xml   Second generated content file.
-   * ...
-   * split-112.xml  Last content, for example.
-   *
-   * Parsing the generated files independently will only work if the files
-   * contain the original root element (for example, because the parser
-   * requires the namespace definitions to be present).
-   *
-   * So the command below needs to mess around a little bit to replace the
-   * wrapper XML element in split-01.xml, split-02.xml, etc with the root
-   * element from split-00.xml.
-   *
-   * Using tail and head is not super robust, but it's simple and it will
-   * work as long as xml_split keeps the opening of the wrapper element
-   * in split-00.xml on a dedicated line.  (It doesn't do this for the
-   * closing element, so we use the tail argument instead.)
-   */
-
-  command = g_strdup_printf
-             ("xml_split -s%s split.xml"
-              " && head -n 2 split-00.xml > head.xml"
-              " && echo '%s' > tail.xml"
-              " && for F in split-*.xml; do"
-              /*   Remove the first two lines and last line. */
-              "    awk 'NR>3 {print last} {last=$0}' $F > body.xml"
-              /*   Combine with new start and end. */
-              "    && cat head.xml body.xml tail.xml > $F;"
-              "    done",
-              size,
-              tail);
-
-  g_debug ("%s: command: %s", __func__, command);
-  ret = system (command);
-  if ((ret == -1) || WIFEXITED(ret) == 0 || WEXITSTATUS (ret))
-    {
-      g_warning ("%s: system failed with ret %i, %i (%i), %s",
-                 __func__,
-                 ret,
-                 WIFEXITED (ret),
-                 WIFEXITED (ret) ? WEXITSTATUS (ret) : 0,
-                 command);
-      g_free (command);
-
-      if (chdir (previous_dir))
-        g_warning ("%s: and failed to chdir back", __func__);
-      g_free (previous_dir);
-
-      return NULL;
-    }
-
-  g_free (command);
-
-  if (chdir (previous_dir))
-    g_warning ("%s: Failed to chdir back (will continue anyway)",
-               __func__);
-
-  g_free (previous_dir);
-
-  return dir;
-}
-
-
 /* Helper: buffer structure for INSERTs. */
+
+/**
+ * @brief Get the SQL buffer size threshold converted from MiB to bytes.
+ */
+int
+setting_secinfo_sql_buffer_threshold_bytes ()
+{
+  int threshold;
+
+  setting_value_int (SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD, &threshold);
+
+  return threshold * 1048576;
+}
 
 /**
  * @brief Buffer for INSERT statements.
@@ -316,26 +208,34 @@ typedef struct
 {
   array_t *statements;     ///< Buffered statements.
   GString *statement;      ///< Current statement.
+  int statements_size;     ///< Sum of lengths of all statements buffered.
+  int max_statements_size; ///< Auto-run at this statement_size, 0 for never.
   int current_chunk_size;  ///< Number of rows in current statement.
   int max_chunk_size;      ///< Max number of rows per INSERT.
   gchar *open_sql;         ///< SQL to open each statement.
   gchar *close_sql;        ///< SQL to close each statement.
 } inserts_t;
 
+static void
+inserts_run (inserts_t *, gboolean);
+
 /**
  * @brief Check size of current statement.
  *
  * @param[in]  inserts         Insert buffer.
- * @param[in]  max_chunk_size  Max chunk size.
+ * @param[in]  max_chunk_size  Max chunk size per statement.
+ * @param[in]  max_statements_size Automatically run at this statements size.
  * @param[in]  open_sql        SQL to to start each statement.
  * @param[in]  close_sql       SQL to append to the end of each statement.
  */
 static void
-inserts_init (inserts_t *inserts, int max_chunk_size, const gchar *open_sql,
-              const gchar *close_sql)
+inserts_init (inserts_t *inserts, int max_chunk_size, int max_statements_size,
+              const gchar *open_sql, const gchar *close_sql)
 {
   inserts->statements = make_array ();
   inserts->statement = NULL;
+  inserts->statements_size = 0;
+  inserts->max_statements_size = max_statements_size;
   inserts->current_chunk_size = 0;
   inserts->max_chunk_size = max_chunk_size;
   inserts->open_sql = open_sql ? g_strdup (open_sql) : NULL;
@@ -377,8 +277,15 @@ inserts_check_size (inserts_t *inserts)
     {
       inserts_statement_close (inserts);
       array_add (inserts->statements, inserts->statement);
+      inserts->statements_size += inserts->statement->len;
       inserts->statement = NULL;
       inserts->current_chunk_size = 0;
+      
+      if (inserts->max_statements_size
+          && inserts-> statements_size >= inserts->max_statements_size)
+        {
+          inserts_run (inserts, FALSE);
+        }
     }
 
   if (inserts->statement == NULL)
@@ -392,7 +299,26 @@ inserts_check_size (inserts_t *inserts)
 }
 
 /**
- * @brief Free everything.
+ * @brief Free only the statements in an inserts buffer so it can be reused.
+ *
+ * @param[in]  inserts  Insert buffer.
+ */
+static void
+inserts_free_statements (inserts_t *inserts)
+{
+  int index;
+
+  for (index = 0; index < inserts->statements->len; index++)
+    {
+      g_string_free (g_ptr_array_index (inserts->statements, index), TRUE);
+      inserts->statements->pdata[index] = NULL;
+    }
+  g_ptr_array_set_size (inserts->statements, 0);
+  inserts->statements_size = 0;
+}
+
+/**
+ * @brief Free all fields in an inserts buffer.
  *
  * @param[in]  inserts  Insert buffer.
  */
@@ -413,9 +339,10 @@ inserts_free (inserts_t *inserts)
  * @brief Run the INSERT SQL, freeing the buffers.
  *
  * @param[in]  inserts  Insert buffer.
+ * @param[in]  finalize Whether to free the whole inserts buffer afterwards.
  */
 static void
-inserts_run (inserts_t *inserts)
+inserts_run (inserts_t *inserts, gboolean finalize)
 {
   guint index;
 
@@ -435,7 +362,10 @@ inserts_run (inserts_t *inserts)
       sql ("%s", statement->str);
     }
 
-  inserts_free (inserts);
+  if (finalize)
+    inserts_free (inserts);
+  else
+    inserts_free_statements (inserts);
 }
 
 
@@ -2119,45 +2049,40 @@ insert_scap_cpe_details (inserts_t *inserts, element_t cpe_item)
 static int
 update_scap_cpes_from_file (const gchar *path)
 {
-  GError *error;
-  element_t element, cpe_list, cpe_item;
-  gchar *xml;
-  gsize xml_len;
-  inserts_t inserts, details_inserts;
+  int ret;
+  element_t cpe_item;
+  inserts_t inserts;
+  xml_file_iterator_t file_iterator;
+  gchar *error_message = NULL;
 
-  g_debug ("%s: parsing %s", __func__, path);
-
-  error = NULL;
-  g_file_get_contents (path, &xml, &xml_len, &error);
-  if (error)
+  file_iterator = xml_file_iterator_new ();
+  ret = xml_file_iterator_init_from_file_path (file_iterator, path, 1);
+  switch (ret)
     {
-      g_warning ("%s: Failed to get contents: %s",
-                 __func__,
-                 error->message);
-      g_error_free (error);
-      return -1;
-    }
-
-  if (parse_element (xml, &element))
-    {
-      g_free (xml);
-      g_warning ("%s: Failed to parse element", __func__);
-      return -1;
-    }
-  g_free (xml);
-
-  cpe_list = element;
-  if (strcmp (element_name (cpe_list), "cpe-list"))
-    {
-      element_free (element);
-      g_warning ("%s: CPE dictionary missing CPE-LIST", __func__);
-      return -1;
+      case 0:
+        break;
+      case 2:
+        g_warning ("%s: Could not open file '%s' for XML file iterator: %s",
+                   __func__, path, strerror(errno));
+        xml_file_iterator_free (file_iterator);
+        return -1;
+      case 3:
+        g_warning ("%s: Could not create parser context for XML file iterator",
+                   __func__);
+        xml_file_iterator_free (file_iterator);
+        return -1;
+      default:
+        g_warning ("%s: Could not initialize XML file iterator",
+                   __func__);
+        xml_file_iterator_free (file_iterator);
+        return -1;
     }
 
   sql_begin_immediate ();
 
   inserts_init (&inserts,
                 CPE_MAX_CHUNK_SIZE,
+                setting_secinfo_sql_buffer_threshold_bytes (),
                 "INSERT INTO scap2.cpes"
                 " (uuid, name, title, creation_time,"
                 "  modification_time, status, deprecated_by_id,"
@@ -2171,7 +2096,15 @@ update_scap_cpes_from_file (const gchar *path)
                 "     status = EXCLUDED.status,"
                 "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
                 "     nvd_id = EXCLUDED.nvd_id");
-  cpe_item = element_first_child (cpe_list);
+
+  cpe_item = xml_file_iterator_next (file_iterator, &error_message);
+  if (error_message)
+    {
+      g_warning ("%s: could not get first CPE XML element: %s",
+                 __func__, error_message);
+      g_free (error_message);
+      goto fail;
+    }
   while (cpe_item)
     {
       gchar *modification_date;
@@ -2180,7 +2113,15 @@ update_scap_cpes_from_file (const gchar *path)
 
       if (strcmp (element_name (cpe_item), "cpe-item"))
         {
-          cpe_item = element_next (cpe_item);
+          element_free (cpe_item);
+          cpe_item = xml_file_iterator_next (file_iterator, &error_message);
+          if (error_message)
+            {
+              g_warning ("%s: could not get next CPE XML element: %s",
+                        __func__, error_message);
+              g_free (error_message);
+              goto fail;
+            }
           continue;
         }
 
@@ -2205,47 +2146,90 @@ update_scap_cpes_from_file (const gchar *path)
       if (insert_scap_cpe (&inserts, cpe_item, item_metadata,
                            modification_time))
         goto fail;
-      cpe_item = element_next (cpe_item);
+
+      element_free (cpe_item);
+      cpe_item = xml_file_iterator_next (file_iterator, &error_message);
+      if (error_message)
+        {
+          g_warning ("%s: could not get next CPE XML element: %s",
+                    __func__, error_message);
+          g_free (error_message);
+          error_message = NULL;
+          goto fail;
+        }
     }
 
-  inserts_run (&inserts);
+  inserts_run (&inserts, TRUE);
   sql_commit ();
+  sql_begin_immediate();
+
+  if (xml_file_iterator_rewind (file_iterator))
+    {
+      g_warning ("%s: Could not create parser context for XML file iterator"
+                 " for details.",
+                 __func__);
+      goto fail;
+    }
 
   // Extract and save details XML.
-  inserts_init (&details_inserts,
+  inserts_init (&inserts,
                 CPE_MAX_CHUNK_SIZE,
+                setting_secinfo_sql_buffer_threshold_bytes (),
                 "INSERT INTO scap2.cpe_details"
                 " (cpe_id, details_xml)"
                 " VALUES",
                 " ON CONFLICT (cpe_id) DO UPDATE"
                 " SET details_xml = EXCLUDED.details_xml");
-  cpe_item = element_first_child (cpe_list);
+  cpe_item = xml_file_iterator_next (file_iterator, &error_message);
+  if (error_message)
+    {
+      g_warning ("%s: could not get first CPE XML element for details: %s",
+                __func__, error_message);
+      g_free (error_message);
+      error_message = NULL;
+      goto fail;
+    }
   while (cpe_item)
     {
       if (strcmp (element_name (cpe_item), "cpe-item"))
         {
-          cpe_item = element_next (cpe_item);
+          element_free (cpe_item);
+          cpe_item = xml_file_iterator_next (file_iterator, &error_message);
+          if (error_message)
+            {
+              g_warning ("%s: could not get next CPE XML element"
+                         " for details: %s",
+                         __func__, error_message);
+              g_free (error_message);
+              goto fail;
+            }
           continue;
         }
 
-      if (insert_scap_cpe_details (&details_inserts, cpe_item))
+      if (insert_scap_cpe_details (&inserts, cpe_item))
         goto fail;
-      cpe_item = element_next (cpe_item);
+      element_free (cpe_item);
+      cpe_item = xml_file_iterator_next (file_iterator, &error_message);
+      if (error_message)
+        {
+          g_warning ("%s: could not get next CPE XML element for details: %s",
+                     __func__, error_message);
+          g_free (error_message);
+          goto fail;
+        }
     }
 
-  element_free (element);
-
-  sql_begin_immediate();
-  inserts_run (&details_inserts);
+  inserts_run (&inserts, TRUE);
   sql_commit();
+  xml_file_iterator_free (file_iterator);
 
   return 0;
 
  fail:
   inserts_free (&inserts);
-  element_free (element);
   g_warning ("Update of CPEs failed");
   sql_commit ();
+  xml_file_iterator_free (file_iterator);
   return -1;
 }
 
@@ -2258,9 +2242,8 @@ static int
 update_scap_cpes ()
 {
   gchar *full_path;
-  const gchar *split_dir;
   GStatBuf state;
-  int index;
+  int ret;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
                                 "official-cpe-dictionary_v2.2.xml",
@@ -2277,44 +2260,9 @@ update_scap_cpes ()
 
   g_info ("Updating CPEs");
 
-  split_dir = split_xml_file (full_path, "40Mb", "</cpe-list>");
-  if (split_dir == NULL)
-    {
-      int ret;
-
-      g_warning ("%s: Failed to split CPEs, attempting with full file",
-                 __func__);
-      ret = update_scap_cpes_from_file (full_path);
-      g_free (full_path);
-      return ret;
-    }
-  g_free (full_path);
-
-  for (index = 1; 1; index++)
-    {
-      int ret;
-      gchar *path, *name;
-
-      name = g_strdup_printf ("split-%02i.xml", index);
-      path = g_build_filename (split_dir, name, NULL);
-      g_free (name);
-
-      if (g_stat (path, &state))
-        {
-          g_free (path);
-          break;
-        }
-
-      ret = update_scap_cpes_from_file (path);
-      g_free (path);
-      if (ret < 0)
-        {
-          gvm_file_remove_recurse (split_dir);
-          return -1;
-        }
-    }
-
-  gvm_file_remove_recurse (split_dir);
+  ret = update_scap_cpes_from_file (full_path);
+  if (ret)
+    return -1;
 
   return 0;
 }
@@ -2422,8 +2370,7 @@ insert_cve_products (element_t list, resource_t cve,
           gchar *quoted_product, *product_decoded;
           gchar *product_tilde;
 
-          product_decoded = g_uri_unescape_string
-                             (element_text (product), NULL);
+          product_decoded = g_uri_unescape_string (product_text, NULL);
           product_tilde = string_replace (product_decoded,
                                           "~", "%7E", "%7e",
                                           NULL);
@@ -2693,12 +2640,13 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
 static int
 update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
 {
-  GError *error;
-  element_t element, entry;
-  gchar *xml, *full_path;
-  gsize xml_len;
+  gchar *error_message = NULL;
+  xml_file_iterator_t iterator;
+  element_t entry;
+  gchar *full_path;
   GStatBuf state;
   int transaction_size = 0;
+  int ret;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, xml_path, NULL);
 
@@ -2712,29 +2660,31 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
 
   g_info ("Updating %s", full_path);
 
-  error = NULL;
-  g_file_get_contents (full_path, &xml, &xml_len, &error);
-  if (error)
+  iterator = xml_file_iterator_new ();
+  ret = xml_file_iterator_init_from_file_path (iterator, full_path, 1);
+  switch (ret)
     {
-      g_warning ("%s: Failed to get contents: %s",
-                 __func__,
-                 error->message);
-      g_error_free (error);
-      g_free (full_path);
-      return -1;
+      case 0:
+        break;
+      case 2:
+        g_warning ("%s: Could not open file '%s' for XML file iterator: %s",
+                   __func__, full_path, strerror(errno));
+        xml_file_iterator_free (iterator);
+        return -1;
+      case 3:
+        g_warning ("%s: Could not create parser context for XML file iterator",
+                   __func__);
+        xml_file_iterator_free (iterator);
+        return -1;
+      default:
+        g_warning ("%s: Could not initialize XML file iterator",
+                   __func__);
+        xml_file_iterator_free (iterator);
+        return -1;
     }
-
-  if (parse_element (xml, &element))
-    {
-      g_free (xml);
-      g_warning ("%s: Failed to parse element", __func__);
-      g_free (full_path);
-      return -1;
-    }
-  g_free (xml);
 
   sql_begin_immediate ();
-  entry = element_first_child (element);
+  entry = xml_file_iterator_next (iterator, &error_message);
   while (entry)
     {
       if (strcmp (element_name (entry), "entry") == 0)
@@ -2744,28 +2694,40 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
           last_modified = element_child (entry, "vuln:last-modified-datetime");
           if (last_modified == NULL)
             {
-              g_warning ("%s: vuln:last-modified-datetime missing",
-                         __func__);
+              error_message = g_strdup ("vuln:last-modified-datetime missing");
               goto fail;
             }
 
           if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
                                      &transaction_size))
-            goto fail;
+            {
+              error_message = g_strdup ("Insert of CVE into database failed");
+              goto fail;
+            }
         }
-      entry = element_next (entry);
+
+      element_free (entry);
+      entry = xml_file_iterator_next (iterator, &error_message);
     }
 
-  element_free (element);
+  if (error_message)
+    goto fail;
+
+  xml_file_iterator_free (iterator);
   g_free (full_path);
   sql_commit ();
   return 0;
 
  fail:
-  element_free (element);
-  g_warning ("Update of CVEs failed at file '%s'",
-             full_path);
+  xml_file_iterator_free (iterator);
+  if (error_message)
+    g_warning ("Update of CVEs failed at file '%s': %s",
+              full_path, error_message);
+  else
+    g_warning ("Update of CVEs failed at file '%s'",
+              full_path);
   g_free (full_path);
+  g_free (error_message);
   sql_commit ();
   return -1;
 }
