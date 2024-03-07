@@ -555,7 +555,13 @@ iso_if_time (time_t epoch_time)
 {
   static char *empty = "";
   if (epoch_time)
-    return iso_time (&epoch_time);
+    {
+      char *ret;
+
+      ret = iso_time (&epoch_time);
+      if (ret)
+        return ret;
+    }
   return empty;
 }
 
