@@ -3433,10 +3433,8 @@ update_cert_data ()
 
 /**
  * @brief Finish scap update.
- *
- * @return 0 success, -1 error.
  */
-static int
+static void
 update_scap_end ()
 {
   g_debug ("%s: update timestamp", __func__);
@@ -3471,8 +3469,6 @@ update_scap_end ()
 
   g_info ("%s: Updating SCAP info succeeded", __func__);
   setproctitle ("Syncing SCAP: done");
-
-  return 0;
 }
 
 /**
@@ -3499,9 +3495,21 @@ abort_scap_update ()
   else
     {
       /* reset scap2 schema */
-      manage_db_init ("scap");
-      manage_db_init_indexes ("scap");
-      manage_db_add_constraints ("scap");
+      if (manage_db_init ("scap"))
+        {
+          g_warning ("%s: could not reset scap2 schema, db init failed", __func__);
+          return;
+        }
+      if (manage_db_init_indexes ("scap"))
+        {
+          g_warning ("%s: could not reset scap2 schema, init indexes failed", __func__);
+          return;
+        }
+      if (manage_db_add_constraints ("scap"))
+        {
+          g_warning ("%s: could not reset scap2 schema, add constrains failed", __func__);
+          return;
+        }
 
       update_scap_timestamp ();
 
@@ -3574,7 +3582,8 @@ try_load_csv ()
           return -1;
         }
 
-      return update_scap_end ();
+      update_scap_end ();
+      return 0;
     }
   return 1;
 }
@@ -3701,7 +3710,8 @@ update_scap (gboolean reset_scap_db)
 
   update_scap_placeholders ();
 
-  return update_scap_end ();
+  update_scap_end ();
+  return 0;
 }
 
 /**
