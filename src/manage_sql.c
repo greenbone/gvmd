@@ -35,6 +35,7 @@
 #include "manage_tickets.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_port_lists.h"
+#include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
@@ -81,6 +82,7 @@
 #include <gvm/util/authutils.h>
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
+#include "manage_report_configs.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -327,9 +329,6 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
                             const char *);
 
 static int
-setting_value_int (const char *, int *);
-
-static int
 setting_auto_cache_rebuild_int ();
 
 static int
@@ -468,6 +467,7 @@ command_t gmp_commands[]
     {"CREATE_PORT_LIST", "Create a port list."},
     {"CREATE_PORT_RANGE", "Create a port range in a port list."},
     {"CREATE_REPORT", "Create a report."},
+    {"CREATE_REPORT_CONFIG", "Create a report config."},
     {"CREATE_REPORT_FORMAT", "Create a report format."},
     {"CREATE_ROLE", "Create a role."},
     {"CREATE_SCANNER", "Create a scanner."},
@@ -490,6 +490,7 @@ command_t gmp_commands[]
     {"DELETE_PORT_LIST", "Delete a port list."},
     {"DELETE_PORT_RANGE", "Delete a port range."},
     {"DELETE_REPORT", "Delete a report."},
+    {"DELETE_REPORT_CONFIG", "Delete a report config."},
     {"DELETE_REPORT_FORMAT", "Delete a report format."},
     {"DELETE_ROLE", "Delete a role."},
     {"DELETE_SCANNER", "Delete a scanner."},
@@ -520,6 +521,7 @@ command_t gmp_commands[]
     {"GET_PORT_LISTS", "Get all port lists."},
     {"GET_PREFERENCES", "Get preferences for all available NVTs."},
     {"GET_REPORTS", "Get all reports."},
+    {"GET_REPORT_CONFIGS", "Get all report configs."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_RESULTS", "Get results."},
     {"GET_ROLES", "Get all roles."},
@@ -548,6 +550,7 @@ command_t gmp_commands[]
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PERMISSION", "Modify an existing permission."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},
+    {"MODIFY_REPORT_CONFIG", "Modify an existing report config."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
     {"MODIFY_ROLE", "Modify an existing role."},
     {"MODIFY_SCANNER", "Modify an existing scanner."},
@@ -3931,6 +3934,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "permission") == 0)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "report") == 0)
+         || (strcasecmp (type, "report_config") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
          || (strcasecmp (type, "role") == 0)
@@ -3981,6 +3985,8 @@ type_db_name (const char* type)
     return "port_list";
   if (strcasecmp (type, "Report") == 0)
     return "report";
+  if (strcasecmp (type, "Report Config") == 0)
+    return "report_config";
   if (strcasecmp (type, "Report Format") == 0)
     return "report_format";
   if (strcasecmp (type, "Result") == 0)
@@ -12133,25 +12139,21 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   if (filter_return)
     *filter_return = filter;
 
+  (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
+  (*alert_filter_get)->details = base_get_data->details;
+  (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
+  (*alert_filter_get)->ignore_max_rows_per_page
+    = base_get_data->ignore_max_rows_per_page;
+
   if (filter)
     {
-      (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
-      (*alert_filter_get)->details = base_get_data->details;
-      (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
-      (*alert_filter_get)->ignore_max_rows_per_page
-        = base_get_data->ignore_max_rows_per_page;
       (*alert_filter_get)->filt_id = g_strdup (filt_id);
       (*alert_filter_get)->filter = filter_term (filt_id);
     }
   else
-    (*alert_filter_get) = NULL;
-
-  ignore_pagination = alert_data (alert, "method",
-                                  "composer_ignore_pagination");
-  if (ignore_pagination)
     {
-      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
-      g_free (ignore_pagination);
+      (*alert_filter_get)->filt_id = NULL;
+      (*alert_filter_get)->filter = g_strdup("");
     }
 
   /* Adjust filter for report composer.
@@ -12162,39 +12164,44 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
    * We simply use these fields to adjust the filter.  In the future we'll
    * remove the filter terms and extend the way we get the report. */
 
-  if (filter)
+  gchar *include_notes, *include_overrides;
+
+  ignore_pagination = alert_data (alert, "method",
+                                  "composer_ignore_pagination");
+  if (ignore_pagination)
     {
-      gchar *include_notes, *include_overrides;
+      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
+      g_free (ignore_pagination);
+    }
 
-      include_notes = alert_data (alert, "method",
-                                  "composer_include_notes");
-      if (include_notes)
-        {
-          gchar *new_filter;
+  include_notes = alert_data (alert, "method",
+                              "composer_include_notes");
+  if (include_notes)
+    {
+      gchar *new_filter;
 
-          new_filter = g_strdup_printf ("notes=%i %s",
-                                        atoi (include_notes),
-                                        (*alert_filter_get)->filter);
-          g_free ((*alert_filter_get)->filter);
-          (*alert_filter_get)->filter = new_filter;
-          (*alert_filter_get)->filt_id = NULL;
-          g_free (include_notes);
-        }
+      new_filter = g_strdup_printf ("notes=%i %s",
+                                    atoi (include_notes),
+                                    (*alert_filter_get)->filter);
+      g_free ((*alert_filter_get)->filter);
+      (*alert_filter_get)->filter = new_filter;
+      (*alert_filter_get)->filt_id = NULL;
+      g_free (include_notes);
+    }
 
-      include_overrides = alert_data (alert, "method",
-                                      "composer_include_overrides");
-      if (include_overrides)
-        {
-          gchar *new_filter;
+  include_overrides = alert_data (alert, "method",
+                                  "composer_include_overrides");
+  if (include_overrides)
+    {
+      gchar *new_filter;
 
-          new_filter = g_strdup_printf ("overrides=%i %s",
-                                        atoi (include_overrides),
-                                        (*alert_filter_get)->filter);
-          g_free ((*alert_filter_get)->filter);
-          (*alert_filter_get)->filter = new_filter;
-          (*alert_filter_get)->filt_id = NULL;
-          g_free (include_overrides);
-        }
+      new_filter = g_strdup_printf ("overrides=%i %s",
+                                    atoi (include_overrides),
+                                    (*alert_filter_get)->filter);
+      g_free ((*alert_filter_get)->filter);
+      (*alert_filter_get)->filter = new_filter;
+      (*alert_filter_get)->filt_id = NULL;
+      g_free (include_overrides);
     }
 
   return 0;
@@ -15996,6 +16003,19 @@ check_db_settings ()
          "  'Delta Reports Version',"
          "  'Version of the generation of the Delta Reports.',"
          "  '2' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "', NULL,"
+         "  'SecInfo SQL Buffer Threshold',"
+         "  'Buffer size threshold in MiB for running buffered SQL statements'"
+         "  || ' in SecInfo updates before the end of the file'"
+         "  || ' being processed.',"
+         "  '100' );");
 }
 
 /**
@@ -48303,6 +48323,11 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
+  /* Report Config. */
+  ret = restore_report_config (id);
+  if (ret != 2)
+    return ret;
+
   /* Report Format. */
   ret = restore_report_format (id);
   if (ret != 2)
@@ -49316,6 +49341,12 @@ manage_empty_trashcan ()
        "                                WHERE uuid = '%s'))"
        " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
        current_credentials.uuid);
+  sql ("DELETE FROM report_config_params_trash"
+       " WHERE report_config IN (SELECT id FROM report_configs_trash"
+       "                         WHERE owner = (SELECT id FROM users"
+       "                                        WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM report_configs_trash" WHERE_OWNER);
   sql ("DELETE FROM role_users_trash"
        " WHERE role IN (SELECT id from roles_trash"
        "                WHERE owner = (SELECT id FROM users"
@@ -52155,7 +52186,7 @@ setting_value (const char *uuid, char **value)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 setting_value_int (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
@@ -52577,6 +52608,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Port Lists Filter");
       else if (strcmp (uuid, "48ae588e-9085-41bc-abcb-3d6389cf7237") == 0)
         setting_name = g_strdup ("Reports Filter");
+      else if (strcmp (uuid, "eca9738b-4339-4a3d-bd13-3c61173236ab") == 0)
+        setting_name = g_strdup ("Report Configs Filter");
       else if (strcmp (uuid, "249c7a55-065c-47fb-b453-78e11a665565") == 0)
         setting_name = g_strdup ("Report Formats Filter");
       else if (strcmp (uuid, "739ab810-163d-11e3-9af6-406186ea4fc5") == 0)
@@ -52858,6 +52891,8 @@ setting_name (const gchar *uuid)
     return "Feed Import Roles";
   if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
     return "Delta Reports Version";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "SecInfo SQL Buffer Threshold";
 
   return NULL;
 }
@@ -52897,12 +52932,15 @@ setting_description (const gchar *uuid)
     return "Roles given access to new resources from feed.";
   if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
     return "Version of the generation of the Delta Reports.";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "Buffer size threshold in MiB for running buffered SQL statements"
+           " in SecInfo updates before the end of the file being processed.";
 
   return NULL;
 }
 
 /**
- * @brief Get the name of a setting.
+ * @brief Verify the value of a setting.
  *
  * @param[in]  uuid   UUID of setting.
  * @param[in]  value  Value of setting, to verify.
@@ -52990,6 +53028,14 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0 || threshold > (INT_MAX / 1048576))
+        return 1;
+    }
+
   return 0;
 }
 
@@ -53045,6 +53091,15 @@ setting_normalise (const gchar *uuid, const gchar *value)
       return g_string_free (normalised, FALSE);
     }
 
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0)
+        return NULL;
+      return g_strdup_printf ("%i", threshold);
+    }
+
   return g_strdup (value);
 }
 
@@ -53075,7 +53130,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
-      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION))
+      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION)
+      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -53102,7 +53158,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0))
+          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
@@ -54285,6 +54342,11 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       sql ("UPDATE roles_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      sql ("UPDATE report_configs SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+      sql ("UPDATE report_configs_trash SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
       /* Report Formats. */
 
       has_rows = inherit_report_formats (user, inheritor, &rows);
@@ -54617,6 +54679,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
   sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
+
+  /* Delete report configs */
+
+  delete_report_configs_user (user);
 
   /* Delete report formats. */
 
@@ -57522,6 +57588,8 @@ type_select_columns (const char *type)
     return port_list_select_columns ();
   if (strcasecmp (type, "REPORT") == 0)
     return report_columns;
+  if (strcasecmp (type, "REPORT_CONFIG") == 0)
+    return report_config_select_columns ();
   if (strcasecmp (type, "REPORT_FORMAT") == 0)
     return report_format_select_columns ();
   if (strcasecmp (type, "RESULT") == 0)
@@ -57675,6 +57743,8 @@ type_filter_columns (const char *type)
       static const char *ret[] = REPORT_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
+  if (strcasecmp (type, "REPORT_CONFIG") == 0)
+    return report_config_filter_columns ();
   if (strcasecmp (type, "REPORT_FORMAT") == 0)
     return report_format_filter_columns ();
   if (strcasecmp (type, "RESULT") == 0)
