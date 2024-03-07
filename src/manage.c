@@ -52,6 +52,7 @@
 #include "manage_acl.h"
 #include "manage_configs.h"
 #include "manage_port_lists.h"
+#include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
@@ -7538,6 +7539,8 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
+  if (strcasecmp (type, "report_config") == 0)
+    return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
   if (strcasecmp (type, "tls_certificate") == 0)
