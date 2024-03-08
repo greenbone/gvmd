@@ -37494,6 +37494,52 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 }
 
 /**
+ * @brief Check whether possibly encrypted data exists.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  type      Type of data.
+ *
+ * @return -1 if error, 1 if exists, else 0.
+ */
+static int
+credential_iterator_encrypted_data_exists (iterator_t* iterator, const char* type)
+{
+  const char *secret, *unencrypted;
+
+  if (iterator->done)
+    return -1;
+
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+
+  if (type == NULL)
+    {
+      g_warning ("%s: NULL data type given", __func__);
+      return -1;
+    }
+
+  if (strcmp (type, "password") == 0)
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  else if (strcmp (type, "private_key") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  else if (strcmp (type, "community") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  else
+    {
+      g_warning ("%s: unknown data type \"%s\"", __func__, type);
+      return -1;
+    }
+
+  /* If we do not have a private key, there is no encrypted data. */
+
+  if (secret)
+    return 1;
+
+  return unencrypted ? 1 : 0;
+}
+
+/**
  * @brief Get the login from a Credential iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -37595,6 +37641,19 @@ const char*
 credential_iterator_private_key (iterator_t* iterator)
 {
   return credential_iterator_encrypted_data (iterator, "private_key");
+}
+
+/**
+ * @brief Check whether the private_key from a Credential iterator exists.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return -1 if error, 1 if exists, else 0.
+ */
+static int
+credential_iterator_private_key_exists (iterator_t* iterator)
+{
+  return credential_iterator_encrypted_data_exists (iterator, "private_key");
 }
 
 
@@ -37770,7 +37829,7 @@ gboolean
 credential_iterator_format_available (iterator_t* iterator,
                                       credential_format_t format)
 {
-  const char *type, *login, *private_key;
+  const char *type, *login;
 
   if (format == CREDENTIAL_FORMAT_NONE)
     return TRUE;
@@ -37789,13 +37848,11 @@ credential_iterator_format_available (iterator_t* iterator,
       && strcasecmp (type, "cc") == 0)
     return validate_credential_username_for_format (login, format);
 
-  private_key = credential_iterator_private_key (iterator);
-
   if ((format == CREDENTIAL_FORMAT_KEY
        || format == CREDENTIAL_FORMAT_RPM
        || format == CREDENTIAL_FORMAT_DEB)
       && strcasecmp (type, "usk") == 0
-      && private_key)
+      && credential_iterator_private_key_exists (iterator))
     return validate_credential_username_for_format (login, format);
 
   return FALSE;
