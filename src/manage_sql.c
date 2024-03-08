@@ -36846,12 +36846,8 @@ delete_credential (const char *credential_id, int ultimate)
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
-   { "(CASE"                                                                  \
-     " WHEN " lean                                                            \
-     " THEN ''"                                                               \
-     " ELSE (SELECT value FROM " table "_data"                                \
-     "       WHERE credential = " table ".id AND type = 'secret')"            \
-     " END)",                                                                 \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'secret')",                 \
      "secret",                                                                \
      KEYWORD_TYPE_STRING },                                                   \
    { "(CASE"                                                                  \
