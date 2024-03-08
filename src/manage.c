@@ -3243,9 +3243,19 @@ fork_cve_scan_handler (task_t task, target_t target)
   /* Add the results. */
 
   gvm_hosts = gvm_hosts_new (hosts);
-  gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "");
-
   free (hosts);
+  
+  if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
+    {
+      set_task_interrupted (task,
+                              "Failed to exclude hosts."
+                              "  Interrupting scan.");      
+      set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
+      gvm_hosts_free (gvm_hosts);
+      free (exclude_hosts);
+      gvm_close_sentry ();
+      exit(1);
+    }
   free (exclude_hosts);
 
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
