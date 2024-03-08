@@ -37451,13 +37451,16 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
+
   secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __func__);
       return NULL;
     }
-  else if (strcmp (type, "password") == 0)
+
+  if (strcmp (type, "password") == 0)
     unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
   else if (strcmp (type, "private_key") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
@@ -37470,11 +37473,13 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
       g_warning ("%s: unknown data type \"%s\"", __func__, type);
       return NULL;
     }
+
   /* If we do not have a private key, there is no encrypted data.
-     Return the password as is or NULL.  */
+   * Return the password as is or NULL. */
+
   if (secret)
     {
-      /* This is an encrypted credential.  */
+      /* This is an encrypted credential. */
       if (!iterator->crypt_ctx)
         {
           char *encryption_key_uid = current_encryption_key_uid (TRUE);
@@ -37484,10 +37489,8 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
       return lsc_crypt_decrypt (iterator->crypt_ctx, secret, type);
     }
-  else
-    {
-      return unencrypted;
-    }
+
+  return unencrypted;
 }
 
 /**
