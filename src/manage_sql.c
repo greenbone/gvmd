@@ -58340,23 +58340,36 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
     }
   else if (strcasecmp (name, "cleanup-config-prefs") == 0)
     {
-      int removed, fixed_values;
       sql ("DELETE FROM config_preferences WHERE id NOT IN"
            " (SELECT min(id) FROM config_preferences"
            "  GROUP BY config, type, name, value);");
-      removed = sql_changes();
 
       sql ("UPDATE config_preferences"
            " SET value = (SELECT value FROM nvt_preferences"
            "              WHERE name='scanner_plugins_timeout')"
            " WHERE name = 'scanner_plugins_timeout'"
            "   AND value = 'SCANNER_NVT_TIMEOUT';");
-      fixed_values = sql_changes();
 
-      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs."
-                                      " Duplicate config preferences removed:"
-                                      " %d. Corrected preference values: %d",
-                                      removed, fixed_values);
+      sql ("UPDATE config_preferences"
+           " SET pref_nvt = NULL,"
+           "     pref_id = NULL,"
+           "     pref_type = NULL,"
+           "     pref_name = NULL"
+           " WHERE type = 'SERVER_PREFS' AND pref_nvt IS NOT NULL;");
+
+      sql ("UPDATE config_preferences"
+          " SET pref_nvt = substring (name, '^([^:]*)'),"
+          "     pref_id = CAST(substring (name, '^[^:]*:([0-9]+)') AS integer),"
+          "     pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):'),"
+          "     pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+          " WHERE type = 'PLUGINS_PREFS'"
+          "       AND (pref_nvt = '(null)' OR pref_nvt IS NULL"
+          "            OR pref_type = '(null)' OR pref_type IS NULL"
+          "            OR pref_name = '(null)' OR pref_name IS NULL)"
+          "       AND name ~ '^[^:]*:[0-9]+:[^:]*:.*'"
+          "       AND type = 'PLUGINS_PREFS';");
+
+      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs.");
     }
   else if (strcasecmp (name, "cleanup-feed-permissions") == 0)
     {
