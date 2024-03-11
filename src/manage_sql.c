@@ -5039,7 +5039,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss%s %s"
-                   " WHERE %ss.id = %llu"
+                   " WHERE %ss%s.id = %llu"
                    " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
@@ -5048,6 +5048,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    resource,
                    owned_clause,
                    extra_where_single ? extra_where_single : "",
