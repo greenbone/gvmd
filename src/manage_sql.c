@@ -329,9 +329,6 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
                             const char *);
 
 static int
-setting_value_int (const char *, int *);
-
-static int
 setting_auto_cache_rebuild_int ();
 
 static int
@@ -12142,25 +12139,21 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   if (filter_return)
     *filter_return = filter;
 
+  (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
+  (*alert_filter_get)->details = base_get_data->details;
+  (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
+  (*alert_filter_get)->ignore_max_rows_per_page
+    = base_get_data->ignore_max_rows_per_page;
+
   if (filter)
     {
-      (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
-      (*alert_filter_get)->details = base_get_data->details;
-      (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
-      (*alert_filter_get)->ignore_max_rows_per_page
-        = base_get_data->ignore_max_rows_per_page;
       (*alert_filter_get)->filt_id = g_strdup (filt_id);
       (*alert_filter_get)->filter = filter_term (filt_id);
     }
   else
-    (*alert_filter_get) = NULL;
-
-  ignore_pagination = alert_data (alert, "method",
-                                  "composer_ignore_pagination");
-  if (ignore_pagination)
     {
-      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
-      g_free (ignore_pagination);
+      (*alert_filter_get)->filt_id = NULL;
+      (*alert_filter_get)->filter = g_strdup("");
     }
 
   /* Adjust filter for report composer.
@@ -12171,39 +12164,44 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
    * We simply use these fields to adjust the filter.  In the future we'll
    * remove the filter terms and extend the way we get the report. */
 
-  if (filter)
+  gchar *include_notes, *include_overrides;
+
+  ignore_pagination = alert_data (alert, "method",
+                                  "composer_ignore_pagination");
+  if (ignore_pagination)
     {
-      gchar *include_notes, *include_overrides;
+      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
+      g_free (ignore_pagination);
+    }
 
-      include_notes = alert_data (alert, "method",
-                                  "composer_include_notes");
-      if (include_notes)
-        {
-          gchar *new_filter;
+  include_notes = alert_data (alert, "method",
+                              "composer_include_notes");
+  if (include_notes)
+    {
+      gchar *new_filter;
 
-          new_filter = g_strdup_printf ("notes=%i %s",
-                                        atoi (include_notes),
-                                        (*alert_filter_get)->filter);
-          g_free ((*alert_filter_get)->filter);
-          (*alert_filter_get)->filter = new_filter;
-          (*alert_filter_get)->filt_id = NULL;
-          g_free (include_notes);
-        }
+      new_filter = g_strdup_printf ("notes=%i %s",
+                                    atoi (include_notes),
+                                    (*alert_filter_get)->filter);
+      g_free ((*alert_filter_get)->filter);
+      (*alert_filter_get)->filter = new_filter;
+      (*alert_filter_get)->filt_id = NULL;
+      g_free (include_notes);
+    }
 
-      include_overrides = alert_data (alert, "method",
-                                      "composer_include_overrides");
-      if (include_overrides)
-        {
-          gchar *new_filter;
+  include_overrides = alert_data (alert, "method",
+                                  "composer_include_overrides");
+  if (include_overrides)
+    {
+      gchar *new_filter;
 
-          new_filter = g_strdup_printf ("overrides=%i %s",
-                                        atoi (include_overrides),
-                                        (*alert_filter_get)->filter);
-          g_free ((*alert_filter_get)->filter);
-          (*alert_filter_get)->filter = new_filter;
-          (*alert_filter_get)->filt_id = NULL;
-          g_free (include_overrides);
-        }
+      new_filter = g_strdup_printf ("overrides=%i %s",
+                                    atoi (include_overrides),
+                                    (*alert_filter_get)->filter);
+      g_free ((*alert_filter_get)->filter);
+      (*alert_filter_get)->filter = new_filter;
+      (*alert_filter_get)->filt_id = NULL;
+      g_free (include_overrides);
     }
 
   return 0;
@@ -16005,6 +16003,19 @@ check_db_settings ()
          "  'Delta Reports Version',"
          "  'Version of the generation of the Delta Reports.',"
          "  '2' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "', NULL,"
+         "  'SecInfo SQL Buffer Threshold',"
+         "  'Buffer size threshold in MiB for running buffered SQL statements'"
+         "  || ' in SecInfo updates before the end of the file'"
+         "  || ' being processed.',"
+         "  '100' );");
 }
 
 /**
@@ -21679,8 +21690,8 @@ report_add_results_array (report_t report, GArray *results)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
    { "iso_time (creation_time)", "name", KEYWORD_TYPE_STRING },              \
    { "''", NULL, KEYWORD_TYPE_STRING },                                      \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },                \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "(SELECT name FROM users WHERE users.id = reports.owner)",              \
@@ -22152,12 +22163,12 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "creation_time",                                                        \
-      KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (date, opts.user_zone)",                                     \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "date",                                                                 \
       "modification_time",                                                    \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -22305,12 +22316,12 @@ where_qod (int min_qod)
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-    { " iso_time (date, opts.user_zone)",                                     \
+    { "date",                                                                 \
       "creation_time",                                                        \
-      KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (date, opts.user_zone)",                                     \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "date",                                                                 \
       "modification_time",                                                    \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "date", "created", KEYWORD_TYPE_INTEGER },                              \
     { "date", "modified", KEYWORD_TYPE_INTEGER },                             \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -22467,12 +22478,12 @@ where_qod (int min_qod)
     { "comparison.delta_qod", NULL, KEYWORD_TYPE_INTEGER },                   \
     { "comparison.delta_uuid", NULL, KEYWORD_TYPE_STRING },                   \
     { "delta_qod_type", NULL, KEYWORD_TYPE_STRING },                          \
-    { " iso_time (delta_date, opts.user_zone)",                               \
+    { "delta_date",                                                           \
       "delta_creation_time",                                                  \
-      KEYWORD_TYPE_STRING },                                                  \
-    { " iso_time (delta_date, opts.user_zone)",                               \
+      KEYWORD_TYPE_INTEGER },                                                 \
+    { "delta_date",                                                           \
       "delta_modification_time",                                              \
-      KEYWORD_TYPE_STRING },                                                  \
+      KEYWORD_TYPE_INTEGER },                                                 \
     { "delta_task", NULL, KEYWORD_TYPE_INTEGER },                             \
     { "delta_report", NULL, KEYWORD_TYPE_INTEGER },                           \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
@@ -23906,13 +23917,13 @@ result_iterator_delta_qod_type (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return delta creation time if any, else NULL.
+ * @return Time, or 0 if iteration is complete.
  */
-const char *
+time_t
 result_iterator_delta_creation_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 6);
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 6);
 }
 
 /**
@@ -23920,13 +23931,13 @@ result_iterator_delta_creation_time (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return delta modification time if any, else NULL.
+ * @return Time, or 0 if iteration is complete.
  */
-const char *
+time_t
 result_iterator_delta_modification_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
+  return iterator_int64 (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 7);
 }
 
 /**
@@ -27919,23 +27930,41 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                           "nvts_cols");
 
   extra_with = g_strdup_printf(" comparison AS ("
-    " WITH r1 as (SELECT results.id, description, host, report, port,"
+    " WITH r1a as (SELECT results.id, description, host, report, port,"
     "              severity, nvt, results.qod, results.uuid, hostname," 
     "              path, r1_lateral.new_severity as new_severity "
     "       FROM results "
-    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid from nvts)"
+    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
     "       AS nvts_cols"
     "       ON nvts_cols.nvts_oid = results.nvt"
     "       %s, LATERAL %s AS r1_lateral" 
     "       WHERE report = %llu),"
-    " r2 as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
+    " r2a as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
     "        FROM results" 
-    "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid from nvts)"
+    "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
     "        AS nvts_cols" 
     "        ON nvts_cols.nvts_oid = results.nvt" 
     "        %s, LATERAL %s AS r2_lateral" 
-    "        WHERE report = %llu)"
-    " SELECT r1.id AS result1_id," 
+    "        WHERE report = %llu),"
+    " r1 as (SELECT DISTINCT ON (r1a.id) r1a.*, r2a.id as r2id, row_number() over w1 as r1_rank"
+    "        FROM r1a LEFT JOIN r2a ON r1a.host = r2a.host"
+    "        AND normalize_port(r1a.port) = normalize_port(r2a.port)" 
+    "        AND r1a.nvt = r2a.nvt "
+    "        AND (r1a.new_severity = 0) = (r2a.new_severity = 0)"
+    "        AND (r1a.description = r2a.description)"
+    "        WINDOW w1 AS (PARTITION BY r1a.host, normalize_port(r1a.port),"
+    "                      r1a.nvt, r1a.new_severity = 0, r2a.id is null ORDER BY r2a.id)"
+    "        ORDER BY r1a.id),"
+    " r2 as (SELECT DISTINCT ON (r2a.id) r2a.*, r1a.id as r1id, row_number() over w2 as r2_rank"
+    "        FROM r2a LEFT JOIN r1a ON r2a.host = r1a.host"
+    "        AND normalize_port(r2a.port) = normalize_port(r1a.port)" 
+    "        AND r2a.nvt = r1a.nvt "
+    "        AND (r2a.new_severity = 0) = (r1a.new_severity = 0)"
+    "        AND (r2a.description = r1a.description)"
+    "        WINDOW w2 AS (PARTITION BY r2a.host, normalize_port(r2a.port),"
+    "                      r2a.nvt, r2a.new_severity = 0, r1a.id is null ORDER BY r1a.id)"
+    "        ORDER BY r2a.id)"
+    " (SELECT r1.id AS result1_id," 
     " r2.id AS result2_id," 
     " compare_results("
     "  r1.description,"
@@ -27961,7 +27990,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     " r2.path AS delta_path,"
     " r2.host AS delta_host,"
       RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
-      " AS delta_hostname,"
+    "   AS delta_hostname,"
     " r2.nvt_version AS delta_nvt_version"
     " FROM r1"
     " FULL OUTER JOIN r2"
@@ -27969,20 +27998,10 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     " AND normalize_port(r1.port) = normalize_port(r2.port)" 
     " AND r1.nvt = r2.nvt "
     " AND (r1.new_severity = 0) = (r2.new_severity = 0)"
-    " AND (r1.description = r2.description"
-    "      OR NOT EXISTS (SELECT * FROM r2"
-    "                     WHERE r1.description = r2.description"
-    "                     AND r1.host = r2.host" 
-    "                     AND normalize_port(r1.port) = normalize_port(r2.port)"
-    "                     AND r1.nvt = r2.nvt"
-    "                     AND (r1.new_severity = 0) = (r2.new_severity = 0))"
-    "      OR NOT EXISTS (SELECT * FROM r1" 
-    "                     WHERE r1.description = r2.description"
-    "                     AND r1.host = r2.host" 
-    "                     AND normalize_port(r1.port) = normalize_port(r2.port)"
-    "                     AND r1.nvt = r2.nvt"
-    "                     AND (r1.new_severity = 0) = (r2.new_severity = 0)))"  
-    " )",
+    " AND ((r1id IS NULL AND r2id IS NULL) OR"
+    "      r2id = r2.id OR r1id = r1.id)"
+    " AND r1_rank = r2_rank"
+    " ) ) ",
     opts_tables,
     with_lateral,
     report,
@@ -38530,8 +38549,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
      KEYWORD_TYPE_STRING                                                   \
    },                                                                      \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                     \
-   { "iso_time (notes.creation_time)", NULL, KEYWORD_TYPE_STRING },        \
-   { "iso_time (notes.modification_time)", NULL, KEYWORD_TYPE_STRING },    \
+   { "notes.creation_time", NULL, KEYWORD_TYPE_INTEGER },                  \
+   { "notes.modification_time", NULL, KEYWORD_TYPE_INTEGER },              \
    { "notes.creation_time", "created", KEYWORD_TYPE_INTEGER },             \
    { "notes.modification_time", "modified", KEYWORD_TYPE_INTEGER },        \
    { "(SELECT name FROM users WHERE users.id = notes.owner)",              \
@@ -38585,8 +38604,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
    { "notes_trash.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                           \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                           \
-   { "iso_time (notes_trash.creation_time)", NULL, KEYWORD_TYPE_STRING },        \
-   { "iso_time (notes_trash.modification_time)", NULL, KEYWORD_TYPE_STRING },    \
+   { "notes_trash.creation_time", NULL, KEYWORD_TYPE_INTEGER },                  \
+   { "notes_trash.modification_time", NULL, KEYWORD_TYPE_INTEGER },              \
    { "notes_trash.creation_time", "created", KEYWORD_TYPE_INTEGER },             \
    { "notes_trash.modification_time", "modified", KEYWORD_TYPE_INTEGER },        \
    { "(SELECT name FROM users WHERE users.id = notes_trash.owner)",              \
@@ -39767,8 +39786,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
      KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
-   { "iso_time (overrides.creation_time)", NULL, KEYWORD_TYPE_STRING },     \
-   { "iso_time (overrides.modification_time)", NULL, KEYWORD_TYPE_STRING }, \
+   { "overrides.creation_time", NULL, KEYWORD_TYPE_INTEGER },               \
+   { "overrides.modification_time", NULL, KEYWORD_TYPE_INTEGER },           \
    { "overrides.creation_time", "created", KEYWORD_TYPE_INTEGER },          \
    { "overrides.modification_time", "modified", KEYWORD_TYPE_INTEGER },     \
    {                                                                        \
@@ -39835,12 +39854,12 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
    { "overrides_trash.uuid", "uuid", KEYWORD_TYPE_STRING },                 \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
    { "CAST ('' AS TEXT)", NULL, KEYWORD_TYPE_STRING },                      \
-   { "iso_time (overrides_trash.creation_time)",                            \
+   { "overrides_trash.creation_time",                                       \
      NULL,                                                                  \
-     KEYWORD_TYPE_STRING },                                                 \
-   { "iso_time (overrides_trash.modification_time)",                        \
+     KEYWORD_TYPE_INTEGER },                                                \
+   { "overrides_trash.modification_time",                                   \
      NULL,                                                                  \
-     KEYWORD_TYPE_STRING },                                                 \
+     KEYWORD_TYPE_INTEGER },                                                \
    { "overrides_trash.creation_time",                                       \
      "created",                                                             \
      KEYWORD_TYPE_INTEGER },                                                \
@@ -50155,9 +50174,9 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
 
   if (host)
     init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, iso_time (creation_time),"
-                   "       iso_time (modification_time), creation_time,"
-                   "       modification_time, owner, owner, value,"
+                   "SELECT id, uuid, name, comment, creation_time,"
+                   "       modification_time, creation_time AS created,"
+                   "       modification_time AS modified, owner, owner, value,"
                    "       source_type, source_id, source_data,"
                    "       (CASE WHEN source_type LIKE 'Report%%'"
                    "        THEN NOT EXISTS (SELECT * FROM reports"
@@ -50168,9 +50187,9 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    " FROM host_identifiers"
                    " WHERE host = %llu"
                    " UNION"
-                   " SELECT id, uuid, name, comment, iso_time (creation_time),"
-                   "        iso_time (modification_time), creation_time,"
-                   "        modification_time, owner, owner,"
+                   " SELECT id, uuid, name, comment, creation_time,"
+                   "        modification_time, creation_time AS created,"
+                   "        modification_time AS modified, owner, owner,"
                    "        (SELECT name FROM oss WHERE id = os),"
                    "        source_type, source_id, source_data,"
                    "        (CASE WHEN source_type LIKE 'Report%%'"
@@ -50189,9 +50208,9 @@ init_host_identifier_iterator (iterator_t* iterator, host_t host,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, iso_time (creation_time),"
-                   "       iso_time (modification_time), creation_time,"
-                   "       modification_time, owner, owner, value,"
+                   "SELECT id, uuid, name, comment, creation_time,"
+                   "       modification_time, creation_time AS created,"
+                   "       modification_time AS modified, owner, owner, value,"
                    "       source_type, source_id, source_data, 0, '', ''"
                    " FROM host_identifiers"
                    " ORDER BY %s %s;",
@@ -50921,8 +50940,8 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
 {
   assert (os);
   init_iterator (iterator,
-                 "SELECT id, uuid, name, comment, iso_time (creation_time),"
-                 "       iso_time (modification_time), creation_time,"
+                 "SELECT id, uuid, name, comment, creation_time,"
+                 "       modification_time, creation_time,"
                  "       modification_time, owner, owner,"
                  "       (SELECT round (CAST (severity AS numeric), 1)"
                  "        FROM host_max_severities"
@@ -51978,7 +51997,7 @@ setting_value (const char *uuid, char **value)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 setting_value_int (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
@@ -52683,6 +52702,8 @@ setting_name (const gchar *uuid)
     return "Feed Import Roles";
   if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
     return "Delta Reports Version";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "SecInfo SQL Buffer Threshold";
 
   return NULL;
 }
@@ -52722,12 +52743,15 @@ setting_description (const gchar *uuid)
     return "Roles given access to new resources from feed.";
   if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
     return "Version of the generation of the Delta Reports.";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "Buffer size threshold in MiB for running buffered SQL statements"
+           " in SecInfo updates before the end of the file being processed.";
 
   return NULL;
 }
 
 /**
- * @brief Get the name of a setting.
+ * @brief Verify the value of a setting.
  *
  * @param[in]  uuid   UUID of setting.
  * @param[in]  value  Value of setting, to verify.
@@ -52815,6 +52839,14 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0 || threshold > (INT_MAX / 1048576))
+        return 1;
+    }
+
   return 0;
 }
 
@@ -52870,6 +52902,15 @@ setting_normalise (const gchar *uuid, const gchar *value)
       return g_string_free (normalised, FALSE);
     }
 
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0)
+        return NULL;
+      return g_strdup_printf ("%i", threshold);
+    }
+
   return g_strdup (value);
 }
 
@@ -52900,7 +52941,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
-      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION))
+      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION)
+      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -52927,7 +52969,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0))
+          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
+          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
@@ -55289,8 +55332,8 @@ user_resources_in_use (user_t user,
    { "uuid", "uuid", KEYWORD_TYPE_STRING },                                  \
    { "name", "name", KEYWORD_TYPE_STRING },                                  \
    { "''", "comment", KEYWORD_TYPE_STRING },                                 \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },                \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },            \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                      \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                     \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },                \
    { "cast (null AS text)", "_owner", KEYWORD_TYPE_INTEGER },                \
@@ -58297,23 +58340,36 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
     }
   else if (strcasecmp (name, "cleanup-config-prefs") == 0)
     {
-      int removed, fixed_values;
       sql ("DELETE FROM config_preferences WHERE id NOT IN"
            " (SELECT min(id) FROM config_preferences"
            "  GROUP BY config, type, name, value);");
-      removed = sql_changes();
 
       sql ("UPDATE config_preferences"
            " SET value = (SELECT value FROM nvt_preferences"
            "              WHERE name='scanner_plugins_timeout')"
            " WHERE name = 'scanner_plugins_timeout'"
            "   AND value = 'SCANNER_NVT_TIMEOUT';");
-      fixed_values = sql_changes();
 
-      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs."
-                                      " Duplicate config preferences removed:"
-                                      " %d. Corrected preference values: %d",
-                                      removed, fixed_values);
+      sql ("UPDATE config_preferences"
+           " SET pref_nvt = NULL,"
+           "     pref_id = NULL,"
+           "     pref_type = NULL,"
+           "     pref_name = NULL"
+           " WHERE type = 'SERVER_PREFS' AND pref_nvt IS NOT NULL;");
+
+      sql ("UPDATE config_preferences"
+          " SET pref_nvt = substring (name, '^([^:]*)'),"
+          "     pref_id = CAST(substring (name, '^[^:]*:([0-9]+)') AS integer),"
+          "     pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):'),"
+          "     pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+          " WHERE type = 'PLUGINS_PREFS'"
+          "       AND (pref_nvt = '(null)' OR pref_nvt IS NULL"
+          "            OR pref_type = '(null)' OR pref_type IS NULL"
+          "            OR pref_name = '(null)' OR pref_name IS NULL)"
+          "       AND name ~ '^[^:]*:[0-9]+:[^:]*:.*'"
+          "       AND type = 'PLUGINS_PREFS';");
+
+      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs.");
     }
   else if (strcasecmp (name, "cleanup-feed-permissions") == 0)
     {
