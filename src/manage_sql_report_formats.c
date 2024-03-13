@@ -26,6 +26,7 @@
 #include "debug_utils.h"
 #include "manage_sql_report_formats.h"
 #include "manage_acl.h"
+#include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "sql.h"
 #include "utils.h"
@@ -3746,12 +3747,14 @@ run_report_format_script (gchar *report_format_id,
  * @param[in]   xml_start      Path of file containing start of report.
  * @param[in]   xml_full       Path to file to print full report to.
  * @param[in]   report_format  Format of report that will be created from XML.
+ * @param[in]   report_config  Report config for report format param.
  *
  * @return 0 success, -1 error.
  */
 int
 print_report_xml_end (gchar *xml_start, gchar *xml_full,
-                      report_format_t report_format)
+                      report_format_t report_format,
+                      report_config_t report_config)
 {
   FILE *out;
 
@@ -3774,15 +3777,41 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
 
   if (report_format > 0)
     {
-      iterator_t params;
+      gboolean can_use_config = FALSE;
       PRINT (out, "<report_format>");
-      init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
-      while (next (&params))
-        PRINT (out,
-               "<param><name>%s</name><value>%s</value></param>",
-               report_format_param_iterator_name (&params),
-               report_format_param_iterator_value (&params));
-      cleanup_iterator (&params);
+
+      if (report_config)
+        {
+          if (report_config_report_format (report_config) == report_format)
+            can_use_config = TRUE;
+          else
+            g_warning ("%s: report config not compatible with report format,"
+                       " using default params",
+                       __func__);
+        }
+
+      if (can_use_config)
+        {
+          iterator_t params;
+          init_report_config_param_iterator (&params, report_config, 0);
+          while (next (&params))
+            PRINT (out,
+                  "<param><name>%s</name><value>%s</value></param>",
+                  report_config_param_iterator_name (&params),
+                  report_config_param_iterator_value (&params));
+          cleanup_iterator (&params);
+        }
+      else
+        {
+          iterator_t params;
+          init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
+          while (next (&params))
+            PRINT (out,
+                  "<param><name>%s</name><value>%s</value></param>",
+                  report_format_param_iterator_name (&params),
+                  report_format_param_iterator_value (&params));
+          cleanup_iterator (&params);
+        }
 
       PRINT (out, "</report_format>");
     }
@@ -3804,6 +3833,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  * @brief Applies a report format to an XML report.
  *
  * @param[in]  report_format_id   Report format to apply.
+ * @param[in]  report_config      Optional report config to apply.
  * @param[in]  xml_start          Path to the main part of the report XML.
  * @param[in]  xml_file           Path to the report XML file.
  * @param[in]  xml_dir            Path to the temporary dir.
@@ -3813,6 +3843,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  */
 gchar*
 apply_report_format (gchar *report_format_id,
+                     report_config_t report_config,
                      gchar *xml_start,
                      gchar *xml_file,
                      gchar *xml_dir,
@@ -3905,7 +3936,9 @@ apply_report_format (gchar *report_format_id,
           if (g_hash_table_contains (subreports, *current_rf_dependency)
               == FALSE)
             {
+              // TODO: Handle report configs for subreports
               subreport_file = apply_report_format (*current_rf_dependency,
+                                                    0,
                                                     xml_start,
                                                     subreport_xml,
                                                     subreport_dir,
@@ -3998,7 +4031,7 @@ apply_report_format (gchar *report_format_id,
 
   /* Add second half of input XML */
 
-  if (print_report_xml_end (xml_start, xml_file, report_format))
+  if (print_report_xml_end (xml_start, xml_file, report_format, report_config))
     {
       g_free (output_file);
       output_file = NULL;
