@@ -3167,7 +3167,7 @@ static int
 fork_cve_scan_handler (task_t task, target_t target)
 {
   int pid;
-  char *report_id, *hosts;
+  char *report_id, *hosts, *exclude_hosts;
   gvm_hosts_t *gvm_hosts;
   gvm_host_t *gvm_host;
 
@@ -3234,6 +3234,8 @@ fork_cve_scan_handler (task_t task, target_t target)
       exit (1);
     }
 
+  exclude_hosts = target_exclude_hosts (target);
+
   reset_task (task);
   set_task_start_time_epoch (task, time (NULL));
   set_scan_start_time_epoch (global_current_report, time (NULL));
@@ -3242,6 +3244,20 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
+  
+  if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
+    {
+      set_task_interrupted (task,
+                              "Failed to exclude hosts."
+                              "  Interrupting scan.");      
+      set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
+      gvm_hosts_free (gvm_hosts);
+      free (exclude_hosts);
+      gvm_close_sentry ();
+      exit(1);
+    }
+  free (exclude_hosts);
+
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
     if (cve_scan_host (task, global_current_report, gvm_host))
       {
@@ -5830,11 +5846,18 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                    nvt_iterator_detection (nvts));
             }
 
+          g_string_append_printf (buffer,
+                                  "<creation_time>%s</creation_time>",
+                                  iso_if_time (get_iterator_creation_time (nvts)));
+
+          g_string_append_printf (buffer,
+                                  "<modification_time>%s</modification_time>",
+                                  iso_if_time (get_iterator_modification_time (nvts)));
+
           default_timeout = nvt_default_timeout (oid);
+
           g_string_append_printf (buffer,
                                   "<default_timeout>%s</default_timeout>"
-                                  "<creation_time>%s</creation_time>"
-                                  "<modification_time>%s</modification_time>"
                                   "<category>%d</category>"
                                   "<family>%s</family>"
                                   "<qod>"
@@ -5844,18 +5867,13 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   "<refs>%s</refs>"
                                   "<tags>%s</tags>",
                                   default_timeout ? default_timeout : "",
-                                  get_iterator_creation_time (nvts)
-                                  ? get_iterator_creation_time (nvts)
-                                  : "",
-                                  get_iterator_modification_time (nvts)
-                                  ? get_iterator_modification_time (nvts)
-                                  : "",
                                   nvt_iterator_category (nvts),
                                   family_text,
                                   nvt_iterator_qod (nvts),
                                   nvt_iterator_qod_type (nvts),
                                   refs_str->str,
                                   nvt_tags->str);
+
           free (default_timeout);
 
           g_string_free (nvt_tags, 1);

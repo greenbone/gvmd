@@ -25,12 +25,6 @@ CONVERT_SCRIPT=$4
 AUTH_PATH=$5
 REPORT_PATH=$6
 
-# Function to encode for URL
-urlencode () {
-  RET=$(python -c "import urllib, sys; print urllib.quote(sys.argv[1])" "$1")
-  echo "$RET"
-}
-
 # Create temp file for converted report
 REPORT_DATE=$(xmlstarlet sel -t -v "report/timestamp" < $REPORT_PATH)
 EXIT_CODE=$?
@@ -76,9 +70,9 @@ END_TIME=$(TZ=UTC date -d "$END_TIME" +%Y-%m-%dT%H:%M:%S.000Z)
 RUNTIME="$START_TIME/$END_TIME"
 
 # Upload the report
-VENDOR=$(urlencode "Greenbone")
-PRODUCT=$(urlencode "Greenbone Vulnerability Manager")
-FORMAT_VERSION=$(urlencode "1.0.0")
+VENDOR="Greenbone"
+PRODUCT="Greenbone%20Vulnerability%20Manager"
+FORMAT_VERSION="1.0.0"
 CN_REPLACEMENT="Tippingpoint"
 
 if [ "1" = $CERT_WORKAROUND ]

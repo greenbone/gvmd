@@ -71,6 +71,7 @@ jobs:
           build-args: |
             VERSION=${{ steps.container-opts.outputs.version }}
             GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
+            IMAGE_REGISTRY=${{ vars.IMAGE_REGISTRY }}
           file: .docker/prod.Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}

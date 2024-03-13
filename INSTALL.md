@@ -705,9 +705,6 @@ Prerequisites for S/MIME support (e.g. email encryption):
 Prerequisites for certificate generation:
 * GnuTLS certtool (Debian package: gnutls-bin)
 
-Prerequisites (recommended) to lower sync RAM usage
-* xml_split (Debian package: xml-twig-tools)
-
 ## Static code analysis with the Clang Static Analyzer
 
 If you want to use the Clang Static Analyzer (https://clang-analyzer.llvm.org/)

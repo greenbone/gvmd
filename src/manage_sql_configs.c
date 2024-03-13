@@ -3627,6 +3627,13 @@ modify_config_preference (config_t config, const char* nvt,
           g_free (quoted_name);
           quoted_name = sql_quote (splits[3]);
         }
+      else
+        {
+          quoted_pref_nvt = sql_quote (splits[0]);
+          pref_id = atoi (splits[1]);
+          quoted_pref_type = sql_quote (splits[2]);
+          quoted_pref_name = sql_quote (splits[3]);
+        }
     }
   g_strfreev (splits);
 
@@ -3639,12 +3646,25 @@ modify_config_preference (config_t config, const char* nvt,
        config,
        nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
        quoted_name);
-  sql ("INSERT INTO config_preferences"
-       " (config, type, name, value, pref_nvt, pref_id, pref_type, pref_name)"
-       " VALUES (%llu, %s, '%s', '%s', '%s', %i, '%s', '%s');",
-       config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
-       quoted_value, quoted_pref_nvt, pref_id, quoted_pref_type,
-       quoted_pref_name);
+  if (nvt)
+    {
+      sql ("INSERT INTO config_preferences"
+          " (config, type, name, value,"
+          "  pref_nvt, pref_id, pref_type, pref_name)"
+          " VALUES (%llu, 'PLUGINS_PREFS', '%s', '%s',"
+          "         '%s', %i, '%s', '%s');",
+          config, quoted_name, quoted_value,
+          quoted_pref_nvt, pref_id, quoted_pref_type, quoted_pref_name);
+    }
+  else
+    {
+      sql ("INSERT INTO config_preferences"
+          " (config, type, name, value,"
+          "  pref_nvt, pref_id, pref_type, pref_name)"
+          " VALUES (%llu, 'SERVER_PREFS', '%s', '%s',"
+          "         NULL, NULL, NULL, NULL);",
+          config, quoted_name, quoted_value);
+    }
 
   g_free (quoted_value);
   g_free (quoted_name);

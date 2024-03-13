@@ -154,18 +154,28 @@ get_iterator_comment (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Creation time of the resource or NULL if iteration is complete.
+ * @return Creation time, or 0 if iteration is complete.
  */
-DEF_ACCESS (get_iterator_creation_time, 4);
+time_t
+get_iterator_creation_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 4);
+}
 
 /**
  * @brief Get the modification time of the resource from a GET iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Modification time of the resource or NULL if iteration is complete.
+ * @return Modification time, or 0 if iteration is complete.
  */
-DEF_ACCESS (get_iterator_modification_time, 5);
+time_t
+get_iterator_modification_time (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 5);
+}
 
 /**
  * @brief Get the owner name of the resource from a GET iterator.

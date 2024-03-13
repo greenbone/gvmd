@@ -661,8 +661,8 @@ restore_report_config (const char *report_config_id)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                   \
    { "name", NULL, KEYWORD_TYPE_STRING },                                   \
    { "comment", NULL, KEYWORD_TYPE_STRING },                                \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },               \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },           \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                     \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                    \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },               \
    {                                                                        \
@@ -696,8 +696,8 @@ restore_report_config (const char *report_config_id)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                                   \
    { "name", NULL, KEYWORD_TYPE_STRING },                                   \
    { "comment", NULL, KEYWORD_TYPE_STRING },                                \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },               \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },           \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                         \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                     \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                    \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },               \
    {                                                                        \

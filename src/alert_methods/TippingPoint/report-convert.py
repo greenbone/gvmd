@@ -137,6 +137,10 @@ def convert (xml_tree, out_file):
     nvt_cve = '';
     nvt_elem = result_elem.find ('nvt')
     nvt_refs = nvt_elem.find ('refs');
+
+    if (nvt_refs is None):
+      continue
+
     for ref in nvt_refs.findall('ref'):
       if (ref.attrib['type'] == 'cve'):
         if (nvt_cve == ''):
