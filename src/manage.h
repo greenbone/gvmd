@@ -1641,9 +1641,6 @@ manage_report (report_t, report_t, const get_data_t *, report_format_t,
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     int, int, int, int, int, int,
-                    gboolean (*) (const char *,
-                                  int (*) (const char*, void*),
-                                  void*),
                     int (*) (const char *, void*), void *, const char *,
                     const gchar *);
 
@@ -2184,6 +2181,10 @@ init_credential_iterator_one (iterator_t*, credential_t);
 
 int
 init_credential_iterator (iterator_t*, const get_data_t *);
+
+int
+init_credential_iterator_format (iterator_t*, const get_data_t *,
+                                 credential_format_t);
 
 const char*
 credential_iterator_login (iterator_t*);

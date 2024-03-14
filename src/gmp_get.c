@@ -261,15 +261,14 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
 /**
  * @brief Send start of GET response.
  *
+ * @param[in]  gmp_parser            GMP Parser.
+ * @param[in]  error                 Error.
  * @param[in]  type                  Type.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
  *
  * @return 0 success, 1 send to client failed.
  */
 int
-send_get_start (const char *type, int (*write_to_client) (const char*, void*),
-                void* write_to_client_data)
+send_get_start (gmp_parser_t *gmp_parser, GError **error, const char *type)
 {
   gchar *msg;
 
@@ -285,7 +284,7 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
                                    type);
 
 
-  if (send_to_client (msg, write_to_client, write_to_client_data))
+  if (send_to_client (gmp_parser, error, msg))
     {
       g_free (msg);
       return 1;
@@ -309,8 +308,8 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
  */
 int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
-                 int (*write_to_client) (const char *, void*),
-                 void* write_to_client_data, int writable, int in_use)
+                 gmp_parser_t *gmp_parser, GError **error, int writable,
+                 int in_use)
 {
   GString *buffer;
   const char *tag_type;
@@ -453,7 +452,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
         }
     }
 
-  if (send_to_client (buffer->str, write_to_client, write_to_client_data))
+  if (send_to_client (gmp_parser, error, buffer->str))
     {
       g_string_free (buffer, TRUE);
       return 1;
@@ -550,8 +549,8 @@ buffer_get_filter_xml (GString *msg, const char* type,
  * @param[in]  count                 Page count.
  * @param[in]  filtered              Filtered count.
  * @param[in]  full                  Full count.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
+ * @param[in]  gmp_parser            GMP Parser.
+ * @param[in]  error                 Error.
  *
  * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
  *         term.
@@ -559,8 +558,7 @@ buffer_get_filter_xml (GString *msg, const char* type,
 static int
 send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                        int count, int filtered, int full,
-                       int (*write_to_client) (const char *, void*),
-                       void* write_to_client_data)
+                       gmp_parser_t *gmp_parser, GError **error)
 {
   gchar *sort_field, *filter;
   int first, max, sort_order;
@@ -685,7 +683,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
   g_free (sort_field);
   g_free (filter);
 
-  if (send_to_client (msg->str, write_to_client, write_to_client_data))
+  if (send_to_client (gmp_parser, error, msg->str))
     {
       g_string_free (msg, TRUE);
       return 1;
@@ -702,19 +700,18 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
  * @param[in]  count                 Page count.
  * @param[in]  filtered              Filtered count.
  * @param[in]  full                  Full count.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
+ * @param[in]  gmp_parser            GMP Parser.
+ * @param[in]  error                 Error.
  *
  * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
  *         term.
  */
 int
 send_get_end (const char *type, get_data_t *get, int count, int filtered,
-              int full, int (*write_to_client) (const char *, void*),
-              void* write_to_client_data)
+              int full, gmp_parser_t *gmp_parser, GError **error)
 {
   return send_get_end_internal (type, get, 1, count, filtered, full,
-                                write_to_client, write_to_client_data);
+                                gmp_parser, error);
 }
 
 /**
@@ -722,17 +719,15 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  *
  * @param[in]  type                  Type.
  * @param[in]  get                   GET data.
- * @param[in]  write_to_client       Function that sends to clients.
- * @param[in]  write_to_client_data  Data for write_to_client.
+ * @param[in]  gmp_parser            GMP Parser.
+ * @param[in]  error                 Error.
  *
  * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
  *         term.
  */
 int
 send_get_end_no_counts (const char *type, get_data_t *get,
-                        int (*write_to_client) (const char *, void*),
-                        void* write_to_client_data)
+                        gmp_parser_t *gmp_parser, GError **error)
 {
-  return send_get_end_internal (type, get, 0, 0, 0, 0, write_to_client,
-                                write_to_client_data);
+  return send_get_end_internal (type, get, 0, 0, 0, 0, gmp_parser, error);
 }

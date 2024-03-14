@@ -334,11 +334,9 @@ create_port_list_run (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("create_port_list",
                                            "port_list",
                                            entity_text (copy),
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             log_event_fail ("port_list", "Port List", NULL, "created");
             break;
           case 99:
