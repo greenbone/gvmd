@@ -1030,11 +1030,12 @@ column_array_copy (column_t *columns)
 static void
 column_array_free (column_t *columns)
 {
-  while (columns->filter)
+  column_t *point = columns;
+  while (point->filter)
     {
-      g_free (columns->select);
-      g_free (columns->filter);
-      columns++;
+      g_free (point->select);
+      g_free (point->filter);
+      point++;
     }
   g_free (columns);
 }
@@ -22158,8 +22159,8 @@ where_qod (int min_qod)
  * @brief Result iterator filterable columns, for severity only version .
  */
 #define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
-    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
-    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
+    { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -22310,9 +22311,9 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define PRE_BASE_RESULT_ITERATOR_COLUMNS(new_severity_sql)                    \
-    { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     /* ^ 0 */                                                                 \
-    { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
+    { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
     { "nvts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
