@@ -1030,11 +1030,12 @@ column_array_copy (column_t *columns)
 static void
 column_array_free (column_t *columns)
 {
-  while (columns->filter)
+  column_t *point = columns;
+  while (point->filter)
     {
-      g_free (columns->select);
-      g_free (columns->filter);
-      columns++;
+      g_free (point->select);
+      g_free (point->filter);
+      point++;
     }
   g_free (columns);
 }
@@ -5039,7 +5040,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss%s %s"
-                   " WHERE %ss.id = %llu"
+                   " WHERE %ss%s.id = %llu"
                    " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
@@ -5048,6 +5049,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    resource,
                    owned_clause,
                    extra_where_single ? extra_where_single : "",
@@ -22157,8 +22159,8 @@ where_qod (int min_qod)
  * @brief Result iterator filterable columns, for severity only version .
  */
 #define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
-    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
-    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
+    { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -22309,9 +22311,9 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define PRE_BASE_RESULT_ITERATOR_COLUMNS(new_severity_sql)                    \
-    { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     /* ^ 0 */                                                                 \
-    { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
+    { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
     { "nvts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -27979,7 +27981,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "  r2.path) AS state,"
     " r2.description AS delta_description,"
     " r2.new_severity AS delta_new_severity,"
-    " r2.severity AS delta_severity,"    
+    " r2.severity AS delta_severity,"
     " r2.qod AS delta_qod,"
     " r2.qod_type AS delta_qod_type,"
     " r2.uuid AS delta_uuid,"
@@ -28811,6 +28813,7 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
                         array_t *result_hosts)
 {
   GString *buffer = g_string_new ("");
+  GTree *ports;
 
   *orig_f_holes = *f_holes;
   *orig_f_infos = *f_infos;
@@ -28818,6 +28821,9 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
   *orig_f_warnings = *f_warnings;
   *orig_f_false_positives = *f_false_positives;
   *orig_filtered_result_count = *filtered_result_count;
+
+  ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
+                           (GDestroyNotify) free_host_ports);
 
   while (next (results)) {
 
@@ -28877,15 +28883,53 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
     if (fprintf (out, "%s", buffer->str) < 0) 
       {
         g_string_free (buffer, TRUE);
+        g_tree_destroy (ports);
         return -1;
       }
+    if (result_hosts_only)
+      array_add_new_string (result_hosts,
+                            result_iterator_host (results));
+    add_port (ports, results);
     g_string_truncate (buffer, 0);
   }
   g_string_free (buffer, TRUE);
   if (fprintf (out, "</results>") < 0)
     {
+      g_tree_destroy (ports);
       return -1;
     }
+
+  gchar *msg;
+  msg = g_markup_printf_escaped ("<ports"
+                                 " start=\"%i\""
+                                 " max=\"%i\">",
+                                 /* Add 1 for 1 indexing. */
+                                 first_result + 1,
+                                 max_results);
+  if (fprintf (out, "%s", msg) < 0)
+    {
+      g_tree_destroy (ports);
+      g_free (msg);
+      return -1;
+    }
+  g_free (msg);
+  if (sort_field == NULL || strcmp (sort_field, "port"))
+    {
+      if (sort_order)
+        g_tree_foreach (ports, print_host_ports_by_severity_asc, out);
+      else
+        g_tree_foreach (ports, print_host_ports_by_severity_desc, out);
+    }
+  else if (sort_order)
+    g_tree_foreach (ports, print_host_ports, out);
+  else
+    g_tree_foreach (ports, print_host_ports_desc, out);
+  g_tree_destroy (ports);
+  if (fprintf (out, "</ports>") < 0)
+    {
+      return -1;
+    }
+
   return 0;
 }
 
