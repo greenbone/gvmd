@@ -1974,6 +1974,7 @@ typedef struct
 {
   get_data_t get;        ///< Get args with result filtering.
   get_data_t report_get; ///< Get args with report filtering.
+  char *config_id;       ///< ID of report config.
   char *delta_report_id; ///< ID of report to compare single report to.
   char *format_id;       ///< ID of report format.
   char *alert_id;        ///< ID of alert.
@@ -1995,6 +1996,7 @@ get_reports_data_reset (get_reports_data_t *data)
 {
   get_data_reset (&data->get);
   get_data_reset (&data->report_get);
+  free (data->config_id);
   free (data->delta_report_id);
   free (data->format_id);
   free (data->alert_id);
@@ -5526,6 +5528,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "alert_id",
                               &get_reports_data->alert_id);
 
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &get_reports_data->config_id);
+            
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
 
@@ -14450,8 +14455,9 @@ static void
 handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
 {
   report_t request_report = 0, delta_report = 0, report;
-  char no_report_format;
-  report_format_t report_format;
+  char no_report_config, no_report_format;
+  report_config_t report_config = 0;
+  report_format_t report_format = 0;
   iterator_t reports;
   int count, filtered, ret, first;
 
@@ -14515,6 +14521,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  no_report_config = (get_reports_data->config_id == NULL)
+                      || (strcmp(get_reports_data->config_id, "") == 0);
   no_report_format = (get_reports_data->format_id == NULL)
                       || (strcmp(get_reports_data->format_id, "") == 0);
 
@@ -14541,6 +14549,44 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       get_reports_data_reset (get_reports_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
+    }
+
+  if (!no_report_config)
+    {
+      if (find_report_config_with_permission (get_reports_data->config_id,
+                                              &report_config,
+                                              "get_report_configs"))
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      if (report_config == 0)
+        {
+          if (send_find_error_to_client ("get_reports", "report config",
+                                         get_reports_data->config_id,
+                                         gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      if (report_config_report_format (report_config) != report_format)
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_reports",
+                              "Report config is not compatible with"
+                              " selected report format"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
     }
 
   if (get_reports_data->get.filt_id
@@ -14748,12 +14794,16 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 "<report"
                                 " id=\"%s\""
                                 " format_id=\"%s\""
+                                " config_id=\"%s\""
                                 " extension=\"%s\""
                                 " content_type=\"%s\">",
                                 report_iterator_uuid (&reports),
                                 no_report_format
                                   ? ""
                                   : get_reports_data->format_id,
+                                no_report_config
+                                  ? ""
+                                  : get_reports_data->config_id,
                                 extension,
                                 content_type);
 
@@ -14822,7 +14872,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               g_free (report_task_uuid);
             }
 
-            if (get_reports_data->format_id)
+            if (!no_report_format)
               {
                 gchar *format_name = NULL;
                 format_name = report_format_name (report_format);
@@ -14834,7 +14884,22 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                    "</report_format>",
                    get_reports_data->format_id,
                    format_name ? format_name : "");
-                // g_free (report_format_name);
+                free (format_name);
+              }
+
+            if (!no_report_config)
+              {
+                gchar *config_name = NULL;
+                config_name = report_config_name (report_config);
+
+                buffer_xml_append_printf
+                  (prefix,
+                   "<report_config id=\"%s\">"
+                   "<name>%s</name>"
+                   "</report_config>",
+                   get_reports_data->config_id,
+                   config_name ? config_name : "");
+                free (config_name);
               }
 
         }
@@ -14850,6 +14915,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       ret = manage_send_report (report,
                                 delta_report,
                                 no_report_format ? -1 : report_format,
+                                report_config,
                                 &get_reports_data->get,
                                 get_reports_data->notes_details,
                                 get_reports_data->overrides_details,

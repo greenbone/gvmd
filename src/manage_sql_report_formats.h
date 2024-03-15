@@ -49,7 +49,7 @@ int
 restore_report_format (const char *);
 
 gchar *
-apply_report_format (gchar *, gchar *, gchar *, gchar *,
+apply_report_format (gchar *, report_config_t, gchar *, gchar *, gchar *,
                      GList **);
 
 gboolean
@@ -89,6 +89,6 @@ int
 check_db_report_formats_trash ();
 
 int
-print_report_xml_end (gchar *, gchar *, report_format_t);
+print_report_xml_end (gchar *, gchar *, report_format_t, report_config_t);
 
 #endif /* not _GVMD_MANAGE_SQL_REPORT_FORMATS_H */

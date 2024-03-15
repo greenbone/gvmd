@@ -1806,6 +1806,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <attrib>
         <name>format_id</name>
         <type>uuid</type>
+        <summary>UUID of the report format used</summary>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <type>uuid</type>
+        <summary>UUID of the report config used</summary>
         <required>1</required>
       </attrib>
       <attrib>
@@ -1836,7 +1843,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>writable</e>
       <e>in_use</e>
       <e>task</e>
-      <e>report_format</e>
+      <o><e>report_format</e></o>
+      <o><e>report_config</e></o>
       <e>report</e>
     </pattern>
     <ele>
@@ -1912,6 +1920,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <ele>
         <name>name</name>
         <summary>The name of the report format</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>report_config</name>
+      <summary>The report config used</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the report config</summary>
         <pattern><t>name</t></pattern>
       </ele>
     </ele>
@@ -17412,7 +17437,12 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>format_id</name>
-        <summary>ID of required report format</summary>
+        <summary>ID of requested report format</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>format_id</name>
+        <summary>ID of requested report config</summary>
         <type>uuid</type>
       </attrib>
       <attrib>

@@ -64,6 +64,9 @@ int
 delete_report_config (const char *, int);
 
 char *
+report_config_name (report_format_t);
+
+char *
 report_config_uuid (report_config_t);
 
 report_format_t

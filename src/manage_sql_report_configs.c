@@ -1033,6 +1033,20 @@ report_config_param_iterator_using_default (iterator_t *iterator)
 /* Misc. functions */
 
 /**
+ * @brief Return the name of a config config.
+ *
+ * @param[in]  report_config  Report config.
+ *
+ * @return Newly allocated UUID.
+ */
+char *
+report_config_name (report_config_t report_config)
+{
+  return sql_string ("SELECT name FROM report_configs WHERE id = %llu;",
+                     report_config);
+}
+
+/**
  * @brief Return the UUID of a config config.
  *
  * @param[in]  report_config  Report config.
