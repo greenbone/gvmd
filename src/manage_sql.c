@@ -52883,7 +52883,7 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     {
       int threshold;
       threshold = atoi (value);
