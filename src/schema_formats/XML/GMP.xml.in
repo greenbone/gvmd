@@ -3225,6 +3225,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>event</e>
       <e>method</e>
       <e>filter</e>
+      <o><e>active</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -3327,6 +3328,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether to alert will be active</summary>
+      <pattern>
+        <t>boolean</t>
       </pattern>
     </ele>
     <response>
@@ -5116,7 +5124,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>ca_pub</name>
-      <summary>Certificate of CA to verify scanner certificate.</summary>
+      <summary>Certificate of CA to verify scanner certificate</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -5205,7 +5213,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </ele>
     <ele>
       <name>icalendar</name>
-      <summary>iCalendar text containing the time data. Replaces first_time, duration and period.</summary>
+      <summary>iCalendar text containing the time data. Replaces first_time, duration and period</summary>
       <pattern>
         text
       </pattern>
@@ -7466,8 +7474,10 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>sort_field</name>
-        <summary>The column to sort the aggregated rows by.
-        With a subgroup column, groups will be sorted by the group_column first.</summary>
+        <summary>The column to sort the aggregated rows by</summary>
+        <description>
+          With a subgroup column, groups will be sorted by the group_column first.
+        </description>
         <type>text</type>
       </attrib>
       <attrib>
@@ -7536,8 +7546,10 @@ END:VCALENDAR
       <pattern>
         <attrib>
           <name>field</name>
-          <summary>The column to sort the aggregated rows by.
-          With a subgroup column, groups will be sorted by the group_column first</summary>
+          <summary>The column to sort the aggregated rows by</summary>
+          <description>
+            With a subgroup column, groups will be sorted by the group_column first.
+          </description>
           <type>text</type>
         </attrib>
         <attrib>
@@ -7720,7 +7732,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>text</name>
-            <summary>The value of a simple text column.</summary>
+            <summary>The value of a simple text column</summary>
             <pattern>
               <attrib>
                 <name>name</name>
@@ -13216,7 +13228,7 @@ END:VCALENDAR
           <column>
             <name>nvt</name>
             <type>oid</type>
-            <summary>OID of the NVT the Note applies to</summary>
+            <summary>Name of the NVT the Note applies to</summary>
           </column>
           <column>
             <name>text</name>
@@ -13226,7 +13238,7 @@ END:VCALENDAR
           <column>
             <name>nvt_id</name>
             <type>oid</type>
-            <summary>Alias of nvt</summary>
+            <summary>OID of the NVT the Note applies to</summary>
           </column>
           <column>
             <name>task_name</name>
@@ -13266,20 +13278,15 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>nvt_oid</name>
-        <type>oid</type>
-      </attrib>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
         <name>details</name>
+        <summary>Whether to include full details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
         <name>result</name>
         <type>boolean</type>
+        <summary>Whether to include the associated result</summary>
+        <description>Requires "details" to be true.</description>
       </attrib>
     </pattern>
     <response>
@@ -14117,7 +14124,7 @@ END:VCALENDAR
           <column>
             <name>nvt</name>
             <type>oid</type>
-            <summary>OID of the NVT the Override applies to</summary>
+            <summary>Name of the NVT the Override applies to</summary>
           </column>
           <column>
             <name>text</name>
@@ -14127,7 +14134,7 @@ END:VCALENDAR
           <column>
             <name>nvt_id</name>
             <type>oid</type>
-            <summary>Alias of nvt</summary>
+            <summary>OID of the NVT the Override applies to</summary>
           </column>
           <column>
             <name>task_name</name>
@@ -14187,20 +14194,15 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>nvt_oid</name>
-        <type>oid</type>
-      </attrib>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
         <name>details</name>
+        <summary>Whether to include full details</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
         <name>result</name>
         <type>boolean</type>
+        <summary>Whether to include the associated result</summary>
+        <description>Requires "details" to be true.</description>
       </attrib>
     </pattern>
     <response>
@@ -17406,7 +17408,7 @@ END:VCALENDAR
         <name>details</name>
         <summary>
           Whether to get the details of the reports including the
-          results, hosts, ports etc.
+          results, hosts, ports etc
         </summary>
         <type>boolean</type>
       </attrib>
@@ -17455,7 +17457,7 @@ END:VCALENDAR
         <name>ignore_pagination</name>
         <summary>
           Whether to ignore info used to split the report into pages
-          like the filter terms "first" and "rows".
+          like the filter terms "first" and "rows"
         </summary>
         <type>boolean</type>
       </attrib>
@@ -17845,7 +17847,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>resource_id</name>
-        <summary>ID of single resource to get.</summary>
+        <summary>ID of single resource to get</summary>
         <type>text</type>
       </attrib>
       <attrib>
@@ -17992,29 +17994,6 @@ END:VCALENDAR
         <type>text</type>
         <filter_keywords>
           <option>
-            <name>first</name>
-            <type>integer</type>
-            <summary>
-              Index of the first item returned, starting at 1 (e.g. first=5
-              starts at the 5th item)
-            </summary>
-          </option>
-          <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
-            <name>sort</name>
-            <type>text</type>
-            <summary>Column to sort by in ascending order</summary>
-          </option>
-          <option>
-            <name>sort-reverse</name>
-            <type>text</type>
-            <summary>Column to sort by in descending order</summary>
-          </option>
-          <option>
             <name>apply_overrides</name>
             <type>boolean</type>
             <summary>Whether to apply Overrides</summary>
@@ -18023,6 +18002,14 @@ END:VCALENDAR
             <name>compliance_levels</name>
             <type>compliance_levels</type>
             <summary>Compliance levels to select</summary>
+          </option>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
           </option>
           <option>
             <name>levels</name>
@@ -18045,50 +18032,20 @@ END:VCALENDAR
             <summary>Whether to include Override descriptions in the report</summary>
           </option>
           <option>
-            <name>timezone</name>
-            <type>text</type>
-            <summary>The timezone to use for the report</summary>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
           </option>
-          <column>
-            <name>tag</name>
+          <option>
+            <name>sort</name>
             <type>text</type>
-            <summary>
-              Name and optional "=" separted value of an attached tag
-              (e.g. "mytag" or "mytag=myvalue")
-            </summary>
-          </column>
-          <column>
-            <name>tag_id</name>
-            <type>UUID</type>
-            <summary>
-              UUID of an attached tag
-            </summary>
-          </column>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Unique ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name of the NVT</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
           <column>
             <name>compliant</name>
             <type>
@@ -18100,6 +18057,31 @@ END:VCALENDAR
               </alts>
             </type>
             <summary>Compliance status</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>cve</name>
+            <type>text</type>
+            <summary>List of CVEs of the result</summary>
+          </column>
+          <column>
+            <name>cvss_base</name>
+            <type>severity</type>
+            <summary>CVSS base score of the NVT that generated the result</summary>
+          </column>
+          <column>
+            <name>date</name>
+            <type>iso_time</type>
+            <summary>Time the result was generated</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the result</summary>
           </column>
           <column>
             <name>host</name>
@@ -18117,9 +18099,14 @@ END:VCALENDAR
             <summary>Port and protocol of the result</summary>
           </column>
           <column>
-            <name>path</name>
-            <type>text</type>
-            <summary>The local path on the host, e.g. a file location</summary>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name of the NVT</summary>
           </column>
           <column>
             <name>nvt</name>
@@ -18127,44 +18114,9 @@ END:VCALENDAR
             <summary>Unique ID of the test that produced the result</summary>
           </column>
           <column>
-            <name>type</name>
-            <type>threat</type>
-            <summary>Severity type of the result with overrides</summary>
-          </column>
-          <column>
-            <name>original_type</name>
-            <type>threat</type>
-            <summary>Original severity type of the result</summary>
-          </column>
-          <column>
-            <name>description</name>
-            <type>text</type>
-            <summary>Description of the result</summary>
-          </column>
-          <column>
-            <name>task</name>
-            <type>text</type>
-            <summary>Name of the task</summary>
-          </column>
-          <column>
-            <name>report</name>
-            <type>number</type>
-            <summary>Internal ID of the report</summary>
-          </column>
-          <column>
-            <name>cvss_base</name>
-            <type>severity</type>
-            <summary>CVSS base score of the NVT that generated the result</summary>
-          </column>
-          <column>
             <name>nvt_version</name>
             <type>text</type>
             <summary>Version of the NVT that generated the result</summary>
-          </column>
-          <column>
-            <name>severity</name>
-            <type>severity</type>
-            <summary>Severity of the result with overrides</summary>
           </column>
           <column>
             <name>original_severity</name>
@@ -18172,24 +18124,19 @@ END:VCALENDAR
             <summary>Original severity of the result</summary>
           </column>
           <column>
-            <name>vulnerability</name>
+            <name>original_type</name>
+            <type>threat</type>
+            <summary>Original severity type of the result</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>path</name>
             <type>text</type>
-            <summary>Name of the NVT that generated result</summary>
-          </column>
-          <column>
-            <name>date</name>
-            <type>iso_time</type>
-            <summary>Time the result was generated</summary>
-          </column>
-          <column>
-            <name>report_id</name>
-            <type>uuid</type>
-            <summary>UUID of the report</summary>
-          </column>
-          <column>
-            <name>solution_type</name>
-            <type>text</type>
-            <summary>Solution type of the result</summary>
+            <summary>The local path on the host, e.g. a file location</summary>
           </column>
           <column>
             <name>qod</name>
@@ -18202,14 +18149,64 @@ END:VCALENDAR
             <summary>QoD type of the result</summary>
           </column>
           <column>
+            <name>report</name>
+            <type>number</type>
+            <summary>Internal ID of the report</summary>
+          </column>
+          <column>
+            <name>report_id</name>
+            <type>uuid</type>
+            <summary>UUID of the report</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the result with overrides</summary>
+          </column>
+          <column>
+            <name>solution_type</name>
+            <type>text</type>
+            <summary>Solution type of the result</summary>
+          </column>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>task</name>
+            <type>text</type>
+            <summary>Name of the task</summary>
+          </column>
+          <column>
             <name>task_id</name>
             <type>uuid</type>
             <summary>UUID of the task</summary>
           </column>
           <column>
-            <name>cve</name>
+            <name>type</name>
+            <type>threat</type>
+            <summary>Severity type of the result with overrides</summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>vulnerability</name>
             <type>text</type>
-            <summary>List of CVEs of the result</summary>
+            <summary>Name of the NVT that generated result</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -19776,7 +19773,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>icalendar</name>
-          <summary>iCalendar text containing the time data.</summary>
+          <summary>iCalendar text containing the time data</summary>
           <pattern>
             text
           </pattern>
@@ -20852,6 +20849,11 @@ END:VCALENDAR
         <summary>Whether to include list of tasks that use the target</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include port range and tag info</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -20897,7 +20899,7 @@ END:VCALENDAR
           <e>snmp_credential</e>
           <e>ssh_elevate_credential</e>
           <e>permissions</e>
-          <e>port_range</e>
+          <o><e>port_range</e></o>
           <e>port_list</e>
           <e>alive_tests</e>
           <e>reverse_lookup_only</e>
@@ -21748,7 +21750,7 @@ END:VCALENDAR
         <name>ignore_pagination</name>
         <summary>
           Whether to ignore info used to split the report into pages
-          like the filter terms "first" and "rows".
+          like the filter terms "first" and "rows"
         </summary>
         <type>boolean</type>
       </attrib>
@@ -22166,12 +22168,12 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>icalendar</name>
-            <summary>iCalendar text containing the time data.</summary>
+            <summary>iCalendar text containing the time data</summary>
             <pattern><t>iso_time</t></pattern>
           </ele>
           <ele>
             <name>timezone</name>
-            <summary>The timezone the schedule will follow.</summary>
+            <summary>The timezone the schedule will follow</summary>
             <pattern>text</pattern>
           </ele>
         </ele>
@@ -26939,7 +26941,7 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>icalendar</name>
-      <summary>iCalendar text containing the time data. Replaces first_time, duration and period.</summary>
+      <summary>iCalendar text containing the time data. Replaces first_time, duration and period</summary>
       <pattern>
         text
       </pattern>
