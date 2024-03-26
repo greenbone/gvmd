@@ -2498,8 +2498,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   published = element_child (entry, "vuln:published-datetime");
   if (published == NULL)
     {
-      g_warning ("%s: vuln:published-datetime missing",
-                 __func__);
+      g_warning ("%s: vuln:published-datetime missing for %s",
+                 __func__, id);
       g_free (id);
       return -1;
     }
@@ -2531,7 +2531,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
                              cvss_is_v3 ? "cvss3:base-score" : "cvss:score");
       if (score == NULL)
         {
-          g_warning ("%s: cvss:score missing", __func__);
+          g_warning ("%s: cvss:score missing for %s", __func__, id);
           g_free (id);
           return -1;
         }
@@ -2541,7 +2541,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
                                               : "cvss:vector-string");
       if (cvss_vector == NULL)
         {
-          g_warning ("%s: cvss:access-vector missing", __func__);
+          g_warning ("%s: cvss:access-vector missing for %s", __func__, id);
           g_free (id);
           return -1;
         }
@@ -2555,7 +2555,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
   summary = element_child (entry, "vuln:summary");
   if (summary == NULL)
     {
-      g_warning ("%s: vuln:summary missing", __func__);
+      g_warning ("%s: vuln:summary missing for %s", __func__, id);
       g_free (id);
       return -1;
     }
@@ -2701,8 +2701,7 @@ update_cve_xml (const gchar *xml_path, GHashTable *hashed_cpes)
           if (insert_cve_from_entry (entry, last_modified, hashed_cpes,
                                      &transaction_size))
             {
-              error_message = g_strdup ("Insert of CVE into database failed");
-              goto fail;
+              g_warning ("%s: Insert of CVE into database failed. CVE skipped.", __func__);
             }
         }
 
