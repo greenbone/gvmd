@@ -330,11 +330,9 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("create_report_format",
                                            "report_format",
                                            entity_text (copy),
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             log_event_fail ("report_format", "Report Format", NULL, "created");
             break;
           case 99:

@@ -130,9 +130,9 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_tickets",
                                            "ticket",
                                            get_tickets_data.get.id,
-                                           gmp_parser))
+                                           gmp_parser,
+                                           error))
               {
-                error_send_to_client (error);
                 get_tickets_reset ();
                 return;
               }
@@ -140,9 +140,8 @@ get_tickets_run (gmp_parser_t *gmp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_tickets", "filter",
-                   get_tickets_data.get.filt_id, gmp_parser))
+                   get_tickets_data.get.filt_id, gmp_parser, error))
               {
-                error_send_to_client (error);
                 get_tickets_reset ();
                 return;
               }
@@ -419,11 +418,8 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
           case 2:
             if (send_find_error_to_client ("create_ticket", "ticket",
                                            entity_text (copy),
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser, error))
+              return;
             log_event_fail ("ticket", "Ticket", NULL, "created");
             break;
           case 99:
@@ -525,20 +521,14 @@ create_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       case 1:
         log_event_fail ("ticket", "Ticket", NULL, "created");
         if (send_find_error_to_client ("create_ticket", "user", user_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         break;
       case 2:
         log_event_fail ("ticket", "Ticket", NULL, "created");
         if (send_find_error_to_client ("create_ticket", "result", result_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         break;
       case 98:
         SEND_TO_CLIENT_OR_FAIL
@@ -747,20 +737,14 @@ modify_ticket_run (gmp_parser_t *gmp_parser, GError **error)
       case 2:
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         if (send_find_error_to_client ("modify_ticket", "ticket", ticket_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         break;
       case 3:
         log_event_fail ("ticket", "Ticket", ticket_id, "modified");
         if (send_find_error_to_client ("modify_ticket", "user", user_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser, error))
+          return;
         break;
       case 4:
         SEND_TO_CLIENT_OR_FAIL

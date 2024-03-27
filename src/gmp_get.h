@@ -19,6 +19,7 @@
 #ifndef _GVMD_GMP_GET_H
 #define _GVMD_GMP_GET_H
 
+#include "gmp_base.h"
 #include "manage_get.h"
 
 void
@@ -60,7 +61,7 @@ get_next (iterator_t *, get_data_t *, int *, int *,
           int (*) (iterator_t *, const get_data_t *));
 
 int
-send_get_start (const char *, int (*) (const char *, void *), void *);
+send_get_start (gmp_parser_t *, GError **, const char *);
 
 /**
  * @brief Send start of GET response to client, returning on fail.
@@ -68,21 +69,17 @@ send_get_start (const char *, int (*) (const char *, void *), void *);
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_START(type)                               \
-  do                                                       \
-    {                                                      \
-      if (send_get_start (type, gmp_parser->client_writer, \
-                          gmp_parser->client_writer_data)) \
-        {                                                  \
-          error_send_to_client (error);                    \
-          return;                                          \
-        }                                                  \
-    }                                                      \
+#define SEND_GET_START(type)                        \
+  do                                                \
+    {                                               \
+      if (send_get_start (gmp_parser, error, type)) \
+        return;                                     \
+    }                                               \
   while (0)
 
 int
-send_get_common (const char *, get_data_t *, iterator_t *,
-                 int (*) (const char *, void *), void *, int, int);
+send_get_common (const char *, get_data_t *, iterator_t *, gmp_parser_t *,
+                 GError **, int, int);
 
 /**
  * @brief Send common part of GET response to client, returning on fail.
@@ -95,18 +92,14 @@ send_get_common (const char *, get_data_t *, iterator_t *,
   do                                                                       \
     {                                                                      \
       if (send_get_common (                                                \
-            G_STRINGIFY (type), get, iterator, gmp_parser->client_writer,  \
-            gmp_parser->client_writer_data,                                \
+            G_STRINGIFY (type), get, iterator, gmp_parser, error,          \
             (get)->trash                                                   \
               ? trash_##type##_writable (get_iterator_resource (iterator)) \
               : type##_writable (get_iterator_resource (iterator)),        \
             (get)->trash                                                   \
               ? trash_##type##_in_use (get_iterator_resource (iterator))   \
               : type##_in_use (get_iterator_resource (iterator))))         \
-        {                                                                  \
-          error_send_to_client (error);                                    \
-          return;                                                          \
-        }                                                                  \
+        return;                                                            \
     }                                                                      \
   while (0)
 
@@ -122,15 +115,11 @@ send_get_common (const char *, get_data_t *, iterator_t *,
 #define SEND_GET_COMMON_NO_TRASH(type, get, iterator)                          \
   do                                                                           \
     {                                                                          \
-      if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
-                           gmp_parser->client_writer,                          \
-                           gmp_parser->client_writer_data,                     \
+      if (send_get_common (G_STRINGIFY (type), get, iterator, gmp_parser,      \
+                           error,                                              \
                            type##_writable (get_iterator_resource (iterator)), \
                            type##_in_use (get_iterator_resource (iterator))))  \
-        {                                                                      \
-          error_send_to_client (error);                                        \
-          return;                                                              \
-        }                                                                      \
+        return;                                                                \
     }                                                                          \
   while (0)
 
@@ -139,12 +128,11 @@ buffer_get_filter_xml (GString *, const char *, const get_data_t *,
                        const char *, const char *);
 
 int
-send_get_end (const char *, get_data_t *, int, int, int,
-              int (*) (const char *, void *), void *);
+send_get_end (const char *, get_data_t *, int, int, int, gmp_parser_t *,
+              GError **);
 
 int
-send_get_end_no_counts (const char *, get_data_t *,
-                        int (*) (const char *, void *), void *);
+send_get_end_no_counts (const char *, get_data_t *, gmp_parser_t *, GError **);
 
 /**
  * @brief Send end of GET response to client, returning on fail.
@@ -152,17 +140,13 @@ send_get_end_no_counts (const char *, get_data_t *,
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_END(type, get, count, filtered)                               \
-  do                                                                           \
-    {                                                                          \
-      if (send_get_end (type, get, count, filtered,                            \
-                        resource_count (type, get), gmp_parser->client_writer, \
-                        gmp_parser->client_writer_data))                       \
-        {                                                                      \
-          error_send_to_client (error);                                        \
-          return;                                                              \
-        }                                                                      \
-    }                                                                          \
+#define SEND_GET_END(type, get, count, filtered)                        \
+  do                                                                    \
+    {                                                                   \
+      if (send_get_end (type, get, count, filtered,                     \
+                        resource_count (type, get), gmp_parser, error)) \
+        return;                                                         \
+    }                                                                   \
   while (0)
 
 #endif /* not _GVMD_GMP_GET_H */

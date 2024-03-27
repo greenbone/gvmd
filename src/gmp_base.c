@@ -125,12 +125,48 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
  * @return TRUE if send to client failed, else FALSE.
  */
 gboolean
-send_to_client (const char* msg,
-                int (*user_send_to_client) (const char*, void*),
-                void* user_send_to_client_data)
+send_to_client (gmp_parser_t *parser, GError** error, const char* msg)
 {
-  if (user_send_to_client && msg)
-    return user_send_to_client (msg, user_send_to_client_data);
+  if (parser
+      && parser->client_writer
+      && msg
+      && parser->client_writer (msg, parser->client_writer_data))
+    {
+      error_send_to_client (error);
+      return TRUE;
+    }
+  return FALSE;
+}
+
+/**
+ * @brief Send a response message to the client.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error.
+ * @param[in]  format       Format string.
+ *
+ * @return TRUE if error, else FALSE.
+ */
+gboolean
+sendf_to_client (gmp_parser_t *parser, GError **error, const char *format, ...)
+{
+  if (format)
+    {
+      va_list args;
+      gchar *msg;
+
+      va_start (args, format);
+      msg = g_markup_vprintf_escaped (format, args);
+      va_end (args);
+
+      if (parser->client_writer (msg, parser->client_writer_data))
+        {
+          g_free (msg);
+          error_send_to_client (error);
+          return TRUE;
+        }
+      g_free (msg);
+    }
   return FALSE;
 }
 
@@ -141,12 +177,14 @@ send_to_client (const char* msg,
  * @param[in]  type         Resource type.
  * @param[in]  id           Resource ID.
  * @param[in]  gmp_parser   GMP Parser.
+ * @param[in]  error        Error.
  *
  * @return TRUE if out of space in to_client, else FALSE.
  */
 gboolean
-send_find_error_to_client (const char* command, const char* type,
-                           const char* id, gmp_parser_t *gmp_parser)
+send_find_error_to_client (const char *command, const char *type,
+                           const char *id, gmp_parser_t *gmp_parser,
+                           GError **error)
 {
   gchar *msg;
   gboolean ret;
@@ -155,8 +193,7 @@ send_find_error_to_client (const char* command, const char* type,
                                  STATUS_ERROR_MISSING
                                  "\" status_text=\"Failed to find %s '%s'\"/>",
                                  command, type, id);
-  ret = send_to_client (msg, gmp_parser->client_writer,
-                        gmp_parser->client_writer_data);
+  ret = send_to_client (gmp_parser, error, msg);
   g_free (msg);
   return ret;
 }

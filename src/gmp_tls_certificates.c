@@ -162,9 +162,9 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("get_tls_certificates",
                                            "tls_certificate",
                                            get_tls_certificates_data.get.id,
-                                           gmp_parser))
+                                           gmp_parser,
+                                           error))
               {
-                error_send_to_client (error);
                 get_tls_certificates_reset ();
                 return;
               }
@@ -172,9 +172,8 @@ get_tls_certificates_run (gmp_parser_t *gmp_parser, GError **error)
           case 2:
             if (send_find_error_to_client
                   ("get_tls_certificates", "filter",
-                   get_tls_certificates_data.get.filt_id, gmp_parser))
+                   get_tls_certificates_data.get.filt_id, gmp_parser, error))
               {
-                error_send_to_client (error);
                 get_tls_certificates_reset ();
                 return;
               }
@@ -472,11 +471,9 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
             if (send_find_error_to_client ("create_tls_certificate",
                                            "tls_certificate",
                                            entity_text (copy),
-                                           gmp_parser))
-              {
-                error_send_to_client (error);
-                return;
-              }
+                                           gmp_parser,
+                                           error))
+              return;
             log_event_fail ("tls_certificate",
                             "TLS Certificate",
                             NULL,
@@ -775,11 +772,9 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
         if (send_find_error_to_client ("modify_tls_certificate",
                                        "TLS certificate",
                                        tls_certificate_id,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+                                       gmp_parser,
+                                       error))
+          return;
         break;
       case 3:
         SEND_TO_CLIENT_OR_FAIL
