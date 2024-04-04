@@ -1030,11 +1030,12 @@ column_array_copy (column_t *columns)
 static void
 column_array_free (column_t *columns)
 {
-  while (columns->filter)
+  column_t *point = columns;
+  while (point->filter)
     {
-      g_free (columns->select);
-      g_free (columns->filter);
-      columns++;
+      g_free (point->select);
+      g_free (point->filter);
+      point++;
     }
   g_free (columns);
 }
@@ -5039,7 +5040,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "%sSELECT %s"
                    " FROM %ss%s %s"
-                   " WHERE %ss.id = %llu"
+                   " WHERE %ss%s.id = %llu"
                    " AND %s%s"
                    "%s%s;",
                    with_clause ? with_clause : "",
@@ -5048,6 +5049,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                    type_trash_in_table (type) ? "" : "_trash",
                    extra_tables ? extra_tables : "",
                    type,
+                   type_trash_in_table (type) ? "" : "_trash",
                    resource,
                    owned_clause,
                    extra_where_single ? extra_where_single : "",
@@ -12153,7 +12155,7 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   else
     {
       (*alert_filter_get)->filt_id = NULL;
-      (*alert_filter_get)->filter = g_strdup("");
+      (*alert_filter_get)->filter = base_get_data->filter;
     }
 
   /* Adjust filter for report composer.
@@ -22180,8 +22182,8 @@ where_qod (int min_qod)
  * @brief Result iterator filterable columns, for severity only version .
  */
 #define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
-    { "id", NULL, KEYWORD_TYPE_INTEGER },                                     \
-    { "uuid", NULL, KEYWORD_TYPE_STRING },                                    \
+    { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
+    { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -22332,9 +22334,9 @@ where_qod (int min_qod)
  * @brief Result iterator columns.
  */
 #define PRE_BASE_RESULT_ITERATOR_COLUMNS(new_severity_sql)                    \
-    { "results.id", NULL, KEYWORD_TYPE_INTEGER },                             \
+    { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     /* ^ 0 */                                                                 \
-    { "results.uuid", NULL, KEYWORD_TYPE_STRING },                            \
+    { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
     { "nvts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
@@ -27953,23 +27955,41 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                           "nvts_cols");
 
   extra_with = g_strdup_printf(" comparison AS ("
-    " WITH r1 as (SELECT results.id, description, host, report, port,"
+    " WITH r1a as (SELECT results.id, description, host, report, port,"
     "              severity, nvt, results.qod, results.uuid, hostname," 
     "              path, r1_lateral.new_severity as new_severity "
     "       FROM results "
-    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid from nvts)"
+    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
     "       AS nvts_cols"
     "       ON nvts_cols.nvts_oid = results.nvt"
     "       %s, LATERAL %s AS r1_lateral" 
     "       WHERE report = %llu),"
-    " r2 as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
+    " r2a as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
     "        FROM results" 
-    "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid from nvts)"
+    "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
     "        AS nvts_cols" 
     "        ON nvts_cols.nvts_oid = results.nvt" 
     "        %s, LATERAL %s AS r2_lateral" 
-    "        WHERE report = %llu)"
-    " SELECT r1.id AS result1_id," 
+    "        WHERE report = %llu),"
+    " r1 as (SELECT DISTINCT ON (r1a.id) r1a.*, r2a.id as r2id, row_number() over w1 as r1_rank"
+    "        FROM r1a LEFT JOIN r2a ON r1a.host = r2a.host"
+    "        AND normalize_port(r1a.port) = normalize_port(r2a.port)" 
+    "        AND r1a.nvt = r2a.nvt "
+    "        AND (r1a.new_severity = 0) = (r2a.new_severity = 0)"
+    "        AND (r1a.description = r2a.description)"
+    "        WINDOW w1 AS (PARTITION BY r1a.host, normalize_port(r1a.port),"
+    "                      r1a.nvt, r1a.new_severity = 0, r2a.id is null ORDER BY r2a.id)"
+    "        ORDER BY r1a.id),"
+    " r2 as (SELECT DISTINCT ON (r2a.id) r2a.*, r1a.id as r1id, row_number() over w2 as r2_rank"
+    "        FROM r2a LEFT JOIN r1a ON r2a.host = r1a.host"
+    "        AND normalize_port(r2a.port) = normalize_port(r1a.port)" 
+    "        AND r2a.nvt = r1a.nvt "
+    "        AND (r2a.new_severity = 0) = (r1a.new_severity = 0)"
+    "        AND (r2a.description = r1a.description)"
+    "        WINDOW w2 AS (PARTITION BY r2a.host, normalize_port(r2a.port),"
+    "                      r2a.nvt, r2a.new_severity = 0, r1a.id is null ORDER BY r1a.id)"
+    "        ORDER BY r2a.id)"
+    " (SELECT r1.id AS result1_id," 
     " r2.id AS result2_id," 
     " compare_results("
     "  r1.description,"
@@ -27984,7 +28004,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "  r2.path) AS state,"
     " r2.description AS delta_description,"
     " r2.new_severity AS delta_new_severity,"
-    " r2.severity AS delta_severity,"    
+    " r2.severity AS delta_severity,"
     " r2.qod AS delta_qod,"
     " r2.qod_type AS delta_qod_type,"
     " r2.uuid AS delta_uuid,"
@@ -27995,7 +28015,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     " r2.path AS delta_path,"
     " r2.host AS delta_host,"
       RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
-      " AS delta_hostname,"
+    "   AS delta_hostname,"
     " r2.nvt_version AS delta_nvt_version"
     " FROM r1"
     " FULL OUTER JOIN r2"
@@ -28003,20 +28023,10 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
     " AND normalize_port(r1.port) = normalize_port(r2.port)" 
     " AND r1.nvt = r2.nvt "
     " AND (r1.new_severity = 0) = (r2.new_severity = 0)"
-    " AND (r1.description = r2.description"
-    "      OR NOT EXISTS (SELECT * FROM r2"
-    "                     WHERE r1.description = r2.description"
-    "                     AND r1.host = r2.host" 
-    "                     AND normalize_port(r1.port) = normalize_port(r2.port)"
-    "                     AND r1.nvt = r2.nvt"
-    "                     AND (r1.new_severity = 0) = (r2.new_severity = 0))"
-    "      OR NOT EXISTS (SELECT * FROM r1" 
-    "                     WHERE r1.description = r2.description"
-    "                     AND r1.host = r2.host" 
-    "                     AND normalize_port(r1.port) = normalize_port(r2.port)"
-    "                     AND r1.nvt = r2.nvt"
-    "                     AND (r1.new_severity = 0) = (r2.new_severity = 0)))"  
-    " )",
+    " AND ((r1id IS NULL AND r2id IS NULL) OR"
+    "      r2id = r2.id OR r1id = r1.id)"
+    " AND r1_rank = r2_rank"
+    " ) ) ",
     opts_tables,
     with_lateral,
     report,
@@ -28826,6 +28836,7 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
                         array_t *result_hosts)
 {
   GString *buffer = g_string_new ("");
+  GTree *ports;
 
   *orig_f_holes = *f_holes;
   *orig_f_infos = *f_infos;
@@ -28833,6 +28844,9 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
   *orig_f_warnings = *f_warnings;
   *orig_f_false_positives = *f_false_positives;
   *orig_filtered_result_count = *filtered_result_count;
+
+  ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
+                           (GDestroyNotify) free_host_ports);
 
   while (next (results)) {
 
@@ -28892,15 +28906,53 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
     if (fprintf (out, "%s", buffer->str) < 0) 
       {
         g_string_free (buffer, TRUE);
+        g_tree_destroy (ports);
         return -1;
       }
+    if (result_hosts_only)
+      array_add_new_string (result_hosts,
+                            result_iterator_host (results));
+    add_port (ports, results);
     g_string_truncate (buffer, 0);
   }
   g_string_free (buffer, TRUE);
   if (fprintf (out, "</results>") < 0)
     {
+      g_tree_destroy (ports);
       return -1;
     }
+
+  gchar *msg;
+  msg = g_markup_printf_escaped ("<ports"
+                                 " start=\"%i\""
+                                 " max=\"%i\">",
+                                 /* Add 1 for 1 indexing. */
+                                 first_result + 1,
+                                 max_results);
+  if (fprintf (out, "%s", msg) < 0)
+    {
+      g_tree_destroy (ports);
+      g_free (msg);
+      return -1;
+    }
+  g_free (msg);
+  if (sort_field == NULL || strcmp (sort_field, "port"))
+    {
+      if (sort_order)
+        g_tree_foreach (ports, print_host_ports_by_severity_asc, out);
+      else
+        g_tree_foreach (ports, print_host_ports_by_severity_desc, out);
+    }
+  else if (sort_order)
+    g_tree_foreach (ports, print_host_ports, out);
+  else
+    g_tree_foreach (ports, print_host_ports_desc, out);
+  g_tree_destroy (ports);
+  if (fprintf (out, "</ports>") < 0)
+    {
+      return -1;
+    }
+
   return 0;
 }
 
@@ -52867,7 +52919,7 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     {
       int threshold;
       threshold = atoi (value);
@@ -58368,23 +58420,36 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
     }
   else if (strcasecmp (name, "cleanup-config-prefs") == 0)
     {
-      int removed, fixed_values;
       sql ("DELETE FROM config_preferences WHERE id NOT IN"
            " (SELECT min(id) FROM config_preferences"
            "  GROUP BY config, type, name, value);");
-      removed = sql_changes();
 
       sql ("UPDATE config_preferences"
            " SET value = (SELECT value FROM nvt_preferences"
            "              WHERE name='scanner_plugins_timeout')"
            " WHERE name = 'scanner_plugins_timeout'"
            "   AND value = 'SCANNER_NVT_TIMEOUT';");
-      fixed_values = sql_changes();
 
-      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs."
-                                      " Duplicate config preferences removed:"
-                                      " %d. Corrected preference values: %d",
-                                      removed, fixed_values);
+      sql ("UPDATE config_preferences"
+           " SET pref_nvt = NULL,"
+           "     pref_id = NULL,"
+           "     pref_type = NULL,"
+           "     pref_name = NULL"
+           " WHERE type = 'SERVER_PREFS' AND pref_nvt IS NOT NULL;");
+
+      sql ("UPDATE config_preferences"
+          " SET pref_nvt = substring (name, '^([^:]*)'),"
+          "     pref_id = CAST(substring (name, '^[^:]*:([0-9]+)') AS integer),"
+          "     pref_type = substring (name, '^[^:]*:[0-9]+:([^:]*):'),"
+          "     pref_name = substring (name, '^[^:]*:[0-9]+:[^:]*:(.*)')"
+          " WHERE type = 'PLUGINS_PREFS'"
+          "       AND (pref_nvt = '(null)' OR pref_nvt IS NULL"
+          "            OR pref_type = '(null)' OR pref_type IS NULL"
+          "            OR pref_name = '(null)' OR pref_name IS NULL)"
+          "       AND name ~ '^[^:]*:[0-9]+:[^:]*:.*'"
+          "       AND type = 'PLUGINS_PREFS';");
+
+      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs.");
     }
   else if (strcasecmp (name, "cleanup-feed-permissions") == 0)
     {

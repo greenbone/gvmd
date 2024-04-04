@@ -446,7 +446,7 @@ modify_report_config_reset ()
       g_slist_free_1 (modify_report_config_data.context->first);
     }
   g_free (modify_report_config_data.context);
-  memset (&modify_report_config_data, 0, sizeof (create_report_config_t));
+  memset (&modify_report_config_data, 0, sizeof (modify_report_config_t));
 }
 
 /**
@@ -518,7 +518,7 @@ modify_report_config_run (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("modify_report_config",
                            "The NAME element must not be empty"));
-      create_report_config_reset ();
+      modify_report_config_reset ();
       return;
     }
 
@@ -541,7 +541,7 @@ modify_report_config_run (gmp_parser_t *gmp_parser, GError **error)
           break;
         }
       case 1:
-        if (send_find_error_to_client ("create_report_config",
+        if (send_find_error_to_client ("modify_report_config",
                                        "Report Config",
                                        report_config_id,
                                        gmp_parser))
@@ -554,9 +554,9 @@ modify_report_config_run (gmp_parser_t *gmp_parser, GError **error)
         break;
       case 2:
         SEND_TO_CLIENT_OR_FAIL
-          (XML_ERROR_SYNTAX ("create_report_config",
+          (XML_ERROR_SYNTAX ("modify_report_config",
                              "Report config with given name exists already"));
-        log_event_fail ("report_config", "Report Config", NULL, "created");
+        log_event_fail ("report_config", "Report Config", NULL, "modified");
         break;
       case 3:
         SENDF_TO_CLIENT_OR_FAIL
