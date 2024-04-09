@@ -12155,7 +12155,7 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   else
     {
       (*alert_filter_get)->filt_id = NULL;
-      (*alert_filter_get)->filter = g_strdup("");
+      (*alert_filter_get)->filter = base_get_data->filter;
     }
 
   /* Adjust filter for report composer.
@@ -12256,6 +12256,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 {
   int ret;
   report_format_t report_format;
+  gboolean report_format_is_fallback = FALSE;
+  report_config_t report_config;
   get_data_t *alert_filter_get;
   gchar *report_content;
   filter_t filter;
@@ -12364,6 +12366,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
           return -1;
         }
 
+      report_format_is_fallback = TRUE;
+
       if (find_report_format_with_permission
             (fallback_format_id,
              &report_format,
@@ -12382,12 +12386,26 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
         }
     }
 
+  // Get report config
+
+  if (report_format_is_fallback)
+    {
+      // Config would only be valid for the original report format
+      report_config = 0;
+    }
+  else
+    {
+      // TODO: Get report config from alert
+      report_config = 0;
+    }
+
   // Generate report content
 
   report_content = manage_report (report,
                                   get_delta_report (alert, task, report),
                                   alert_filter_get ? alert_filter_get : get,
                                   report_format,
+                                  report_config,
                                   notes_details,
                                   overrides_details,
                                   content_length,
@@ -12594,11 +12612,15 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
     {
       gchar *report_format_id;
       report_format_t report_format;
+      report_config_t report_config;
 
       report_format_id = g_strstrip (*point);
       find_report_format_with_permission (report_format_id,
                                           &report_format,
                                           "get_report_formats");
+
+      // TODO: Add option to set report configs
+      report_config = 0;
 
       if (report_format)
         {
@@ -12616,6 +12638,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                             ? alert_filter_get
                                             : get,
                                           report_format,
+                                          report_config,
                                           notes_details,
                                           overrides_details,
                                           &content_length,
@@ -30258,6 +30281,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
  * @param[in]  delta_report       Report to compare with.
  * @param[in]  get                GET data for report.
  * @param[in]  report_format      Report format.
+ * @param[in]  report_config      Report config.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
  * @param[out] output_length      NULL or location for length of return.
@@ -30274,6 +30298,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 gchar *
 manage_report (report_t report, report_t delta_report, const get_data_t *get,
                const report_format_t report_format,
+               const report_config_t report_config,
                int notes_details, int overrides_details,
                gsize *output_length, gchar **extension, gchar **content_type,
                gchar **filter_term_return, gchar **zone_return,
@@ -30326,14 +30351,14 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
       /* Apply report format(s) */
       gchar* report_format_id = report_format_uuid (report_format);
 
-      output_file = apply_report_format (report_format_id,
+      output_file = apply_report_format (report_format_id, report_config,
                                          xml_start, xml_file, xml_dir,
                                          &used_rfps);
       g_free (report_format_id);
     }
   else
     {
-      print_report_xml_end(xml_start, xml_file, -1);
+      print_report_xml_end (xml_start, xml_file, -1, 0);
       output_file = g_strdup(xml_file);
     }
 
@@ -30426,6 +30451,7 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
  * @param[in]  report             Report.
  * @param[in]  delta_report       Report to compare with.
  * @param[in]  report_format      Report format.
+ * @param[in]  report_config      Report config.
  * @param[in]  get                GET command data.
  * @param[in]  notes_details      If notes, Whether to include details.
  * @param[in]  overrides_details  If overrides, Whether to include details.
@@ -30447,7 +30473,9 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
  */
 int
 manage_send_report (report_t report, report_t delta_report,
-                    report_format_t report_format, const get_data_t *get,
+                    report_format_t report_format,
+                    report_config_t report_config,
+                    const get_data_t *get,
                     int notes_details, int overrides_details, int result_tags,
                     int ignore_pagination, int lean, int base64,
                     gboolean (*send) (const char *,
@@ -30507,6 +30535,14 @@ manage_send_report (report_t report, report_t delta_report,
       && (report_format_trust (report_format) != TRUST_YES))
     return -1;
 
+  if (report_config
+      && report_config_report_format (report_config) != report_format)
+    {
+      g_warning ("%s: report config is not compatible with report_format",
+                 __func__);
+      return -1;
+    }
+
   if (mkdtemp (xml_dir) == NULL)
     {
       g_warning ("%s: mkdtemp failed", __func__);
@@ -30533,14 +30569,14 @@ manage_send_report (report_t report, report_t delta_report,
       /* Apply report format(s). */
       gchar* report_format_id = report_format_uuid (report_format);
 
-      output_file = apply_report_format (report_format_id,
+      output_file = apply_report_format (report_format_id, report_config,
                                          xml_start, xml_file, xml_dir,
                                          &used_rfps);
       g_free (report_format_id);
     }
   else
     {
-      print_report_xml_end(xml_start, xml_file, -1);
+      print_report_xml_end (xml_start, xml_file, -1, 0);
       output_file = g_strdup(xml_file);
     }
 
@@ -52883,7 +52919,7 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     {
       int threshold;
       threshold = atoi (value);
