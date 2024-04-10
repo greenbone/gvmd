@@ -15201,8 +15201,10 @@ print_report_config_params (gmp_parser_t *gmp_parser, GError **error,
               report_config_param_iterator_fallback_value (&params));
         }
 
-      if (report_config_param_iterator_type (&params)
-          == REPORT_FORMAT_PARAM_TYPE_SELECTION)
+      report_format_param_type_t param_type;
+      param_type = report_config_param_iterator_type (&params);
+      if (param_type == REPORT_FORMAT_PARAM_TYPE_SELECTION
+          || param_type == REPORT_FORMAT_PARAM_TYPE_MULTI_SELECTION)
         {
           SEND_TO_CLIENT_OR_FAIL ("<options>");
           init_param_option_iterator
@@ -15624,8 +15626,10 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
                          report_format_param_iterator_fallback (&params));
                     }
 
-                  if (report_format_param_iterator_type (&params)
-                      == REPORT_FORMAT_PARAM_TYPE_SELECTION)
+                  report_format_param_type_t param_type;
+                  param_type = report_format_param_iterator_type (&params);
+                  if (param_type == REPORT_FORMAT_PARAM_TYPE_SELECTION
+                      || param_type == REPORT_FORMAT_PARAM_TYPE_MULTI_SELECTION)
                     {
                       SEND_TO_CLIENT_OR_FAIL ("<options>");
                       init_param_option_iterator

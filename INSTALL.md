@@ -9,6 +9,7 @@ necessary to install dependent development packages.
 Prerequisites:
 * GCC (Debian package: gcc)
 * cmake >= 3.0 (Debian package: cmake)
+* cJSON >= 1.7.14 (Debian package: libcjson-dev)
 * glib-2.0 >= 2.42 (Debian package: libglib2.0-dev)
 * gnutls >= 3.2.15 (Debian package: libgnutls28-dev)
 * libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.08.0 ([gvm-libs](https://github.com/greenbone/gvm-libs/tree/gvm-libs-20.08) component)

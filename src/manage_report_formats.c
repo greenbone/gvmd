@@ -114,6 +114,8 @@ report_format_param_type_name (report_format_param_type_t type)
         return "text";
       case REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST:
         return "report_format_list";
+      case REPORT_FORMAT_PARAM_TYPE_MULTI_SELECTION:
+        return "multi_selection";
       default:
         assert (0);
       case REPORT_FORMAT_PARAM_TYPE_ERROR:
@@ -143,6 +145,8 @@ report_format_param_type_from_name (const char *name)
     return REPORT_FORMAT_PARAM_TYPE_TEXT;
   if (strcmp (name, "report_format_list") == 0)
     return REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST;
+  if (strcmp (name, "multi_selection") == 0)
+    return REPORT_FORMAT_PARAM_TYPE_MULTI_SELECTION;
   return REPORT_FORMAT_PARAM_TYPE_ERROR;
 }
 
