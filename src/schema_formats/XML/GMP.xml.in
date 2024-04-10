@@ -16002,6 +16002,7 @@ END:VCALENDAR
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
+                <alt>multi_selection</alt>
                 <alt>selection</alt>
                 <alt>string</alt>
                 <alt>text</alt>
@@ -16664,6 +16665,7 @@ END:VCALENDAR
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
+                <alt>multi_selection</alt>
                 <alt>selection</alt>
                 <alt>string</alt>
                 <alt>text</alt>
