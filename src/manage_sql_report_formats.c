@@ -31,6 +31,7 @@
 #include "sql.h"
 #include "utils.h"
 
+#include <cjson/cJSON.h>
 #include <errno.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -2406,6 +2407,28 @@ report_format_param_type_min (report_format_t report_format, const char *name)
   return min;
 }
 
+static int
+report_format_param_value_in_options (report_format_param_t param,
+                                      const char *value)
+{
+  iterator_t options;
+  int found = 0;
+
+  init_param_option_iterator (&options, param, 1, NULL);
+  while (next (&options))
+    {
+      if (param_option_iterator_value (&options)
+          && (strcmp (param_option_iterator_value (&options), value)
+              == 0))
+        {
+          found = 1;
+          break;
+        }
+    }
+  cleanup_iterator (&options);
+  return found;
+}
+
 /**
  * @brief Validate a value for a report format param.
  *
@@ -2459,29 +2482,18 @@ report_format_validate_param_value (report_format_t report_format,
         break;
       case REPORT_FORMAT_PARAM_TYPE_SELECTION:
         {
-          iterator_t options;
-          int found = 0;
-
-          init_param_option_iterator (&options, param, 1, NULL);
-          while (next (&options))
-            if (param_option_iterator_value (&options)
-                && (strcmp (param_option_iterator_value (&options), value)
-                    == 0))
-              {
-                found = 1;
-                break;
-              }
-          cleanup_iterator (&options);
-          if (found)
-            break;
-          if (error_message)
+          if (! report_format_param_value_in_options (param, value))
             {
-              *error_message
-                = g_strdup_printf ("value of param \"%s\""
-                                   " is not a valid selection option",
-                                   name);
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                      " is not a valid selection option",
+                                      name);
+                }
+              return 1;
             }
-          return 1;
+          break;
         }
       case REPORT_FORMAT_PARAM_TYPE_STRING:
       case REPORT_FORMAT_PARAM_TYPE_TEXT:
@@ -2533,6 +2545,86 @@ report_format_validate_param_value (report_format_t report_format,
             return 0;
         }
         break;
+      case REPORT_FORMAT_PARAM_TYPE_MULTI_SELECTION:
+        {
+          long long int min, max, actual;
+          min = report_format_param_type_min (report_format, name);
+          max = report_format_param_type_max (report_format, name);
+          actual = 0LL;
+          cJSON *json = cJSON_Parse (value);
+          cJSON *array_item = NULL;
+
+          if (!cJSON_IsArray (json))
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is not a valid JSON array",
+                                       name);
+                }
+              cJSON_Delete (json);
+              return 1;
+            }
+
+          cJSON_ArrayForEach (array_item, json)
+            {
+              char *string;
+              if (!cJSON_IsString (array_item))
+                {
+                  if (error_message)
+                    {
+                      *error_message
+                        = g_strdup_printf ("value of param \"%s\""
+                                           " contains a non-string value",
+                                           name);
+                    }
+                  cJSON_Delete (json);
+                  return 1;
+                }
+              string = cJSON_GetStringValue (array_item);
+              if (! report_format_param_value_in_options (param, string))
+                {
+                  if (error_message)
+                    {
+                      *error_message
+                        = g_strdup_printf ("\"%s\" in value of param \"%s\""
+                                           " is not a valid selection option",
+                                           string, name);
+                    }
+                  cJSON_Delete (json);
+                  return 1;
+                }
+              actual ++;
+            }
+
+          cJSON_Delete (json);
+          if (actual < min)
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " must contain at least %lld option(s),"
+                                       " got %lld",
+                                       name, min, actual);
+                }
+              return 1;
+            }
+          if (actual > max)
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " must contain a maximum of %lld"
+                                       " option(s), got %lld",
+                                       name, max, actual);
+                }
+              return 1;
+            }
+          break;
+        }
       default:
         break;
     }
