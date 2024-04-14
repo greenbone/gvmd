@@ -18088,11 +18088,6 @@ END:VCALENDAR
             <type>boolean</type>
             <summary>Whether to include Override descriptions in the report</summary>
           </option>
-          <option>
-            <name>timezone</name>
-            <type>text</type>
-            <summary>The timezone to use for the report</summary>
-          </option>
           <column>
             <name>tag</name>
             <type>text</type>
