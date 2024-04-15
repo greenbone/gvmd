@@ -14,6 +14,11 @@ jobs:
   images:
     name: Production Images
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build:
+          - default
+          - openvasd
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,8 +46,9 @@ jobs:
             type=ref,event=pr
 
             # when a new git tag is created set stable and a latest tags
-            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
-            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' && matrix.build == 'default'}}
+            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' && matrix.build == 'default'}}
+            type=raw,value=edge-openvasd,enable=${{ steps.latest.outputs.is-latest-tag == 'false' && matrix.build == 'openvasd' }}
       - name: Set container build options
         id: container-opts
         run: |
@@ -52,6 +58,11 @@ jobs:
           else
             echo "version=edge" >> $GITHUB_OUTPUT
             echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
+          fi
+          if [[ "${{ matrix.build }}" = 'openvasd' ]]; then
+            echo 'ft=-DOPENVASD=1' >> $GITHUB_OUTPUT
+          else
+            echo 'ft=-DOPENVASD=0' >> $GITHUB_OUTPUT
           fi
       - name: Login to Docker Registry
         if: github.event_name != 'pull_request'
@@ -71,6 +82,7 @@ jobs:
           build-args: |
             VERSION=${{ steps.container-opts.outputs.version }}
             GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
+            FEATURE_TOGGLE=${{ steps.container-opts.outputs.ft }}
             IMAGE_REGISTRY=${{ vars.IMAGE_REGISTRY }}
           file: .docker/prod.Dockerfile
           platforms: linux/amd64,linux/arm64
