@@ -2484,6 +2484,11 @@ gvmd (int argc, char** argv, char *env[])
   /**
    * LDAP debugging
    */
+
+#if OPENVASD == 1
+  g_message (" openvasd toggle activated %d", OPENVASD);
+#endif
+
   if (ldap_debug)
     {
       if (ldap_enable_debug () == 0)
