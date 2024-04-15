@@ -20891,6 +20891,11 @@ END:VCALENDAR
         <summary>Whether to include list of tasks that use the target</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include port range and tag info</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
