@@ -39905,7 +39905,7 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
      " THEN overrides.nvt"                                                  \
      " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
      " END)",                                                               \
-     "name",                                                                \
+     "nvt",                                                                 \
      KEYWORD_TYPE_STRING                                                    \
    },                                                                       \
    { "overrides.nvt", "nvt_id", KEYWORD_TYPE_STRING },                      \
