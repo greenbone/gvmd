@@ -32674,6 +32674,9 @@ validate_results_port (const char *port)
   if (!port)
     return 1;
 
+  if (strcmp (port, "package") == 0)
+    return 0;
+
   /* "cpe:abc", "general/tcp", "20/udp"
    *
    * We keep the "general/tcp" case pretty open because it is not clearly
