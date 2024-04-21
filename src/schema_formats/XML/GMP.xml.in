@@ -14154,8 +14154,8 @@ END:VCALENDAR
           </column>
           <column>
             <name>nvt</name>
-            <type>oid</type>
-            <summary>OID of the NVT the Override applies to</summary>
+            <type>text</type>
+            <summary>Name of the NVT the Override applies to</summary>
           </column>
           <column>
             <name>text</name>
@@ -14165,7 +14165,7 @@ END:VCALENDAR
           <column>
             <name>nvt_id</name>
             <type>oid</type>
-            <summary>Alias of nvt</summary>
+            <summary>OID of the NVT the Override applies to</summary>
           </column>
           <column>
             <name>task_name</name>
