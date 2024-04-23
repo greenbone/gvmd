@@ -22250,7 +22250,7 @@ where_qod (int min_qod)
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "results.qod_type", "qod_type", KEYWORD_TYPE_STRING },                  \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
       "       WHERE name = 'hostname'"                                        \
