@@ -30879,7 +30879,7 @@ check_osp_result_exists (report_t report, task_t task,
                    quoted_port, severity_double,
                    qod_int, quoted_path))
         {
-          g_info ("Captured duplicate result, report: %llu hash_value: %s",
+          g_debug ("Captured duplicate result, report: %llu hash_value: %s",
                    report, *entity_hash_value);
           g_debug ("Entity string: %s", entity_string->str);
           return_value = 1;
@@ -30949,7 +30949,7 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                    report_host, *detail_hash_value, quoted_s_type,
                    quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
         {
-          g_info ("Captured duplicate report host detail, report: %llu hash_value: %s",
+          g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
                   report, *detail_hash_value);
           g_debug ("Hash string: %s", hash_string);
           return_value = 1;
