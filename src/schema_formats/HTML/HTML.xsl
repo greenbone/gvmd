@@ -272,7 +272,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <!-- RNC preamble. -->
 
   <xsl:template name="rnc-preamble">
-    <details open="">
+    <details>
       <xsl:call-template name="details-summary">
         <xsl:with-param name="id" select="'rnc_preamble'"/>
         <xsl:with-param name="text" select="'4 RNC Preamble'"/>
