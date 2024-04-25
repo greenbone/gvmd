@@ -269,6 +269,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </summary>
   </xsl:template>
 
+  <xsl:template name="details-summary-3">
+    <xsl:param name="id"/>
+    <xsl:param name="name"/>
+    <xsl:param name="text"/>
+    <summary id="{$id}"
+             style="margin-block-start: .83em; margin-block-end: .83em; cursor: pointer;">
+      <h3 style="display: inline;"><xsl:value-of select="$text"/> <tt><xsl:value-of select="$name"/></tt></h3>
+    </summary>
+  </xsl:template>
+
   <!-- RNC preamble. -->
 
   <xsl:template name="rnc-preamble">
@@ -312,12 +322,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template match="type" mode="details">
     <xsl:param name="index">5.<xsl:value-of select="position()"/></xsl:param>
-    <div>
-      <div>
-        <h3 id="type_{name}">
-        <xsl:value-of select="$index"/>
-        Data Type <tt><xsl:value-of select="name"/></tt></h3>
-      </div>
+    <details open="">
+      <xsl:call-template name="details-summary-3">
+        <xsl:with-param name="id" select="concat('type_', name)"/>
+        <xsl:with-param name="text" select="concat($index, ' Data Type ')"/>
+        <xsl:with-param name="name" select="name"/>
+      </xsl:call-template>
 
       <xsl:if test="summary">
         <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
@@ -340,7 +350,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </pre>
       </div>
 
-    </div>
+    </details>
   </xsl:template>
 
   <xsl:template name="type-details">
@@ -390,12 +400,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template match="element">
     <xsl:param name="index">6.<xsl:value-of select="position()"/></xsl:param>
-    <div>
-      <div>
-        <h3 id="element_{name}">
-        <xsl:value-of select="$index"/>
-        Element <tt><xsl:value-of select="name"/></tt></h3>
-      </div>
+    <details open="">
+      <xsl:call-template name="details-summary-3">
+        <xsl:with-param name="id" select="concat('element_', name)"/>
+        <xsl:with-param name="text" select="concat($index, ' Element ')"/>
+        <xsl:with-param name="name" select="name"/>
+      </xsl:call-template>
 
       <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
 
@@ -417,7 +427,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
       </div>
 
-    </div>
+    </details>
   </xsl:template>
 
   <!-- Commands. -->
@@ -646,12 +656,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template match="command">
     <xsl:param name="index">7.<xsl:value-of select="position()"/></xsl:param>
-    <div>
-      <div>
-        <h3 id="command_{name}">
-        <xsl:value-of select="$index"/>
-        Command <tt><xsl:value-of select="name"/></tt></h3>
-      </div>
+    <details open="">
+      <xsl:call-template name="details-summary-3">
+        <xsl:with-param name="id" select="concat('command_', name)"/>
+        <xsl:with-param name="text" select="concat($index, ' Command ')"/>
+        <xsl:with-param name="name" select="name"/>
+      </xsl:call-template>
 
       <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
 
@@ -714,7 +724,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </xsl:otherwise>
       </xsl:choose>
 
-    </div>
+    </details>
   </xsl:template>
 
   <xsl:template match="command" mode="index">
