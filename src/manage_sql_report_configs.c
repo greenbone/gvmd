@@ -555,7 +555,7 @@ delete_report_configs_user (user_t user)
        " WHERE report_config IN"
        "   (SELECT id FROM report_configs_trash WHERE owner = %llu)",
        user);
-  sql ("DELETE report_configs_trash WHERE owner = %llu;", user);
+  sql ("DELETE FROM report_configs_trash WHERE owner = %llu;", user);
 }
 
 /**
