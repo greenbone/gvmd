@@ -17436,7 +17436,8 @@ auth_cache_find (const char *username, const char *password, int method)
 
   quoted_username = sql_quote (username);
   hash = sql_string ("SELECT hash FROM auth_cache WHERE username = '%s'"
-                     " AND method = %i AND creation_time >= m_now () - %d;",
+                     " AND method = %i AND creation_time >= m_now () - %d"
+                     " FOR UPDATE;",
                      quoted_username, method, get_auth_timeout()*60);
   g_free (quoted_username);
   if (!hash)
@@ -17526,6 +17527,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
   int ret;
   gchar *hash;
 
+  sql_begin_immediate ();
   if (gvm_auth_ldap_enabled ()
       && ldap_auth_enabled ()
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
@@ -17539,6 +17541,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       if (auth_cache_find (username, password, 0) == 0)
         {
           auth_cache_refresh (username);
+          sql_commit ();
           return 0;
         }
 
@@ -17552,7 +17555,14 @@ authenticate_any_method (const gchar *username, const gchar *password,
       free (cacert);
 
       if (ret == 0)
-        auth_cache_insert (username, password, 0);
+        {
+          auth_cache_insert (username, password, 0);
+          sql_commit ();
+        }
+      else
+        {
+          sql_rollback ();
+        }
       return ret;
     }
   if (gvm_auth_radius_enabled ()
@@ -17565,6 +17575,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       if (auth_cache_find (username, password, 1) == 0)
         {
           auth_cache_refresh (username);
+          sql_commit ();
           return 0;
         }
 
@@ -17573,13 +17584,21 @@ authenticate_any_method (const gchar *username, const gchar *password,
       g_free (host);
       g_free (key);
       if (ret == 0)
-        auth_cache_insert (username, password, 1);
+        {
+          auth_cache_insert (username, password, 1);
+          sql_commit ();
+        }
+      else
+        {
+          sql_rollback ();
+        }
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
   if (auth_cache_find (username, password, 2) == 0)
     {
       auth_cache_refresh (username);
+      sql_commit ();
       return 0;
     }
   hash = manage_user_hash (username);
@@ -17605,6 +17624,10 @@ authenticate_any_method (const gchar *username, const gchar *password,
           break;
   }
 
+  if (ret)
+    sql_rollback ();
+  else
+    sql_commit ();
 
   g_free (hash);
   return ret;
@@ -22227,7 +22250,7 @@ where_qod (int min_qod)
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
-    { "qod_type", NULL, KEYWORD_TYPE_STRING },                                \
+    { "results.qod_type", "qod_type", KEYWORD_TYPE_STRING },                  \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
       "       WHERE name = 'hostname'"                                        \
