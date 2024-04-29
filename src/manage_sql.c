@@ -17133,12 +17133,12 @@ cleanup_manage_process (gboolean cleanup)
 void
 manage_cleanup_process_error (int signal)
 {
-  g_debug ("Received %s signal", strsignal (signal));
+  g_message ("Received %s signal", strsignal (signal));
   if (sql_is_open ())
     {
       if (current_scanner_task)
         {
-          g_warning ("%s: Error exit, setting running task to Interrupted",
+          g_message ("%s: Error exit, setting running task to Interrupted",
                      __func__);
           set_task_interrupted (current_scanner_task,
                                 "Error exit, setting running task to"

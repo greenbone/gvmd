@@ -999,7 +999,7 @@ handle_sigabrt (int given_signal)
       frame_count = 0;
     }
   for (index = 0; index < frame_count; index++)
-    g_debug ("BACKTRACE: %s", frames_text[index]);
+    g_message ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
 
   manage_cleanup_process_error (given_signal);
@@ -1043,7 +1043,7 @@ handle_sigsegv (/* unused */ int given_signal)
       frame_count = 0;
     }
   for (index = 0; index < frame_count; index++)
-    g_debug ("BACKTRACE: %s", frames_text[index]);
+    g_message ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
 
   manage_cleanup_process_error (given_signal);
