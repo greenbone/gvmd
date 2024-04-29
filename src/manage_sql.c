@@ -17138,7 +17138,7 @@ manage_cleanup_process_error (int signal)
     {
       if (current_scanner_task)
         {
-          g_message ("%s: Error exit, setting running task to Interrupted",
+          g_warning ("%s: Error exit, setting running task to Interrupted",
                      __func__);
           set_task_interrupted (current_scanner_task,
                                 "Error exit, setting running task to"
