@@ -260,7 +260,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template name="details-summary">
+  <xsl:template name="details-summary-2">
     <xsl:param name="id"/>
     <xsl:param name="text"/>
     <summary id="{$id}"
@@ -290,7 +290,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="rnc-preamble">
     <details>
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'rnc_preamble'"/>
         <xsl:with-param name="text" select="'4 RNC Preamble'"/>
       </xsl:call-template>
@@ -317,7 +317,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="type-summary">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'type_summary'"/>
         <xsl:with-param name="text" select="'1 Summary of Data Types'"/>
       </xsl:call-template>
@@ -366,7 +366,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="type-details">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'type_details'"/>
         <xsl:with-param name="text" select="'5 Data Type Details'"/>
       </xsl:call-template>
@@ -389,7 +389,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="element-summary">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'element_summary'"/>
         <xsl:with-param name="text" select="'2 Summary of Elements'"/>
       </xsl:call-template>
@@ -401,7 +401,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="element-details">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'element_details'"/>
         <xsl:with-param name="text" select="'6 Element Details'"/>
       </xsl:call-template>
@@ -768,7 +768,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="command-summary">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'command_summary'"/>
         <xsl:with-param name="text" select="'3 Summary of Commands'"/>
       </xsl:call-template>
@@ -780,7 +780,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="command-details">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'command_details'"/>
         <xsl:with-param name="text" select="'7 Command Details'"/>
       </xsl:call-template>
@@ -836,7 +836,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template name="changes">
     <details open="">
-      <xsl:call-template name="details-summary">
+      <xsl:call-template name="details-summary-2">
         <xsl:with-param name="id" select="'changes'"/>
         <xsl:with-param name="text">
           <xsl:value-of select="'8 Compatibility Changes in Version '"/>
