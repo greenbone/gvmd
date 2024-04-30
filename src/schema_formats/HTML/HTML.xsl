@@ -342,7 +342,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <xsl:apply-templates select="description"/>
 
-      <details open="">
+      <details>
         <xsl:call-template name="details-summary-4">
           <xsl:with-param name="text" select="concat($index, '.1 RNC')"/>
         </xsl:call-template>
@@ -434,7 +434,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ul>
       </details>
 
-      <details open="">
+      <details>
         <xsl:call-template name="details-summary-4">
           <xsl:with-param name="text" select="concat($index, '.2 RNC')"/>
         </xsl:call-template>
@@ -705,7 +705,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ul>
       </details>
 
-      <details open="">
+      <details>
         <xsl:call-template name="details-summary-4">
           <xsl:with-param name="text" select="concat($index, '.2 RNC')"/>
         </xsl:call-template>
