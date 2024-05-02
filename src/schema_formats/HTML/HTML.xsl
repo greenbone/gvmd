@@ -294,7 +294,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <xsl:with-param name="id" select="'rnc_preamble'"/>
         <xsl:with-param name="text" select="'4 RNC Preamble'"/>
       </xsl:call-template>
-      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+      <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
         <pre>
           <xsl:call-template name="preamble"/>
         </pre>
@@ -347,7 +347,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <xsl:with-param name="text" select="concat($index, '.1 RNC')"/>
         </xsl:call-template>
 
-        <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+        <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
           <pre>
             <xsl:value-of select="name"/>
             <xsl:text> = </xsl:text>
@@ -439,7 +439,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <xsl:with-param name="text" select="concat($index, '.2 RNC')"/>
         </xsl:call-template>
 
-        <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+        <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
           <div style="margin-left: 5%">
             <xsl:call-template name="command-relax"/>
           </div>
@@ -710,7 +710,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <xsl:with-param name="text" select="concat($index, '.2 RNC')"/>
         </xsl:call-template>
 
-        <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+        <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
           <i>Command</i>
           <div style="margin-left: 5%">
             <xsl:call-template name="command-relax"/>
