@@ -12155,7 +12155,7 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   else
     {
       (*alert_filter_get)->filt_id = NULL;
-      (*alert_filter_get)->filter = base_get_data->filter;
+      (*alert_filter_get)->filter = g_strdup (base_get_data->filter);
     }
 
   /* Adjust filter for report composer.
