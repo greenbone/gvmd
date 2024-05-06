@@ -30839,10 +30839,7 @@ check_osp_result_exists (report_t report, task_t task,
 
   if (g_hash_table_contains (hashed_osp_results, *entity_hash_value))
     {
-        g_debug ("Captured duplicate result, report: %llu hash_value: %s",
-                 report, *entity_hash_value);
-        g_debug ("Entity string: %s", entity_string->str);
-        return_value = 1;
+      return_value = 1;
     }
   else
     {
@@ -30916,9 +30913,6 @@ check_osp_result_exists (report_t report, task_t task,
                       quoted_port, severity_double,
                       qod_int, quoted_path))
             {
-              g_debug ("Captured duplicate result, report: %llu hash_value: %s",
-                      report, *entity_hash_value);
-              g_debug ("Entity string: %s", entity_string->str);
               return_value = 1;
             }
 
@@ -30931,6 +30925,12 @@ check_osp_result_exists (report_t report, task_t task,
       }
     }
 
+  if (return_value)
+  {
+    g_debug ("Captured duplicate result, report: %llu hash_value: %s",
+              report, *entity_hash_value);
+    g_debug ("Entity string: %s", entity_string->str);
+  }
   g_string_free(entity_string, TRUE);
   return return_value;
 }
@@ -30966,10 +30966,7 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
 
   if (g_hash_table_contains (hashed_host_details, *detail_hash_value))
     {
-        g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
-                report, *detail_hash_value);
-        g_debug ("Hash string: %s", hash_string);
-        return_value = 1;
+      return_value = 1;
     }
   else
     {
@@ -31001,9 +30998,6 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                         report_host, *detail_hash_value, quoted_s_type,
                         quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
               {
-                g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
-                        report, *detail_hash_value);
-                g_debug ("Hash string: %s", hash_string);
                 return_value = 1;
               }
             g_free (quoted_host);
@@ -31015,6 +31009,12 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
           }
     }
 
+  if (return_value)
+    {
+      g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
+              report, *detail_hash_value);
+      g_debug ("Hash string: %s", hash_string);
+    }
   g_free (hash_string);
   return return_value;
 }
