@@ -30837,6 +30837,11 @@ check_osp_result_exists (report_t report, task_t task,
   print_entity_to_string (r_entity, entity_string);
   *entity_hash_value = get_md5_hash_from_string (entity_string->str);
 
+  /* The hash map is used to to filter duplicates that may exist within
+   * the same batch of results fetched from the scanner even before
+   * insertion in the database while the SQL is used to check for duplicates
+   * across batches. */
+
   if (g_hash_table_contains (hashed_osp_results, *entity_hash_value))
     {
       return_value = 1;
@@ -30964,6 +30969,11 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                                  s_name, s_desc, name, value);
   *detail_hash_value = get_md5_hash_from_string (hash_string);
 
+  /* The hash map is used to to filter duplicates that may exist within
+   * the same batch of results fetched from the scanner even before
+   * insertion in the database while the SQL is used to check for duplicates
+   * across batches. */
+
   if (g_hash_table_contains (hashed_host_details, *detail_hash_value))
     {
       return_value = 1;
@@ -31012,7 +31022,7 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
   if (return_value)
     {
       g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
-              report, *detail_hash_value);
+                report, *detail_hash_value);
       g_debug ("Hash string: %s", hash_string);
     }
   g_free (hash_string);
