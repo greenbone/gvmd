@@ -733,17 +733,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <xsl:apply-templates select="description"/>
               <div style="margin-left: 5%; margin-right: 5%;">
                 <i>Client</i>
-                <div style="margin-left: 2%; margin-right: 2%;">
+                <div style="margin-left: 2%; margin-right: 2%; display: flex; align-items: start;">
                   <xsl:for-each select="request/*">
-                    <pre>
+                    <pre style="border: 1px solid #F5F5F5; border-radius: 4px; padding: 10px 10px 10px 5px; background: #F5F5F5;">
                       <xsl:call-template name="pretty"/>
                     </pre>
                   </xsl:for-each>
                 </div>
                 <i>Manager</i>
-                <div style="margin-left: 2%; margin-right: 2%;">
+                <div style="margin-left: 2%; margin-right: 2%; display: flex; align-items: start;">
                   <xsl:for-each select="response/*">
-                    <pre>
+                    <pre style="border: 1px solid #F5F5F5; border-radius: 4px; padding: 10px 10px 10px 5px; background: #F5F5F5;">
                       <xsl:call-template name="pretty"/>
                     </pre>
                   </xsl:for-each>
