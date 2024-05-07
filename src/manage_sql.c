@@ -30931,11 +30931,11 @@ check_osp_result_exists (report_t report, task_t task,
     }
 
   if (return_value)
-  {
-    g_debug ("Captured duplicate result, report: %llu hash_value: %s",
-              report, *entity_hash_value);
-    g_debug ("Entity string: %s", entity_string->str);
-  }
+    {
+      g_debug ("Captured duplicate result, report: %llu hash_value: %s",
+                report, *entity_hash_value);
+      g_debug ("Entity string: %s", entity_string->str);
+    }
   g_string_free(entity_string, TRUE);
   return return_value;
 }
