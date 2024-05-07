@@ -1287,7 +1287,7 @@ insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *);
 
 int
-manage_report_host_detail (report_t, const char *, const char *);
+manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
 
 void
 hosts_set_identifiers (report_t);
