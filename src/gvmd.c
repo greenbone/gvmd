@@ -2397,6 +2397,9 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+  else
+    set_log_tz ("utc 0");
+
   tzset ();
 
   /* Set umask to hoard created files, including the database. */
