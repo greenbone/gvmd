@@ -12200,11 +12200,15 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   else
     format = CREDENTIAL_FORMAT_NONE;
 
-  if (format == CREDENTIAL_FORMAT_ERROR)
+  if (format == CREDENTIAL_FORMAT_ERROR) {
     SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_credentials",
                          "Format attribute should"
                          " be 'key', 'rpm', 'deb', 'exe' or 'pem'"));
+    get_credentials_data_reset (get_credentials_data);
+    set_client_state (CLIENT_AUTHENTIC);
+    return;
+  }
 
   INIT_GET (credential, Credential);
 
