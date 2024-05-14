@@ -2271,37 +2271,6 @@ update_scap_cpes ()
 /* SCAP update: CVEs. */
 
 /**
- * @brief Check if this is the last appearance of a product in its siblings.
- *
- * @param[in]  product  Product.
- *
- * @return 1 if last appearance of product, else 0.
- */
-static int
-last_appearance (element_t product)
-{
-  element_t product2;
-
-  product2 = element_next (product);
-  while (product2)
-    {
-      gchar *product_text, *product2_text;
-      int cmp;
-
-      product_text = element_text (product);
-      product2_text = element_text (product2);
-
-      cmp = strcmp (product_text, product2_text);
-      g_free (product_text);
-      g_free (product2_text);
-      if (cmp == 0)
-        break;
-      product2 = element_next (product2);
-    }
-  return product2 == NULL;
-}
-
-/**
  * @brief Get the ID of a CPE from a hashtable.
  *
  * @param[in]  hashed_cpes    CPEs.
@@ -2330,16 +2299,19 @@ insert_cve_products (element_t list, resource_t cve,
                      int time_modified, int time_published,
                      GHashTable *hashed_cpes, int *transaction_size)
 {
-  element_t product;
+  element_t product_element;
+  GHashTable *products;
+  GHashTableIter products_iter;
+  gchar *product_tilde;
   int first_product, first_affected;
   GString *sql_cpes, *sql_affected;
 
   if (list == NULL)
     return;
 
-  product = element_first_child (list);
+  product_element = element_first_child (list);
 
-  if (product == NULL)
+  if (product_element == NULL)
     return;
 
   sql_cpes = g_string_new ("INSERT INTO scap2.cpes"
@@ -2350,117 +2322,119 @@ insert_cve_products (element_t list, resource_t cve,
                                " (cve, cpe)"
                                " VALUES");
 
-  /* Buffer the SQL. */
-
-  first_product = first_affected = 1;
-
-  while (product)
+  /* Collect unique product CPEs in the current CVE's XML.
+   * Duplicates have to be avoided as they would cause errors from Postgres
+   * ON CONFLICT DO UPDATE.
+   */
+  products = g_hash_table_new_full (g_str_hash, g_str_equal, free, NULL);
+  while (product_element)
     {
-      gchar *product_text;
-
-      if (strcmp (element_name (product), "product"))
+      gchar *product_text, *product_decoded;
+      if (strcmp (element_name (product_element), "product"))
         {
-          product = element_next (product);
+          product_element = element_next (product_element);
           continue;
         }
 
-      product_text = element_text (product);
-      if (strlen (product_text))
+      product_text = element_text (product_element);
+      if (strcmp (product_text, "") == 0)
         {
-          gchar *quoted_product, *product_decoded;
-          gchar *product_tilde;
-
-          product_decoded = g_uri_unescape_string (product_text, NULL);
-          product_tilde = string_replace (product_decoded,
-                                          "~", "%7E", "%7e",
-                                          NULL);
-          g_free (product_decoded);
-          quoted_product = sql_quote (product_tilde);
-
-          if (g_hash_table_contains (hashed_cpes, product_tilde) == 0)
-            {
-              /* The product was not in the db.
-               *
-               * Only insert the product if this is its last appearance
-               * in the current CVE's XML, to avoid errors from Postgres
-               * ON CONFLICT DO UPDATE. */
-
-              if (last_appearance (product))
-                {
-                  /* The CPE does not appear later in this CVE's XML. */
-
-                  g_string_append_printf
-                   (sql_cpes,
-                    "%s ('%s', '%s', %i, %i)",
-                    first_product ? "" : ",", quoted_product, quoted_product,
-                    time_published, time_modified);
-
-                  first_product = 0;
-
-                  /* We could add product_tilde to the hashtable but then we
-                   * would have to worry about memory management in the
-                   * hashtable. */
-                }
-
-              /* We don't know the db id of the CPE right now. */
-
-              g_string_append_printf
-               (sql_affected,
-                "%s (%llu,"
-                "    (SELECT id FROM scap2.cpes"
-                "     WHERE name='%s'))",
-                first_affected ? "" : ",", cve, quoted_product);
-            }
-          else
-            {
-              int cpe;
-
-              /* The product is in the db.
-               *
-               * So we don't need to insert it. */
-
-              cpe = hashed_cpes_cpe_id (hashed_cpes, product_tilde);
-
-              g_string_append_printf
-               (sql_affected,
-                "%s (%llu, %i)",
-                first_affected ? "" : ",", cve,
-                cpe);
-            }
-
-          first_affected = 0;
-          g_free (product_tilde);
-          g_free (quoted_product);
+          free (product_text);
+          product_element = element_next (product_element);
+          continue;
         }
 
+      product_decoded = g_uri_unescape_string (product_text, NULL);
+      product_tilde = string_replace (product_decoded,
+                                      "~", "%7E", "%7e",
+                                      NULL);
       g_free (product_text);
+      g_free (product_decoded);
+      g_hash_table_insert (products, product_tilde, NULL);
 
-      product = element_next (product);
+      product_element = element_next (product_element);
+    }
+  
+  /* Add new CPEs. */
+
+  first_product = first_affected = 1;
+  g_hash_table_iter_init (&products_iter, products);
+
+  while (g_hash_table_iter_next (&products_iter,
+                                 (gpointer*)(&product_tilde),
+                                 NULL))
+    {
+      if (g_hash_table_contains (hashed_cpes, product_tilde) == 0)
+        {
+          gchar *quoted_product;
+          quoted_product = sql_quote (product_tilde);
+          g_string_append_printf
+            (sql_cpes,
+             "%s ('%s', '%s', %i, %i)",
+             first_product ? "" : ",", quoted_product, quoted_product,
+             time_published, time_modified);
+          g_free (quoted_product);
+          first_product = 0;
+        }
     }
 
-  /* Run the SQL. */
-
   if (first_product == 0)
-     {
-       sql ("%s"
-            " ON CONFLICT (uuid)"
-            " DO UPDATE SET name = EXCLUDED.name;",
-            sql_cpes->str);
+    {
+      /* Run the SQL for inserting new CPEs and add them to hashed_cpes 
+       * so they can be looked up quickly when adding affected_products.
+       */
+      iterator_t inserted_cpes;
+      init_iterator (&inserted_cpes,
+                     "%s"
+                     " ON CONFLICT (uuid)"
+                     " DO UPDATE SET name = EXCLUDED.name"
+                     " RETURNING id, name;",
+                     sql_cpes->str);
 
-       increment_transaction_size (transaction_size);
-     }
+      while (next (&inserted_cpes))
+        {
+          int rowid = iterator_int (&inserted_cpes, 0);
+          const char *name = iterator_string (&inserted_cpes, 1);
+          g_hash_table_insert (hashed_cpes,
+                               g_strdup (name),
+                               GINT_TO_POINTER (rowid));
+        }
+      cleanup_iterator (&inserted_cpes);
+      increment_transaction_size (transaction_size);
+      g_string_free (sql_cpes, TRUE);
+    }
 
-   if (first_affected == 0)
-     {
-       sql ("%s"
-            " ON CONFLICT DO NOTHING;",
-            sql_affected->str);
+  /**
+   * Add the affected product references.
+   */
+  g_hash_table_iter_init (&products_iter, products);
 
-       increment_transaction_size (transaction_size);
-     }
+  while (g_hash_table_iter_next (&products_iter,
+                                 (gpointer*)(&product_tilde),
+                                 NULL))
+    {
+      int cpe;
 
-   g_string_free (sql_cpes, TRUE);
-   g_string_free (sql_affected, TRUE);
+      cpe = hashed_cpes_cpe_id (hashed_cpes, product_tilde);
+      g_string_append_printf
+         (sql_affected,
+          "%s (%llu, %i)",
+          first_affected ? "" : ",", cve,
+          cpe);
+      first_affected = 0;
+    }
+
+  if (first_affected == 0)
+    {
+      sql ("%s"
+           " ON CONFLICT DO NOTHING;",
+           sql_affected->str);
+
+      increment_transaction_size (transaction_size);
+    }
+
+  g_string_free (sql_affected, TRUE);
+  g_hash_table_destroy (products);
 }
 
 /**
@@ -2758,11 +2732,11 @@ update_scap_cves ()
       return -1;
     }
 
-  hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
+  hashed_cpes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   init_iterator (&cpes, "SELECT uuid, id FROM scap2.cpes;");
   while (next (&cpes))
     g_hash_table_insert (hashed_cpes,
-                         (gpointer*) iterator_string (&cpes, 0),
+                         (gpointer*) g_strdup (iterator_string (&cpes, 0)),
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
   count = 0;
