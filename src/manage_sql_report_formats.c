@@ -2407,6 +2407,14 @@ report_format_param_type_min (report_format_t report_format, const char *name)
   return min;
 }
 
+/**
+ * @brief Checks if the value of a report format param is a valid option.
+ * 
+ * @param[in]  param  The report format param to check.
+ * @param[in]  value  The value to check.
+ * 
+ * @return 1 if the value is one of the allowed options, 0 if not.
+ */
 static int
 report_format_param_value_in_options (report_format_param_t param,
                                       const char *value)
