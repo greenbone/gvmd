@@ -12155,7 +12155,7 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
   else
     {
       (*alert_filter_get)->filt_id = NULL;
-      (*alert_filter_get)->filter = base_get_data->filter;
+      (*alert_filter_get)->filter = g_strdup (base_get_data->filter);
     }
 
   /* Adjust filter for report composer.
@@ -17133,7 +17133,7 @@ cleanup_manage_process (gboolean cleanup)
 void
 manage_cleanup_process_error (int signal)
 {
-  g_debug ("Received %s signal", strsignal (signal));
+  g_message ("Received %s signal", strsignal (signal));
   if (sql_is_open ())
     {
       if (current_scanner_task)
@@ -30821,12 +30821,14 @@ report_host_noticeable (report_t report, const gchar *host)
  * @param[in]  task        Task.
  * @param[in]  r_entity    entity of the result.
  * @param[out] entity_hash_value  The generated hash value of r_entity.
+ * @param[out] hashed_osp_results  A GHashtable containing hashed osp results.
  *
  * @return     "1" if osp result already exists, else "0"
  */
 static int
 check_osp_result_exists (report_t report, task_t task,
-                         entity_t r_entity, char **entity_hash_value)
+                         entity_t r_entity, char **entity_hash_value,
+                         GHashTable *hashed_osp_results)
 {
   GString *entity_string;
   int return_value = 0;
@@ -30834,87 +30836,106 @@ check_osp_result_exists (report_t report, task_t task,
   entity_string = g_string_new ("");
   print_entity_to_string (r_entity, entity_string);
   *entity_hash_value = get_md5_hash_from_string (entity_string->str);
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM results"
-               "  WHERE report = %llu and hash_value = '%s');",
-               report, *entity_hash_value))
+
+  /* The hash map is used to to filter duplicates that may exist within
+   * the same batch of results fetched from the scanner even before
+   * insertion in the database while the SQL is used to check for duplicates
+   * across batches. */
+
+  if (g_hash_table_contains (hashed_osp_results, *entity_hash_value))
     {
-      const char *desc, *type, *severity, *host;
-      const char *hostname, *port, *qod, *path;
-      gchar *quoted_desc, *quoted_type, *quoted_host;
-      gchar *quoted_hostname, *quoted_port, *quoted_path;
-      double severity_double = 0.0;
-      int qod_int = QOD_DEFAULT;
-
-      host = entity_attribute (r_entity, "host");
-      hostname = entity_attribute (r_entity, "hostname");
-      type = entity_attribute (r_entity, "type");
-      desc = entity_text (r_entity);
-      port = entity_attribute (r_entity, "port");
-      severity = entity_attribute (r_entity, "severity");
-      qod = entity_attribute (r_entity, "qod");
-      path = entity_attribute (r_entity, "uri");
-
-      if (!qod)
+      return_value = 1;
+    }
+  else
+    {
+      g_hash_table_insert (hashed_osp_results, g_strdup(*entity_hash_value),
+                           GINT_TO_POINTER(1));
+      if (sql_int ("SELECT EXISTS"
+                  " (SELECT * FROM results"
+                  "  WHERE report = %llu and hash_value = '%s');",
+                  report, *entity_hash_value))
         {
-          qod_int = QOD_DEFAULT;
-        }
-      else
-        {
-          qod_int = atoi (qod);
-          if (qod_int <= 0 || qod_int > 100)
-            qod_int = QOD_DEFAULT;
-        }
+          const char *desc, *type, *severity, *host;
+          const char *hostname, *port, *qod, *path;
+          gchar *quoted_desc, *quoted_type, *quoted_host;
+          gchar *quoted_hostname, *quoted_port, *quoted_path;
+          double severity_double = 0.0;
+          int qod_int = QOD_DEFAULT;
 
-      if (!severity || !strcmp (severity, ""))
-        {
-          if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
-            severity_double = SEVERITY_ERROR;
+          host = entity_attribute (r_entity, "host");
+          hostname = entity_attribute (r_entity, "hostname");
+          type = entity_attribute (r_entity, "type");
+          desc = entity_text (r_entity);
+          port = entity_attribute (r_entity, "port");
+          severity = entity_attribute (r_entity, "severity");
+          qod = entity_attribute (r_entity, "qod");
+          path = entity_attribute (r_entity, "uri");
+
+          if (!qod)
+            {
+              qod_int = QOD_DEFAULT;
+            }
           else
             {
-              g_debug ("%s: Result without severity", __func__);
-              return 0;
+              qod_int = atoi (qod);
+              if (qod_int <= 0 || qod_int > 100)
+                qod_int = QOD_DEFAULT;
             }
-        }
-      else
-        {
-          severity_double = strtod (severity, NULL);
-        }
 
-      quoted_host = sql_quote (host ?: "");
-      quoted_hostname = sql_quote (hostname ?: "");
-      quoted_type = sql_quote (type ?: "");
-      quoted_desc = sql_quote (desc ?: "");
-      quoted_port = sql_quote (port ?: "");
-      quoted_path = sql_quote (path ?: "");
+          if (!severity || !strcmp (severity, ""))
+            {
+              if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
+                severity_double = SEVERITY_ERROR;
+              else
+                {
+                  g_debug ("%s: Result without severity", __func__);
+                  return 0;
+                }
+            }
+          else
+            {
+              severity_double = strtod (severity, NULL);
+            }
 
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM results"
-                   "   WHERE report = %llu and hash_value = '%s'"
-                   "    and host = '%s' and hostname = '%s'"
-                   "    and type = '%s' and description = '%s'"
-                   "    and port = '%s' and severity = %1.1f"
-                   "    and qod = %d and path = '%s'"
-                   " );",
-                   report, *entity_hash_value,
-                   quoted_host, quoted_hostname,
-                   quoted_type, quoted_desc,
-                   quoted_port, severity_double,
-                   qod_int, quoted_path))
-        {
-          g_debug ("Captured duplicate result, report: %llu hash_value: %s",
-                   report, *entity_hash_value);
-          g_debug ("Entity string: %s", entity_string->str);
-          return_value = 1;
-        }
+          quoted_host = sql_quote (host ?: "");
+          quoted_hostname = sql_quote (hostname ?: "");
+          quoted_type = sql_quote (type ?: "");
+          quoted_desc = sql_quote (desc ?: "");
+          quoted_port = sql_quote (port ?: "");
+          quoted_path = sql_quote (path ?: "");
 
-      g_free (quoted_host);
-      g_free (quoted_hostname);
-      g_free (quoted_type);
-      g_free (quoted_desc);
-      g_free (quoted_port);
-      g_free (quoted_path);
-  }
+          if (sql_int ("SELECT EXISTS"
+                      " (SELECT * FROM results"
+                      "   WHERE report = %llu and hash_value = '%s'"
+                      "    and host = '%s' and hostname = '%s'"
+                      "    and type = '%s' and description = '%s'"
+                      "    and port = '%s' and severity = %1.1f"
+                      "    and qod = %d and path = '%s'"
+                      " );",
+                      report, *entity_hash_value,
+                      quoted_host, quoted_hostname,
+                      quoted_type, quoted_desc,
+                      quoted_port, severity_double,
+                      qod_int, quoted_path))
+            {
+              return_value = 1;
+            }
+
+          g_free (quoted_host);
+          g_free (quoted_hostname);
+          g_free (quoted_type);
+          g_free (quoted_desc);
+          g_free (quoted_port);
+          g_free (quoted_path);
+      }
+    }
+
+  if (return_value)
+    {
+      g_debug ("Captured duplicate result, report: %llu hash_value: %s",
+                report, *entity_hash_value);
+      g_debug ("Entity string: %s", entity_string->str);
+    }
   g_string_free(entity_string, TRUE);
   return return_value;
 }
@@ -30930,13 +30951,15 @@ check_osp_result_exists (report_t report, task_t task,
  * @param[in]  name        Name.
  * @param[in]  value       Value.
  * @param[out] detail_hash_value  The generated hash value.
+ * @param[out] hashed_host_details  A GHashtable containing hashed host details.
  *
  * @return     "1" if osp result already exists, else "0"
  */
 static int
 check_host_detail_exists (report_t report, const char *host, const char *s_type,
                           const char *s_name, const char *s_desc, const char *name,
-                          const char *value, char **detail_hash_value)
+                          const char *value, char **detail_hash_value,
+                          GHashTable *hashed_host_details)
 {
   char *hash_string;
   long long int report_host;
@@ -30946,43 +30969,61 @@ check_host_detail_exists (report_t report, const char *host, const char *s_type,
                                  s_name, s_desc, name, value);
   *detail_hash_value = get_md5_hash_from_string (hash_string);
 
-  sql_int64 (&report_host, "SELECT id FROM report_hosts"
-                           " WHERE report = %llu AND host = '%s';",
-             report, host);
+  /* The hash map is used to to filter duplicates that may exist within
+   * the same batch of results fetched from the scanner even before
+   * insertion in the database while the SQL is used to check for duplicates
+   * across batches. */
 
-  if (sql_int ("SELECT EXISTS"
-               " (SELECT * FROM report_host_details"
-               "  WHERE report_host = %llu and hash_value = '%s');",
-               report_host, *detail_hash_value))
+  if (g_hash_table_contains (hashed_host_details, *detail_hash_value))
     {
-      gchar *quoted_host = sql_quote (host);
-      gchar *quoted_s_type = sql_quote (s_type);
-      gchar *quoted_s_name = sql_quote (s_name);
-      gchar *quoted_s_desc = sql_quote (s_desc);
-      gchar *quoted_name = sql_quote (name);
-      gchar *quoted_value = sql_quote (value);
+      return_value = 1;
+    }
+  else
+    {
+        g_hash_table_insert (hashed_host_details, g_strdup(*detail_hash_value),
+                        GINT_TO_POINTER(1));
+        sql_int64 (&report_host, "SELECT id FROM report_hosts"
+                                " WHERE report = %llu AND host = '%s';",
+                  report, host);
 
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM report_host_details"
-                   "   WHERE report_host = %llu and hash_value = '%s'"
-                   "   and source_type = '%s' and source_name = '%s'"
-                   "   and source_description = '%s'"
-                   "   and  name = '%s' and value = '%s'"
-                   " );",
-                   report_host, *detail_hash_value, quoted_s_type,
-                   quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
-        {
-          g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
-                  report, *detail_hash_value);
-          g_debug ("Hash string: %s", hash_string);
-          return_value = 1;
-        }
-      g_free (quoted_host);
-      g_free (quoted_s_type);
-      g_free (quoted_s_name);
-      g_free (quoted_s_desc);
-      g_free (quoted_name);
-      g_free (quoted_value);
+        if (sql_int ("SELECT EXISTS"
+                    " (SELECT * FROM report_host_details"
+                    "  WHERE report_host = %llu and hash_value = '%s');",
+                    report_host, *detail_hash_value))
+          {
+            gchar *quoted_host = sql_quote (host);
+            gchar *quoted_s_type = sql_quote (s_type);
+            gchar *quoted_s_name = sql_quote (s_name);
+            gchar *quoted_s_desc = sql_quote (s_desc);
+            gchar *quoted_name = sql_quote (name);
+            gchar *quoted_value = sql_quote (value);
+
+            if (sql_int ("SELECT EXISTS"
+                        " (SELECT * FROM report_host_details"
+                        "   WHERE report_host = %llu and hash_value = '%s'"
+                        "   and source_type = '%s' and source_name = '%s'"
+                        "   and source_description = '%s'"
+                        "   and  name = '%s' and value = '%s'"
+                        " );",
+                        report_host, *detail_hash_value, quoted_s_type,
+                        quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
+              {
+                return_value = 1;
+              }
+            g_free (quoted_host);
+            g_free (quoted_s_type);
+            g_free (quoted_s_name);
+            g_free (quoted_s_desc);
+            g_free (quoted_name);
+            g_free (quoted_value);
+          }
+    }
+
+  if (return_value)
+    {
+      g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
+                report, *detail_hash_value);
+      g_debug ("Hash string: %s", hash_string);
     }
   g_free (hash_string);
   return return_value;
@@ -31005,6 +31046,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   time_t start_time, end_time;
   gboolean has_results = FALSE;
   GArray *results_array;
+  GHashTable *hashed_osp_results;
+  GHashTable *hashed_host_details;
 
   assert (task);
   assert (report);
@@ -31015,6 +31058,16 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       g_warning ("Couldn't parse %s OSP scan report", report_xml);
       return;
     }
+
+  hashed_osp_results = g_hash_table_new_full (g_str_hash,
+                                              g_str_equal,
+                                              g_free,
+                                              NULL);
+
+  hashed_host_details = g_hash_table_new_full (g_str_hash,
+                                               g_str_equal,
+                                               g_free,
+                                               NULL);
 
   sql_begin_immediate ();
   /* Set the report's start and end times. */
@@ -31091,7 +31144,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           gchar *hash_value = NULL;
           if (!check_host_detail_exists (report, host, "osp", "",
                                          "OSP Host Detail", name,
-                                         entity_text (r_entity), &hash_value))
+                                         entity_text (r_entity), &hash_value,
+                                         hashed_host_details))
             {
               insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
                                          name, entity_text (r_entity), hash_value);
@@ -31120,7 +31174,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           /* TODO: This should probably be handled by the "Host Detail"
            *        result type with extra source info in OSP.
            */
-          if (manage_report_host_detail (report, host, desc))
+          if (manage_report_host_detail (report, host, desc, hashed_host_details))
             g_warning ("%s: Failed to add report detail for host '%s': %s",
                        __func__, host, desc);
         }
@@ -31136,7 +31190,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       else
         {
           char *hash_value;
-          if (!check_osp_result_exists (report, task, r_entity, &hash_value))
+          if (!check_osp_result_exists (report, task, r_entity, &hash_value,
+                                        hashed_osp_results))
             {
               result = make_osp_result (task,
                                         host,
@@ -31170,6 +31225,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
  end_parse_osp_report:
   sql_commit ();
   g_array_free (results_array, TRUE);
+  g_hash_table_destroy (hashed_osp_results);
+  g_hash_table_destroy (hashed_host_details);
   g_free (defs_file);
   free_entity (entity);
 }
@@ -50090,11 +50147,13 @@ host_routes_xml (host_t host)
  * @param[in]  report  UUID of resource.
  * @param[in]  ip      Host.
  * @param[in]  entity  XML entity containing details.
+ * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
  *
  * @return 0 success, -1 failed to parse XML.
  */
 int
-manage_report_host_details (report_t report, const char *ip, entity_t entity)
+manage_report_host_details (report_t report, const char *ip,
+                            entity_t entity, GHashTable *hashed_host_details)
 {
   int in_assets;
   entities_t details;
@@ -50145,7 +50204,8 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
                                          entity_text (source_desc),
                                          entity_text (name),
                                          entity_text (value),
-                                         (char**) &hash_value))
+                                         (char**) &hash_value,
+                                         hashed_host_details))
             {
               insert_report_host_detail
                (report, ip, entity_text (source_type), entity_text (source_name),
@@ -50243,11 +50303,13 @@ manage_report_host_details (report_t report, const char *ip, entity_t entity)
  * @param[in]  report  UUID of resource.
  * @param[in]  host    Host.
  * @param[in]  xml     Report host detail XML.
+ * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
  *
  * @return 0 success, -1 failed to parse XML, -2 host was NULL.
  */
 int
-manage_report_host_detail (report_t report, const char *host, const char *xml)
+manage_report_host_detail (report_t report, const char *host,
+                           const char *xml, GHashTable *hashed_host_details)
 {
   int ret;
   entity_t entity;
@@ -50259,7 +50321,10 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
   if (parse_entity (xml, &entity))
     return -1;
 
-  ret = manage_report_host_details (report, host, entity);
+  ret = manage_report_host_details (report,
+                                    host,
+                                    entity,
+                                    hashed_host_details);
   free_entity (entity);
   return ret;
 }

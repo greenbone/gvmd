@@ -385,7 +385,7 @@ void reinit_manage_process ();
 
 int manage_update_nvti_cache ();
 
-int manage_report_host_details (report_t, const char *, entity_t);
+int manage_report_host_details (report_t, const char *, entity_t, GHashTable *);
 
 const char *run_status_name_internal (task_status_t);
 
