@@ -2401,8 +2401,8 @@ insert_cve_products (element_t list, resource_t cve,
         }
       cleanup_iterator (&inserted_cpes);
       increment_transaction_size (transaction_size);
-      g_string_free (sql_cpes, TRUE);
     }
+    g_string_free (sql_cpes, TRUE);
 
   /**
    * Add the affected product references.
