@@ -3422,6 +3422,12 @@ manage_db_init (const gchar *name)
            " (cve INTEGER,"
            "  cpe INTEGER);");
 
+      sql ("CREATE TABLE scap2.epss_scores"
+           " (cve TEXT,"
+           "  epss DOUBLE PRECISION,"
+           "  percentile DOUBLE PRECISION);");
+
+
       /* Init tables. */
 
       sql ("INSERT INTO scap2.meta (name, value)"
@@ -3466,6 +3472,10 @@ manage_db_add_constraints (const gchar *name)
            " ADD UNIQUE (cve, cpe),"
            " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
            " ADD FOREIGN KEY(cpe) REFERENCES cpes(id);");
+
+      sql ("ALTER TABLE scap2.epss_scores"
+           " ALTER cve SET NOT NULL,"
+           " ADD UNIQUE (cve);");
     }
   else
     {
@@ -3512,6 +3522,9 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.affected_products (cpe);");
       sql ("CREATE INDEX afp_cve_idx"
            " ON scap2.affected_products (cve);");
+
+      sql ("CREATE INDEX epss_scores_by_cve"
+           " ON scap2.epss_scores (cve);");
     }
   else
     {

@@ -12529,6 +12529,7 @@ END:VCALENDAR
             <e>cvss_vector</e>
             <e>description</e>
             <e>products</e>
+            <o><e>epss</e></o>
             <o><e>nvts</e></o>
             <o><e>cert</e></o>
             <o><e>raw_data</e></o>
@@ -12561,6 +12562,28 @@ END:VCALENDAR
             <pattern>
               text
             </pattern>
+          </ele>
+          <ele>
+            <name>epss</name>
+            <summary>Exploit Prediction Scoring System (EPSS) info if available</summary>
+            <pattern>
+              <e>score</e>
+              <e>percentile</e>
+            </pattern>
+            <ele>
+              <name>score</name>
+              <summary>EPSS score of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>percentile</name>
+              <summary>EPSS percentile of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
           </ele>
           <ele>
             <name>nvts</name>

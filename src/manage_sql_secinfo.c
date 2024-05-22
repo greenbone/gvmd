@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <cjson/cJSON.h>
 #include <gvm/base/gvm_sentry.h>
 #include <bsd/unistd.h>
 #include <gvm/util/fileutils.h>
@@ -71,6 +72,11 @@
  * @brief Commit size for updates.
  */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+
+/**
+ * @brief Maximum number of rows in a EPSS INSERT.
+ */
+#define EPSS_MAX_CHUNK_SIZE 10000
 
 
 /* Headers. */
@@ -650,7 +656,9 @@ cve_info_count (const get_data_t *get)
 {
   static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
-  return count ("cve", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
+  return count ("cve", get, columns, NULL, filter_columns, 0,
+                " LEFT JOIN epss_scores ON cve = cves.uuid",
+                0, FALSE);
 }
 
 /**
@@ -696,7 +704,7 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
+                           " LEFT JOIN epss_scores ON cve = cves.uuid",
                            clause,
                            FALSE);
   g_free (clause);
@@ -768,6 +776,38 @@ DEF_ACCESS (cve_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the EPSS score for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The EPSS score of this CVE, or 0.0 if iteration is
+ *         complete.
+ */
+double
+cve_info_iterator_epss_score (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+}
+
+/**
+ * @brief Get the EPSS percentile for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The EPSS percentile of this CVE, or 0.0 if iteration is
+ *         complete.
+ */
+double
+cve_info_iterator_epss_percentile (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+}
 
 
 /* CERT-Bund data. */
@@ -2762,6 +2802,174 @@ update_scap_cves ()
   return 0;
 }
 
+/**
+ * @brief Adds a EPSS score entry to an SQL inserts buffer.
+ *
+ * @param[in]  inserts      The SQL inserts buffer to add to.
+ * @param[in]  cve          The CVE the epss score and percentile apply to.
+ * @param[in]  epss         The EPSS score to add.
+ * @param[in]  percentile   The EPSS percentile to add.
+ */
+static void
+insert_epss_score_entry (inserts_t *inserts, const char *cve,
+                         double epss, double percentile)
+{
+  gchar *quoted_cve;
+  int first = inserts_check_size (inserts);
+
+  quoted_cve = sql_quote (cve);
+  g_string_append_printf (inserts->statement,
+                          "%s ('%s', %lf, %lf)",
+                          first ? "" : ",",
+                          quoted_cve,
+                          epss,
+                          percentile);
+
+  inserts->current_chunk_size++;
+}
+
+/**
+ * @brief Checks a failure condition for validating EPSS JSON.
+ */
+#define EPSS_JSON_FAIL_IF(failure_condition, error_message)       \
+if (failure_condition) {                                          \
+  g_warning ("%s: %s", __func__, error_message);                  \
+  goto fail_insert;                                                 \
+}
+
+/**
+ * @brief Updates the base EPSS scores table in the SCAP database.
+ * 
+ * @return 0 success, -1 error.
+ */
+static int
+update_epss_scores ()
+{
+  GError *error = NULL;
+  gchar *latest_json_path;
+  gchar *file_contents = NULL; 
+  cJSON *parsed, *list_item;
+  inserts_t inserts;
+
+  latest_json_path = g_build_filename (GVM_SCAP_DATA_DIR, "epss-latest.json",
+                                       NULL);
+
+  if (! g_file_get_contents (latest_json_path, &file_contents, NULL, &error))
+    {
+      int ret;
+      if (error->code == G_FILE_ERROR_NOENT)
+        {
+          g_info ("%s: EPSS scores file '%s' not found",
+                  __func__, latest_json_path);
+          ret = 0;
+        }
+      else
+        {
+          g_warning ("%s: Error loading EPSS scores file: %s",
+                     __func__, error->message);
+          ret = -1;
+        }
+      g_error_free (error);
+      g_free (latest_json_path);
+      return ret;
+    }
+
+  g_info ("Updating EPSS scores from %s", latest_json_path);
+  g_free (latest_json_path);
+
+  parsed = cJSON_Parse (file_contents);
+  g_free (file_contents);
+
+  if (parsed == NULL)
+    {
+      g_warning ("%s: EPSS scores file is not valid JSON", __func__);
+      return -1;
+    }
+  
+  if (! cJSON_IsArray (parsed))
+    {
+      g_warning ("%s: EPSS scores file is not a JSON array", __func__);
+      cJSON_Delete (parsed);
+      return -1;
+    }
+
+  sql_begin_immediate ();
+  inserts_init (&inserts,
+                EPSS_MAX_CHUNK_SIZE,
+                setting_secinfo_sql_buffer_threshold_bytes (),
+                "INSERT INTO scap2.epss_scores"
+                "  (cve, epss, percentile)"
+                "  VALUES ",
+                " ON CONFLICT (cve) DO NOTHING");
+
+  cJSON_ArrayForEach (list_item, parsed)
+    {
+      cJSON *cve_json, *epss_json, *percentile_json;
+      
+      EPSS_JSON_FAIL_IF (! cJSON_IsObject (list_item),
+                         "Unexpected non-object item in EPSS scores file")
+
+      cve_json = cJSON_GetObjectItem (list_item, "cve");
+      epss_json = cJSON_GetObjectItem (list_item, "epss");
+      percentile_json = cJSON_GetObjectItem (list_item, "percentile");
+
+      EPSS_JSON_FAIL_IF (cve_json == NULL,
+                         "Item missing mandatory 'cve' field");
+
+      EPSS_JSON_FAIL_IF (epss_json == NULL,
+                         "Item missing mandatory 'epss' field");
+      
+      EPSS_JSON_FAIL_IF (percentile_json == NULL,
+                         "Item missing mandatory 'percentile' field");
+
+      EPSS_JSON_FAIL_IF (! cJSON_IsString (cve_json),
+                         "Field 'cve' in item is not a string");
+
+      EPSS_JSON_FAIL_IF (! cJSON_IsNumber(epss_json),
+                         "Field 'epss' in item is not a number");
+      
+      EPSS_JSON_FAIL_IF (! cJSON_IsNumber(percentile_json),
+                         "Field 'percentile' in item is not a number");
+
+      insert_epss_score_entry (&inserts,
+                               cve_json->valuestring,
+                               epss_json->valuedouble,
+                               percentile_json->valuedouble);
+    }
+
+  inserts_run (&inserts, TRUE);
+  sql_commit ();
+  cJSON_Delete (parsed);
+
+  return 0;
+
+fail_insert:
+  inserts_free (&inserts);
+  sql_rollback ();
+  char *printed_item = cJSON_Print (list_item);
+  g_message ("%s: invalid item: %s", __func__, printed_item);
+  free (printed_item);
+  cJSON_Delete (parsed);
+  return -1;
+}
+
+/**
+ * @brief Update EPSS data as supplement to SCAP CVEs.
+ *
+ * Assume that the databases are attached.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_epss ()
+{
+  if (update_epss_scores ())
+    return -1;
+
+  return 0;
+}
+
+
 
 /* CERT and SCAP update. */
 
@@ -3672,6 +3880,14 @@ update_scap (gboolean reset_scap_db)
 
   g_debug ("%s: updating user defined data", __func__);
 
+  g_debug ("%s: update epss", __func__);
+  setproctitle ("Syncing SCAP: Updating EPSS scores");
+
+  if (update_scap_epss () == -1)
+    {
+      abort_scap_update ();
+      return -1;
+    }
 
   /* Do calculations that need all data. */
 
