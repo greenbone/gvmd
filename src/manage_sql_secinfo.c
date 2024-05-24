@@ -2999,8 +2999,10 @@ manage_db_reinit (const gchar *name)
  * @param[in]  sigmask_current    Sigmask to restore in child.
  * @param[in]  update             Function to do the sync.
  * @param[in]  process_title      Process title.
+ *
+ * @return PID of the forked process handling the SecInfo sync, -1 on error.
  */
-static void
+static pid_t
 sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
               const gchar *process_title)
 {
@@ -3038,11 +3040,11 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
       case -1:
         /* Parent on error.  Reschedule and continue to next task. */
         g_warning ("%s: fork failed", __func__);
-        return;
+        return -1;
 
       default:
         /* Parent.  Continue to next task. */
-        return;
+        return pid;
 
     }
 
@@ -3439,13 +3441,15 @@ sync_cert ()
  * @brief Sync the CERT DB.
  *
  * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the CERT sync, -1 on error.
  */
-void
+pid_t
 manage_sync_cert (sigset_t *sigmask_current)
 {
-  sync_secinfo (sigmask_current,
-                sync_cert,
-                "Syncing CERT");
+  return sync_secinfo (sigmask_current,
+                       sync_cert,
+                       "Syncing CERT");
 }
 
 
@@ -3921,13 +3925,15 @@ sync_scap ()
  * @brief Sync the SCAP DB.
  *
  * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the SCAP sync, -1 on error.
  */
-void
+pid_t
 manage_sync_scap (sigset_t *sigmask_current)
 {
-  sync_secinfo (sigmask_current,
-                sync_scap,
-                "Syncing SCAP");
+  return sync_secinfo (sigmask_current,
+                       sync_scap,
+                       "Syncing SCAP");
 }
 
 /**

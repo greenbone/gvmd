@@ -2853,7 +2853,7 @@ void
 set_scheduled_user_uuid (const gchar* uuid);
 
 void
-manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) (pid_t*), gboolean);
 
 int
 manage_rebuild_gvmd_data_from_feed (const char *,

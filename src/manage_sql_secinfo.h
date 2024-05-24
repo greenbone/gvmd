@@ -174,13 +174,13 @@
 int
 secinfo_feed_version_status ();
 
-void
+pid_t
 manage_sync_scap (sigset_t *);
 
 int
 manage_rebuild_scap (GSList *, const db_conn_info_t *);
 
-void
+pid_t
 manage_sync_cert (sigset_t *);
 
 int

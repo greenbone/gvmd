@@ -5064,7 +5064,7 @@ feed_sync_required ()
  */
 void
 manage_sync (sigset_t *sigmask_current,
-             int (*fork_update_nvt_cache) (),
+             int (*fork_update_nvt_cache) (pid_t*),
              gboolean try_gvmd_data_sync)
 {
   lockfile_t lockfile;
@@ -5076,9 +5076,14 @@ manage_sync (sigset_t *sigmask_current,
     {
       if (feed_lockfile_lock (&lockfile) == 0)
         {
-          manage_sync_nvts (fork_update_nvt_cache);
-          manage_sync_scap (sigmask_current);
-          manage_sync_cert (sigmask_current);
+          pid_t nvts_pid, scap_pid, cert_pid;
+          nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
+          scap_pid = manage_sync_scap (sigmask_current);
+          cert_pid = manage_sync_cert (sigmask_current);
+
+          wait_for_pid (nvts_pid, "NVTs sync");
+          wait_for_pid (scap_pid, "SCAP sync");
+          wait_for_pid (cert_pid, "CERT sync");
 
           lockfile_unlock (&lockfile);
         }
