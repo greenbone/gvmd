@@ -3331,6 +3331,12 @@ cve_info_iterator_description (iterator_t*);
 const char*
 cve_info_iterator_products (iterator_t*);
 
+double
+cve_info_iterator_epss_score (iterator_t*);
+
+double
+cve_info_iterator_epss_percentile (iterator_t*);
+
 int
 init_cve_info_iterator (iterator_t*, get_data_t*, const char*);
 

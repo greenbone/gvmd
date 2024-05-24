@@ -13403,6 +13403,18 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              cve_info_iterator_vector (&info),
                              cve_info_iterator_description (&info),
                              cve_info_iterator_products (&info));
+
+          if (cve_info_iterator_epss_score (&info) > 0.0)
+            {
+              xml_string_append (result,
+                                 "<epss>"
+                                 "<score>%0.5f</score>"
+                                 "<percentile>%0.5f</percentile>"
+                                 "</epss>",
+                                 cve_info_iterator_epss_score (&info),
+                                 cve_info_iterator_epss_percentile (&info));
+            }
+
           if (get_info_data->details == 1)
             {
               iterator_t nvts;
