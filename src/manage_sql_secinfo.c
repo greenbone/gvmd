@@ -2824,6 +2824,7 @@ insert_epss_score_entry (inserts_t *inserts, const char *cve,
                           quoted_cve,
                           epss,
                           percentile);
+  g_free (quoted_cve);
 
   inserts->current_chunk_size++;
 }
