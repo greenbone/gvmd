@@ -47,6 +47,7 @@
 #include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <gvm/base/gvm_sentry.h>
@@ -905,4 +906,56 @@ fork_with_handlers ()
       setup_signal_handler (SIGQUIT, SIG_DFL, 0);
     }
   return pid;
+}
+
+/**
+ * @brief Waits for a process with the given PID, retrying if interrupted.
+ *
+ * If the wait is interrupted or the process does not exist, only debug
+ *  messages are logged.
+ *
+ * @param[in]  pid      The pid to wait for.
+ * @param[in]  context  Short context desciption for error and debug messages.
+ */
+void
+wait_for_pid (pid_t pid, const char *context)
+{
+  gboolean retry = TRUE;
+  const char *shown_context = context ? context : "unknown context";
+  if (pid <= 0)
+    {
+      g_message ("%s: No PID given (%s)", __func__, shown_context);
+      return;
+    }
+
+  while (retry)
+    {
+      retry = FALSE;
+      pid_t ret = waitpid (pid, NULL, 0);
+      if (ret <= 0)
+        {
+          int err = errno;
+          if (errno == ECHILD)
+            {
+              g_debug ("%s: process with PID %d (%s) does not exist",
+                       __func__, pid, shown_context);
+            }
+          else if (errno == EINTR)
+            {
+              g_debug ("%s: waitpid interrupted for PID %d (%s), retrying...",
+                       __func__, pid, shown_context);
+              retry = TRUE;
+            }
+          else
+            {
+              g_warning ("%s: waitpid failed for PID %d (%s): %s",
+                         __func__, pid, shown_context, strerror(err));
+            }
+        }
+      else
+        {
+          g_debug ("%s: wait for PID %d (%s) successful",
+                   __func__, pid, shown_context);
+        }
+    }
 }

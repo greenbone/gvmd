@@ -100,4 +100,6 @@ setup_signal_handler_info (int, void (*) (int, siginfo_t *, void *), int);
 int
 fork_with_handlers ();
 
+void wait_for_pid (pid_t, const char*);
+
 #endif /* not _GVMD_UTILS_H */

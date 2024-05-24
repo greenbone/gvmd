@@ -130,8 +130,8 @@ check_db_nvts ();
 int
 check_config_families ();
 
-void
-manage_sync_nvts (int (*) ());
+pid_t
+manage_sync_nvts (int (*) (pid_t*));
 
 int
 update_or_rebuild_nvts (int);
