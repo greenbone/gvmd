@@ -8091,6 +8091,287 @@ utf8_substring (const gchar *str, glong start_pos, glong end_pos)
 }
 
 /**
+ * @brief Buffer XML for a single note.
+ *
+ * @param[in]  buffer                 Buffer into which to buffer notes.
+ * @param[in]  notes                  Notes iterator.
+ * @param[in]  include_notes_details  Whether to include details of notes.
+ * @param[in]  include_result         Whether to include associated result.
+ * @param[out] count                  Number of notes.
+ */
+static void
+buffer_note_xml (GString *buffer, iterator_t *notes, int include_notes_details,
+                 int include_result, int *count)
+{
+  int tag_count;
+  char *uuid_task, *uuid_result;
+
+  tag_count = resource_tag_count ("note",
+                                  get_iterator_resource (notes),
+                                  1);
+
+  if (count)
+    (*count)++;
+
+  if (note_iterator_task (notes))
+    task_uuid (note_iterator_task (notes),
+               &uuid_task);
+  else
+    uuid_task = NULL;
+
+  if (note_iterator_result (notes))
+    result_uuid (note_iterator_result (notes),
+                 &uuid_result);
+  else
+    uuid_result = NULL;
+
+  buffer_xml_append_printf (buffer,
+                            "<note id=\"%s\">"
+                            "<permissions>",
+                            get_iterator_uuid (notes));
+
+  if (/* The user is the owner. */
+      (current_credentials.username
+       && get_iterator_owner_name (notes)
+       && (strcmp (get_iterator_owner_name (notes),
+                   current_credentials.username)
+           == 0))
+      /* Or the user is effectively the owner. */
+      || acl_user_has_super (current_credentials.uuid,
+                             get_iterator_owner (notes)))
+    buffer_xml_append_printf (buffer,
+                              "<permission><name>Everything</name></permission>"
+                              "</permissions>");
+  else
+    {
+      iterator_t perms;
+      get_data_t perms_get;
+
+      memset (&perms_get, '\0', sizeof (perms_get));
+      perms_get.filter = g_strdup_printf ("resource_uuid=%s"
+                                          " owner=any"
+                                          " permission=any",
+                                          get_iterator_uuid (notes));
+      init_permission_iterator (&perms, &perms_get);
+      g_free (perms_get.filter);
+      while (next (&perms))
+        buffer_xml_append_printf (buffer,
+                                  "<permission><name>%s</name></permission>",
+                                  get_iterator_name (&perms));
+      cleanup_iterator (&perms);
+
+      buffer_xml_append_printf (buffer, "</permissions>");
+    }
+
+  if (include_notes_details == 0)
+    {
+      gchar *excerpt;
+      const char *text;
+
+      text = note_iterator_text (notes);
+      excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+
+      /* This must match send_get_common. */
+
+      buffer_xml_append_printf (buffer,
+                                "<owner><name>%s</name></owner>"
+                                "<nvt oid=\"%s\">"
+                                "<name>%s</name>"
+                                "<type>%s</type>"
+                                "</nvt>",
+                                get_iterator_owner_name (notes)
+                                ? get_iterator_owner_name (notes)
+                                : "",
+                                note_iterator_nvt_oid (notes),
+                                note_iterator_nvt_name (notes),
+                                note_iterator_nvt_type (notes));
+
+      buffer_xml_append_printf (buffer,
+                                "<creation_time>%s</creation_time>",
+                                iso_if_time (get_iterator_creation_time (notes)));
+
+      buffer_xml_append_printf (buffer,
+                                "<modification_time>%s</modification_time>",
+                                iso_if_time (get_iterator_modification_time (notes)));
+
+      buffer_xml_append_printf (buffer,
+                                "<writable>1</writable>"
+                                "<in_use>0</in_use>"
+                                "<active>%i</active>"
+                                "<text excerpt=\"%i\">%s</text>"
+                                "<orphan>%i</orphan>",
+                                note_iterator_active (notes),
+                                strlen (excerpt) < strlen (text),
+                                excerpt,
+                                ((note_iterator_task (notes)
+                                  && (uuid_task == NULL))
+                                 || (note_iterator_result (notes)
+                                     && (uuid_result == NULL))));
+
+      if (tag_count)
+        {
+          buffer_xml_append_printf (buffer,
+                                    "<user_tags>"
+                                    "<count>%i</count>"
+                                    "</user_tags>",
+                                    tag_count);
+        }
+
+      g_string_append (buffer, "</note>");
+
+      g_free (excerpt);
+    }
+  else
+    {
+      char *name_task;
+      int trash_task;
+      time_t end_time;
+      iterator_t tags;
+
+      if (uuid_task)
+        {
+          name_task = task_name (note_iterator_task (notes));
+          trash_task = task_in_trash (note_iterator_task (notes));
+        }
+      else
+        {
+          name_task = NULL;
+          trash_task = 0;
+        }
+
+      end_time = note_iterator_end_time (notes);
+
+      /* This must match send_get_common. */
+
+      buffer_xml_append_printf
+        (buffer,
+         "<owner><name>%s</name></owner>"
+         "<nvt oid=\"%s\">"
+         "<name>%s</name>"
+         "<type>%s</type>"
+         "</nvt>",
+         get_iterator_owner_name (notes)
+         ? get_iterator_owner_name (notes)
+         : "",
+         note_iterator_nvt_oid (notes),
+         note_iterator_nvt_name (notes),
+         note_iterator_nvt_type (notes));
+
+      buffer_xml_append_printf
+        (buffer,
+         "<creation_time>%s</creation_time>",
+         iso_if_time (get_iterator_creation_time (notes)));
+
+      buffer_xml_append_printf
+        (buffer,
+         "<modification_time>%s</modification_time>",
+         iso_if_time (get_iterator_modification_time (notes)));
+
+      buffer_xml_append_printf
+        (buffer,
+         "<writable>1</writable>"
+         "<in_use>0</in_use>"
+         "<active>%i</active>"
+         "<end_time>%s</end_time>"
+         "<text>%s</text>"
+         "<hosts>%s</hosts>"
+         "<port>%s</port>"
+         "<severity>%s</severity>"
+         "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
+         "<orphan>%i</orphan>",
+         note_iterator_active (notes),
+         end_time > 1 ? iso_time (&end_time) : "",
+         note_iterator_text (notes),
+         note_iterator_hosts (notes)
+         ? note_iterator_hosts (notes) : "",
+         note_iterator_port (notes)
+         ? note_iterator_port (notes) : "",
+         note_iterator_severity (notes)
+         ? note_iterator_severity (notes) : "",
+         uuid_task ? uuid_task : "",
+         name_task ? name_task : "",
+         trash_task,
+         ((note_iterator_task (notes) && (uuid_task == NULL))
+          || (note_iterator_result (notes) && (uuid_result == NULL))));
+
+      free (name_task);
+
+      if (include_result && uuid_result && note_iterator_result (notes))
+        {
+          iterator_t results;
+          get_data_t *result_get;
+          result_get = report_results_get_data (1, 1,
+                                                1, /* apply_overrides */
+                                                0  /* min_qod */);
+          result_get->id = g_strdup (uuid_result);
+          init_result_get_iterator (&results, result_get,
+                                    0,     /* No report restriction */
+                                    NULL,  /* No host restriction */
+                                    NULL); /* No extra order SQL. */
+          get_data_reset (result_get);
+          free (result_get);
+
+          while (next (&results))
+            buffer_results_xml (buffer,
+                                &results,
+                                0,
+                                0,  /* Notes. */
+                                0,  /* Note details. */
+                                0,  /* Overrides. */
+                                0,  /* Override details. */
+                                0,  /* Tags. */
+                                0,  /* Tag details. */
+                                0,  /* Result details. */
+                                NULL,
+                                NULL,
+                                0,
+                                -1,
+                                0,  /* Lean. */
+                                0); /* Delta fields. */
+          cleanup_iterator (&results);
+        }
+      else
+        buffer_xml_append_printf (buffer,
+                                  "<result id=\"%s\"/>",
+                                  uuid_result ? uuid_result : "");
+      if (tag_count)
+        {
+          buffer_xml_append_printf (buffer,
+                                    "<user_tags>"
+                                    "<count>%i</count>",
+                                    tag_count);
+
+          init_resource_tag_iterator (&tags, "note",
+                                      get_iterator_resource (notes),
+                                      1, NULL, 1);
+
+          while (next (&tags))
+            {
+              buffer_xml_append_printf
+                (buffer,
+                 "<tag id=\"%s\">"
+                 "<name>%s</name>"
+                 "<value>%s</value>"
+                 "<comment>%s</comment>"
+                 "</tag>",
+                 resource_tag_iterator_uuid (&tags),
+                 resource_tag_iterator_name (&tags),
+                 resource_tag_iterator_value (&tags),
+                 resource_tag_iterator_comment (&tags));
+            }
+
+          cleanup_iterator (&tags);
+
+          g_string_append (buffer, "</user_tags>");
+        }
+
+      g_string_append (buffer, "</note>");
+    }
+  free (uuid_task);
+  free (uuid_result);
+}
+
+/**
  * @brief Buffer XML for some notes.
  *
  * @param[in]  buffer                 Buffer into which to buffer notes.
@@ -8104,274 +8385,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                   int include_result, int *count)
 {
   while (next (notes))
-    {
-      int tag_count;
-      char *uuid_task, *uuid_result;
-
-      tag_count = resource_tag_count ("note",
-                                      get_iterator_resource (notes),
-                                      1);
-
-      if (count)
-        (*count)++;
-
-      if (note_iterator_task (notes))
-        task_uuid (note_iterator_task (notes),
-                   &uuid_task);
-      else
-        uuid_task = NULL;
-
-      if (note_iterator_result (notes))
-        result_uuid (note_iterator_result (notes),
-                     &uuid_result);
-      else
-        uuid_result = NULL;
-
-      buffer_xml_append_printf (buffer,
-                                "<note id=\"%s\">"
-                                "<permissions>",
-                                get_iterator_uuid (notes));
-
-      if (/* The user is the owner. */
-          (current_credentials.username
-           && get_iterator_owner_name (notes)
-           && (strcmp (get_iterator_owner_name (notes),
-                       current_credentials.username)
-              == 0))
-          /* Or the user is effectively the owner. */
-          || acl_user_has_super (current_credentials.uuid,
-                                 get_iterator_owner (notes)))
-        buffer_xml_append_printf (buffer,
-                                  "<permission><name>Everything</name></permission>"
-                                  "</permissions>");
-      else
-        {
-          iterator_t perms;
-          get_data_t perms_get;
-
-          memset (&perms_get, '\0', sizeof (perms_get));
-          perms_get.filter = g_strdup_printf ("resource_uuid=%s"
-                                              " owner=any"
-                                              " permission=any",
-                                              get_iterator_uuid (notes));
-          init_permission_iterator (&perms, &perms_get);
-          g_free (perms_get.filter);
-          while (next (&perms))
-            buffer_xml_append_printf (buffer,
-                                      "<permission><name>%s</name></permission>",
-                                      get_iterator_name (&perms));
-          cleanup_iterator (&perms);
-
-          buffer_xml_append_printf (buffer, "</permissions>");
-        }
-
-      if (include_notes_details == 0)
-        {
-          gchar *excerpt;
-          const char *text;
-
-          text = note_iterator_text (notes);
-          excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
-
-          /* This must match send_get_common. */
-
-          buffer_xml_append_printf (buffer,
-                                    "<owner><name>%s</name></owner>"
-                                    "<nvt oid=\"%s\">"
-                                    "<name>%s</name>"
-                                    "<type>%s</type>"
-                                    "</nvt>",
-                                    get_iterator_owner_name (notes)
-                                     ? get_iterator_owner_name (notes)
-                                     : "",
-                                    note_iterator_nvt_oid (notes),
-                                    note_iterator_nvt_name (notes),
-                                    note_iterator_nvt_type (notes));
-
-          buffer_xml_append_printf (buffer,
-                                    "<creation_time>%s</creation_time>",
-                                    iso_if_time (get_iterator_creation_time (notes)));
-
-          buffer_xml_append_printf (buffer,
-                                    "<modification_time>%s</modification_time>",
-                                    iso_if_time (get_iterator_modification_time (notes)));
-
-          buffer_xml_append_printf (buffer,
-                                    "<writable>1</writable>"
-                                    "<in_use>0</in_use>"
-                                    "<active>%i</active>"
-                                    "<text excerpt=\"%i\">%s</text>"
-                                    "<orphan>%i</orphan>",
-                                    note_iterator_active (notes),
-                                    strlen (excerpt) < strlen (text),
-                                    excerpt,
-                                    ((note_iterator_task (notes)
-                                      && (uuid_task == NULL))
-                                     || (note_iterator_result (notes)
-                                         && (uuid_result == NULL))));
-
-          if (tag_count)
-            {
-              buffer_xml_append_printf (buffer,
-                                        "<user_tags>"
-                                        "<count>%i</count>"
-                                        "</user_tags>",
-                                        tag_count);
-            }
-
-          g_string_append (buffer, "</note>");
-
-          g_free (excerpt);
-        }
-      else
-        {
-          char *name_task;
-          int trash_task;
-          time_t end_time;
-          iterator_t tags;
-
-          if (uuid_task)
-            {
-              name_task = task_name (note_iterator_task (notes));
-              trash_task = task_in_trash (note_iterator_task (notes));
-            }
-          else
-            {
-              name_task = NULL;
-              trash_task = 0;
-            }
-
-          end_time = note_iterator_end_time (notes);
-
-          /* This must match send_get_common. */
-
-          buffer_xml_append_printf
-           (buffer,
-            "<owner><name>%s</name></owner>"
-            "<nvt oid=\"%s\">"
-            "<name>%s</name>"
-            "<type>%s</type>"
-            "</nvt>",
-            get_iterator_owner_name (notes)
-             ? get_iterator_owner_name (notes)
-             : "",
-            note_iterator_nvt_oid (notes),
-            note_iterator_nvt_name (notes),
-            note_iterator_nvt_type (notes));
-
-          buffer_xml_append_printf
-           (buffer,
-            "<creation_time>%s</creation_time>",
-            iso_if_time (get_iterator_creation_time (notes)));
-
-          buffer_xml_append_printf
-           (buffer,
-            "<modification_time>%s</modification_time>",
-            iso_if_time (get_iterator_modification_time (notes)));
-
-          buffer_xml_append_printf
-           (buffer,
-            "<writable>1</writable>"
-            "<in_use>0</in_use>"
-            "<active>%i</active>"
-            "<end_time>%s</end_time>"
-            "<text>%s</text>"
-            "<hosts>%s</hosts>"
-            "<port>%s</port>"
-            "<severity>%s</severity>"
-            "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
-            "<orphan>%i</orphan>",
-            note_iterator_active (notes),
-            end_time > 1 ? iso_time (&end_time) : "",
-            note_iterator_text (notes),
-            note_iterator_hosts (notes)
-             ? note_iterator_hosts (notes) : "",
-            note_iterator_port (notes)
-             ? note_iterator_port (notes) : "",
-            note_iterator_severity (notes)
-             ? note_iterator_severity (notes) : "",
-            uuid_task ? uuid_task : "",
-            name_task ? name_task : "",
-            trash_task,
-            ((note_iterator_task (notes) && (uuid_task == NULL))
-             || (note_iterator_result (notes) && (uuid_result == NULL))));
-
-          free (name_task);
-
-          if (include_result && uuid_result && note_iterator_result (notes))
-            {
-              iterator_t results;
-              get_data_t *result_get;
-              result_get = report_results_get_data (1, 1,
-                                                    1, /* apply_overrides */
-                                                    0  /* min_qod */);
-              result_get->id = g_strdup (uuid_result);
-              init_result_get_iterator (&results, result_get,
-                                        0,     /* No report restriction */
-                                        NULL,  /* No host restriction */
-                                        NULL); /* No extra order SQL. */
-              get_data_reset (result_get);
-              free (result_get);
-
-              while (next (&results))
-                buffer_results_xml (buffer,
-                                    &results,
-                                    0,
-                                    0,  /* Notes. */
-                                    0,  /* Note details. */
-                                    0,  /* Overrides. */
-                                    0,  /* Override details. */
-                                    0,  /* Tags. */
-                                    0,  /* Tag details. */
-                                    0,  /* Result details. */
-                                    NULL,
-                                    NULL,
-                                    0,
-                                    -1,
-                                    0,  /* Lean. */
-                                    0); /* Delta fields. */
-              cleanup_iterator (&results);
-            }
-          else
-            buffer_xml_append_printf (buffer,
-                                      "<result id=\"%s\"/>",
-                                      uuid_result ? uuid_result : "");
-          if (tag_count)
-            {
-              buffer_xml_append_printf (buffer,
-                                        "<user_tags>"
-                                        "<count>%i</count>",
-                                        tag_count);
-
-              init_resource_tag_iterator (&tags, "note",
-                                          get_iterator_resource (notes),
-                                          1, NULL, 1);
-
-              while (next (&tags))
-                {
-                  buffer_xml_append_printf
-                     (buffer,
-                      "<tag id=\"%s\">"
-                      "<name>%s</name>"
-                      "<value>%s</value>"
-                      "<comment>%s</comment>"
-                      "</tag>",
-                      resource_tag_iterator_uuid (&tags),
-                      resource_tag_iterator_name (&tags),
-                      resource_tag_iterator_value (&tags),
-                      resource_tag_iterator_comment (&tags));
-                }
-
-              cleanup_iterator (&tags);
-
-              g_string_append (buffer, "</user_tags>");
-            }
-
-          g_string_append (buffer, "</note>");
-        }
-      free (uuid_task);
-      free (uuid_result);
-    }
+    buffer_note_xml (buffer, notes, include_notes_details, include_result, count);
 }
 
 /**
