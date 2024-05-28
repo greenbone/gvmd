@@ -14088,10 +14088,22 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
 
       buffer = g_string_new ("");
 
-      // TODO: Do the iteration with get_next so it checks "first".
-      buffer_overrides_xml (buffer, &overrides,
-                            get_overrides_data->get.details,
-                            get_overrides_data->result, &count);
+      while (1)
+        {
+          ret = get_next (&overrides, &get_overrides_data->get, &first, &count,
+                          init_override_iterator_all);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          buffer_override_xml (buffer, &overrides,
+                               get_overrides_data->get.details,
+                               get_overrides_data->result, &count);
+        }
 
       SEND_TO_CLIENT_OR_FAIL (buffer->str);
       g_string_free (buffer, TRUE);
