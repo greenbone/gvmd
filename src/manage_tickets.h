@@ -26,7 +26,7 @@ int
 ticket_count (const get_data_t *);
 
 int
-init_ticket_iterator (iterator_t *, const get_data_t *);
+init_ticket_iterator (iterator_t *, get_data_t *);
 
 const char*
 ticket_iterator_user_id (iterator_t*);

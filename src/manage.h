@@ -630,7 +630,7 @@ int
 alert_count (const get_data_t *);
 
 int
-init_alert_iterator (iterator_t*, const get_data_t*);
+init_alert_iterator (iterator_t*, get_data_t*);
 
 int
 alert_iterator_event (iterator_t*);
@@ -730,7 +730,7 @@ unsigned int
 task_count (const get_data_t *);
 
 int
-init_task_iterator (iterator_t*, const get_data_t *);
+init_task_iterator (iterator_t*, get_data_t *);
 
 task_status_t
 task_iterator_run_status (iterator_t*);
@@ -1746,7 +1746,7 @@ void
 init_target_iterator_one (iterator_t*, target_t);
 
 int
-init_target_iterator (iterator_t*, const get_data_t *);
+init_target_iterator (iterator_t*, get_data_t *);
 
 const char*
 target_iterator_hosts (iterator_t*);
@@ -2185,7 +2185,7 @@ void
 init_credential_iterator_one (iterator_t*, credential_t);
 
 int
-init_credential_iterator (iterator_t*, const get_data_t *);
+init_credential_iterator (iterator_t*, get_data_t *);
 
 const char*
 credential_iterator_login (iterator_t*);
@@ -2703,7 +2703,7 @@ char *
 openvas_default_scanner_host ();
 
 int
-init_scanner_iterator (iterator_t*, const get_data_t *);
+init_scanner_iterator (iterator_t*, get_data_t *);
 
 const char*
 scanner_iterator_host (iterator_t*);
@@ -2888,7 +2888,7 @@ int
 schedule_info (schedule_t, int, gchar **, gchar **);
 
 int
-init_schedule_iterator (iterator_t*, const get_data_t *);
+init_schedule_iterator (iterator_t*, get_data_t *);
 
 const char*
 schedule_iterator_timezone (iterator_t *);
@@ -2940,7 +2940,7 @@ set_schedule_timeout (int);
 /* Groups. */
 
 int
-init_group_iterator (iterator_t *, const get_data_t *);
+init_group_iterator (iterator_t *, get_data_t *);
 
 int
 copy_group (const char *, const char *, const char *, group_t *);
@@ -3007,7 +3007,7 @@ int
 permission_count (const get_data_t *);
 
 int
-init_permission_iterator (iterator_t*, const get_data_t *);
+init_permission_iterator (iterator_t*, get_data_t *);
 
 const char*
 permission_iterator_resource_type (iterator_t*);
@@ -3064,7 +3064,7 @@ int
 manage_get_roles (GSList *, const db_conn_info_t *, int);
 
 int
-init_role_iterator (iterator_t *, const get_data_t *);
+init_role_iterator (iterator_t *, get_data_t *);
 
 int
 copy_role (const char *, const char *, const char *, role_t *);
@@ -3221,7 +3221,7 @@ int
 filter_count (const get_data_t*);
 
 int
-init_filter_iterator (iterator_t*, const get_data_t*);
+init_filter_iterator (iterator_t*, get_data_t*);
 
 const char*
 filter_iterator_type (iterator_t*);
@@ -3519,7 +3519,7 @@ gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
 
 int
-init_user_iterator (iterator_t*, const get_data_t*);
+init_user_iterator (iterator_t*, get_data_t*);
 
 const char*
 user_iterator_role (iterator_t*);
@@ -3665,7 +3665,7 @@ modify_tag (const char *, const char *, const char *, const char *,
             gchar **);
 
 int
-init_tag_iterator (iterator_t*, const get_data_t*);
+init_tag_iterator (iterator_t*, get_data_t*);
 
 int
 tag_count (const get_data_t *get);
@@ -3698,7 +3698,7 @@ int
 tag_resource_iterator_readable (iterator_t*);
 
 int
-init_tag_name_iterator (iterator_t*, const get_data_t*);
+init_tag_name_iterator (iterator_t*, get_data_t*);
 
 const char*
 tag_name_iterator_name (iterator_t*);

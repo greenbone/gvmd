@@ -1967,7 +1967,7 @@ port_list_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
+init_port_list_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = PORT_LIST_ITERATOR_COLUMNS;

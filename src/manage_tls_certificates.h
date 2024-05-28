@@ -33,7 +33,7 @@ int
 tls_certificate_count (const get_data_t *);
 
 int
-init_tls_certificate_iterator (iterator_t *, const get_data_t *);
+init_tls_certificate_iterator (iterator_t *, get_data_t *);
 
 const char*
 tls_certificate_iterator_certificate (iterator_t*);

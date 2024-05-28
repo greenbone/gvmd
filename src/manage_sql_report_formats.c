@@ -2872,7 +2872,7 @@ report_format_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
+init_report_format_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;

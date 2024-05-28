@@ -3176,7 +3176,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
  *         -1 error.
  */
 int
-init_config_iterator (iterator_t* iterator, const get_data_t *get)
+init_config_iterator (iterator_t* iterator, get_data_t *get)
 {
   int rc;
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
