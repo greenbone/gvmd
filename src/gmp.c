@@ -13665,9 +13665,21 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
 
       buffer = g_string_new ("");
 
-      // TODO: Do the iteration with get_next so it checks "first".
-      buffer_notes_xml (buffer, &notes, get_notes_data->get.details,
-                        get_notes_data->result, &count);
+      while (1)
+        {
+          ret = get_next (&notes, &get_notes_data->get, &first, &count,
+                          init_note_iterator_all);
+          if (ret == 1)
+            break;
+          if (ret == -1)
+            {
+              internal_error_send_to_client (error);
+              return;
+            }
+
+          buffer_note_xml (buffer, &notes, get_notes_data->get.details,
+                           get_notes_data->result, &count);
+        }
 
       SEND_TO_CLIENT_OR_FAIL (buffer->str);
       g_string_free (buffer, TRUE);
