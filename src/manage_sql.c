@@ -57795,6 +57795,8 @@ type_opts_table (const char *type, const char *filter)
 {
   if (type == NULL)
     return NULL;
+  if (strcasecmp (type, "CVE") == 0)
+    return g_strdup (" LEFT JOIN scap.epss_scores ON cve = cves.uuid");
   if (strcasecmp (type, "TASK") == 0)
     return task_iterator_opts_table (filter_term_apply_overrides (filter),
                                      filter_term_min_qod (filter), 0);
