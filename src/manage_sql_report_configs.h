@@ -44,9 +44,4 @@ restore_report_config (const char *);
 void
 delete_report_configs_user (user_t);
 
-gboolean
-inherit_report_configs (user_t, user_t);
-
-
-
 #endif /* not _GVMD_MANAGE_SQL_REPORT_CONFIGS_H */
