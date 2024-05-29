@@ -53682,7 +53682,7 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (allowed_methods && (allowed_methods->len > 2))
     return -3;
 
-  if (allowed_methods && (allowed_methods->len == 0))
+  if (allowed_methods && (allowed_methods->len <= 1))
     allowed_methods = NULL;
 
   if (allowed_methods
