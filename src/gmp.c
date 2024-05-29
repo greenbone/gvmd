@@ -8064,33 +8064,6 @@ convert_to_newlines (const char *text)
 }
 
 /**
- * @brief Get substring of UTF8 string.
- *
- * @param[in]  str        String
- * @param[in]  start_pos  Start.
- * @param[in]  end_pos    End.
- *
- * @return Substring.
- */
-static gchar *
-utf8_substring (const gchar *str, glong start_pos, glong end_pos)
-{
-  gchar *start, *end, *out;
-
-  /* TODO This is a copy of g_utf8_substring from glib 2.38.2.  Once our glib
-   * minimum goes past 2.30 we can just use g_utf8_substring. */
-
-  start = g_utf8_offset_to_pointer (str, start_pos);
-  end = g_utf8_offset_to_pointer (start, end_pos - start_pos);
-
-  out = g_malloc (end - start + 1);
-  memcpy (out, start, end - start);
-  out[end - start] = 0;
-
-  return out;
-}
-
-/**
  * @brief Buffer XML for a single note.
  *
  * @param[in]  buffer                 Buffer into which to buffer note.
@@ -8169,7 +8142,7 @@ buffer_note_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       const char *text;
 
       text = note_iterator_text (notes);
-      excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+      excerpt = g_utf8_substring (text, 0, setting_excerpt_size_int ());
 
       /* This must match send_get_common. */
 
@@ -8467,7 +8440,7 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
       const char *text;
 
       text = override_iterator_text (overrides);
-      excerpt = utf8_substring (text, 0, setting_excerpt_size_int ());
+      excerpt = g_utf8_substring (text, 0, setting_excerpt_size_int ());
 
       /* This must match send_get_common. */
 
@@ -18055,7 +18028,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (task_schedule_xml);
 
           SENDF_TO_CLIENT_OR_FAIL ("</task>");
-
         }
       else
         {
