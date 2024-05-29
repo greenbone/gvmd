@@ -6107,6 +6107,7 @@ END:VCALENDAR
       <o><e>hosts</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
+      <o><e>sources</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -6152,6 +6153,29 @@ END:VCALENDAR
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>sources</name>
+      <summary>List of authentication sources for this user (if omitted then 'file')</summary>
+      <description>
+        <p>
+          'file' means to store the user in the database.
+        </p>
+      </description>
+      <pattern>
+        <any><e>source</e></any>
+      </pattern>
+      <ele>
+        <name>source</name>
+        <summary>Authentication source</summary>
+        <pattern>
+          <alts>
+            <alt>file</alt>
+            <alt>ldap_connect</alt>
+            <alt>radius_connect</alt>
+          </alts>
+        </pattern>
+      </ele>
     </ele>
     <response>
       <pattern>
@@ -27870,6 +27894,11 @@ END:VCALENDAR
     <ele>
       <name>sources</name>
       <summary>List of authentication sources for this user (if omitted, no changes)</summary>
+      <description>
+        <p>
+          'file' means to store the user in the database.
+        </p>
+      </description>
       <pattern>
         <any><e>source</e></any>
       </pattern>
