@@ -196,6 +196,8 @@ increment_transaction_size (int* current_size)
 
 /**
  * @brief Get the SQL buffer size threshold converted from MiB to bytes.
+ *
+ * @return Number of bytes.
  */
 int
 setting_secinfo_sql_buffer_threshold_bytes ()
@@ -471,7 +473,6 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
- * @param[in]  name            Name of the info
  *
  * @return 0 success, 1 failed to find target, 2 failed to find filter,
  *         -1 error.
@@ -716,7 +717,6 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
- * @param[in]  name            Name of the info
  *
  * @return 0 success, 1 failed to find target, 2 failed to find filter,
  *         -1 error.
@@ -3209,8 +3209,6 @@ check_cert_db_version ()
 
 /**
  * @brief Update timestamp in CERT db from feed timestamp.
- *
- * @return 0 success, -1 error.
  */
 static void
 update_cert_timestamp ()
@@ -3482,8 +3480,6 @@ check_scap_db_version ()
 
 /**
  * @brief Update timestamp in SCAP db from feed timestamp.
- *
- * @return 0 success, -1 error.
  */
 static void
 update_scap_timestamp ()
