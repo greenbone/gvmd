@@ -262,10 +262,10 @@ static gchar*
 vulns_extra_where (int);
 
 static gchar*
-vuln_iterator_opts_from_filter (const char*);
+vuln_iterator_opts_from_filter (const gchar *);
 
 static gchar*
-vuln_iterator_extra_with_from_filter ();
+vuln_iterator_extra_with_from_filter (const gchar *);
 
 static int
 task_last_report_any_status (task_t, report_t *);
