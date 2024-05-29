@@ -3087,7 +3087,7 @@ report_format_alert_iterator_readable (iterator_t* iterator)
  * Iterates over all report configs that use the Report Format.
  *
  * @param[in]  iterator          Iterator.
- * @param[in]  report_format     Report Format.
+ * @param[in]  report_format_id  Report Format.
  */
 void
 init_report_format_report_config_iterator (iterator_t* iterator,

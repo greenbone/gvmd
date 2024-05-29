@@ -22340,6 +22340,9 @@ where_qod (int min_qod)
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
+/**
+ * @brief SQL for result iterator column.
+ */
 #define RESULT_HOSTNAME_SQL(hostname_col, host_col, report_col)               \
       "(CASE WHEN (" hostname_col " IS NULL) "                                \
       "           OR (" hostname_col " = '')"                                 \
@@ -55551,7 +55554,6 @@ user_resources_in_use (user_t user,
  * @param[in]  task_id    UUID of the task to limit vulns to.
  * @param[in]  report_id  UUID of the report to limit vulns to.
  * @param[in]  host       IP address of the task to limit vulns to.
- * @param[in]  min_qod    Minimum QoD.
  *
  * @return Newly allocated string with the extra_with clause.
  */
@@ -55947,6 +55949,8 @@ vuln_count (const get_data_t *get)
 
 /**
  * @brief Extra WHERE clause for vulns.
+ *
+ * @param[in]  min_qod  Min QOD.
  *
  * @return WHERE clause.
  */
@@ -57956,7 +57960,8 @@ type_extra_where (const char *type, int trash, const char *filter,
 /**
  * @brief Get the extra WITH clauses for a resource type.
  *
- * @param[in]  type  The resource type.
+ * @param[in]  type    The resource type.
+ * @param[in]  filter  Filter term.
  *
  * @return The extra WITH clauses.
  */
@@ -57965,7 +57970,7 @@ type_extra_with (const char *type, const char *filter)
 {
   if (strcasecmp (type, "VULN") == 0)
     {
-      return vuln_iterator_extra_with_from_filter(filter);
+      return vuln_iterator_extra_with_from_filter (filter);
     }
   return NULL;
 }
