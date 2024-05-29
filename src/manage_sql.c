@@ -53652,7 +53652,8 @@ find_user_by_name (const char* name, user_t *user)
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find role, 3 syntax error in hosts, 99 permission denied,
- *         -1 on error, -2 if user exists already.
+ *         -1 on error, -2 if user exists already, -3 if wrong number of methods,
+ *         -4 error in method.
  */
 int
 create_user (const gchar * name, const gchar * password, const gchar *comment,
@@ -53681,7 +53682,10 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (allowed_methods && (allowed_methods->len == 0))
     allowed_methods = NULL;
 
-  // TODO validate methods  single source, one of ldap, ...
+  if (allowed_methods
+      && (auth_method_name_valid (g_ptr_array_index (allowed_methods, 0))
+          == 0))
+    return -4;
 
   if (validate_username (name) != 0)
     {
@@ -54713,7 +54717,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  *         2 failed to find user, 3 success and user gained admin, 4 success
  *         and user lost admin, 5 failed to find role, 6 syntax error in hosts,
  *         7 syntax error in new name, 99 permission denied, -1 on error,
- *         -2 for an unknown role, -3 if wrong number of methods.
+ *         -2 for an unknown role, -3 if wrong number of methods, -4 error in
+ *         method.
  */
 int
 modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
@@ -54745,7 +54750,10 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           || (strlen (g_ptr_array_index (allowed_methods, 0)) == 0)))
     allowed_methods = NULL;
 
-  // TODO Validate methods: single source, one of "", "ldap", ...
+  if (allowed_methods
+      && (auth_method_name_valid (g_ptr_array_index (allowed_methods, 0))
+          == 0))
+    return -4;
 
   sql_begin_immediate ();
 
