@@ -1982,6 +1982,36 @@ nvt_iterator_solution_type (iterator_t*);
 const char*
 nvt_iterator_solution_method (iterator_t*);
 
+double
+nvt_iterator_epss_score (iterator_t*);
+
+double
+nvt_iterator_epss_percentile (iterator_t*);
+
+const char*
+nvt_iterator_epss_cve (iterator_t*);
+
+double
+nvt_iterator_epss_severity (iterator_t*);
+
+gboolean
+nvt_iterator_has_epss_severity (iterator_t*);
+
+double
+nvt_iterator_max_epss_score (iterator_t*);
+
+double
+nvt_iterator_max_epss_percentile (iterator_t*);
+
+const char*
+nvt_iterator_max_epss_cve (iterator_t*);
+
+double
+nvt_iterator_max_epss_severity (iterator_t*);
+
+gboolean
+nvt_iterator_has_max_epss_severity (iterator_t*);
+
 char*
 nvt_default_timeout (const char *);
 

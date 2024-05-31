@@ -3571,6 +3571,65 @@ update_scap_placeholders ()
        "                                       WHERE cpe=cpes.id))"
        " WHERE cpes.title IS NULL;");
 }
+
+/**
+ * @brief Update extra data for VTs based on SCAP and SCAP supplement data.
+ */
+static void
+update_vt_scap_extra_data ()
+{
+  g_info ("Assigning EPSS scores to VTs");
+
+  sql ("UPDATE nvts"
+       " SET epss_cve = NULL,"
+       "     epss_score = NULL,"
+       "     epss_percentile = NULL,"
+       "     epss_severity = NULL,"
+       "     max_epss_cve = NULL,"
+       "     max_epss_score = NULL,"
+       "     max_epss_percentile = NULL,"
+       "     max_epss_severity = NULL;");
+
+  sql ("WITH epss_candidates AS ("
+       " SELECT vt_oid, cve, severity, epss, percentile,"
+       "         rank() OVER (PARTITION BY vt_oid"
+       "                      ORDER BY severity DESC,"
+       "                      epss DESC,"
+       "                      scap.cves.modification_time DESC) AS rank"
+       "   FROM (SELECT * FROM vt_refs WHERE type='cve') AS vt_cves"
+       "   JOIN scap.epss_scores ON ref_id = cve"
+       "   LEFT JOIN scap.cves ON scap.cves.name = cve"
+       "  ORDER BY vt_oid"
+       ") "
+       "UPDATE nvts"
+       " SET epss_cve = epss_candidates.cve,"
+       "     epss_score = epss_candidates.epss,"
+       "     epss_percentile = epss_candidates.percentile,"
+       "     epss_severity = epss_candidates.severity"
+       " FROM epss_candidates"
+       " WHERE epss_candidates.vt_oid = nvts.oid"
+       "   AND epss_candidates.rank = 1;");
+
+  sql ("WITH epss_candidates AS ("
+       " SELECT vt_oid, cve, severity, epss, percentile,"
+       "         rank() OVER (PARTITION BY vt_oid"
+       "                      ORDER BY epss DESC,"
+       "                      severity DESC,"
+       "                      scap.cves.modification_time DESC) AS rank"
+       "   FROM (SELECT * FROM vt_refs WHERE type='cve') AS vt_cves"
+       "   JOIN scap.epss_scores ON ref_id = cve"
+       "   LEFT JOIN scap.cves ON scap.cves.name = cve"
+       "  ORDER BY vt_oid"
+       ") "
+       "UPDATE nvts"
+       " SET max_epss_cve = epss_candidates.cve,"
+       "     max_epss_score = epss_candidates.epss,"
+       "     max_epss_percentile = epss_candidates.percentile,"
+       "     max_epss_severity = epss_candidates.severity"
+       " FROM epss_candidates"
+       " WHERE epss_candidates.vt_oid = nvts.oid"
+       "   AND epss_candidates.rank = 1;");
+}
  
 /**
  * @brief Update CERT data that depends on SCAP.
@@ -3907,6 +3966,29 @@ update_scap (gboolean reset_scap_db)
 }
 
 /**
+ * @brief Update extra data in the SCAP DB that depends on other feeds.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_scap_extra ()
+{
+  if (manage_scap_loaded () == 0)
+    {
+      g_info ("%s: SCAP database missing, skipping extra data update",
+              __func__);
+      return 0;
+    }
+
+  g_debug ("%s: update SCAP extra data of VTs", __func__);
+  setproctitle ("Syncing SCAP: Updating VT extra data");
+
+  update_vt_scap_extra_data ();
+
+  return 0;
+}
+
+/**
  * @brief Sync the SCAP DB.
  *
  * @return 0 success, -1 error.
@@ -3952,6 +4034,9 @@ rebuild_scap ()
   ret = update_scap (TRUE);
   if (ret == 1)
     ret = 2;
+
+  if (ret == 0)
+    ret = update_scap_extra ();
 
   if (feed_lockfile_unlock (&lockfile))
     {

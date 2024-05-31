@@ -41,6 +41,7 @@
 #include "manage_preferences.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_secinfo.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -1213,6 +1214,153 @@ DEF_ACCESS (nvt_iterator_detection, GET_ITERATOR_COLUMN_COUNT + 19);
  *         cleanup_iterator.
  */
 DEF_ACCESS (nvt_iterator_solution_method, GET_ITERATOR_COLUMN_COUNT + 20);
+
+/**
+ * @brief Get the EPSS score selected by severity from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The EPSS score.
+ */
+double
+nvt_iterator_epss_score (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -1;
+  ret = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
+
+/**
+ * @brief Get the EPSS percentile selected by severity from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The EPSS percentile.
+ */
+double
+nvt_iterator_epss_percentile (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -1;
+  ret = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 22);
+  return ret;
+}
+
+/**
+ * @brief Get the CVE of the EPSS score by severity from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVE-ID of the EPSS score, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_epss_cve, GET_ITERATOR_COLUMN_COUNT + 23);
+
+/**
+ * @brief Get the maximum severity of CVEs with EPSS info from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity score.
+ */
+double
+nvt_iterator_epss_severity (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -1;
+  ret = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 24);
+  return ret;
+}
+
+/**
+ * @brief Get whether the NVT has a severity for the max severity EPSS score.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the severity exists.
+ */
+gboolean
+nvt_iterator_has_epss_severity (iterator_t* iterator)
+{
+  gboolean ret;
+  if (iterator->done) return -1;
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 24) != NULL;
+  return ret;
+}
+
+/**
+ * @brief Get the maximum EPSS score from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum EPSS score.
+ */
+double
+nvt_iterator_max_epss_score (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -1;
+  ret = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 25);
+  return ret;
+}
+
+/**
+ * @brief Get the maximum EPSS percentile from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum EPSS percentile.
+ */
+double
+nvt_iterator_max_epss_percentile (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -1;
+  ret = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 26);
+  return ret;
+}
+
+/**
+ * @brief Get the CVE of the maximum EPSS score from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVE-ID of the maximum EPSS score, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_max_epss_cve, GET_ITERATOR_COLUMN_COUNT + 27);
+
+/**
+ * @brief Get the severity of the maximum EPSS score from an NVT iterator.
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity score.
+ */
+double
+nvt_iterator_max_epss_severity (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -1;
+  ret = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 28);
+  return ret;
+}
+
+/**
+ * @brief Get whether the NVT has a severity for the max EPSS score.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the severity exists.
+ */
+gboolean
+nvt_iterator_has_max_epss_severity (iterator_t* iterator)
+{
+  gboolean ret;
+  if (iterator->done) return -1;
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 28) != NULL;
+  return ret;
+}
 
 /**
  * @brief Get the default timeout of an NVT.
@@ -2531,6 +2679,9 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
         sql_rollback ();
         break;
     }
+
+  if (ret == 0)
+    ret = update_scap_extra ();
 
   feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();
