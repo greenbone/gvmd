@@ -6272,14 +6272,17 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>sources</name>
-      <summary>List of authentication sources for this user (if omitted then 'file')</summary>
+      <summary>Authentication source for this user (if omitted then 'file')</summary>
       <description>
         <p>
           'file' means to store the user in the database.
         </p>
+        <p>
+          The element is called SOURCES for historic reasons. Only one SOURCE is allowed.
+        </p>
       </description>
       <pattern>
-        <any><e>source</e></any>
+        <o><e>source</e></o>
       </pattern>
       <ele>
         <name>source</name>
@@ -28163,14 +28166,17 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>sources</name>
-      <summary>List of authentication sources for this user (if omitted, no changes)</summary>
+      <summary>Authentication source for this user (if omitted, no changes)</summary>
       <description>
         <p>
           'file' means to store the user in the database.
         </p>
+        <p>
+          The element is called SOURCES for historic reasons. Only one SOURCE is allowed.
+        </p>
       </description>
       <pattern>
-        <any><e>source</e></any>
+        <o><e>source</e></o>
       </pattern>
       <ele>
         <name>source</name>
