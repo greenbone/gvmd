@@ -427,7 +427,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <xsl:with-param name="text" select="concat($index, '.1 Structure')"/>
         </xsl:call-template>
 
-        <ul style="list-style: none">
+        <ul style="list-style: none; padding-left: 10px;">
           <li>
             <xsl:call-template name="command-structure"/>
           </li>
@@ -656,7 +656,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="command-structure">
-    <ul style="list-style: none">
+    <ul style="list-style: none; border: 1px solid #F5F5F5; border-radius: 4px; margin-left: 2%; padding: 10px; background: #F5F5F5;">
       <xsl:choose>
         <xsl:when test="(count(pattern/*) = 0) and (string-length(normalize-space(pattern)) = 0)">
           <i>Empty single element.</i>
@@ -693,11 +693,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
         <ul style="list-style: none">
           <li>
-            <i>Command</i>
+            <div style="padding-bottom: 5px;"><i>Command</i></div>
             <xsl:call-template name="command-structure"/>
           </li>
           <li style="margin-top: 15px;">
-            <i>Response</i>
+            <div style="padding-bottom: 5px;"><i>Response</i></div>
             <xsl:for-each select="response">
               <xsl:call-template name="command-structure"/>
             </xsl:for-each>
