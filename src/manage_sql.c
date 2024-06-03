@@ -262,10 +262,10 @@ static gchar*
 vulns_extra_where (int);
 
 static gchar*
-vuln_iterator_opts_from_filter (const char*);
+vuln_iterator_opts_from_filter (const gchar *);
 
 static gchar*
-vuln_iterator_extra_with_from_filter ();
+vuln_iterator_extra_with_from_filter (const gchar *);
 
 static int
 task_last_report_any_status (task_t, report_t *);
@@ -22340,6 +22340,9 @@ where_qod (int min_qod)
     { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
   }
 
+/**
+ * @brief SQL for result iterator column.
+ */
 #define RESULT_HOSTNAME_SQL(hostname_col, host_col, report_col)               \
       "(CASE WHEN (" hostname_col " IS NULL) "                                \
       "           OR (" hostname_col " = '')"                                 \
@@ -55559,7 +55562,6 @@ user_resources_in_use (user_t user,
  * @param[in]  task_id    UUID of the task to limit vulns to.
  * @param[in]  report_id  UUID of the report to limit vulns to.
  * @param[in]  host       IP address of the task to limit vulns to.
- * @param[in]  min_qod    Minimum QoD.
  *
  * @return Newly allocated string with the extra_with clause.
  */
@@ -55955,6 +55957,8 @@ vuln_count (const get_data_t *get)
 
 /**
  * @brief Extra WHERE clause for vulns.
+ *
+ * @param[in]  min_qod  Min QOD.
  *
  * @return WHERE clause.
  */
@@ -57803,6 +57807,8 @@ type_opts_table (const char *type, const char *filter)
 {
   if (type == NULL)
     return NULL;
+  if (strcasecmp (type, "CVE") == 0)
+    return g_strdup (" LEFT JOIN scap.epss_scores ON cve = cves.uuid");
   if (strcasecmp (type, "TASK") == 0)
     return task_iterator_opts_table (filter_term_apply_overrides (filter),
                                      filter_term_min_qod (filter), 0);
@@ -57962,7 +57968,8 @@ type_extra_where (const char *type, int trash, const char *filter,
 /**
  * @brief Get the extra WITH clauses for a resource type.
  *
- * @param[in]  type  The resource type.
+ * @param[in]  type    The resource type.
+ * @param[in]  filter  Filter term.
  *
  * @return The extra WITH clauses.
  */
@@ -57971,7 +57978,7 @@ type_extra_with (const char *type, const char *filter)
 {
   if (strcasecmp (type, "VULN") == 0)
     {
-      return vuln_iterator_extra_with_from_filter(filter);
+      return vuln_iterator_extra_with_from_filter (filter);
     }
   return NULL;
 }

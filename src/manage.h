@@ -1171,9 +1171,6 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 
 /* Reports. */
 
-/** @todo How is this documented? */
-#define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
-
 /**
  * @brief Default apply_overrides setting
  */
