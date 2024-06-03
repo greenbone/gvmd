@@ -342,7 +342,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <xsl:apply-templates select="description"/>
 
-      <details>
+      <details open="">
         <xsl:call-template name="details-summary-4">
           <xsl:with-param name="text" select="concat($index, '.1 RNC')"/>
         </xsl:call-template>
