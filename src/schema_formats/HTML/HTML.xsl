@@ -661,6 +661,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <xsl:when test="(count(pattern/*) = 0) and (string-length(normalize-space(pattern)) = 0)">
           <i>Empty single element.</i>
         </xsl:when>
+        <xsl:when test="(count(pattern/*) = 0)">
+          <xsl:value-of select="pattern"/>
+        </xsl:when>
         <xsl:otherwise>
           <xsl:variable name="command" select="."/>
           <xsl:for-each select="pattern/*">
