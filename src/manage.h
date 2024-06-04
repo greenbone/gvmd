@@ -1171,9 +1171,6 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 
 /* Reports. */
 
-/** @todo How is this documented? */
-#define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
-
 /**
  * @brief Default apply_overrides setting
  */
@@ -2853,7 +2850,7 @@ void
 set_scheduled_user_uuid (const gchar* uuid);
 
 void
-manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) (pid_t*), gboolean);
 
 int
 manage_rebuild_gvmd_data_from_feed (const char *,
@@ -3330,6 +3327,12 @@ cve_info_iterator_description (iterator_t*);
 
 const char*
 cve_info_iterator_products (iterator_t*);
+
+double
+cve_info_iterator_epss_score (iterator_t*);
+
+double
+cve_info_iterator_epss_percentile (iterator_t*);
 
 int
 init_cve_info_iterator (iterator_t*, get_data_t*, const char*);

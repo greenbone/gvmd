@@ -1179,11 +1179,13 @@ update_nvt_cache_retry ()
 /**
  * @brief Update the NVT cache in a child process.
  *
+ * @param[out] child_pid_out  Optional output param for child PID.
+ *
  * @return 0 success, 1 update in progress, -1 error.  Always exits with
  *         EXIT_SUCCESS in child.
  */
 static int
-fork_update_nvt_cache ()
+fork_update_nvt_cache (pid_t *child_pid_out)
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1210,6 +1212,8 @@ fork_update_nvt_cache ()
     }
 
   pid = fork_with_handlers ();
+  if (child_pid_out)
+    *child_pid_out = pid;
   switch (pid)
     {
       case 0:

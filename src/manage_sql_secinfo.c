@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <cjson/cJSON.h>
 #include <gvm/base/gvm_sentry.h>
 #include <bsd/unistd.h>
 #include <gvm/util/fileutils.h>
@@ -71,6 +72,11 @@
  * @brief Commit size for updates.
  */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+
+/**
+ * @brief Maximum number of rows in a EPSS INSERT.
+ */
+#define EPSS_MAX_CHUNK_SIZE 10000
 
 
 /* Headers. */
@@ -190,6 +196,8 @@ increment_transaction_size (int* current_size)
 
 /**
  * @brief Get the SQL buffer size threshold converted from MiB to bytes.
+ *
+ * @return Number of bytes.
  */
 int
 setting_secinfo_sql_buffer_threshold_bytes ()
@@ -465,7 +473,6 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
- * @param[in]  name            Name of the info
  *
  * @return 0 success, 1 failed to find target, 2 failed to find filter,
  *         -1 error.
@@ -650,7 +657,9 @@ cve_info_count (const get_data_t *get)
 {
   static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
-  return count ("cve", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
+  return count ("cve", get, columns, NULL, filter_columns, 0,
+                " LEFT JOIN epss_scores ON cve = cves.uuid",
+                0, FALSE);
 }
 
 /**
@@ -696,7 +705,7 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
+                           " LEFT JOIN epss_scores ON cve = cves.uuid",
                            clause,
                            FALSE);
   g_free (clause);
@@ -708,7 +717,6 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
- * @param[in]  name            Name of the info
  *
  * @return 0 success, 1 failed to find target, 2 failed to find filter,
  *         -1 error.
@@ -768,6 +776,38 @@ DEF_ACCESS (cve_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (cve_info_iterator_description, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the EPSS score for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The EPSS score of this CVE, or 0.0 if iteration is
+ *         complete.
+ */
+double
+cve_info_iterator_epss_score (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+}
+
+/**
+ * @brief Get the EPSS percentile for this CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The EPSS percentile of this CVE, or 0.0 if iteration is
+ *         complete.
+ */
+double
+cve_info_iterator_epss_percentile (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+}
 
 
 /* CERT-Bund data. */
@@ -2271,37 +2311,6 @@ update_scap_cpes ()
 /* SCAP update: CVEs. */
 
 /**
- * @brief Check if this is the last appearance of a product in its siblings.
- *
- * @param[in]  product  Product.
- *
- * @return 1 if last appearance of product, else 0.
- */
-static int
-last_appearance (element_t product)
-{
-  element_t product2;
-
-  product2 = element_next (product);
-  while (product2)
-    {
-      gchar *product_text, *product2_text;
-      int cmp;
-
-      product_text = element_text (product);
-      product2_text = element_text (product2);
-
-      cmp = strcmp (product_text, product2_text);
-      g_free (product_text);
-      g_free (product2_text);
-      if (cmp == 0)
-        break;
-      product2 = element_next (product2);
-    }
-  return product2 == NULL;
-}
-
-/**
  * @brief Get the ID of a CPE from a hashtable.
  *
  * @param[in]  hashed_cpes    CPEs.
@@ -2330,16 +2339,19 @@ insert_cve_products (element_t list, resource_t cve,
                      int time_modified, int time_published,
                      GHashTable *hashed_cpes, int *transaction_size)
 {
-  element_t product;
+  element_t product_element;
+  GHashTable *products;
+  GHashTableIter products_iter;
+  gchar *product_tilde;
   int first_product, first_affected;
   GString *sql_cpes, *sql_affected;
 
   if (list == NULL)
     return;
 
-  product = element_first_child (list);
+  product_element = element_first_child (list);
 
-  if (product == NULL)
+  if (product_element == NULL)
     return;
 
   sql_cpes = g_string_new ("INSERT INTO scap2.cpes"
@@ -2350,117 +2362,119 @@ insert_cve_products (element_t list, resource_t cve,
                                " (cve, cpe)"
                                " VALUES");
 
-  /* Buffer the SQL. */
-
-  first_product = first_affected = 1;
-
-  while (product)
+  /* Collect unique product CPEs in the current CVE's XML.
+   * Duplicates have to be avoided as they would cause errors from Postgres
+   * ON CONFLICT DO UPDATE.
+   */
+  products = g_hash_table_new_full (g_str_hash, g_str_equal, free, NULL);
+  while (product_element)
     {
-      gchar *product_text;
-
-      if (strcmp (element_name (product), "product"))
+      gchar *product_text, *product_decoded;
+      if (strcmp (element_name (product_element), "product"))
         {
-          product = element_next (product);
+          product_element = element_next (product_element);
           continue;
         }
 
-      product_text = element_text (product);
-      if (strlen (product_text))
+      product_text = element_text (product_element);
+      if (strcmp (product_text, "") == 0)
         {
-          gchar *quoted_product, *product_decoded;
-          gchar *product_tilde;
-
-          product_decoded = g_uri_unescape_string (product_text, NULL);
-          product_tilde = string_replace (product_decoded,
-                                          "~", "%7E", "%7e",
-                                          NULL);
-          g_free (product_decoded);
-          quoted_product = sql_quote (product_tilde);
-
-          if (g_hash_table_contains (hashed_cpes, product_tilde) == 0)
-            {
-              /* The product was not in the db.
-               *
-               * Only insert the product if this is its last appearance
-               * in the current CVE's XML, to avoid errors from Postgres
-               * ON CONFLICT DO UPDATE. */
-
-              if (last_appearance (product))
-                {
-                  /* The CPE does not appear later in this CVE's XML. */
-
-                  g_string_append_printf
-                   (sql_cpes,
-                    "%s ('%s', '%s', %i, %i)",
-                    first_product ? "" : ",", quoted_product, quoted_product,
-                    time_published, time_modified);
-
-                  first_product = 0;
-
-                  /* We could add product_tilde to the hashtable but then we
-                   * would have to worry about memory management in the
-                   * hashtable. */
-                }
-
-              /* We don't know the db id of the CPE right now. */
-
-              g_string_append_printf
-               (sql_affected,
-                "%s (%llu,"
-                "    (SELECT id FROM scap2.cpes"
-                "     WHERE name='%s'))",
-                first_affected ? "" : ",", cve, quoted_product);
-            }
-          else
-            {
-              int cpe;
-
-              /* The product is in the db.
-               *
-               * So we don't need to insert it. */
-
-              cpe = hashed_cpes_cpe_id (hashed_cpes, product_tilde);
-
-              g_string_append_printf
-               (sql_affected,
-                "%s (%llu, %i)",
-                first_affected ? "" : ",", cve,
-                cpe);
-            }
-
-          first_affected = 0;
-          g_free (product_tilde);
-          g_free (quoted_product);
+          free (product_text);
+          product_element = element_next (product_element);
+          continue;
         }
 
+      product_decoded = g_uri_unescape_string (product_text, NULL);
+      product_tilde = string_replace (product_decoded,
+                                      "~", "%7E", "%7e",
+                                      NULL);
       g_free (product_text);
+      g_free (product_decoded);
+      g_hash_table_insert (products, product_tilde, NULL);
 
-      product = element_next (product);
+      product_element = element_next (product_element);
+    }
+  
+  /* Add new CPEs. */
+
+  first_product = first_affected = 1;
+  g_hash_table_iter_init (&products_iter, products);
+
+  while (g_hash_table_iter_next (&products_iter,
+                                 (gpointer*)(&product_tilde),
+                                 NULL))
+    {
+      if (g_hash_table_contains (hashed_cpes, product_tilde) == 0)
+        {
+          gchar *quoted_product;
+          quoted_product = sql_quote (product_tilde);
+          g_string_append_printf
+            (sql_cpes,
+             "%s ('%s', '%s', %i, %i)",
+             first_product ? "" : ",", quoted_product, quoted_product,
+             time_published, time_modified);
+          g_free (quoted_product);
+          first_product = 0;
+        }
     }
 
-  /* Run the SQL. */
-
   if (first_product == 0)
-     {
-       sql ("%s"
-            " ON CONFLICT (uuid)"
-            " DO UPDATE SET name = EXCLUDED.name;",
-            sql_cpes->str);
+    {
+      /* Run the SQL for inserting new CPEs and add them to hashed_cpes 
+       * so they can be looked up quickly when adding affected_products.
+       */
+      iterator_t inserted_cpes;
+      init_iterator (&inserted_cpes,
+                     "%s"
+                     " ON CONFLICT (uuid)"
+                     " DO UPDATE SET name = EXCLUDED.name"
+                     " RETURNING id, name;",
+                     sql_cpes->str);
 
-       increment_transaction_size (transaction_size);
-     }
+      while (next (&inserted_cpes))
+        {
+          int rowid = iterator_int (&inserted_cpes, 0);
+          const char *name = iterator_string (&inserted_cpes, 1);
+          g_hash_table_insert (hashed_cpes,
+                               g_strdup (name),
+                               GINT_TO_POINTER (rowid));
+        }
+      cleanup_iterator (&inserted_cpes);
+      increment_transaction_size (transaction_size);
+    }
+    g_string_free (sql_cpes, TRUE);
 
-   if (first_affected == 0)
-     {
-       sql ("%s"
-            " ON CONFLICT DO NOTHING;",
-            sql_affected->str);
+  /**
+   * Add the affected product references.
+   */
+  g_hash_table_iter_init (&products_iter, products);
 
-       increment_transaction_size (transaction_size);
-     }
+  while (g_hash_table_iter_next (&products_iter,
+                                 (gpointer*)(&product_tilde),
+                                 NULL))
+    {
+      int cpe;
 
-   g_string_free (sql_cpes, TRUE);
-   g_string_free (sql_affected, TRUE);
+      cpe = hashed_cpes_cpe_id (hashed_cpes, product_tilde);
+      g_string_append_printf
+         (sql_affected,
+          "%s (%llu, %i)",
+          first_affected ? "" : ",", cve,
+          cpe);
+      first_affected = 0;
+    }
+
+  if (first_affected == 0)
+    {
+      sql ("%s"
+           " ON CONFLICT DO NOTHING;",
+           sql_affected->str);
+
+      increment_transaction_size (transaction_size);
+    }
+
+  g_string_free (sql_affected, TRUE);
+  g_hash_table_destroy (products);
 }
 
 /**
@@ -2477,7 +2491,6 @@ static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
                        GHashTable *hashed_cpes, int *transaction_size)
 {
-  gboolean cvss_is_v3;
   element_t published, summary, cvss, score, base_metrics, cvss_vector, list;
   double severity_dbl;
   gchar *quoted_id, *quoted_summary, *quoted_cvss_vector;
@@ -2504,21 +2517,36 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
       return -1;
     }
 
-  cvss = element_child (entry, "vuln:cvss3");
+  gchar *base_metrics_element = "cvss:base_metrics";
+  gchar *score_element = "cvss:score";
+  gchar *cvss_vector_element = "cvss:vector-string";
+
+  cvss = element_child (entry, "vuln:cvss4");
   if (cvss == NULL)
     {
-      cvss = element_child (entry, "vuln:cvss");
-      cvss_is_v3 = FALSE;
+      cvss = element_child (entry, "vuln:cvss3");
+      if (cvss == NULL)
+        {
+          cvss = element_child (entry, "vuln:cvss");
+        }
+      else
+        {
+          base_metrics_element = "cvss3:base_metrics";
+          score_element = "cvss3:base-score";
+          cvss_vector_element = "cvss3:vector-string";
+        }
     }
   else
-     cvss_is_v3 = TRUE;
+    {
+      base_metrics_element = "cvss4:base_metrics";
+      score_element = "cvss4:base-score";
+      cvss_vector_element = "cvss4:vector-string";
+    }
 
   if (cvss == NULL)
     base_metrics = NULL;
   else
-    base_metrics = element_child (cvss,
-                                  cvss_is_v3 ? "cvss3:base_metrics"
-                                             : "cvss:base_metrics");
+    base_metrics = element_child (cvss, base_metrics_element);
 
   if (base_metrics == NULL)
     {
@@ -2527,8 +2555,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
   else
     {
-      score = element_child (base_metrics,
-                             cvss_is_v3 ? "cvss3:base-score" : "cvss:score");
+      score = element_child (base_metrics, score_element);
+
       if (score == NULL)
         {
           g_warning ("%s: cvss:score missing for %s", __func__, id);
@@ -2536,9 +2564,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           return -1;
         }
 
-      cvss_vector = element_child (base_metrics,
-                                   cvss_is_v3 ? "cvss3:vector-string"
-                                              : "cvss:vector-string");
+      cvss_vector = element_child (base_metrics, cvss_vector_element);
+
       if (cvss_vector == NULL)
         {
           g_warning ("%s: cvss:access-vector missing for %s", __func__, id);
@@ -2758,11 +2785,11 @@ update_scap_cves ()
       return -1;
     }
 
-  hashed_cpes = g_hash_table_new (g_str_hash, g_str_equal);
+  hashed_cpes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   init_iterator (&cpes, "SELECT uuid, id FROM scap2.cpes;");
   while (next (&cpes))
     g_hash_table_insert (hashed_cpes,
-                         (gpointer*) iterator_string (&cpes, 0),
+                         (gpointer*) g_strdup (iterator_string (&cpes, 0)),
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
   count = 0;
@@ -2787,6 +2814,175 @@ update_scap_cves ()
   cleanup_iterator (&cpes);
   return 0;
 }
+
+/**
+ * @brief Adds a EPSS score entry to an SQL inserts buffer.
+ *
+ * @param[in]  inserts      The SQL inserts buffer to add to.
+ * @param[in]  cve          The CVE the epss score and percentile apply to.
+ * @param[in]  epss         The EPSS score to add.
+ * @param[in]  percentile   The EPSS percentile to add.
+ */
+static void
+insert_epss_score_entry (inserts_t *inserts, const char *cve,
+                         double epss, double percentile)
+{
+  gchar *quoted_cve;
+  int first = inserts_check_size (inserts);
+
+  quoted_cve = sql_quote (cve);
+  g_string_append_printf (inserts->statement,
+                          "%s ('%s', %lf, %lf)",
+                          first ? "" : ",",
+                          quoted_cve,
+                          epss,
+                          percentile);
+  g_free (quoted_cve);
+
+  inserts->current_chunk_size++;
+}
+
+/**
+ * @brief Checks a failure condition for validating EPSS JSON.
+ */
+#define EPSS_JSON_FAIL_IF(failure_condition, error_message)       \
+if (failure_condition) {                                          \
+  g_warning ("%s: %s", __func__, error_message);                  \
+  goto fail_insert;                                                 \
+}
+
+/**
+ * @brief Updates the base EPSS scores table in the SCAP database.
+ * 
+ * @return 0 success, -1 error.
+ */
+static int
+update_epss_scores ()
+{
+  GError *error = NULL;
+  gchar *latest_json_path;
+  gchar *file_contents = NULL; 
+  cJSON *parsed, *list_item;
+  inserts_t inserts;
+
+  latest_json_path = g_build_filename (GVM_SCAP_DATA_DIR, "epss-latest.json",
+                                       NULL);
+
+  if (! g_file_get_contents (latest_json_path, &file_contents, NULL, &error))
+    {
+      int ret;
+      if (error->code == G_FILE_ERROR_NOENT)
+        {
+          g_info ("%s: EPSS scores file '%s' not found",
+                  __func__, latest_json_path);
+          ret = 0;
+        }
+      else
+        {
+          g_warning ("%s: Error loading EPSS scores file: %s",
+                     __func__, error->message);
+          ret = -1;
+        }
+      g_error_free (error);
+      g_free (latest_json_path);
+      return ret;
+    }
+
+  g_info ("Updating EPSS scores from %s", latest_json_path);
+  g_free (latest_json_path);
+
+  parsed = cJSON_Parse (file_contents);
+  g_free (file_contents);
+
+  if (parsed == NULL)
+    {
+      g_warning ("%s: EPSS scores file is not valid JSON", __func__);
+      return -1;
+    }
+  
+  if (! cJSON_IsArray (parsed))
+    {
+      g_warning ("%s: EPSS scores file is not a JSON array", __func__);
+      cJSON_Delete (parsed);
+      return -1;
+    }
+
+  sql_begin_immediate ();
+  inserts_init (&inserts,
+                EPSS_MAX_CHUNK_SIZE,
+                setting_secinfo_sql_buffer_threshold_bytes (),
+                "INSERT INTO scap2.epss_scores"
+                "  (cve, epss, percentile)"
+                "  VALUES ",
+                " ON CONFLICT (cve) DO NOTHING");
+
+  cJSON_ArrayForEach (list_item, parsed)
+    {
+      cJSON *cve_json, *epss_json, *percentile_json;
+      
+      EPSS_JSON_FAIL_IF (! cJSON_IsObject (list_item),
+                         "Unexpected non-object item in EPSS scores file")
+
+      cve_json = cJSON_GetObjectItem (list_item, "cve");
+      epss_json = cJSON_GetObjectItem (list_item, "epss");
+      percentile_json = cJSON_GetObjectItem (list_item, "percentile");
+
+      EPSS_JSON_FAIL_IF (cve_json == NULL,
+                         "Item missing mandatory 'cve' field");
+
+      EPSS_JSON_FAIL_IF (epss_json == NULL,
+                         "Item missing mandatory 'epss' field");
+      
+      EPSS_JSON_FAIL_IF (percentile_json == NULL,
+                         "Item missing mandatory 'percentile' field");
+
+      EPSS_JSON_FAIL_IF (! cJSON_IsString (cve_json),
+                         "Field 'cve' in item is not a string");
+
+      EPSS_JSON_FAIL_IF (! cJSON_IsNumber(epss_json),
+                         "Field 'epss' in item is not a number");
+      
+      EPSS_JSON_FAIL_IF (! cJSON_IsNumber(percentile_json),
+                         "Field 'percentile' in item is not a number");
+
+      insert_epss_score_entry (&inserts,
+                               cve_json->valuestring,
+                               epss_json->valuedouble,
+                               percentile_json->valuedouble);
+    }
+
+  inserts_run (&inserts, TRUE);
+  sql_commit ();
+  cJSON_Delete (parsed);
+
+  return 0;
+
+fail_insert:
+  inserts_free (&inserts);
+  sql_rollback ();
+  char *printed_item = cJSON_Print (list_item);
+  g_message ("%s: invalid item: %s", __func__, printed_item);
+  free (printed_item);
+  cJSON_Delete (parsed);
+  return -1;
+}
+
+/**
+ * @brief Update EPSS data as supplement to SCAP CVEs.
+ *
+ * Assume that the databases are attached.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_epss ()
+{
+  if (update_epss_scores ())
+    return -1;
+
+  return 0;
+}
+
 
 
 /* CERT and SCAP update. */
@@ -2816,8 +3012,10 @@ manage_db_reinit (const gchar *name)
  * @param[in]  sigmask_current    Sigmask to restore in child.
  * @param[in]  update             Function to do the sync.
  * @param[in]  process_title      Process title.
+ *
+ * @return PID of the forked process handling the SecInfo sync, -1 on error.
  */
-static void
+static pid_t
 sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
               const gchar *process_title)
 {
@@ -2855,11 +3053,11 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
       case -1:
         /* Parent on error.  Reschedule and continue to next task. */
         g_warning ("%s: fork failed", __func__);
-        return;
+        return -1;
 
       default:
         /* Parent.  Continue to next task. */
-        return;
+        return pid;
 
     }
 
@@ -3024,8 +3222,6 @@ check_cert_db_version ()
 
 /**
  * @brief Update timestamp in CERT db from feed timestamp.
- *
- * @return 0 success, -1 error.
  */
 static void
 update_cert_timestamp ()
@@ -3256,13 +3452,15 @@ sync_cert ()
  * @brief Sync the CERT DB.
  *
  * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the CERT sync, -1 on error.
  */
-void
+pid_t
 manage_sync_cert (sigset_t *sigmask_current)
 {
-  sync_secinfo (sigmask_current,
-                sync_cert,
-                "Syncing CERT");
+  return sync_secinfo (sigmask_current,
+                       sync_cert,
+                       "Syncing CERT");
 }
 
 
@@ -3295,8 +3493,6 @@ check_scap_db_version ()
 
 /**
  * @brief Update timestamp in SCAP db from feed timestamp.
- *
- * @return 0 success, -1 error.
  */
 static void
 update_scap_timestamp ()
@@ -3698,6 +3894,14 @@ update_scap (gboolean reset_scap_db)
 
   g_debug ("%s: updating user defined data", __func__);
 
+  g_debug ("%s: update epss", __func__);
+  setproctitle ("Syncing SCAP: Updating EPSS scores");
+
+  if (update_scap_epss () == -1)
+    {
+      abort_scap_update ();
+      return -1;
+    }
 
   /* Do calculations that need all data. */
 
@@ -3730,13 +3934,15 @@ sync_scap ()
  * @brief Sync the SCAP DB.
  *
  * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the SCAP sync, -1 on error.
  */
-void
+pid_t
 manage_sync_scap (sigset_t *sigmask_current)
 {
-  sync_secinfo (sigmask_current,
-                sync_scap,
-                "Syncing SCAP");
+  return sync_secinfo (sigmask_current,
+                       sync_scap,
+                       "Syncing SCAP");
 }
 
 /**

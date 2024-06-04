@@ -2390,11 +2390,15 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
  * @brief Sync NVTs if newer NVTs are available.
  *
  * @param[in]  fork_update_nvt_cache  Function to do the update.
+ *
+ * @return PID of the forked process handling the VTs sync, -1 on error.
  */
-void
-manage_sync_nvts (int (*fork_update_nvt_cache) ())
+pid_t
+manage_sync_nvts (int (*fork_update_nvt_cache) (pid_t*))
 {
-  fork_update_nvt_cache ();
+  pid_t child_pid = -1;
+  fork_update_nvt_cache (&child_pid);
+  return child_pid;
 }
 
 /**

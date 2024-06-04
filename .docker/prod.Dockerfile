@@ -82,6 +82,7 @@ RUN apt-get update && \
     gpgsm \
     gnutls-bin \
     libbsd0 \
+    libcjson1 \
     libgpgme11 \
     libical3 \
     libpq5 \

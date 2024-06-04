@@ -3,7 +3,7 @@
 # Greenbone Vulnerability Manager
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
-[![codecov](https://codecov.io/gh/greenbone/gvmd/branch/main/graph/badge.svg?token=y8cY3Pfn7P)](https://codecov.io/gh/greenbone/gvmd)
+[![Code Documentation Coverage](https://img.shields.io/codecov/c/github/greenbone/gvmd.svg?label=Documentation%20Coverage&logo=codecov)](https://codecov.io/gh/greenbone/gvmd)
 [![Build and Test](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml)
 [![Docker Pulls](https://img.shields.io/docker/pulls/greenbone/gvmd.svg)](https://hub.docker.com/r/greenbone/gvmd/)
 [![Docker Image Size](https://img.shields.io/docker/image-size/greenbone/gvmd.svg?maxAge=2592000)](https://hub.docker.com/r/greenbone/gvmd/)

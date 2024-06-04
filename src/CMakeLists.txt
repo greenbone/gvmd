@@ -26,6 +26,7 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
+pkg_check_modules (CJSON REQUIRED libcjson>=1.7.14)
 pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.9)
 pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.9)
 pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.9)
@@ -290,32 +291,32 @@ add_executable (gvmd
 
 target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-sql-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gmp-tickets-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gvm-pg-server ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})

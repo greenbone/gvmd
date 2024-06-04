@@ -76,7 +76,8 @@
  */
 #define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
  { GET_ITERATOR_FILTER_COLUMNS, "cvss_vector", "products",       \
-   "description", "published", "severity", NULL }
+   "description", "published", "severity", "epss_score",         \
+   "epss_percentile", NULL }
 
 /**
  * @brief CVE iterator columns.
@@ -91,6 +92,8 @@
    { "severity", NULL, KEYWORD_TYPE_DOUBLE },                   \
    { "description", NULL, KEYWORD_TYPE_STRING },                \
    { "creation_time", "published", KEYWORD_TYPE_INTEGER },      \
+   { "coalesce (epss, 0.0)", "epss_score", KEYWORD_TYPE_DOUBLE },             \
+   { "coalesce (percentile, 0.0)", "epss_percentile", KEYWORD_TYPE_DOUBLE },  \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                         \
  }
 
@@ -171,13 +174,13 @@
 int
 secinfo_feed_version_status ();
 
-void
+pid_t
 manage_sync_scap (sigset_t *);
 
 int
 manage_rebuild_scap (GSList *, const db_conn_info_t *);
 
-void
+pid_t
 manage_sync_cert (sigset_t *);
 
 int

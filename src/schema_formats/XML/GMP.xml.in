@@ -6107,6 +6107,7 @@ END:VCALENDAR
       <o><e>hosts</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
+      <o><e>sources</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -6152,6 +6153,29 @@ END:VCALENDAR
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>sources</name>
+      <summary>List of authentication sources for this user (if omitted then 'file')</summary>
+      <description>
+        <p>
+          'file' means to store the user in the database.
+        </p>
+      </description>
+      <pattern>
+        <any><e>source</e></any>
+      </pattern>
+      <ele>
+        <name>source</name>
+        <summary>Authentication source</summary>
+        <pattern>
+          <alts>
+            <alt>file</alt>
+            <alt>ldap_connect</alt>
+            <alt>radius_connect</alt>
+          </alts>
+        </pattern>
+      </ele>
     </ele>
     <response>
       <pattern>
@@ -12529,6 +12553,7 @@ END:VCALENDAR
             <e>cvss_vector</e>
             <e>description</e>
             <e>products</e>
+            <o><e>epss</e></o>
             <o><e>nvts</e></o>
             <o><e>cert</e></o>
             <o><e>raw_data</e></o>
@@ -12561,6 +12586,28 @@ END:VCALENDAR
             <pattern>
               text
             </pattern>
+          </ele>
+          <ele>
+            <name>epss</name>
+            <summary>Exploit Prediction Scoring System (EPSS) info if available</summary>
+            <pattern>
+              <e>score</e>
+              <e>percentile</e>
+            </pattern>
+            <ele>
+              <name>score</name>
+              <summary>EPSS score of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>percentile</name>
+              <summary>EPSS percentile of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
           </ele>
           <ele>
             <name>nvts</name>
@@ -16016,6 +16063,7 @@ END:VCALENDAR
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
+                <alt>multi_selection</alt>
                 <alt>selection</alt>
                 <alt>string</alt>
                 <alt>text</alt>
@@ -16678,6 +16726,7 @@ END:VCALENDAR
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
+                <alt>multi_selection</alt>
                 <alt>selection</alt>
                 <alt>string</alt>
                 <alt>text</alt>
@@ -27845,6 +27894,11 @@ END:VCALENDAR
     <ele>
       <name>sources</name>
       <summary>List of authentication sources for this user (if omitted, no changes)</summary>
+      <description>
+        <p>
+          'file' means to store the user in the database.
+        </p>
+      </description>
       <pattern>
         <any><e>source</e></any>
       </pattern>
