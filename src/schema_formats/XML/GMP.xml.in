@@ -3990,6 +3990,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
+      <description>
+        <p>cc: Client certificate</p>
+        <p>pgp: PGP encryption key</p>
+        <p>pw: Password only</p>
+        <p>smime: S/MIME certificate</p>
+        <p>snmp: SNMP</p>
+        <p>up: User name + password</p>
+        <p>usk: User name + SSH key</p>
+      </description>
       <pattern>
         <alts>
           <alt>cc</alt>
@@ -10740,6 +10749,15 @@ END:VCALENDAR
         <ele>
           <name>type</name>
           <summary>The type of the credential</summary>
+          <description>
+            <p>cc: Client certificate</p>
+            <p>pgp: PGP encryption key</p>
+            <p>pw: Password only</p>
+            <p>smime: S/MIME certificate</p>
+            <p>snmp: SNMP</p>
+            <p>up: User name + password</p>
+            <p>usk: User name + SSH key</p>
+          </description>
           <pattern>
             <alts>
               <alt>cc</alt>
