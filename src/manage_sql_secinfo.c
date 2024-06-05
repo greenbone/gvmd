@@ -4041,8 +4041,6 @@ rebuild_scap ()
     return -1;
 
   ret = update_scap (TRUE);
-  if (ret == 1)
-    ret = 2;
 
   if (ret == 0)
     update_scap_extra ();
