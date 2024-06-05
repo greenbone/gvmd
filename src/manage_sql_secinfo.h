@@ -195,4 +195,7 @@ get_secinfo_commit_size ();
 void
 set_secinfo_commit_size (int);
 
+void
+update_scap_extra ();
+
 #endif /* not _GVMD_MANAGE_SQL_SECINFO_H */
