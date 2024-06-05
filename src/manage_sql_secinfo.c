@@ -2491,7 +2491,6 @@ static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
                        GHashTable *hashed_cpes, int *transaction_size)
 {
-  gboolean cvss_is_v3;
   element_t published, summary, cvss, score, base_metrics, cvss_vector, list;
   double severity_dbl;
   gchar *quoted_id, *quoted_summary, *quoted_cvss_vector;
@@ -2518,21 +2517,36 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
       return -1;
     }
 
-  cvss = element_child (entry, "vuln:cvss3");
+  gchar *base_metrics_element = "cvss:base_metrics";
+  gchar *score_element = "cvss:score";
+  gchar *cvss_vector_element = "cvss:vector-string";
+
+  cvss = element_child (entry, "vuln:cvss4");
   if (cvss == NULL)
     {
-      cvss = element_child (entry, "vuln:cvss");
-      cvss_is_v3 = FALSE;
+      cvss = element_child (entry, "vuln:cvss3");
+      if (cvss == NULL)
+        {
+          cvss = element_child (entry, "vuln:cvss");
+        }
+      else
+        {
+          base_metrics_element = "cvss3:base_metrics";
+          score_element = "cvss3:base-score";
+          cvss_vector_element = "cvss3:vector-string";
+        }
     }
   else
-     cvss_is_v3 = TRUE;
+    {
+      base_metrics_element = "cvss4:base_metrics";
+      score_element = "cvss4:base-score";
+      cvss_vector_element = "cvss4:vector-string";
+    }
 
   if (cvss == NULL)
     base_metrics = NULL;
   else
-    base_metrics = element_child (cvss,
-                                  cvss_is_v3 ? "cvss3:base_metrics"
-                                             : "cvss:base_metrics");
+    base_metrics = element_child (cvss, base_metrics_element);
 
   if (base_metrics == NULL)
     {
@@ -2541,8 +2555,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
   else
     {
-      score = element_child (base_metrics,
-                             cvss_is_v3 ? "cvss3:base-score" : "cvss:score");
+      score = element_child (base_metrics, score_element);
+
       if (score == NULL)
         {
           g_warning ("%s: cvss:score missing for %s", __func__, id);
@@ -2550,9 +2564,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           return -1;
         }
 
-      cvss_vector = element_child (base_metrics,
-                                   cvss_is_v3 ? "cvss3:vector-string"
-                                              : "cvss:vector-string");
+      cvss_vector = element_child (base_metrics, cvss_vector_element);
+
       if (cvss_vector == NULL)
         {
           g_warning ("%s: cvss:access-vector missing for %s", __func__, id);
