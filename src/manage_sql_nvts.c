@@ -2681,7 +2681,7 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     }
 
   if (ret == 0)
-    ret = update_scap_extra ();
+    update_scap_extra ();
 
   feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();

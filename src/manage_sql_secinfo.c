@@ -3980,25 +3980,21 @@ update_scap (gboolean reset_scap_db)
 
 /**
  * @brief Update extra data in the SCAP DB that depends on other feeds.
- *
- * @return 0 success, -1 error.
  */
-int
+void
 update_scap_extra ()
 {
   if (manage_scap_loaded () == 0)
     {
       g_info ("%s: SCAP database missing, skipping extra data update",
               __func__);
-      return 0;
+      return;
     }
 
   g_debug ("%s: update SCAP extra data of VTs", __func__);
   setproctitle ("Syncing SCAP: Updating VT extra data");
 
   update_vt_scap_extra_data ();
-
-  return 0;
 }
 
 /**
@@ -4049,7 +4045,7 @@ rebuild_scap ()
     ret = 2;
 
   if (ret == 0)
-    ret = update_scap_extra ();
+    update_scap_extra ();
 
   if (feed_lockfile_unlock (&lockfile))
     {
