@@ -139,11 +139,8 @@ delete_run (gmp_parser_t *gmp_parser, GError **error)
         break;
       case 2:
         if (send_find_error_to_client
-             (delete.command, delete.type, delete.id, gmp_parser))
-          {
-            error_send_to_client (error);
-            return;
-          }
+             (delete.command, delete.type, delete.id, gmp_parser, error))
+          return;
         log_event_fail (delete.type, delete.type_capital,
                         delete.id,
                         "deleted");

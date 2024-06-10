@@ -362,6 +362,21 @@ typedef resource_t scanner_t;
 typedef resource_t setting_t;
 typedef resource_t user_t;
 
+/**
+ * @brief Key info about a task.
+ */
+typedef struct
+{
+  int config_in_trash;    ///< Whether config is in trash;
+  int scanner_in_trash;   ///< Whether scanner is in trash;
+  gchar *config_name;     ///< Config name.
+  gchar *config_uuid;     ///< Config UUID.
+  gchar *scanner_name;          ///< Scanner name.
+  gchar *scanner_uuid;          ///< Scanner UUID.
+  int scanner_type;             ///< Scanner type.
+  gchar *second_last_report_id; ///< UUID of second last report.
+} task_info_t;
+
 
 /* GMP GET support.
  *
@@ -764,6 +779,12 @@ task_iterator_usage_type (iterator_t *);
 
 int
 task_uuid (task_t, char **);
+
+task_info_t *
+task_info (task_t, scanner_t);
+
+void
+task_info_free (task_info_t *);
 
 int
 task_in_trash (task_t);
@@ -1640,9 +1661,6 @@ int
 manage_send_report (report_t, report_t, report_format_t, report_config_t,
                     const get_data_t *,
                     int, int, int, int, int, int,
-                    gboolean (*) (const char *,
-                                  int (*) (const char*, void*),
-                                  void*),
                     int (*) (const char *, void*), void *, const char *,
                     const gchar *);
 
@@ -2213,6 +2231,10 @@ init_credential_iterator_one (iterator_t*, credential_t);
 
 int
 init_credential_iterator (iterator_t*, const get_data_t *);
+
+int
+init_credential_iterator_format (iterator_t*, const get_data_t *,
+                                 credential_format_t);
 
 const char*
 credential_iterator_login (iterator_t*);
@@ -2785,6 +2807,9 @@ trash_scanner_name (scanner_t);
 
 char *
 trash_scanner_uuid (scanner_t);
+
+int
+trash_scanner_type (scanner_t);
 
 int
 osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,

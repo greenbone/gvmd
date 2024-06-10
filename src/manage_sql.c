@@ -17865,6 +17865,151 @@ task_uuid (task_t task, char ** id)
 }
 
 /**
+ * @brief Return key info about a task, for GET_TASKS.
+ *
+ * @param[in]  task     Task.
+ * @param[in]  scanner  Task's scanner.
+ *
+ * @return Info, or NULL on error.
+ */
+task_info_t *
+task_info (task_t task, scanner_t scanner)
+{
+  iterator_t rows;
+  task_info_t *info;
+
+  info = g_malloc0 (sizeof (task_info_t));
+
+  init_iterator (&rows,
+                 "WITH tmp AS"
+                 "     (SELECT config,"
+                 //
+                 "             config_location = " G_STRINGIFY (LOCATION_TRASH)
+                 "             AS config_in_trash,"
+                 //
+                 "             (SELECT uuid FROM reports"
+                 "              WHERE task = tasks.id"
+                 "              AND scan_run_status = %u"
+                 "              ORDER BY creation_time DESC LIMIT 1 OFFSET 1)"
+                 "             AS second_last_report_id,"
+                 //
+                 "             scanner,"
+                 "             scanner_location = " G_STRINGIFY (LOCATION_TRASH)
+                 "             AS scanner_in_trash"
+                 "      FROM tasks WHERE id = %llu)"
+                 //
+                 " SELECT config_in_trash,"
+                 //       1
+                 "        (CASE WHEN config_in_trash"
+                 "              THEN (SELECT name FROM configs_trash"
+                 "                    WHERE id = config)"
+                 "              ELSE (SELECT name FROM configs"
+                 "                    WHERE id = config)"
+                 "         END),"
+                 //       2
+                 "        (CASE WHEN config_in_trash"
+                 "              THEN (SELECT uuid FROM configs_trash"
+                 "                    WHERE id = config)"
+                 "              ELSE (SELECT uuid FROM configs"
+                 "                    WHERE id = config)"
+                 "         END),"
+                 //       3
+                 "        second_last_report_id,"
+                 //       4
+                 "        scanner_in_trash,"
+                 //       5
+                 "        (CASE WHEN scanner > 0 AND scanner_in_trash"
+                 "              THEN (SELECT name FROM scanners_trash"
+                 "                    WHERE id = scanner)"
+                 "              WHEN scanner > 0"
+                 "              THEN (SELECT name FROM scanners"
+                 "                    WHERE id = scanner)"
+                 "              ELSE NULL"
+                 "         END),"
+                 //       6
+                 "        (CASE WHEN scanner > 0 AND scanner_in_trash"
+                 "              THEN (SELECT uuid FROM scanners_trash"
+                 "                    WHERE id = scanner)"
+                 "              WHEN scanner > 0"
+                 "              THEN (SELECT uuid FROM scanners"
+                 "                    WHERE id = scanner)"
+                 "              ELSE NULL"
+                 "         END),"
+                 //       7
+                 "        (CASE WHEN scanner > 0 AND scanner_in_trash"
+                 "              THEN (SELECT type FROM scanners_trash"
+                 "                    WHERE id = scanner)"
+                 "              WHEN scanner > 0"
+                 "              THEN (SELECT type FROM scanners"
+                 "                    WHERE id = scanner)"
+                 "              ELSE NULL"
+                 "         END)"
+                 "        FROM tmp;",
+                 TASK_STATUS_DONE,
+                 task);
+  if (next (&rows))
+    {
+      const char *config_name, *config_uuid, *report_id;
+
+      info->config_in_trash = iterator_int (&rows, 0);
+
+      config_name = iterator_string (&rows, 1);
+      info->config_name = config_name ? g_strdup (config_name) : NULL;
+
+      config_uuid = iterator_string (&rows, 2);
+      info->config_uuid = config_uuid ? g_strdup (config_uuid) : NULL;
+
+      report_id = iterator_string (&rows, 3);
+      info->second_last_report_id = report_id ? g_strdup (report_id) : NULL;
+
+      if (scanner)
+        {
+          const char *scanner_name, *scanner_uuid, *str;
+
+          info->scanner_in_trash = iterator_int (&rows, 4);
+
+          scanner_name = iterator_string (&rows, 5);
+          info->scanner_name = scanner_name ? g_strdup (scanner_name) : NULL;
+
+          scanner_uuid = iterator_string (&rows, 6);
+          info->scanner_uuid = scanner_uuid ? g_strdup (scanner_uuid) : NULL;
+
+          str = iterator_string (&rows, 7);
+          if (str)
+            info->scanner_type = atoi (str);
+          else
+            info->scanner_type = -1;
+        }
+      else
+        {
+          /* Container tasks have no associated scanner. */
+        }
+
+    }
+  cleanup_iterator (&rows);
+
+  return info;
+}
+
+/**
+ * @brief Free task info.
+ *
+ * @param[in]  info  Info.
+ */
+void
+task_info_free (task_info_t *info)
+{
+  if (info == NULL)
+    return;
+
+  g_free (info->config_name);
+  g_free (info->config_uuid);
+  g_free (info->second_last_report_id);
+  g_free (info->scanner_name);
+  g_free (info->scanner_uuid);
+}
+
+/**
  * @brief Return whether a task is in the trashcan.
  *
  * @param[in]  task  Task.
@@ -30504,10 +30649,7 @@ manage_send_report (report_t report, report_t delta_report,
                     const get_data_t *get,
                     int notes_details, int overrides_details, int result_tags,
                     int ignore_pagination, int lean, int base64,
-                    gboolean (*send) (const char *,
-                                      int (*) (const char *, void*),
-                                      void*),
-                    int (*send_data_1) (const char *, void*), void *send_data_2,
+                    int (*send) (const char *, void*), void *send_data,
                     const char *alert_id,
                     const gchar* prefix)
 {
@@ -30626,7 +30768,7 @@ manage_send_report (report_t report, report_t delta_report,
       return -1;
     }
 
-  if (prefix && send (prefix, send_data_1, send_data_2))
+  if (prefix && send (prefix, send_data))
     {
       fclose (stream);
       g_warning ("%s: send prefix error", __func__);
@@ -30671,7 +30813,7 @@ manage_send_report (report_t report, report_t delta_report,
               chunk64 = g_base64_encode ((guchar*) chunk,
                                           MANAGE_SEND_REPORT_CHUNK_SIZE
                                           - left);
-              if (send (chunk64, send_data_1, send_data_2))
+              if (send (chunk64, send_data))
                 {
                   g_free (chunk64);
                   fclose (stream);
@@ -30684,7 +30826,7 @@ manage_send_report (report_t report, report_t delta_report,
           else
             {
               chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
-              if (send (chunk, send_data_1, send_data_2))
+              if (send (chunk, send_data))
                 {
                   fclose (stream);
                   g_warning ("%s: send error", __func__);
@@ -36982,114 +37124,110 @@ delete_credential (const char *credential_id, int ultimate)
 /**
  * @brief LSC Credential iterator columns.
  */
-#define CREDENTIAL_ITERATOR_COLUMNS                                           \
+#define CREDENTIAL_ITERATOR_COLUMNS_TABLE(table, lean)                        \
  {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials),                                        \
+   GET_ITERATOR_COLUMNS (table),                                              \
    /* public generic data */                                                  \
    { "type", NULL, KEYWORD_TYPE_STRING },                                     \
    { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
    /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'username')",             \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'username')",               \
      "login",                                                                 \
      KEYWORD_TYPE_STRING                                                      \
    },                                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'certificate')",          \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'certificate')",            \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'auth_algorithm')",       \
+   { "(CASE"                                                                  \
+     " WHEN type = 'snmp'"                                                    \
+     " THEN (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'auth_algorithm')"    \
+     " ELSE ''"                                                               \
+     " END)",                                                                 \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
+   { "(CASE"                                                                  \
+     " WHEN type = 'snmp'"                                                    \
+     " THEN (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'privacy_algorithm')" \
+     " ELSE ''"                                                               \
+     " END)",                                                                 \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'public_key')",           \
+   /* Only one used by credential_iterator_formats_xml (excl login, type) */  \
+   { "(SELECT value FROM " table "_data"                                      \
+     " WHERE credential = " table ".id AND type = 'public_key')",             \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'secret')",               \
+   { "(CASE"                                                                  \
+     " WHEN " lean                                                            \
+     " THEN ''"                                                               \
+     " ELSE (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'secret')"            \
+     " END)",                                                                 \
      "secret",                                                                \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'password')",             \
+   { "(CASE"                                                                  \
+     " WHEN " lean                                                            \
+     " THEN ''"                                                               \
+     " ELSE (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'password')"          \
+     " END)",                                                                 \
      "password",                                                              \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'private_key')",          \
+   { "(CASE"                                                                  \
+     " WHEN " lean                                                            \
+     " THEN ''"                                                               \
+     " ELSE (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'private_key')"       \
+     " END)",                                                                 \
      "private_key",                                                           \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'community')",            \
+   { "(CASE"                                                                  \
+     " WHEN " lean                                                            \
+     " THEN ''"                                                               \
+     " ELSE (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'community')"         \
+     " END)",                                                                 \
      "community",                                                             \
      KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_password')",     \
+   { "(CASE"                                                                  \
+     " WHEN " lean                                                            \
+     " THEN ''"                                                               \
+     " ELSE (SELECT value FROM " table "_data"                                \
+     "       WHERE credential = " table ".id AND type = 'privacy_password')"  \
+     " END)",                                                                 \
      "privacy_password",                                                      \
      KEYWORD_TYPE_STRING },                                                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
 
 /**
+ * @brief LSC Credential iterator columns.
+ */
+#define CREDENTIAL_ITERATOR_COLUMNS                                  \
+  CREDENTIAL_ITERATOR_COLUMNS_TABLE("credentials", "FALSE")
+
+/**
  * @brief LSC Credential iterator columns for trash case.
  */
-#define CREDENTIAL_ITERATOR_TRASH_COLUMNS                                     \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials_trash),                                  \
-   /* public generic data */                                                  \
-   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
-   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
-   /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'username')",       \
-     "login",                                                                 \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'certificate')",    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     "   AND type = 'auth_algorithm')",                                       \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     "   AND type = 'privacy_algorithm')",                                    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials_trash.id AND type = 'public_key')",     \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   /* private data */                                                         \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'secret')",         \
-     "secret",                                                                \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'password')",       \
-     "password",                                                              \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'private_key')",    \
-     "private_key",                                                           \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'community')",      \
-     "community",                                                             \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     " AND type = 'privacy_password')",                                       \
-     "privacy_password",                                                      \
-     KEYWORD_TYPE_STRING },                                                   \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
+#define CREDENTIAL_ITERATOR_TRASH_COLUMNS                            \
+  CREDENTIAL_ITERATOR_COLUMNS_TABLE("credentials_trash", "FALSE")
+
+/**
+ * @brief LSC Credential iterator columns.
+ */
+#define CREDENTIAL_ITERATOR_LEAN_COLUMNS                             \
+  CREDENTIAL_ITERATOR_COLUMNS_TABLE("credentials", "TRUE")
+
+/**
+ * @brief LSC Credential iterator columns for trash case.
+ */
+#define CREDENTIAL_ITERATOR_LEAN_TRASH_COLUMNS                       \
+  CREDENTIAL_ITERATOR_COLUMNS_TABLE("credentials_trash", "TRUE")
 
 /**
  * @brief Count number of LSC Credentials.
@@ -37578,6 +37716,47 @@ init_credential_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
+ * @brief Initialise a Credential iterator, where the format is known.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  get       GET data.
+ * @param[in]  format    Credential format.
+ *
+ * @return 0 success, 1 failed to find filter, 2 failed to find
+ *         filter (filt_id), -1 error.
+ */
+int
+init_credential_iterator_format (iterator_t* iterator, const get_data_t *get,
+                                 credential_format_t format)
+{
+  static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = CREDENTIAL_ITERATOR_TRASH_COLUMNS;
+  static column_t lean_columns[] = CREDENTIAL_ITERATOR_LEAN_COLUMNS;
+  static column_t lean_trash_columns[] = CREDENTIAL_ITERATOR_LEAN_TRASH_COLUMNS;
+  column_t *actual_columns, *actual_trash_columns;
+
+  actual_columns = columns;
+  actual_trash_columns = trash_columns;
+  if (format == CREDENTIAL_FORMAT_NONE)
+    {
+      actual_columns = lean_columns;
+      actual_trash_columns = lean_trash_columns;
+    }
+
+  return init_get_iterator (iterator,
+                            "credential",
+                            get,
+                            actual_columns,
+                            actual_trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
  * @brief Get possibly encrypted data from credentials.
  *
  * @param[in]  iterator  Iterator.
@@ -37910,34 +38089,32 @@ credential_iterator_format_available (iterator_t* iterator,
 {
   const char *type, *login, *private_key;
 
+  if (format == CREDENTIAL_FORMAT_NONE)
+    return TRUE;
+
+  if (format == CREDENTIAL_FORMAT_ERROR)
+    return FALSE;
+
   type = credential_iterator_type (iterator);
   login = credential_iterator_login (iterator);
+
+  if (format == CREDENTIAL_FORMAT_EXE
+      && strcasecmp (type, "up") == 0)
+    return validate_credential_username_for_format (login, format);
+
+  if (format == CREDENTIAL_FORMAT_PEM
+      && strcasecmp (type, "cc") == 0)
+    return validate_credential_username_for_format (login, format);
+
   private_key = credential_iterator_private_key (iterator);
 
-  switch (format)
-    {
-      case CREDENTIAL_FORMAT_NONE:
-        return TRUE;
-      case CREDENTIAL_FORMAT_KEY:
-      case CREDENTIAL_FORMAT_RPM:
-      case CREDENTIAL_FORMAT_DEB:
-        if (strcasecmp (type, "usk") == 0 && private_key)
-          return validate_credential_username_for_format (login, format);
-        else
-          return FALSE;
-      case CREDENTIAL_FORMAT_EXE:
-        if (strcasecmp (type, "up") == 0)
-          return validate_credential_username_for_format (login, format);
-        else
-          return FALSE;
-      case CREDENTIAL_FORMAT_PEM:
-        if (strcasecmp (type, "cc") == 0)
-          return validate_credential_username_for_format (login, format);
-        else
-          return FALSE;
-      case CREDENTIAL_FORMAT_ERROR:
-        return FALSE;
-    }
+  if ((format == CREDENTIAL_FORMAT_KEY
+       || format == CREDENTIAL_FORMAT_RPM
+       || format == CREDENTIAL_FORMAT_DEB)
+      && strcasecmp (type, "usk") == 0
+      && private_key)
+    return validate_credential_username_for_format (login, format);
+
   return FALSE;
 }
 
@@ -42246,6 +42423,26 @@ trash_scanner_uuid (scanner_t scanner)
 {
   return sql_string ("SELECT uuid FROM scanners_trash WHERE id = %llu;",
                      scanner);
+}
+
+/**
+ * @brief Return the type of a scanner in the trashcan.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Scanner type, -1 if not found;
+ */
+int
+trash_scanner_type (scanner_t scanner)
+{
+  int type;
+  char *str;
+  str = sql_string ("SELECT type FROM scanners_trash WHERE id = %llu;", scanner);
+  if (!str)
+    return -1;
+  type = atoi (str);
+  g_free (str);
+  return type;
 }
 
 /**
