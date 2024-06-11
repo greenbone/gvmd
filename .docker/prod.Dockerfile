@@ -2,8 +2,14 @@ ARG VERSION=edge
 ARG GVM_LIBS_VERSION=oldstable
 ARG DEBIAN_FRONTEND=noninteractive
 ARG IMAGE_REGISTRY=ghcr.io
+# when set it will added to the cmake command
+# As an example:
+# FEATURE_TOGGLES="-DOPENVASD=1"
+# enables openvasd feature toggle.
+ARG FEATURE_TOGGLE=""
 
 FROM ${IMAGE_REGISTRY}/greenbone/gvmd-build:${VERSION} as builder
+ARG FEATURE_TOGGLE
 
 COPY . /source
 WORKDIR /source
@@ -11,7 +17,7 @@ WORKDIR /source
 RUN mkdir /build && \
     mkdir /install && \
     cd /build && \
-    cmake -DCMAKE_BUILD_TYPE=Release /source && \
+    cmake -DCMAKE_BUILD_TYPE=Release $FEATURE_TOGGLE /source && \
     make DESTDIR=/install install
 
 FROM greenbone/gvm-libs:${GVM_LIBS_VERSION}
