@@ -1,0 +1,55 @@
+name: Build and Push
+
+on:
+  push:
+    branches: [ main ]
+    tags: ["v*"]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  building:
+    runs-on: self-hosted-generic
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: greenbone/actions/is-latest-tag@v3
+        id: latest
+
+      - name: Set container build options
+        id: container-opts
+        run: |
+          if [[ "${{ github.ref_type }}" = 'tag' ]]; then
+            echo "version=stable" >> $GITHUB_OUTPUT
+            echo "gvm-libs-version=oldstable" >> $GITHUB_OUTPUT
+          else
+            echo "version=edge" >> $GITHUB_OUTPUT
+            echo "gvm-libs-version=oldstable-edge" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and Push Container
+        id: build-and-push
+        uses: greenbone/actions/container-build-push-generic@v3
+        with:
+          build-docker-file: .docker/prod.Dockerfile
+          build-args: |
+            VERSION=${{ steps.container-opts.outputs.version }}
+            GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
+            IMAGE_REGISTRY=${{ vars.IMAGE_REGISTRY }}
+          image-url: community/gvmd
+          image-labels: |
+            org.opencontainers.image.vendor=Greenbone
+            org.opencontainers.image.base.name=greenbone/gvm-libs
+          image-tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=edge
+            type=ref,event=pr
+            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+          registry: ${{ secrets.GREENBONE_REGISTRY }}
+          registry-username: ${{ secrets.GREENBONE_REGISTRY_USER }}
+          registry-password: ${{ secrets.GREENBONE_REGISTRY_TOKEN }}
