@@ -2462,8 +2462,10 @@ nvts_feed_version_status_internal (const gchar *update_socket,
 
   scanner_feed_version = osp_scanner_feed_version (update_socket);
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
-  if (scanner_feed_version == NULL)
+  if (scanner_feed_version == NULL) {
+    g_free (db_feed_version);
     return -1;
+  }
   if (scanner_feed_version_out && scanner_feed_version)
     *scanner_feed_version_out = g_strdup (scanner_feed_version);
 
@@ -2475,6 +2477,8 @@ nvts_feed_version_status_internal (const gchar *update_socket,
       return 1;
     }
 
+  g_free (db_feed_version);
+  g_free (scanner_feed_version);
   return 0;
 }
 
