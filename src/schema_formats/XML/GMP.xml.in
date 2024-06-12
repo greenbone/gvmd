@@ -582,6 +582,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>timeout</e>
       <e>default_timeout</e>
       <e>solution</e>
+      <o><e>epss</e></o>
       <e>preferences</e>
     </pattern>
     <ele>
@@ -679,6 +680,112 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <required>0</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>epss</name>
+      <summary>Exploit Prediction Scoring System (EPSS) info if available</summary>
+      <pattern>
+        <e>max_severity</e>
+        <e>max_epss</e>
+      </pattern>
+      <ele>
+        <name>max_severity</name>
+        <summary>
+          EPSS info of the referenced CVE with the highest severity
+        </summary>
+        <description>
+          In case there are multiple CVEs referenced by the NVT tied for the
+          highest severity, they are also sorted by EPSS score and modification
+          time and the first one is chosen.
+        </description>
+        <pattern>
+          <e>score</e>
+          <e>percentile</e>
+          <e>cve</e>
+        </pattern>
+        <ele>
+          <name>score</name>
+          <summary>EPSS score of the CVE</summary>
+          <pattern>
+            <t>decimal</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>percentile</name>
+          <summary>EPSS percentile of the CVE</summary>
+          <pattern>
+            <t>decimal</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>cve</name>
+          <summary>The representative CVE chosen</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>CVE-ID of the CVE</summary>
+              <type>text</type>
+            </attrib>
+            <o><e>severity</e></o>
+          </pattern>
+          <ele>
+            <name>severity</name>
+            <summary>Severity (CVSS) score of the CVE if available</summary>
+            <pattern>
+              <t>severity</t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>max_epss</name>
+        <summary>
+          EPSS info of the referenced CVE with the highest EPSS score
+        </summary>
+        <description>
+          In case there are multiple CVEs referenced by the NVT tied for the
+          highest EPSS score, they are also sorted by severity and modification
+          time and the first one is chosen.
+        </description>
+        <pattern>
+          <e>score</e>
+          <e>percentile</e>
+          <e>cve</e>
+        </pattern>
+        <ele>
+          <name>score</name>
+          <summary>EPSS score of the CVE</summary>
+          <pattern>
+            <t>decimal</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>percentile</name>
+          <summary>EPSS percentile of the CVE</summary>
+          <pattern>
+            <t>decimal</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>cve</name>
+          <summary>The representative CVE chosen</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>CVE-ID of the CVE</summary>
+              <type>text</type>
+            </attrib>
+            <o><e>severity</e></o>
+          </pattern>
+          <ele>
+            <name>severity</name>
+            <summary>Severity (CVSS) score of the CVE if available</summary>
+            <pattern>
+              <t>severity</t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>preferences</name>
@@ -12199,6 +12306,34 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Version of the NVT (deprected)</summary>
           </column>
+          <column>
+            <name>epss_score</name>
+            <type>decimal</type>
+            <summary>
+              EPSS score of highest severity CVE (see epss/max_severity)
+            </summary>
+          </column>
+          <column>
+            <name>epss_percentile</name>
+            <type>decimal</type>
+            <summary>
+              EPSS percentile of highest severity CVE (see epss/max_severity)
+            </summary>
+          </column>
+          <column>
+            <name>max_epss_score</name>
+            <type>decimal</type>
+            <summary>
+              Highest EPSS score of referenced CVEs (see epss/max_epss)
+            </summary>
+          </column>
+          <column>
+            <name>max_epss_percentile</name>
+            <type>decimal</type>
+            <summary>
+              Highest EPSS percentile of referenced CVEs (see epss/max_epss)
+            </summary>
+          </column>
         </filter_keywords>
         <filter_keywords>
           <condition>type is "cve"</condition>
@@ -12221,6 +12356,16 @@ END:VCALENDAR
             <name>published</name>
             <type><t>iso_time</t></type>
             <summary>Time the CVE was published, alias for created</summary>
+          </column>
+          <column>
+            <name>epss_score</name>
+            <type>decimal</type>
+            <summary>EPSS score the CVE</summary>
+          </column>
+          <column>
+            <name>epss_percentile</name>
+            <type>decimal</type>
+            <summary>EPSS percentile of the CVE</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -13793,6 +13938,7 @@ END:VCALENDAR
               <o><e>timeout</e></o>
               <o><e>default_timeout</e></o>
               <e>solution</e>
+              <o><e>epss</e></o>
               <o><e>preferences</e></o>
             </g>
           </o>
@@ -13968,6 +14114,112 @@ END:VCALENDAR
             </attrib>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>epss</name>
+          <summary>Exploit Prediction Scoring System (EPSS) info if available</summary>
+          <pattern>
+            <e>max_severity</e>
+            <e>max_epss</e>
+          </pattern>
+          <ele>
+            <name>max_severity</name>
+            <summary>
+              EPSS info of the referenced CVE with the highest severity
+            </summary>
+            <description>
+              In case there are multiple CVEs referenced by the NVT tied for the
+              highest severity, they are also sorted by EPSS score and modification
+              time and the first one is chosen.
+            </description>
+            <pattern>
+              <e>score</e>
+              <e>percentile</e>
+              <e>cve</e>
+            </pattern>
+            <ele>
+              <name>score</name>
+              <summary>EPSS score of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>percentile</name>
+              <summary>EPSS percentile of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>cve</name>
+              <summary>The representative CVE chosen</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <summary>CVE-ID of the CVE</summary>
+                  <type>text</type>
+                </attrib>
+                <o><e>severity</e></o>
+              </pattern>
+              <ele>
+                <name>severity</name>
+                <summary>Severity (CVSS) score of the CVE if available</summary>
+                <pattern>
+                  <t>severity</t>
+                </pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>max_epss</name>
+            <summary>
+              EPSS info of the referenced CVE with the highest EPSS score
+            </summary>
+            <description>
+              In case there are multiple CVEs referenced by the NVT tied for the
+              highest EPSS score, they are also sorted by severity and modification
+              time and the first one is chosen.
+            </description>
+            <pattern>
+              <e>score</e>
+              <e>percentile</e>
+              <e>cve</e>
+            </pattern>
+            <ele>
+              <name>score</name>
+              <summary>EPSS score of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>percentile</name>
+              <summary>EPSS percentile of the CVE</summary>
+              <pattern>
+                <t>decimal</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>cve</name>
+              <summary>The representative CVE chosen</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <summary>CVE-ID of the CVE</summary>
+                  <type>text</type>
+                </attrib>
+                <o><e>severity</e></o>
+              </pattern>
+              <ele>
+                <name>severity</name>
+                <summary>Severity (CVSS) score of the CVE if available</summary>
+                <pattern>
+                  <t>severity</t>
+                </pattern>
+              </ele>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>preferences</name>

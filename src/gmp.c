@@ -18556,9 +18556,13 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             auto_delete ? auto_delete : "0",
             auto_delete_data ? auto_delete_data : "0");
 
+          g_free (assets_apply_overrides);
+          g_free (assets_min_qod);
           g_free (in_assets);
           g_free (max_checks);
           g_free (max_hosts);
+          g_free (auto_delete);
+          g_free (auto_delete_data);
         }
 
       count++;

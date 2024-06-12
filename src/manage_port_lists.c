@@ -537,7 +537,11 @@ should_sync_port_lists ()
         && strlen (port_list_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (port_list_path, ".xml")
         && should_sync_port_list_from_path (port_list_path, FALSE, &port_list))
-      return TRUE;
+      {
+        g_dir_close (dir);
+        return TRUE;
+      }
 
+  g_dir_close (dir);
   return FALSE;
 }
