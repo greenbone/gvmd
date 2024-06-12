@@ -12252,7 +12252,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *private_key, *public_key, *login, *type, *cert;
+      const char *login, *type, *cert;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -12266,8 +12266,6 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
         }
 
       SEND_GET_COMMON (credential, &get_credentials_data->get, &credentials);
-      private_key = credential_iterator_private_key (&credentials);
-      public_key = credential_iterator_public_key (&credentials);
       login = credential_iterator_login (&credentials);
       type = credential_iterator_type (&credentials);
       cert = credential_iterator_certificate (&credentials);
@@ -12346,6 +12344,10 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
           case CREDENTIAL_FORMAT_KEY:
             {
+              const char *public_key;
+
+              public_key = credential_iterator_public_key (&credentials);
+
               if (public_key && strcmp (public_key, ""))
                 {
                   SENDF_TO_CLIENT_OR_FAIL
@@ -12354,8 +12356,9 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
               else
                 {
                   char *pub;
-                  const char *pass;
+                  const char *pass, *private_key;
 
+                  private_key = credential_iterator_private_key (&credentials);
                   pass = credential_iterator_password (&credentials);
                   pub = gvm_ssh_public_from_private (private_key, pass);
                   SENDF_TO_CLIENT_OR_FAIL
