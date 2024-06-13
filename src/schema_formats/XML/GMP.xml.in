@@ -25930,7 +25930,6 @@ END:VCALENDAR
       </attrib>
       <o>><e>name</e></o>
       <o><e>comment</e></o>
-      <o><e>scanner</e></o>
       <any><e>preference</e></any>
       <o><e>family_selection</e></o>
       <any><e>nvt_selection</e></any>
@@ -25943,11 +25942,6 @@ END:VCALENDAR
     <ele>
       <name>comment</name>
       <summary>New comment for the config</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>scanner</name>
-      <summary>New scanner's UUID for the config</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
