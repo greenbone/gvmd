@@ -225,7 +225,7 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
  */
 int
 get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
-          int (*init) (iterator_t*, const get_data_t *))
+          int (*init) (iterator_t*, get_data_t *))
 {
   if (next (resources) == FALSE)
    {

@@ -3731,7 +3731,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <or>
         <e>copy</e>
         <r>get_configs</r>
-        <e>scanner</e>
       </or>
       <e>name</e>
       <o><e>usage_type</e></o>
@@ -3746,13 +3745,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>copy</name>
       <summary>The UUID of an existing config</summary>
-      <pattern>
-        <t>uuid</t>
-      </pattern>
-    </ele>
-    <ele>
-      <name>scanner</name>
-      <summary>The UUID of an OSP scanner to get config data from</summary>
       <pattern>
         <t>uuid</t>
       </pattern>
@@ -3815,20 +3807,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <truncated>...</truncated>
             </config>
           </get_configs_response>
-        </create_config>
-      </request>
-      <response>
-        <create_config_response status="201" status_text="OK, resource created"
-                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
-        </create_config_response>
-      </response>
-    </example>
-    <example>
-      <summary>Create an OSP config from a scanner</summary>
-      <request>
-        <create_config>
-          <name>Full</name>
-          <scanner>daba56c8-73ec-11df-a475-002264764cea</scanner>
         </create_config>
       </request>
       <response>
@@ -3990,6 +3968,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
+      <description>
+        <p>cc: Client certificate</p>
+        <p>pgp: PGP encryption key</p>
+        <p>pw: Password only</p>
+        <p>smime: S/MIME certificate</p>
+        <p>snmp: SNMP</p>
+        <p>up: User name + password</p>
+        <p>usk: User name + SSH key</p>
+      </description>
       <pattern>
         <alts>
           <alt>cc</alt>
@@ -6263,14 +6250,17 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>sources</name>
-      <summary>List of authentication sources for this user (if omitted then 'file')</summary>
+      <summary>Authentication source for this user (if omitted then 'file')</summary>
       <description>
         <p>
           'file' means to store the user in the database.
         </p>
+        <p>
+          The element is called SOURCES for historic reasons. Only one SOURCE is allowed.
+        </p>
       </description>
       <pattern>
-        <any><e>source</e></any>
+        <o><e>source</e></o>
       </pattern>
       <ele>
         <name>source</name>
@@ -10740,6 +10730,15 @@ END:VCALENDAR
         <ele>
           <name>type</name>
           <summary>The type of the credential</summary>
+          <description>
+            <p>cc: Client certificate</p>
+            <p>pgp: PGP encryption key</p>
+            <p>pw: Password only</p>
+            <p>smime: S/MIME certificate</p>
+            <p>snmp: SNMP</p>
+            <p>up: User name + password</p>
+            <p>usk: User name + SSH key</p>
+          </description>
           <pattern>
             <alts>
               <alt>cc</alt>
@@ -25931,7 +25930,6 @@ END:VCALENDAR
       </attrib>
       <o>><e>name</e></o>
       <o><e>comment</e></o>
-      <o><e>scanner</e></o>
       <any><e>preference</e></any>
       <o><e>family_selection</e></o>
       <any><e>nvt_selection</e></any>
@@ -25944,11 +25942,6 @@ END:VCALENDAR
     <ele>
       <name>comment</name>
       <summary>New comment for the config</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>scanner</name>
-      <summary>New scanner's UUID for the config</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -28145,14 +28138,17 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>sources</name>
-      <summary>List of authentication sources for this user (if omitted, no changes)</summary>
+      <summary>Authentication source for this user (if omitted, no changes)</summary>
       <description>
         <p>
           'file' means to store the user in the database.
         </p>
+        <p>
+          The element is called SOURCES for historic reasons. Only one SOURCE is allowed.
+        </p>
       </description>
       <pattern>
-        <any><e>source</e></any>
+        <o><e>source</e></o>
       </pattern>
       <ele>
         <name>source</name>

@@ -38,6 +38,9 @@ jobs:
             VERSION=${{ steps.container-opts.outputs.version }}
             GVM_LIBS_VERSION=${{ steps.container-opts.outputs.gvm-libs-version }}
             IMAGE_REGISTRY=${{ vars.IMAGE_REGISTRY }}
+          cosign-key: ${{ secrets.COSIGN_KEY_OPENSIGHT }}
+          cosign-key-password: ${{ secrets.COSIGN_KEY_PASSWORD_OPENSIGHT }}
+          cosign-tlog-upload: "false"
           image-url: community/gvmd
           image-labels: |
             org.opencontainers.image.vendor=Greenbone

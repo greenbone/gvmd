@@ -89,7 +89,7 @@ report_config_count (const get_data_t *);
 
 
 int
-init_report_config_iterator (iterator_t*, const get_data_t *);
+init_report_config_iterator (iterator_t*, get_data_t *);
 
 const char*
 report_config_iterator_report_format_id (iterator_t *);

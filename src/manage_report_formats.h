@@ -111,7 +111,7 @@ int
 report_format_count (const get_data_t *);
 
 int
-init_report_format_iterator (iterator_t*, const get_data_t *);
+init_report_format_iterator (iterator_t*, get_data_t *);
 
 const char*
 report_format_iterator_extension (iterator_t *);
