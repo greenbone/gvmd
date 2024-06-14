@@ -23454,6 +23454,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   log_event_fail ("user", "User", NULL, "created");
                   break;
                 case -3:
+                case -4:
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                           ("create_user", "Error in SOURCE"));
                   log_event_fail ("user", "User", NULL, "created");
@@ -26056,6 +26057,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                             ("modify_user", "Unknown role"));
                     break;
                   case -3:
+                  case -4:
                     SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                             ("modify_user", "Error in SOURCES"));
                     break;
