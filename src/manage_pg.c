@@ -1868,7 +1868,16 @@ create_tables_nvt (const gchar *suffix)
        "  solution_method text,"
        "  detection text,"
        "  qod integer,"
-       "  qod_type text);",
+       "  qod_type text,"
+       "  epss_cve TEXT,"
+       "  epss_score DOUBLE PRECISION,"
+       "  epss_percentile DOUBLE PRECISION,"
+       "  epss_severity DOUBLE PRECISION,"
+       "  max_epss_cve TEXT,"
+       "  max_epss_score DOUBLE PRECISION,"
+       "  max_epss_percentile DOUBLE PRECISION,"
+       "  max_epss_severity DOUBLE PRECISION"
+       ");",
        suffix);
 }
 

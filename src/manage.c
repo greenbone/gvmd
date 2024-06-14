@@ -5085,6 +5085,8 @@ manage_sync (sigset_t *sigmask_current,
           wait_for_pid (scap_pid, "SCAP sync");
           wait_for_pid (cert_pid, "CERT sync");
 
+          update_scap_extra ();
+
           lockfile_unlock (&lockfile);
         }
     }
@@ -5975,6 +5977,54 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           xml_string_append (buffer, "</preferences>");
           free (default_timeout);
+        }
+
+      if (nvt_iterator_epss_cve (nvts))
+        {
+          buffer_xml_append_printf 
+             (buffer,
+              "<epss>"
+              "<max_severity>"
+              "<score>%0.5f</score>"
+              "<percentile>%0.5f</percentile>"
+              "<cve id=\"%s\">",
+              nvt_iterator_epss_score (nvts),
+              nvt_iterator_epss_percentile (nvts),
+              nvt_iterator_epss_cve (nvts));
+
+          if (nvt_iterator_has_epss_severity (nvts))
+            {
+              buffer_xml_append_printf 
+                 (buffer,
+                  "<severity>%0.1f</severity>",
+                  nvt_iterator_epss_severity (nvts));
+            }
+
+          buffer_xml_append_printf
+             (buffer,
+              "</cve>"
+              "</max_severity>"
+              "<max_epss>"
+              "<score>%0.5f</score>"
+              "<percentile>%0.5f</percentile>"
+              "<cve id=\"%s\">",
+              nvt_iterator_max_epss_score (nvts),
+              nvt_iterator_max_epss_percentile (nvts),
+              nvt_iterator_max_epss_cve (nvts));
+
+          if (nvt_iterator_has_max_epss_severity (nvts))
+            {
+              buffer_xml_append_printf 
+                 (buffer,
+                  "<severity>%0.1f</severity>",
+                  nvt_iterator_max_epss_severity (nvts));
+            }
+
+          buffer_xml_append_printf
+             (buffer,
+              "</cve>"
+              "</max_epss>"
+              "</epss>");
         }
 
       xml_string_append (buffer, close_tag ? "</nvt>" : "");

@@ -2300,6 +2300,9 @@ gvmd (int argc, char** argv, char *env[])
           else
             printf ("Sentry support disabled\n");
         }
+#if OPENVASD == 1
+      printf ("OpenVASD is enabled\n");
+#endif
       printf ("Copyright (C) 2009-2021 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
@@ -2487,6 +2490,7 @@ gvmd (int argc, char** argv, char *env[])
   /**
    * LDAP debugging
    */
+
   if (ldap_debug)
     {
       if (ldap_enable_debug () == 0)

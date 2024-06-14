@@ -2351,7 +2351,6 @@ config_insert_preferences (config_t config,
         else if (preference->type)
           {
             gchar *quoted_type, *quoted_nvt_oid, *quoted_preference_name;
-            gchar *quoted_default;
             gchar *quoted_preference_id;
 
             /* Presume NVT or OSP preference. */
@@ -2375,9 +2374,6 @@ config_insert_preferences (config_t config,
                   : sql_quote (preference->type);
             quoted_value = sql_quote (value->str);
             g_string_free (value, TRUE);
-            quoted_default = preference->default_value
-                              ? sql_quote (preference->default_value)
-                              : NULL;
 
             /* NVT preference */
             /* OID:PrefID:PrefType:PrefName value */
@@ -2401,7 +2397,6 @@ config_insert_preferences (config_t config,
             g_free (quoted_preference_name);
             g_free (quoted_type);
             g_free (quoted_value);
-            g_free (quoted_default);
             g_free (quoted_preference_id);
           }
         else
@@ -3176,7 +3171,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
  *         -1 error.
  */
 int
-init_config_iterator (iterator_t* iterator, const get_data_t *get)
+init_config_iterator (iterator_t* iterator, get_data_t *get)
 {
   int rc;
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;

@@ -8505,7 +8505,7 @@ trash_alert_writable (alert_t alert)
  *         -1 error.
  */
 int
-init_alert_iterator (iterator_t* iterator, const get_data_t *get)
+init_alert_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = ALERT_ITERATOR_COLUMNS;
@@ -15366,7 +15366,7 @@ init_user_task_iterator (iterator_t* iterator, int trash, int ignore_severity)
  *         -1 error.
  */
 int
-init_task_iterator (iterator_t* iterator, const get_data_t *get)
+init_task_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
@@ -34214,7 +34214,7 @@ init_target_iterator_one (iterator_t* iterator, target_t target)
  *         -1 error.
  */
 int
-init_target_iterator (iterator_t* iterator, const get_data_t *get)
+init_target_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TARGET_ITERATOR_COLUMNS;
@@ -37559,7 +37559,7 @@ init_credential_iterator_one (iterator_t* iterator,
  *         filter (filt_id), -1 error.
  */
 int
-init_credential_iterator (iterator_t* iterator, const get_data_t *get)
+init_credential_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
@@ -41675,7 +41675,7 @@ delete_scanner (const char *scanner_id, int ultimate)
  * @return 0 success, 1 failed to find scanner, 2 failed to find filter, -1 error.
  */
 int
-init_scanner_iterator (iterator_t* iterator, const get_data_t *get)
+init_scanner_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = SCANNER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = SCANNER_ITERATOR_COLUMNS;
@@ -43157,7 +43157,7 @@ schedule_count (const get_data_t *get)
  *         filter (filt_id), -1 error.
  */
 int
-init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
+init_schedule_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = SCHEDULE_ITERATOR_COLUMNS;
@@ -44273,7 +44273,7 @@ group_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_group_iterator (iterator_t* iterator, const get_data_t *get)
+init_group_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = GROUP_ITERATOR_COLUMNS;
@@ -45521,7 +45521,7 @@ permission_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_permission_iterator (iterator_t* iterator, const get_data_t *get)
+init_permission_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = PERMISSION_ITERATOR_COLUMNS;
@@ -47141,7 +47141,7 @@ role_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_role_iterator (iterator_t* iterator, const get_data_t *get)
+init_role_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = ROLE_ITERATOR_COLUMNS;
@@ -47820,7 +47820,7 @@ filter_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_filter_iterator (iterator_t* iterator, const get_data_t *get)
+init_filter_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = FILTER_ITERATOR_COLUMNS;
@@ -53655,7 +53655,8 @@ find_user_by_name (const char* name, user_t *user)
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find role, 3 syntax error in hosts, 99 permission denied,
- *         -1 on error, -2 if user exists already.
+ *         -1 on error, -2 if user exists already, -3 if wrong number of methods,
+ *         -4 error in method.
  */
 int
 create_user (const gchar * name, const gchar * password, const gchar *comment,
@@ -53684,7 +53685,10 @@ create_user (const gchar * name, const gchar * password, const gchar *comment,
   if (allowed_methods && (allowed_methods->len == 0))
     allowed_methods = NULL;
 
-  // TODO validate methods  single source, one of ldap, ...
+  if (allowed_methods
+      && (auth_method_name_valid (g_ptr_array_index (allowed_methods, 0))
+          == 0))
+    return -4;
 
   if (validate_username (name) != 0)
     {
@@ -54716,7 +54720,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  *         2 failed to find user, 3 success and user gained admin, 4 success
  *         and user lost admin, 5 failed to find role, 6 syntax error in hosts,
  *         7 syntax error in new name, 99 permission denied, -1 on error,
- *         -2 for an unknown role, -3 if wrong number of methods.
+ *         -2 for an unknown role, -3 if wrong number of methods, -4 error in
+ *         method.
  */
 int
 modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
@@ -54748,7 +54753,10 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           || (strlen (g_ptr_array_index (allowed_methods, 0)) == 0)))
     allowed_methods = NULL;
 
-  // TODO Validate methods: single source, one of "", "ldap", ...
+  if (allowed_methods
+      && (auth_method_name_valid (g_ptr_array_index (allowed_methods, 0))
+          == 0))
+    return -4;
 
   sql_begin_immediate ();
 
@@ -55240,7 +55248,7 @@ user_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_user_iterator (iterator_t* iterator, const get_data_t *get)
+init_user_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = USER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = USER_ITERATOR_COLUMNS;
@@ -57148,7 +57156,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  *         -1 error.
  */
 int
-init_tag_iterator (iterator_t* iterator, const get_data_t *get)
+init_tag_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TAG_ITERATOR_COLUMNS;
@@ -57243,7 +57251,7 @@ tag_iterator_resources (iterator_t* iterator)
  * @return 0 success, -1 error.
  */
 int
-init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
+init_tag_name_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TAG_NAME_ITERATOR_COLUMNS;
