@@ -196,6 +196,8 @@ increment_transaction_size (int* current_size)
 
 /**
  * @brief Get the SQL buffer size threshold converted from MiB to bytes.
+ *
+ * @return Number of bytes.
  */
 int
 setting_secinfo_sql_buffer_threshold_bytes ()
@@ -471,7 +473,6 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
- * @param[in]  name            Name of the info
  *
  * @return 0 success, 1 failed to find target, 2 failed to find filter,
  *         -1 error.
@@ -716,7 +717,6 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
  *
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
- * @param[in]  name            Name of the info
  *
  * @return 0 success, 1 failed to find target, 2 failed to find filter,
  *         -1 error.
@@ -2491,7 +2491,6 @@ static int
 insert_cve_from_entry (element_t entry, element_t last_modified,
                        GHashTable *hashed_cpes, int *transaction_size)
 {
-  gboolean cvss_is_v3;
   element_t published, summary, cvss, score, base_metrics, cvss_vector, list;
   double severity_dbl;
   gchar *quoted_id, *quoted_summary, *quoted_cvss_vector;
@@ -2518,21 +2517,36 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
       return -1;
     }
 
-  cvss = element_child (entry, "vuln:cvss3");
+  gchar *base_metrics_element = "cvss:base_metrics";
+  gchar *score_element = "cvss:score";
+  gchar *cvss_vector_element = "cvss:vector-string";
+
+  cvss = element_child (entry, "vuln:cvss4");
   if (cvss == NULL)
     {
-      cvss = element_child (entry, "vuln:cvss");
-      cvss_is_v3 = FALSE;
+      cvss = element_child (entry, "vuln:cvss3");
+      if (cvss == NULL)
+        {
+          cvss = element_child (entry, "vuln:cvss");
+        }
+      else
+        {
+          base_metrics_element = "cvss3:base_metrics";
+          score_element = "cvss3:base-score";
+          cvss_vector_element = "cvss3:vector-string";
+        }
     }
   else
-     cvss_is_v3 = TRUE;
+    {
+      base_metrics_element = "cvss4:base_metrics";
+      score_element = "cvss4:base-score";
+      cvss_vector_element = "cvss4:vector-string";
+    }
 
   if (cvss == NULL)
     base_metrics = NULL;
   else
-    base_metrics = element_child (cvss,
-                                  cvss_is_v3 ? "cvss3:base_metrics"
-                                             : "cvss:base_metrics");
+    base_metrics = element_child (cvss, base_metrics_element);
 
   if (base_metrics == NULL)
     {
@@ -2541,8 +2555,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
     }
   else
     {
-      score = element_child (base_metrics,
-                             cvss_is_v3 ? "cvss3:base-score" : "cvss:score");
+      score = element_child (base_metrics, score_element);
+
       if (score == NULL)
         {
           g_warning ("%s: cvss:score missing for %s", __func__, id);
@@ -2550,9 +2564,8 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
           return -1;
         }
 
-      cvss_vector = element_child (base_metrics,
-                                   cvss_is_v3 ? "cvss3:vector-string"
-                                              : "cvss:vector-string");
+      cvss_vector = element_child (base_metrics, cvss_vector_element);
+
       if (cvss_vector == NULL)
         {
           g_warning ("%s: cvss:access-vector missing for %s", __func__, id);
@@ -3209,8 +3222,6 @@ check_cert_db_version ()
 
 /**
  * @brief Update timestamp in CERT db from feed timestamp.
- *
- * @return 0 success, -1 error.
  */
 static void
 update_cert_timestamp ()
@@ -3482,8 +3493,6 @@ check_scap_db_version ()
 
 /**
  * @brief Update timestamp in SCAP db from feed timestamp.
- *
- * @return 0 success, -1 error.
  */
 static void
 update_scap_timestamp ()
@@ -3574,6 +3583,65 @@ update_scap_placeholders ()
        "                                       FROM scap2.affected_products"
        "                                       WHERE cpe=cpes.id))"
        " WHERE cpes.title IS NULL;");
+}
+
+/**
+ * @brief Update extra data for VTs based on SCAP and SCAP supplement data.
+ */
+static void
+update_vt_scap_extra_data ()
+{
+  g_info ("Assigning EPSS scores to VTs");
+
+  sql ("UPDATE nvts"
+       " SET epss_cve = NULL,"
+       "     epss_score = NULL,"
+       "     epss_percentile = NULL,"
+       "     epss_severity = NULL,"
+       "     max_epss_cve = NULL,"
+       "     max_epss_score = NULL,"
+       "     max_epss_percentile = NULL,"
+       "     max_epss_severity = NULL;");
+
+  sql ("WITH epss_candidates AS ("
+       " SELECT vt_oid, cve, severity, epss, percentile,"
+       "         rank() OVER (PARTITION BY vt_oid"
+       "                      ORDER BY severity DESC,"
+       "                      epss DESC,"
+       "                      scap.cves.modification_time DESC) AS rank"
+       "   FROM (SELECT * FROM vt_refs WHERE type='cve') AS vt_cves"
+       "   JOIN scap.epss_scores ON ref_id = cve"
+       "   LEFT JOIN scap.cves ON scap.cves.name = cve"
+       "  ORDER BY vt_oid"
+       ") "
+       "UPDATE nvts"
+       " SET epss_cve = epss_candidates.cve,"
+       "     epss_score = epss_candidates.epss,"
+       "     epss_percentile = epss_candidates.percentile,"
+       "     epss_severity = epss_candidates.severity"
+       " FROM epss_candidates"
+       " WHERE epss_candidates.vt_oid = nvts.oid"
+       "   AND epss_candidates.rank = 1;");
+
+  sql ("WITH epss_candidates AS ("
+       " SELECT vt_oid, cve, severity, epss, percentile,"
+       "         rank() OVER (PARTITION BY vt_oid"
+       "                      ORDER BY epss DESC,"
+       "                      severity DESC,"
+       "                      scap.cves.modification_time DESC) AS rank"
+       "   FROM (SELECT * FROM vt_refs WHERE type='cve') AS vt_cves"
+       "   JOIN scap.epss_scores ON ref_id = cve"
+       "   LEFT JOIN scap.cves ON scap.cves.name = cve"
+       "  ORDER BY vt_oid"
+       ") "
+       "UPDATE nvts"
+       " SET max_epss_cve = epss_candidates.cve,"
+       "     max_epss_score = epss_candidates.epss,"
+       "     max_epss_percentile = epss_candidates.percentile,"
+       "     max_epss_severity = epss_candidates.severity"
+       " FROM epss_candidates"
+       " WHERE epss_candidates.vt_oid = nvts.oid"
+       "   AND epss_candidates.rank = 1;");
 }
  
 /**
@@ -3911,6 +3979,25 @@ update_scap (gboolean reset_scap_db)
 }
 
 /**
+ * @brief Update extra data in the SCAP DB that depends on other feeds.
+ */
+void
+update_scap_extra ()
+{
+  if (manage_scap_loaded () == 0)
+    {
+      g_info ("%s: SCAP database missing, skipping extra data update",
+              __func__);
+      return;
+    }
+
+  g_debug ("%s: update SCAP extra data of VTs", __func__);
+  setproctitle ("Syncing SCAP: Updating VT extra data");
+
+  update_vt_scap_extra_data ();
+}
+
+/**
  * @brief Sync the SCAP DB.
  *
  * @return 0 success, -1 error.
@@ -3954,8 +4041,9 @@ rebuild_scap ()
     return -1;
 
   ret = update_scap (TRUE);
-  if (ret == 1)
-    ret = 2;
+
+  if (ret == 0)
+    update_scap_extra ();
 
   if (feed_lockfile_unlock (&lockfile))
     {

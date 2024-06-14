@@ -66,7 +66,6 @@ send_get_start (const char *, int (*) (const char *, void *), void *);
  * @brief Send start of GET response to client, returning on fail.
  *
  * @param[in]  type  Type of resource.
- * @param[in]  get   GET data.
  */
 #define SEND_GET_START(type)                               \
   do                                                       \

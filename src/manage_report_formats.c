@@ -905,7 +905,11 @@ should_sync_report_formats ()
         && should_sync_report_format_from_path (report_format_path,
                                                 FALSE,
                                                 &report_format))
-      return TRUE;
+      {
+        g_dir_close (dir);
+        return TRUE;
+      }
 
+  g_dir_close (dir);
   return FALSE;
 }

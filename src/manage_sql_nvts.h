@@ -31,7 +31,9 @@
  { GET_ITERATOR_FILTER_COLUMNS, "version", "cve",                           \
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
    "qod_type", "solution_type", "solution", "summary", "insight",           \
-   "affected", "impact", "detection", "solution_method", NULL }
+   "affected", "impact", "detection", "solution_method", "epss_score",      \
+   "epss_percentile", "max_epss_score", "max_epss_percentile",              \
+   NULL }
 
 /**
  * @brief NVT iterator columns.
@@ -62,6 +64,18 @@
    { "impact", NULL, KEYWORD_TYPE_STRING },                                 \
    { "detection", NULL, KEYWORD_TYPE_STRING },                              \
    { "solution_method", NULL, KEYWORD_TYPE_STRING },                        \
+   { "coalesce (epss_score, 0.0)", "epss_score",                            \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "coalesce (epss_percentile, 0.0)", "epss_percentile",                  \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "epss_cve", NULL, KEYWORD_TYPE_STRING },                               \
+   { "epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                          \
+   { "coalesce (max_epss_score, 0.0)", "max_epss_score",                    \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "coalesce (max_epss_percentile, 0.0)", "max_epss_percentile",          \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
+   { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
@@ -94,6 +108,18 @@
    { "impact", NULL, KEYWORD_TYPE_STRING },                                 \
    { "detection", NULL, KEYWORD_TYPE_STRING },                              \
    { "solution_method", NULL, KEYWORD_TYPE_STRING },                        \
+   { "coalesce (epss_score, 0.0)", "epss_score",                            \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "coalesce (epss_percentile, 0.0)", "epss_percentile",                  \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "epss_cve", NULL, KEYWORD_TYPE_STRING },                               \
+   { "epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                          \
+   { "coalesce (max_epss_score, 0.0)", "max_epss_score",                    \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "coalesce (max_epss_percentile, 0.0)", "max_epss_percentile",          \
+     KEYWORD_TYPE_DOUBLE },                                                 \
+   { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
+   { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 

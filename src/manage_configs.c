@@ -620,7 +620,11 @@ should_sync_configs ()
         && strlen (config_path) >= (36 /* UUID */ + strlen (".xml"))
         && g_str_has_suffix (config_path, ".xml")
         && should_sync_config_from_path (config_path, FALSE, &config))
-      return TRUE;
+      {
+        g_dir_close (dir);
+        return TRUE;
+      }
 
+  g_dir_close (dir);
   return FALSE;
 }
