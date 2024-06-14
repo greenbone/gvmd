@@ -8505,7 +8505,7 @@ trash_alert_writable (alert_t alert)
  *         -1 error.
  */
 int
-init_alert_iterator (iterator_t* iterator, const get_data_t *get)
+init_alert_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = ALERT_ITERATOR_COLUMNS;
@@ -15366,7 +15366,7 @@ init_user_task_iterator (iterator_t* iterator, int trash, int ignore_severity)
  *         -1 error.
  */
 int
-init_task_iterator (iterator_t* iterator, const get_data_t *get)
+init_task_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
@@ -34214,7 +34214,7 @@ init_target_iterator_one (iterator_t* iterator, target_t target)
  *         -1 error.
  */
 int
-init_target_iterator (iterator_t* iterator, const get_data_t *get)
+init_target_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TARGET_ITERATOR_COLUMNS;
@@ -37559,7 +37559,7 @@ init_credential_iterator_one (iterator_t* iterator,
  *         filter (filt_id), -1 error.
  */
 int
-init_credential_iterator (iterator_t* iterator, const get_data_t *get)
+init_credential_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
@@ -41675,7 +41675,7 @@ delete_scanner (const char *scanner_id, int ultimate)
  * @return 0 success, 1 failed to find scanner, 2 failed to find filter, -1 error.
  */
 int
-init_scanner_iterator (iterator_t* iterator, const get_data_t *get)
+init_scanner_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = SCANNER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = SCANNER_ITERATOR_COLUMNS;
@@ -43157,7 +43157,7 @@ schedule_count (const get_data_t *get)
  *         filter (filt_id), -1 error.
  */
 int
-init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
+init_schedule_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = SCHEDULE_ITERATOR_COLUMNS;
@@ -44273,7 +44273,7 @@ group_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_group_iterator (iterator_t* iterator, const get_data_t *get)
+init_group_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = GROUP_ITERATOR_COLUMNS;
@@ -45521,7 +45521,7 @@ permission_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_permission_iterator (iterator_t* iterator, const get_data_t *get)
+init_permission_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = PERMISSION_ITERATOR_COLUMNS;
@@ -47141,7 +47141,7 @@ role_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_role_iterator (iterator_t* iterator, const get_data_t *get)
+init_role_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = ROLE_ITERATOR_COLUMNS;
@@ -47820,7 +47820,7 @@ filter_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_filter_iterator (iterator_t* iterator, const get_data_t *get)
+init_filter_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = FILTER_ITERATOR_COLUMNS;
@@ -55240,7 +55240,7 @@ user_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_user_iterator (iterator_t* iterator, const get_data_t *get)
+init_user_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = USER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = USER_ITERATOR_COLUMNS;
@@ -57148,7 +57148,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  *         -1 error.
  */
 int
-init_tag_iterator (iterator_t* iterator, const get_data_t *get)
+init_tag_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TAG_ITERATOR_COLUMNS;
@@ -57243,7 +57243,7 @@ tag_iterator_resources (iterator_t* iterator)
  * @return 0 success, -1 error.
  */
 int
-init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
+init_tag_name_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = TAG_NAME_ITERATOR_COLUMNS;
