@@ -898,7 +898,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </title>
       </head>
       <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;">
-        <div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;">
+        <div style="width: 700px; padding-left: 4px; padding-right: 4px; align: center; margin-left: auto; margin-right: auto;">
           <table style="width: 100%;" cellpadding="3" cellspacing="0">
             <tr>
               <td valign="top">
