@@ -5050,13 +5050,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         The client uses the create_report_format command to create a new report
         format.
       </p>
+      <p>
+        Element "name" only applies when "copy" is given.
+      </p>
     </description>
     <pattern>
+      <o><e>name</e></o>
       <or>
         <e>copy</e>
         <r>get_report_formats</r>
       </or>
     </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the report format</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
     <ele>
       <name>copy</name>
       <summary>The UUID of an existing report format</summary>
