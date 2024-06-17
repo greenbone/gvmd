@@ -5921,8 +5921,24 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>observers</name>
-      <summary>Users allowed to observe this task</summary>
-      <pattern><t>user_list</t></pattern>
+      <summary>Users and/or groups allowed to observe this task</summary>
+      <description>
+        The optional text of element observers is a space separated list of users.
+      </description>
+      <pattern>
+        <t>user_list</t>
+        <any><e>group</e></any>
+      </pattern>
+      <ele>
+        <name>group</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>preferences</name>

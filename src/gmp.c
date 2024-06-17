@@ -23137,8 +23137,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               gchar *fail_group_id;
 
               switch (set_task_groups (create_task_data->task,
-                                               create_task_data->groups,
-                                               &fail_group_id))
+                                       create_task_data->groups,
+                                       &fail_group_id))
                 {
                   case 0:
                     break;
