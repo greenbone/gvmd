@@ -6451,7 +6451,7 @@ END:VCALENDAR
       </pattern>
     </response>
     <example>
-      <summary>Delete a asset</summary>
+      <summary>Delete an asset</summary>
       <request>
         <delete_asset asset_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
         </delete_asset>
@@ -7535,7 +7535,7 @@ END:VCALENDAR
             <type>text</type>
             <required>1</required>
           </attrib>
-          <e>auth_conf_setting</e>
+          <any><e>auth_conf_setting</e></any>
         </pattern>
         <ele>
           <name>auth_conf_setting</name>
