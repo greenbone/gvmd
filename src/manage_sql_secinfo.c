@@ -3707,6 +3707,7 @@ update_scap_end ()
       /* View 'vulns' contains references into the SCAP schema, so it is
        * removed by the CASCADE. */
       create_view_vulns ();
+      create_view_result_vt_epss ();
     }
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
@@ -3745,6 +3746,7 @@ abort_scap_update ()
       /* View 'vulns' contains references into the SCAP schema, so it is
        * removed by the CASCADE. */
       create_view_vulns ();
+      create_view_result_vt_epss ();
       /* Update CERT data that depends on SCAP. */
       update_cert_data ();
     }
