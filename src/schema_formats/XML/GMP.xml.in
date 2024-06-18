@@ -7570,10 +7570,14 @@ END:VCALENDAR
       </request>
       <response>
         <describe_auth_response status="200" status_text="OK">
-          <group name="Foo">
+          <group name="method:file">
             <auth_conf_setting>
-              <key>Bar</key>
-              <value>Baz</value>
+              <key>enable</key>
+              <value>true</value>
+            </auth_conf_setting>
+            <auth_conf_setting>
+              <key>order</key>
+              <value>1</value>
             </auth_conf_setting>
           </group>
         </describe_auth_response>
