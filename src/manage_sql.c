@@ -54745,7 +54745,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
   if (allowed_methods && (allowed_methods->len > 2))
     return -3;
 
-  if (allowed_methods && (allowed_methods->len <= 0))
+  if (allowed_methods && (allowed_methods->len <= 1))
     allowed_methods = NULL;
 
   if (allowed_methods
