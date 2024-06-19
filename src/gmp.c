@@ -9165,7 +9165,6 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
         {
           gchar *severity;
 
-          // TODO: Add EPSS for CVE results
           severity = cve_cvss_base (oid);
           buffer_xml_append_printf (buffer,
                                     "<nvt oid=\"%s\">"
