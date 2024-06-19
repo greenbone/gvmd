@@ -22198,7 +22198,8 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", "compliant", NULL }
+    "path", "compliant", "epss_score", "epss_percentile", "max_epss_score",   \
+    "max_epss_percentile", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -22498,29 +22499,29 @@ where_qod (int min_qod)
       "compliant",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 45 = 35 */                                                           \
-    { "result_vt_epss.epss_score",                                            \
+    { "coalesce (result_vt_epss.epss_score, 0.0)",                            \
       "epss_score",                                                           \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    { "result_vt_epss.epss_percentile",                                       \
+    { "coalesce (result_vt_epss.epss_percentile, 0.0)",                       \
       "epss_percentile",                                                      \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "result_vt_epss.epss_cve",                                              \
       "epss_cve",                                                             \
       KEYWORD_TYPE_STRING },                                                  \
-    { "result_vt_epss.epss_severity",                                         \
+    { "coalesce (result_vt_epss.epss_severity, 0.0)",                         \
       "epss_severity",                                                        \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    { "result_vt_epss.max_epss_score",                                        \
+    { "coalesce (result_vt_epss.max_epss_score, 0.0)",                        \
       "max_epss_score",                                                       \
       KEYWORD_TYPE_DOUBLE },                                                  \
     /* ^ 50 = 40 */                                                           \
-    { "result_vt_epss.max_epss_percentile",                                   \
+    { "coalesce (result_vt_epss.max_epss_percentile, 0.0)",                   \
       "max_epss_percentile",                                                  \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "result_vt_epss.max_epss_cve",                                          \
       "max_epss_cve",                                                         \
       KEYWORD_TYPE_STRING },                                                  \
-    { "result_vt_epss.max_epss_severity",                                     \
+    { "coalesce (result_vt_epss.max_epss_severity, 0.0)",                     \
       "max_epss_severity",                                                    \
       KEYWORD_TYPE_DOUBLE },                                                  \
 
