@@ -53374,7 +53374,7 @@ manage_delete_user (GSList *log_config, const db_conn_info_t *database,
   /* Setup a dummy user, so that delete_user will work. */
   current_credentials.uuid = "";
 
-  switch ((ret = delete_user (NULL, name, 1, 0, NULL, inheritor_name)))
+  switch ((ret = delete_user (NULL, name, 0, NULL, inheritor_name)))
     {
       case 0:
         printf ("User deleted.\n");
@@ -54009,7 +54009,6 @@ copy_user (const char* name, const char* comment, const char *user_id,
  *
  * @param[in]  user_id_arg  UUID of user.
  * @param[in]  name_arg     Name of user.  Overridden by user_id.
- * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  * @param[in]  forbid_super_admin  Whether to forbid removal of Super Admin.
  * @param[in]  inheritor_id   UUID of user who will inherit owned objects.
  * @param[in]  inheritor_name Name of user who will inherit owned objects.
@@ -54020,7 +54019,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
  *         10 user is 'Feed Import Owner' 99 permission denied, -1 error.
  */
 int
-delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
+delete_user (const char *user_id_arg, const char *name_arg,
              int forbid_super_admin,
              const char* inheritor_id, const char *inheritor_name)
 {

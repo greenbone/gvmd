@@ -5103,7 +5103,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("DELETE_USER", element_name) == 0)
           {
-            const gchar* attribute;
             append_attribute (attribute_names, attribute_values, "name",
                               &delete_user_data->name);
             append_attribute (attribute_names, attribute_values, "user_id",
@@ -5114,11 +5113,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values,
                               "inheritor_name",
                               &delete_user_data->inheritor_name);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_user_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_user_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_USER);
           }
         else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
@@ -19704,7 +19698,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         if (delete_user_data->user_id || delete_user_data->name)
           switch (delete_user (delete_user_data->user_id,
                                delete_user_data->name,
-                               delete_user_data->ultimate,
                                1,
                                delete_user_data->inheritor_id,
                                delete_user_data->inheritor_name))
