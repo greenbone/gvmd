@@ -1596,7 +1596,6 @@ typedef struct
 {
   get_data_t get;        ///< Get args.
   char *type;            ///< Resource type.
-  char *subtype;         ///< Resource subtype.
   GList *data_columns;   ///< Columns to calculate aggregate for.
   GList *text_columns;   ///< Columns to get simple text from.
   char *group_column;    ///< Column to group data by.
@@ -5132,13 +5131,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "type",
                               &get_aggregates_data->type);
-
-            if (get_aggregates_data->type
-                && strcasecmp (get_aggregates_data->type, "info") == 0)
-            {
-              append_attribute (attribute_names, attribute_values, "info_type",
-                                &get_aggregates_data->subtype);
-            }
 
             append_attribute (attribute_names, attribute_values, "data_column",
                               &data_column);
