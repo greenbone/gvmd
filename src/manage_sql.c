@@ -28097,6 +28097,8 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
   extra_tables = g_strdup_printf (" JOIN comparison "
                                   " ON results.id = COALESCE (result1_id,"
                                   "                           result2_id)"
+                                  " LEFT OUTER JOIN result_vt_epss"
+                                  " ON results.nvt = result_vt_epss.vt_id"
                                   " LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
