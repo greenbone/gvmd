@@ -7928,6 +7928,7 @@ END:VCALENDAR
           <e>data_type</e>
           <any><e>data_column</e></any>
           <o><e>group_column</e></o>
+          <o><e>subgroup_column</e></o>
           <any><e>text_column</e></any>
           <or>
             <any><e>group</e></any>
@@ -7949,6 +7950,11 @@ END:VCALENDAR
         <ele>
           <name>group_column</name>
           <summary>The column the data is grouped by</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
+          <name>subgroup_column</name>
+          <summary>The column to further group the resources by</summary>
           <pattern><t>text</t></pattern>
         </ele>
         <ele>
