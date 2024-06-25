@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Run the c lang coverage action
         uses: greenbone/actions/doc-coverage-clang@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   build-gmp-doc:
     name: Build GMP documentation
