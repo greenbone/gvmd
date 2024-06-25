@@ -8107,6 +8107,7 @@ END:VCALENDAR
           <summary>Aggregate data for all resources of the selected type</summary>
           <pattern>
             <e>count</e>
+            <e>c_count</e>
             <e>min</e>
             <e>max</e>
             <e>mean</e>
@@ -8115,6 +8116,12 @@ END:VCALENDAR
           <ele>
             <name>count</name>
             <summary>Overall number of resources</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>c_count</name>
+            <summary>Cumulative number of resources</summary>
+            <description>For overall this is always the same as count.</description>
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
