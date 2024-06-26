@@ -275,10 +275,6 @@ enable_testing ()
 
 ## Program
 
-if (ENABLE_COVERAGE)
-  set (COVERAGE_FLAGS "--coverage")
-endif (ENABLE_COVERAGE)
-
 if (DEBUG_FUNCTION_NAMES)
   # The excluded functions are for update_nvti_cache, which fills the log
   # quickly.  Hopefully this internal NVTi cache is removed soon.
