@@ -55,6 +55,8 @@ jobs:
           rm -rf /var/lib/apt/lists/*
       - name: Check out gvmd
         uses: actions/checkout@v4
+      - name: Set git safe.directory
+        run: git config --global --add safe.directory '*'
       - name: Build gvmd
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
