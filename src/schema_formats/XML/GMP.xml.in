@@ -10156,7 +10156,7 @@ END:VCALENDAR
         <ele>
           <name>writable</name>
           <summary>
-            Whether any tasks are using the config, including trashcan tasks
+            Whether the config may be modified
           </summary>
           <pattern><t>boolean</t></pattern>
         </ele>
