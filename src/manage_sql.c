@@ -5266,7 +5266,7 @@ append_column (GArray *columns, const gchar *column_name,
  *                                resource.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter,
- *         3 invalid stat_column, 4 invalid group_column, 5 invalid type,
+ *         3 invalid data_column, 4 invalid group_column, 5 invalid type,
  *         6 trashcan not used by type, 7 invalid text column, 8 invalid
  *         subgroup_column, -1 error.
  */
