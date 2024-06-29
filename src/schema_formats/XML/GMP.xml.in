@@ -8115,6 +8115,7 @@ END:VCALENDAR
             <e>count</e>
             <e>c_count</e>
             <any><e>stats</e></any>
+            <any><e>text</e></any>
           </pattern>
           <ele>
             <name>count</name>
@@ -8168,6 +8169,18 @@ END:VCALENDAR
               <description>For overall this is always the same as sum.</description>
               <pattern><t>text</t></pattern>
             </ele>
+          </ele>
+          <ele>
+            <name>text</name>
+            <summary>The value of a simple text column</summary>
+            <pattern>
+              <attrib>
+                <name>name</name>
+                <summary>Name of the text column</summary>
+                <type>text</type>
+              </attrib>
+              text
+            </pattern>
           </ele>
         </ele>
         <ele>
