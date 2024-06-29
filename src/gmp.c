@@ -10141,6 +10141,10 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
   g_string_append_printf (xml, "<aggregate>");
 
   g_string_append_printf (xml,
+                          "<data_type>%s</data_type>",
+                          type);
+
+  g_string_append_printf (xml,
                           "<group_column>%s</group_column>",
                           group_column);
 
@@ -10295,6 +10299,10 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
   int has_groups = 0;
 
   g_string_append_printf (xml, "<aggregate>");
+
+  g_string_append_printf (xml,
+                          "<data_type>%s</data_type>",
+                          type);
 
   for (index = 0; index < data_columns->len ;index ++)
     {
