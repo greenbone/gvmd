@@ -2303,6 +2303,9 @@ gvmd (int argc, char** argv, char *env[])
 #if OPENVASD == 1
       printf ("OpenVASD is enabled\n");
 #endif
+#if CVSS3_RATINGS == 1
+      printf ("CVSS3 severity ratings enabled\n");
+#endif
       printf ("Copyright (C) 2009-2021 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf

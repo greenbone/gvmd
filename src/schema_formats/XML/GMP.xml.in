@@ -11164,6 +11164,64 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_features</name>
+    <summary>Get a list of optional features</summary>
+    <description>
+      <p>
+        The client uses the get_feeds command to get a list of optional
+        features.
+        If the command sent by the client was valid, the manager will
+        reply with a list of feeds to the client.
+      </p>
+    </description>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>feature</e></any>
+      </pattern>
+      <ele>
+        <name>feature</name>
+        <pattern>
+          <attrib>
+            <name>enabled</name>
+            <type>boolean</type>
+            <summary>Whether the feature is enabled</summary>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the feature</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get the optional features</summary>
+      <request>
+        <get_feeds>
+        </get_feeds>
+      </request>
+      <response>
+        <get_features_response status_text="OK" status="200">
+          <feature enabled="0">
+            <name>OPENVASD</name>
+          </feature>
+        </get_features_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_feeds</name>
     <summary>Get one or many feeds</summary>
     <description>
