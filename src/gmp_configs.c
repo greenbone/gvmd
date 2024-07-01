@@ -1026,12 +1026,18 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
   config_id = attr_or_null (entity, "config_id");
 
   if (config_id == NULL)
-    SEND_TO_CLIENT_OR_FAIL
-     (XML_ERROR_SYNTAX ("modify_config",
-                        "A config_id attribute is required"));
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_config",
+                           "A config_id attribute is required"));
+      return;
+    }
   else if (config_predefined_uuid (config_id))
-    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
-                                              "Permission denied"));
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_config",
+                                                "Permission denied"));
+      return;
+    }
 
   // Find the config
   switch (manage_modify_config_start (config_id, &config))
@@ -1053,6 +1059,7 @@ modify_config_run (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("modify_config"));
         log_event_fail ("config", "Scan Config", config_id, "modified");
+        return;
     }
 
   // Handle basic attributes and elements
