@@ -24,6 +24,8 @@
 /**
  * @brief Enable extra GNU functions.
  */
+#include "manage.h"
+#include <stdio.h>
 #define _GNU_SOURCE
 
 #include "debug_utils.h"
@@ -67,6 +69,8 @@
 #include <sys/time.h>
 #include <grp.h>
 #include <gpgme.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <gvm/base/gvm_sentry.h>
 #include <gvm/base/hosts.h>
@@ -82,6 +86,7 @@
 #include <gvm/util/authutils.h>
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
+#include <gvm/openvasd/openvasd.h>
 #include "manage_report_configs.h"
 
 #undef G_LOG_DOMAIN
@@ -20074,14 +20079,17 @@ nvt_severity (const char *nvt_id, const char *type)
 {
   char *severity = NULL;
 
-  if (strcasecmp (type, "Alarm") == 0 && nvt_id)
+  if ((strcasecmp (type, "alarm") == 0 || strcasecmp (type, "Alarm") == 0) && nvt_id)
     severity = sql_string ("SELECT coalesce(cvss_base, '0.0')"
                            " FROM nvts WHERE uuid = '%s';", nvt_id);
-  else if (strcasecmp (type, "Alarm") == 0)
+  else if (strcasecmp (type, "Alarm") == 0
+           || strcasecmp (type, "alarm") == 0)
     g_warning ("%s result type requires an NVT", type);
-  else if (strcasecmp (type, "Log Message") == 0)
+  else if (strcasecmp (type, "Log Message") == 0
+           || strcasecmp (type, "log") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
-  else if (strcasecmp (type, "Error Message") == 0)
+  else if (strcasecmp (type, "Error Message") == 0
+           || strcasecmp (type, "error") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
   else
     g_warning ("Invalid result nvt type %s", type);
@@ -42087,7 +42095,7 @@ create_scanner (const char* name, const char *comment, const char *host,
 
   if (!host || !port || !type)
     return 2;
-  if (*host == '/')
+  if (*host == '/' || *host == 'h')
     {
       unix_socket = 1;
       ca_pub = NULL;
@@ -43315,6 +43323,7 @@ osp_scanner_connect (scanner_t scanner)
   return connection;
 }
 
+
 /**
  * @brief Get an OSP Scanner's get_version info.
  *
@@ -43413,6 +43422,11 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD)
+    {
+      cleanup_iterator (&scanner);
+      return 0;
+    }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
@@ -43469,6 +43483,9 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_OSP_SENSOR:
             scanner_type_str = "OSP-Sensor";
+            break;
+          case SCANNER_TYPE_OPENVASD:
+            scanner_type_str = "Openvasd";
             break;
           default:
             scanner_type_str = NULL;
@@ -59996,4 +60013,357 @@ cleanup_ids_for_table (const char *table)
 
   free (sequence_name);
   return 0;
+}
+
+
+/**
+ * @brief Create a new connection to an OSP scanner.
+ *
+ * @param[in]   scanner     Scanner.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+openvasd_connector_t
+openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
+{
+  int port;
+  openvasd_connector_t connection;
+  char *server, *ca_pub, *key_pub, *key_priv;
+
+  assert (scanner);
+  server = scanner_host (scanner);
+  port = scanner_port (scanner);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+
+  connection = openvasd_connector_new();
+
+  openvasd_connector_builder (&connection, OPENVASD_SERVER, server);
+  openvasd_connector_builder (&connection, OPENVASD_CA_CERT, ca_pub);
+  openvasd_connector_builder (&connection, OPENVASD_KEY, key_priv);
+  openvasd_connector_builder (&connection, OPENVASD_CERT, key_pub);
+  openvasd_connector_builder (&connection, OPENVASD_PORT, (void *) &port);
+
+  if (scan_id && scan_id[0] != '\0')
+    openvasd_connector_builder (&connection, OPENVASD_SCAN_ID, scan_id);
+
+  g_free (server);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+
+  return connection;
+}
+
+/**
+ * @brief Generate the hash value for the fields of the result and
+ * check if openvasd result for report already exists
+ *
+ * @param[in]  report      Report.
+ * @param[in]  task        Task.
+ * @param[in]  r_entity    entity of the result.
+ * @param[out] entity_hash_value  The generated hash value of r_entity.
+ *
+ * @return     "1" if openvasd result already exists, else "0"
+ */
+static int
+check_openvasd_result_exists (report_t report, task_t task,
+                              openvasd_result_t res, char **entity_hash_value,
+                              GHashTable *hashed_openvasd_results)
+{
+  GString *result_string;
+  int return_value = 0;
+  char *port_str = NULL;
+  if (res->port == 0 && res->detail_value && *res->detail_value)
+    port_str = g_strdup ("general/Host_Details");
+  else if (res->port > 0)
+    {
+      char buf[6];
+      snprintf (buf, sizeof(buf) , "%d", res->port);
+      port_str = g_strdup (buf);
+    }
+  else
+    port_str = "";
+
+  result_string = g_string_new ("");
+  g_string_append_printf (result_string, "host:%s\n"
+                          "hostname:%s\n"
+                          "type:%s\n"
+                          "description:%s\n"
+                          "port:%s",res->ip_address, res->hostname,
+                          res->type, res->message, port_str);
+
+ *entity_hash_value = get_md5_hash_from_string (result_string->str);
+  if (g_hash_table_contains (hashed_openvasd_results, *entity_hash_value))
+    {
+      return_value = 1;
+    }
+  else
+    {
+      g_hash_table_insert (hashed_openvasd_results,
+                           g_strdup(*entity_hash_value),
+                           GINT_TO_POINTER(1));
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM results"
+                   "  WHERE report = %llu and hash_value = '%s');",
+                   report, *entity_hash_value))
+        {
+          const char *desc, *type, *severity = NULL, *host;
+          const char *hostname, *port = NULL, *path = NULL;
+          gchar *quoted_desc, *quoted_type, *quoted_host;
+          gchar *quoted_hostname, *quoted_port, *quoted_path;
+          double severity_double = 0.0;
+          int qod_int = QOD_DEFAULT;
+
+          host = res->ip_address;
+          hostname = res->hostname;
+          type = res->type;
+          desc = res->message;
+          qod_int = QOD_DEFAULT;
+
+          if (!severity || !strcmp (severity, ""))
+            {
+              if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
+                severity_double = SEVERITY_ERROR;
+              else
+                {
+                  g_debug ("%s: Result without severity", __func__);
+                  return 0;
+                }
+            }
+          else
+            {
+              severity_double = strtod (severity, NULL);
+            }
+
+          quoted_host = sql_quote (host ?: "");
+          quoted_hostname = sql_quote (hostname ?: "");
+          quoted_type = sql_quote (type ?: "");
+          quoted_desc = sql_quote (desc ?: "");
+          quoted_port = sql_quote (port ?: "");
+          quoted_path = sql_quote (path ?: "");
+
+          if (sql_int ("SELECT EXISTS"
+                       " (SELECT * FROM results"
+                       "   WHERE report = %llu and hash_value = '%s'"
+                       "    and host = '%s' and hostname = '%s'"
+                       "    and type = '%s' and description = '%s'"
+                       "    and port = '%s' and severity = %1.1f"
+                       "    and qod = %d and path = '%s'"
+                       " );",
+                       report, *entity_hash_value,
+                       quoted_host, quoted_hostname,
+                       quoted_type, quoted_desc,
+                       quoted_port, severity_double,
+                       qod_int, quoted_path))
+            {
+              g_info ("Captured duplicate result, report: %llu hash_value: %s",
+                      report, *entity_hash_value);
+              g_debug ("Entity string: %s", result_string->str);
+              return_value = 1;
+            }
+
+          g_free (quoted_host);
+          g_free (quoted_hostname);
+          g_free (quoted_type);
+          g_free (quoted_desc);
+          g_free (quoted_port);
+          g_free (quoted_path);
+        }
+    }
+  if (return_value)
+    {
+      g_debug ("Captured duplicate result, report: %llu hash_value: %s",
+                report, *entity_hash_value);
+      g_debug ("Entity string: %s", result_string->str);
+    }
+  g_string_free (result_string, TRUE);
+  return return_value;
+}
+
+/* Struct to be sent as user data to the GFunc for adding results */
+struct report_aux {
+  GArray *results_array;
+  report_t report;
+  task_t task;
+  GHashTable *hash_results;
+  GHashTable *hash_hostdetails;
+};
+
+static void
+add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
+{
+
+  struct report_aux *rep_aux = *results_aux;
+  result_t result;
+  char *type, *name, *severity, *host, *hostname, *test_id;
+  char *port = NULL, *path = NULL;
+  char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
+  int qod_int;
+
+  type = res->type;
+  name = NULL;
+  severity = NULL;
+  test_id = res->oid;
+  host = res->ip_address;
+  hostname = res->hostname;
+
+  if (res->port == 0 && res->detail_value && *res->detail_value)
+    port = g_strdup ("general/Host_Details");
+  else if (res->port > 0)
+    {
+      char buf[6];
+      snprintf(buf, sizeof(buf) , "%d", res->port);
+      port = g_strdup (buf);
+    }
+
+  /* Add report host if it doesn't exist. */
+  manage_report_host_add (rep_aux->report, host, 0, 0);
+  if (!strcmp (type, "host_detail"))
+    {
+      gchar *hash_value = NULL;
+      if (!check_host_detail_exists (rep_aux->report, host, "openvasd", "",
+                                     "Openvasd Host Detail", res->detail_name,
+                                     res->detail_value, &hash_value,
+                                     rep_aux->hash_hostdetails))
+        {
+
+          insert_report_host_detail (rep_aux->report, host, "openvasd", "",
+                                     "Openvasd Host Detail", res->detail_name,
+                                     res->detail_value, hash_value);
+        }
+      g_free (hash_value);
+      g_free (port);
+      return;
+    }
+  else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
+    {
+      nvt_id = g_strdup (test_id);
+      severity_str = nvt_severity (test_id, type);
+      desc = res->message;
+    }
+  else
+    {
+      nvt_id = g_strdup (name);
+      desc = res->message;
+    }
+  qod_int = QOD_DEFAULT;
+  if (port && strcmp (port, "general/Host_Details") == 0)
+    {
+      /* TODO: This should probably be handled by the "Host Detail"
+       *        result type with extra source info in OSP.
+       */
+      if (manage_report_host_detail (rep_aux->report, host, desc,
+                                     rep_aux->hash_hostdetails))
+        g_warning ("%s: Failed to add report detail for host '%s': %s",
+                   __func__, host, desc);
+    }
+  else if (host && desc && (strcmp (type, "host_start") == 0))
+    {
+      set_scan_host_start_time_ctime (rep_aux->report, host, desc);
+    }
+  else if (host && desc && (strcmp (type, "host_end") == 0))
+    {
+      set_scan_host_end_time_ctime (rep_aux->report, host, desc);
+      add_assets_from_host_in_report (rep_aux->report, host);
+    }
+  else
+    {
+      char *hash_value;
+      if (!check_openvasd_result_exists (rep_aux->report, rep_aux->task, res,
+                                        &hash_value, rep_aux->hash_results))
+        {
+          result = make_osp_result (rep_aux->task,
+                                    host ?: "",
+                                    hostname ?: "",
+                                    nvt_id ?: "",
+                                    type ?: "",
+                                    desc ?: "",
+                                    port ?: "",
+                                    severity_str ?: severity,
+                                    qod_int,
+                                    path ?: "",
+                                    hash_value);
+          g_array_append_val (rep_aux->results_array, result);
+        }
+      g_free (hash_value);
+    }
+
+  g_free (port);
+  g_free (nvt_id);
+
+  return;
+}
+
+/**
+ * @brief Parse Openvasd results.
+ *
+ * @param[in]  task        Task.
+ * @param[in]  report      Report.
+ * @param[in]  results     Openvasd results.
+ */
+void
+parse_openvasd_report (task_t task, report_t report, GSList *results,
+                       time_t start_time, time_t end_time)
+{
+  char *defs_file = NULL;
+  gboolean has_results = FALSE;
+  GArray *results_array = NULL;
+  GHashTable *hashed_openvasd_results = NULL;
+  GHashTable *hashed_host_details = NULL;
+  struct report_aux *rep_aux;
+
+  assert (task);
+  assert (report);
+
+  hashed_openvasd_results = g_hash_table_new_full (g_str_hash,
+                                              g_str_equal,
+                                              g_free,
+                                              NULL);
+
+  hashed_host_details = g_hash_table_new_full (g_str_hash,
+                                               g_str_equal,
+                                               g_free,
+                                               NULL);
+
+  sql_begin_immediate ();
+  /* Set the report's start and end times. */
+
+  if (start_time)
+    set_scan_start_time_epoch (report, start_time);
+
+  if (end_time)
+    set_scan_end_time_epoch (report, end_time);
+
+  if (g_slist_length (results))
+    has_results = TRUE;
+
+  defs_file = task_definitions_file (task);
+
+  results_array = g_array_new(TRUE, TRUE, sizeof(result_t));
+  rep_aux = g_malloc0 (sizeof (struct report_aux));
+  rep_aux->report = report;
+  rep_aux->task = task;
+  rep_aux->results_array = results_array;
+  rep_aux->hash_results = hashed_openvasd_results;
+  rep_aux->hash_hostdetails = hashed_host_details;
+
+  g_slist_foreach(results, (GFunc) add_openvasd_result_to_report, &rep_aux);
+
+  if (has_results)
+    {
+      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
+           report);
+      report_add_results_array (report, results_array);
+    }
+
+  sql_commit ();
+  if (results_array && has_results)
+    g_array_free (results_array, TRUE);
+
+  g_hash_table_destroy (hashed_openvasd_results);
+  g_hash_table_destroy (hashed_host_details);
+  g_free (defs_file);
+  g_free (rep_aux);
 }
