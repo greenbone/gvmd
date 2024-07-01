@@ -4360,6 +4360,7 @@ typedef enum
   CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
+  CLIENT_GET_FEATURES,
   CLIENT_GET_FEEDS,
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
@@ -5294,6 +5295,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
+          }
+        else if (strcasecmp ("GET_FEATURES", element_name) == 0)
+          {
+            set_client_state (CLIENT_GET_FEATURES);
           }
         else if (strcasecmp ("GET_FEEDS", element_name) == 0)
           {
@@ -12880,6 +12885,32 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 }
 
 /**
+ * @brief Handle end of GET_FEATURES element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_features (gmp_parser_t *gmp_parser, GError **error)
+{
+  SEND_TO_CLIENT_OR_FAIL ("<get_features_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>CVSS3_RATINGS</name>"
+                           "</feature>",
+                           CVSS3_RATINGS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>OPENVASD</name>"
+                           "</feature>",
+                           OPENVASD ? 1 : 0);
+
+  SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
+}
+
+/**
  * @brief Handle end of GET_FEEDS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -19958,6 +19989,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_CREDENTIALS:
         handle_get_credentials (gmp_parser, error);
+        break;
+
+      case CLIENT_GET_FEATURES:
+        handle_get_features (gmp_parser, error);
         break;
 
       case CLIENT_GET_FEEDS:
