@@ -25,6 +25,7 @@
 #define _GVMD_MANAGE_SQL_H
 
 #include <gvm/util/xmlutils.h>
+#include <time.h>
 
 #include "manage.h"
 #include "manage_utils.h"
@@ -542,4 +543,6 @@ cleanup_nvt_sequences ();
 int
 cleanup_ids_for_table (const char *);
 
+void
+parse_openvasd_report (task_t, report_t, GSList *, time_t, time_t);
 #endif /* not _GVMD_MANAGE_SQL_H */
