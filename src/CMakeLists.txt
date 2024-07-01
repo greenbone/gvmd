@@ -262,6 +262,21 @@ add_custom_target (tests
                    DEPENDS
                    gmp-tickets-test manage-test manage-sql-test manage-utils-test utils-test)
 
+if (ENABLE_COVERAGE)
+  add_custom_target (coverage-html
+                     COMMAND gcovr --html-details ${COVERAGE_DIR}/coverage.html
+                     -r ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+  add_custom_target (coverage-xml
+                     COMMAND gcovr --xml ${COVERAGE_DIR}/coverage.xml
+                     -r ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+  add_custom_target (coverage DEPENDS coverage-xml coverage-html)
+endif (ENABLE_COVERAGE)
+
+add_custom_target (clean-coverage
+                   COMMAND find . -name *.gcda -delete -or -name *.gcno -delete
+                   COMMAND rm -f ${COVERAGE_DIR}/*)
+
+
 add_executable (gvmd
                 main.c gvmd.c
                 debug_utils.c
