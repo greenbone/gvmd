@@ -2820,6 +2820,8 @@ gvmd (int argc, char** argv, char *env[])
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP-Sensor"))
         type = SCANNER_TYPE_OSP_SENSOR;
+      else if (!strcasecmp (scanner_type, "Openvasd"))
+        type = SCANNER_TYPE_OPENVASD;
       else
         {
           type = atoi (scanner_type);
@@ -2862,6 +2864,8 @@ gvmd (int argc, char** argv, char *env[])
             type = SCANNER_TYPE_OPENVAS;
           else if (!strcasecmp (scanner_type, "OSP-Sensor"))
             type = SCANNER_TYPE_OSP_SENSOR;
+          else if (!strcasecmp (scanner_type, "Openvasd"))
+            type = SCANNER_TYPE_OPENVASD;
           else
             {
               type = atoi (scanner_type);
