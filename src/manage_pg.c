@@ -1882,6 +1882,33 @@ create_tables_nvt (const gchar *suffix)
 }
 
 /**
+ * @brief Create NVT related indexes.
+ *
+ * @param[in]  suffix  String to append to table names.
+ */
+void
+create_indexes_nvt ()
+{
+  sql ("SELECT create_index ('nvts_by_creation_time',"
+       "                     'nvts',"
+       "                     'creation_time');");
+  sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
+  sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
+  sql ("SELECT create_index ('nvts_by_modification_time',"
+       "                     'nvts', 'modification_time');");
+  sql ("SELECT create_index ('nvts_by_cvss_base',"
+       "                     'nvts', 'cvss_base');");
+  sql ("SELECT create_index ('nvts_by_solution_type',"
+       "                     'nvts', 'solution_type');");
+  
+  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
+       "                     'vt_refs', 'vt_oid');");
+
+  sql ("SELECT create_index ('vt_severities_by_vt_oid',"
+       "                     'vt_severities', 'vt_oid');");
+}
+
+/**
  * @brief Create all tables.
  */
 void
@@ -3021,17 +3048,8 @@ create_tables ()
   sql ("SELECT create_index ('nvt_selectors_by_name',"
        "                     'nvt_selectors',"
        "                     'name');");
-  sql ("SELECT create_index ('nvts_by_creation_time',"
-       "                     'nvts',"
-       "                     'creation_time');");
-  sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
-  sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
-  sql ("SELECT create_index ('nvts_by_modification_time',"
-       "                     'nvts', 'modification_time');");
-  sql ("SELECT create_index ('nvts_by_cvss_base',"
-       "                     'nvts', 'cvss_base');");
-  sql ("SELECT create_index ('nvts_by_solution_type',"
-       "                     'nvts', 'solution_type');");
+
+  create_indexes_nvt ();
 
   sql ("SELECT create_index ('permissions_by_name',"
        "                     'permissions', 'name');");
@@ -3062,12 +3080,6 @@ create_tables ()
   sql ("SELECT create_index ('tls_certificate_origins_by_origin_id_and_type',"
        "                     'tls_certificate_origins',"
        "                     'origin_id, origin_type')");
-
-  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
-       "                     'vt_refs', 'vt_oid');");
-
-  sql ("SELECT create_index ('vt_severities_by_vt_oid',"
-       "                     'vt_severities', 'vt_oid');");
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen
