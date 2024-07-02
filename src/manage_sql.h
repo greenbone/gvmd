@@ -505,6 +505,9 @@ add_role_permission_resource (const gchar *, const gchar *, const gchar *,
 void
 create_view_vulns ();
 
+void
+create_indexes_nvt ();
+
 int
 config_family_entire_and_growing (config_t, const char*);
 
