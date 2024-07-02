@@ -22198,7 +22198,8 @@ where_qod (int min_qod)
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
-    "path", "compliant", NULL }
+    "path", "compliant", "epss_score", "epss_percentile", "max_epss_score",   \
+    "max_epss_percentile", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -22497,6 +22498,32 @@ where_qod (int min_qod)
       "         'undefined')",                                                \
       "compliant",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
+    /* ^ 45 = 35 */                                                           \
+    { "coalesce (result_vt_epss.epss_score, 0.0)",                            \
+      "epss_score",                                                           \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.epss_percentile, 0.0)",                       \
+      "epss_percentile",                                                      \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "result_vt_epss.epss_cve",                                              \
+      "epss_cve",                                                             \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "coalesce (result_vt_epss.epss_severity, 0.0)",                         \
+      "epss_severity",                                                        \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.max_epss_score, 0.0)",                        \
+      "max_epss_score",                                                       \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    /* ^ 50 = 40 */                                                           \
+    { "coalesce (result_vt_epss.max_epss_percentile, 0.0)",                   \
+      "max_epss_percentile",                                                  \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "result_vt_epss.max_epss_cve",                                          \
+      "max_epss_cve",                                                         \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "coalesce (result_vt_epss.max_epss_severity, 0.0)",                     \
+      "max_epss_severity",                                                    \
+      KEYWORD_TYPE_DOUBLE },                                                  \
 
 /**
  * @brief Result iterator columns.
@@ -23196,7 +23223,9 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                                             "results",
                                             "nvts");
 
-  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
+                                  " ON results.nvt = result_vt_epss.vt_id"
+                                  " LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
@@ -23300,7 +23329,9 @@ result_count (const get_data_t *get, report_t report, const char* host)
                                             "results",
                                             "nvts");
   
-  extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
+  extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
+                                  " ON results.nvt = result_vt_epss.vt_id"
+                                  " LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
@@ -23766,6 +23797,118 @@ DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
 DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
+ * @brief Get EPSS score of highest severity CVE from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return EPSS score of the highest severity CVE.
+ */
+double
+result_iterator_epss_score (iterator_t* iterator)
+{
+  if (iterator->done) return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+}
+
+/**
+ * @brief Get EPSS percentile of highest severity CVE from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return EPSS percentile of the highest severity CVE.
+ */
+double
+result_iterator_epss_percentile (iterator_t* iterator)
+{
+  if (iterator->done) return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+}
+
+/**
+ * @brief Get highest severity CVE with EPSS score from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Highest severity CVE with EPSS score.
+ */
+const gchar *
+result_iterator_epss_cve (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
+}
+
+/**
+ * @brief Get the highest severity of EPSS CVEs from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Highest severity of referenced CVEs with EPSS.
+ */
+double
+result_iterator_epss_severity (iterator_t* iterator)
+{
+  if (iterator->done) return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 39);
+}
+
+/**
+ * @brief Get maximum EPSS score of referenced CVEs from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Maximum EPSS score.
+ */
+double
+result_iterator_max_epss_score (iterator_t* iterator)
+{
+  if (iterator->done) return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 40);
+}
+
+/**
+ * @brief Get maximum EPSS percentile of referenced CVEs from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Maximum EPSS percentile.
+ */
+double
+result_iterator_max_epss_percentile (iterator_t* iterator)
+{
+  if (iterator->done) return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 41);
+}
+
+/**
+ * @brief Get the CVE with the maximum EPSS score from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CVE with maximum EPSS score.
+ */
+const gchar *
+result_iterator_max_epss_cve (iterator_t* iterator)
+{
+  if (iterator->done) return NULL;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 42);
+}
+
+/**
+ * @brief Get severity of CVE with maximum EPSS score from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Severity of CVE with maximum EPSS score.
+ */
+double
+result_iterator_max_epss_severity (iterator_t* iterator)
+{
+  if (iterator->done) return 0.0;
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 43);
+}
+
+/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -23776,7 +23919,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 44);
 }
 
 /**
@@ -23790,7 +23933,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 45);
 }
 
 /**
@@ -27954,6 +28097,8 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
   extra_tables = g_strdup_printf (" JOIN comparison "
                                   " ON results.id = COALESCE (result1_id,"
                                   "                           result2_id)"
+                                  " LEFT OUTER JOIN result_vt_epss"
+                                  " ON results.nvt = result_vt_epss.vt_id"
                                   " LEFT OUTER JOIN nvts"
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
@@ -58055,7 +58200,9 @@ type_build_select (const char *type, const char *columns_str,
                                                 "results", 
                                                 "nvts");
 
-      opts_table = g_strdup_printf (" LEFT OUTER JOIN nvts"
+      opts_table = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
+                                    " ON results.nvt = result_vt_epss.vt_id"
+                                    " LEFT OUTER JOIN nvts"
                                     " ON results.nvt = nvts.oid %s,"
                                     " LATERAL %s AS lateral_new_severity",
                                     original,
