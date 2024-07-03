@@ -170,6 +170,7 @@ truncate_private_key (const gchar*);
 int
 get_certificate_info (const gchar *,
                       gssize,
+                      gboolean,
                       time_t *,
                       time_t *,
                       gchar **,

@@ -88,6 +88,12 @@ lockfile_locked (const gchar *);
 int
 is_uuid (const char *);
 
+gchar *
+strescape_check_utf8 (const char *, const char *);
+
+gchar *
+strescape_without_utf8 (const char *, const char *);
+
 int
 parse_xml_file (const gchar *, entity_t *);
 
