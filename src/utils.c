@@ -792,7 +792,7 @@ is_uuid (const char *uuid)
 gchar *
 strescape_check_utf8 (const char *str, const char *extra_exceptions)
 {
-  if (g_utf8_validate (str, 0, NULL))
+  if (g_utf8_validate (str, -1, NULL))
     return strescape_without_utf8 (str, extra_exceptions);
   else
     return g_strescape (str, extra_exceptions);
