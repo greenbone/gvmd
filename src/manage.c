@@ -362,6 +362,7 @@ truncate_private_key (const gchar* private_key)
  *
  * @param[in]  certificate        The certificate to get data from.
  * @param[in]  certificate_len    Length of certificate, -1: null-terminated
+ * @param[in]  escape_dns         Whether to escape control characters in DNs.
  * @param[out] activation_time    Pointer to write activation time to.
  * @param[out] expiration_time    Pointer to write expiration time to.
  * @param[out] md5_fingerprint    Pointer for newly allocated MD5 fingerprint.
@@ -376,6 +377,7 @@ truncate_private_key (const gchar* private_key)
  */
 int
 get_certificate_info (const gchar* certificate, gssize certificate_len,
+                      gboolean escape_dns,
                       time_t* activation_time, time_t* expiration_time,
                       gchar** md5_fingerprint, gchar **sha256_fingerprint,
                       gchar **subject, gchar** issuer, gchar **serial,
@@ -518,7 +520,13 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           buffer = g_malloc (buffer_size);
           gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size);
 
-          *subject = buffer;
+          if (escape_dns)
+            {
+              *subject = strescape_check_utf8 (buffer, NULL);
+              g_free (buffer);
+            }
+          else
+            *subject = buffer;
         }
 
       if (issuer)
@@ -529,7 +537,13 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           buffer = g_malloc (buffer_size);
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
 
-          *issuer = buffer;
+          if (escape_dns)
+            {
+              *issuer = strescape_check_utf8 (buffer, NULL);
+              g_free (buffer);
+            }
+          else
+            *issuer = buffer;
         }
 
       if (serial)

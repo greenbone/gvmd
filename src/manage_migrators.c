@@ -780,6 +780,7 @@ migrate_212_to_213 ()
 
       get_certificate_info ((gchar*)certificate,
                             certificate_size,
+                            FALSE,
                             NULL,   /* activation_time */
                             NULL,   /* expiration_time */
                             NULL,   /* md5_fingerprint */
@@ -1086,6 +1087,7 @@ migrate_213_to_214 ()
           /* Try extracting the data directly from the certificate */
           get_certificate_info ((gchar*)certificate,
                                 certificate_size,
+                                FALSE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
