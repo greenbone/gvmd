@@ -10307,6 +10307,7 @@ END:VCALENDAR
             <pattern>
               <e>nvt</e>
               <e>name</e>
+              <o><e>hr_name</e></o>
               <e>id</e>
               <e>type</e>
               <e>value</e>
@@ -10333,6 +10334,11 @@ END:VCALENDAR
             <ele>
               <name>name</name>
               <summary>The compact name of the preference as used by the scanner</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>hr_name</name>
+              <summary>The human readable name of the preference</summary>
               <pattern><t>name</t></pattern>
             </ele>
             <ele>
