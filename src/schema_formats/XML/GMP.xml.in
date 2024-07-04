@@ -10310,7 +10310,7 @@ END:VCALENDAR
               <e>id</e>
               <e>type</e>
               <e>value</e>
-              <e>default</e>
+              <o><e>default</e></o>
               <any><e>alt</e></any>
             </pattern>
             <ele>
