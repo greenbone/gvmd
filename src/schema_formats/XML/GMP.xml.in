@@ -523,6 +523,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>expiration_time</e>
       <e>issuer</e>
       <e>md5_fingerprint</e>
+      <o><e>sha256_fingerprint</e></o>
+      <o><e>subject</e></o>
+      <o><e>serial</e></o>
     </pattern>
     <ele>
       <name>time_status</name>
@@ -556,6 +559,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>md5_fingerprint</name>
       <summary>MD5 fingerprint of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>sha256_fingerprint</name>
+      <summary>SHA-256 fingerprint of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>subject</name>
+      <summary>Name of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>serial</name>
+      <summary>Serial number of certificate</summary>
       <pattern>text</pattern>
     </ele>
   </element>
