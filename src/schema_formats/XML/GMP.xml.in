@@ -8519,6 +8519,7 @@ END:VCALENDAR
           <e>method</e>
           <e>filter</e>
           <o><e>tasks</e></o>
+          <e>active</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8784,6 +8785,11 @@ END:VCALENDAR
               <pattern></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the alert is active</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
