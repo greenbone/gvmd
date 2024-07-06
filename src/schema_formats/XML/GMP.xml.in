@@ -8679,7 +8679,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>method</name>
-          <summary>The method by which he alert must occur</summary>
+          <summary>The method by which the alert must occur</summary>
           <pattern>
             text
             <any><e>data</e></any>
