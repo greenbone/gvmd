@@ -9494,7 +9494,7 @@ END:VCALENDAR
               Hosts on which this OS has been detected as the best match
             </summary>
             <pattern>
-              <e>asset</e>
+              <any><e>asset</e></any>
             </pattern>
             <ele>
               <name>asset</name>
