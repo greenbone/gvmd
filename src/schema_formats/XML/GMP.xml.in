@@ -9150,7 +9150,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>details</name>
-        <summary>Whether to include additional information (e.g., tags)</summary>
+        <summary>Whether to include additional information (e.g. tags)</summary>
         <type>boolean</type>
       </attrib>
     </pattern>
@@ -9515,7 +9515,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>in_use</name>
-          <summary>Whether any tasks are using the asset</summary>
+          <summary>Whether the asset is in use</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
