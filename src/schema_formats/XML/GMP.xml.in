@@ -9276,6 +9276,7 @@ END:VCALENDAR
                 <e>type</e>
                 <e>data</e>
                 <e>deleted</e>
+                <e>name</e>
               </pattern>
               <ele>
                 <name>type</name>
@@ -9290,6 +9291,11 @@ END:VCALENDAR
               <ele>
                 <name>deleted</name>
                 <summary>Whether the source has been deleted</summary>
+                <pattern>boolean</pattern>
+              </ele>
+              <ele>
+                <name>name</name>
+                <summary>User name when source type is User, else empty</summary>
                 <pattern>boolean</pattern>
               </ele>
             </ele>
