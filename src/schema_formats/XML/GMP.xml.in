@@ -9331,7 +9331,7 @@ END:VCALENDAR
           <pattern>
             <e>severity</e>
             <any><e>detail</e></any>
-            <e>routes</e>
+            <o><e>routes</e></o>
           </pattern>
           <ele>
             <name>severity</name>
