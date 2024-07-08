@@ -9190,6 +9190,7 @@ END:VCALENDAR
           <e>permissions</e>
           <o><e>user_tags</e></o>
           <o><e>identifiers</e></o>
+          <e>type</e>
           <or>
             <e>host</e>
             <e>os</e>
@@ -9316,6 +9317,13 @@ END:VCALENDAR
               </ele>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>Either "host" or "os"</summary>
+          <pattern>
+            xsd:token { pattern = "host|os" }
+          </pattern>
         </ele>
         <ele>
           <name>host</name>
