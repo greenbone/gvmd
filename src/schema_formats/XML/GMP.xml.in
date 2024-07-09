@@ -10683,6 +10683,11 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>details</name>
+        <summary>Whether to include certificate info</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>scanners</name>
         <summary>Whether to include a list of scanners using the credentials</summary>
         <type>boolean</type>
