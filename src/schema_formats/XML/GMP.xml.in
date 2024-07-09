@@ -68,13 +68,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </description>
     <pattern>xsd:token { pattern = "y?n?i?u?" }</pattern>
   </type>
+  @IF_COMPLIANCE_REPORTS@
   <type>
     <name>compliance_status</name>
     <summary>A compliance status</summary>
     <pattern>
       xsd:token { pattern = "yes|no|incomplete|undefined" }
     </pattern>
-  </type>  
+  </type>
+  @ENDIF_COMPLIANCE_REPORTS@
   <type>
     <name>ctime</name>
     <summary>A date and time, in the C `ctime' format</summary>
@@ -2214,10 +2216,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>permissions</e>
             <o><e>user_tags</e></o>
             <e>scan_run_status</e>
-            <o><e>result_count</e></o>
+            @IF_COMPLIANCE_REPORTS@
+            <o>
+            @ENDIF_COMPLIANCE_REPORTS@
+            <e>result_count</e>
+            <e>severity</e>
+            @IF_COMPLIANCE_REPORTS@
+            </o>
             <o><e>compliance_count</e></o>
-            <o><e>severity</e></o>
             <o><e>compliance</e></o>
+            @ENDIF_COMPLIANCE_REPORTS@
             <e>task</e>
             <e>ports</e>
             <e>results</e>
@@ -2544,7 +2552,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
       <ele>
         <name>result_count</name>
-        <summary>Counts of results produced by scan. Only for reports of a scan task</summary>
+        <summary>Counts of results produced by scan</summary>
         <description>
           <p>
             The text contains the full count -- the total number of results
@@ -2651,12 +2659,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
         </ele>
       </ele>
+      @IF_COMPLIANCE_REPORTS@
       <ele>
         <name>compliance_count</name>
         <summary>Counts of compliance results. Only for reports of an audit task.</summary>
         <description>
           <p>
-            The text contains the full count -- the total number of compliance results.
+            The text contains the full count. The total number of compliance results.
           </p>
         </description>
         <pattern>
@@ -2758,7 +2767,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-      </ele>      
+      </ele>
+      @ENDIF_COMPLIANCE_REPORTS@
       <ele>
         <name>severity</name>
         <pattern>
@@ -2776,6 +2786,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Maximum severity of the report after filtering</summary>
         </ele>
       </ele>
+      @IF_COMPLIANCE_REPORTS@
       <ele>
         <name>compliance</name>
         <pattern>
@@ -2792,7 +2803,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern><t>compliance_status</t></pattern>
           <summary>Compliance of the report after filtering ("yes", "no", "incomplete" or "undefined")</summary>
         </ele>
-      </ele>      
+      </ele>
+      @ENDIF_COMPLIANCE_REPORTS@
       <ele>
         <name>task</name>
         <pattern>
@@ -3054,9 +3066,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>start</e>
           <e>end</e>
           <e>port_count</e>
-          <o><e>result_count</e></o>
+          @IF_COMPLIANCE_REPORTS@
+          <o>
+          @ENDIF_COMPLIANCE_REPORTS@
+          <e>result_count</e>
+          @IF_COMPLIANCE_REPORTS@
+          </o>
           <o><e>compliance_count</e></o>
           <o><e>host_compliance</e></o>
+          @ENDIF_COMPLIANCE_REPORTS@
           <any><e>detail</e></any>
         </pattern>
         <ele>
@@ -3099,7 +3117,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ele>
         <ele>
           <name>result_count</name>
-          <summary>Only for scan reports</summary>
+          <summary></summary>
           <pattern>
             <e>page</e>
             <e>hole</e>
@@ -3174,6 +3192,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </ele>
           </ele>
         </ele>
+        @IF_COMPLIANCE_REPORTS@
         <ele>
           <name>compliance_count</name>
           <summary>Only for audit reports</summary>
@@ -3242,7 +3261,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>host_compliance</name>
           <summary>Only for audit reports. Host compliance</summary>
           <pattern><t>compliance_status</t></pattern>
-        </ele>               
+        </ele>
+        @ENDIF_COMPLIANCE_REPORTS@
         <ele>
           <name>detail</name>
           <summary>A detail associated with the host</summary>
@@ -18125,11 +18145,13 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Minimum QoD of the results</summary>
           </option>
+          @IF_COMPLIANCE_REPORTS@
           <option>
             <name>report_compliance_levels</name>
             <type>compliance_levels</type>
             <summary>report compliance level to select</summary>
-          </option>          
+          </option>
+          @ENDIF_COMPLIANCE_REPORTS@   
           <column>
             <name>tag</name>
             <type>text</type>
@@ -18275,6 +18297,7 @@ END:VCALENDAR
             <type>iso_time</type>
             <summary>Scan end time</summary>
           </column>
+          @IF_COMPLIANCE_REPORTS@
           <column>
             <name>compliance_yes</name>
             <type>integer</type>
@@ -18294,7 +18317,8 @@ END:VCALENDAR
             <name>compliant</name>
             <type>compliance_status</type>
             <summary>Compliance state of the report. Can be yes, no, incomplete or undefined</summary>
-          </column>                      
+          </column>
+          @ENDIF_COMPLIANCE_REPORTS@      
         </filter_keywords>
       </attrib>
       <attrib>
@@ -18364,6 +18388,7 @@ END:VCALENDAR
         </summary>
         <type>boolean</type>
       </attrib>
+      @IF_COMPLIANCE_REPORTS@
       <attrib>
           <name>usage_type</name>
           <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
@@ -18374,7 +18399,8 @@ END:VCALENDAR
               <alt></alt>
             </alts>
           </type>
-        </attrib>    
+      </attrib>
+      @ENDIF_COMPLIANCE_REPORTS@
     </pattern>
     <response>
       <pattern>
@@ -23153,9 +23179,15 @@ END:VCALENDAR
               </attrib>
               <e>timestamp</e>
               <e>scan_end</e>
-              <o><e>result_count</e></o>
-              <o><e>severity</e></o>
+              @IF_COMPLIANCE_REPORTS@
+              <o>
+              @ENDIF_COMPLIANCE_REPORTS@
+              <e>result_count</e>
+              <e>severity</e>
+              @IF_COMPLIANCE_REPORTS@
+              </o>
               <o><e>compliance_count</e></o>
+              @ENDIF_COMPLIANCE_REPORTS@
             </pattern>
             <ele>
               <name>timestamp</name>
@@ -23167,7 +23199,7 @@ END:VCALENDAR
             </ele>
             <ele>
               <name>result_count</name>
-              <summary>Result counts for this report. Only for scan tasks</summary>
+              <summary>Result counts for this report</summary>
               <pattern>
                 <e>false_positive</e>
                 <e>log</e>
@@ -23199,8 +23231,9 @@ END:VCALENDAR
             <ele>
               <name>severity</name>
               <pattern><t>severity</t></pattern>
-              <summary>Maximum severity of the report. Only for scan tasks</summary>
+              <summary>Maximum severity of the report</summary>
             </ele>
+            @IF_COMPLIANCE_REPORTS@
             <ele>
               <name>compliance_count</name>
               <summary>Complaince counts. Only for audit tasks</summary>
@@ -23226,7 +23259,8 @@ END:VCALENDAR
                 <name>undefined</name>
                 <pattern><t>integer</t></pattern>
               </ele>
-            </ele>            
+            </ele>
+            @ENDIF_COMPLIANCE_REPORTS@
           </ele>
         </ele>
         <ele>
