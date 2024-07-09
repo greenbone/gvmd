@@ -11342,7 +11342,7 @@ END:VCALENDAR
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type of single feed to get: NVT, CERT or SCAP</summary>
+        <summary>Type of single feed to get: NVT, CERT, SCAP or GVMD_DATA</summary>
         <type>text</type>
       </attrib>
     </pattern>
@@ -11372,7 +11372,7 @@ END:VCALENDAR
         </pattern>
         <ele>
           <name>type</name>
-          <summary>The type of feed: NVT, CERT or SCAP</summary>
+          <summary>The type of feed: NVT, CERT, SCAP or GVMD_DATA</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
