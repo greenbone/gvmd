@@ -247,12 +247,24 @@ if (NOT CVSS3_RATINGS)
 endif (NOT CVSS3_RATINGS)
 add_definitions (-DCVSS3_RATINGS=${CVSS3_RATINGS})
 
+if (NOT COMPLIANCE_REPORTS)
+  set (COMPLIANCE_REPORTS 0)
+endif (NOT COMPLIANCE_REPORTS)
+add_definitions (-DCOMPLIANCE_REPORTS=${COMPLIANCE_REPORTS})
 
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 ## Version
 
 set (GVMD_VERSION "${PROJECT_VERSION_STRING}")
+
+if (COMPLIANCE_REPORTS EQUAL 1)
+  set(IF_COMPLIANCE_REPORTS "")
+  set(ENDIF_COMPLIANCE_REPORTS "")
+elseif (COMPLIANCE_REPORTS EQUAL 0)
+  set(IF_COMPLIANCE_REPORTS "<!--")
+  set(ENDIF_COMPLIANCE_REPORTS "-->")
+endif()
 
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)

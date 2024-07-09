@@ -12956,6 +12956,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>COMPLIANCE_REPORTS</name>"
+                           "</feature>",
+                           COMPLIANCE_REPORTS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
                            "<name>CVSS3_RATINGS</name>"
                            "</feature>",
                            CVSS3_RATINGS ? 1 : 0);
@@ -14831,7 +14836,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       || (strlen (get_reports_data->report_get.id) == 0))
     {
       int overrides, min_qod;
-      gchar *filter, *levels, *compliance_levels;
+      gchar *filter, *levels;
       get_data_t * get;
 
       /* For simplicity, use a fixed result filter when filtering
@@ -14853,22 +14858,33 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
       levels = filter_term_value (filter ? filter : get->filter, "levels");
-      compliance_levels = filter_term_value (filter 
-                                                ? filter 
-                                                : get->filter,
-                                             "compliance_levels");
-      g_free (filter);
+      #if COMPLIANCE_REPORTS == 1
+        gchar *compliance_levels;
+        compliance_levels = filter_term_value (filter
+                                                  ? filter
+                                                  : get->filter,
+                                              "compliance_levels");
 
-      /* Setup result filter from overrides. */
-      get_reports_data->get.filter
-        = g_strdup_printf 
-            ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
-             overrides, 
-             min_qod, 
-             levels ? levels : "hmlgdf", 
-             compliance_levels ? compliance_levels : "yniu");
+        /* Setup result filter from overrides. */
+        get_reports_data->get.filter
+          = g_strdup_printf
+              ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
+              overrides,
+              min_qod,
+              levels ? levels : "hmlgdf",
+              compliance_levels ? compliance_levels : "yniu");
+        g_free (compliance_levels);
+      #else
+        /* Setup result filter from overrides. */
+        get_reports_data->get.filter
+          = g_strdup_printf
+              ("apply_overrides=%i min_qod=%i levels=%s",
+              overrides,
+              min_qod,
+              levels ? levels : "hmlgdf");
+      #endif
+      g_free (filter);
       g_free (levels);
-      g_free (compliance_levels);
     }
 
   ret = init_report_iterator (&reports, &get_reports_data->report_get);
@@ -15914,6 +15930,7 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+#if COMPLIANCE_REPORTS == 1
       get_data_set_extra (&resource_names_data->get, 
                           "usage_type",
                           g_strdup ("scan"));
@@ -15924,6 +15941,7 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
       get_data_set_extra (&resource_names_data->get, 
                           "usage_type",
                           g_strdup ("audit"));
+#endif
     }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
