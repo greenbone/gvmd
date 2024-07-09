@@ -11406,16 +11406,10 @@ END:VCALENDAR
           <summary>Present if a sync of this type is underway</summary>
           <pattern>
             <e>timestamp</e>
-            <e>user</e>
           </pattern>
           <ele>
             <name>timestamp</name>
             <summary>Time sync started</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>user</name>
-            <summary>Name of user who is performing sync</summary>
             <pattern>text</pattern>
           </ele>
         </ele>
