@@ -8107,10 +8107,8 @@ END:VCALENDAR
           <summary>Aggregate data for all resources of the selected type</summary>
           <pattern>
             <e>count</e>
-            <e>min</e>
-            <e>max</e>
-            <e>mean</e>
-            <e>sum</e>
+            <e>c_count</e>
+            <any><e>stats</e></any>
           </pattern>
           <ele>
             <name>count</name>
@@ -8118,24 +8116,52 @@ END:VCALENDAR
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
-            <name>min</name>
-            <summary>Overall minimum value of the data column</summary>
-            <pattern><t>text</t></pattern>
+            <name>c_count</name>
+            <summary>Cumulative number of resources</summary>
+            <description>For overall this is always the same as count.</description>
+            <pattern><t>integer</t></pattern>
           </ele>
           <ele>
-            <name>max</name>
-            <summary>Overall maximum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>mean</name>
-            <summary>Overall arithmetic mean of the numeric values of the data</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>sum</name>
-            <summary>Overall sum of the numeric values of the data column</summary>
-            <pattern><t>text</t></pattern>
+            <name>stats</name>
+            <summary>Statistics of a data column</summary>
+            <pattern>
+              <attrib>
+                <name>column</name>
+                <summary>Name of the column the stats apply to</summary>
+                <type>text</type>
+              </attrib>
+              <e>min</e>
+              <e>max</e>
+              <e>mean</e>
+              <e>sum</e>
+              <e>c_sum</e>
+            </pattern>
+            <ele>
+              <name>min</name>
+              <summary>Overall minimum value of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>max</name>
+              <summary>Overall maximum value of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>mean</name>
+              <summary>Overall arithmetic mean of the numeric values of the data</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>sum</name>
+              <summary>Overall sum of the numeric values of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>c_sum</name>
+              <summary>Cumulative sum of the numeric values of the data column</summary>
+              <description>For overall this is always the same as sum.</description>
+              <pattern><t>text</t></pattern>
+            </ele>
           </ele>
         </ele>
         <ele>
