@@ -11719,7 +11719,6 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       gchar *routes_xml;
 
       asset = get_iterator_resource (&assets);
-      /* Assets are currently always writable. */
       if (send_get_common ("asset", &get_assets_data->get, &assets,
                            gmp_parser->client_writer,
                            gmp_parser->client_writer_data,

@@ -9150,7 +9150,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>details</name>
-        <summary>Whether to include additional information (e.g., tags)</summary>
+        <summary>Whether to include additional information (e.g. tags)</summary>
         <type>boolean</type>
       </attrib>
     </pattern>
@@ -9190,6 +9190,7 @@ END:VCALENDAR
           <e>permissions</e>
           <o><e>user_tags</e></o>
           <o><e>identifiers</e></o>
+          <e>type</e>
           <or>
             <e>host</e>
             <e>os</e>
@@ -9276,6 +9277,7 @@ END:VCALENDAR
                 <e>type</e>
                 <e>data</e>
                 <e>deleted</e>
+                <e>name</e>
               </pattern>
               <ele>
                 <name>type</name>
@@ -9290,6 +9292,11 @@ END:VCALENDAR
               <ele>
                 <name>deleted</name>
                 <summary>Whether the source has been deleted</summary>
+                <pattern>boolean</pattern>
+              </ele>
+              <ele>
+                <name>name</name>
+                <summary>User name when source type is User, else empty</summary>
                 <pattern>boolean</pattern>
               </ele>
             </ele>
@@ -9312,12 +9319,19 @@ END:VCALENDAR
           </ele>
         </ele>
         <ele>
+          <name>type</name>
+          <summary>Either "host" or "os"</summary>
+          <pattern>
+            xsd:token { pattern = "host|os" }
+          </pattern>
+        </ele>
+        <ele>
           <name>host</name>
           <summary>A host</summary>
           <pattern>
             <e>severity</e>
             <any><e>detail</e></any>
-            <e>routes</e>
+            <o><e>routes</e></o>
           </pattern>
           <ele>
             <name>severity</name>
@@ -9480,7 +9494,7 @@ END:VCALENDAR
               Hosts on which this OS has been detected as the best match
             </summary>
             <pattern>
-              <e>asset</e>
+              <any><e>asset</e></any>
             </pattern>
             <ele>
               <name>asset</name>
@@ -9515,7 +9529,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>in_use</name>
-          <summary>Whether any tasks are using the asset</summary>
+          <summary>Whether the asset is in use</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
