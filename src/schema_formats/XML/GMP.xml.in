@@ -10539,20 +10539,31 @@ END:VCALENDAR
       <response>
         <get_configs_response status="200" status_text="OK">
           <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <owner>
+              <name>mabel</name>
+            </owner>
             <name>Full and fast</name>
-            <comment>All NVT's; optimized by using previously collected information.</comment>
-            <creation_time>2012-11-23T10:44:00+01:00</creation_time>
-            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
+            <comment>Most NVT's; optimized by using previously collected information. Version 20201215.</comment>
+            <creation_time>2023-03-06T11:26:30-05:00</creation_time>
+            <modification_time>2024-01-23T10:02:26-05:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
             <family_count>
-              4
+              56
               <growing>1</growing>
             </family_count>
             <nvt_count>
-              12
+              88005
               <growing>1</growing>
             </nvt_count>
-            <in_use>1</in_use>
-            <writable>0</writable>
+            <type>0</type>
+            <usage_type>scan</usage_type>
+            <predefined>0</predefined>
           </config>
           <truncated>...</truncated>
         </get_configs_response>
@@ -10567,44 +10578,64 @@ END:VCALENDAR
       <response>
         <get_configs_response status="200" status_text="OK">
           <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <owner>
+              <name>mabel</name>
+            </owner>
             <name>Full and fast</name>
-            <comment>All NVT's; optimized by using previously collected information.</comment>
+            <comment>
+              Most NVT's; optimized by using previously collected information. Version 20201215.
+            </comment>
+            <creation_time>2023-03-06T11:26:30-05:00</creation_time>
+            <modification_time>2024-01-23T10:02:26-05:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
             <family_count>
-              4
+              56
               <growing>1</growing>
             </family_count>
             <nvt_count>
-              12
+              88005
               <growing>1</growing>
             </nvt_count>
-            <in_use>1</in_use>
-            <tasks>
-              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
-                <name>Web Servers</name>
-              </task>
-              <truncated>...</truncated>
-            </tasks>
+            <type>0</type>
+            <usage_type>scan</usage_type>
+            <predefined>0</predefined>
             <families>
               <family>
-                <name>Credentials</name>
-                <nvt_count>8</nvt_count>
-                <max_nvt_count>8</max_nvt_count>
+                <name>AIX Local Security Checks</name>
+                <nvt_count>1</nvt_count>
+                <max_nvt_count>1</max_nvt_count>
                 <growing>1</growing>
               </family>
               <truncated>...</truncated>
             </families>
+            <max_nvt_count>88014</max_nvt_count>
+            <known_nvt_count>88005</known_nvt_count>
             <preferences>
               <preference>
-                <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
-                  <name>Services</name>
+                <nvt oid="1.3.6.1.4.1.25623.1.0.100151">
+                  <name>PostgreSQL Detection (TCP)</name>
                 </nvt>
                 <id>1</id>
-                <name>Network connection timeout :</name>
+                <hr_name>Postgres Username:</hr_name>
+                <name>Postgres Username:</name>
                 <type>entry</type>
-                <value>5</value>
+                <value>postgres</value>
+                <default>postgres</default>
               </preference>
               <truncated>...</truncated>
             </preferences>
+            <tasks>
+              <task id="1d5c5fc8-937e-41f1-b52f-49887c386b12">
+                <name>Web Servers</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
           </config>
           <truncated>...</truncated>
         </get_configs_response>
