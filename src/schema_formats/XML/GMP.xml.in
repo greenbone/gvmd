@@ -11342,7 +11342,7 @@ END:VCALENDAR
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type of single feed to get: NVT, CERT or SCAP</summary>
+        <summary>Type of single feed to get: NVT, CERT, SCAP or GVMD_DATA</summary>
         <type>text</type>
       </attrib>
     </pattern>
@@ -11372,7 +11372,7 @@ END:VCALENDAR
         </pattern>
         <ele>
           <name>type</name>
-          <summary>The type of feed: NVT, CERT or SCAP</summary>
+          <summary>The type of feed: NVT, CERT, SCAP or GVMD_DATA</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11406,16 +11406,10 @@ END:VCALENDAR
           <summary>Present if a sync of this type is underway</summary>
           <pattern>
             <e>timestamp</e>
-            <e>user</e>
           </pattern>
           <ele>
             <name>timestamp</name>
             <summary>Time sync started</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>user</name>
-            <summary>Name of user who is performing sync</summary>
             <pattern>text</pattern>
           </ele>
         </ele>
