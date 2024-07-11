@@ -10755,11 +10755,13 @@ END:VCALENDAR
           <o><e>certificate_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
-          <or>
-            <e>public_key</e>
-            <e>package</e>
-            <e>certificate</e>
-          </or>
+          <o>
+            <or>
+              <e>public_key</e>
+              <e>package</e>
+              <e>certificate</e>
+            </or>
+          </o>
         </pattern>
         <ele>
           <name>owner</name>
