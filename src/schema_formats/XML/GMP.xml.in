@@ -11990,7 +11990,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>in_use</name>
-          <summary>Whether any tasks are using the filter</summary>
+          <summary>Whether any alerts are using the filter</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
