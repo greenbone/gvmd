@@ -4360,6 +4360,7 @@ typedef enum
   CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
+  CLIENT_GET_FEATURES,
   CLIENT_GET_FEEDS,
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
@@ -5294,6 +5295,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
+          }
+        else if (strcasecmp ("GET_FEATURES", element_name) == 0)
+          {
+            set_client_state (CLIENT_GET_FEATURES);
           }
         else if (strcasecmp ("GET_FEEDS", element_name) == 0)
           {
@@ -9104,6 +9109,42 @@ results_xml_append_cert (GString *buffer, iterator_t *results, const char *oid,
 }
 
 /**
+ * @brief Append an EPSS info element to a results XML buffer.
+ *
+ * @param[in]  results  Results iterator.
+ * @param[in]  buffer   XML buffer to add to.
+ */
+static void
+results_xml_append_epss (iterator_t *results, GString *buffer)
+{
+  buffer_xml_append_printf (buffer,
+                            "<epss>"
+                            "<max_severity>"
+                            "<score>%0.5f</score>"
+                            "<percentile>%0.5f</percentile>"
+                            "<cve id=\"%s\">"
+                            "<severity>%0.1f</severity>"
+                            "</cve>"
+                            "</max_severity>"
+                            "<max_epss>"
+                            "<score>%0.5f</score>"
+                            "<percentile>%0.5f</percentile>"
+                            "<cve id=\"%s\">"
+                            "<severity>%0.1f</severity>"
+                            "</cve>"
+                            "</max_epss>"
+                            "</epss>",
+                            result_iterator_epss_score (results),
+                            result_iterator_epss_percentile (results),
+                            result_iterator_epss_cve (results),
+                            result_iterator_epss_severity (results),
+                            result_iterator_max_epss_score (results),
+                            result_iterator_max_epss_percentile (results),
+                            result_iterator_max_epss_cve (results),
+                            result_iterator_max_epss_severity (results));
+}
+
+/**
  * @brief Append an NVT element to an XML buffer.
  *
  * @param[in]  results  Results.
@@ -9133,14 +9174,19 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<severities score=\"%s\">"
                                     "</severities>"
                                     "<cpe id='%s'/>"
-                                    "<cve>%s</cve>"
-                                    "</nvt>",
+                                    "<cve>%s</cve>",
                                     oid,
                                     oid,
                                     severity ? severity : "",
                                     severity ? severity : "",
                                     result_iterator_port (results),
                                     oid);
+
+          if (result_iterator_epss_cve (results))
+            results_xml_append_epss (results, buffer);
+
+          buffer_xml_append_printf (buffer, "</nvt>");
+
           g_free (severity);
           return;
         }
@@ -9279,6 +9325,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             else
               buffer_xml_append_printf (buffer, "/>");
           }
+
+        if (result_iterator_epss_cve (results))
+          results_xml_append_epss (results, buffer);
 
         first = 1;
         xml_append_nvt_refs (buffer, result_iterator_nvt_oid (results),
@@ -11670,7 +11719,6 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       gchar *routes_xml;
 
       asset = get_iterator_resource (&assets);
-      /* Assets are currently always writable. */
       if (send_get_common ("asset", &get_assets_data->get, &assets,
                            gmp_parser->client_writer,
                            gmp_parser->client_writer_data,
@@ -12877,6 +12925,32 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
   g_free (feed_description);
 
   SEND_TO_CLIENT_OR_FAIL ("</feed>");
+}
+
+/**
+ * @brief Handle end of GET_FEATURES element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_features (gmp_parser_t *gmp_parser, GError **error)
+{
+  SEND_TO_CLIENT_OR_FAIL ("<get_features_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>CVSS3_RATINGS</name>"
+                           "</feature>",
+                           CVSS3_RATINGS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>OPENVASD</name>"
+                           "</feature>",
+                           OPENVASD ? 1 : 0);
+
+  SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
 
 /**
@@ -19958,6 +20032,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_CREDENTIALS:
         handle_get_credentials (gmp_parser, error);
+        break;
+
+      case CLIENT_GET_FEATURES:
+        handle_get_features (gmp_parser, error);
         break;
 
       case CLIENT_GET_FEEDS:

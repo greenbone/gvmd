@@ -1522,6 +1522,30 @@ result_iterator_may_have_overrides (iterator_t*);
 int
 result_iterator_may_have_tickets (iterator_t*);
 
+double
+result_iterator_epss_score (iterator_t*);
+
+double
+result_iterator_epss_percentile (iterator_t*);
+
+const char*
+result_iterator_epss_cve (iterator_t*);
+
+double
+result_iterator_epss_severity (iterator_t*);
+
+double
+result_iterator_max_epss_score (iterator_t*);
+
+double
+result_iterator_max_epss_percentile (iterator_t*);
+
+const char*
+result_iterator_max_epss_cve (iterator_t*);
+
+double
+result_iterator_max_epss_severity (iterator_t*);
+
 gchar **
 result_iterator_cert_bunds (iterator_t*);
 
