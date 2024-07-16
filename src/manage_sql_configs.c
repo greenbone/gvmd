@@ -3316,12 +3316,12 @@ config_in_use (config_t config)
  *
  * @param[in]  config  Config.
  *
- * @return 1.
+ * @return 1 if writable, else 0.
  */
 int
 config_writable (config_t config)
 {
-  return 1;
+  return config_predefined (config) ? 0 : 1;
 }
 
 /**
