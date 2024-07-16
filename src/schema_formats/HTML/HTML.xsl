@@ -579,12 +579,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </xsl:when>
       <xsl:when test="name() = 'e'">
         <li>
-          <xsl:variable name="element-name" select="text()"/>
+          <xsl:variable name="element-name-or-id" select="text()"/>
+          <!-- | appends right to left and [1] limits to one ele.
+               So if an ele with <id> is present it will override an ele with <name>. -->
           <xsl:variable name="new-line-element"
-                        select="$line-element/ele[name=$element-name]"/>
+                        select="($line-element/ele[id=$element-name-or-id]|$line-element/ele[name=$element-name-or-id])[1]"/>
           <xsl:choose>
             <xsl:when test="$new-line-element">
-              &lt;<b><xsl:value-of select="text()"/></b>&gt;
+              &lt;<b><xsl:value-of select="$new-line-element/name"/></b>&gt;
               <xsl:value-of select="$element-suffix"/>
               <xsl:if test="$new-line-element/type">
                 <div style="margin-left: 15px; display: inline;">(<xsl:apply-templates select="$new-line-element/type" mode="element"/>)</div>
@@ -611,6 +613,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </xsl:if>
             </xsl:when>
             <xsl:otherwise>
+              <xsl:variable name="element-name" select="text()"/>
               <xsl:variable name="global-element"
                             select="/protocol/element[name=$element-name]"/>
               &lt;<a href="#element_{$global-element/name}"><b><xsl:value-of select="text()"/></b></a>&gt;
