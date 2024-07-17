@@ -7994,6 +7994,126 @@ end_stop_openvasd:
 }
 
 /**
+ * @brief Prepare a report for resuming an OSP scan
+ *
+ * @param[in]  task     The task of the scan.
+ * @param[in]  scan_id  The scan uuid.
+ * @param[out] error    Error return.
+ *
+ * @return 0 scan finished or still running,
+ *         1 scan must be started,
+ *         -1 error
+ */
+static int
+prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
+                                  char **error)
+{
+  openvasd_connector_t connection;
+
+  openvasd_scan_status_t status;
+  openvasd_resp_t response;
+
+  assert (task);
+  assert (scan_id);
+  assert (global_current_report);
+  assert (error);
+
+  connection = openvasd_scanner_connect (task_scanner (task), scan_id);
+  if (!connection)
+    {
+      *error = g_strdup ("Could not connect to Openvasd Scanner");
+      return -1;
+    }
+  status = openvasd_parsed_scan_status (&connection);
+
+  if (status->status == OPENVASD_SCAN_STATUS_ERROR)
+    {
+      if (status->response_code == 404)
+        {
+          g_debug ("%s: Scan %s not found", __func__, scan_id);
+          openvasd_connector_free (&connection);
+          trim_partial_report (global_current_report);
+          return 1;
+        }
+      g_warning ("%s: Error getting status of scan %s: %ld",
+                 __func__, scan_id, status->response_code);
+      openvasd_connector_free (&connection);
+      return -1;
+    }
+  else if (status->status == OPENVASD_SCAN_STATUS_RUNNING
+           || status->status == OPENVASD_SCAN_STATUS_REQUESTED)
+    {
+      g_debug ("%s: Scan %s queued or running", __func__, scan_id);
+      /* It would be possible to simply continue getting the results
+       * from the scanner, but gvmd may have crashed while receiving
+       * or storing the results, so some may be missing. */
+      response = openvasd_stop_scan (&connection);
+      if (response->code != 204)
+        {
+          *error = g_strdup_printf ("Failed to stop old report: %ld",
+                                    response->code);
+          openvasd_connector_free (&connection);
+          openvasd_response_free(response);
+          return -1;
+        }
+      response = openvasd_delete_scan (&connection);
+      if (response->code != 204)
+        {
+          *error = g_strdup_printf ("Failed to delete old report: %ld",
+                             response->code);
+          openvasd_response_free(response);
+          openvasd_connector_free (&connection);
+          return -1;
+        }
+      openvasd_connector_free (&connection);
+      trim_partial_report (global_current_report);
+      return 1;
+    }
+  else if (status->status == OPENVASD_SCAN_STATUS_SUCCEEDED)
+    {
+      /* OSP can't stop an already finished/interrupted scan,
+       * but it must be delete to be resumed. */
+      g_debug ("%s: Scan %s finished", __func__, scan_id);
+     response = openvasd_delete_scan (&connection);
+      if (response->code != 204)
+        {
+          *error = g_strdup_printf ("Failed to delete old report: %ld",
+                             response->code);
+          openvasd_response_free(response);
+          openvasd_connector_free (&connection);
+          return -1;
+        }
+      openvasd_connector_free (&connection);
+      trim_partial_report (global_current_report);
+      return 1;
+    }
+  else if (status->status == OPENVASD_SCAN_STATUS_STOPPED
+           || status->status == OPENVASD_SCAN_STATUS_FAILED)
+    {
+      g_debug ("%s: Scan %s stopped or interrupted",
+               __func__, scan_id);
+    response = openvasd_delete_scan (&connection);
+      if (response->code != 204)
+        {
+          *error = g_strdup_printf ("Failed to delete old report: %ld",
+                             response->code);
+          openvasd_response_free(response);
+          openvasd_connector_free (&connection);
+          return -1;
+        }
+      openvasd_connector_free (&connection);
+      trim_partial_report (global_current_report);
+      return 1;
+    }
+
+  g_warning ("%s: Unexpected scanner status %d", __func__, status->status);
+  *error = g_strdup_printf ("Unexpected scanner status %d", status->status);
+  openvasd_connector_free (&connection);
+
+  return -1;
+}
+
+/**
  * @brief Launch an OpenVAS via Openvasd task.
  *
  * @param[in]   task        The task.
@@ -8036,7 +8156,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   /* Prepare the report */
   if (from)
     {
-      ret = prepare_osp_scan_for_resume (task, scan_id, error);
+      ret = prepare_openvasd_scan_for_resume (task, scan_id, error);
       if (ret == 0)
         return 0;
       else if (ret == -1)
