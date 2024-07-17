@@ -7939,7 +7939,7 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
 static int
 stop_openvasd_task (task_t task)
 {
-  int ret = -1;
+  int ret = 0;
   report_t scan_report;
   char *scan_id;
   task_t previous_task;
@@ -7951,15 +7951,20 @@ stop_openvasd_task (task_t task)
 
   previous_task = current_scanner_task;
   previous_report = global_current_report;
-
   scan_report = task_running_report (task);
   scan_id = report_uuid (scan_report);
   if (!scan_id)
-    goto end_stop_openvasd;
+    {
+      ret = -1;
+      goto end_stop_openvasd;
+    }
   scanner = task_scanner (task);
   connector = openvasd_scanner_connect (scanner, scan_id);
   if (!connector)
-    goto end_stop_openvasd;
+    {
+      ret = -1;
+      goto end_stop_openvasd;
+    }
 
   current_scanner_task = task;
   global_current_report = task_running_report (task);
@@ -7967,13 +7972,12 @@ stop_openvasd_task (task_t task)
   response = openvasd_stop_scan (&connector);
   if (response->code < 0)
     {
+      ret = -1;
       g_free (scan_id);
       goto end_stop_openvasd;
     }
-
   response = openvasd_delete_scan (&connector);
   g_free (scan_id);
-
 end_stop_openvasd:
   openvasd_connector_free(&connector);
   set_task_end_time_epoch (task, time (NULL));
@@ -7985,9 +7989,8 @@ end_stop_openvasd:
     }
   current_scanner_task = previous_task;
   global_current_report = previous_report;
-  if (ret)
-    return -1;
-  return 0;
+
+  return ret;
 }
 
 /**
