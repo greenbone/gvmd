@@ -4,5 +4,7 @@ ${GVM_LOG_DIR}/gvmd.log {
 	notifempty
 	sharedscripts
 	copytruncate
+	su gvm gvm
+	create 0640 gvm gvm
 }
 
