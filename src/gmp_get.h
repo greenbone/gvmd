@@ -57,7 +57,7 @@ init_get (gchar *, get_data_t *, const gchar *, int *);
 
 int
 get_next (iterator_t *, get_data_t *, int *, int *,
-          int (*) (iterator_t *, const get_data_t *));
+          int (*) (iterator_t *, get_data_t *));
 
 int
 send_get_start (const char *, int (*) (const char *, void *), void *);
@@ -66,7 +66,6 @@ send_get_start (const char *, int (*) (const char *, void *), void *);
  * @brief Send start of GET response to client, returning on fail.
  *
  * @param[in]  type  Type of resource.
- * @param[in]  get   GET data.
  */
 #define SEND_GET_START(type)                               \
   do                                                       \

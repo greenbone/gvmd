@@ -142,6 +142,10 @@
  */
 #define SETTING_UUID_DELTA_REPORTS_VERSION "985a0c05-2140-4e66-9989-ce9a0906a5a9"
 
+/**
+ * @brief UUID of 'SecInfo SQL Buffer Threshold' setting.
+ */
+#define SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "316275a9-3629-49ad-9cea-5b3ab155b93f"
 
 /**
  * @brief Trust constant for error.
@@ -248,9 +252,9 @@ typedef struct
  *
  * @param[in]  prefix  Column prefix.
  */
-#define GET_ITERATOR_COLUMNS_STRING                                \
-  "id, uuid, name, comment, iso_time (creation_time),"             \
-  " iso_time (modification_time), creation_time AS created,"       \
+#define GET_ITERATOR_COLUMNS_STRING                     \
+  "id, uuid, name, comment, creation_time,"             \
+  " modification_time, creation_time AS created,"       \
   " modification_time AS modified"
 
 /**
@@ -263,8 +267,8 @@ typedef struct
   { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
   { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
   { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
-  { " iso_time (" prefix "creation_time)", NULL, KEYWORD_TYPE_STRING },     \
-  { " iso_time (" prefix "modification_time)", NULL, KEYWORD_TYPE_STRING }, \
+  { prefix "creation_time", NULL, KEYWORD_TYPE_INTEGER },                   \
+  { prefix "modification_time", NULL, KEYWORD_TYPE_INTEGER },               \
   { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
   { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
 
@@ -291,7 +295,7 @@ typedef struct
 /**
  * @brief Delta results columns offset for result iterator.
  */
-#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 38
+#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 46
 
 
 /* Variables */
@@ -381,7 +385,7 @@ void reinit_manage_process ();
 
 int manage_update_nvti_cache ();
 
-int manage_report_host_details (report_t, const char *, entity_t);
+int manage_report_host_details (report_t, const char *, entity_t, GHashTable *);
 
 const char *run_status_name_internal (task_status_t);
 
@@ -500,6 +504,9 @@ add_role_permission_resource (const gchar *, const gchar *, const gchar *,
 
 void
 create_view_vulns ();
+
+void
+create_view_result_vt_epss ();
 
 int
 config_family_entire_and_growing (config_t, const char*);

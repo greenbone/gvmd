@@ -62,7 +62,7 @@ int
 port_list_count (const get_data_t *);
 
 int
-init_port_list_iterator (iterator_t *, const get_data_t *);
+init_port_list_iterator (iterator_t *, get_data_t *);
 
 int
 port_list_iterator_count_all (iterator_t *);

@@ -26,10 +26,11 @@ find_package (Threads)
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.7)
-pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.6)
-pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.6)
-pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.6)
+pkg_check_modules (CJSON REQUIRED libcjson>=1.7.14)
+pkg_check_modules (LIBGVM_BASE REQUIRED libgvm_base>=22.10)
+pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.10)
+pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.10)
+pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.10)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules (LIBBSD REQUIRED libbsd)
@@ -54,14 +55,6 @@ elseif ((CMAKE_MATCH_1 EQUAL 9 AND CMAKE_MATCH_2 LESS 6)
   message (SEND_ERROR "PostgreSQL version >= 9.6 is required")
   message (STATUS "PostgreSQL version ${CMAKE_MATCH_1}.${CMAKE_MATCH_2}${CMAKE_MATCH_3}")
 endif (NOT CMAKE_MATCH_1)
-
-message (STATUS "Looking for xml_split...")
-find_program (XML_SPLIT_EXECUTABLE xml_split DOC "xml_split")
-if (NOT XML_SPLIT_EXECUTABLE)
-  message (WARNING "xml_split is recommended to reduce SCAP sync memory usage (Debian package xml-twig-tools).")
-else (NOT XML_SPLIT_EXECUTABLE)
-  message (STATUS "Looking for xml_split... ${XML_SPLIT_EXECUTABLE}")
-endif (NOT XML_SPLIT_EXECUTABLE)
 
 message (STATUS "Looking for xsltproc...")
 find_program (XSLTPROC_EXECUTABLE xsltproc DOC "xsltproc")
@@ -120,10 +113,12 @@ add_executable (manage-utils-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -132,7 +127,9 @@ add_executable (manage-utils-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (manage-utils-test manage-utils-test)
@@ -147,10 +144,12 @@ add_executable (manage-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -159,7 +158,9 @@ add_executable (manage-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (manage-test manage-test)
@@ -174,10 +175,12 @@ add_executable (manage-sql-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -186,7 +189,9 @@ add_executable (manage-sql-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (manage-sql-test manage-sql-test)
@@ -201,10 +206,12 @@ add_executable (gmp-tickets-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -213,7 +220,10 @@ add_executable (gmp-tickets-test
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tls_certificates.c)
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c
+                gmp_tls_certificates.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
 
@@ -227,10 +237,12 @@ add_executable (utils-test
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -239,7 +251,9 @@ add_executable (utils-test
                 lsc_user.c lsc_crypt.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 add_test (utils-test utils-test)
@@ -247,6 +261,21 @@ add_test (utils-test utils-test)
 add_custom_target (tests
                    DEPENDS
                    gmp-tickets-test manage-test manage-sql-test manage-utils-test utils-test)
+
+if (ENABLE_COVERAGE)
+  add_custom_target (coverage-html
+                     COMMAND gcovr --html-details ${COVERAGE_DIR}/coverage.html
+                     -r ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+  add_custom_target (coverage-xml
+                     COMMAND gcovr --xml ${COVERAGE_DIR}/coverage.xml
+                     -r ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+  add_custom_target (coverage DEPENDS coverage-xml coverage-html)
+endif (ENABLE_COVERAGE)
+
+add_custom_target (clean-coverage
+                   COMMAND find . -name *.gcda -delete -or -name *.gcno -delete
+                   COMMAND rm -f ${COVERAGE_DIR}/*)
+
 
 add_executable (gvmd
                 main.c gvmd.c
@@ -256,10 +285,12 @@ add_executable (gvmd
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
+                manage_report_configs.c
                 manage_report_formats.c
                 manage_authentication.c
                 manage_sql.c manage_sql_nvts.c manage_sql_secinfo.c
                 manage_sql_port_lists.c manage_sql_configs.c
+                manage_sql_report_configs.c
                 manage_sql_report_formats.c
                 manage_sql_tickets.c manage_sql_tls_certificates.c
                 manage_tls_certificates.c
@@ -268,37 +299,39 @@ add_executable (gvmd
                 lsc_user.c lsc_crypt.c utils.c
                 gmp.c gmp_base.c gmp_configs.c gmp_delete.c gmp_get.c
                 gmp_license.c gmp_logout.c
-                gmp_port_lists.c gmp_report_formats.c gmp_tickets.c
+                gmp_port_lists.c
+                gmp_report_configs.c
+                gmp_report_formats.c gmp_tickets.c
                 gmp_tls_certificates.c)
 
 target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-sql-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gmp-tickets-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
-                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
+                       ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_GMP_LDFLAGS}
                        ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gvm-pg-server ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})

@@ -47,6 +47,7 @@
 #include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <gvm/base/gvm_sentry.h>
@@ -483,7 +484,7 @@ iso_time_internal (time_t *epoch_time, const char **abbrev)
 /**
  * @brief Create an ISO time from seconds since epoch.
  *
- * @param[in]  epoch_time  Time in seconds from epoch.
+ * @param[in]  epoch_time  Pointer to time in seconds from epoch.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
@@ -496,7 +497,7 @@ iso_time (time_t *epoch_time)
 /**
  * @brief Create an ISO time from seconds since epoch, given a timezone.
  *
- * @param[in]  epoch_time  Time in seconds from epoch.
+ * @param[in]  epoch_time  Pointer to time in seconds from epoch.
  * @param[in]  zone        Timezone.
  * @param[out] abbrev      Timezone abbreviation.
  *
@@ -541,6 +542,28 @@ iso_time_tz (time_t *epoch_time, const char *zone, const char **abbrev)
 
   g_free (tz);
   return ret;
+}
+
+/**
+ * @brief Create an ISO time from seconds since epoch, with a 0 check.
+ *
+ * @param[in]  epoch_time  Time in seconds from epoch.
+ *
+ * @return ISO time string in static memory.  If epoch_time is 0 then string is empty.
+ */
+char *
+iso_if_time (time_t epoch_time)
+{
+  static char *empty = "";
+  if (epoch_time)
+    {
+      char *ret;
+
+      ret = iso_time (&epoch_time);
+      if (ret)
+        return ret;
+    }
+  return empty;
 }
 
 
@@ -883,4 +906,56 @@ fork_with_handlers ()
       setup_signal_handler (SIGQUIT, SIG_DFL, 0);
     }
   return pid;
+}
+
+/**
+ * @brief Waits for a process with the given PID, retrying if interrupted.
+ *
+ * If the wait is interrupted or the process does not exist, only debug
+ *  messages are logged.
+ *
+ * @param[in]  pid      The pid to wait for.
+ * @param[in]  context  Short context desciption for error and debug messages.
+ */
+void
+wait_for_pid (pid_t pid, const char *context)
+{
+  gboolean retry = TRUE;
+  const char *shown_context = context ? context : "unknown context";
+  if (pid <= 0)
+    {
+      g_message ("%s: No PID given (%s)", __func__, shown_context);
+      return;
+    }
+
+  while (retry)
+    {
+      retry = FALSE;
+      pid_t ret = waitpid (pid, NULL, 0);
+      if (ret <= 0)
+        {
+          int err = errno;
+          if (errno == ECHILD)
+            {
+              g_debug ("%s: process with PID %d (%s) does not exist",
+                       __func__, pid, shown_context);
+            }
+          else if (errno == EINTR)
+            {
+              g_debug ("%s: waitpid interrupted for PID %d (%s), retrying...",
+                       __func__, pid, shown_context);
+              retry = TRUE;
+            }
+          else
+            {
+              g_warning ("%s: waitpid failed for PID %d (%s): %s",
+                         __func__, pid, shown_context, strerror(err));
+            }
+        }
+      else
+        {
+          g_debug ("%s: wait for PID %d (%s) successful",
+                   __func__, pid, shown_context);
+        }
+    }
 }

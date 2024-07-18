@@ -8,6 +8,7 @@ if [ -n MTA_HOST ]; then
     [ -n MTA_PORT ] && echo "port $MTA_PORT" >> $CONFIG
     [ -n MTA_TLS ] && echo "tls $MTA_TLS" >> $CONFIG
     [ -n MTA_STARTTLS ] && echo "tls_starttls $MTA_STARTTLS" >> $CONFIG
+    [ -n MTA_TLS_CERTCHECK ] && echo "tls_certcheck $MTA_TLS_CERTCHECK" >> $CONFIG
     [ -n MTA_AUTH ] && echo "auth $MTA_AUTH" >> $CONFIG
     [ -n MTA_USER ] && echo "user $MTA_USER" >> $CONFIG
     [ -n MTA_FROM ] && echo "from $MTA_FROM" >> $CONFIG

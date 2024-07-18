@@ -1806,6 +1806,59 @@ create_view_vulns ()
          " WHERE uuid in (SELECT * FROM used_nvts)");
 }
 
+/**
+ * @brief Create or replace the result_vt_epss view.
+ */
+void
+create_view_result_vt_epss ()
+{
+  sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
+
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'scap'"
+               "               AND table_name = 'cves')"
+               " ::integer;",
+               sql_database ()))
+    sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
+         "  SELECT cve AS vt_id,"
+         "    epss AS epss_score,"
+         "    percentile AS epss_percentile,"
+         "    cve AS epss_cve,"
+         "    cves.severity AS epss_severity,"
+         "    epss AS max_epss_score,"
+         "    percentile AS max_epss_percentile,"
+         "    cve AS max_epss_cve,"
+         "    cves.severity AS max_epss_severity"
+         "  FROM scap.epss_scores"
+         "  JOIN scap.cves ON cve = cves.uuid"
+         "  UNION ALL"
+         "  SELECT oid AS vt_id,"
+         "    epss_score,"
+         "    epss_percentile,"
+         "    epss_cve,"
+         "    epss_severity,"
+         "    max_epss_score,"
+         "    max_epss_percentile,"
+         "    max_epss_cve,"
+         "    max_epss_severity"
+         "  FROM nvts);");
+  else
+    sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
+         "  SELECT oid AS vt_id,"
+         "    epss_score,"
+         "    epss_percentile,"
+         "    epss_cve,"
+         "    max_epss_score,"
+         "    max_epss_percentile,"
+         "    max_epss_cve"
+         "  FROM nvts);");
+
+  sql ("SELECT create_index ('result_vt_epss_by_vt_id',"
+       "                     'result_vt_epss', 'vt_id');");
+
+}
+
 
 
 #undef VULNS_RESULTS_WHERE
@@ -1868,7 +1921,16 @@ create_tables_nvt (const gchar *suffix)
        "  solution_method text,"
        "  detection text,"
        "  qod integer,"
-       "  qod_type text);",
+       "  qod_type text,"
+       "  epss_cve TEXT,"
+       "  epss_score DOUBLE PRECISION,"
+       "  epss_percentile DOUBLE PRECISION,"
+       "  epss_severity DOUBLE PRECISION,"
+       "  max_epss_cve TEXT,"
+       "  max_epss_score DOUBLE PRECISION,"
+       "  max_epss_percentile DOUBLE PRECISION,"
+       "  max_epss_severity DOUBLE PRECISION"
+       ");",
        suffix);
 }
 
@@ -2613,6 +2675,42 @@ create_tables ()
        " (result_nvt INTEGER,"
        "  report INTEGER);");
 
+  sql ("CREATE TABLE IF NOT EXISTS report_configs"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  report_format_id text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS report_configs_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  report_format_id text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS report_config_params"
+       " (id SERIAL PRIMARY KEY,"
+       "  report_config integer"
+       "    REFERENCES report_configs (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  value text,"
+       "  UNIQUE (report_config, name));");
+
+  sql ("CREATE TABLE IF NOT EXISTS report_config_params_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  report_config integer"
+       "    REFERENCES report_configs_trash (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  value text,"
+       "  UNIQUE (report_config, name));");
+
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2951,6 +3049,8 @@ create_tables ()
        "    ON sources.origin = origins.id;");
 
   create_view_vulns ();
+
+  create_view_result_vt_epss ();
 
   /* Create indexes. */
 
@@ -3386,6 +3486,12 @@ manage_db_init (const gchar *name)
            " (cve INTEGER,"
            "  cpe INTEGER);");
 
+      sql ("CREATE TABLE scap2.epss_scores"
+           " (cve TEXT,"
+           "  epss DOUBLE PRECISION,"
+           "  percentile DOUBLE PRECISION);");
+
+
       /* Init tables. */
 
       sql ("INSERT INTO scap2.meta (name, value)"
@@ -3430,6 +3536,10 @@ manage_db_add_constraints (const gchar *name)
            " ADD UNIQUE (cve, cpe),"
            " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
            " ADD FOREIGN KEY(cpe) REFERENCES cpes(id);");
+
+      sql ("ALTER TABLE scap2.epss_scores"
+           " ALTER cve SET NOT NULL,"
+           " ADD UNIQUE (cve);");
     }
   else
     {
@@ -3476,6 +3586,9 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.affected_products (cpe);");
       sql ("CREATE INDEX afp_cve_idx"
            " ON scap2.affected_products (cve);");
+
+      sql ("CREATE INDEX epss_scores_by_cve"
+           " ON scap2.epss_scores (cve);");
     }
   else
     {

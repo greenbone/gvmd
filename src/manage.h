@@ -346,6 +346,8 @@ typedef resource_t tls_certificate_t;
 typedef resource_t result_t;
 typedef resource_t report_t;
 typedef resource_t report_host_t;
+typedef resource_t report_config_t;
+typedef resource_t report_config_param_t;
 typedef resource_t report_format_t;
 typedef resource_t report_format_param_t;
 typedef resource_t role_t;
@@ -628,7 +630,7 @@ int
 alert_count (const get_data_t *);
 
 int
-init_alert_iterator (iterator_t*, const get_data_t*);
+init_alert_iterator (iterator_t*, get_data_t*);
 
 int
 alert_iterator_event (iterator_t*);
@@ -728,7 +730,7 @@ unsigned int
 task_count (const get_data_t *);
 
 int
-init_task_iterator (iterator_t*, const get_data_t *);
+init_task_iterator (iterator_t*, get_data_t *);
 
 task_status_t
 task_iterator_run_status (iterator_t*);
@@ -1169,9 +1171,6 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 
 /* Reports. */
 
-/** @todo How is this documented? */
-#define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
-
 /**
  * @brief Default apply_overrides setting
  */
@@ -1285,7 +1284,7 @@ insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *);
 
 int
-manage_report_host_detail (report_t, const char *, const char *);
+manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
 
 void
 hosts_set_identifiers (report_t);
@@ -1523,6 +1522,30 @@ result_iterator_may_have_overrides (iterator_t*);
 int
 result_iterator_may_have_tickets (iterator_t*);
 
+double
+result_iterator_epss_score (iterator_t*);
+
+double
+result_iterator_epss_percentile (iterator_t*);
+
+const char*
+result_iterator_epss_cve (iterator_t*);
+
+double
+result_iterator_epss_severity (iterator_t*);
+
+double
+result_iterator_max_epss_score (iterator_t*);
+
+double
+result_iterator_max_epss_percentile (iterator_t*);
+
+const char*
+result_iterator_max_epss_cve (iterator_t*);
+
+double
+result_iterator_max_epss_severity (iterator_t*);
+
 gchar **
 result_iterator_cert_bunds (iterator_t*);
 
@@ -1562,10 +1585,10 @@ result_iterator_delta_uuid (iterator_t*);
 const char *
 result_iterator_delta_qod_type (iterator_t*);
 
-const char *
+time_t
 result_iterator_delta_creation_time (iterator_t*);
 
-const char *
+time_t
 result_iterator_delta_modification_time (iterator_t*);
 
 task_t
@@ -1632,12 +1655,14 @@ int
 report_progress (report_t);
 
 gchar *
-manage_report (report_t, report_t, const get_data_t *, report_format_t,
+manage_report (report_t, report_t, const get_data_t *,
+               report_format_t, report_config_t,
                int, int, gsize *, gchar **, gchar **, gchar **, gchar **,
                gchar **);
 
 int
-manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
+manage_send_report (report_t, report_t, report_format_t, report_config_t,
+                    const get_data_t *,
                     int, int, int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
@@ -1742,7 +1767,7 @@ void
 init_target_iterator_one (iterator_t*, target_t);
 
 int
-init_target_iterator (iterator_t*, const get_data_t *);
+init_target_iterator (iterator_t*, get_data_t *);
 
 const char*
 target_iterator_hosts (iterator_t*);
@@ -1981,6 +2006,36 @@ nvt_iterator_solution_type (iterator_t*);
 const char*
 nvt_iterator_solution_method (iterator_t*);
 
+double
+nvt_iterator_epss_score (iterator_t*);
+
+double
+nvt_iterator_epss_percentile (iterator_t*);
+
+const char*
+nvt_iterator_epss_cve (iterator_t*);
+
+double
+nvt_iterator_epss_severity (iterator_t*);
+
+gboolean
+nvt_iterator_has_epss_severity (iterator_t*);
+
+double
+nvt_iterator_max_epss_score (iterator_t*);
+
+double
+nvt_iterator_max_epss_percentile (iterator_t*);
+
+const char*
+nvt_iterator_max_epss_cve (iterator_t*);
+
+double
+nvt_iterator_max_epss_severity (iterator_t*);
+
+gboolean
+nvt_iterator_has_max_epss_severity (iterator_t*);
+
 char*
 nvt_default_timeout (const char *);
 
@@ -2181,7 +2236,7 @@ void
 init_credential_iterator_one (iterator_t*, credential_t);
 
 int
-init_credential_iterator (iterator_t*, const get_data_t *);
+init_credential_iterator (iterator_t*, get_data_t *);
 
 const char*
 credential_iterator_login (iterator_t*);
@@ -2699,7 +2754,7 @@ char *
 openvas_default_scanner_host ();
 
 int
-init_scanner_iterator (iterator_t*, const get_data_t *);
+init_scanner_iterator (iterator_t*, get_data_t *);
 
 const char*
 scanner_iterator_host (iterator_t*);
@@ -2849,7 +2904,7 @@ void
 set_scheduled_user_uuid (const gchar* uuid);
 
 void
-manage_sync (sigset_t *, int (*fork_update_nvt_cache) (), gboolean);
+manage_sync (sigset_t *, int (*fork_update_nvt_cache) (pid_t*), gboolean);
 
 int
 manage_rebuild_gvmd_data_from_feed (const char *,
@@ -2884,7 +2939,7 @@ int
 schedule_info (schedule_t, int, gchar **, gchar **);
 
 int
-init_schedule_iterator (iterator_t*, const get_data_t *);
+init_schedule_iterator (iterator_t*, get_data_t *);
 
 const char*
 schedule_iterator_timezone (iterator_t *);
@@ -2936,7 +2991,7 @@ set_schedule_timeout (int);
 /* Groups. */
 
 int
-init_group_iterator (iterator_t *, const get_data_t *);
+init_group_iterator (iterator_t *, get_data_t *);
 
 int
 copy_group (const char *, const char *, const char *, group_t *);
@@ -3003,7 +3058,7 @@ int
 permission_count (const get_data_t *);
 
 int
-init_permission_iterator (iterator_t*, const get_data_t *);
+init_permission_iterator (iterator_t*, get_data_t *);
 
 const char*
 permission_iterator_resource_type (iterator_t*);
@@ -3060,7 +3115,7 @@ int
 manage_get_roles (GSList *, const db_conn_info_t *, int);
 
 int
-init_role_iterator (iterator_t *, const get_data_t *);
+init_role_iterator (iterator_t *, get_data_t *);
 
 int
 copy_role (const char *, const char *, const char *, role_t *);
@@ -3217,7 +3272,7 @@ int
 filter_count (const get_data_t*);
 
 int
-init_filter_iterator (iterator_t*, const get_data_t*);
+init_filter_iterator (iterator_t*, get_data_t*);
 
 const char*
 filter_iterator_type (iterator_t*);
@@ -3326,6 +3381,12 @@ cve_info_iterator_description (iterator_t*);
 
 const char*
 cve_info_iterator_products (iterator_t*);
+
+double
+cve_info_iterator_epss_score (iterator_t*);
+
+double
+cve_info_iterator_epss_percentile (iterator_t*);
 
 int
 init_cve_info_iterator (iterator_t*, get_data_t*, const char*);
@@ -3448,6 +3509,9 @@ const char*
 setting_iterator_value (iterator_t*);
 
 int
+setting_value_int (const char *, int *);
+
+int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 int
@@ -3506,7 +3570,7 @@ gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
 
 int
-init_user_iterator (iterator_t*, const get_data_t*);
+init_user_iterator (iterator_t*, get_data_t*);
 
 const char*
 user_iterator_role (iterator_t*);
@@ -3550,7 +3614,7 @@ create_user (const gchar *, const gchar *, const gchar *, const gchar *,
              array_t *, gchar **, gchar **, user_t *, int);
 
 int
-delete_user (const char *, const char *, int, int, const char*, const char*);
+delete_user (const char *, const char *, int, const char*, const char*);
 
 int
 modify_user (const gchar *, gchar **, const gchar *, const gchar *,
@@ -3652,7 +3716,7 @@ modify_tag (const char *, const char *, const char *, const char *,
             gchar **);
 
 int
-init_tag_iterator (iterator_t*, const get_data_t*);
+init_tag_iterator (iterator_t*, get_data_t*);
 
 int
 tag_count (const get_data_t *get);
@@ -3685,7 +3749,7 @@ int
 tag_resource_iterator_readable (iterator_t*);
 
 int
-init_tag_name_iterator (iterator_t*, const get_data_t*);
+init_tag_name_iterator (iterator_t*, get_data_t*);
 
 const char*
 tag_name_iterator_name (iterator_t*);

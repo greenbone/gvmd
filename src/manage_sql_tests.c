@@ -42,6 +42,7 @@ Ensure (manage_sql, validate_results_port_validates)
   PASS ("1/tcp");
   PASS ("8080/tcp");
   PASS ("65535/tcp");
+  PASS ("package");
 
   FAIL (NULL);
   FAIL ("cpe:/a:.joomclan:com_joomclip cpe:two");

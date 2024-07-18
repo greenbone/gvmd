@@ -3176,6 +3176,46 @@ migrate_254_to_255 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 255 to version 256.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_255_to_256 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 255. */
+
+  if (manage_db_version () != 255)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add new columns
+
+  sql ("ALTER TABLE nvts ADD COLUMN epss_cve TEXT;");
+  sql ("ALTER TABLE nvts ADD COLUMN epss_score DOUBLE PRECISION;");
+  sql ("ALTER TABLE nvts ADD COLUMN epss_percentile DOUBLE PRECISION;");
+  sql ("ALTER TABLE nvts ADD COLUMN epss_severity DOUBLE PRECISION;");
+  sql ("ALTER TABLE nvts ADD COLUMN max_epss_cve TEXT;");
+  sql ("ALTER TABLE nvts ADD COLUMN max_epss_score DOUBLE PRECISION;");
+  sql ("ALTER TABLE nvts ADD COLUMN max_epss_percentile DOUBLE PRECISION;");
+  sql ("ALTER TABLE nvts ADD COLUMN max_epss_severity DOUBLE PRECISION;");
+
+  /* Set the database version to 256. */
+
+  set_db_version (256);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3237,6 +3277,7 @@ static migrator_t database_migrators[] = {
   {253, migrate_252_to_253},
   {254, migrate_253_to_254},
   {255, migrate_254_to_255},
+  {256, migrate_255_to_256},
   /* End marker. */
   {-1, NULL}};
 

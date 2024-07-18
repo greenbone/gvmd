@@ -1078,6 +1078,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
   if (permissions == NULL || permissions->len == 0)
     {
       /* Treat filters with no permissions keyword as "any". */
+      g_string_free (permission_or, TRUE);
       permission_or = g_string_new ("t ()");
       index = 1;
     }
@@ -1144,7 +1145,7 @@ acl_where_owned_user (const char *user_id, const char *user_sql,
             permission_clause
              = g_strdup_printf ("%s"
                                 " OR results%s.task IN"
-                                " (SELECT id FROM %spermissions_subject"
+                                " (SELECT resource FROM %spermissions_subject"
                                 "  WHERE resource_type = 'task'"
                                 "  AND (%s))",
                                 clause,

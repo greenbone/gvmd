@@ -260,15 +260,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template name="details-summary-2">
+    <xsl:param name="id"/>
+    <xsl:param name="text"/>
+    <summary id="{$id}"
+             style="margin-block-start: .83em; margin-block-end: .83em; cursor: pointer;">
+      <h2 style="display: inline;"><xsl:value-of select="$text"/></h2>
+    </summary>
+  </xsl:template>
+
+  <xsl:template name="details-summary-3">
+    <xsl:param name="id"/>
+    <xsl:param name="name"/>
+    <xsl:param name="text"/>
+    <summary id="{$id}"
+             style="margin-block-start: .83em; margin-block-end: .83em; cursor: pointer;">
+      <h3 style="display: inline;"><xsl:value-of select="$text"/> <tt><xsl:value-of select="$name"/></tt></h3>
+    </summary>
+  </xsl:template>
+
+  <xsl:template name="details-summary-4">
+    <xsl:param name="text"/>
+    <summary style="margin-block-start: .83em; margin-block-end: .83em; cursor: pointer;">
+      <h4 style="display: inline;"><xsl:value-of select="$text"/></h4>
+    </summary>
+  </xsl:template>
+
   <!-- RNC preamble. -->
 
   <xsl:template name="rnc-preamble">
-    <h2 id="rnc_preamble">4 RNC Preamble</h2>
-    <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-      <pre>
-        <xsl:call-template name="preamble"/>
-      </pre>
-    </div>
+    <details>
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'rnc_preamble'"/>
+        <xsl:with-param name="text" select="'4 RNC Preamble'"/>
+      </xsl:call-template>
+      <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
+        <pre>
+          <xsl:call-template name="preamble"/>
+        </pre>
+      </div>
+    </details>
   </xsl:template>
 
   <!-- Types. -->
@@ -285,20 +316,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="type-summary">
-    <h2 id="type_summary">1 Summary of Data Types</h2>
-    <table id="index">
-    <xsl:apply-templates select="type" mode="index"/>
-    </table>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'type_summary'"/>
+        <xsl:with-param name="text" select="'1 Summary of Data Types'"/>
+      </xsl:call-template>
+      <table id="index">
+        <xsl:apply-templates select="type" mode="index"/>
+      </table>
+    </details>
   </xsl:template>
 
   <xsl:template match="type" mode="details">
     <xsl:param name="index">5.<xsl:value-of select="position()"/></xsl:param>
-    <div>
-      <div>
-        <h3 id="type_{name}">
-        <xsl:value-of select="$index"/>
-        Data Type <tt><xsl:value-of select="name"/></tt></h3>
-      </div>
+    <details open="">
+      <xsl:call-template name="details-summary-3">
+        <xsl:with-param name="id" select="concat('type_', name)"/>
+        <xsl:with-param name="text" select="concat($index, ' Data Type ')"/>
+        <xsl:with-param name="name" select="name"/>
+      </xsl:call-template>
 
       <xsl:if test="summary">
         <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
@@ -306,27 +342,36 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <xsl:apply-templates select="description"/>
 
-      <h4><xsl:value-of select="$index"/>.1 RNC</h4>
+      <details open="">
+        <xsl:call-template name="details-summary-4">
+          <xsl:with-param name="text" select="concat($index, '.1 RNC')"/>
+        </xsl:call-template>
 
-      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-        <pre>
-          <xsl:value-of select="name"/>
-          <xsl:text> = </xsl:text>
-          <xsl:call-template name="wrap">
-            <xsl:with-param name="string">
-              <xsl:value-of select="normalize-space (pattern)"/>
-            </xsl:with-param>
-          </xsl:call-template>
-          <xsl:call-template name="newline"/>
-        </pre>
-      </div>
+        <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
+          <pre>
+            <xsl:value-of select="name"/>
+            <xsl:text> = </xsl:text>
+            <xsl:call-template name="wrap">
+              <xsl:with-param name="string">
+                <xsl:value-of select="normalize-space (pattern)"/>
+              </xsl:with-param>
+            </xsl:call-template>
+            <xsl:call-template name="newline"/>
+          </pre>
+        </div>
+      </details>
 
-    </div>
+    </details>
   </xsl:template>
 
   <xsl:template name="type-details">
-    <h2 id="type_details">5 Data Type Details</h2>
-    <xsl:apply-templates select="type" mode="details"/>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'type_details'"/>
+        <xsl:with-param name="text" select="'5 Data Type Details'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="type" mode="details"/>
+    </details>
   </xsl:template>
 
   <!-- Elements. -->
@@ -343,47 +388,65 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="element-summary">
-    <h2 id="element_summary">2 Summary of Elements</h2>
-    <table id="index">
-    <xsl:apply-templates select="element" mode="index"/>
-    </table>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'element_summary'"/>
+        <xsl:with-param name="text" select="'2 Summary of Elements'"/>
+      </xsl:call-template>
+      <table id="index">
+        <xsl:apply-templates select="element" mode="index"/>
+      </table>
+    </details>
   </xsl:template>
 
   <xsl:template name="element-details">
-    <h2 id="element_details">6 Element Details</h2>
-    <xsl:apply-templates select="element"/>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'element_details'"/>
+        <xsl:with-param name="text" select="'6 Element Details'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="element"/>
+    </details>
   </xsl:template>
 
   <xsl:template match="element">
     <xsl:param name="index">6.<xsl:value-of select="position()"/></xsl:param>
-    <div>
-      <div>
-        <h3 id="element_{name}">
-        <xsl:value-of select="$index"/>
-        Element <tt><xsl:value-of select="name"/></tt></h3>
-      </div>
+    <details open="">
+      <xsl:call-template name="details-summary-3">
+        <xsl:with-param name="id" select="concat('element_', name)"/>
+        <xsl:with-param name="text" select="concat($index, ' Element ')"/>
+        <xsl:with-param name="name" select="name"/>
+      </xsl:call-template>
 
       <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
 
       <xsl:apply-templates select="description"/>
 
-      <h4><xsl:value-of select="$index"/>.1 Structure</h4>
+      <details open="">
+        <xsl:call-template name="details-summary-4">
+          <xsl:with-param name="text" select="concat($index, '.1 Structure')"/>
+        </xsl:call-template>
 
-      <ul style="list-style: none">
-        <li>
-          <xsl:call-template name="command-structure"/>
-        </li>
-      </ul>
+        <ul style="list-style: none; padding-left: 10px;">
+          <li>
+            <xsl:call-template name="command-structure"/>
+          </li>
+        </ul>
+      </details>
 
-      <h4><xsl:value-of select="$index"/>.2 RNC</h4>
+      <details>
+        <xsl:call-template name="details-summary-4">
+          <xsl:with-param name="text" select="concat($index, '.2 RNC')"/>
+        </xsl:call-template>
 
-      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-        <div style="margin-left: 5%">
-          <xsl:call-template name="command-relax"/>
+        <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
+          <div style="margin-left: 5%">
+            <xsl:call-template name="command-relax"/>
+          </div>
         </div>
-      </div>
+      </details>
 
-    </div>
+    </details>
   </xsl:template>
 
   <!-- Commands. -->
@@ -593,10 +656,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="command-structure">
-    <ul style="list-style: none">
+    <ul style="list-style: none; border: 1px solid #F5F5F5; border-radius: 4px; margin-left: 2%; padding: 10px; background: #F5F5F5;">
       <xsl:choose>
         <xsl:when test="(count(pattern/*) = 0) and (string-length(normalize-space(pattern)) = 0)">
           <i>Empty single element.</i>
+        </xsl:when>
+        <xsl:when test="(count(pattern/*) = 0)">
+          <xsl:value-of select="pattern"/>
         </xsl:when>
         <xsl:otherwise>
           <xsl:variable name="command" select="."/>
@@ -612,75 +678,88 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   <xsl:template match="command">
     <xsl:param name="index">7.<xsl:value-of select="position()"/></xsl:param>
-    <div>
-      <div>
-        <h3 id="command_{name}">
-        <xsl:value-of select="$index"/>
-        Command <tt><xsl:value-of select="name"/></tt></h3>
-      </div>
+    <details open="">
+      <xsl:call-template name="details-summary-3">
+        <xsl:with-param name="id" select="concat('command_', name)"/>
+        <xsl:with-param name="text" select="concat($index, ' Command ')"/>
+        <xsl:with-param name="name" select="name"/>
+      </xsl:call-template>
 
       <p>In short: <xsl:value-of select="normalize-space(summary)"/>.</p>
 
       <xsl:apply-templates select="description"/>
 
-      <h4><xsl:value-of select="$index"/>.1 Structure</h4>
+      <details open="">
+        <xsl:call-template name="details-summary-4">
+          <xsl:with-param name="text" select="concat($index, '.1 Structure')"/>
+        </xsl:call-template>
 
-      <ul style="list-style: none">
-        <li>
-          <i>Command</i>
-          <xsl:call-template name="command-structure"/>
-        </li>
-        <li style="margin-top: 15px;">
-          <i>Response</i>
-          <xsl:for-each select="response">
+        <ul style="list-style: none">
+          <li>
+            <div style="padding-bottom: 5px;"><i>Command</i></div>
             <xsl:call-template name="command-structure"/>
-          </xsl:for-each>
-        </li>
-      </ul>
+          </li>
+          <li style="margin-top: 15px;">
+            <div style="padding-bottom: 5px;"><i>Response</i></div>
+            <xsl:for-each select="response">
+              <xsl:call-template name="command-structure"/>
+            </xsl:for-each>
+          </li>
+        </ul>
+      </details>
 
-      <h4><xsl:value-of select="$index"/>.2 RNC</h4>
+      <details>
+        <xsl:call-template name="details-summary-4">
+          <xsl:with-param name="text" select="concat($index, '.2 RNC')"/>
+        </xsl:call-template>
 
-      <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-        <i>Command</i>
-        <div style="margin-left: 5%">
-          <xsl:call-template name="command-relax"/>
+        <div style="border: 1px solid #F5F5F5; border-radius: 4px; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #F5F5F5;">
+          <i>Command</i>
+          <div style="margin-left: 5%">
+            <xsl:call-template name="command-relax"/>
+          </div>
+          <i>Response</i>
+          <div style="margin-left: 5%">
+            <xsl:call-template name="response-relax"/>
+          </div>
         </div>
-        <i>Response</i>
-        <div style="margin-left: 5%">
-          <xsl:call-template name="response-relax"/>
-        </div>
-      </div>
+      </details>
 
       <xsl:choose>
         <xsl:when test="count(example) &gt; 0">
           <xsl:for-each select="example">
-            <h4><xsl:value-of select="$index"/>.3 Example: <xsl:value-of select="summary"/></h4>
-            <xsl:apply-templates select="description"/>
-            <div style="margin-left: 5%; margin-right: 5%;">
-              <i>Client</i>
-              <div style="margin-left: 2%; margin-right: 2%;">
-                <xsl:for-each select="request/*">
-                  <pre>
-                    <xsl:call-template name="pretty"/>
-                  </pre>
-                </xsl:for-each>
+            <details open="">
+              <xsl:call-template name="details-summary-4">
+                <xsl:with-param name="text" select="concat($index, '.3 Example: ', summary)"/>
+              </xsl:call-template>
+
+              <xsl:apply-templates select="description"/>
+              <div style="margin-left: 5%; margin-right: 5%;">
+                <i>Client</i>
+                <div style="margin-left: 2%; margin-right: 2%; display: flex; align-items: start;">
+                  <xsl:for-each select="request/*">
+                    <pre style="border: 1px solid #F5F5F5; border-radius: 4px; padding: 10px 10px 10px 5px; background: #F5F5F5;">
+                      <xsl:call-template name="pretty"/>
+                    </pre>
+                  </xsl:for-each>
+                </div>
+                <i>Manager</i>
+                <div style="margin-left: 2%; margin-right: 2%; display: flex; align-items: start;">
+                  <xsl:for-each select="response/*">
+                    <pre style="border: 1px solid #F5F5F5; border-radius: 4px; padding: 10px 10px 10px 5px; background: #F5F5F5;">
+                      <xsl:call-template name="pretty"/>
+                    </pre>
+                  </xsl:for-each>
+                </div>
               </div>
-              <i>Manager</i>
-              <div style="margin-left: 2%; margin-right: 2%;">
-                <xsl:for-each select="response/*">
-                  <pre>
-                    <xsl:call-template name="pretty"/>
-                  </pre>
-                </xsl:for-each>
-              </div>
-            </div>
+            </details>
           </xsl:for-each>
         </xsl:when>
         <xsl:otherwise>
         </xsl:otherwise>
       </xsl:choose>
 
-    </div>
+    </details>
   </xsl:template>
 
   <xsl:template match="command" mode="index">
@@ -691,15 +770,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="command-summary">
-    <h2 id="command_summary">3 Summary of Commands</h2>
-    <table id="index">
-    <xsl:apply-templates select="command" mode="index"/>
-    </table>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'command_summary'"/>
+        <xsl:with-param name="text" select="'3 Summary of Commands'"/>
+      </xsl:call-template>
+      <table id="index">
+        <xsl:apply-templates select="command" mode="index"/>
+      </table>
+    </details>
   </xsl:template>
 
   <xsl:template name="command-details">
-    <h2 id="command_details">7 Command Details</h2>
-    <xsl:apply-templates select="command"/>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'command_details'"/>
+        <xsl:with-param name="text" select="'7 Command Details'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="command"/>
+    </details>
   </xsl:template>
 
   <!-- Filter keywords -->
@@ -749,11 +838,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </xsl:template>
 
   <xsl:template name="changes">
-    <h2 id="changes">
-      8 Compatibility Changes in Version
-      <xsl:value-of select="/protocol/version"/>
-    </h2>
-    <xsl:apply-templates select="change[version=/protocol/version]"/>
+    <details open="">
+      <xsl:call-template name="details-summary-2">
+        <xsl:with-param name="id" select="'changes'"/>
+        <xsl:with-param name="text">
+          <xsl:value-of select="'8 Compatibility Changes in Version '"/>
+          <xsl:value-of select="/protocol/version"/>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:apply-templates select="change[version=/protocol/version]"/>
+    </details>
   </xsl:template>
 
   <!-- Deprecation Warnings. -->
@@ -804,7 +898,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </title>
       </head>
       <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;">
-        <div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;">
+        <div style="width: 700px; padding-left: 4px; padding-right: 4px; align: center; margin-left: auto; margin-right: auto;">
           <table style="width: 100%;" cellpadding="3" cellspacing="0">
             <tr>
               <td valign="top">

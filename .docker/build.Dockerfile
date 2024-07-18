@@ -19,6 +19,7 @@ RUN apt-get update && \
     build-essential \
     cmake \
     gcc \
+    libcjson-dev \
     libglib2.0-dev \
     libgnutls28-dev \
     libpq-dev \

@@ -999,7 +999,7 @@ handle_sigabrt (int given_signal)
       frame_count = 0;
     }
   for (index = 0; index < frame_count; index++)
-    g_debug ("BACKTRACE: %s", frames_text[index]);
+    g_message ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
 
   manage_cleanup_process_error (given_signal);
@@ -1043,7 +1043,7 @@ handle_sigsegv (/* unused */ int given_signal)
       frame_count = 0;
     }
   for (index = 0; index < frame_count; index++)
-    g_debug ("BACKTRACE: %s", frames_text[index]);
+    g_message ("BACKTRACE: %s", frames_text[index]);
   free (frames_text);
 
   manage_cleanup_process_error (given_signal);
@@ -1179,11 +1179,13 @@ update_nvt_cache_retry ()
 /**
  * @brief Update the NVT cache in a child process.
  *
+ * @param[out] child_pid_out  Optional output param for child PID.
+ *
  * @return 0 success, 1 update in progress, -1 error.  Always exits with
  *         EXIT_SUCCESS in child.
  */
 static int
-fork_update_nvt_cache ()
+fork_update_nvt_cache (pid_t *child_pid_out)
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1210,6 +1212,8 @@ fork_update_nvt_cache ()
     }
 
   pid = fork_with_handlers ();
+  if (child_pid_out)
+    *child_pid_out = pid;
   switch (pid)
     {
       case 0:
@@ -2296,6 +2300,12 @@ gvmd (int argc, char** argv, char *env[])
           else
             printf ("Sentry support disabled\n");
         }
+#if OPENVASD == 1
+      printf ("OpenVASD is enabled\n");
+#endif
+#if CVSS3_RATINGS == 1
+      printf ("CVSS3 severity ratings enabled\n");
+#endif
       printf ("Copyright (C) 2009-2021 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
@@ -2397,6 +2407,9 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+  else
+    set_log_tz ("utc 0");
+
   tzset ();
 
   /* Set umask to hoard created files, including the database. */
@@ -2480,6 +2493,7 @@ gvmd (int argc, char** argv, char *env[])
   /**
    * LDAP debugging
    */
+
   if (ldap_debug)
     {
       if (ldap_enable_debug () == 0)

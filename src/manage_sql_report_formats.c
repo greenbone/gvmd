@@ -26,10 +26,12 @@
 #include "debug_utils.h"
 #include "manage_sql_report_formats.h"
 #include "manage_acl.h"
+#include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "sql.h"
 #include "utils.h"
 
+#include <cjson/cJSON.h>
 #include <errno.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -63,10 +65,6 @@ sync_report_formats_with_feed (gboolean);
 
 
 /* Static headers. */
-
-static int
-validate_param_value (report_format_t, report_format_param_t param, const char *,
-                      const char *);
 
 static void
 set_report_format_name (report_format_t, const char *);
@@ -808,12 +806,14 @@ add_report_format_params (report_format_t report_format, array_t *params,
           }
       }
 
-      if (validate_param_value (report_format, param_rowid, param->name,
-                                param->value))
+      if (report_format_validate_param_value (report_format, param_rowid,
+                                              param->name, param->value,
+                                              NULL))
         return 3;
 
-      if (validate_param_value (report_format, param_rowid, param->name,
-                                param->fallback))
+      if (report_format_validate_param_value (report_format, param_rowid,
+                                              param->name, param->fallback,
+                                              NULL))
         return 4;
     }
 
@@ -2408,19 +2408,52 @@ report_format_param_type_min (report_format_t report_format, const char *name)
 }
 
 /**
+ * @brief Checks if the value of a report format param is a valid option.
+ * 
+ * @param[in]  param  The report format param to check.
+ * @param[in]  value  The value to check.
+ * 
+ * @return 1 if the value is one of the allowed options, 0 if not.
+ */
+static int
+report_format_param_value_in_options (report_format_param_t param,
+                                      const char *value)
+{
+  iterator_t options;
+  int found = 0;
+
+  init_param_option_iterator (&options, param, 1, NULL);
+  while (next (&options))
+    {
+      if (param_option_iterator_value (&options)
+          && (strcmp (param_option_iterator_value (&options), value)
+              == 0))
+        {
+          found = 1;
+          break;
+        }
+    }
+  cleanup_iterator (&options);
+  return found;
+}
+
+/**
  * @brief Validate a value for a report format param.
  *
  * @param[in]  report_format  Report format.
  * @param[in]  param          Param.
  * @param[in]  name           Name of param.
  * @param[in]  value          Potential value of param.
+ * @param[out] error_message  Pointer for error message or NULL.
  *
  * @return 0 success, 1 fail.
  */
-static int
-validate_param_value (report_format_t report_format,
-                      report_format_param_t param, const char *name,
-                      const char *value)
+int
+report_format_validate_param_value (report_format_t report_format,
+                                    report_format_param_t param,
+                                    const char *name,
+                                    const char *value,
+                                    gchar **error_message)
 {
   switch (report_format_param_type (report_format, name))
     {
@@ -2431,30 +2464,44 @@ validate_param_value (report_format_t report_format,
           /* Simply truncate out of range values. */
           actual = strtoll (value, NULL, 0);
           if (actual < min)
-            return 1;
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is below minimum (%lld < %lld)",
+                                       name, actual, min);
+                }
+              return 1;
+            }
           max = report_format_param_type_max (report_format, name);
           if (actual > max)
-            return 1;
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is above maximum (%lld > %lld)",
+                                       name, actual, max);
+                }
+              return 1;
+            }
         }
         break;
       case REPORT_FORMAT_PARAM_TYPE_SELECTION:
         {
-          iterator_t options;
-          int found = 0;
-
-          init_param_option_iterator (&options, param, 1, NULL);
-          while (next (&options))
-            if (param_option_iterator_value (&options)
-                && (strcmp (param_option_iterator_value (&options), value)
-                    == 0))
-              {
-                found = 1;
-                break;
-              }
-          cleanup_iterator (&options);
-          if (found)
-            break;
-          return 1;
+          if (! report_format_param_value_in_options (param, value))
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                      " is not a valid selection option",
+                                      name);
+                }
+              return 1;
+            }
+          break;
         }
       case REPORT_FORMAT_PARAM_TYPE_STRING:
       case REPORT_FORMAT_PARAM_TYPE_TEXT:
@@ -2463,10 +2510,28 @@ validate_param_value (report_format_t report_format,
           min = report_format_param_type_min (report_format, name);
           actual = strlen (value);
           if (actual < min)
-            return 1;
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is too short (%lld < %lld)",
+                                       name, actual, min);
+                }
+              return 1;
+            }
           max = report_format_param_type_max (report_format, name);
           if (actual > max)
-            return 1;
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is too long (%lld > %lld)",
+                                       name, actual, min);
+                }
+              return 1;
+            }
         }
         break;
       case REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST:
@@ -2474,11 +2539,100 @@ validate_param_value (report_format_t report_format,
           if (g_regex_match_simple
                 ("^(?:[[:alnum:]\\-_]+)?(?:,(?:[[:alnum:]\\-_])+)*$", value, 0, 0)
               == FALSE)
-            return 1;
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is not a valid UUID list",
+                                       name);
+                }
+              return 1;
+            }
           else
             return 0;
         }
         break;
+      case REPORT_FORMAT_PARAM_TYPE_MULTI_SELECTION:
+        {
+          long long int min, max, actual;
+          min = report_format_param_type_min (report_format, name);
+          max = report_format_param_type_max (report_format, name);
+          actual = 0LL;
+          cJSON *json = cJSON_Parse (value);
+          cJSON *array_item = NULL;
+
+          if (!cJSON_IsArray (json))
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " is not a valid JSON array",
+                                       name);
+                }
+              cJSON_Delete (json);
+              return 1;
+            }
+
+          cJSON_ArrayForEach (array_item, json)
+            {
+              char *string;
+              if (!cJSON_IsString (array_item))
+                {
+                  if (error_message)
+                    {
+                      *error_message
+                        = g_strdup_printf ("value of param \"%s\""
+                                           " contains a non-string value",
+                                           name);
+                    }
+                  cJSON_Delete (json);
+                  return 1;
+                }
+              string = cJSON_GetStringValue (array_item);
+              if (! report_format_param_value_in_options (param, string))
+                {
+                  if (error_message)
+                    {
+                      *error_message
+                        = g_strdup_printf ("\"%s\" in value of param \"%s\""
+                                           " is not a valid selection option",
+                                           string, name);
+                    }
+                  cJSON_Delete (json);
+                  return 1;
+                }
+              actual ++;
+            }
+
+          cJSON_Delete (json);
+          if (actual < min)
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " must contain at least %lld option(s),"
+                                       " got %lld",
+                                       name, min, actual);
+                }
+              return 1;
+            }
+          if (actual > max)
+            {
+              if (error_message)
+                {
+                  *error_message
+                    = g_strdup_printf ("value of param \"%s\""
+                                       " must contain a maximum of %lld"
+                                       " option(s), got %lld",
+                                       name, max, actual);
+                }
+              return 1;
+            }
+          break;
+        }
       default:
         break;
     }
@@ -2542,7 +2696,8 @@ set_report_format_param (report_format_t report_format, const char *name,
 
   /* Validate the value. */
 
-  if (validate_param_value (report_format, param, name, value))
+  if (report_format_validate_param_value (report_format, param,
+                                          name, value, NULL))
     {
       sql_rollback ();
       g_free (quoted_name);
@@ -2588,7 +2743,7 @@ report_format_trust (report_format_t report_format)
 #define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
    "summary", "description", "trust", "trust_time", "active", "predefined",   \
-   NULL }
+   "configurable", NULL }
 
 /**
  * @brief Report Format iterator columns.
@@ -2599,8 +2754,8 @@ report_format_trust (report_format_t report_format)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
    { "name", NULL, KEYWORD_TYPE_STRING },                               \
    { "''", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },           \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },       \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                 \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },           \
    {                                                                    \
@@ -2616,6 +2771,12 @@ report_format_trust (report_format_t report_format)
    { "signature", NULL, KEYWORD_TYPE_STRING },                          \
    { "trust", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "trust_time", NULL, KEYWORD_TYPE_INTEGER },                        \
+   {                                                                    \
+     "(SELECT count(*) > 0 FROM report_format_params"                   \
+     " WHERE report_format = report_formats.id)",                       \
+     "configurable",                                                    \
+     KEYWORD_TYPE_INTEGER                                               \
+   },                                                                   \
    { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
@@ -2630,8 +2791,8 @@ report_format_trust (report_format_t report_format)
    { "uuid", NULL, KEYWORD_TYPE_STRING },                               \
    { "name", NULL, KEYWORD_TYPE_STRING },                               \
    { "''", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "iso_time (creation_time)", NULL, KEYWORD_TYPE_STRING },           \
-   { "iso_time (modification_time)", NULL, KEYWORD_TYPE_STRING },       \
+   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                 \
    { "creation_time", "created", KEYWORD_TYPE_INTEGER },                \
    { "modification_time", "modified", KEYWORD_TYPE_INTEGER },           \
    {                                                                    \
@@ -2648,6 +2809,12 @@ report_format_trust (report_format_t report_format)
    { "signature", NULL, KEYWORD_TYPE_STRING },                          \
    { "trust", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "trust_time", NULL, KEYWORD_TYPE_INTEGER },                        \
+   {                                                                    \
+     "(SELECT count(*) > 0 FROM report_format_params_trash"             \
+     " WHERE report_format = report_formats_trash.id)",                 \
+     "configurable",                                                    \
+     KEYWORD_TYPE_INTEGER                                               \
+   },                                                                   \
    { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
@@ -2705,7 +2872,7 @@ report_format_count (const get_data_t *get)
  *         -1 error.
  */
 int
-init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
+init_report_format_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;
@@ -2810,6 +2977,22 @@ report_format_iterator_trust_time (iterator_t* iterator)
 }
 
 /**
+ * @brief Get whether a report format is configurable from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Time report format was verified.
+ */
+int 
+report_format_iterator_configurable (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  return ret;
+}
+
+/**
  * @brief Get the active flag from a report format iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -2820,7 +3003,7 @@ int
 report_format_iterator_active (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return (iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7)
+  return (iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8)
           & REPORT_FORMAT_FLAG_ACTIVE) ? 1 : 0;
 }
 
@@ -2893,6 +3076,82 @@ DEF_ACCESS (report_format_alert_iterator_uuid, 1);
  */
 int
 report_format_alert_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
+
+/**
+ * @brief Initialise a Report Format config iterator.
+ *
+ * Iterates over all report configs that use the Report Format.
+ *
+ * @param[in]  iterator          Iterator.
+ * @param[in]  report_format_id  Report Format.
+ */
+void
+init_report_format_report_config_iterator (iterator_t* iterator,
+                                           const char *report_format_id)
+{
+  gchar *quoted_report_format_id;
+  gchar *available, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (report_format_id);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_report_configs"));
+  available = acl_where_owned ("report_config", &get, 1, "any", 0, permissions,
+                               0, &with_clause);
+  array_free (permissions);
+
+  quoted_report_format_id = sql_quote (report_format_id);
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT DISTINCT report_configs.name, report_configs.uuid, %s"
+                 " FROM report_configs"
+                 " WHERE report_configs.report_format_id = '%s'"
+                 " ORDER BY report_configs.name ASC;",
+                 with_clause ? with_clause : "",
+                 available,
+                 quoted_report_format_id);
+
+  g_free (quoted_report_format_id);
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the name from a report_format_report_config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the Report Config, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (report_format_report_config_iterator_name, 0);
+
+/**
+ * @brief Get the UUID from a report_format_report_config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the Report Config, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (report_format_report_config_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+report_format_report_config_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
@@ -3588,12 +3847,14 @@ run_report_format_script (gchar *report_format_id,
  * @param[in]   xml_start      Path of file containing start of report.
  * @param[in]   xml_full       Path to file to print full report to.
  * @param[in]   report_format  Format of report that will be created from XML.
+ * @param[in]   report_config  Report config for report format param.
  *
  * @return 0 success, -1 error.
  */
 int
 print_report_xml_end (gchar *xml_start, gchar *xml_full,
-                      report_format_t report_format)
+                      report_format_t report_format,
+                      report_config_t report_config)
 {
   FILE *out;
 
@@ -3616,15 +3877,41 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
 
   if (report_format > 0)
     {
-      iterator_t params;
+      gboolean can_use_config = FALSE;
       PRINT (out, "<report_format>");
-      init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
-      while (next (&params))
-        PRINT (out,
-               "<param><name>%s</name><value>%s</value></param>",
-               report_format_param_iterator_name (&params),
-               report_format_param_iterator_value (&params));
-      cleanup_iterator (&params);
+
+      if (report_config)
+        {
+          if (report_config_report_format (report_config) == report_format)
+            can_use_config = TRUE;
+          else
+            g_warning ("%s: report config not compatible with report format,"
+                       " using default params",
+                       __func__);
+        }
+
+      if (can_use_config)
+        {
+          iterator_t params;
+          init_report_config_param_iterator (&params, report_config, 0);
+          while (next (&params))
+            PRINT (out,
+                  "<param><name>%s</name><value>%s</value></param>",
+                  report_config_param_iterator_name (&params),
+                  report_config_param_iterator_value (&params));
+          cleanup_iterator (&params);
+        }
+      else
+        {
+          iterator_t params;
+          init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
+          while (next (&params))
+            PRINT (out,
+                  "<param><name>%s</name><value>%s</value></param>",
+                  report_format_param_iterator_name (&params),
+                  report_format_param_iterator_value (&params));
+          cleanup_iterator (&params);
+        }
 
       PRINT (out, "</report_format>");
     }
@@ -3646,6 +3933,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  * @brief Applies a report format to an XML report.
  *
  * @param[in]  report_format_id   Report format to apply.
+ * @param[in]  report_config      Optional report config to apply.
  * @param[in]  xml_start          Path to the main part of the report XML.
  * @param[in]  xml_file           Path to the report XML file.
  * @param[in]  xml_dir            Path to the temporary dir.
@@ -3655,6 +3943,7 @@ print_report_xml_end (gchar *xml_start, gchar *xml_full,
  */
 gchar*
 apply_report_format (gchar *report_format_id,
+                     report_config_t report_config,
                      gchar *xml_start,
                      gchar *xml_file,
                      gchar *xml_dir,
@@ -3747,7 +4036,9 @@ apply_report_format (gchar *report_format_id,
           if (g_hash_table_contains (subreports, *current_rf_dependency)
               == FALSE)
             {
+              // TODO: Handle report configs for subreports
               subreport_file = apply_report_format (*current_rf_dependency,
+                                                    0,
                                                     xml_start,
                                                     subreport_xml,
                                                     subreport_dir,
@@ -3840,7 +4131,7 @@ apply_report_format (gchar *report_format_id,
 
   /* Add second half of input XML */
 
-  if (print_report_xml_end (xml_start, xml_file, report_format))
+  if (print_report_xml_end (xml_start, xml_file, report_format, report_config))
     {
       g_free (output_file);
       output_file = NULL;

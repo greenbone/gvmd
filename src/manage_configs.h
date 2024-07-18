@@ -69,7 +69,7 @@ void
 init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
 
 int
-init_config_iterator (iterator_t*, const get_data_t*);
+init_config_iterator (iterator_t*, get_data_t*);
 
 const char*
 config_iterator_nvt_selector (iterator_t*);

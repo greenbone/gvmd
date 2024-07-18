@@ -22,7 +22,7 @@ jobs:
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:stable
+    container: ${{ vars.IMAGE_REGISTRY }}/greenbone/gvmd-build:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
@@ -46,13 +46,26 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container: greenbone/gvmd-build:stable
+    container: ${{ vars.IMAGE_REGISTRY }}/greenbone/gvmd-build:stable
     steps:
+      - name: Install git for Codecov uploader
+        run: |
+          apt update
+          apt install --no-install-recommends -y ca-certificates git
+          rm -rf /var/lib/apt/lists/*
       - name: Check out gvmd
         uses: actions/checkout@v4
+      - name: Set git safe.directory
+        run: git config --global --add safe.directory '*'
       - name: Build gvmd
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1
           cmake --build build
       - name: Configure and run tests
         run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
+      - name: Upload test coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: build/coverage/coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests

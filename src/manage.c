@@ -52,6 +52,7 @@
 #include "manage_acl.h"
 #include "manage_configs.h"
 #include "manage_port_lists.h"
+#include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
@@ -3166,7 +3167,7 @@ static int
 fork_cve_scan_handler (task_t task, target_t target)
 {
   int pid;
-  char *report_id, *hosts;
+  char *report_id, *hosts, *exclude_hosts;
   gvm_hosts_t *gvm_hosts;
   gvm_host_t *gvm_host;
 
@@ -3233,6 +3234,8 @@ fork_cve_scan_handler (task_t task, target_t target)
       exit (1);
     }
 
+  exclude_hosts = target_exclude_hosts (target);
+
   reset_task (task);
   set_task_start_time_epoch (task, time (NULL));
   set_scan_start_time_epoch (global_current_report, time (NULL));
@@ -3241,6 +3244,20 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
+  
+  if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
+    {
+      set_task_interrupted (task,
+                              "Failed to exclude hosts."
+                              "  Interrupting scan.");      
+      set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
+      gvm_hosts_free (gvm_hosts);
+      free (exclude_hosts);
+      gvm_close_sentry ();
+      exit(1);
+    }
+  free (exclude_hosts);
+
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
     if (cve_scan_host (task, global_current_report, gvm_host))
       {
@@ -5047,7 +5064,7 @@ feed_sync_required ()
  */
 void
 manage_sync (sigset_t *sigmask_current,
-             int (*fork_update_nvt_cache) (),
+             int (*fork_update_nvt_cache) (pid_t*),
              gboolean try_gvmd_data_sync)
 {
   lockfile_t lockfile;
@@ -5059,9 +5076,16 @@ manage_sync (sigset_t *sigmask_current,
     {
       if (feed_lockfile_lock (&lockfile) == 0)
         {
-          manage_sync_nvts (fork_update_nvt_cache);
-          manage_sync_scap (sigmask_current);
-          manage_sync_cert (sigmask_current);
+          pid_t nvts_pid, scap_pid, cert_pid;
+          nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
+          scap_pid = manage_sync_scap (sigmask_current);
+          cert_pid = manage_sync_cert (sigmask_current);
+
+          wait_for_pid (nvts_pid, "NVTs sync");
+          wait_for_pid (scap_pid, "SCAP sync");
+          wait_for_pid (cert_pid, "CERT sync");
+
+          update_scap_extra ();
 
           lockfile_unlock (&lockfile);
         }
@@ -5829,11 +5853,18 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                    nvt_iterator_detection (nvts));
             }
 
+          g_string_append_printf (buffer,
+                                  "<creation_time>%s</creation_time>",
+                                  iso_if_time (get_iterator_creation_time (nvts)));
+
+          g_string_append_printf (buffer,
+                                  "<modification_time>%s</modification_time>",
+                                  iso_if_time (get_iterator_modification_time (nvts)));
+
           default_timeout = nvt_default_timeout (oid);
+
           g_string_append_printf (buffer,
                                   "<default_timeout>%s</default_timeout>"
-                                  "<creation_time>%s</creation_time>"
-                                  "<modification_time>%s</modification_time>"
                                   "<category>%d</category>"
                                   "<family>%s</family>"
                                   "<qod>"
@@ -5843,18 +5874,13 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                   "<refs>%s</refs>"
                                   "<tags>%s</tags>",
                                   default_timeout ? default_timeout : "",
-                                  get_iterator_creation_time (nvts)
-                                  ? get_iterator_creation_time (nvts)
-                                  : "",
-                                  get_iterator_modification_time (nvts)
-                                  ? get_iterator_modification_time (nvts)
-                                  : "",
                                   nvt_iterator_category (nvts),
                                   family_text,
                                   nvt_iterator_qod (nvts),
                                   nvt_iterator_qod_type (nvts),
                                   refs_str->str,
                                   nvt_tags->str);
+
           free (default_timeout);
 
           g_string_free (nvt_tags, 1);
@@ -5951,6 +5977,54 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           xml_string_append (buffer, "</preferences>");
           free (default_timeout);
+        }
+
+      if (nvt_iterator_epss_cve (nvts))
+        {
+          buffer_xml_append_printf 
+             (buffer,
+              "<epss>"
+              "<max_severity>"
+              "<score>%0.5f</score>"
+              "<percentile>%0.5f</percentile>"
+              "<cve id=\"%s\">",
+              nvt_iterator_epss_score (nvts),
+              nvt_iterator_epss_percentile (nvts),
+              nvt_iterator_epss_cve (nvts));
+
+          if (nvt_iterator_has_epss_severity (nvts))
+            {
+              buffer_xml_append_printf 
+                 (buffer,
+                  "<severity>%0.1f</severity>",
+                  nvt_iterator_epss_severity (nvts));
+            }
+
+          buffer_xml_append_printf
+             (buffer,
+              "</cve>"
+              "</max_severity>"
+              "<max_epss>"
+              "<score>%0.5f</score>"
+              "<percentile>%0.5f</percentile>"
+              "<cve id=\"%s\">",
+              nvt_iterator_max_epss_score (nvts),
+              nvt_iterator_max_epss_percentile (nvts),
+              nvt_iterator_max_epss_cve (nvts));
+
+          if (nvt_iterator_has_max_epss_severity (nvts))
+            {
+              buffer_xml_append_printf 
+                 (buffer,
+                  "<severity>%0.1f</severity>",
+                  nvt_iterator_max_epss_severity (nvts));
+            }
+
+          buffer_xml_append_printf
+             (buffer,
+              "</cve>"
+              "</max_epss>"
+              "</epss>");
         }
 
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
@@ -7536,6 +7610,8 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
+  if (strcasecmp (type, "report_config") == 0)
+    return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
   if (strcasecmp (type, "tls_certificate") == 0)

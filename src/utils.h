@@ -55,6 +55,9 @@ iso_time (time_t *);
 char *
 iso_time_tz (time_t *, const char *, const char **);
 
+char *
+iso_if_time (time_t epoch_time);
+
 /**
  * @brief Lockfile.
  */
@@ -96,5 +99,8 @@ setup_signal_handler_info (int, void (*) (int, siginfo_t *, void *), int);
 
 int
 fork_with_handlers ();
+
+void
+wait_for_pid (pid_t, const char *);
 
 #endif /* not _GVMD_UTILS_H */
