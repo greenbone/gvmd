@@ -3870,6 +3870,21 @@ get_feed_lock_timeout ();
 void
 set_feed_lock_timeout (int);
 
+int
+get_mem_wait_retries ();
+
+void
+set_mem_wait_retries (int);
+
+int
+check_min_mem_feed_update ();
+
+int
+get_min_mem_feed_update ();
+
+void
+set_min_mem_feed_update (int);
+
 void
 write_sync_start (int);
 

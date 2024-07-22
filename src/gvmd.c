@@ -1895,6 +1895,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static int mem_wait_retries = 30;
+  static int min_mem_feed_update = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
   static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
   static gchar *vt_verification_collation = NULL;
@@ -2088,10 +2090,20 @@ gvmd (int argc, char** argv, char *env[])
           &max_ips_per_target,
           "Maximum number of IPs per target.",
           "<number>" },
+        { "mem-wait-retries", '\0', 0, G_OPTION_ARG_INT,
+          &mem_wait_retries,
+          "How often to try waiting for available memory. Default: 30."
+          " Each retry will wait for 10 seconds.",
+          "<number>" },
         { "migrate", 'm', 0, G_OPTION_ARG_NONE,
           &migrate_database,
           "Migrate the database and exit.",
           NULL },
+        { "min-mem-feed-update", '\0', 0, G_OPTION_ARG_INT,
+          &min_mem_feed_update,
+          "Minimum memory in MiB for feed updates. Default: 0."
+          " Feed updates are skipped if less physical memory is available.",
+          "<number>" },
         { "modify-scanner", '\0', 0, G_OPTION_ARG_STRING,
           &modify_scanner,
           "Modify scanner <scanner-uuid> and exit.",
@@ -2446,6 +2458,12 @@ gvmd (int argc, char** argv, char *env[])
         gnutls_global_set_log_level (atoi (s));
       }
   }
+
+  /* Set number of retries waiting for memory */
+  set_mem_wait_retries (mem_wait_retries);
+  
+  /* Set minimum memory for feed updates */
+  set_min_mem_feed_update (min_mem_feed_update);
 
   /* Set relay mapper */
   if (relay_mapper)
