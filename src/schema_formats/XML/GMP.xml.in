@@ -1019,7 +1019,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+        <e>name</e>
+        <e>trash</e>
       </pattern>
+      <ele>
+        <name>name</name>
+        <summary>Task name</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>trash</name>
+        <summary>Whether the task is in the trashcan</summary>
+        <type>boolean</type>
+      </ele>
     </ele>
     <ele>
       <name>active</name>
