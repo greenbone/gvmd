@@ -959,3 +959,26 @@ wait_for_pid (pid_t pid, const char *context)
         }
     }
 }
+
+/**
+ * @brief Get the available physical memory in bytes.
+ * 
+ * @return The available memory
+ */
+guint64
+phys_mem_available ()
+{
+  return (unsigned long long)(sysconf(_SC_AVPHYS_PAGES))
+    * sysconf(_SC_PAGESIZE);
+}
+
+/**
+ * @brief Get the total physical memory in bytes.
+ * 
+ * @return The total memory
+ */
+guint64
+phys_mem_total ()
+{
+  return sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGESIZE);
+}

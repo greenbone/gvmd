@@ -103,4 +103,10 @@ fork_with_handlers ();
 void
 wait_for_pid (pid_t, const char *);
 
+guint64
+phys_mem_available ();
+
+guint64
+phys_mem_total ();
+
 #endif /* not _GVMD_UTILS_H */

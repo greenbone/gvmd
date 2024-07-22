@@ -242,9 +242,27 @@
       
     
     
+      <p><b>--mem-wait-retries=<em>NUMBER</em></b></p>
+      
+        <p>
+          How often to try waiting for available memory. Default: 30.
+           Each retry will wait for 10 seconds.
+        </p>
+      
+    
+    
       <p><b>-m, --migrate</b></p>
       
         <p>Migrate the database and exit.</p>
+      
+    
+    
+      <p><b>--min-mem-feed-update=<em>NUMBER</em></b></p>
+      
+        <p>
+          Minimum memory in MiB for feed updates. Default: 0.
+          Feed updates are skipped if less physical memory is available.
+        </p>
       
     
     
