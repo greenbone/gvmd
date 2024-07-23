@@ -161,7 +161,7 @@ sql_quote (const char* string)
  * @return Freshly allocated, quoted string. Free with g_free.
  */
 gchar*
-sql_ascii_escape_and_quote (const char* string)
+sql_ascii_escape_and_quote (const char* string, const char* exceptions)
 {
   gchar *escaped_string;
   gchar *quoted_string;
@@ -171,9 +171,9 @@ sql_ascii_escape_and_quote (const char* string)
   if (string == NULL)
     return NULL;
 
-  escaped_string = strescape_check_utf8 (string, NULL);
+  escaped_string = strescape_check_utf8 (string, exceptions);
   quoted_string = sql_quote (escaped_string);
-  g_free (quoted_string);
+  g_free (escaped_string);
 
   return quoted_string;
 }
