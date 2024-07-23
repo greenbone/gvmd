@@ -523,6 +523,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>expiration_time</e>
       <e>issuer</e>
       <e>md5_fingerprint</e>
+      <o><e>sha256_fingerprint</e></o>
+      <o><e>subject</e></o>
+      <o><e>serial</e></o>
     </pattern>
     <ele>
       <name>time_status</name>
@@ -556,6 +559,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>md5_fingerprint</name>
       <summary>MD5 fingerprint of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>sha256_fingerprint</name>
+      <summary>SHA-256 fingerprint of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>subject</name>
+      <summary>Name of the certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>serial</name>
+      <summary>Serial number of certificate</summary>
       <pattern>text</pattern>
     </ele>
   </element>
@@ -1667,6 +1685,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>severities</e>
         <e>cpe</e>
         <e>tags</e>
+        <o><e>epss</e></o>
         <e>refs</e>
       </pattern>
       <ele>
@@ -1703,6 +1722,112 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <name>tags</name>
         <summary>Tags associated with the NVT</summary>
         <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>epss</name>
+        <summary>Exploit Prediction Scoring System (EPSS) info if available</summary>
+        <pattern>
+          <e>max_severity</e>
+          <e>max_epss</e>
+        </pattern>
+        <ele>
+          <name>max_severity</name>
+          <summary>
+            EPSS info of the referenced CVE with the highest severity
+          </summary>
+          <description>
+            In case there are multiple CVEs referenced by the NVT tied for the
+            highest severity, they are also sorted by EPSS score and modification
+            time and the first one is chosen.
+          </description>
+          <pattern>
+            <e>score</e>
+            <e>percentile</e>
+            <e>cve</e>
+          </pattern>
+          <ele>
+            <name>score</name>
+            <summary>EPSS score of the CVE</summary>
+            <pattern>
+              <t>decimal</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>percentile</name>
+            <summary>EPSS percentile of the CVE</summary>
+            <pattern>
+              <t>decimal</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>cve</name>
+            <summary>The representative CVE chosen</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>CVE-ID of the CVE</summary>
+                <type>text</type>
+              </attrib>
+              <o><e>severity</e></o>
+            </pattern>
+            <ele>
+              <name>severity</name>
+              <summary>Severity (CVSS) score of the CVE if available</summary>
+              <pattern>
+                <t>severity</t>
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>max_epss</name>
+          <summary>
+            EPSS info of the referenced CVE with the highest EPSS score
+          </summary>
+          <description>
+            In case there are multiple CVEs referenced by the NVT tied for the
+            highest EPSS score, they are also sorted by severity and modification
+            time and the first one is chosen.
+          </description>
+          <pattern>
+            <e>score</e>
+            <e>percentile</e>
+            <e>cve</e>
+          </pattern>
+          <ele>
+            <name>score</name>
+            <summary>EPSS score of the CVE</summary>
+            <pattern>
+              <t>decimal</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>percentile</name>
+            <summary>EPSS percentile of the CVE</summary>
+            <pattern>
+              <t>decimal</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>cve</name>
+            <summary>The representative CVE chosen</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>CVE-ID of the CVE</summary>
+                <type>text</type>
+              </attrib>
+              <o><e>severity</e></o>
+            </pattern>
+            <ele>
+              <name>severity</name>
+              <summary>Severity (CVSS) score of the CVE if available</summary>
+              <pattern>
+                <t>severity</t>
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
       </ele>
       <ele>
         <name>refs</name>
@@ -7803,6 +7928,7 @@ END:VCALENDAR
           <e>data_type</e>
           <any><e>data_column</e></any>
           <o><e>group_column</e></o>
+          <o><e>subgroup_column</e></o>
           <any><e>text_column</e></any>
           <or>
             <any><e>group</e></any>
@@ -7824,6 +7950,11 @@ END:VCALENDAR
         <ele>
           <name>group_column</name>
           <summary>The column the data is grouped by</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
+          <name>subgroup_column</name>
+          <summary>The column to further group the resources by</summary>
           <pattern><t>text</t></pattern>
         </ele>
         <ele>
@@ -7982,10 +8113,8 @@ END:VCALENDAR
           <summary>Aggregate data for all resources of the selected type</summary>
           <pattern>
             <e>count</e>
-            <e>min</e>
-            <e>max</e>
-            <e>mean</e>
-            <e>sum</e>
+            <e>c_count</e>
+            <any><e>stats</e></any>
           </pattern>
           <ele>
             <name>count</name>
@@ -7993,24 +8122,52 @@ END:VCALENDAR
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
-            <name>min</name>
-            <summary>Overall minimum value of the data column</summary>
-            <pattern><t>text</t></pattern>
+            <name>c_count</name>
+            <summary>Cumulative number of resources</summary>
+            <description>For overall this is always the same as count.</description>
+            <pattern><t>integer</t></pattern>
           </ele>
           <ele>
-            <name>max</name>
-            <summary>Overall maximum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>mean</name>
-            <summary>Overall arithmetic mean of the numeric values of the data</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>sum</name>
-            <summary>Overall sum of the numeric values of the data column</summary>
-            <pattern><t>text</t></pattern>
+            <name>stats</name>
+            <summary>Statistics of a data column</summary>
+            <pattern>
+              <attrib>
+                <name>column</name>
+                <summary>Name of the column the stats apply to</summary>
+                <type>text</type>
+              </attrib>
+              <e>min</e>
+              <e>max</e>
+              <e>mean</e>
+              <e>sum</e>
+              <e>c_sum</e>
+            </pattern>
+            <ele>
+              <name>min</name>
+              <summary>Overall minimum value of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>max</name>
+              <summary>Overall maximum value of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>mean</name>
+              <summary>Overall arithmetic mean of the numeric values of the data</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>sum</name>
+              <summary>Overall sum of the numeric values of the data column</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>c_sum</name>
+              <summary>Cumulative sum of the numeric values of the data column</summary>
+              <description>For overall this is always the same as sum.</description>
+              <pattern><t>text</t></pattern>
+            </ele>
           </ele>
         </ele>
         <ele>
@@ -8394,6 +8551,7 @@ END:VCALENDAR
           <e>method</e>
           <e>filter</e>
           <o><e>tasks</e></o>
+          <e>active</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8553,7 +8711,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>method</name>
-          <summary>The method by which he alert must occur</summary>
+          <summary>The method by which the alert must occur</summary>
           <pattern>
             text
             <any><e>data</e></any>
@@ -8659,6 +8817,11 @@ END:VCALENDAR
               <pattern></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the alert is active</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -9043,7 +9206,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>details</name>
-        <summary>Whether to include additional information (e.g., tags)</summary>
+        <summary>Whether to include additional information (e.g. tags)</summary>
         <type>boolean</type>
       </attrib>
     </pattern>
@@ -9083,6 +9246,7 @@ END:VCALENDAR
           <e>permissions</e>
           <o><e>user_tags</e></o>
           <o><e>identifiers</e></o>
+          <e>type</e>
           <or>
             <e>host</e>
             <e>os</e>
@@ -9169,6 +9333,7 @@ END:VCALENDAR
                 <e>type</e>
                 <e>data</e>
                 <e>deleted</e>
+                <e>name</e>
               </pattern>
               <ele>
                 <name>type</name>
@@ -9183,6 +9348,11 @@ END:VCALENDAR
               <ele>
                 <name>deleted</name>
                 <summary>Whether the source has been deleted</summary>
+                <pattern>boolean</pattern>
+              </ele>
+              <ele>
+                <name>name</name>
+                <summary>User name when source type is User, else empty</summary>
                 <pattern>boolean</pattern>
               </ele>
             </ele>
@@ -9205,12 +9375,19 @@ END:VCALENDAR
           </ele>
         </ele>
         <ele>
+          <name>type</name>
+          <summary>Either "host" or "os"</summary>
+          <pattern>
+            xsd:token { pattern = "host|os" }
+          </pattern>
+        </ele>
+        <ele>
           <name>host</name>
           <summary>A host</summary>
           <pattern>
             <e>severity</e>
             <any><e>detail</e></any>
-            <e>routes</e>
+            <o><e>routes</e></o>
           </pattern>
           <ele>
             <name>severity</name>
@@ -9373,7 +9550,7 @@ END:VCALENDAR
               Hosts on which this OS has been detected as the best match
             </summary>
             <pattern>
-              <e>asset</e>
+              <any><e>asset</e></any>
             </pattern>
             <ele>
               <name>asset</name>
@@ -9408,7 +9585,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>in_use</name>
-          <summary>Whether any tasks are using the asset</summary>
+          <summary>Whether the asset is in use</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
@@ -10011,7 +10188,7 @@ END:VCALENDAR
         <ele>
           <name>writable</name>
           <summary>
-            Whether any tasks are using the config, including trashcan tasks
+            Whether the config may be modified
           </summary>
           <pattern><t>boolean</t></pattern>
         </ele>
@@ -10162,10 +10339,11 @@ END:VCALENDAR
             <pattern>
               <e>nvt</e>
               <e>name</e>
+              <o><e>hr_name</e></o>
               <e>id</e>
               <e>type</e>
               <e>value</e>
-              <e>default</e>
+              <o><e>default</e></o>
               <any><e>alt</e></any>
             </pattern>
             <ele>
@@ -10188,6 +10366,11 @@ END:VCALENDAR
             <ele>
               <name>name</name>
               <summary>The compact name of the preference as used by the scanner</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>hr_name</name>
+              <summary>The human readable name of the preference</summary>
               <pattern><t>name</t></pattern>
             </ele>
             <ele>
@@ -10394,20 +10577,31 @@ END:VCALENDAR
       <response>
         <get_configs_response status="200" status_text="OK">
           <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <owner>
+              <name>mabel</name>
+            </owner>
             <name>Full and fast</name>
-            <comment>All NVT's; optimized by using previously collected information.</comment>
-            <creation_time>2012-11-23T10:44:00+01:00</creation_time>
-            <modification_time>2013-01-23T10:44:00+01:00</modification_time>
+            <comment>Most NVT's; optimized by using previously collected information. Version 20201215.</comment>
+            <creation_time>2023-03-06T11:26:30-05:00</creation_time>
+            <modification_time>2024-01-23T10:02:26-05:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
             <family_count>
-              4
+              56
               <growing>1</growing>
             </family_count>
             <nvt_count>
-              12
+              88005
               <growing>1</growing>
             </nvt_count>
-            <in_use>1</in_use>
-            <writable>0</writable>
+            <type>0</type>
+            <usage_type>scan</usage_type>
+            <predefined>0</predefined>
           </config>
           <truncated>...</truncated>
         </get_configs_response>
@@ -10422,44 +10616,64 @@ END:VCALENDAR
       <response>
         <get_configs_response status="200" status_text="OK">
           <config id="daba56c8-73ec-11df-a475-002264764cea">
+            <owner>
+              <name>mabel</name>
+            </owner>
             <name>Full and fast</name>
-            <comment>All NVT's; optimized by using previously collected information.</comment>
+            <comment>
+              Most NVT's; optimized by using previously collected information. Version 20201215.
+            </comment>
+            <creation_time>2023-03-06T11:26:30-05:00</creation_time>
+            <modification_time>2024-01-23T10:02:26-05:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
             <family_count>
-              4
+              56
               <growing>1</growing>
             </family_count>
             <nvt_count>
-              12
+              88005
               <growing>1</growing>
             </nvt_count>
-            <in_use>1</in_use>
-            <tasks>
-              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
-                <name>Web Servers</name>
-              </task>
-              <truncated>...</truncated>
-            </tasks>
+            <type>0</type>
+            <usage_type>scan</usage_type>
+            <predefined>0</predefined>
             <families>
               <family>
-                <name>Credentials</name>
-                <nvt_count>8</nvt_count>
-                <max_nvt_count>8</max_nvt_count>
+                <name>AIX Local Security Checks</name>
+                <nvt_count>1</nvt_count>
+                <max_nvt_count>1</max_nvt_count>
                 <growing>1</growing>
               </family>
               <truncated>...</truncated>
             </families>
+            <max_nvt_count>88014</max_nvt_count>
+            <known_nvt_count>88005</known_nvt_count>
             <preferences>
               <preference>
-                <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
-                  <name>Services</name>
+                <nvt oid="1.3.6.1.4.1.25623.1.0.100151">
+                  <name>PostgreSQL Detection (TCP)</name>
                 </nvt>
                 <id>1</id>
-                <name>Network connection timeout :</name>
+                <hr_name>Postgres Username:</hr_name>
+                <name>Postgres Username:</name>
                 <type>entry</type>
-                <value>5</value>
+                <value>postgres</value>
+                <default>postgres</default>
               </preference>
               <truncated>...</truncated>
             </preferences>
+            <tasks>
+              <task id="1d5c5fc8-937e-41f1-b52f-49887c386b12">
+                <name>Web Servers</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
           </config>
           <truncated>...</truncated>
         </get_configs_response>
@@ -10576,6 +10790,11 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>details</name>
+        <summary>Whether to include certificate info</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>scanners</name>
         <summary>Whether to include a list of scanners using the credentials</summary>
         <type>boolean</type>
@@ -10648,11 +10867,13 @@ END:VCALENDAR
           <o><e>certificate_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
-          <or>
-            <e>public_key</e>
-            <e>package</e>
-            <e>certificate</e>
-          </or>
+          <o>
+            <or>
+              <e>public_key</e>
+              <e>package</e>
+              <e>certificate</e>
+            </or>
+          </o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -11235,7 +11456,7 @@ END:VCALENDAR
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type of single feed to get: NVT, CERT or SCAP</summary>
+        <summary>Type of single feed to get: NVT, CERT, SCAP or GVMD_DATA</summary>
         <type>text</type>
       </attrib>
     </pattern>
@@ -11265,7 +11486,7 @@ END:VCALENDAR
         </pattern>
         <ele>
           <name>type</name>
-          <summary>The type of feed: NVT, CERT or SCAP</summary>
+          <summary>The type of feed: NVT, CERT, SCAP or GVMD_DATA</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11299,16 +11520,10 @@ END:VCALENDAR
           <summary>Present if a sync of this type is underway</summary>
           <pattern>
             <e>timestamp</e>
-            <e>user</e>
           </pattern>
           <ele>
             <name>timestamp</name>
             <summary>Time sync started</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>user</name>
-            <summary>Name of user who is performing sync</summary>
             <pattern>text</pattern>
           </ele>
         </ele>

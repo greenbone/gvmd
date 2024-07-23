@@ -1806,6 +1806,59 @@ create_view_vulns ()
          " WHERE uuid in (SELECT * FROM used_nvts)");
 }
 
+/**
+ * @brief Create or replace the result_vt_epss view.
+ */
+void
+create_view_result_vt_epss ()
+{
+  sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
+
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = '%s'"
+               "               AND table_schema = 'scap'"
+               "               AND table_name = 'cves')"
+               " ::integer;",
+               sql_database ()))
+    sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
+         "  SELECT cve AS vt_id,"
+         "    epss AS epss_score,"
+         "    percentile AS epss_percentile,"
+         "    cve AS epss_cve,"
+         "    cves.severity AS epss_severity,"
+         "    epss AS max_epss_score,"
+         "    percentile AS max_epss_percentile,"
+         "    cve AS max_epss_cve,"
+         "    cves.severity AS max_epss_severity"
+         "  FROM scap.epss_scores"
+         "  JOIN scap.cves ON cve = cves.uuid"
+         "  UNION ALL"
+         "  SELECT oid AS vt_id,"
+         "    epss_score,"
+         "    epss_percentile,"
+         "    epss_cve,"
+         "    epss_severity,"
+         "    max_epss_score,"
+         "    max_epss_percentile,"
+         "    max_epss_cve,"
+         "    max_epss_severity"
+         "  FROM nvts);");
+  else
+    sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
+         "  SELECT oid AS vt_id,"
+         "    epss_score,"
+         "    epss_percentile,"
+         "    epss_cve,"
+         "    max_epss_score,"
+         "    max_epss_percentile,"
+         "    max_epss_cve"
+         "  FROM nvts);");
+
+  sql ("SELECT create_index ('result_vt_epss_by_vt_id',"
+       "                     'result_vt_epss', 'vt_id');");
+
+}
+
 
 
 #undef VULNS_RESULTS_WHERE
@@ -3023,6 +3076,8 @@ create_tables ()
        "    ON sources.origin = origins.id;");
 
   create_view_vulns ();
+
+  create_view_result_vt_epss ();
 
   /* Create indexes. */
 

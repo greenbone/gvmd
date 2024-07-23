@@ -295,7 +295,7 @@ typedef struct
 /**
  * @brief Delta results columns offset for result iterator.
  */
-#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 38
+#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 46
 
 
 /* Variables */
@@ -507,6 +507,9 @@ create_view_vulns ();
 
 void
 create_indexes_nvt ();
+
+void
+create_view_result_vt_epss ();
 
 int
 config_family_entire_and_growing (config_t, const char*);

@@ -9109,6 +9109,42 @@ results_xml_append_cert (GString *buffer, iterator_t *results, const char *oid,
 }
 
 /**
+ * @brief Append an EPSS info element to a results XML buffer.
+ *
+ * @param[in]  results  Results iterator.
+ * @param[in]  buffer   XML buffer to add to.
+ */
+static void
+results_xml_append_epss (iterator_t *results, GString *buffer)
+{
+  buffer_xml_append_printf (buffer,
+                            "<epss>"
+                            "<max_severity>"
+                            "<score>%0.5f</score>"
+                            "<percentile>%0.5f</percentile>"
+                            "<cve id=\"%s\">"
+                            "<severity>%0.1f</severity>"
+                            "</cve>"
+                            "</max_severity>"
+                            "<max_epss>"
+                            "<score>%0.5f</score>"
+                            "<percentile>%0.5f</percentile>"
+                            "<cve id=\"%s\">"
+                            "<severity>%0.1f</severity>"
+                            "</cve>"
+                            "</max_epss>"
+                            "</epss>",
+                            result_iterator_epss_score (results),
+                            result_iterator_epss_percentile (results),
+                            result_iterator_epss_cve (results),
+                            result_iterator_epss_severity (results),
+                            result_iterator_max_epss_score (results),
+                            result_iterator_max_epss_percentile (results),
+                            result_iterator_max_epss_cve (results),
+                            result_iterator_max_epss_severity (results));
+}
+
+/**
  * @brief Append an NVT element to an XML buffer.
  *
  * @param[in]  results  Results.
@@ -9138,14 +9174,19 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                     "<severities score=\"%s\">"
                                     "</severities>"
                                     "<cpe id='%s'/>"
-                                    "<cve>%s</cve>"
-                                    "</nvt>",
+                                    "<cve>%s</cve>",
                                     oid,
                                     oid,
                                     severity ? severity : "",
                                     severity ? severity : "",
                                     result_iterator_port (results),
                                     oid);
+
+          if (result_iterator_epss_cve (results))
+            results_xml_append_epss (results, buffer);
+
+          buffer_xml_append_printf (buffer, "</nvt>");
+
           g_free (severity);
           return;
         }
@@ -9284,6 +9325,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
             else
               buffer_xml_append_printf (buffer, "/>");
           }
+
+        if (result_iterator_epss_cve (results))
+          results_xml_append_epss (results, buffer);
 
         first = 1;
         xml_append_nvt_refs (buffer, result_iterator_nvt_oid (results),
@@ -11675,7 +11719,6 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       gchar *routes_xml;
 
       asset = get_iterator_resource (&assets);
-      /* Assets are currently always writable. */
       if (send_get_common ("asset", &get_assets_data->get, &assets,
                            gmp_parser->client_writer,
                            gmp_parser->client_writer_data,

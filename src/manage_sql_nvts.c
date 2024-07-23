@@ -1987,7 +1987,10 @@ update_nvts_from_vts (element_t *get_vts_response,
     sql ("ALTER TABLE nvts_rebuild RENAME TO nvts;");
 
     create_view_vulns ();
+
     create_indexes_nvt ();
+
+    create_view_result_vt_epss ();
   }
 
   set_nvts_check_time (count_new_vts, count_modified_vts);
