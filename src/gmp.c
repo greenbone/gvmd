@@ -13793,25 +13793,25 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("get_nvts",
                             "Too many parameters at once"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->preference_count)
+               && get_nvts_data->preference_count)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The preference_count attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->preferences)
+               && get_nvts_data->preferences)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The preferences attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->skip_cert_refs)
+               && get_nvts_data->skip_cert_refs)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The skip_cert_refs attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->skip_tags)
+               && get_nvts_data->skip_tags)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The skip_tags attribute"
@@ -13825,14 +13825,14 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
       else if (((get_nvts_data->details == 0)
                 || ((get_nvts_data->config_id == NULL)
                     && (get_nvts_data->preferences_config_id == NULL)))
-                && get_nvts_data->timeout)
+               && get_nvts_data->timeout)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The timeout attribute"
                             " requires the details and config_id"
                             " attributes"));
       else if (get_nvts_data->nvt_oid
-                && find_nvt (get_nvts_data->nvt_oid, &nvt))
+               && find_nvt (get_nvts_data->nvt_oid, &nvt))
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("get_nvts"));
       else if (get_nvts_data->nvt_oid && nvt == 0)
@@ -13846,15 +13846,15 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       else if (get_nvts_data->config_id
-                && get_nvts_data->preferences_config_id)
+               && get_nvts_data->preferences_config_id)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "config_id and"
                             " preferences_config_id both given"));
       else if (get_nvts_data->config_id
-                && find_config_with_permission (get_nvts_data->config_id,
-                                                &config,
-                                                NULL))
+               && find_config_with_permission (get_nvts_data->config_id,
+                                               &config,
+                                               NULL))
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("get_nvts"));
       else if (get_nvts_data->config_id && (config == 0))
@@ -13868,19 +13868,19 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       else if (get_nvts_data->preferences_config_id
-                && find_config_with_permission
+               && find_config_with_permission
                     (get_nvts_data->preferences_config_id,
-                    &preferences_config,
-                    NULL))
+                     &preferences_config,
+                     NULL))
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("get_nvts"));
       else if (get_nvts_data->preferences_config_id
-                && (preferences_config == 0))
+               && (preferences_config == 0))
         {
           if (send_find_error_to_client
                 ("get_nvts", "config",
-                get_nvts_data->preferences_config_id,
-                gmp_parser))
+                 get_nvts_data->preferences_config_id,
+                 gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -13896,16 +13896,16 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             " status_text=\"" STATUS_OK_TEXT "\">");
 
           init_nvt_iterator (&nvts,
-                              nvt,
-                              get_nvts_data->nvt_oid
-                              /* Presume the NVT is in the config (if
-                                * a config was given). */
-                              ? 0
-                              : config,
-                              get_nvts_data->family,
-                              NULL,
-                              get_nvts_data->sort_order,
-                              get_nvts_data->sort_field);
+                             nvt,
+                             get_nvts_data->nvt_oid
+                             /* Presume the NVT is in the config (if
+                              * a config was given). */
+                             ? 0
+                             : config,
+                             get_nvts_data->family,
+                             NULL,
+                             get_nvts_data->sort_order,
+                             get_nvts_data->sort_field);
           if (preferences_config)
             config = preferences_config;
           if (get_nvts_data->details)
@@ -13921,7 +13921,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 if (get_nvts_data->preferences && (timeout == NULL))
                   timeout = config_nvt_timeout
                               (config,
-                              nvt_iterator_oid (&nvts));
+                               nvt_iterator_oid (&nvts));
 
                 if (get_nvts_data->preference_count)
                   {
