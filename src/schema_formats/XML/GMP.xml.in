@@ -14296,7 +14296,6 @@ END:VCALENDAR
               <e>creation_time</e>
               <e>modification_time</e>
               <e>category</e>
-              <e>summary</e>
               <e>family</e>
               <e>cvss_base</e>
               <e>severities</e>
@@ -14406,11 +14405,6 @@ END:VCALENDAR
               <pattern>text</pattern>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>summary</name>
-          <summary>Short description of the NVT</summary>
-          <pattern>text</pattern>
         </ele>
         <ele>
           <name>family</name>
@@ -14719,7 +14713,6 @@ END:VCALENDAR
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
             <category>3</category>
-            <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
             <severities score="0"/>
