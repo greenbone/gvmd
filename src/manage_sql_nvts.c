@@ -1979,6 +1979,7 @@ update_nvts_from_vts (element_t *get_vts_response,
   if (rebuild) {
     sql ("DROP VIEW IF EXISTS results_autofp;");
     sql ("DROP VIEW vulns;");
+    sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
     sql ("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
 
     sql ("ALTER TABLE vt_refs_rebuild RENAME TO vt_refs;");
