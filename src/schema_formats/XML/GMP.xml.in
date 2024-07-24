@@ -14618,6 +14618,7 @@ END:VCALENDAR
             <pattern>
               <e>nvt</e>
               <e>name</e>
+              <e>hr_name</e>
               <e>id</e>
               <e>type</e>
               <e>value</e>
@@ -14645,6 +14646,11 @@ END:VCALENDAR
               <name>name</name>
               <summary>The name of the preference</summary>
               <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>hr_name</name>
+              <summary>The human readable name of the preference</summary>
+              <pattern><t>name</t></pattern>
             </ele>
             <ele>
               <name>id</name>
