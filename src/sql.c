@@ -208,7 +208,7 @@ sql_insert (const char *string)
  *
  * @return 0 success, 1 gave up (even when retry given),
  *         2 reserved (lock unavailable), 3 unique constraint violation,
- *         -1 error.
+ *         4 deadlock, -1 error.
  */
 int
 sqlv (int retry, char* sql, va_list args)
@@ -274,13 +274,14 @@ sql (char* sql, ...)
         continue;
       else if (ret == 4)
         {
-            if (deadlock_amount++ > DEADLOCK_THRESHOLD)
-              {
-                  g_warning("%s: %d deadlocks detected, waiting and retrying %s", __func__, deadlock_amount, sql);
-              }
-            gvm_usleep (DEADLOCK_SLEEP);
-            continue;
-         }
+          if (deadlock_amount++ > DEADLOCK_THRESHOLD)
+            {
+              g_warning("%s: %d deadlocks detected, waiting and retrying %s",
+                        __func__, deadlock_amount, sql);
+            }
+          gvm_usleep (DEADLOCK_SLEEP);
+          continue;
+        }
       else if (ret)
         abort();
       break;
@@ -355,6 +356,7 @@ int
 sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   int ret;
+  unsigned int deadlock_amount =  0;
 
   assert (stmt_return);
 
@@ -390,6 +392,16 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
         {
           /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (*stmt_return);
+          continue;
+        }
+      else if (ret == -5)
+        {
+          if (deadlock_amount++ > DEADLOCK_THRESHOLD)
+            {
+              g_warning("%s: %d deadlocks detected, waiting and retrying %s",
+                        __func__, deadlock_amount, sql);
+            }
+          gvm_usleep (DEADLOCK_SLEEP);
           continue;
         }
       break;
