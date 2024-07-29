@@ -1106,10 +1106,14 @@ handle_sigabrt_simple (int signal)
 static int
 update_nvt_cache_osp (const gchar *update_socket)
 {
+#ifdef OPENVASD
+  setproctitle ("Openvasd: Updating NVT cache");
+#else
   setproctitle ("OSP: Updating NVT cache");
-
+#endif
   return manage_update_nvts_osp (update_socket);
 }
+
 
 /**
  * @brief Update NVT cache in forked child, retrying if scanner loading.

@@ -99,6 +99,11 @@
 #define SCANNER_UUID_DEFAULT "08b69003-5fc2-4037-a479-93b440211c73"
 
 /**
+ * @brief UUID of 'Openvasd Default' scanner.
+ */
+#define SCANNER_UUID_OPENVASD_DEFAULT "8154d8e3-30ee-4959-9151-1863c89a8e62"
+
+/**
  * @brief UUID of 'CVE' scanner.
  */
 #define SCANNER_UUID_CVE "6acd0832-df90-11e4-b9d5-28d24461215b"
