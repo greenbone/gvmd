@@ -7145,6 +7145,50 @@ nvts_feed_info_internal (const gchar *update_socket,
 }
 
 /**
+ * @brief Get VTs feed information from a scanner.
+ *
+ * @param[in]  scanner_uuid  The uuid of the scanner to be used.
+ * @param[out] vts_version   Output of scanner feed version.
+ *
+ * @return 0 success, 1 connection to scanner failed, 2 scanner still starting,
+ *         -1 other error.
+ */
+static int
+nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
+                                       gchar **vts_version)
+{
+  scanner_t scan;
+  openvasd_connector_t connector = NULL;
+  openvasd_resp_t resp = NULL;
+  int ret;
+  if (find_resource_no_acl ("scanner", scanner_uuid, &scan))
+    return -1;
+
+  connector = openvasd_scanner_connect (scan, NULL);
+  if (!connector)
+    return 1;
+
+  resp = openvasd_get_health_ready (&connector);
+  if (resp->code == -1)
+    {
+      g_warning ("%s: failed to connect to %s:%d", __func__,
+                 scanner_host (scan), scanner_port (scan));
+      ret = 1;
+    }
+  else if (resp->code  == 503)
+    ret = 2;
+  else
+    {
+      *vts_version = g_strdup (resp->header);
+      ret = 0;
+    }
+
+  openvasd_response_free (resp);
+  openvasd_connector_free (&connector);
+  return ret;
+}
+
+/**
  * @brief Get VTs feed information from the scanner using VT update socket.
  *
  * @param[out] vts_version  Output of scanner feed version.
@@ -7159,11 +7203,17 @@ int
 nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
                 gchar **feed_home)
 {
+#if OPENVASD == 1
+  return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
+                                  vts_version);
+#else
   return nvts_feed_info_internal (get_osp_vt_update_socket (),
                                   vts_version,
                                   feed_name,
                                   feed_vendor,
                                   feed_home);
+
+#endif
 }
 
 /**
@@ -7223,10 +7273,30 @@ nvts_check_feed (int *lockfile_in_use,
                  int *self_test_exit_error,
                  char **self_test_error_msg)
 {
+#if OPENVASD == 1
+  int ret = 0;
+  char *vts_version = NULL;
+
+  ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
+                                  &vts_version);
+  self_test_exit_error = 0;
+  *self_test_error_msg = NULL;
+  if (ret == 0 && vts_version)
+    lockfile_in_use = 0;
+  else if (ret == 2)
+    {
+      ret = 0;
+      *lockfile_in_use = 1;
+    }
+
+  return ret;
+
+#else
   return nvts_check_feed_internal (get_osp_vt_update_socket (),
                                    lockfile_in_use,
                                    self_test_exit_error,
                                    self_test_error_msg);
+#endif
 }
 
 /**
