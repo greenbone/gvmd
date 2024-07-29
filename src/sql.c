@@ -394,7 +394,7 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
           sql_finalize (*stmt_return);
           continue;
         }
-      else if (ret == -5)
+      if (ret == -5)
         {
           if (deadlock_amount++ > DEADLOCK_THRESHOLD)
             {
