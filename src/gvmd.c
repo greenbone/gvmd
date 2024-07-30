@@ -102,6 +102,7 @@
 #include <gvm/util/ldaputils.h>
 
 #include "debug_utils.h"
+#include "ipc.h"
 #include "manage.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
