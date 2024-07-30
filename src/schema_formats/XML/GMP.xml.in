@@ -11687,7 +11687,7 @@ END:VCALENDAR
         <any><e>filter</e></any>
         <e>filters</e>
         <e>sort</e>
-        <e>filters</e>
+        <e>filters2</e>
         <e>filter_count</e>
       </pattern>
       <ele>
@@ -11944,6 +11944,7 @@ END:VCALENDAR
         </ele>
       </ele>
       <ele>
+        <id>filters2</id>
         <name>filters</name>
         <pattern>
           <attrib>
