@@ -506,6 +506,9 @@ void
 create_view_vulns ();
 
 void
+create_indexes_nvt ();
+
+void
 create_view_result_vt_epss ();
 
 int
