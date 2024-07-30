@@ -7317,7 +7317,8 @@ validate_tippingpoint_data (alert_method_t method, const gchar *name,
           int ret;
           gnutls_x509_crt_fmt_t crt_fmt;
 
-          ret = get_certificate_info (*data, strlen(*data), NULL, NULL, NULL,
+          ret = get_certificate_info (*data, strlen(*data), FALSE,
+                                      NULL, NULL, NULL,
                                       NULL, NULL, NULL, NULL, &crt_fmt);
           if (ret || crt_fmt != GNUTLS_X509_FMT_PEM)
             {
@@ -27441,6 +27442,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
 
       get_certificate_info ((gchar*)certificate,
                             certificate_size,
+                            TRUE,
                             &activation_time,
                             &expiration_time,
                             &md5_fingerprint,
