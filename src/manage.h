@@ -3871,6 +3871,12 @@ void
 set_feed_lock_timeout (int);
 
 int
+get_max_concurrent_scan_updates ();
+
+void
+set_max_concurrent_scan_updates (int);
+
+int
 get_mem_wait_retries ();
 
 void

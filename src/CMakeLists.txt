@@ -109,6 +109,7 @@ add_executable (manage-utils-test
 
                 debug_utils.c
                 gvmd.c gmpd.c
+                ipc.c
                 manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
@@ -140,6 +141,7 @@ add_executable (manage-test
 
                 debug_utils.c
                 gvmd.c gmpd.c
+                ipc.c
                 manage_utils.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
@@ -171,6 +173,7 @@ add_executable (manage-sql-test
 
                 debug_utils.c
                 gvmd.c gmpd.c
+                ipc.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
@@ -202,6 +205,7 @@ add_executable (gmp-tickets-test
 
                 debug_utils.c
                 gvmd.c gmpd.c
+                ipc.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
@@ -233,6 +237,7 @@ add_executable (utils-test
 
                 debug_utils.c
                 gvmd.c gmpd.c
+                ipc.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c
@@ -281,6 +286,7 @@ add_executable (gvmd
                 main.c gvmd.c
                 debug_utils.c
                 gmpd.c
+                ipc.c
                 manage_utils.c manage.c sql.c
                 manage_acl.c manage_configs.c manage_get.c
                 manage_license.c

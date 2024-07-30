@@ -48,6 +48,7 @@
 
 #include "debug_utils.h"
 #include "gmp_base.h"
+#include "ipc.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_configs.h"
@@ -183,6 +184,11 @@ static gchar *feed_lock_path = NULL;
  * @brief Number of seconds to wait for the feed lock to be released.
  */
 static int feed_lock_timeout = 0;
+
+/**
+ * @brief Maximum number of concurrent scan updates.
+ */
+static int max_concurrent_scan_updates = 0;
 
 /**
  * @brief Retries for waiting for memory to be available.
@@ -1842,6 +1848,40 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
 }
 
 /**
+ * @brief Handles the semaphore for the end of an OSP scan update.
+ *
+ * @param[in]  add_result_on_error  Whether to create an OSP result on error.
+ * @param[in]  task   The current task (for error result).
+ * @param[in]  report The current report (for error result).
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+osp_scan_semaphore_update_end (int add_result_on_error,
+                               task_t task, report_t report)
+{
+  if (max_concurrent_scan_updates == 0)
+    return 0;
+
+  if (semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0))
+    {
+      g_warning ("%s: error signaling scan update semaphore",
+                __func__);
+      if (add_result_on_error)
+        {
+          result_t result = make_osp_result
+            (task, "", "", "",
+              threat_message_type ("Error"),
+              "Error signaling scan update semaphore", "", "",
+              QOD_DEFAULT, NULL, NULL);
+          report_add_result (report, result);
+        }
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Handle an ongoing OSP scan, until success or failure.
  *
  * @param[in]   task      The task.
@@ -1874,7 +1914,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   rc = -1;
   while (retry >= 0)
     {
-      int run_status, progress;
+      int sem_op_ret, run_status, progress;
       osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
@@ -1883,6 +1923,28 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
         {
           rc = -4;
           break;
+        }
+
+      if (max_concurrent_scan_updates)
+        {
+          sem_op_ret = semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 5);
+          if (sem_op_ret == 1)
+            continue;
+          else if (sem_op_ret)
+            {
+              g_warning ("%s: error waiting for scan update semaphore",
+                        __func__);
+              result_t result = make_osp_result
+                (task, "", "", "",
+                  threat_message_type ("Error"),
+                  "Error waiting for scan update semaphore", "", "",
+                  QOD_DEFAULT, NULL, NULL);
+              report_add_result (report, result);
+              delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                key_priv);
+              rc = -3;
+              break;
+            }
         }
 
       /* Get only the progress, without results and details. */
@@ -1897,10 +1959,18 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               g_warning ("Connection lost with the scanner at %s. "
                          "Trying again in 1 second.", host);
               gvm_sleep (1);
+              if (osp_scan_semaphore_update_end (TRUE, task, report))
+                {
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  rc = -3;
+                  break;
+                }
               continue;
             }
           else if (progress == -2)
             {
+              osp_scan_semaphore_update_end (FALSE, task, report);
               rc = -2;
               break;
             }
@@ -1910,6 +1980,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
+          osp_scan_semaphore_update_end (FALSE, task, report);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                            key_priv);
           rc = -1;
@@ -1928,11 +1999,19 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   retry--;
                   g_warning ("Connection lost with the scanner at %s. "
                              "Trying again in 1 second.", host);
+                  if (osp_scan_semaphore_update_end (TRUE, task, report))
+                    {
+                      delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                       key_priv);
+                      rc = -3;
+                      break;
+                    }
                   gvm_sleep (1);
                   continue;
                 }
               else if (progress == -2)
                 {
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -2;
                   break;
                 }
@@ -1943,6 +2022,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                   "Erroneous scan progress value", "", "",
                                   QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
+              osp_scan_semaphore_update_end (FALSE, task, report);
               rc = -1;
               break;
             }
@@ -1975,6 +2055,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -3;
                   break;
                 }
@@ -1986,6 +2067,13 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                       retry--;
                       g_warning ("Connection lost with the scanner at %s. "
                                  "Trying again in 1 second.", host);
+                      if (osp_scan_semaphore_update_end (TRUE, task, report))
+                        {
+                          delete_osp_scan (scan_id, host, port, ca_pub,
+                                           key_pub, key_priv);
+                          rc = -3;
+                          break;
+                        }
                       gvm_sleep (1);
                       continue;
                     }
@@ -1998,6 +2086,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -1;
                   break;
                 }
@@ -2006,6 +2095,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = 0;
                   break;
                 }
@@ -2018,6 +2108,14 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   started = TRUE;
                 }
             }
+        }
+
+      if (osp_scan_semaphore_update_end (TRUE, task, report))
+        {
+          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                           key_priv);
+          rc = -3;
+          break;
         }
 
       retry = connection_retry;
@@ -2887,9 +2985,25 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       set_task_run_status (task, TASK_STATUS_PROCESSING);
       set_report_scan_run_status (global_current_report,
                                   TASK_STATUS_PROCESSING);
+
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
       hosts_set_identifiers (global_current_report);
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
+
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
       hosts_set_max_severity (global_current_report, NULL, NULL);
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
+
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
       hosts_set_details (global_current_report);
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
+
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
@@ -6489,6 +6603,31 @@ set_min_mem_feed_update (int new_min_mem)
     }
   else
     min_mem_feed_update = new_min_mem;
+}
+
+/**
+ * @brief Get the maximum number of concurrent scan updates.
+ *
+ * @return The current maximum number of concurrent scan updates.
+ */
+int
+get_max_concurrent_scan_updates ()
+{
+  return max_concurrent_scan_updates;
+}
+
+/**
+ * @brief Set the maximum number of concurrent scan updates.
+ *
+ * @param new_max The new maximum number of concurrent scan updates.
+ */
+void
+set_max_concurrent_scan_updates (int new_max)
+{
+  if (new_max < 0)
+    max_concurrent_scan_updates = 0;
+  else
+    max_concurrent_scan_updates = new_max;
 }
 
 /**
