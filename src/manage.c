@@ -7930,17 +7930,18 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
  * @brief Union type for values of semctl actions
  */
 union semun {
-    int              val;    /* Value for SETVAL */
-    struct semid_ds *buf;    /* Buffer for IPC_STAT, IPC_SET */
-    unsigned short  *array;  /* Array for GETALL, SETALL */
-    struct seminfo  *__buf;  /* Buffer for IPC_INFO
-                                (Linux-specific) */
+    int              val;    ///< Value for SETVAL
+    struct semid_ds *buf;    ///< Buffer for IPC_STAT, IPC_SET
+    unsigned short  *array;  ///< Array for GETALL, SETALL
+    struct seminfo  *__buf;  ///< Buffer for IPC_INFO (Linux-specific)
 };
 
 /**
  * @brief Initializes the semaphore set for gvmd actions.
  *
  * Needs max_concurrent_scan_updates to be set.
+ *
+ * @return 0 success, -1 error
  */
 int
 init_semaphore_set ()
@@ -7971,6 +7972,7 @@ init_semaphore_set ()
     {
       g_warning ("%s: error getting semaphore set: %s",
                  __func__, strerror (errno));
+      g_free (key_file_name);
       return -1;
     }
 
@@ -8001,6 +8003,9 @@ init_semaphore_set ()
  *
  * @param[in]  semaphore_index  The index of the semaphore in the gvmd set.
  * @param[in]  op_value   The operation value
+ * @param[in]  timeout    Timeout in seconds, 0 for unlimited
+ *
+ * @return 0 success, 1 timed out, -1 error
  */
 int
 semaphore_op (semaphore_index_t semaphore_index,
