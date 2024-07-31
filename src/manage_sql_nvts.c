@@ -2674,13 +2674,68 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
   gvm_close_jnode_parser (parser);
 
   openvasd_response_free (resp);
-  openvasd_connector_free (&connector);
 
   if (ret)
-    return ret;
+    {
+      openvasd_connector_free (&connector);
+      return ret;
+    }
 
   /* Update scanner preferences */
   // TODO: update scanner preferences
+
+  resp = openvasd_get_vts (&connector);
+  if (resp->code != 200)
+    {
+      g_warning ("%s: failed to get scanner preferences", __func__);
+      return -1;
+    }
+  GSList *scan_prefs = NULL;
+
+  openvasd_parsed_scans_preferences (&connector, &scan_prefs);
+  g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
+  openvasd_connector_free (&connector);
+
+  GString *prefs_sql;
+  GSList *point;
+  int first;
+
+  point = scan_prefs;
+  first = 1;
+
+  prefs_sql = g_string_new ("INSERT INTO nvt_preferences (name, value)"
+                            " VALUES");
+  while (point)
+    {
+      openvasd_param_t *param;
+      gchar *quoted_name, *quoted_value;
+
+      param = point->data;
+      quoted_name = sql_quote (openvasd_param_id (param));
+      quoted_value = sql_quote (openvasd_param_default (param));
+
+      g_string_append_printf (prefs_sql,
+                              "%s ('%s', '%s')",
+                              first ? "" : ",",
+                              quoted_name,
+                              quoted_value);
+      first = 0;
+      point = g_slist_next (point);
+      g_free (quoted_name);
+      g_free (quoted_value);
+    }
+  g_slist_free_full (scan_prefs, (GDestroyNotify) openvasd_param_free);
+
+  g_string_append (prefs_sql,
+                   " ON CONFLICT (name)"
+                   " DO UPDATE SET value = EXCLUDED.value;");
+
+  if (first == 0)
+    {
+      sql ("%s", prefs_sql->str);
+    }
+
+  g_string_free (prefs_sql, TRUE);
 
   /* Update the cache of report counts. */
 
