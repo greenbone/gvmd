@@ -60209,7 +60209,8 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
   host = res->ip_address;
   hostname = res->hostname;
 
-  if (res->port == 0 && res->detail_value && *res->detail_value)
+  if (res && res->port == 0 && !strcmp (type, "host_detail") &&
+      res->detail_value && *res->detail_value)
     port = g_strdup ("general/Host_Details");
   else if (res->port > 0)
     {
@@ -60233,6 +60234,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
                                      "Openvasd Host Detail", res->detail_name,
                                      res->detail_value, hash_value);
         }
+      desc = res->message;
       g_free (hash_value);
       g_free (port);
       return;
