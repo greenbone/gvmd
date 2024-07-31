@@ -1874,7 +1874,6 @@ get_nvt_families_data_reset (get_nvt_families_data_t *data)
 typedef struct
 {
   get_data_t get;      ///< Get args.
-  char *override_id;   ///< ID of override to get.
   char *nvt_oid;       ///< OID of NVT to which to limit listing.
   char *task_id;       ///< ID of task to which to limit listing.
   int result;          ///< Boolean.  Whether to include associated results.
@@ -1888,7 +1887,6 @@ typedef struct
 static void
 get_overrides_data_reset (get_overrides_data_t *data)
 {
-  free (data->override_id);
   free (data->nvt_oid);
   free (data->task_id);
 
@@ -5428,9 +5426,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_overrides_data->get, "override",
                                        attribute_names,
                                        attribute_values);
-
-            append_attribute (attribute_names, attribute_values, "override_id",
-                              &get_overrides_data->override_id);
 
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_overrides_data->nvt_oid);
@@ -14048,12 +14043,12 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
   nvt_t nvt = 0;
   task_t task = 0;
 
-  if (get_overrides_data->override_id && get_overrides_data->nvt_oid)
+  if (get_overrides_data->get.id && get_overrides_data->nvt_oid)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_overrides",
                         "Only one of NVT and the override_id attribute"
                         " may be given"));
-  else if (get_overrides_data->override_id
+  else if (get_overrides_data->get.id
             && get_overrides_data->task_id)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_overrides",
