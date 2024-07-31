@@ -1793,7 +1793,6 @@ get_info_data_reset (get_info_data_t *data)
 typedef struct
 {
   get_data_t get;        ///< Get args.
-  char *note_id;         ///< ID of single note to get.
   char *nvt_oid;         ///< OID of NVT to which to limit listing.
   char *task_id;         ///< ID of task to which to limit listing.
   int result;            ///< Boolean.  Whether to include associated results.
@@ -1807,7 +1806,6 @@ typedef struct
 static void
 get_notes_data_reset (get_notes_data_t *data)
 {
-  free (data->note_id);
   free (data->nvt_oid);
   free (data->task_id);
 
@@ -5332,7 +5330,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                attribute_names,
                                attribute_values);
             set_client_state (CLIENT_GET_LICENSE);
-          }      
+          }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5340,9 +5338,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_notes_data->get, "note",
                                        attribute_names,
                                        attribute_values);
-
-            append_attribute (attribute_names, attribute_values, "note_id",
-                              &get_notes_data->note_id);
 
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_notes_data->nvt_oid);
@@ -13648,12 +13643,12 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
   nvt_t nvt = 0;
   task_t task = 0;
 
-  if (get_notes_data->note_id && get_notes_data->nvt_oid)
+  if (get_notes_data->get.id && get_notes_data->nvt_oid)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_notes",
                         "Only one of NVT and the note_id attribute"
                         " may be given"));
-  else if (get_notes_data->note_id && get_notes_data->task_id)
+  else if (get_notes_data->get.id && get_notes_data->task_id)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_notes",
                         "Only one of the note_id and task_id"
