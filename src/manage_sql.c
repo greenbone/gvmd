@@ -43388,6 +43388,48 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
 }
 
 /**
+ * @brief Get an Openvasd Scanner's get_scanner_preferences info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  desc        Scanner description.
+ * @param[out]  params      Scanner parameters.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
+                               GSList **params)
+{
+  int port;
+  openvasd_connector_t connection;
+  const char *server, *ca_pub, *key_pub, *key_priv;
+
+  assert (iterator);
+  server = scanner_iterator_host (iterator);
+  port = scanner_iterator_port (iterator);
+  ca_pub = scanner_iterator_ca_pub (iterator);
+  key_pub = scanner_iterator_key_pub (iterator);
+  key_priv = scanner_iterator_key_priv (iterator);
+
+  connection = openvasd_connector_new();
+
+  openvasd_connector_builder (&connection, OPENVASD_SERVER, server);
+  openvasd_connector_builder (&connection, OPENVASD_CA_CERT, ca_pub);
+  openvasd_connector_builder (&connection, OPENVASD_KEY, key_priv);
+  openvasd_connector_builder (&connection, OPENVASD_CERT, key_pub);
+  openvasd_connector_builder (&connection, OPENVASD_PORT, (void *) &port);
+
+  if (!connection)
+    return 1;
+
+  *desc = g_strdup_printf("Openvasd Sensor on htt://%s:%d", server, port);
+  if (openvasd_parsed_scans_preferences (&connection, params) < 0)
+    return 1;
+  openvasd_connector_free (&connection);
+  return 0;
+}
+
+/**
  * @brief Verify a scanner.
  *
  * @param[in]   scanner_id  Scanner UUID.
