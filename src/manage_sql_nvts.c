@@ -27,6 +27,7 @@
  * @brief Enable extra GNU functions.
  */
 #include "base/nvti.h"
+#include "glibconfig.h"
 #include "manage.h"
 #include "openvasd/openvasd.h"
 #include "openvasd/jsonutils.h"
@@ -1456,6 +1457,7 @@ insert_nvt_preference (gpointer nvt_preference, gpointer rebuild)
     return;
 
   preference = (preference_t*) nvt_preference;
+
   manage_nvt_preference_add (preference->name, preference->value,
                              preference->nvt_oid, preference->id,
                              preference->type, preference->pref_name,
@@ -1623,9 +1625,9 @@ update_preferences_from_json_nvt (nvti_t *nvti, GList **preferences)
 
       id = nvtpref_id (pref);
       char_id = g_strdup_printf ("%d", id);
-      type = nvtpref_type (pref);
-      name = nvtpref_name (pref);
-      def = nvtpref_default (pref);
+      type = g_strdup (nvtpref_type (pref));
+      name = g_strdup (nvtpref_name (pref));
+      def = g_strdup (nvtpref_default (pref));
 
       if (type == NULL)
         {
@@ -1667,16 +1669,16 @@ update_preferences_from_json_nvt (nvti_t *nvti, GList **preferences)
             preference->value = g_strdup (def);
           else
             preference->value = g_strdup ("");
-          preference->nvt_oid = g_strdup (nvti_oid(nvti));
+          preference->nvt_oid = g_strdup (nvti_oid (nvti));
           preference->id = g_strdup (char_id);
           preference->type = g_strdup (type);
-          preference->pref_name = name;
+          preference->pref_name = g_strdup (name);
           *preferences = g_list_prepend (*preferences, preference);
         }
 
-      g_free (type);
-      g_free (name);
       g_free (char_id);
+      g_free (name);
+      g_free (type);
       g_free (def);
     }
 
@@ -1707,6 +1709,7 @@ nvti_from_vt (element_t vt)
       nvti_free (nvti);
       return NULL;
     }
+
   nvti_set_oid (nvti, id);
   g_free (id);
 
@@ -3005,8 +3008,27 @@ manage_sync_nvts (int (*fork_update_nvt_cache) (pid_t*))
 int
 update_or_rebuild_nvts (int update)
 {
+gchar *db_feed_version, *scanner_feed_version;
+#if OPENVASD
+ int ret = 0;
+ const char *update_socket = NULL;
+ nvts_feed_version_status_internal (update_socket,
+                                    &db_feed_version,
+                                    &scanner_feed_version);
+
+  g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
+
+  if (update == 0)
+    set_nvts_feed_version ("0");
+  ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT, db_feed_version,
+                                   scanner_feed_version, 0);
+  if (ret != 0)
+    ret = -1;
+
+  return ret;
+
+#else
   const char *osp_update_socket;
-  gchar *db_feed_version, *scanner_feed_version;
   osp_connection_t *connection;
   int ret;
   gchar *error;
@@ -3055,7 +3077,7 @@ update_or_rebuild_nvts (int update)
     {
       return -1;
     }
-
+#endif
   return 0;
 }
 
