@@ -3479,6 +3479,22 @@ manage_db_init (const gchar *name)
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text);");
 
+      sql ("CREATE TABLE scap2.cpe_match_nodes"
+           " (id SERIAL PRIMARY KEY,"
+           "  parent_id INTEGER DEFAULT 0,"
+           "  cve_id INTEGER DEFAULT 0,"
+           "  operator text);");
+
+      sql ("CREATE TABLE scap2.cpe_match_range"
+           " (id SERIAL PRIMARY KEY,"
+           "  node_id INTEGER DEFAULT 0,"
+           "  vulnerable INTEGER DEFAULT 0,"
+           "  cpe text,"
+           "  version_start_incl text,"
+           "  version_start_excl text,"
+           "  version_end_incl text,"
+           "  version_end_excl text);");
+
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
            "  cpe_id text,"
