@@ -10352,22 +10352,18 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
     {
       gchar *column_name = g_array_index (data_columns, gchar*, index);
       if (column_name && strcmp (column_name, ""))
-        {
-          g_string_append_printf (xml,
-                                  "<data_column>%s</data_column>",
-                                  column_name);
-        }
+        g_string_append_printf (xml,
+                                "<data_column>%s</data_column>",
+                                column_name);
     }
 
   for (index = 0; index < text_columns->len ;index ++)
     {
       gchar *column_name = g_array_index (text_columns, gchar*, index);
       if (column_name && strcmp (column_name, ""))
-        {
-          g_string_append_printf (xml,
-                                  "<text_column>%s</text_column>",
-                                  column_name);
-        }
+        g_string_append_printf (xml,
+                                "<text_column>%s</text_column>",
+                                column_name);
     }
 
   if (group_column)
@@ -10394,11 +10390,9 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
       group_c_sums = g_array_new (TRUE, TRUE, sizeof (GTree*));
       for (index = 0; index < data_columns->len; index++)
-        {
-          g_array_index (group_c_sums, GTree*, index)
-            = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
-                               g_free, g_free);
-        }
+        g_array_index (group_c_sums, GTree*, index)
+          = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
+                             g_free, g_free);
 
       subgroup_c_counts = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
                                            g_free, g_free);
@@ -10620,29 +10614,25 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       *subgroup_c_count);
             }
           else
-            {
-              // No subgrouping
-              g_string_append_printf (xml,
-                                      "<group>"
-                                      "<value>%s</value>"
-                                      "<count>%d</count>"
-                                      "<c_count>%ld</c_count>",
-                                      value_escaped ? value_escaped : "",
-                                      aggregate_iterator_count (aggregate),
-                                      c_count);
-            }
+            // No subgrouping
+            g_string_append_printf (xml,
+                                    "<group>"
+                                    "<value>%s</value>"
+                                    "<count>%d</count>"
+                                    "<c_count>%ld</c_count>",
+                                    value_escaped ? value_escaped : "",
+                                    aggregate_iterator_count (aggregate),
+                                    c_count);
 
           previous_c_count = c_count;
         }
       else
-        {
-          g_string_append_printf (xml,
-                                  "<overall>"
-                                  "<count>%d</count>"
-                                  "<c_count>%ld</c_count>",
-                                  aggregate_iterator_count (aggregate),
-                                  c_count);
-        }
+        g_string_append_printf (xml,
+                                "<overall>"
+                                "<count>%d</count>"
+                                "<c_count>%ld</c_count>",
+                                aggregate_iterator_count (aggregate),
+                                c_count);
 
       for (index = 0; index < data_columns->len; index++)
         {
@@ -10695,23 +10685,21 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       iso_time (&mean));
             }
           else
-            {
-              g_string_append_printf (xml,
-                                      "<stats column=\"%s\">"
-                                      "<min>%g</min>"
-                                      "<max>%g</max>"
-                                      "<mean>%g</mean>"
-                                      "<sum>%g</sum>"
-                                      "<c_sum>%g</c_sum>"
-                                      "</stats>",
-                                      data_column,
-                                      aggregate_iterator_min (aggregate, index),
-                                      aggregate_iterator_max (aggregate, index),
-                                      aggregate_iterator_mean (aggregate, index),
-                                      aggregate_iterator_sum (aggregate, index),
-                                      subgroup_column && subgroup_c_sum
-                                        ? *subgroup_c_sum : c_sum);
-          }
+            g_string_append_printf (xml,
+                                    "<stats column=\"%s\">"
+                                    "<min>%g</min>"
+                                    "<max>%g</max>"
+                                    "<mean>%g</mean>"
+                                    "<sum>%g</sum>"
+                                    "<c_sum>%g</c_sum>"
+                                    "</stats>",
+                                    data_column,
+                                    aggregate_iterator_min (aggregate, index),
+                                    aggregate_iterator_max (aggregate, index),
+                                    aggregate_iterator_mean (aggregate, index),
+                                    aggregate_iterator_sum (aggregate, index),
+                                    subgroup_column && subgroup_c_sum
+                                    ? *subgroup_c_sum : c_sum);
         }
 
       for (index = 0; index < text_columns->len; index++)
@@ -10742,17 +10730,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
         }
 
       if (subgroup_column)
-        {
-          g_string_append_printf (xml, "</subgroup>");
-        }
+        g_string_append_printf (xml, "</subgroup>");
       else if (group_column)
-        {
-          g_string_append_printf (xml, "</group>");
-        }
+        g_string_append_printf (xml, "</group>");
       else
-        {
-          g_string_append_printf (xml, "</overall>");
-        }
+        g_string_append_printf (xml, "</overall>");
+
       g_free (value_escaped);
       g_free (subgroup_value_escaped);
     }
@@ -10761,14 +10744,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
     {
       // Add elements for last group in case subgroups are used
       if (has_groups)
-        {
-          g_string_append_printf (xml,
-                                  "<count>%ld</count>"
-                                  "<c_count>%ld</c_count>"
-                                  "</group>",
-                                  aggregate_group_count,
-                                  previous_c_count);
-        }
+        g_string_append_printf (xml,
+                                "<count>%ld</count>"
+                                "<c_count>%ld</c_count>"
+                                "</group>",
+                                aggregate_group_count,
+                                previous_c_count);
 
       // Also add overview of all subgroup values
       g_string_append_printf (xml,
@@ -10785,34 +10766,30 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
   g_string_append (xml, "<column_info>");
 
   if (group_column)
-    {
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>value</name>"
-                              "<stat>value</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              type,
-                              group_column,
-                              group_column_type);
-    }
+    g_string_append_printf (xml,
+                            "<aggregate_column>"
+                            "<name>value</name>"
+                            "<stat>value</stat>"
+                            "<type>%s</type>"
+                            "<column>%s</column>"
+                            "<data_type>%s</data_type>"
+                            "</aggregate_column>",
+                            type,
+                            group_column,
+                            group_column_type);
 
   if (subgroup_column)
-    {
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>subgroup_value</name>"
-                              "<stat>value</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              type,
-                              subgroup_column,
-                              subgroup_column_type);
-    }
+    g_string_append_printf (xml,
+                            "<aggregate_column>"
+                            "<name>subgroup_value</name>"
+                            "<stat>value</stat>"
+                            "<type>%s</type>"
+                            "<column>%s</column>"
+                            "<data_type>%s</data_type>"
+                            "</aggregate_column>",
+                            type,
+                            subgroup_column,
+                            subgroup_column_type);
 
   g_string_append_printf (xml,
                           "<aggregate_column>"
@@ -10932,9 +10909,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
       g_array_free (group_sums, TRUE);
 
       for (index = 0; index < data_columns->len; index++)
-        {
-          g_tree_destroy (g_array_index (group_c_sums, GTree*, index));
-        }
+        g_tree_destroy (g_array_index (group_c_sums, GTree*, index));
 
       g_array_free (group_c_sums, TRUE);
 
