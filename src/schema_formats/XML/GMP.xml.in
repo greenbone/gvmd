@@ -1173,7 +1173,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>hosts</e>
           <e>port</e>
           <e>task</e>
-          <o><e>end_time</e></o>
+          <e>end_time</e>
           <o><e>result</e></o>
         </g>
       </o>
