@@ -1167,7 +1167,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>new_threat</e>
       <e>new_severity</e>
       <e>orphan</e>
-      <e>permissions</e>
       <o><e>user_tags</e></o>
       <o>
         <g>
