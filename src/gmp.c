@@ -1905,7 +1905,6 @@ get_overrides_data_reset (get_overrides_data_t *data)
 typedef struct
 {
   get_data_t get;     ///< Get args.
-  char *resource_id;  ///< Resource whose permissions to get.
 } get_permissions_data_t;
 
 /**
@@ -1916,8 +1915,6 @@ typedef struct
 static void
 get_permissions_data_reset (get_permissions_data_t *data)
 {
-  free (data->resource_id);
-
   get_data_reset (&data->get);
   memset (data, 0, sizeof (get_permissions_data_t));
 }
@@ -5475,8 +5472,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_permissions_data->get, "permission",
                                        attribute_names,
                                        attribute_values);
-            append_attribute (attribute_names, attribute_values, "resource_id",
-                              &get_permissions_data->resource_id);
             set_client_state (CLIENT_GET_PERMISSIONS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
