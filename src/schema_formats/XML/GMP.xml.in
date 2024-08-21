@@ -16519,7 +16519,6 @@ END:VCALENDAR
           <o><e>user_tags</e></o>
           <e>report_format</e>
           <o><e>orphan</e></o>
-          <o><e>alerts</e></o>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -16658,36 +16657,6 @@ END:VCALENDAR
           <pattern>
             <t>boolean</t>
           </pattern>
-        </ele>
-        <ele>
-          <name>alerts</name>
-          <summary>Alerts using the report config</summary>
-          <pattern>
-            <any><e>alert</e></any>
-          </pattern>
-          <ele>
-            <name>alert</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the alert</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the alert</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the alert</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
         </ele>
         <ele>
           <name>param</name>
