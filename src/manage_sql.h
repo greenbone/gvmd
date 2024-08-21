@@ -148,6 +148,16 @@
 #define SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "316275a9-3629-49ad-9cea-5b3ab155b93f"
 
 /**
+ * @brief UUID of 'User Interface Time Format' setting.
+ */
+#define SETTING_UUID_USER_INTERFACE_TIME_FORMAT "11deb7ff-550b-4950-aacf-06faeb7c61b9"
+
+/**
+ * @brief UUID of 'User Interface Date Format' setting.
+ */
+#define SETTING_UUID_USER_INTERFACE_DATE_FORMAT "d9857b7c-1159-4193-9bc0-18fae5473a69"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
