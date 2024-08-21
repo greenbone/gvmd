@@ -16703,6 +16703,12 @@ END:VCALENDAR
             <name>value</name>
             <summary>The value of the param</summary>
             <pattern>
+              <attrib>
+                <name>using_default</name>
+                <summary>Whether this is the default value</summary>
+                <type>boolean</type>
+                <required>1</required>
+              </attrib>
               <any><e>report_format</e></any>
             </pattern>
             <ele>
