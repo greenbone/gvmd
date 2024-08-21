@@ -80,7 +80,7 @@ gchar *
 sql_quote (const char *);
 
 gchar *
-sql_ascii_escape_and_quote (const char *);
+sql_ascii_escape_and_quote (const char *, const char *);
 
 gchar *
 sql_insert (const char *);
