@@ -11498,6 +11498,7 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
               if (certificate && strcmp (certificate, "")
                   && get_certificate_info ((gchar*)certificate,
                                            strlen (certificate),
+                                           TRUE,
                                            &activation_time,
                                            &expiration_time,
                                            &md5_fingerprint,
@@ -12345,6 +12346,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
           get_certificate_info (cert,
                                 -1,
+                                TRUE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
@@ -16505,6 +16507,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 
               get_certificate_info (scanner_iterator_ca_pub (&scanners),
                                     -1,
+                                    TRUE,
                                     &activation_time,
                                     &expiration_time,
                                     &md5_fingerprint,
@@ -16559,6 +16562,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 
               get_certificate_info (scanner_iterator_key_pub (&scanners),
                                     -1,
+                                    TRUE,
                                     &activation_time,
                                     &expiration_time,
                                     &md5_fingerprint,
@@ -17143,6 +17147,7 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
 
           get_certificate_info (setting_iterator_value (&settings),
                                 -1,
+                                TRUE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
@@ -19935,6 +19940,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                   get_certificate_info (ldap_cacert,
                                         -1,
+                                        TRUE,
                                         &activation_time,
                                         &expiration_time,
                                         &md5_fingerprint,

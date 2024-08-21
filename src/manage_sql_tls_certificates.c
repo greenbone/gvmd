@@ -585,9 +585,9 @@ make_tls_certificate (const char *name,
   quoted_sha256_fingerprint
     = sql_quote (sha256_fingerprint ? sha256_fingerprint : "");
   quoted_subject_dn
-    = sql_ascii_escape_and_quote (subject_dn ? subject_dn : "");
+    = sql_ascii_escape_and_quote (subject_dn ? subject_dn : "", NULL);
   quoted_issuer_dn
-    = sql_ascii_escape_and_quote (issuer_dn ? issuer_dn : "");
+    = sql_ascii_escape_and_quote (issuer_dn ? issuer_dn : "", NULL);
   quoted_serial
     = sql_quote (serial ? serial : "");
 
@@ -725,6 +725,7 @@ make_tls_certificate_from_base64 (const char *name,
 
   ret = get_certificate_info (certificate_decoded,
                               certificate_len,
+                              FALSE,
                               &activation_time,
                               &expiration_time,
                               &md5_fingerprint,
@@ -1558,6 +1559,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
 
       get_certificate_info ((gchar*)certificate,
                             certificate_size,
+                            FALSE,
                             &activation_time,
                             &expiration_time,
                             &md5_fingerprint,
@@ -1725,6 +1727,8 @@ cleanup_tls_certificate_encoding ()
   int changes = 0;
   iterator_t iterator;
 
+  // Clean up names that are not valid UTF-8
+
   init_iterator (&iterator,
                  "SELECT id, subject_dn, issuer_dn"
                  " FROM tls_certificates"
@@ -1743,8 +1747,10 @@ cleanup_tls_certificate_encoding ()
       if (g_utf8_validate (subject_dn, -1, NULL) == FALSE
           || g_utf8_validate (issuer_dn, -1, NULL) == FALSE)
         {
-          gchar *quoted_subject_dn = sql_ascii_escape_and_quote (subject_dn);
-          gchar *quoted_issuer_dn = sql_ascii_escape_and_quote (issuer_dn);
+          gchar *quoted_subject_dn 
+            = sql_ascii_escape_and_quote (subject_dn, NULL);
+          gchar *quoted_issuer_dn 
+            = sql_ascii_escape_and_quote (issuer_dn, NULL);
 
           sql ("UPDATE tls_certificates"
                " SET subject_dn = '%s', issuer_dn = '%s'"
@@ -1757,5 +1763,36 @@ cleanup_tls_certificate_encoding ()
         }
     }
   cleanup_iterator (&iterator);
+
+  // Clean up control characters in remaining UTF-8 DNs
+
+  init_iterator (&iterator,
+                 "SELECT id, subject_dn, issuer_dn"
+                 " FROM tls_certificates"
+                 " WHERE subject_dn ~ '[\\x01-\\x1F\\x7F]'"
+                 "   OR issuer_dn ~ '[\\x01-\\x1F\\x7F]'");
+
+  while (next (&iterator))
+    {
+      tls_certificate_t tls_certificate;
+      const char *subject_dn, *issuer_dn;
+
+      tls_certificate = iterator_int64 (&iterator, 0);
+      subject_dn = iterator_string (&iterator, 1);
+      issuer_dn = iterator_string (&iterator, 2);
+
+      gchar *quoted_subject_dn = sql_ascii_escape_and_quote (subject_dn, NULL);
+      gchar *quoted_issuer_dn = sql_ascii_escape_and_quote (issuer_dn, NULL);
+
+      sql ("UPDATE tls_certificates"
+            " SET subject_dn = '%s', issuer_dn = '%s'"
+            " WHERE id = %llu",
+            quoted_subject_dn, quoted_issuer_dn, tls_certificate);
+      changes ++;
+
+      g_free (quoted_subject_dn);
+      g_free (quoted_issuer_dn);
+    }
+
   return changes;
 }
