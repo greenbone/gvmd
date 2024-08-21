@@ -16726,7 +16726,27 @@ END:VCALENDAR
           <ele>
             <name>default</name>
             <summary>The fallback value of the param</summary>
-            <pattern>text</pattern>
+            <pattern>
+              text
+              <any><e>report_format</e></any>
+            </pattern>
+            <ele>
+              <name>report_format</name>
+              <summary>Report format info if type is report_format_list</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the report format if available</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
           </ele>
           <ele>
             <name>options</name>
