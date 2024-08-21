@@ -16041,6 +16041,28 @@ check_db_settings ()
          "  || ' in SecInfo updates before the end of the file'"
          "  || ' being processed.',"
          "  '100' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+              " WHERE uuid = '" SETTING_UUID_USER_INTERFACE_TIME_FORMAT "'"
+              " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+          " VALUES"
+          " ('" SETTING_UUID_USER_INTERFACE_TIME_FORMAT "', NULL,"
+          "  'User Interface Time Format',"
+          "  'Preferred time format to be used in client user interfaces.',"
+          "  '24' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+              " WHERE uuid = '" SETTING_UUID_USER_INTERFACE_DATE_FORMAT "'"
+              " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+          " VALUES"
+          " ('" SETTING_UUID_USER_INTERFACE_DATE_FORMAT "', NULL,"
+          "  'User Interface Date Format',"
+          "  'Preferred date format to be used in client user interfaces.',"
+          "  'wdmy' );");
 }
 
 /**
@@ -52453,7 +52475,9 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
                || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
-               || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0))
+               || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0
+               || strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0
+               || strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
@@ -52585,6 +52609,28 @@ modify_setting (const gchar *uuid, const gchar *name,
           /* Auto Cache Rebuild */
           if (sscanf (value, "%d", &value_int) != 1
               || (strcmp (value, "0") && strcmp (value, "1")))
+            {
+              g_free (value);
+              return 2;
+            }
+        }
+
+      if (strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0)
+        {
+          int value_int;
+          /* User Interface Time Format */
+          if (sscanf (value, "%d", &value_int) != 1
+              || (strcmp (value, "12") && strcmp (value, "24")))
+            {
+              g_free (value);
+              return 2;
+            }
+        }
+
+      if (strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0)
+        {
+          /* User Interface Date Format */
+          if (strcmp (value, "wmdy") && strcmp (value, "wdmy"))
             {
               g_free (value);
               return 2;
