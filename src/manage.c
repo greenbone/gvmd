@@ -185,6 +185,16 @@ static gchar *feed_lock_path = NULL;
 static int feed_lock_timeout = 0;
 
 /**
+ * @brief Retries for waiting for memory to be available.
+ */
+static int mem_wait_retries = 0;
+
+/**
+ * @brief Minimum available memory in MiB for running a feed update.
+ */
+static int min_mem_feed_update = 0;
+
+/**
  * @brief Path to the relay mapper executable, NULL to disable relays.
  */
 static gchar *relay_mapper_path = NULL;
@@ -5050,7 +5060,52 @@ feed_sync_required ()
   return FALSE;
 }
 
+/**
+ * @brief Wait for memory
+ * 
+ * @param[in]  check_func  Function to check memory, should return 1 if enough.
+ * @param[in]  retries     Number of retries.
+ * @param[in]  min_mem     Minimum memory in MiB, for logging only
+ * @param[in]  action      Short descriptor of action waiting for memory.
+ * 
+ * @return 0 if enough memory is available, 1 gave up
+ */
+static int
+wait_for_mem (int check_func(),
+              int retries,
+              int min_mem,
+              const char *action)
+{
+  int retry_number = 0;
+  while (check_func () == 0)
+    {
+      if (retry_number == 0)
+        {
+          g_info ("%s: not enough memory for %s"
+                  " (%lld / %d) MiB",
+                  __func__,
+                  action,
+                  phys_mem_available () / 1048576llu,
+                  min_mem);
+        }
+      else
+        {
+          g_debug ("%s: waiting for memory for %s"
+                   " (%lld / %d) MiB",
+                   __func__,
+                   action,
+                   phys_mem_available () / 1048576llu,
+                   min_mem);
+        }
 
+      retry_number ++;
+      if (retry_number > retries)
+        return 1;
+
+      sleep (SCHEDULE_PERIOD);
+    }
+  return 0;
+}
 
 /**
  * @brief Perform any syncing that is due.
@@ -5074,7 +5129,11 @@ manage_sync (sigset_t *sigmask_current,
 
   if (feed_sync_required ())
     {
-      if (feed_lockfile_lock (&lockfile) == 0)
+      if (wait_for_mem (check_min_mem_feed_update,
+                        mem_wait_retries,
+                        min_mem_feed_update,
+                        "SecInfo feed sync") == 0
+          && feed_lockfile_lock (&lockfile) == 0)
         {
           pid_t nvts_pid, scap_pid, cert_pid;
           nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
@@ -5096,7 +5155,11 @@ manage_sync (sigset_t *sigmask_current,
           || should_sync_port_lists ()
           || should_sync_report_formats ()))
     {
-      if (feed_lockfile_lock (&lockfile) == 0)
+      if (wait_for_mem (check_min_mem_feed_update,
+                        mem_wait_retries,
+                        min_mem_feed_update,
+                        "data objects feed sync") == 0
+          && feed_lockfile_lock (&lockfile) == 0)
         {
           manage_sync_configs ();
           manage_sync_port_lists ();
@@ -6350,6 +6413,82 @@ set_feed_lock_timeout (int new_timeout)
     feed_lock_timeout = 0;
   else
     feed_lock_timeout = new_timeout;
+}
+
+/**
+ * @brief Get the number of retries when waiting for memory to be available.
+ *
+ * @return The current number of retries.
+ */
+int
+get_mem_wait_retries()
+{
+  return mem_wait_retries;
+}
+
+/**
+ * @brief Set the number of retries when waiting for memory to be available.
+ *
+ * @param[in]  new_retries The new number of retries.
+ */
+void
+set_mem_wait_retries (int new_retries)
+{
+  if (new_retries < 0)
+    min_mem_feed_update = 0;
+  else
+    min_mem_feed_update = new_retries;
+}
+
+/**
+ * @brief Check if the minimum memory for feed updates is available
+ * 
+ * @return 1 if minimum memory amount is available, 0 if not
+ */
+int
+check_min_mem_feed_update ()
+{
+  if (min_mem_feed_update)
+    {
+      guint64 min_mem_bytes = (guint64)min_mem_feed_update * 1048576llu;
+      return phys_mem_available () >= min_mem_bytes ? 1 : 0;
+    }
+  return 1;
+}
+
+/**
+ * @brief Get the minimum memory for feed updates.
+ *
+ * @return The current minimum memory for feed updates in MiB.
+ */
+int
+get_min_mem_feed_update ()
+{
+  return min_mem_feed_update;
+}
+
+/**
+ * @brief Get the minimum memory for feed updates.
+ *
+ * @param[in]  new_min_mem The new minimum memory for feed updates in MiB.
+ */
+void
+set_min_mem_feed_update (int new_min_mem)
+{
+  guint64 min_mem_bytes = (guint64)new_min_mem * 1048576llu;
+  if (new_min_mem < 0)
+    min_mem_feed_update = 0;
+  else if (min_mem_bytes > phys_mem_total ())
+    {
+      g_warning ("%s: requested feed minimum memory limit (%d MiB)"
+                 " exceeds total physical memory (%lld MiB)."
+                 " The setting is ignored.",
+                 __func__,
+                 new_min_mem,
+                 phys_mem_total () / 1048576llu);
+    }
+  else
+    min_mem_feed_update = new_min_mem;
 }
 
 /**

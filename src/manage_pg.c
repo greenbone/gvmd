@@ -1849,9 +1849,11 @@ create_view_result_vt_epss ()
          "    epss_score,"
          "    epss_percentile,"
          "    epss_cve,"
+         "    epss_severity,"
          "    max_epss_score,"
          "    max_epss_percentile,"
-         "    max_epss_cve"
+         "    max_epss_cve,"
+         "    max_epss_severity"
          "  FROM nvts);");
 
   sql ("SELECT create_index ('result_vt_epss_by_vt_id',"

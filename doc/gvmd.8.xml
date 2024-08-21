@@ -288,9 +288,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--mem-wait-retries=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>
+          How often to try waiting for available memory. Default: 30.
+          Each retry will wait for 10 seconds.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>-m, --migrate</opt></p>
       <optdesc>
         <p>Migrate the database and exit.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--min-mem-feed-update=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>
+          Minimum memory in MiB for feed updates. Default: 0.
+          Feed updates are skipped if less physical memory is available.
+        </p>
       </optdesc>
     </option>
     <option>
