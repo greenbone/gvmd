@@ -16665,6 +16665,7 @@ END:VCALENDAR
             <e>type</e>
             <e>value</e>
             <e>default</e>
+            <o><e>options</e></o>
           </pattern>
           <ele>
             <name>name</name>
@@ -16677,7 +16678,6 @@ END:VCALENDAR
             <pattern>
               <o><e>min</e></o>
               <o><e>max</e></o>
-              <o><e>options</e></o>
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
@@ -16697,16 +16697,6 @@ END:VCALENDAR
               <name>max</name>
               <summary>Maximum</summary>
               <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>options</name>
-              <summary>Selection options</summary>
-              <pattern><any><e>option</e></any></pattern>
-              <ele>
-                <name>option</name>
-                <summary>Option value</summary>
-                <pattern>text</pattern>
-              </ele>
             </ele>
           </ele>
           <ele>
@@ -16737,6 +16727,16 @@ END:VCALENDAR
             <name>default</name>
             <summary>The fallback value of the param</summary>
             <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>options</name>
+            <summary>Selection options</summary>
+            <pattern><any><e>option</e></any></pattern>
+            <ele>
+              <name>option</name>
+              <summary>Option value</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
         </ele>
         <ele>
