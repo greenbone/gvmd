@@ -294,6 +294,9 @@ cache_all_permissions_for_users (GArray*);
 static void
 report_cache_counts (report_t, int, int, const char*);
 
+static gchar * 
+reports_extra_where (int, const char *, const char *);
+
 static int
 report_host_dead (report_host_t);
 
@@ -2033,7 +2036,13 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  *                              results if NULL.
  * @param[out]  levels         String describing threat levels (message types)
  *                             to include in count (for example, "hmlg" for
- *                             High, Medium, Low and loG).  All levels if NULL.
+ *                             High, Medium, Low and loG). All levels if NULL.
+ * @param[out]  compliance_levels   String describing compliance levels
+ *                             to include in count (for example, "yniu" for
+ *                             "yes" (compliant), "n" for "no" (not compliant),
+ *                             "i" for "incomplete" and "u" for "undefined" 
+ *                              (without compliance information). 
+ *                              All levels if NULL.
  * @param[out]  delta_states   String describing delta states to include in count
  *                             (for example, "sngc" Same, New, Gone and Changed).
  *                             All levels if NULL.
@@ -2049,10 +2058,11 @@ void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **sort_field, int *sort_order,
                                int *result_hosts_only, gchar **min_qod,
-                               gchar **levels, gchar **delta_states,
-                               gchar **search_phrase, int *search_phrase_exact,
-                               int *notes, int *overrides,
-                               int *apply_overrides, gchar **zone)
+                               gchar **levels, gchar **compliance_levels,
+                               gchar **delta_states, gchar **search_phrase, 
+                               int *search_phrase_exact, int *notes, 
+                               int *overrides, int *apply_overrides, 
+                               gchar **zone)
 {
   keyword_t **point;
   array_t *split;
@@ -2210,6 +2220,16 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         }
       else
         *apply_overrides = val;
+    }
+  
+  if (compliance_levels)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
+                              "compliance_levels",
+                              &string))
+        *compliance_levels = NULL;
+      else
+        *compliance_levels = string;
     }
 
   if (delta_states)
@@ -3951,6 +3971,26 @@ valid_type (const char* type)
 }
 
 /**
+ * @brief Check whether a resource subtype name is valid.
+ *
+ * @param[in]  subtype  Subtype of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+valid_subtype (const char* type)
+{
+  #if COMPLIANCE_REPORTS == 1
+    return (strcasecmp (type, "audit_report") == 0)
+          || (strcasecmp (type, "audit") == 0)
+          || (strcasecmp (type, "policy") == 0);
+  #else
+    return (strcasecmp (type, "audit") == 0)
+          || (strcasecmp (type, "policy") == 0);
+  #endif
+}
+
+/**
  * @brief Return DB name of type.
  *
  * @param[in]  type  Database or pretty name.
@@ -4044,6 +4084,45 @@ type_is_info_subtype (const char *type)
           && strcasecmp (type, "cert_bund_adv")
           && strcasecmp (type, "dfn_cert_adv"))
          == 0;
+}
+
+/**
+ * @brief Check whether a resource type is a report subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_report_subtype (const char *type)
+{
+  return (strcasecmp (type, "audit_report") == 0);
+}
+
+/**
+ * @brief Check whether a resource type is a task subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_task_subtype (const char *type)
+{
+  return (strcasecmp (type, "audit") == 0);
+}
+
+/**
+ * @brief Check whether a resource type is a config subtype.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+type_is_config_subtype (const char *type)
+{
+  return (strcasecmp (type, "policy") == 0);
 }
 
 /**
@@ -17781,9 +17860,8 @@ resource_count (const char *type, const get_data_t *get)
     }
   else if (strcmp (type, "report") == 0)
     {
-      extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
-                              "      WHERE tasks.id = task)"
-                              "     = 0");
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = reports_extra_where (0, NULL, usage_type);
     }
   else if (strcmp (type, "result") == 0)
     {
@@ -18240,6 +18318,25 @@ task_scanner_in_trash (task_t task)
 {
   return sql_int ("SELECT scanner_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE id = %llu;", task);
+}
+
+/**
+ * @brief Return the usage type of a task.
+ *
+ * @param[in]  task  Task.
+ * @param[out] usage_type  Pointer to a newly allocated string.
+ *
+ * @return 0 if successful, -1 otherwise.
+ */
+int
+task_usage_type (task_t task, char ** usage_type)
+{
+  *usage_type = sql_string ("SELECT usage_type FROM tasks WHERE id = %llu;",
+                            task);
+  if (usage_type == NULL)
+    return -1;
+  
+  return 0;
 }
 
 /**
@@ -21483,12 +21580,14 @@ report_task (report_t report, task_t *task)
  * @param[out] compliance_yes         Number of "YES" results.
  * @param[out] compliance_no          Number of "NO" results.
  * @param[out] compliance_incomplete  Number of "INCOMPLETE" results.
+ * @param[out] compliance_undefined   Number of "UNDEFINED" results.
  */
 void
 report_compliance_by_uuid (const char *report_id,
                            int *compliance_yes,
                            int *compliance_no,
-                           int *compliance_incomplete)
+                           int *compliance_incomplete,
+                           int *compliance_undefined)
 {
   report_t report;
   gchar *quoted_uuid = sql_quote (report_id);
@@ -21522,6 +21621,14 @@ report_compliance_by_uuid (const char *report_id,
                    " AND description LIKE 'Compliant:%%INCOMPLETE%%';",
                    report);
     }
+  if (compliance_undefined)
+    {
+      *compliance_undefined
+        = sql_int ("SELECT count(*) FROM results"
+                   " WHERE report = %llu"
+                   " AND description NOT LIKE 'Compliant:%%';",
+                   report);
+    }    
 
   g_free (quoted_uuid);
 }
@@ -21750,7 +21857,8 @@ report_add_results_array (report_t report, GArray *results)
    "medium", "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",   \
    "low_per_host", "medium_per_host", "high_per_host", "duration",             \
    "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
-   NULL }
+   "compliance_yes", "compliance_no", "compliance_incomplete",                 \
+   "compliant", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -21888,6 +21996,26 @@ report_add_results_array (report_t report, GArray *results)
      "duration_per_host",                                                    \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
+   {                                                                         \
+     "report_compliance_count (id, 'YES')",                                  \
+     "compliance_yes",                                                       \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_compliance_count (id, 'NO')",                                   \
+     "compliance_no",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_compliance_count (id, 'INCOMPLETE')",                           \
+     "compliance_incomplete",                                                \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "report_compliance_status (id)",                                        \
+     "compliant",                                                            \
+     KEYWORD_TYPE_STRING                                                     \
+   },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
@@ -21910,6 +22038,129 @@ report_iterator_opts_table (int override, int min_qod)
                           min_qod);
 }
 
+#if COMPLIANCE_REPORTS == 1
+/**
+ * @brief Return SQL WHERE for restricting a SELECT to compliance statuses.
+ *
+ * @param[in]  compliance  String describing compliance statuses of reports
+ *                         to include (for example, "yniu" for yes (compliant), 
+ *                         no (not compliant), i (incomplete) and u (undefined))
+ *                         All compliance statuses if NULL.
+ *
+ * @return WHERE clause for compliance if one is required, else NULL.
+ */
+
+static gchar*
+where_compliance_status (const char *compliance)
+{
+  int count;
+  GString *compliance_sql;
+
+  /* Generate SQL for constraints on compliance status, according to compliance. */
+
+  compliance_sql = g_string_new ("");
+  count = 0;
+
+  g_string_append_printf (compliance_sql,
+    " AND report_compliance_status(reports.id) IN (");
+
+  if (strchr (compliance, 'y'))
+    {
+      g_string_append (compliance_sql, "'yes'");
+      count++;
+    }
+  if (strchr (compliance, 'n'))
+    {
+      g_string_append (compliance_sql, count ? ", 'no'" : "'no'");
+      count++;
+    }
+  if (strchr (compliance, 'i'))
+    {
+      g_string_append (compliance_sql, count ? ", 'incomplete'" : "'incomplete'");
+      count++;
+    }
+  if (strchr (compliance, 'u'))
+    {
+      g_string_append (compliance_sql, count ? ", 'undefined'" : "'undefined'");
+      count++;
+    }
+
+  g_string_append (compliance_sql, ")");
+
+  if ((count == 4) || (count == 0))
+    {
+      /* All compliance levels or no valid ones selected. */
+      g_string_free (compliance_sql, TRUE);
+      return NULL;
+    }
+
+   return g_string_free (compliance_sql, FALSE);;
+}
+#endif
+
+/**
+ * @brief  Generate an extra WHERE clause for selecting reports
+ *
+ * @param[in]  trash        Whether to get results from trashcan.
+ * @param[in]  filter       Filter string.
+ * @param[in]  usage_type   The usage type to limit the selection to.
+ *
+ * @return Newly allocated where clause string.
+ */
+static gchar *
+reports_extra_where (int trash, const gchar *filter, const char *usage_type)
+{
+
+  GString *extra_where = g_string_new ("");
+  gchar *trash_clause;
+
+  if (trash)
+    {
+      trash_clause = g_strdup_printf (" AND (SELECT hidden FROM tasks"
+                                      "      WHERE tasks.id = task)"
+                                      "     = 2");    
+    }
+  else
+    {
+      trash_clause = g_strdup_printf (" AND (SELECT hidden FROM tasks"
+                                      "      WHERE tasks.id = task)"
+                                      "     = 0");
+    }
+
+
+  g_string_append_printf(extra_where, "%s", trash_clause);
+  g_free (trash_clause);
+
+  #if COMPLIANCE_REPORTS == 1
+    gchar *usage_type_clause, *compliance_clause = NULL;
+    gchar *compliance_filter = NULL;
+    if (usage_type && strcmp (usage_type, ""))
+      {
+        gchar *quoted_usage_type;
+        quoted_usage_type = sql_quote (usage_type);
+        usage_type_clause = g_strdup_printf (" AND task in (SELECT id from tasks"
+                                            "              WHERE usage_type='%s')",
+                                            quoted_usage_type);
+
+        g_free (quoted_usage_type);
+      }
+    else
+      usage_type_clause = NULL;
+
+    if (filter)
+      compliance_filter = filter_term_value(filter, "report_compliance_levels");
+
+    compliance_clause = where_compliance_status (compliance_filter ?: "yniu");
+
+    g_string_append_printf (extra_where, "%s%s", usage_type_clause ?: "", compliance_clause ?: "");
+    g_free (compliance_filter);
+    g_free (compliance_clause);
+    g_free (usage_type_clause);
+  #endif
+
+  return g_string_free (extra_where, FALSE);
+}
+
 /**
  * @brief Count number of reports.
  *
@@ -21923,21 +22174,18 @@ report_count (const get_data_t *get)
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = REPORT_ITERATOR_COLUMNS;
   static column_t where_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
-  gchar *extra_tables;
+  gchar *extra_tables, *extra_where;
   int ret;
 
   extra_tables = report_iterator_opts_table (0, MIN_QOD_DEFAULT);
+  
+  const gchar *usage_type = get_data_get_extra (get, "usage_type");
+  extra_where = reports_extra_where(get->trash, get->filter, usage_type);
 
   ret = count2 ("report", get, columns, NULL, where_columns, NULL,
                 filter_columns, 0,
                 extra_tables,
-                get->trash
-                 ? " AND (SELECT hidden FROM tasks"
-                   "      WHERE tasks.id = task)"
-                   "     = 2"
-                 : " AND (SELECT hidden FROM tasks"
-                   "      WHERE tasks.id = task)"
-                   "     = 0",
+                extra_where,
                 NULL,
                 TRUE);
 
@@ -21962,7 +22210,8 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t where_columns[] = REPORT_ITERATOR_WHERE_COLUMNS;
   char *filter;
   int overrides, min_qod;
-  gchar *extra_tables;
+  const char *usage_type;
+  gchar *extra_tables, *extra_where;
   int ret;
 
   if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
@@ -21977,9 +22226,14 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   overrides = filter_term_apply_overrides (filter ? filter : get->filter);
   min_qod = filter_term_min_qod (filter ? filter : get->filter);
 
-  free (filter);
-
   extra_tables = report_iterator_opts_table (overrides, min_qod);
+  usage_type = get_data_get_extra (get, "usage_type");
+
+  extra_where = reports_extra_where (get->trash, 
+                                     filter ? filter : get->filter,
+                                     usage_type);
+
+  free (filter);
 
   ret = init_get_iterator2 (iterator,
                             "report",
@@ -21993,13 +22247,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             extra_tables,
-                            get->trash
-                             ? " AND (SELECT hidden FROM tasks"
-                               "      WHERE tasks.id = task)"
-                               "     = 2"
-                             : " AND (SELECT hidden FROM tasks"
-                               "      WHERE tasks.id = task)"
-                               "     = 0",
+                            extra_where,
                             NULL,
                             TRUE,
                             FALSE,
@@ -22182,9 +22430,9 @@ where_compliance_levels (const char *levels)
     }
   g_string_append (levels_sql, ")");
 
-  if (count == 4)
+  if ((count == 4) || (count == 0))
     {
-      /* All compliance levels selected, so no restriction is necessary. */
+      /* All compliance levels or none selected, so no restriction is necessary. */
       g_string_free (levels_sql, TRUE);
       return NULL;
     }
@@ -22628,11 +22876,16 @@ where_qod (int min_qod)
       "        END)",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-      { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                     \
+    { TICKET_SQL_RESULT_MAY_HAVE_TICKETS("result2_id"),                       \
       NULL,                                                                   \
       KEYWORD_TYPE_INTEGER },                                                 \
-      { "delta_hostname", NULL, KEYWORD_TYPE_STRING },                        \
-      { "delta_new_severity", NULL, KEYWORD_TYPE_DOUBLE },
+    { "delta_hostname", NULL, KEYWORD_TYPE_STRING },                          \
+    { "delta_new_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
+    { "coalesce(lower(substring(comparison.delta_description,"                \
+      "          '^Compliant:[\\s]*([A-Z_]*)')),"                             \
+      "         'undefined')",                                                \
+      "compliant",                                                            \
+      KEYWORD_TYPE_STRING },
 
 /**
  * @brief Delta result iterator columns.
@@ -23820,6 +24073,20 @@ DEF_ACCESS (result_iterator_nvt_family, GET_ITERATOR_COLUMN_COUNT + 33);
 DEF_ACCESS (result_iterator_nvt_tag, GET_ITERATOR_COLUMN_COUNT + 34);
 
 /**
+ * @brief Get compliance status from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The compliance status (yes, no, incomplete or undefined).
+ */
+const char *
+result_iterator_compliance (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 35);
+}
+
+/**
  * @brief Get EPSS score of highest severity CVE from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -24338,6 +24605,20 @@ result_iterator_delta_severity_double (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_double (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 19);
+}
+
+/**
+ * @brief Get delta compliance from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return delta compliance if any, else NULL.
+ */
+const char *
+result_iterator_delta_compliance (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, RESULT_ITERATOR_DELTA_COLUMN_OFFSET + 20);
 }
 
 /**
@@ -25692,6 +25973,154 @@ report_counts_id_full (report_t report, int* holes, int* infos,
 
   return 0;
 }
+
+#if COMPLIANCE_REPORTS == 1
+/**
+ * @brief Get the compliance state from compliance counts.
+ *
+ * @param[in]  yes_count         Compliant results count.
+ * @param[in]  no_count          Incompliant results count.
+ * @param[in]  incomplete_count  Incomplete results count.
+ * @param[in]  undefined_count   Undefined results count.
+ *
+ * @return 0 on success, -1 on error.
+ */
+const char *
+report_compliance_from_counts (const int* yes_count,
+                               const int* no_count,
+                               const int* incomplete_count,
+                               const int* undefined_count)
+{
+  if (no_count && *no_count > 0)
+    {
+      return "no";
+    }
+  else if (incomplete_count && *incomplete_count > 0)
+    {
+      return "incomplete";
+    }
+  else if (yes_count && *yes_count > 0)
+    {
+      return "yes";
+    }
+
+  return "undefined";
+}
+
+
+/**
+ * @brief Get the compliance filtered counts for a report.
+ *
+ * @param[in]   report               Report.
+ * @param[in]   get                  Get data.
+ * @param[out]  f_compliance_yes     Compliant results count after filtering.
+ * @param[out]  f_compliance_no      Incompliant results count after filtering.
+ * @param[out]  f_compliance_incomplete  Incomplete results count 
+ *                                       after filtering.
+ * @param[out]  f_compliance_undefined   Undefined results count 
+ *                                       after filtering.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+report_compliance_f_counts (report_t report, 
+                            const get_data_t* get, 
+                            int* f_compliance_yes, 
+                            int* f_compliance_no, 
+                            int* f_compliance_incomplete, 
+                            int* f_compliance_undefined)
+{
+  if (report == 0)
+    return -1;
+
+  get_data_t get_filtered;
+  iterator_t results;
+  int yes_count, no_count, incomplete_count, undefined_count;
+
+  yes_count = no_count = incomplete_count = undefined_count = 0;
+
+  memset (&get_filtered, 0, sizeof (get_data_t));
+  get_filtered.filt_id = get->filt_id;
+  get_filtered.filter = get->filter;
+  get_filtered.type = get->type;
+  get_filtered.ignore_pagination = 1;
+
+  ignore_max_rows_per_page = 1;
+  init_result_get_iterator (&results, &get_filtered, report, NULL,
+                            NULL);
+  ignore_max_rows_per_page = 0;
+  while (next (&results))
+    {
+      const char* compliance;
+
+      compliance = result_iterator_compliance (&results);
+
+      if (strcasecmp (compliance, "yes") == 0)
+        {
+          yes_count++;
+        }
+      else if (strcasecmp (compliance, "no") == 0)
+        {
+          no_count++;
+        }      
+      else if (strcasecmp (compliance, "incomplete") == 0)
+        {
+          incomplete_count++;
+        }
+      else if (strcasecmp (compliance, "undefined") == 0)
+        {
+          undefined_count++;
+        }      
+
+    }
+
+  if (f_compliance_yes)
+      *f_compliance_yes = yes_count;
+  if (f_compliance_no)
+      *f_compliance_no = no_count;
+  if (f_compliance_incomplete)
+      *f_compliance_incomplete = incomplete_count;
+  if (f_compliance_undefined)
+      *f_compliance_undefined = undefined_count;
+
+  cleanup_iterator (&results);
+
+  return 0;
+}
+
+/**
+ * @brief Get the compliance counts for a report.
+ *
+ * @param[in]   report    Report.
+ * @param[in]   get       Get data.
+ * @param[out]  compliance_yes          Compliant results count.
+ * @param[out]  compliance_no           Incompliant results count.
+ * @param[out]  compliance_incomplete   Incomplete results count.
+ * @param[out]  compliance_undefined    Undefined results count.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+report_compliance_counts (report_t report, 
+                          const get_data_t* get,
+                          int* compliance_yes, 
+                          int* compliance_no,
+                          int* compliance_incomplete, 
+                          int* compliance_undefined)
+{
+  if (report == 0)
+    return -1;
+
+  report_compliance_by_uuid (report_uuid(report),
+                             compliance_yes,
+                             compliance_no, 
+                             compliance_incomplete,
+                             compliance_undefined);
+
+  return 0;
+}
+#endif
+
 
 /**
  * @brief Get only the filtered message counts for a report.
@@ -27950,6 +28379,178 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 }
 
 /**
+ * @brief Print the XML for a report's host to a file stream.
+ * @param[in]  stream                   File stream to write to.
+ * @param[in]  hosts                    Host iterator.
+ * @param[in]  host                     Single host to iterate over.
+ *                                        All hosts if NULL.
+ * @param[in]  usage_type               Report usage type.
+ * @param[in]  lean                     Whether to return lean report.
+ * @param[in]  host_summary_buffer      Host sumary buffer.
+ * @param[in]  f_host_ports             Hashtable for host ports.
+ * @param[in]  f_host_holes             Hashtable for host holes.
+ * @param[in]  f_host_warnings          Hashtable for host host warnings.
+ * @param[in]  f_host_infos             Hashtable for host infos.
+ * @param[in]  f_host_logs              Hashtable for host logs.
+ * @param[in]  f_host_false_positives   Hashtable for host false positives.
+ * @param[in]  f_host_compliant         Hashtable for host compliant results.
+ * @param[in]  f_host_notcompliant      Hashtable for host non compliant results.
+ * @param[in]  f_host_incomplete        Hashtable for host incomplete resuls.
+ * @param[in]  f_host_undefined         Hashtable for host undefined results.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_host_xml (FILE *stream,
+                       iterator_t *hosts,
+                       const char *host,
+                       gchar *usage_type,
+                       int lean,
+                       GString *host_summary_buffer,
+                       GHashTable *f_host_ports,
+                       GHashTable *f_host_holes,
+                       GHashTable *f_host_warnings,
+                       GHashTable *f_host_infos,
+                       GHashTable *f_host_logs,
+                       GHashTable *f_host_false_positives,
+                       GHashTable *f_host_compliant,
+                       GHashTable *f_host_notcompliant,
+                       GHashTable *f_host_incomplete,
+                       GHashTable *f_host_undefined)
+{
+  const char *current_host;
+  int ports_count;
+
+  current_host = host_iterator_host (hosts);
+
+  ports_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (f_host_ports, current_host));
+
+  host_summary_append (host_summary_buffer,
+                       host ? host : host_iterator_host (hosts),
+                       host_iterator_start_time (hosts),
+                       host_iterator_end_time (hosts));
+  PRINT (stream,
+          "<host>"
+          "<ip>%s</ip>",
+          host ? host : host_iterator_host (hosts));
+
+  if (host_iterator_asset_uuid (hosts)
+      && strlen (host_iterator_asset_uuid (hosts)))
+    PRINT (stream,
+            "<asset asset_id=\"%s\"/>",
+            host_iterator_asset_uuid (hosts));
+  else if (lean == 0)
+    PRINT (stream,
+            "<asset asset_id=\"\"/>");
+
+  #if COMPLIANCE_REPORTS == 1
+    if (strcmp (usage_type, "audit") == 0)
+      {
+        int yes_count, no_count, incomplete_count, undefined_count;
+
+        yes_count
+          = GPOINTER_TO_INT
+              (g_hash_table_lookup (f_host_compliant, current_host));
+        no_count
+          = GPOINTER_TO_INT
+              (g_hash_table_lookup (f_host_notcompliant, current_host));
+        incomplete_count
+          = GPOINTER_TO_INT
+              (g_hash_table_lookup (f_host_incomplete, current_host));
+        undefined_count
+          = GPOINTER_TO_INT
+              (g_hash_table_lookup (f_host_undefined, current_host));
+
+        PRINT (stream,
+              "<start>%s</start>"
+              "<end>%s</end>"
+              "<port_count><page>%d</page></port_count>"
+              "<compliance_count>"
+              "<page>%d</page>"
+              "<yes><page>%d</page></yes>"
+              "<no><page>%d</page></no>"
+              "<incomplete><page>%d</page></incomplete>"
+              "<undefined><page>%d</page></undefined>"
+              "</compliance_count>"
+              "<host_compliance>%s</host_compliance>",
+              host_iterator_start_time (hosts),
+              host_iterator_end_time (hosts)
+                ? host_iterator_end_time (hosts)
+                : "",
+              ports_count,
+              (yes_count + no_count + incomplete_count + undefined_count),
+              yes_count,
+              no_count,
+              incomplete_count,
+              undefined_count,
+              report_compliance_from_counts (&yes_count,
+                                              &no_count,
+                                              &incomplete_count,
+                                              &undefined_count));
+      } else
+  #endif
+    {
+      int holes_count, warnings_count, infos_count;
+      int logs_count, false_positives_count;
+
+      holes_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_holes, current_host));
+      warnings_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_warnings, current_host));
+      infos_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_infos, current_host));
+      logs_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_logs, current_host));
+      false_positives_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_false_positives,
+                                    current_host));
+
+      PRINT (stream,
+            "<start>%s</start>"
+            "<end>%s</end>"
+            "<port_count><page>%d</page></port_count>"
+            "<result_count>"
+            "<page>%d</page>"
+            "<hole><page>%d</page></hole>"
+            "<warning><page>%d</page></warning>"
+            "<info><page>%d</page></info>"
+            "<log><page>%d</page></log>"
+            "<false_positive><page>%d</page></false_positive>"
+            "</result_count>",
+            host_iterator_start_time (hosts),
+            host_iterator_end_time (hosts)
+              ? host_iterator_end_time (hosts)
+              : "",
+            ports_count,
+            (holes_count + warnings_count + infos_count
+              + logs_count + false_positives_count),
+            holes_count,
+            warnings_count,
+            infos_count,
+            logs_count,
+            false_positives_count);
+    }
+
+  if (print_report_host_details_xml
+        (host_iterator_report_host (hosts), stream, lean))
+    {
+      return -1;
+    }
+
+  PRINT (stream,
+          "</host>");
+
+  return 0;
+}
+
+/**
  * @brief Init delta iterators for print_report_xml.
  *
  * @param[in]  report         The report.
@@ -29010,6 +29611,11 @@ print_report_delta_xml (FILE *out, iterator_t *results,
  * @param[in]  f_warnings       Result count.
  * @param[in]  orig_f_false_positives  Result count.
  * @param[in]  f_false_positives       Result count.
+ * @param[in]  f_compliance_yes        filtered compliant count.
+ * @param[in]  f_compliance_no         filtered incompliant count.
+ * @param[in]  f_compliance_incomplete filtered incomplete count.
+ * @param[in]  f_compliance_undefined  filtered undefined count.
+ * @param[in]  f_compliance_count      total filtered compliance count.
  * @param[in]  result_hosts   Result hosts.
  *
  * @return 0 on success, -1 error.
@@ -29028,6 +29634,9 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
                         int *orig_f_logs, int *f_logs,
                         int *orig_f_warnings, int *f_warnings,
                         int *orig_f_false_positives, int *f_false_positives,
+                        int *f_compliance_yes, int *f_compliance_no,
+                        int *f_compliance_incomplete, 
+                        int *f_compliance_undefined, int *f_compliance_count,
                         array_t *result_hosts)
 {
   GString *buffer = g_string_new ("");
@@ -29039,6 +29648,10 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
   *orig_f_warnings = *f_warnings;
   *orig_f_false_positives = *f_false_positives;
   *orig_filtered_result_count = *filtered_result_count;
+  gchar *usage_type = NULL;
+
+  if (task && task_usage_type(task, &usage_type))
+    return -1;
 
   ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
                            (GDestroyNotify) free_host_ports);
@@ -29049,37 +29662,62 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
 
     if (strchr (delta_states, state[0]) == NULL) continue;
 
-    const char *level;
-    /* Increase the result count. */
-    level = result_iterator_level (results);
-    (*orig_filtered_result_count)++;
-    (*filtered_result_count)++;
-    if (strcmp (level, "High") == 0)
+    #if COMPLIANCE_REPORTS == 1
+      if (strcmp (usage_type, "audit") == 0)
+        {
+            const char* compliance;
+            compliance = result_iterator_compliance (results);
+            (*f_compliance_count)++;
+            if (strcasecmp (compliance, "yes") == 0)
+              {
+                  (*f_compliance_yes)++;
+              }
+            else if (strcasecmp (compliance, "no") == 0)
+              {
+                  (*f_compliance_no)++;
+              }
+            else if (strcasecmp (compliance, "incomplete") == 0)
+              {
+                  (*f_compliance_incomplete)++;
+              }
+            else if (strcasecmp (compliance, "undefined") == 0)
+              {
+                  (*f_compliance_undefined)++;
+              }
+        } else
+    #endif
       {
-        (*orig_f_holes)++;
-        (*f_holes)++;
+        const char *level;
+        /* Increase the result count. */
+        level = result_iterator_level (results);
+        (*orig_filtered_result_count)++;
+        (*filtered_result_count)++;
+        if (strcmp (level, "High") == 0)
+          {
+            (*orig_f_holes)++;
+            (*f_holes)++;
+          }
+        else if (strcmp (level, "Medium") == 0)
+          {
+            (*orig_f_warnings)++;
+            (*f_warnings)++;
+          }
+        else if (strcmp (level, "Low") == 0)
+          {
+            (*orig_f_infos)++;
+            (*f_infos)++;
+          }
+        else if (strcmp (level, "Log") == 0)
+          {
+            (*orig_f_logs)++;
+            (*f_logs)++;
+          }
+        else if (strcmp (level, "False Positive") == 0)
+          {
+            (*orig_f_false_positives)++;
+            (*f_false_positives)++;
+          }
       }
-    else if (strcmp (level, "Medium") == 0)
-      {
-        (*orig_f_warnings)++;
-        (*f_warnings)++;
-      }
-    else if (strcmp (level, "Low") == 0)
-      {
-        (*orig_f_infos)++;
-        (*f_infos)++;
-      }
-    else if (strcmp (level, "Log") == 0)
-      {
-        (*orig_f_logs)++;
-        (*f_logs)++;
-      }
-    else if (strcmp (level, "False Positive") == 0)
-      {
-        (*orig_f_false_positives)++;
-        (*f_false_positives)++;
-      }
-
 
     buffer_results_xml (buffer,
                         results,
@@ -29111,6 +29749,8 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
     g_string_truncate (buffer, 0);
   }
   g_string_free (buffer, TRUE);
+  g_free (usage_type);
+  
   if (fprintf (out, "</results>") < 0)
     {
       g_tree_destroy (ports);
@@ -29185,7 +29825,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase;
-  gchar *min_qod;
+  gchar *min_qod, *compliance_levels;
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -29206,18 +29846,26 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
+  GHashTable *f_host_compliant, *f_host_notcompliant;
+  GHashTable  *f_host_incomplete, *f_host_undefined;
   task_status_t run_status;
+  gchar *tsk_usage_type = NULL;
+  int f_compliance_yes, f_compliance_no;
+  int f_compliance_incomplete, f_compliance_undefined;
+  int f_compliance_count;
 
   int delta_reports_version = 0;
 
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
+  compliance_levels = NULL;
   zone = NULL;
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
   total_result_count = filtered_result_count = 0;
+  f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = 0;
@@ -29227,6 +29875,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_infos = NULL;
   f_host_logs = NULL;
   f_host_false_positives = NULL;
+  f_host_compliant = NULL;
+  f_host_notcompliant = NULL;
+  f_host_incomplete = NULL;
+  f_host_undefined = NULL;
 
   /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
    *        then anyway. */
@@ -29277,10 +29929,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       manage_report_filter_controls (term ? term : get->filter,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &delta_states,
-                                     &search_phrase, &search_phrase_exact,
-                                     &notes, &overrides,
-                                     &apply_overrides, &zone);
+                                     &min_qod, &levels, &compliance_levels,
+                                     &delta_states, &search_phrase, 
+                                     &search_phrase_exact, &notes, 
+                                     &overrides, &apply_overrides, &zone);
     }
   else
     {
@@ -29289,9 +29941,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       manage_report_filter_controls (term,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &delta_states,
-                                     &search_phrase, &search_phrase_exact,
-                                     &notes, &overrides,
+                                     &min_qod, &levels, &compliance_levels,
+                                     &delta_states, &search_phrase, 
+                                     &search_phrase_exact, &notes, &overrides,
                                      &apply_overrides, &zone);
     }
 
@@ -29304,7 +29956,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   levels = levels ? levels : g_strdup ("hmlgdf");
 
-  if (task && task_uuid (task, &tsk_uuid))
+  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
     {
       fclose (out);
       g_free (term);
@@ -29415,45 +30067,49 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (report)
     {
       /* Get total counts of full results. */
-
-      if (delta == 0)
+      #if COMPLIANCE_REPORTS == 1
+        if (strcmp (tsk_usage_type, "audit"))
+      #endif
         {
-          int total_holes, total_infos, total_logs;
-          int total_warnings, total_false_positives;
-          get_data_t *all_results_get;
+          if (delta == 0)
+            {         
+              int total_holes, total_infos, total_logs;
+              int total_warnings, total_false_positives;
+              get_data_t *all_results_get;
 
-          all_results_get = report_results_get_data (1, -1, 0, 0);
-          report_counts_id (report, &total_holes, &total_infos,
-                            &total_logs, &total_warnings,
-                            &total_false_positives, NULL, all_results_get,
-                            NULL);
-          total_result_count = total_holes + total_infos
-                               + total_logs + total_warnings
-                               + total_false_positives;
-          get_data_reset (all_results_get);
-          free (all_results_get);
+              all_results_get = report_results_get_data (1, -1, 0, 0);
+              report_counts_id (report, &total_holes, &total_infos,
+                                &total_logs, &total_warnings,
+                                &total_false_positives, NULL, all_results_get,
+                                NULL);
+              total_result_count = total_holes + total_infos
+                                  + total_logs + total_warnings
+                                  + total_false_positives;
+              get_data_reset (all_results_get);
+              free (all_results_get);
+            }
+
+          /* Get total counts of filtered results. */
+
+          if (count_filtered)
+            {
+              /* We're getting all the filtered results, so we can count them as we
+              * print them, to save time. */
+
+              filtered_result_count = 0;
+            }
+          else
+            {
+              /* Beware, we're using the full variables temporarily here, but
+              * report_counts_id counts the filtered results. */
+              report_counts_id (report, &holes, &infos, &logs, &warnings,
+                                &false_positives, NULL, get, NULL);
+
+              filtered_result_count = holes + infos + logs + warnings
+                                      + false_positives;
+
+            }          
         }
-
-      /* Get total counts of filtered results. */
-
-      if (count_filtered)
-        {
-          /* We're getting all the filtered results, so we can count them as we
-           * print them, to save time. */
-
-          filtered_result_count = 0;
-        }
-      else
-        {
-          /* Beware, we're using the full variables temporarily here, but
-           * report_counts_id counts the filtered results. */
-          report_counts_id (report, &holes, &infos, &logs, &warnings,
-                            &false_positives, NULL, get, NULL);
-
-          filtered_result_count = holes + infos + logs + warnings
-                                  + false_positives;
-        }
-
       /* Get report run status. */
 
       report_scan_run_status (report, &run_status);
@@ -29551,16 +30207,34 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   filters_extra_buffer = g_string_new ("");
 
-  if (strchr (levels, 'h'))
-    g_string_append (filters_extra_buffer, "<filter>High</filter>");
-  if (strchr (levels, 'm'))
-    g_string_append (filters_extra_buffer, "<filter>Medium</filter>");
-  if (strchr (levels, 'l'))
-    g_string_append (filters_extra_buffer, "<filter>Low</filter>");
-  if (strchr (levels, 'g'))
-    g_string_append (filters_extra_buffer, "<filter>Log</filter>");
-  if (strchr (levels, 'f'))
-    g_string_append (filters_extra_buffer, "<filter>False Positive</filter>");
+  #if COMPLIANCE_REPORTS == 1
+    if (strcmp (tsk_usage_type, "audit") == 0)
+      {
+        compliance_levels = compliance_levels ? compliance_levels : g_strdup ("yniu");
+
+        if (strchr (compliance_levels, 'y'))
+          g_string_append (filters_extra_buffer, "<filter>Yes</filter>");
+        if (strchr (compliance_levels, 'n'))
+          g_string_append (filters_extra_buffer, "<filter>No</filter>");
+        if (strchr (compliance_levels, 'i'))
+          g_string_append (filters_extra_buffer, "<filter>Incomplete</filter>");
+        if (strchr (compliance_levels, 'u'))
+          g_string_append (filters_extra_buffer, "<filter>Undefined</filter>");
+      }
+    else
+  #endif
+    {
+      if (strchr (levels, 'h'))
+        g_string_append (filters_extra_buffer, "<filter>High</filter>");
+      if (strchr (levels, 'm'))
+        g_string_append (filters_extra_buffer, "<filter>Medium</filter>");
+      if (strchr (levels, 'l'))
+        g_string_append (filters_extra_buffer, "<filter>Low</filter>");
+      if (strchr (levels, 'g'))
+        g_string_append (filters_extra_buffer, "<filter>Log</filter>");
+      if (strchr (levels, 'f'))
+        g_string_append (filters_extra_buffer, "<filter>False Positive</filter>");
+    }
 
   if (delta)
     {
@@ -29825,25 +30499,60 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
 
   /* Prepare result counts. */
+  #if COMPLIANCE_REPORTS == 1
+    int compliance_yes, compliance_no;
+    int compliance_incomplete, compliance_undefined;
+    int total_compliance_count = 0;
 
-  if (count_filtered)
-    {
-      /* We're getting all the filtered results, so we can count them as we
-       * print them, to save time. */
+    if (strcmp (tsk_usage_type, "audit") == 0)
+      {
+        report_compliance_counts (report, get, &compliance_yes, &compliance_no,
+                                  &compliance_incomplete, &compliance_undefined);
 
-      report_counts_id_full (report, &holes, &infos, &logs,
-                             &warnings, &false_positives, &severity,
-                             get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        total_compliance_count = compliance_yes
+                                + compliance_no
+                                + compliance_incomplete
+                                + compliance_undefined;
 
-      f_holes = f_infos = f_logs = f_warnings = 0;
-      f_false_positives = f_severity = 0;
-    }
-  else
-    report_counts_id_full (report, &holes, &infos, &logs,
-                           &warnings, &false_positives, &severity,
-                           get, NULL,
-                           &f_holes, &f_infos, &f_logs, &f_warnings,
-                           &f_false_positives, &f_severity);
+        f_compliance_yes = f_compliance_no = 0;
+        f_compliance_incomplete = f_compliance_undefined = 0;
+
+        if (count_filtered == 0)
+          {
+            report_compliance_f_counts (report,
+                                        get,
+                                        &f_compliance_yes,
+                                        &f_compliance_no,
+                                        &f_compliance_incomplete,
+                                        &f_compliance_undefined);
+
+            f_compliance_count = f_compliance_yes
+                                + f_compliance_no
+                                + f_compliance_incomplete
+                                + f_compliance_undefined;
+          }
+      } else
+  #endif
+  {
+    if (count_filtered)
+      {
+        /* We're getting all the filtered results, so we can count them as we
+        * print them, to save time. */
+
+        report_counts_id_full (report, &holes, &infos, &logs,
+                              &warnings, &false_positives, &severity,
+                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+        f_holes = f_infos = f_logs = f_warnings = 0;
+        f_false_positives = f_severity = 0;
+      }
+    else
+        report_counts_id_full (report, &holes, &infos, &logs,
+                              &warnings, &false_positives, &severity,
+                              get, NULL,
+                              &f_holes, &f_infos, &f_logs, &f_warnings,
+                              &f_false_positives, &f_severity);
+  }
 
   /* Results. */
 
@@ -29908,16 +30617,31 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
-  f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, NULL);
-  f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                      g_free, NULL);
-  f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                      g_free, NULL);
-  f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
+  #if COMPLIANCE_REPORTS == 1
+    if (strcmp (tsk_usage_type, "audit") == 0)
+      {
+        f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                   g_free, NULL);
+        f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+        f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                   g_free, NULL);
+        f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                  g_free, NULL);
+      } else
+  #endif
+  {
+    f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                          g_free, NULL);
+    f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
+    f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+    f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, NULL);
+    f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+  }
 
   if (delta && get->details)
     {
@@ -29940,24 +30664,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                       &orig_f_false_positives, 
                                       &f_false_positives,
                                       result_hosts))
-            {
-              fclose (out);
-              g_free (sort_field);
-              g_free (levels);
-              g_free (search_phrase);
-              g_free (min_qod);
-              g_free (delta_states);
-              cleanup_iterator (&results);
-              cleanup_iterator (&delta_results);
-              tz_revert (zone, tz, old_tz_override);
-              g_hash_table_destroy (f_host_ports);
-              g_hash_table_destroy (f_host_holes);
-              g_hash_table_destroy (f_host_warnings);
-              g_hash_table_destroy (f_host_infos);
-              g_hash_table_destroy (f_host_logs);
-              g_hash_table_destroy (f_host_false_positives);
-              return -1;
-            }
+          goto failed_delta_report;
         } 
       else 
         {
@@ -29976,25 +30683,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                         &orig_f_warnings, &f_warnings,
                                         &orig_f_false_positives, 
                                         &f_false_positives,
+                                        &f_compliance_yes,
+                                        &f_compliance_no,
+                                        &f_compliance_incomplete,
+                                        &f_compliance_undefined,
+                                        &f_compliance_count,
                                         result_hosts))
-            {
-              fclose (out);
-              g_free (sort_field);
-              g_free (levels);
-              g_free (search_phrase);
-              g_free (min_qod);
-              g_free (delta_states);
-              cleanup_iterator (&results);
-              cleanup_iterator (&delta_results);
-              tz_revert (zone, tz, old_tz_override);
-              g_hash_table_destroy (f_host_ports);
-              g_hash_table_destroy (f_host_holes);
-              g_hash_table_destroy (f_host_warnings);
-              g_hash_table_destroy (f_host_infos);
-              g_hash_table_destroy (f_host_logs);
-              g_hash_table_destroy (f_host_false_positives);
-              return -1;
-            }
+            goto failed_delta_report;
         }
     }
   else if (get->details)
@@ -30007,7 +30702,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           const char* level;
           GHashTable *f_host_result_counts;
           GString *buffer = g_string_new ("");
-          double result_severity;
 
           buffer_results_xml (buffer,
                               &results,
@@ -30031,55 +30725,108 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
 
-          result_severity = result_iterator_severity_double (&results);
-          if (result_severity > f_severity)
-            f_severity = result_severity;
+          #if COMPLIANCE_REPORTS == 1
+            if (strcmp (tsk_usage_type, "audit") == 0)
+              {
+                const char* compliance;
+                compliance = result_iterator_compliance (&results);
 
-          level = result_iterator_level (&results);
-          if (strcasecmp (level, "log") == 0)
-            {
-              f_host_result_counts = f_host_logs;
-              if (count_filtered)
-                f_logs++;
-            }
-          else if (strcasecmp (level, "high") == 0)
-            {
-              f_host_result_counts = f_host_holes;
-              if (count_filtered)
-                f_holes++;
-            }
-          else if (strcasecmp (level, "medium") == 0)
-            {
-              f_host_result_counts = f_host_warnings;
-              if (count_filtered)
-                f_warnings++;
-            }
-          else if (strcasecmp (level, "low") == 0)
-            {
-              f_host_result_counts = f_host_infos;
-              if (count_filtered)
-                f_infos++;
-            }
-          else if (strcasecmp (level, "false positive") == 0)
-            {
-              f_host_result_counts = f_host_false_positives;
-              if (count_filtered)
-                f_false_positives++;
-            }
-          else
-            f_host_result_counts = NULL;
+                if (strcasecmp (compliance, "yes") == 0)
+                  {
+                    f_host_result_counts = f_host_compliant;
+                    if (count_filtered)
+                      f_compliance_yes++;
+                  }
+                else if (strcasecmp (compliance, "no") == 0)
+                  {
+                    f_host_result_counts = f_host_notcompliant;
+                    if (count_filtered)
+                      f_compliance_no++;
+                  }
+                else if (strcasecmp (compliance, "incomplete") == 0)
+                  {
+                    f_host_result_counts = f_host_incomplete;
+                    if (count_filtered)
+                      f_compliance_incomplete++;
+                  }
+                else if (strcasecmp (compliance, "undefined") == 0)
+                  {
+                    f_host_result_counts = f_host_undefined;
+                    if (count_filtered)
+                      f_compliance_undefined++;
+                  }
+                else
+                  {
+                    f_host_result_counts = NULL;
+                  }
 
-          if (f_host_result_counts)
-            {
-              const char *result_host = result_iterator_host (&results);
-              int result_count
-                    = GPOINTER_TO_INT
-                        (g_hash_table_lookup (f_host_result_counts, result_host));
+                if (f_host_result_counts)
+                  {
+                    const char *result_host = result_iterator_host (&results);
+                    int result_count
+                          = GPOINTER_TO_INT
+                              (g_hash_table_lookup (f_host_result_counts,
+                                                    result_host));
 
-              g_hash_table_replace (f_host_result_counts,
-                                    g_strdup (result_host),
-                                    GINT_TO_POINTER (result_count + 1));
-            }
+                    g_hash_table_replace (f_host_result_counts,
+                                          g_strdup (result_host),
+                                          GINT_TO_POINTER (result_count + 1));
+                }
+              } else
+          #endif
+          {
+            double result_severity;
+            result_severity = result_iterator_severity_double (&results);
+            if (result_severity > f_severity)
+              f_severity = result_severity;
+
+            level = result_iterator_level (&results);
+
+            if (strcasecmp (level, "log") == 0)
+              {
+                f_host_result_counts = f_host_logs;
+                if (count_filtered)
+                  f_logs++;
+              }
+            else if (strcasecmp (level, "high") == 0)
+              {
+                f_host_result_counts = f_host_holes;
+                if (count_filtered)
+                  f_holes++;
+              }
+            else if (strcasecmp (level, "medium") == 0)
+              {
+                f_host_result_counts = f_host_warnings;
+                if (count_filtered)
+                  f_warnings++;
+              }
+            else if (strcasecmp (level, "low") == 0)
+              {
+                f_host_result_counts = f_host_infos;
+                if (count_filtered)
+                  f_infos++;
+              }
+            else if (strcasecmp (level, "false positive") == 0)
+              {
+                f_host_result_counts = f_host_false_positives;
+                if (count_filtered)
+                  f_false_positives++;
+              }
+            else
+              f_host_result_counts = NULL;
+
+            if (f_host_result_counts)
+              {
+                const char *result_host = result_iterator_host (&results);
+                int result_count
+                      = GPOINTER_TO_INT
+                          (g_hash_table_lookup (f_host_result_counts, result_host));
+
+                g_hash_table_replace (f_host_result_counts,
+                                      g_strdup (result_host),
+                                      GINT_TO_POINTER (result_count + 1));
+              }
+          }
 
         }
       PRINT (out, "</results>");
@@ -30091,67 +30838,131 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Print result counts and severity. */
 
-  if (delta)
-    /** @todo The f_holes, etc. vars are setup to give the page count. */
-    PRINT (out,
-           "<result_count>"
-           "<filtered>%i</filtered>"
-           "<hole><filtered>%i</filtered></hole>"
-           "<info><filtered>%i</filtered></info>"
-           "<log><filtered>%i</filtered></log>"
-           "<warning><filtered>%i</filtered></warning>"
-           "<false_positive>"
-           "<filtered>%i</filtered>"
-           "</false_positive>"
-           "</result_count>",
-           orig_filtered_result_count,
-           (strchr (levels, 'h') ? orig_f_holes : 0),
-           (strchr (levels, 'l') ? orig_f_infos : 0),
-           (strchr (levels, 'g') ? orig_f_logs : 0),
-           (strchr (levels, 'm') ? orig_f_warnings : 0),
-           (strchr (levels, 'f') ? orig_f_false_positives : 0));
-  else
-    {
-      if (count_filtered)
-        filtered_result_count = f_holes + f_infos + f_logs
-                                + f_warnings + false_positives;
+  #if COMPLIANCE_REPORTS == 1
+    if (strcmp (tsk_usage_type, "audit") == 0)
+      {
+        if (delta)
+          PRINT (out,
+                "<compliance_count>"
+                "<filtered>%i</filtered>"
+                "<yes><filtered>%i</filtered></yes>"
+                "<no><filtered>%i</filtered></no>"
+                "<incomplete><filtered>%i</filtered></incomplete>"
+                "<undefined><filtered>%i</filtered></undefined>"
+                "</compliance_count>",
+                f_compliance_count,
+                (strchr (compliance_levels, 'y') ? f_compliance_yes : 0),
+                (strchr (compliance_levels, 'n') ? f_compliance_no : 0),
+                (strchr (compliance_levels, 'i') ? f_compliance_incomplete : 0),
+                (strchr (compliance_levels, 'u') ? f_compliance_undefined : 0));
+        else
+          {
+            if (count_filtered)
+              f_compliance_count = f_compliance_yes
+                                    + f_compliance_no
+                                    + f_compliance_incomplete
+                                    + f_compliance_undefined;
+            PRINT (out,
+                "<compliance_count>"
+                "%i"
+                "<full>%i</full>"
+                "<filtered>%i</filtered>"
+                "<yes><full>%i</full><filtered>%i</filtered></yes>"
+                "<no><full>%i</full><filtered>%i</filtered></no>"
+                "<incomplete><full>%i</full><filtered>%i</filtered></incomplete>"
+                "<undefined><full>%i</full><filtered>%i</filtered></undefined>"
+                "</compliance_count>",
+                total_compliance_count,
+                total_compliance_count,
+                f_compliance_count,
+                compliance_yes,
+                (strchr (compliance_levels, 'y') ? f_compliance_yes : 0),
+                compliance_no,
+                (strchr (compliance_levels, 'n') ? f_compliance_no : 0),
+                compliance_incomplete,
+                (strchr (compliance_levels, 'i') ? f_compliance_incomplete : 0),
+                compliance_undefined,
+                (strchr (compliance_levels, 'i') ? f_compliance_undefined : 0));
 
+            PRINT (out,
+                  "<compliance>"
+                  "<full>%s</full>"
+                  "<filtered>%s</filtered>"
+                  "</compliance>",
+                  report_compliance_from_counts (&compliance_yes,
+                                                  &compliance_no,
+                                                  &compliance_incomplete,
+                                                  &compliance_undefined),
+                  report_compliance_from_counts (&f_compliance_yes,
+                                                  &f_compliance_no,
+                                                  &f_compliance_incomplete,
+                                                  &f_compliance_undefined));
+          }
+    } else
+  #endif
+  {
+    if (delta)
+      /** @todo The f_holes, etc. vars are setup to give the page count. */
       PRINT (out,
-             "<result_count>"
-             "%i"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "<hole><full>%i</full><filtered>%i</filtered></hole>"
-             "<info><full>%i</full><filtered>%i</filtered></info>"
-             "<log><full>%i</full><filtered>%i</filtered></log>"
-             "<warning><full>%i</full><filtered>%i</filtered></warning>"
-             "<false_positive>"
-             "<full>%i</full>"
-             "<filtered>%i</filtered>"
-             "</false_positive>"
-             "</result_count>",
-             total_result_count,
-             total_result_count,
-             filtered_result_count,
-             holes,
-             (strchr (levels, 'h') ? f_holes : 0),
-             infos,
-             (strchr (levels, 'l') ? f_infos : 0),
-             logs,
-             (strchr (levels, 'g') ? f_logs : 0),
-             warnings,
-             (strchr (levels, 'm') ? f_warnings : 0),
-             false_positives,
-             (strchr (levels, 'f') ? f_false_positives : 0));
+            "<result_count>"
+            "<filtered>%i</filtered>"
+            "<hole><filtered>%i</filtered></hole>"
+            "<info><filtered>%i</filtered></info>"
+            "<log><filtered>%i</filtered></log>"
+            "<warning><filtered>%i</filtered></warning>"
+            "<false_positive>"
+            "<filtered>%i</filtered>"
+            "</false_positive>"
+            "</result_count>",
+            orig_filtered_result_count,
+            (strchr (levels, 'h') ? orig_f_holes : 0),
+            (strchr (levels, 'l') ? orig_f_infos : 0),
+            (strchr (levels, 'g') ? orig_f_logs : 0),
+            (strchr (levels, 'm') ? orig_f_warnings : 0),
+            (strchr (levels, 'f') ? orig_f_false_positives : 0));
+    else
+      {
+        if (count_filtered)
+          filtered_result_count = f_holes + f_infos + f_logs
+                                  + f_warnings + false_positives;
 
-      PRINT (out,
-             "<severity>"
-             "<full>%1.1f</full>"
-             "<filtered>%1.1f</filtered>"
-             "</severity>",
-             severity,
-             f_severity);
-    }
+        PRINT (out,
+              "<result_count>"
+              "%i"
+              "<full>%i</full>"
+              "<filtered>%i</filtered>"
+              "<hole><full>%i</full><filtered>%i</filtered></hole>"
+              "<info><full>%i</full><filtered>%i</filtered></info>"
+              "<log><full>%i</full><filtered>%i</filtered></log>"
+              "<warning><full>%i</full><filtered>%i</filtered></warning>"
+              "<false_positive>"
+              "<full>%i</full>"
+              "<filtered>%i</filtered>"
+              "</false_positive>"
+              "</result_count>",
+              total_result_count,
+              total_result_count,
+              filtered_result_count,
+              holes,
+              (strchr (levels, 'h') ? f_holes : 0),
+              infos,
+              (strchr (levels, 'l') ? f_infos : 0),
+              logs,
+              (strchr (levels, 'g') ? f_logs : 0),
+              warnings,
+              (strchr (levels, 'm') ? f_warnings : 0),
+              false_positives,
+              (strchr (levels, 'f') ? f_false_positives : 0));
+
+        PRINT (out,
+              "<severity>"
+              "<full>%1.1f</full>"
+              "<filtered>%1.1f</filtered>"
+              "</severity>",
+              severity,
+              f_severity);
+      }
+  }
 
   if (host_summary)
     {
@@ -30182,92 +30993,26 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             }
           if (present)
             {
-              const char *current_host;
-              int ports_count;
-              int holes_count, warnings_count, infos_count;
-              int logs_count, false_positives_count;
+                if (print_report_host_xml (out,
+                                          &hosts,
+                                          result_host,
+                                          tsk_usage_type,
+                                          lean,
+                                          host_summary_buffer,
+                                          f_host_ports,
+                                          f_host_holes,
+                                          f_host_warnings,
+                                          f_host_infos,
+                                          f_host_logs,
+                                          f_host_false_positives,
+                                          f_host_compliant,
+                                          f_host_notcompliant,
+                                          f_host_incomplete,
+                                          f_host_undefined))
 
-              current_host = host_iterator_host (&hosts);
-
-              ports_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup (f_host_ports, current_host));
-              holes_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup ( f_host_holes, current_host));
-              warnings_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup ( f_host_warnings, current_host));
-              infos_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup ( f_host_infos, current_host));
-              logs_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup ( f_host_logs, current_host));
-              false_positives_count
-                = GPOINTER_TO_INT
-                    (g_hash_table_lookup ( f_host_false_positives, current_host));
-
-              host_summary_append (host_summary_buffer,
-                                   result_host,
-                                   host_iterator_start_time (&hosts),
-                                   host_iterator_end_time (&hosts));
-              PRINT (out,
-                     "<host>"
-                     "<ip>%s</ip>",
-                     result_host);
-
-              if (host_iterator_asset_uuid (&hosts)
-                  && strlen (host_iterator_asset_uuid (&hosts)))
-                PRINT (out,
-                       "<asset asset_id=\"%s\"/>",
-                       host_iterator_asset_uuid (&hosts));
-              else if (lean == 0)
-                PRINT (out,
-                       "<asset asset_id=\"\"/>");
-
-              PRINT (out,
-                     "<start>%s</start>"
-                     "<end>%s</end>"
-                     "<port_count><page>%d</page></port_count>"
-                     "<result_count>"
-                     "<page>%d</page>"
-                     "<hole><page>%d</page></hole>"
-                     "<warning><page>%d</page></warning>"
-                     "<info><page>%d</page></info>"
-                     "<log><page>%d</page></log>"
-                     "<false_positive><page>%d</page></false_positive>"
-                     "</result_count>",
-                     host_iterator_start_time (&hosts),
-                     host_iterator_end_time (&hosts)
-                       ? host_iterator_end_time (&hosts)
-                       : "",
-                     ports_count,
-                     (holes_count + warnings_count + infos_count
-                      + logs_count + false_positives_count),
-                     holes_count,
-                     warnings_count,
-                     infos_count,
-                     logs_count,
-                     false_positives_count);
-
-              if (print_report_host_details_xml
-                   (host_iterator_report_host (&hosts), out, lean))
                 {
-                  tz_revert (zone, tz, old_tz_override);
-                  if (host_summary_buffer)
-                    g_string_free (host_summary_buffer, TRUE);
-                  g_hash_table_destroy (f_host_ports);
-                  g_hash_table_destroy (f_host_holes);
-                  g_hash_table_destroy (f_host_warnings);
-                  g_hash_table_destroy (f_host_infos);
-                  g_hash_table_destroy (f_host_logs);
-                  g_hash_table_destroy (f_host_false_positives);
-                  return -1;
+                    goto failed_print_report_host;
                 }
-
-              PRINT (out,
-                     "</host>");
             }
           cleanup_iterator (&hosts);
         }
@@ -30278,103 +31023,43 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
-          const char *current_host;
-          int ports_count;
-          int holes_count, warnings_count, infos_count;
-          int logs_count, false_positives_count;
-
-          current_host = host_iterator_host (&hosts);
-
-          ports_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_ports, current_host));
-          holes_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_holes, current_host));
-          warnings_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_warnings, current_host));
-          infos_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_infos, current_host));
-          logs_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_logs, current_host));
-          false_positives_count
-            = GPOINTER_TO_INT
-                (g_hash_table_lookup (f_host_false_positives, current_host));
-
-          host_summary_append (host_summary_buffer,
-                               host_iterator_host (&hosts),
-                               host_iterator_start_time (&hosts),
-                               host_iterator_end_time (&hosts));
-          PRINT (out,
-                 "<host>"
-                 "<ip>%s</ip>",
-                 host_iterator_host (&hosts));
-
-          if (host_iterator_asset_uuid (&hosts)
-              && strlen (host_iterator_asset_uuid (&hosts)))
-            PRINT (out,
-                   "<asset asset_id=\"%s\"/>",
-                   host_iterator_asset_uuid (&hosts));
-          else if (lean == 0)
-            PRINT (out,
-                   "<asset asset_id=\"\"/>");
-
-          PRINT (out,
-                 "<start>%s</start>"
-                 "<end>%s</end>"
-                 "<port_count><page>%d</page></port_count>"
-                 "<result_count>"
-                 "<page>%d</page>"
-                 "<hole><page>%d</page></hole>"
-                 "<warning><page>%d</page></warning>"
-                 "<info><page>%d</page></info>"
-                 "<log><page>%d</page></log>"
-                 "<false_positive><page>%d</page></false_positive>"
-                 "</result_count>",
-                 host_iterator_start_time (&hosts),
-                 host_iterator_end_time (&hosts)
-                   ? host_iterator_end_time (&hosts)
-                   : "",
-                 ports_count,
-                 (holes_count + warnings_count + infos_count
-                  + logs_count + false_positives_count),
-                 holes_count,
-                 warnings_count,
-                 infos_count,
-                 logs_count,
-                 false_positives_count);
-
-          if (print_report_host_details_xml
-               (host_iterator_report_host (&hosts), out, lean))
-            {
-              tz_revert (zone, tz, old_tz_override);
-              if (host_summary_buffer)
-                g_string_free (host_summary_buffer, TRUE);
-              g_hash_table_destroy (f_host_ports);
-              g_hash_table_destroy (f_host_holes);
-              g_hash_table_destroy (f_host_warnings);
-              g_hash_table_destroy (f_host_infos);
-              g_hash_table_destroy (f_host_logs);
-              g_hash_table_destroy (f_host_false_positives);
-              return -1;
-            }
-
-          PRINT (out,
-                 "</host>");
+          if (print_report_host_xml (out,
+                                    &hosts,
+                                    NULL,
+                                    tsk_usage_type,
+                                    lean,
+                                    host_summary_buffer,
+                                    f_host_ports,
+                                    f_host_holes,
+                                    f_host_warnings,
+                                    f_host_infos,
+                                    f_host_logs,
+                                    f_host_false_positives,
+                                    f_host_compliant,
+                                    f_host_notcompliant,
+                                    f_host_incomplete,
+                                    f_host_undefined))
+            goto failed_print_report_host;
         }
       cleanup_iterator (&hosts);
     }
-
+  #if COMPLIANCE_REPORTS == 1
+    if (strcmp (tsk_usage_type, "audit") == 0)
+      {
+        g_hash_table_destroy (f_host_compliant);
+        g_hash_table_destroy (f_host_notcompliant);
+        g_hash_table_destroy (f_host_incomplete);
+        g_hash_table_destroy (f_host_undefined);
+      } else
+  #endif
+  {
+    g_hash_table_destroy (f_host_holes);
+    g_hash_table_destroy (f_host_warnings);
+    g_hash_table_destroy (f_host_infos);
+    g_hash_table_destroy (f_host_logs);
+    g_hash_table_destroy (f_host_false_positives);
+  }
   g_hash_table_destroy (f_host_ports);
-  g_hash_table_destroy (f_host_holes);
-  g_hash_table_destroy (f_host_warnings);
-  g_hash_table_destroy (f_host_infos);
-  g_hash_table_destroy (f_host_logs);
-  g_hash_table_destroy (f_host_false_positives);
-
 
   /* Print TLS certificates */
 
@@ -30454,6 +31139,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (search_phrase);
   g_free (min_qod);
   g_free (delta_states);
+  g_free (compliance_levels);
+  g_free (tsk_usage_type);
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
@@ -30467,6 +31154,39 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
 
   return 0;
+
+  failed_delta_report:
+     fclose (out);
+     g_free (sort_field);
+     g_free (levels);
+     g_free (search_phrase);
+     g_free (min_qod);
+     g_free (delta_states);
+     cleanup_iterator (&results);
+     cleanup_iterator (&delta_results);
+  failed_print_report_host:
+    if (host_summary_buffer)
+        g_string_free (host_summary_buffer, TRUE);
+    tz_revert (zone, tz, old_tz_override);
+    g_hash_table_destroy (f_host_ports);
+    #if COMPLIANCE_REPORTS == 1
+      g_free (compliance_levels);
+      if (strcmp (tsk_usage_type, "audit") == 0)
+      {
+        g_hash_table_destroy (f_host_compliant);
+        g_hash_table_destroy (f_host_notcompliant);
+        g_hash_table_destroy (f_host_incomplete);
+        g_hash_table_destroy (f_host_undefined);
+      } else
+    #endif
+    {
+      g_hash_table_destroy (f_host_holes);
+      g_hash_table_destroy (f_host_warnings);
+      g_hash_table_destroy (f_host_infos);
+      g_hash_table_destroy (f_host_logs);
+      g_hash_table_destroy (f_host_false_positives);
+    }
+    return -1;
 }
 
 /**
@@ -47532,14 +48252,18 @@ create_filter (const char *name, const char *comment, const char *type,
                const char *term, filter_t* filter)
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *clean_term;
+  const char *db_type;
 
   assert (current_credentials.uuid);
 
   if (type && strlen (type))
     {
-      type = type_db_name (type);
-      if (type == NULL || !valid_type (type))
+      db_type = type_db_name (type);
+      if ((db_type == NULL || !valid_type (db_type)) && !valid_subtype (type))
+      {
         return 2;
+      }
+      type = valid_subtype (type) ? type : db_type;
     }
 
   sql_begin_immediate ();
@@ -48134,13 +48858,18 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
   filter_t filter;
+  const char *db_type;
 
   if (filter_id == NULL)
     return 4;
 
-  type = type_db_name (type);
-  if (type && !((strcmp (type, "") == 0) || valid_type (type)))
-    return 3;
+  db_type = type_db_name (type);
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type))) 
+    {
+      if (!valid_subtype (type))
+        return 3;
+    }
+  type = valid_subtype (type) ? type : db_type;
 
   sql_begin_immediate ();
 
@@ -52764,6 +53493,10 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
+      #if COMPLIANCE_REPORTS == 1
+        else if (strcmp (uuid, "45414da7-55f0-44c1-abbb-6b7d1126fbdf") == 0)
+          setting_name = g_strdup ("Audit Reports Filter");
+      #endif
       else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
         setting_name = g_strdup ("Configs Filter");
       else if (strcmp (uuid, "186a5ac8-fe5a-4fb1-aa22-44031fb339f3") == 0)
@@ -52886,6 +53619,11 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "e599bb6b-b95a-4bb2-a6bb-fe8ac69bc071") == 0)
         setting_name = g_strdup ("Reports Top Dashboard Configuration");
 
+      /* Audit Reports dashboard settings */
+      #if COMPLIANCE_REPORTS == 1
+        else if (strcmp (uuid, "8083d77b-05bb-4b17-ab39-c81175cb512c") == 0)
+          setting_name = g_strdup ("Audit Reports Top Dashboard Configuration");
+      #endif
       /* Results dashboard settings */
       else if (strcmp (uuid, "0b8ae70d-d8fc-4418-8a72-e65ac8d2828e") == 0)
         setting_name = g_strdup ("Results Top Dashboard Configuration");
@@ -56550,6 +57288,21 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     resource_permission = g_strdup ("get_info");
   else if (type_is_asset_subtype (type))
     resource_permission = g_strdup ("get_assets");
+  else if (type_is_report_subtype (type)) 
+    {
+      resource_permission = g_strdup ("get_reports");
+      type = g_strdup("report");
+    }
+  else if (type_is_task_subtype (type))
+    {
+      resource_permission = g_strdup ("get_tasks");
+      type = g_strdup("task");
+    }
+  else if (type_is_config_subtype (type))
+    {
+      resource_permission = g_strdup ("get_configs");
+      type = g_strdup("config");
+    }
   else
     resource_permission = g_strdup_printf ("get_%ss", type);
 
@@ -56613,6 +57366,39 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
     }
   else
     {
+      if (strcasecmp (type, "task") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      else if (strcasecmp (type, "audit") == 0)
+        {
+          type = g_strdup ("task");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+        }
+      else if (strcasecmp (type, "policy") == 0)
+        {
+          type = g_strdup ("config");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("policy"));
+        }
+      else if (strcasecmp (type, "config") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      #if COMPLIANCE_REPORTS == 1
+        else if (strcasecmp (type, "audit_report") == 0)
+          {
+            type = g_strdup ("report");
+            resources_get.type = g_strdup (type);
+            get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+          }
+        else if (strcasecmp (type, "report") == 0)
+          {
+            get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+          }
+      #endif
+
       gchar *columns;
 
       columns = g_strdup_printf ("%ss.id, %ss.uuid", type, type);
@@ -56642,6 +57428,8 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             sql_rollback ();
             g_free (resources_get.filter);
             g_free (resources_get.type);
+            if (resources_get.extra_params)
+              g_hash_table_destroy (resources_get.extra_params);
             return -1;
         }
     }
@@ -56649,6 +57437,8 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
+  if (resources_get.extra_params)
+    g_hash_table_destroy (resources_get.extra_params);
 
   ret = 2;
   while (next (&resources))
@@ -56759,6 +57549,41 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
     }
   else
     {
+      if (strcasecmp (type, "task") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      else if (strcasecmp (type, "audit") == 0)
+        {
+          type = g_strdup ("task");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+        }
+      else if (strcasecmp (type, "policy") == 0)
+        {
+          type = g_strdup ("config");
+          resources_get.type = g_strdup (type);
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("policy"));
+        }
+      else if (strcasecmp (type, "config") == 0)
+        {
+          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+        }
+      #if COMPLIANCE_REPORTS == 1
+        else if (strcasecmp (type, "audit_report") == 0)
+          {
+            type = g_strdup ("report");
+            resources_get.type = g_strdup (type);
+            get_data_set_extra (&resources_get,
+                                "usage_type",
+                                g_strdup ("audit"));
+          }
+        else if (strcasecmp (type, "report") == 0)
+          {
+            get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+          }
+      #endif
+
       gchar *columns;
 
       columns = g_strdup_printf ("%ss.id", type);
@@ -56778,6 +57603,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             sql_rollback ();
             g_free (resources_get.filter);
             g_free (resources_get.type);
+            if (resources_get.extra_params)
+              g_hash_table_destroy (resources_get.extra_params);           
             return -1;
         }
     }
@@ -56785,6 +57612,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
+  if (resources_get.extra_params)
+      g_hash_table_destroy (resources_get.extra_params);  
 
   ret = 2;
   while (next (&resources))
@@ -56901,9 +57730,12 @@ create_tag (const char * name, const char * comment, const char * value,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      g_free (lc_resource_type);
-      sql_rollback ();
-      return -1;
+      if (!valid_subtype (lc_resource_type)) 
+        {
+          g_free (lc_resource_type);
+          sql_rollback ();
+          return -1;          
+        }
     }
 
   quoted_name = sql_insert (name);
@@ -57133,8 +57965,11 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      sql_rollback ();
-      return -1;
+      if (!valid_subtype (lc_resource_type))
+        {
+          sql_rollback ();
+          return -1;          
+        }
     }
 
   quoted_resource_type = sql_insert (lc_resource_type);
@@ -58100,14 +58935,13 @@ type_extra_where (const char *type, int trash, const char *filter,
     }
   else if (strcasecmp (type, "REPORT") == 0)
     {
-      if (trash)
-        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
-                                "      WHERE tasks.id = task)"
-                                "     = 2");
+      gchar *usage_type;
+      if (extra_params)
+        usage_type = g_hash_table_lookup (extra_params, "usage_type");
       else
-        extra_where = g_strdup (" AND (SELECT hidden FROM tasks"
-                                "      WHERE tasks.id = task)"
-                                "     = 0");
+        usage_type = NULL;
+      
+      extra_where = reports_extra_where (trash, filter, usage_type);
     }
   else if (strcasecmp (type, "RESULT") == 0)
     {

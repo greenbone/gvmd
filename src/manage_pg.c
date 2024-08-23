@@ -895,7 +895,46 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
-  /* Functions in SQL. */
+  sql ("CREATE OR REPLACE FUNCTION report_compliance_status ("
+       "  report_id integer)"
+       "RETURNS text AS $$ "
+       "BEGIN"
+       "  CASE"
+       "  WHEN (SELECT count(*) FROM results"
+       "        WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%NO%%') > 0"
+       "  THEN RETURN 'no';"
+       "  WHEN (SELECT count(*) FROM results"
+       "        WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%INCOMPLETE%%') > 0"
+       "  THEN RETURN 'incomplete';"
+       "  WHEN (SELECT count(*) FROM results"
+       "        WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%YES%%') > 0"
+       "  THEN RETURN 'yes';"
+       "  ELSE RETURN 'undefined';"
+       "  END CASE;" 
+       "END;"
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
+  sql ("CREATE OR REPLACE FUNCTION report_compliance_count ("
+       "  report_id integer,"
+       "  compliance text)"
+       " RETURNS integer AS $$"
+       " DECLARE count integer := 0;"
+       " BEGIN"
+       "   WITH compliance_count AS"
+       "   (SELECT count(*) AS total FROM results WHERE report = report_id"                        
+       "        AND description LIKE 'Compliant:%%' || compliance || '%%')"
+       "   SELECT total FROM compliance_count"
+       "   INTO count;"
+       "   RETURN count;"
+       " END;"
+       " $$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
+ /* Functions in SQL. */       
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "                WHERE table_catalog = '%s'"

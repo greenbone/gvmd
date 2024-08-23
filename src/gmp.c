@@ -5555,6 +5555,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               get_reports_data->ignore_pagination = 0;
 
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_reports_data->report_get,
+                                    "usage_type",
+                                    attribute);
+              }
+
             set_client_state (CLIENT_GET_REPORTS);
           }
         else if (strcasecmp ("GET_REPORT_CONFIGS", element_name) == 0)
@@ -9421,6 +9429,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  const char *compliance;
   double severity_double;
   gchar *nl_descr, *nl_descr_escaped;
   result_t result;
@@ -9451,6 +9460,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_delta_hostname (results);
       if (host)
         asset_id = result_iterator_delta_host_asset_id (results);
+      compliance = result_iterator_delta_compliance (results);
     }
   else
     {
@@ -9469,6 +9479,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_hostname (results);
       if (host)
         asset_id = result_iterator_asset_host_id (results);
+      compliance = result_iterator_compliance (results);
     }
 
 
@@ -9722,6 +9733,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<original_severity>%s</original_severity>",
                               original_level,
                               original_severity);
+
+  buffer_xml_append_printf (buffer, "<compliance>%s</compliance>", compliance);
 
   if (include_notes
       && use_delta_fields 
@@ -12943,6 +12956,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>COMPLIANCE_REPORTS</name>"
+                           "</feature>",
+                           COMPLIANCE_REPORTS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
                            "<name>CVSS3_RATINGS</name>"
                            "</feature>",
                            CVSS3_RATINGS ? 1 : 0);
@@ -14840,12 +14858,32 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
       levels = filter_term_value (filter ? filter : get->filter, "levels");
-      g_free (filter);
+      #if COMPLIANCE_REPORTS == 1
+        gchar *compliance_levels;
+        compliance_levels = filter_term_value (filter
+                                                  ? filter
+                                                  : get->filter,
+                                              "compliance_levels");
 
-      /* Setup result filter from overrides. */
-      get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%i levels=%s",
-                           overrides, min_qod, levels ? levels : "hmlgdf");
+        /* Setup result filter from overrides. */
+        get_reports_data->get.filter
+          = g_strdup_printf
+              ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
+              overrides,
+              min_qod,
+              levels ? levels : "hmlgdf",
+              compliance_levels ? compliance_levels : "yniu");
+        g_free (compliance_levels);
+      #else
+        /* Setup result filter from overrides. */
+        get_reports_data->get.filter
+          = g_strdup_printf
+              ("apply_overrides=%i min_qod=%i levels=%s",
+              overrides,
+              min_qod,
+              levels ? levels : "hmlgdf");
+      #endif
+      g_free (filter);
       g_free (levels);
     }
 
@@ -15892,7 +15930,19 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+#if COMPLIANCE_REPORTS == 1
+      get_data_set_extra (&resource_names_data->get, 
+                          "usage_type",
+                          g_strdup ("scan"));
     }                
+  else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+      get_data_set_extra (&resource_names_data->get, 
+                          "usage_type",
+                          g_strdup ("audit"));
+#endif
+    }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
@@ -15908,7 +15958,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
-    }                
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("policy", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("policy"));
+    }
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
@@ -15924,7 +15984,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
-    } 
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("audit", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("audit"));
+    }
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
@@ -15968,14 +16038,21 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
        && (acl_user_may ("get_assets") == 0))
       || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
           && (acl_user_may ("get_results") == 0))
-      || ((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+      || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
           && (acl_user_may ("get_reports") == 0))
       || (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cve", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("nvt", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
-          && (acl_user_may ("get_info") == 0)))
+          && (acl_user_may ("get_info") == 0))
+      || (((g_strcmp0 ("config", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("policy", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_configs") == 0))
+      || (((g_strcmp0 ("task", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("audit", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_tasks") == 0)))
       {
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_resource_names",
@@ -16059,14 +16136,6 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
 
   while (next (&resource))
     {
-      if ((g_strcmp0 ("task", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("audit", task_iterator_usage_type(&resource)) == 0)
-          || (g_strcmp0 ("config", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("policy", config_iterator_usage_type(&resource)) == 0))
-      {
-        continue;
-      }
-
       GString *result;
       result = g_string_new ("");
       
@@ -16252,6 +16321,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* result_hosts_only */
                                       NULL, /* min_qod */
                                       NULL, /* levels */
+                                      NULL, /* compliance_levels */
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
@@ -18266,7 +18336,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   report_compliance_by_uuid (last_report_id,
                                              &compliance_yes,
                                              &compliance_no,
-                                             &compliance_incomplete);
+                                             &compliance_incomplete,
+                                             NULL);
 
                   last_report
                     = g_strdup_printf ("<last_report>"
@@ -22486,8 +22557,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "RESOURCES requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (create_tag_data->resource_type)
-                     == 0)
+          else if (valid_db_resource_type (create_tag_data->resource_type) == 0
+                    && valid_subtype (create_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "TYPE in RESOURCES must be"
@@ -25239,7 +25310,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "name must be at least one"
                                 " character long or omitted completely"));
           else if (modify_tag_data->resource_type &&
-                   valid_db_resource_type (modify_tag_data->resource_type) == 0)
+                   valid_db_resource_type (modify_tag_data->resource_type) == 0
+                   && valid_subtype (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE in RESOURCES must be"
