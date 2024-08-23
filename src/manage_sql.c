@@ -57366,17 +57366,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
     }
   else
     {
-      if (strcasecmp (type, "audit_report") == 0)
-        {
-          type = g_strdup ("report");
-          resources_get.type = g_strdup (type);
-          get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
-        }
-      else if (strcasecmp (type, "report") == 0)
-        {
-          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
-        }
-      else if (strcasecmp (type, "task") == 0)
+      if (strcasecmp (type, "task") == 0)
         {
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
         }
@@ -57396,6 +57386,18 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
         {
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
         }
+      #if COMPLIANCE_REPORTS == 1
+        else if (strcasecmp (type, "audit_report") == 0)
+          {
+            type = g_strdup ("report");
+            resources_get.type = g_strdup (type);
+            get_data_set_extra (&resources_get, "usage_type", g_strdup ("audit"));
+          }
+        else if (strcasecmp (type, "report") == 0)
+          {
+            get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+          }
+      #endif
 
       gchar *columns;
 
@@ -57547,19 +57549,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
     }
   else
     {
-      if (strcasecmp (type, "audit_report") == 0)
-        {
-          type = g_strdup ("report");
-          resources_get.type = g_strdup (type);
-          get_data_set_extra (&resources_get,
-                              "usage_type",
-                              g_strdup ("audit"));
-        }
-      else if (strcasecmp (type, "report") == 0)
-        {
-          get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
-        }
-      else if (strcasecmp (type, "task") == 0)
+      if (strcasecmp (type, "task") == 0)
         {
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
         }
@@ -57579,6 +57569,20 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
         {
           get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
         }
+      #if COMPLIANCE_REPORTS == 1
+        else if (strcasecmp (type, "audit_report") == 0)
+          {
+            type = g_strdup ("report");
+            resources_get.type = g_strdup (type);
+            get_data_set_extra (&resources_get,
+                                "usage_type",
+                                g_strdup ("audit"));
+          }
+        else if (strcasecmp (type, "report") == 0)
+          {
+            get_data_set_extra (&resources_get, "usage_type", g_strdup ("scan"));
+          }
+      #endif
 
       gchar *columns;
 
