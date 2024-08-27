@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <name>alive_test</name>
     <summary>An alive test</summary>
     <pattern>
-      xsd:token { pattern = "ICMP, TCP Service &amp; ARP Ping|TCP Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP Service Ping|ARP Ping|TCP Service Ping|ICMP Ping|Scan Config Default" }
+      xsd:token { pattern = "ICMP, TCP-ACK Service &amp; ARP Ping|TCP-ACK Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP-ACK Service Ping|ARP Ping|TCP-ACK Service Ping|TCP-SYN Service Ping|ICMP Ping|Consider Alive|Scan Config Default" }
     </pattern>
   </type>
   <type>
