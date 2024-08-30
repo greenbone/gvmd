@@ -16131,7 +16131,7 @@ check_db_settings ()
           " ('" SETTING_UUID_USER_INTERFACE_TIME_FORMAT "', NULL,"
           "  'User Interface Time Format',"
           "  'Preferred time format to be used in client user interfaces.',"
-          "  '24' );");
+          "  'system_default' );");
 
   if (sql_int ("SELECT count(*) FROM settings"
               " WHERE uuid = '" SETTING_UUID_USER_INTERFACE_DATE_FORMAT "'"
@@ -16142,7 +16142,7 @@ check_db_settings ()
           " ('" SETTING_UUID_USER_INTERFACE_DATE_FORMAT "', NULL,"
           "  'User Interface Date Format',"
           "  'Preferred date format to be used in client user interfaces.',"
-          "  'wdmy' );");
+          "  'system_default' );");
 }
 
 /**
@@ -53348,10 +53348,9 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       if (strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0)
         {
-          int value_int;
           /* User Interface Time Format */
-          if (sscanf (value, "%d", &value_int) != 1
-              || (strcmp (value, "12") && strcmp (value, "24")))
+          if (strcmp (value, "12") && strcmp (value, "24")
+              && strcmp (value, "system_default"))
             {
               g_free (value);
               return 2;
@@ -53361,7 +53360,8 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0)
         {
           /* User Interface Date Format */
-          if (strcmp (value, "wmdy") && strcmp (value, "wdmy"))
+          if (strcmp (value, "wmdy") && strcmp (value, "wdmy")
+              && strcmp (value, "system_default"))
             {
               g_free (value);
               return 2;
