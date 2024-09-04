@@ -11905,7 +11905,7 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
                                       (&details));
           cleanup_iterator (&details);
 
-          if (get_assets_data->details || get_assets_data->get.id)
+          if (get_assets_data->get.id)
             {
               routes_xml = host_routes_xml (asset);
               g_string_append (result, routes_xml);
@@ -11922,9 +11922,6 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       g_string_free (result, TRUE);
     }
   cleanup_iterator (&assets);
-
-  if (get_assets_data->details == 1)
-    SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
 
   filtered = get_assets_data->get.id
               ? 1
