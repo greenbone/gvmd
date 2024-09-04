@@ -1167,21 +1167,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>new_threat</e>
       <e>new_severity</e>
       <e>orphan</e>
-      <e>permissions</e>
       <o><e>user_tags</e></o>
       <o>
         <g>
           <e>hosts</e>
           <e>port</e>
           <e>task</e>
-          <o><e>end_time</e></o>
+          <e>end_time</e>
           <o><e>result</e></o>
         </g>
       </o>
     </pattern>
     <ele>
       <name>permissions</name>
-      <summary>Permissions that the current user has on the note</summary>
+      <summary>Permissions that the current user has on the override</summary>
       <pattern>
         <any><e>permission</e></any>
       </pattern>
@@ -1369,7 +1368,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+        <e>name</e>
+        <e>trash</e>
       </pattern>
+      <ele>
+        <name>name</name>
+        <summary>Task name</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>trash</name>
+        <summary>Whether the task is in the trashcan</summary>
+        <type>boolean</type>
+      </ele>
     </ele>
     <ele>
       <name>active</name>
@@ -1384,114 +1395,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>result</name>
       <summary>Result to which override applies</summary>
-      <pattern>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-        <e>host</e>
-        <e>port</e>
-        <e>nvt</e>
-        <e>threat</e>
-        <e>severity</e>
-        <e>qod</e>
-        <e>description</e>
-      </pattern>
-      <ele>
-        <name>host</name>
-        <pattern>
-          <e>asset</e>
-          text
-        </pattern>
-        <ele>
-          <name>asset</name>
-          <summary>Asset linked to host</summary>
-          <pattern>
-            <attrib>
-              <name>asset_id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>port</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>nvt</name>
-        <pattern>
-          <attrib>
-            <name>oid</name>
-            <type>oid</type>
-            <required>1</required>
-          </attrib>
-          <e>name</e>
-          <e>type</e>
-          <e>cvss_base</e>
-          <e>severities</e>
-          <o><e>cve</e></o>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the NVT: nvt, cve, ...</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>cvss_base</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>severities</name>
-          <summary>Severity score information of the NVT</summary>
-          <type>severities</type>
-        </ele>
-        <ele>
-          <name>cve</name>
-          <summary>CVE value associated with the NVT</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>threat</name>
-        <pattern>
-          <t>threat</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>severity</name>
-        <pattern>
-          <t>severity</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>qod</name>
-        <summary>The quality of detection (QoD) of the result</summary>
-        <pattern>
-          <e>value</e>
-          <e>type</e>
-        </pattern>
-        <ele>
-          <name>value</name>
-          <summary>The numeric QoD value</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The QoD type</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>description</name>
-        <pattern>text</pattern>
-      </ele>
+      <type>result</type>
     </ele>
   </element>
   <element>
