@@ -556,7 +556,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
         {
           int i;
           size_t buffer_size = 0;
-          gchar* buffer;
+          unsigned char *buffer;
           GString *string;
 
           string = g_string_new ("");
