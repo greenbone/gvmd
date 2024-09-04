@@ -771,6 +771,73 @@ is_uuid (const char *uuid)
 }
 
 
+/* Strings. */
+
+/**
+ * @brief Escape a string with exceptions for UTF-8 if it is valid UTF-8.
+ *
+ * If the string is valid UTF-8, characters in the range 0x80 - 0xFF
+ * are excluded so non-ASCII UTF-8 characters and any characters in the
+ * extra_exceptions are not escaped.
+ * This leaves the characters 0x01 - 0x1F and 0x7F to be escaped if they are
+ * not in the given extra_exceptions.
+ *
+ * For strings that are not valid UTF-8 all characters in the ranges
+ *
+ * @param[in]  str               The string to escape.
+ * @param[in]  extra_exceptions  Extra exc.
+ *
+ * @return Newly allocated escaped copy of the string.
+ */
+gchar *
+strescape_check_utf8 (const char *str, const char *extra_exceptions)
+{
+  if (g_utf8_validate (str, -1, NULL))
+    return strescape_without_utf8 (str, extra_exceptions);
+  else
+    return g_strescape (str, extra_exceptions);
+}
+
+/**
+ * @brief Escape control characters in a string with exceptions for UTF-8.
+ *
+ * Characters in the range 0x80 - 0xFF are excluded so non-ASCII UTF-8
+ * characters are not escaped.
+ * This leaves the characters 0x01 - 0x1F and 0x7F to be escaped if they are
+ * not in the given extra_exceptions.
+ *
+ * @param[in]  str               The string to escape.
+ * @param[in]  extra_exceptions  Extra exceptions to the escaping.
+ *
+ * @return Newly allocated escaped copy of the string.
+ */
+gchar *
+strescape_without_utf8 (const char *str, const char *extra_exceptions)
+{
+  static const char *base_exceptions =
+    "\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217"
+    "\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237"
+    "\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257"
+    "\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277"
+    "\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317"
+    "\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337"
+    "\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357"
+    "\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377";
+  gchar *exceptions = NULL;
+  gchar *escaped;
+
+  if (extra_exceptions && strcmp (extra_exceptions, ""))
+    {
+      exceptions = g_strconcat (base_exceptions,
+                                extra_exceptions ? extra_exceptions : "",
+                                NULL);
+    }
+  escaped = g_strescape (str, exceptions ? exceptions : base_exceptions);
+  g_free (exceptions);
+  return escaped;
+}
+
+
 /* XML. */
 
 /**
@@ -958,4 +1025,27 @@ wait_for_pid (pid_t pid, const char *context)
                    __func__, pid, shown_context);
         }
     }
+}
+
+/**
+ * @brief Get the available physical memory in bytes.
+ * 
+ * @return The available memory
+ */
+guint64
+phys_mem_available ()
+{
+  return (unsigned long long)(sysconf(_SC_AVPHYS_PAGES))
+    * sysconf(_SC_PAGESIZE);
+}
+
+/**
+ * @brief Get the total physical memory in bytes.
+ * 
+ * @return The total memory
+ */
+guint64
+phys_mem_total ()
+{
+  return sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGESIZE);
 }

@@ -1793,7 +1793,6 @@ get_info_data_reset (get_info_data_t *data)
 typedef struct
 {
   get_data_t get;        ///< Get args.
-  char *note_id;         ///< ID of single note to get.
   char *nvt_oid;         ///< OID of NVT to which to limit listing.
   char *task_id;         ///< ID of task to which to limit listing.
   int result;            ///< Boolean.  Whether to include associated results.
@@ -1807,7 +1806,6 @@ typedef struct
 static void
 get_notes_data_reset (get_notes_data_t *data)
 {
-  free (data->note_id);
   free (data->nvt_oid);
   free (data->task_id);
 
@@ -1876,7 +1874,6 @@ get_nvt_families_data_reset (get_nvt_families_data_t *data)
 typedef struct
 {
   get_data_t get;      ///< Get args.
-  char *override_id;   ///< ID of override to get.
   char *nvt_oid;       ///< OID of NVT to which to limit listing.
   char *task_id;       ///< ID of task to which to limit listing.
   int result;          ///< Boolean.  Whether to include associated results.
@@ -1890,7 +1887,6 @@ typedef struct
 static void
 get_overrides_data_reset (get_overrides_data_t *data)
 {
-  free (data->override_id);
   free (data->nvt_oid);
   free (data->task_id);
 
@@ -5332,7 +5328,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                attribute_names,
                                attribute_values);
             set_client_state (CLIENT_GET_LICENSE);
-          }      
+          }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5340,9 +5336,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_notes_data->get, "note",
                                        attribute_names,
                                        attribute_values);
-
-            append_attribute (attribute_names, attribute_values, "note_id",
-                              &get_notes_data->note_id);
 
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_notes_data->nvt_oid);
@@ -5433,9 +5426,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_overrides_data->get, "override",
                                        attribute_names,
                                        attribute_values);
-
-            append_attribute (attribute_names, attribute_values, "override_id",
-                              &get_overrides_data->override_id);
 
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_overrides_data->nvt_oid);
@@ -5554,6 +5544,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_reports_data->ignore_pagination = atoi (attribute);
             else
               get_reports_data->ignore_pagination = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_reports_data->report_get,
+                                    "usage_type",
+                                    attribute);
+              }
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -9421,6 +9419,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  const char *compliance;
   double severity_double;
   gchar *nl_descr, *nl_descr_escaped;
   result_t result;
@@ -9451,6 +9450,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_delta_hostname (results);
       if (host)
         asset_id = result_iterator_delta_host_asset_id (results);
+      compliance = result_iterator_delta_compliance (results);
     }
   else
     {
@@ -9469,6 +9469,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_hostname (results);
       if (host)
         asset_id = result_iterator_asset_host_id (results);
+      compliance = result_iterator_compliance (results);
     }
 
 
@@ -9722,6 +9723,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               "<original_severity>%s</original_severity>",
                               original_level,
                               original_severity);
+
+  buffer_xml_append_printf (buffer, "<compliance>%s</compliance>", compliance);
 
   if (include_notes
       && use_delta_fields 
@@ -11498,6 +11501,7 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
               if (certificate && strcmp (certificate, "")
                   && get_certificate_info ((gchar*)certificate,
                                            strlen (certificate),
+                                           TRUE,
                                            &activation_time,
                                            &expiration_time,
                                            &md5_fingerprint,
@@ -11891,7 +11895,7 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
                                       (&details));
           cleanup_iterator (&details);
 
-          if (get_assets_data->details || get_assets_data->get.id)
+          if (get_assets_data->get.id)
             {
               routes_xml = host_routes_xml (asset);
               g_string_append (result, routes_xml);
@@ -11908,9 +11912,6 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       g_string_free (result, TRUE);
     }
   cleanup_iterator (&assets);
-
-  if (get_assets_data->details == 1)
-    SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
 
   filtered = get_assets_data->get.id
               ? 1
@@ -12345,6 +12346,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
           get_certificate_info (cert,
                                 -1,
+                                TRUE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
@@ -12939,6 +12941,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   SEND_TO_CLIENT_OR_FAIL ("<get_features_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>COMPLIANCE_REPORTS</name>"
+                           "</feature>",
+                           COMPLIANCE_REPORTS ? 1 : 0);
 
   SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
                            "<name>CVSS3_RATINGS</name>"
@@ -13631,12 +13638,12 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
   nvt_t nvt = 0;
   task_t task = 0;
 
-  if (get_notes_data->note_id && get_notes_data->nvt_oid)
+  if (get_notes_data->get.id && get_notes_data->nvt_oid)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_notes",
                         "Only one of NVT and the note_id attribute"
                         " may be given"));
-  else if (get_notes_data->note_id && get_notes_data->task_id)
+  else if (get_notes_data->get.id && get_notes_data->task_id)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_notes",
                         "Only one of the note_id and task_id"
@@ -14036,12 +14043,12 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
   nvt_t nvt = 0;
   task_t task = 0;
 
-  if (get_overrides_data->override_id && get_overrides_data->nvt_oid)
+  if (get_overrides_data->get.id && get_overrides_data->nvt_oid)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_overrides",
                         "Only one of NVT and the override_id attribute"
                         " may be given"));
-  else if (get_overrides_data->override_id
+  else if (get_overrides_data->get.id
             && get_overrides_data->task_id)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_overrides",
@@ -14838,12 +14845,32 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
       levels = filter_term_value (filter ? filter : get->filter, "levels");
-      g_free (filter);
+      #if COMPLIANCE_REPORTS == 1
+        gchar *compliance_levels;
+        compliance_levels = filter_term_value (filter
+                                                  ? filter
+                                                  : get->filter,
+                                              "compliance_levels");
 
-      /* Setup result filter from overrides. */
-      get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%i levels=%s",
-                           overrides, min_qod, levels ? levels : "hmlgdf");
+        /* Setup result filter from overrides. */
+        get_reports_data->get.filter
+          = g_strdup_printf
+              ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
+              overrides,
+              min_qod,
+              levels ? levels : "hmlgdf",
+              compliance_levels ? compliance_levels : "yniu");
+        g_free (compliance_levels);
+      #else
+        /* Setup result filter from overrides. */
+        get_reports_data->get.filter
+          = g_strdup_printf
+              ("apply_overrides=%i min_qod=%i levels=%s",
+              overrides,
+              min_qod,
+              levels ? levels : "hmlgdf");
+      #endif
+      g_free (filter);
       g_free (levels);
     }
 
@@ -15890,7 +15917,19 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+#if COMPLIANCE_REPORTS == 1
+      get_data_set_extra (&resource_names_data->get, 
+                          "usage_type",
+                          g_strdup ("scan"));
     }                
+  else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+      get_data_set_extra (&resource_names_data->get, 
+                          "usage_type",
+                          g_strdup ("audit"));
+#endif
+    }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
@@ -15906,7 +15945,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
-    }                
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("policy", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("policy"));
+    }
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
@@ -15922,7 +15971,17 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
-    } 
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("audit", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("audit"));
+    }
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
@@ -15966,14 +16025,21 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
        && (acl_user_may ("get_assets") == 0))
       || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
           && (acl_user_may ("get_results") == 0))
-      || ((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+      || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
           && (acl_user_may ("get_reports") == 0))
       || (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cve", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("nvt", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
-          && (acl_user_may ("get_info") == 0)))
+          && (acl_user_may ("get_info") == 0))
+      || (((g_strcmp0 ("config", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("policy", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_configs") == 0))
+      || (((g_strcmp0 ("task", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("audit", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_tasks") == 0)))
       {
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_resource_names",
@@ -16057,14 +16123,6 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
 
   while (next (&resource))
     {
-      if ((g_strcmp0 ("task", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("audit", task_iterator_usage_type(&resource)) == 0)
-          || (g_strcmp0 ("config", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("policy", config_iterator_usage_type(&resource)) == 0))
-      {
-        continue;
-      }
-
       GString *result;
       result = g_string_new ("");
       
@@ -16250,6 +16308,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* result_hosts_only */
                                       NULL, /* min_qod */
                                       NULL, /* levels */
+                                      NULL, /* compliance_levels */
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
@@ -16505,6 +16564,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 
               get_certificate_info (scanner_iterator_ca_pub (&scanners),
                                     -1,
+                                    TRUE,
                                     &activation_time,
                                     &expiration_time,
                                     &md5_fingerprint,
@@ -16559,6 +16619,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 
               get_certificate_info (scanner_iterator_key_pub (&scanners),
                                     -1,
+                                    TRUE,
                                     &activation_time,
                                     &expiration_time,
                                     &md5_fingerprint,
@@ -17143,6 +17204,7 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
 
           get_certificate_info (setting_iterator_value (&settings),
                                 -1,
+                                TRUE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
@@ -18261,7 +18323,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   report_compliance_by_uuid (last_report_id,
                                              &compliance_yes,
                                              &compliance_no,
-                                             &compliance_incomplete);
+                                             &compliance_incomplete,
+                                             NULL);
 
                   last_report
                     = g_strdup_printf ("<last_report>"
@@ -19935,6 +19998,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                   get_certificate_info (ldap_cacert,
                                         -1,
+                                        TRUE,
                                         &activation_time,
                                         &expiration_time,
                                         &md5_fingerprint,
@@ -22480,8 +22544,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "RESOURCES requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (create_tag_data->resource_type)
-                     == 0)
+          else if (valid_db_resource_type (create_tag_data->resource_type) == 0
+                    && valid_subtype (create_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "TYPE in RESOURCES must be"
@@ -25233,7 +25297,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "name must be at least one"
                                 " character long or omitted completely"));
           else if (modify_tag_data->resource_type &&
-                   valid_db_resource_type (modify_tag_data->resource_type) == 0)
+                   valid_db_resource_type (modify_tag_data->resource_type) == 0
+                   && valid_subtype (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE in RESOURCES must be"

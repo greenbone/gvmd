@@ -109,6 +109,9 @@ File mode of the unix socket
 \fB--listen-owner=\fISTRING\fB\f1
 Owner of the unix socket
 .TP
+\fB--max-concurrent-scan-updates=\fINUMBER\fB\f1
+Maximum number of scan updates that can run at the same time. Default: 0 (unlimited). 
+.TP
 \fB--max-email-attachment-size=\fINUMBER\fB\f1
 Maximum size of alert email attachments, in bytes.
 .TP
@@ -121,8 +124,14 @@ Maximum size of user-defined message text in alert emails, in bytes.
 \fB--max-ips-per-target=\fINUMBER\fB\f1
 Maximum number of IPs per target.
 .TP
+\fB--mem-wait-retries=\fINUMBER\fB\f1
+How often to try waiting for available memory. Default: 30. Each retry will wait for 10 seconds. 
+.TP
 \fB-m, --migrate\f1
 Migrate the database and exit.
+.TP
+\fB--min-mem-feed-update=\fINUMBER\fB\f1
+Minimum memory in MiB for feed updates. Default: 0. Feed updates are skipped if less physical memory is available. 
 .TP
 \fB--modify-scanner=\fISCANNER-UUID\fB\f1
 Modify scanner SCANNER-UUID and exit.
