@@ -16519,7 +16519,6 @@ END:VCALENDAR
           <o><e>user_tags</e></o>
           <e>report_format</e>
           <o><e>orphan</e></o>
-          <o><e>alerts</e></o>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -16660,42 +16659,13 @@ END:VCALENDAR
           </pattern>
         </ele>
         <ele>
-          <name>alerts</name>
-          <summary>Alerts using the report config</summary>
-          <pattern>
-            <any><e>alert</e></any>
-          </pattern>
-          <ele>
-            <name>alert</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the alert</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the alert</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the alert</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
           <name>param</name>
           <pattern>
             <e>name</e>
             <e>type</e>
             <e>value</e>
             <e>default</e>
+            <o><e>options</e></o>
           </pattern>
           <ele>
             <name>name</name>
@@ -16708,7 +16678,6 @@ END:VCALENDAR
             <pattern>
               <o><e>min</e></o>
               <o><e>max</e></o>
-              <o><e>options</e></o>
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
@@ -16729,21 +16698,17 @@ END:VCALENDAR
               <summary>Maximum</summary>
               <pattern>text</pattern>
             </ele>
-            <ele>
-              <name>options</name>
-              <summary>Selection options</summary>
-              <pattern><any><e>option</e></any></pattern>
-              <ele>
-                <name>option</name>
-                <summary>Option value</summary>
-                <pattern>text</pattern>
-              </ele>
-            </ele>
           </ele>
           <ele>
             <name>value</name>
             <summary>The value of the param</summary>
             <pattern>
+              <attrib>
+                <name>using_default</name>
+                <summary>Whether this is the default value</summary>
+                <type>boolean</type>
+                <required>1</required>
+              </attrib>
               <any><e>report_format</e></any>
             </pattern>
             <ele>
@@ -16767,7 +16732,37 @@ END:VCALENDAR
           <ele>
             <name>default</name>
             <summary>The fallback value of the param</summary>
-            <pattern>text</pattern>
+            <pattern>
+              text
+              <any><e>report_format</e></any>
+            </pattern>
+            <ele>
+              <name>report_format</name>
+              <summary>Report format info if type is report_format_list</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the report format if available</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>options</name>
+            <summary>Selection options</summary>
+            <pattern><any><e>option</e></any></pattern>
+            <ele>
+              <name>option</name>
+              <summary>Option value</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
         </ele>
         <ele>
