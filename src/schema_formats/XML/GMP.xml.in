@@ -18269,9 +18269,6 @@ END:VCALENDAR
           </attrib>
           <e>term</e>
           <o><e>name</e></o>
-          <any><e>filter</e></any>
-          <o><e>host</e></o>
-          <o><e>delta</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
@@ -18283,61 +18280,6 @@ END:VCALENDAR
           <name>name</name>
           <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>filter</name>
-          <summary>A severity level that is included in the report</summary>
-          <pattern>
-            <alts>
-              <alt>High</alt>
-              <alt>Medium</alt>
-              <alt>Low</alt>
-              <alt>Log</alt>
-            </alts>
-          </pattern>
-        </ele>
-        <ele>
-          <name>host</name>
-          <summary>Single host selected for delta report</summary>
-          <pattern>
-            <e>ip</e>
-          </pattern>
-          <ele>
-            <name>ip</name>
-            <summary>IP address of the host</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>delta</name>
-          <summary>Delta states</summary>
-          <pattern>
-            text
-            <e>changed</e>
-            <e>gone</e>
-            <e>new</e>
-            <e>same</e>
-          </pattern>
-          <ele>
-            <name>changed</name>
-            <summary>Whether changed results are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>gone</name>
-            <summary>Whether results that have vanished are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>new</name>
-            <summary>Whether new results are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>same</name>
-            <summary>Whether results that are equal are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
         </ele>
         <ele>
           <name>keywords</name>
