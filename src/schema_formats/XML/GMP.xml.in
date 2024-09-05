@@ -17293,17 +17293,11 @@ END:VCALENDAR
                 <required>1</required>
               </attrib>
               <e>name</e>
-              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>Name of the alert</summary>
               <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the permission</summary>
-              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -17328,17 +17322,11 @@ END:VCALENDAR
                 <required>1</required>
               </attrib>
               <e>name</e>
-              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>Name of the report config</summary>
               <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the report config</summary>
-              <pattern></pattern>
             </ele>
           </ele>
         </ele>
