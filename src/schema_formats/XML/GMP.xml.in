@@ -18162,7 +18162,7 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>format_id</name>
+        <name>config_id</name>
         <summary>ID of requested report config</summary>
         <type>uuid</type>
       </attrib>
