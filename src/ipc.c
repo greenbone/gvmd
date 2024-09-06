@@ -34,6 +34,11 @@
 #include "ipc.h"
 #include "manage.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md   main"
 
 /**
  * @brief System V semaphore set key for gvmd actions.
