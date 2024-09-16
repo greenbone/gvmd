@@ -148,6 +148,16 @@
 #define SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "316275a9-3629-49ad-9cea-5b3ab155b93f"
 
 /**
+ * @brief UUID of 'User Interface Time Format' setting.
+ */
+#define SETTING_UUID_USER_INTERFACE_TIME_FORMAT "11deb7ff-550b-4950-aacf-06faeb7c61b9"
+
+/**
+ * @brief UUID of 'User Interface Date Format' setting.
+ */
+#define SETTING_UUID_USER_INTERFACE_DATE_FORMAT "d9857b7c-1159-4193-9bc0-18fae5473a69"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
@@ -498,12 +508,18 @@ setting_value (const char *, char **);
 int
 valid_type (const char *);
 
+int
+valid_subtype (const char *);
+
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,
                               const gchar *);
 
 void
 create_view_vulns ();
+
+void
+create_indexes_nvt ();
 
 void
 create_view_result_vt_epss ();

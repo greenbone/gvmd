@@ -3353,21 +3353,22 @@ static int
 update_epss_scores ()
 {
   GError *error = NULL;
-  gchar *latest_json_path;
+  gchar *current_json_path;
   gchar *file_contents = NULL; 
-  cJSON *parsed, *list_item;
+  cJSON *parsed, *epss_scores_list, *list_item;
   inserts_t inserts;
 
-  latest_json_path = g_build_filename (GVM_SCAP_DATA_DIR, "epss-latest.json",
-                                       NULL);
+  current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                        "epss-scores-current.json",
+                                        NULL);
 
-  if (! g_file_get_contents (latest_json_path, &file_contents, NULL, &error))
+  if (! g_file_get_contents (current_json_path, &file_contents, NULL, &error))
     {
       int ret;
       if (error->code == G_FILE_ERROR_NOENT)
         {
           g_info ("%s: EPSS scores file '%s' not found",
-                  __func__, latest_json_path);
+                  __func__, current_json_path);
           ret = 0;
         }
       else
@@ -3377,12 +3378,12 @@ update_epss_scores ()
           ret = -1;
         }
       g_error_free (error);
-      g_free (latest_json_path);
+      g_free (current_json_path);
       return ret;
     }
 
-  g_info ("Updating EPSS scores from %s", latest_json_path);
-  g_free (latest_json_path);
+  g_info ("Updating EPSS scores from %s", current_json_path);
+  g_free (current_json_path);
 
   parsed = cJSON_Parse (file_contents);
   g_free (file_contents);
@@ -3393,9 +3394,18 @@ update_epss_scores ()
       return -1;
     }
   
-  if (! cJSON_IsArray (parsed))
+  if (! cJSON_IsObject (parsed))
     {
-      g_warning ("%s: EPSS scores file is not a JSON array", __func__);
+      g_warning ("%s: EPSS scores file is not a JSON object", __func__);
+      cJSON_Delete (parsed);
+      return -1;
+    }
+
+  epss_scores_list = cJSON_GetObjectItem (parsed, "epss_scores");
+  if (epss_scores_list == NULL)
+    {
+      g_warning ("%s: Missing epss_scores field",
+                 __func__);
       cJSON_Delete (parsed);
       return -1;
     }
@@ -3409,7 +3419,7 @@ update_epss_scores ()
                 "  VALUES ",
                 " ON CONFLICT (cve) DO NOTHING");
 
-  cJSON_ArrayForEach (list_item, parsed)
+  cJSON_ArrayForEach (list_item, epss_scores_list)
     {
       cJSON *cve_json, *epss_json, *percentile_json;
       

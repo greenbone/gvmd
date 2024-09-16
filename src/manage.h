@@ -170,6 +170,7 @@ truncate_private_key (const gchar*);
 int
 get_certificate_info (const gchar *,
                       gssize,
+                      gboolean,
                       time_t *,
                       time_t *,
                       gchar **,
@@ -837,6 +838,9 @@ set_task_hosts_ordering (task_t, const char *);
 void
 set_task_scanner (task_t, scanner_t);
 
+int
+task_usage_type (task_t, char**);
+
 void
 set_task_usage_type (task_t, const char *);
 
@@ -1327,7 +1331,7 @@ gboolean
 report_task (report_t, task_t*);
 
 void
-report_compliance_by_uuid (const char *, int *, int *, int *);
+report_compliance_by_uuid (const char *, int *, int *, int *, int *);
 
 int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
@@ -1553,6 +1557,9 @@ gchar **
 result_iterator_dfn_certs (iterator_t*);
 
 const char *
+result_iterator_compliance (iterator_t*);
+
+const char *
 result_iterator_delta_state (iterator_t*);
 
 const char *
@@ -1563,6 +1570,9 @@ result_iterator_delta_severity (iterator_t*);
 
 double
 result_iterator_delta_severity_double (iterator_t*);
+
+const char *
+result_iterator_delta_compliance (iterator_t*);
 
 const char*
 result_iterator_delta_level (iterator_t*);
@@ -1723,8 +1733,8 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *, gchar **);
+                               int *, gchar **, gchar **, gchar **, gchar **, 
+                               gchar **, int *, int *, int *, int *, gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);
@@ -3869,6 +3879,12 @@ get_feed_lock_timeout ();
 
 void
 set_feed_lock_timeout (int);
+
+int
+get_max_concurrent_scan_updates ();
+
+void
+set_max_concurrent_scan_updates (int);
 
 int
 get_mem_wait_retries ();
