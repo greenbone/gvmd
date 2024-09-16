@@ -263,6 +263,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--max-concurrent-scan-updates=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>
+          Maximum number of scan updates that can run at the same time.
+          Default: 0 (unlimited).
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--max-email-attachment-size=<arg>NUMBER</arg></opt></p>
       <optdesc>
         <p>Maximum size of alert email attachments, in bytes.</p>

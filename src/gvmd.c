@@ -102,6 +102,7 @@
 #include <gvm/util/ldaputils.h>
 
 #include "debug_utils.h"
+#include "ipc.h"
 #include "manage.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
@@ -1895,6 +1896,7 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static int max_concurrent_scan_updates = 0;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
@@ -2073,6 +2075,11 @@ gvmd (int argc, char** argv, char *env[])
           &listen_owner,
           "Owner of the unix socket",
           "<string>" },
+        { "max-concurrent-scan-updates", '\0', 0, G_OPTION_ARG_INT,
+          &max_concurrent_scan_updates,
+          "Maximum number of scan updates that can run at the same time."
+          " Default: 0 (unlimited).",
+          "<number>" },
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT,
           &max_email_attachment_size,
           "Maximum size of alert email attachments, in bytes.",
@@ -2318,6 +2325,9 @@ gvmd (int argc, char** argv, char *env[])
 #if CVSS3_RATINGS == 1
       printf ("CVSS3 severity ratings enabled\n");
 #endif
+#if COMPLIANCE_REPORTS == 1
+      printf ("Compliance reports enabled\n");
+#endif
       printf ("Copyright (C) 2009-2021 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
@@ -2448,6 +2458,12 @@ gvmd (int argc, char** argv, char *env[])
     {
       g_debug ("Sentry support disabled");
     }
+
+  /* Set maximum number of concurrent scan updates */
+  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
+
+  /* Initialize Inter-Process Communication */
+  init_semaphore_set ();
 
   /* Enable GNUTLS debugging if requested via env variable.  */
   {
