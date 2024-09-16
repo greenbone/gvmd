@@ -22358,8 +22358,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
       count++;
     }
 
-  // HIERHIERHIER
-
   if (count == 0)
     {
       g_string_free (levels_sql, TRUE);
