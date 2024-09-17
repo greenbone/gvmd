@@ -3371,20 +3371,23 @@ if (failure_condition) {                                          \
 static int
 update_epss_scores ()
 {
-  GError *error = NULL;
+  GStatBuf state;
   gchar *current_json_path;
-  gchar *file_contents = NULL; 
-  cJSON *parsed, *epss_scores_list, *list_item;
+  gchar *error_message = NULL;
+  FILE *epss_scores_file;
+  cJSON *epss_entry;
+  gvm_json_pull_event_t event;
+  gvm_json_pull_parser_t parser;
+  gvm_json_path_elem_t *path_tail = NULL;
   inserts_t inserts;
 
   current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
                                         "epss-scores-current.json",
                                         NULL);
-
-  if (! g_file_get_contents (current_json_path, &file_contents, NULL, &error))
+  if (g_stat (current_json_path, &state))
     {
       int ret;
-      if (error->code == G_FILE_ERROR_NOENT)
+      if (errno == ENOENT)
         {
           g_info ("%s: EPSS scores file '%s' not found",
                   __func__, current_json_path);
@@ -3392,45 +3395,65 @@ update_epss_scores ()
         }
       else
         {
-          g_warning ("%s: Error loading EPSS scores file: %s",
-                     __func__, error->message);
+          g_warning ("%s: Failed to stat EPSS scores file: %s",
+                     __func__, strerror (errno));
           ret = -1;
         }
-      g_error_free (error);
       g_free (current_json_path);
       return ret;
+    }
+
+  epss_scores_file = fopen (current_json_path, "r");
+  if (epss_scores_file == NULL)
+    {
+      g_warning ("%s: Failed to open EPSS scores file: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (current_json_path);
+      return -1;
     }
 
   g_info ("Updating EPSS scores from %s", current_json_path);
   g_free (current_json_path);
 
-  parsed = cJSON_Parse (file_contents);
-  g_free (file_contents);
+  gvm_json_pull_event_init (&event);
+  gvm_json_pull_parser_init (&parser, epss_scores_file);
 
-  if (parsed == NULL)
-    {
-      g_warning ("%s: EPSS scores file is not valid JSON", __func__);
-      return -1;
-    }
-  
-  if (! cJSON_IsObject (parsed))
-    {
-      g_warning ("%s: EPSS scores file is not a JSON object", __func__);
-      cJSON_Delete (parsed);
-      return -1;
-    }
+  gvm_json_pull_parser_next (&parser, &event);
 
-  epss_scores_list = cJSON_GetObjectItem (parsed, "epss_scores");
-  if (epss_scores_list == NULL)
+  if (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
     {
-      g_warning ("%s: Missing epss_scores field",
-                 __func__);
-      cJSON_Delete (parsed);
-      return -1;
-    }
+      gboolean epss_scores_found = FALSE;
+      while (!epss_scores_found)
+        {
+          gvm_json_pull_parser_next (&parser, &event);
+	        path_tail = g_queue_peek_tail (event.path);
+	        if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START
+              && path_tail && strcmp (path_tail->key, "epss_scores") == 0)
+            {
+              epss_scores_found = TRUE;
+            }
+          else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
+            {
+              g_warning ("%s: Parser error: %s", __func__, event.error_message);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (epss_scores_file);
+              return -1;
+            }
+          else if (event.type == GVM_JSON_PULL_EVENT_OBJECT_END
+                   && g_queue_is_empty (event.path))
+            {
+              g_warning ("%s: Unexpected json object end. Missing epss_scores field", __func__);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (epss_scores_file);
+              return -1;
+            }
+        }
 
-  sql_begin_immediate ();
-  inserts_init (&inserts,
+      sql_begin_immediate ();
+      inserts_init (&inserts,
                 EPSS_MAX_CHUNK_SIZE,
                 setting_secinfo_sql_buffer_threshold_bytes (),
                 "INSERT INTO scap2.epss_scores"
@@ -3438,54 +3461,85 @@ update_epss_scores ()
                 "  VALUES ",
                 " ON CONFLICT (cve) DO NOTHING");
 
-  cJSON_ArrayForEach (list_item, epss_scores_list)
+      gvm_json_pull_parser_next (&parser, &event);
+      while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
+        {
+          cJSON *cve_json, *epss_json, *percentile_json;
+
+          epss_entry = gvm_json_pull_expand_container (&parser, &error_message);
+
+          if (error_message)
+            {
+              g_warning ("%s: Error expanding EPSS item: %s", __func__, error_message);
+              g_free (error_message);
+              goto fail_insert;
+            }
+
+          cve_json = cJSON_GetObjectItemCaseSensitive (epss_entry, "cve");
+          epss_json = cJSON_GetObjectItemCaseSensitive (epss_entry, "epss");
+          percentile_json = cJSON_GetObjectItemCaseSensitive (epss_entry, "percentile");
+
+          EPSS_JSON_FAIL_IF (cve_json == NULL,
+                            "Item missing mandatory 'cve' field");
+
+          EPSS_JSON_FAIL_IF (epss_json == NULL,
+                            "Item missing mandatory 'epss' field");
+
+          EPSS_JSON_FAIL_IF (percentile_json == NULL,
+                            "Item missing mandatory 'percentile' field");
+
+          EPSS_JSON_FAIL_IF (! cJSON_IsString (cve_json),
+                            "Field 'cve' in item is not a string");
+
+          EPSS_JSON_FAIL_IF (! cJSON_IsNumber(epss_json),
+                            "Field 'epss' in item is not a number");
+
+          EPSS_JSON_FAIL_IF (! cJSON_IsNumber(percentile_json),
+                            "Field 'percentile' in item is not a number");
+
+          insert_epss_score_entry (&inserts,
+                                  cve_json->valuestring,
+                                  epss_json->valuedouble,
+                                  percentile_json->valuedouble);
+
+          gvm_json_pull_parser_next (&parser, &event);
+          cJSON_Delete (epss_entry);
+	      }
+    }
+  else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
     {
-      cJSON *cve_json, *epss_json, *percentile_json;
-      
-      EPSS_JSON_FAIL_IF (! cJSON_IsObject (list_item),
-                         "Unexpected non-object item in EPSS scores file")
-
-      cve_json = cJSON_GetObjectItem (list_item, "cve");
-      epss_json = cJSON_GetObjectItem (list_item, "epss");
-      percentile_json = cJSON_GetObjectItem (list_item, "percentile");
-
-      EPSS_JSON_FAIL_IF (cve_json == NULL,
-                         "Item missing mandatory 'cve' field");
-
-      EPSS_JSON_FAIL_IF (epss_json == NULL,
-                         "Item missing mandatory 'epss' field");
-      
-      EPSS_JSON_FAIL_IF (percentile_json == NULL,
-                         "Item missing mandatory 'percentile' field");
-
-      EPSS_JSON_FAIL_IF (! cJSON_IsString (cve_json),
-                         "Field 'cve' in item is not a string");
-
-      EPSS_JSON_FAIL_IF (! cJSON_IsNumber(epss_json),
-                         "Field 'epss' in item is not a number");
-      
-      EPSS_JSON_FAIL_IF (! cJSON_IsNumber(percentile_json),
-                         "Field 'percentile' in item is not a number");
-
-      insert_epss_score_entry (&inserts,
-                               cve_json->valuestring,
-                               epss_json->valuedouble,
-                               percentile_json->valuedouble);
+      g_warning ("%s: Parser error: %s", __func__, event.error_message);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (epss_scores_file);
+      return -1;
+    }
+  else
+    {
+      g_warning ("%s: EPSS scores file is not a JSON object.", __func__);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (epss_scores_file);
+      return -1;
     }
 
   inserts_run (&inserts, TRUE);
   sql_commit ();
-  cJSON_Delete (parsed);
-
+  gvm_json_pull_event_cleanup (&event);
+  gvm_json_pull_parser_cleanup (&parser);
+  fclose (epss_scores_file);
   return 0;
 
 fail_insert:
   inserts_free (&inserts);
   sql_rollback ();
-  char *printed_item = cJSON_Print (list_item);
+  char *printed_item = cJSON_Print (epss_entry);
   g_message ("%s: invalid item: %s", __func__, printed_item);
+  cJSON_Delete (epss_entry);
   free (printed_item);
-  cJSON_Delete (parsed);
+  gvm_json_pull_event_cleanup (&event);
+  gvm_json_pull_parser_cleanup (&parser);
+  fclose (epss_scores_file);
   return -1;
 }
 
