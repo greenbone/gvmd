@@ -2709,8 +2709,8 @@ json_object_item_double (cJSON *object, char *key, double fallback)
  *
  * @return The (database) id of the node.
  */
-static int
-save_node (long int parent_id, long int cve_id, char * operator)
+static resource_t
+save_node (resource_t parent_id, resource_t cve_id, char *operator)
 {
   return sql_int64_0
            ("INSERT INTO scap2.cpe_match_nodes"
@@ -2803,7 +2803,7 @@ add_cpe_match_rules (long int id, cJSON *match_rules)
  *                        specific tree level.
  */
 static void
-load_nodes (long int parent_id, long int cveid, cJSON *nodes)
+load_nodes (resource_t parent_id, resource_t cveid, cJSON *nodes)
 {
   cJSON *node;
   long int id;
