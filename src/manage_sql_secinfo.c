@@ -2712,19 +2712,15 @@ json_object_item_double (cJSON *object, char *key, double fallback)
 static int
 save_node (long int parent_id, long int cve_id, char * operator)
 {
-  long int id;
-
-  id = sql_int64_0
-         ("INSERT INTO scap2.cpe_match_nodes"
-          " (parent_id, cve_id, operator)"
-          " VALUES"
-          " (%i, %i, '%s')"
-          " RETURNING scap2.cpe_match_nodes.id;",
-          parent_id,
-          cve_id,
-          operator);
-
-  return id;
+  return sql_int64_0
+           ("INSERT INTO scap2.cpe_match_nodes"
+            " (parent_id, cve_id, operator)"
+            " VALUES"
+            " (%i, %i, '%s')"
+            " RETURNING scap2.cpe_match_nodes.id;",
+            parent_id,
+            cve_id,
+            operator);
 }
 
 /**
@@ -2781,8 +2777,8 @@ add_cpe_match_rules (long int id, cJSON *match_rules)
       sql
        ("INSERT INTO scap2.cpe_match_range"
         " (node_id, vulnerable, cpe,"
-	"  version_start_incl, version_start_excl,"
-	"  version_end_incl, version_end_excl)"
+        "  version_start_incl, version_start_excl,"
+        "  version_end_incl, version_end_excl)"
         " VALUES"
         " (%ld, %d, '%s', '%s', '%s', '%s', '%s')",
         id,
@@ -2821,12 +2817,17 @@ load_nodes (long int parent_id, long int cveid, cJSON *nodes)
   cpe_match_rules = NULL;
   child_nodes = NULL;
 
+  if (nodes == NULL)
+    return;
+
   cJSON_ArrayForEach(node, nodes)
     {
       operator = cJSON_GetObjectItemCaseSensitive(node, "operator");
-      id = save_node (parent_id, cveid, operator->valuestring);
+      if (operator)
+        id = save_node (parent_id, cveid, operator->valuestring);
       cpe_match_rules = cJSON_GetObjectItemCaseSensitive(node, "cpe_match");
-      add_cpe_match_rules (id, cpe_match_rules);
+      if (cpe_match_rules)
+        add_cpe_match_rules (id, cpe_match_rules);
       child_nodes = cJSON_GetObjectItemCaseSensitive(node, "children");
       load_nodes (id, cveid, child_nodes);
     }
@@ -2847,7 +2848,7 @@ handle_json_cve_item (cJSON *item)
   cJSON *cve_data_meta_json;
 
   char *cve_id;
-  long int cve_db_id;
+  resource_t cve_db_id;
 
   cve_json = cJSON_GetObjectItemCaseSensitive(item, "cve");
   cve_data_meta_json = cJSON_GetObjectItemCaseSensitive(cve_json, "CVE_data_meta");
@@ -3028,15 +3029,15 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
   gvm_json_pull_event_t event;
   gvm_json_pull_parser_t parser;
   gchar *full_path;
-  GStatBuf state;
   int transaction_size = 0;
-  // int ret;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, cve_path, NULL);
 
-  if (g_stat (full_path, &state))
+  int fd = open (full_path, O_RDONLY);
+
+  if (fd < 0)
     {
-      g_warning ("%s: Failed to stat SCAP file: %s",
+      g_warning ("%s: Failed to open CVE file: %s",
                  __func__,
                  strerror (errno));
       g_free (full_path);
@@ -3045,7 +3046,7 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
 
   g_info ("Updating %s", full_path);
 
-  cve_file = fopen (full_path, "r");
+  cve_file = fdopen (fd, "r");
   if (cve_file == NULL)
     {
       g_warning ("%s: Failed to open CVE file: %s",
@@ -3067,9 +3068,9 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
       while (!cve_items_found)
         {
           gvm_json_pull_parser_next (&parser, &event);
-	  gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
-	  if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START &&
-              strcmp (path_tail->key, "CVE_Items") == 0)
+          gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
+          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START && path_tail &&
+              path_tail->key && strcmp (path_tail->key, "CVE_Items") == 0)
             {
               cve_items_found = TRUE;
             }
@@ -3091,6 +3092,7 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
             }
         }
       gvm_json_pull_parser_next (&parser, &event);
+      sql_begin_immediate ();
       while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
         {
           entry = gvm_json_pull_expand_container (&parser, &error_message);
@@ -3099,19 +3101,25 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
               g_warning ("%s: Error expanding CVE item: %s", __func__, error_message);
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
+              cJSON_Delete (entry);
               fclose (cve_file);
+              sql_commit ();
               return -1;
             }
           if (handle_json_cve_item (entry))
             {
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
+              cJSON_Delete (entry);
               fclose (cve_file);
+              sql_commit ();
               return -1;
             }
           increment_transaction_size (&transaction_size);
+          cJSON_Delete (entry);
           gvm_json_pull_parser_next (&parser, &event);
-	}
+        }
+      sql_commit ();
     }
   else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
     {
@@ -3286,7 +3294,7 @@ update_scap_cves ()
             }
           count++;
         }
-      if (fnmatch ("nvdcve-2.0-*.xml", cve_path, 0) == 0)
+      else if (fnmatch ("nvdcve-2.0-*.xml", cve_path, 0) == 0)
         {
           if (update_cve_xml (cve_path, hashed_cpes))
             {
