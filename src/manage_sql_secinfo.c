@@ -3371,20 +3371,20 @@ if (failure_condition) {                                          \
 static int
 update_epss_scores ()
 {
-  GStatBuf state;
   gchar *current_json_path;
   gchar *error_message = NULL;
   FILE *epss_scores_file;
   cJSON *epss_entry;
   gvm_json_pull_event_t event;
   gvm_json_pull_parser_t parser;
-  gvm_json_path_elem_t *path_tail = NULL;
   inserts_t inserts;
 
   current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
                                         "epss-scores-current.json",
                                         NULL);
-  if (g_stat (current_json_path, &state))
+  int fd = open(current_json_path, O_RDONLY);
+
+  if (fd < 0)
     {
       int ret;
       if (errno == ENOENT)
@@ -3395,21 +3395,22 @@ update_epss_scores ()
         }
       else
         {
-          g_warning ("%s: Failed to stat EPSS scores file: %s",
-                     __func__, strerror (errno));
+          g_warning ("%s: Failed to open EPSS scores file: %s",
+                    __func__, strerror (errno));
           ret = -1;
         }
-      g_free (current_json_path);
+        g_free (current_json_path);
       return ret;
     }
 
-  epss_scores_file = fopen (current_json_path, "r");
+  epss_scores_file = fdopen(fd, "r");
   if (epss_scores_file == NULL)
     {
-      g_warning ("%s: Failed to open EPSS scores file: %s",
+      g_warning ("%s: Failed to convert file descriptor to FILE*: %s",
                  __func__,
                  strerror (errno));
       g_free (current_json_path);
+      close(fd);
       return -1;
     }
 
@@ -3427,7 +3428,7 @@ update_epss_scores ()
       while (!epss_scores_found)
         {
           gvm_json_pull_parser_next (&parser, &event);
-	        path_tail = g_queue_peek_tail (event.path);
+	        gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
 	        if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START
               && path_tail && strcmp (path_tail->key, "epss_scores") == 0)
             {
