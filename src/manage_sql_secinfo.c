@@ -2716,7 +2716,7 @@ save_node (resource_t parent_id, resource_t cve_id, char *operator)
            ("INSERT INTO scap2.cpe_match_nodes"
             " (parent_id, cve_id, operator)"
             " VALUES"
-            " (%i, %i, '%s')"
+            " (%llu, %llu, '%s')"
             " RETURNING scap2.cpe_match_nodes.id;",
             parent_id,
             cve_id,
@@ -2730,7 +2730,7 @@ save_node (resource_t parent_id, resource_t cve_id, char *operator)
  * @param[in]  match_rules  The JSON object that contains the rules.
  */
 static void
-add_cpe_match_rules (long int id, cJSON *match_rules)
+add_cpe_match_rules (result_t id, cJSON *match_rules)
 {
   cJSON *match_rule;
   cJSON *ver_se;
@@ -2780,10 +2780,10 @@ add_cpe_match_rules (long int id, cJSON *match_rules)
         "  version_start_incl, version_start_excl,"
         "  version_end_incl, version_end_excl)"
         " VALUES"
-        " (%ld, %d, '%s', '%s', '%s', '%s', '%s')",
+        " (%llu, %d, '%s', '%s', '%s', '%s', '%s')",
         id,
         vulnerable ? 1 : 0,
-	quoted_cpe,
+        quoted_cpe,
         version_start_incl,
         version_start_excl,
         version_end_incl,
@@ -2806,7 +2806,7 @@ static void
 load_nodes (resource_t parent_id, resource_t cveid, cJSON *nodes)
 {
   cJSON *node;
-  long int id;
+  resource_t id;
   cJSON *operator;
   cJSON *cpe_match_rules;
   cJSON *child_nodes;
@@ -3280,10 +3280,21 @@ update_scap_cves ()
                          (gpointer*) g_strdup (iterator_string (&cpes, 0)),
                          GINT_TO_POINTER (iterator_int (&cpes, 1)));
 
-  count = 0;
+  gboolean read_json = FALSE;
   while ((cve_path = g_dir_read_name (dir)))
     {
       if (fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0)
+        {
+          read_json = TRUE;
+          break;
+        }
+    }
+  g_dir_rewind (dir);
+
+  count = 0;
+  while ((cve_path = g_dir_read_name (dir)))
+    {
+      if ((fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0) && read_json)
         {
           if (update_cve_json (cve_path, hashed_cpes))
             {
@@ -3294,7 +3305,7 @@ update_scap_cves ()
             }
           count++;
         }
-      else if (fnmatch ("nvdcve-2.0-*.xml", cve_path, 0) == 0)
+      else if ((fnmatch ("nvdcve-2.0-*.xml", cve_path, 0) == 0) && !read_json)
         {
           if (update_cve_xml (cve_path, hashed_cpes))
             {
