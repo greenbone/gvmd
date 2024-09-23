@@ -1688,7 +1688,52 @@ void
 init_app_locations_iterator (iterator_t*, report_host_t, const gchar *);
 
 const char *
-app_locations_iterator_location (iterator_t *);
+app_locations_iterator_location (iterator_t*);
+
+void
+init_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+long long int
+cpe_match_nodes_iterator_root_id (iterator_t*);
+
+void
+init_host_details_cpe_iterator (iterator_t*, report_host_t);
+
+const char*
+host_details_cpe_iterator_cpe (iterator_t*);
+
+void
+init_cpe_match_node_childs_iterator (iterator_t*, long long int);
+
+long long int
+cpe_match_node_childs_iterator_id (iterator_t*);
+
+void
+init_cpe_match_range_iterator (iterator_t*, long long int);
+
+const char*
+cpe_match_range_iterator_cpe (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_start_incl (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_start_excl (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_end_incl (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_end_excl (iterator_t*);
+
+int
+cpe_match_range_iterator_vulnerable (iterator_t*);
+
+void
+init_host_details_cpe_product_iterator (iterator_t*, const char *, report_host_t);
+
+const char*
+host_details_cpe_product_iterator_value (iterator_t*);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t);

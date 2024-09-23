@@ -1589,6 +1589,8 @@ manage_create_sql_functions ()
            "         THEN $1 = 0"
            "         WHEN 'false'"
            "         THEN $1 = -1"
+           "         WHEN 'error'"
+           "         THEN $1 = -3"
            "         ELSE 0::boolean"
            "         END);"
            "$$ LANGUAGE SQL"
@@ -3533,6 +3535,7 @@ manage_db_init (const gchar *name)
       sql ("CREATE TABLE scap2.cpe_match_nodes"
            " (id SERIAL PRIMARY KEY,"
            "  parent_id INTEGER DEFAULT 0,"
+           "  root_id INTEGER DEFAULT 0,"
            "  cve_id INTEGER DEFAULT 0,"
            "  operator text);");
 
@@ -3540,11 +3543,11 @@ manage_db_init (const gchar *name)
            " (id SERIAL PRIMARY KEY,"
            "  node_id INTEGER DEFAULT 0,"
            "  vulnerable INTEGER DEFAULT 0,"
-           "  cpe text,"
-           "  version_start_incl text,"
-           "  version_start_excl text,"
-           "  version_end_incl text,"
-           "  version_end_excl text);");
+           "  cpe text DEFAULT NULL,"
+           "  version_start_incl text DEFAULT NULL,"
+           "  version_start_excl text DEFAULT NULL,"
+           "  version_end_incl text DEFAULT NULL,"
+           "  version_end_excl text DEFAULT NULL);");
 
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
