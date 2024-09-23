@@ -23303,7 +23303,8 @@ results_extra_where (int trash, report_t report, const gchar* host,
   extra_where = g_strdup_printf("%s%s%s%s%s",
                                 report_clause ? report_clause : "",
                                 host_clause ? host_clause : "",
-                                (levels_clause && levels_clause->str) ? levels_clause->str : "",
+                                (levels_clause && levels_clause->str) ?
+                                  levels_clause->str : "",
                                 min_qod_clause ? min_qod_clause : "",
                                 compliance_levels_clause ?: "");
 
