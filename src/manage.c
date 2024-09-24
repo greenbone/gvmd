@@ -3298,7 +3298,9 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
           prognosis_report_host = 0;
 
           gboolean use_json = FALSE;
-          if (sql_int64_0 ("SELECT count(*) FROM scap.cpe_match_nodes") > 0)
+          if (sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
+                           " WHERE table_schema = 'scap'"
+                           " AND table_name = 'cpe_match_nodes';") > 0)
             use_json = TRUE;
 
           if (use_json)
