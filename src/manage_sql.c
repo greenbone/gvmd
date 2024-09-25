@@ -20453,10 +20453,10 @@ app_locations_iterator_location (iterator_t *iterator)
  * @param[in]  report_host  Report host.
  */
 void
-init_host_details_cpe_iterator (iterator_t* iterator, report_host_t report_host)
+init_host_details_cpe_iterator (iterator_t *iterator, report_host_t report_host)
 {
   init_iterator (iterator,
-                 "SELECT LOWER (value) FROM report_host_details"
+                 "SELECT DISTINCT LOWER (value) FROM report_host_details"
                  " WHERE name = 'App' and report_host = %llu;",
                  report_host);
 }
