@@ -60120,7 +60120,6 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
                                      res->detail_value, &hash_value,
                                      rep_aux->hash_hostdetails))
         {
-
           insert_report_host_detail (rep_aux->report, host, "openvasd", "",
                                      "Openvasd Host Detail", res->detail_name,
                                      res->detail_value, hash_value);
