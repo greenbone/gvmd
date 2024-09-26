@@ -26,11 +26,10 @@
 /**
  * @brief Enable extra GNU functions.
  */
-#include "base/nvti.h"
+
+#include <gvm/base/nvti.h>
 #include "glibconfig.h"
 #include "manage.h"
-#include "openvasd/openvasd.h"
-#include "openvasd/jsonutils.h"
 #define _GNU_SOURCE
 
 #include <assert.h>
@@ -40,6 +39,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <gvm/util/jsonpull.h>
+#include <gvm/openvasd/openvasd.h>
+#include <gvm/openvasd/vtparser.h>
 #include <gvm/base/cvss.h>
 
 #include "manage_sql_nvts.h"
@@ -2155,9 +2157,10 @@ update_nvts_from_vts (element_t *get_vts_response,
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 static int
-update_nvts_from_json_vts (jreader_t *get_vts_response,
-                      const gchar *scanner_feed_version,
-                      int rebuild)
+update_nvts_from_json_vts (gvm_json_pull_parser_t *parser,
+                           gvm_json_pull_event_t *event,
+                           const gchar *scanner_feed_version,
+                           int rebuild)
 {
   GList *preferences;
   int count_modified_vts, count_new_vts;
@@ -2203,7 +2206,7 @@ update_nvts_from_json_vts (jreader_t *get_vts_response,
   vt_refs_batch = batch_start (vt_ref_insert_size);
   vt_sevs_batch = batch_start (vt_sev_insert_size);
 
-  nvti_t *nvti = gvm_jnode_parse_vt (*get_vts_response);
+  nvti_t *nvti = openvasd_parse_vt (parser,event);
   while (nvti)
     {
       if (nvti == NULL)
@@ -2230,7 +2233,7 @@ update_nvts_from_json_vts (jreader_t *get_vts_response,
       g_list_free_full (preferences, (GDestroyNotify) preference_free);
 
       nvti_free (nvti);
-      nvti = gvm_jnode_parse_vt (*get_vts_response);
+      nvti = openvasd_parse_vt (parser, event);
     }
 
   batch_end (vt_refs_batch);
@@ -2666,15 +2669,17 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
       return -1;
     }
 
-  jparser_t parser;
-  jreader_t reader;
+  FILE *stream;
+  gvm_json_pull_event_t event;
+  gvm_json_pull_parser_t parser;
 
-  parser = gvm_parse_jnode ();
-  gvm_read_jnode (resp->body, parser, &reader);
-
-  ret = update_nvts_from_json_vts (&reader, scanner_feed_version, rebuild);
-  gvm_close_jnode_reader (reader);
-  gvm_close_jnode_parser (parser);
+  stream = fmemopen (resp->body, strlen (resp->body), "r");
+  gvm_json_pull_parser_init (&parser, stream);
+  gvm_json_pull_event_init (&event);
+  ret = update_nvts_from_json_vts (&parser, &event, scanner_feed_version,
+                                   rebuild);
+  fclose(stream);
+  gvm_json_pull_parser_cleanup (&parser);
 
   openvasd_response_free (resp);
 
@@ -2966,7 +2971,8 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
               sql_int ("SELECT count (*) FROM nvts;"));
 
 #if OPENVASD == 1
-      ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT, db_feed_version,
+      ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
+                                       db_feed_version,
                                        scanner_feed_version, 0);
 #else
       ret = update_nvt_cache_osp (update_socket, db_feed_version,
