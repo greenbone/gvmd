@@ -82,8 +82,7 @@ manage_update_license_file (const char *new_license, char **error_msg)
                  __func__, broker_address);
       return 1;
     }
-  else
-    g_debug ("%s: Connected to %s\n", __func__, broker_address);
+  g_debug ("%s: Connected to %s\n", __func__, broker_address);
 
   ret = theia_new_modify_license_cmd ((char *) new_license, &modify_license_cmd);
 
@@ -105,13 +104,11 @@ manage_update_license_file (const char *new_license, char **error_msg)
       free (client);
       return 2;
     }
-  else
-    g_debug ("%s: Sent modify.license command"
-             " (message_id: %s, group_id: %s)\n",
-             __func__,
-             modify_license_cmd->message->id,
-             modify_license_cmd->message->group_id);
-
+  g_debug ("%s: Sent modify.license command"
+           " (message_id: %s, group_id: %s)\n",
+           __func__,
+           modify_license_cmd->message->id,
+           modify_license_cmd->message->group_id);
 
   ret = theia_client_get_info_response (client, THEIA_LICENSE_INFO_TOPIC,
                                         "modified.license",
@@ -127,8 +124,7 @@ manage_update_license_file (const char *new_license, char **error_msg)
       free (client);
       return 3;
     }
-  else
-    g_debug ("%s: Received modified.license response", __func__);
+  g_debug ("%s: Received modified.license response", __func__);
 
   if (failure_modify_license_info)
     {
@@ -142,11 +138,8 @@ manage_update_license_file (const char *new_license, char **error_msg)
       free (client);
       return 5;
     }
-  else
-    {
-    g_message ("%s: Uploaded new license file (%lu bytes)",
-               __func__, strlen (new_license));
-    }
+  g_message ("%s: Uploaded new license file (%lu bytes)",
+             __func__, strlen (new_license));
 
   theia_client_disconnect (client);
   theia_modified_license_info_free (modified_license_info);
@@ -207,8 +200,7 @@ manage_get_license (gchar **status,
                  __func__, broker_address);
       return 1;
     }
-  else
-    g_debug ("%s: Connected to %s\n", __func__, broker_address);
+  g_debug ("%s: Connected to %s\n", __func__, broker_address);
 
   ret = theia_new_get_license_cmd (&get_license_cmd);
   if (ret)
@@ -229,13 +221,11 @@ manage_get_license (gchar **status,
       free (client);
       return 2;
     }
-  else
-    g_debug ("%s: Sent get.license command"
-             " (message_id: %s, group_id: %s)\n",
-             __func__,
-             get_license_cmd->message->id,
-             get_license_cmd->message->group_id);
-
+  g_debug ("%s: Sent get.license command"
+           " (message_id: %s, group_id: %s)\n",
+           __func__,
+           get_license_cmd->message->id,
+           get_license_cmd->message->group_id);
 
   ret = theia_client_get_info_response (client, THEIA_LICENSE_INFO_TOPIC,
                                         "got.license", NULL,
@@ -250,8 +240,7 @@ manage_get_license (gchar **status,
       free (client);
       return 3;
     }
-  else
-    g_debug ("%s: Received got.license response", __func__);
+  g_debug ("%s: Received got.license response", __func__);
 
   theia_client_disconnect (client);
 
