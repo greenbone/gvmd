@@ -13473,24 +13473,33 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                "<title>%s</title>",
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
-                             "<nvd_id>%s</nvd_id>"
+                             "<cpe_name_id>%s</cpe_name_id>"
                              "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
-                             "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info)
-                              ? cpe_info_iterator_nvd_id (&info)
+                             "<deprecated>%s</deprecated>",
+                             cpe_info_iterator_cpe_name_id (&info)
+                              ? cpe_info_iterator_cpe_name_id (&info)
                               : "",
                              cpe_info_iterator_severity (&info)
                               ? cpe_info_iterator_severity (&info)
                               : "",
                              cpe_info_iterator_cve_refs (&info),
-                             cpe_info_iterator_status (&info)
-                              ? cpe_info_iterator_status (&info)
-                              : "");
+                             cpe_info_iterator_deprecated (&info)
+                              ? cpe_info_iterator_deprecated (&info)
+                              : "0");
 
           if (get_info_data->details == 1)
             {
-              iterator_t cves;
+              const char *deprecated_by_id
+                = cpe_info_iterator_deprecated_by_id (&info);
+              if (deprecated_by_id && strcmp (deprecated_by_id, ""))
+                {
+                  xml_string_append (result,
+                                     "<deprecated_by>%s</deprecated_by>",
+                                     deprecated_by_id);
+                }
+
+              iterator_t cves, refs;
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
               while (next (&cves))
@@ -13518,6 +13527,16 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                     : "");
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
+
+              g_string_append (result, "<references>");
+              init_cpe_reference_iterator (&refs, get_iterator_name (&info));
+              while (next (&refs))
+                xml_string_append (result,
+                                   "<reference href=\"%s\">%s</reference>",
+                                   cpe_reference_iterator_href (&refs),
+                                   cpe_reference_iterator_type (&refs));
+              cleanup_iterator (&refs);
+              g_string_append (result, "</references>");
             }
         }
       else if (g_strcmp0 ("cve", get_info_data->type) == 0)
