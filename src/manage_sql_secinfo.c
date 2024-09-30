@@ -51,6 +51,7 @@
 #include <cjson/cJSON.h>
 #include <gvm/base/gvm_sentry.h>
 #include <bsd/unistd.h>
+#include <gvm/util/cpeutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/xmlutils.h>
@@ -377,6 +378,72 @@ inserts_run (inserts_t *inserts, gboolean finalize)
     inserts_free_statements (inserts);
 }
 
+/**
+ * @brief Get the string value for a specified key from a JSON object.
+ *
+ * @param[in]  object  JSON object
+ * @param[in]  key     The key of the string in the JSON object.
+ *
+ * @return The string out of the JSON object with key "key", if any.
+ *         NULL otherwise.
+ */
+static char*
+json_object_item_string (cJSON *object, char *key)
+{
+  cJSON *value_json;
+
+  value_json = cJSON_GetObjectItemCaseSensitive(object, key);
+  if (cJSON_IsString(value_json))
+    return value_json->valuestring;
+  return NULL;
+}
+
+/**
+ * @brief Get the double value for a specified key from a JSON object.
+ *
+ * @param[in]  object    JSON object
+ * @param[in]  key       The key of the double value in the JSON object.
+ * @param[in]  fallback  The fallback value if the double value is not
+ *                       available.
+ *
+ * @return The double value out of the JSON object with key "key", if any.
+ *         The fallback value otherwise.
+ */
+static double
+json_object_item_double (cJSON *object, char *key, double fallback)
+{
+  cJSON *value_json;
+
+  value_json = cJSON_GetObjectItemCaseSensitive(object, key);
+  if (cJSON_IsNumber(value_json))
+    return value_json->valuedouble;
+  return fallback;
+}
+
+/**
+ * @brief Get the boolean value for a specified key from a JSON object.
+ *
+ * @param[in]  object    JSON object
+ * @param[in]  key       The key of the double value in the JSON object.
+ * @param[in]  fallback  The fallback value if the boolean value is not
+ *                       available.
+ *
+ * @return The double value out of the JSON object with key "key", if any.
+ *         The fallback value otherwise.
+ */
+static int
+json_object_item_boolean (cJSON *object, char *key, int fallback)
+{
+  cJSON *value_json;
+
+  value_json = cJSON_GetObjectItemCaseSensitive(object, key);
+  if (cJSON_IsTrue(value_json))
+    return 1;
+  else if (cJSON_IsFalse(value_json))
+    return 0;
+  return fallback;
+}
+
 
 /* CPE data. */
 
@@ -495,14 +562,25 @@ init_cpe_info_iterator_all (iterator_t* iterator, get_data_t *get)
 DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the status from a CPE iterator.
+ * @brief Get the deprecation status from a CPE iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The Status of the CPE, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
+ * @return The deprecation status of the CPE, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_status, GET_ITERATOR_COLUMN_COUNT + 1);
+DEF_ACCESS (cpe_info_iterator_deprecated, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the first CPE the current one is deprecated by
+ *        from a CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The first CPE the current one is deprecated by,
+ *         or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cpe_info_iterator_deprecated_by_id, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the highest severity Score of all CVE's referencing this cpe.
@@ -525,14 +603,14 @@ DEF_ACCESS (cpe_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 3);
 DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
- * @brief Get the NVD ID for this CPE.
+ * @brief Get the NVD assigned cpeNameId for this CPE.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return The NVD ID of this CPE, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_nvd_id, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (cpe_info_iterator_cpe_name_id, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the XML details / raw data for a given CPE ID.
@@ -552,6 +630,44 @@ cpe_details_xml (const char *cpe_id) {
   g_free (quoted_cpe_id);
   return details_xml;
 }
+
+/**
+ * @brief Initialise a CPE refrerences iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  cpe         CPE to get references of.
+ */
+void
+init_cpe_reference_iterator (iterator_t *iterator, const char *cpe)
+{
+  gchar *quoted_cpe;
+  quoted_cpe = sql_quote (cpe);
+  init_iterator (iterator,
+                 "SELECT ref, type FROM cpe_refs"
+                 " WHERE cpe = (SELECT id FROM cpes WHERE uuid = '%s');",
+                 quoted_cpe);
+  g_free (quoted_cpe);
+}
+
+/**
+ * @brief Get the reference URL from CPE reference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The reference URL, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cpe_reference_iterator_href, 0);
+
+/**
+ * @brief Get the reference type from CPE reference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The reference type, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (cpe_reference_iterator_type, 1);
 
 
 /* CVE data. */
@@ -1896,6 +2012,29 @@ update_cert_bund_advisories (int last_cert_update)
 /* SCAP update: CPEs. */
 
 /**
+ * @brief Convert a CPE name from formatted string to URI and SQL quote it.
+ *
+ * @param[in]  name  Name.
+ *
+ * @return URI converted uoted name.
+ */
+static gchar *
+fs_to_uri_convert_and_quote_cpe_name (const char *name)
+{
+  gchar *name_converted, *name_decoded, *name_tilde, *quoted_name;
+
+  name_converted = fs_cpe_to_uri_cpe (name);
+  name_decoded = g_uri_unescape_string (name_converted, NULL);
+  name_tilde = string_replace (name_decoded,
+                               "~", "%7E", "%7e", NULL);
+  g_free (name_decoded);
+  g_free (name_converted);
+  quoted_name = sql_quote (name_tilde);
+  g_free (name_tilde);
+  return quoted_name;
+}
+
+/**
  * @brief Decode and SQL quote a CPE name.
  *
  * @param[in]  name  Name.
@@ -1917,7 +2056,7 @@ decode_and_quote_cpe_name (const char *name)
 }
 
 /**
- * @brief Insert a SCAP CPE.
+ * @brief Insert a SCAP CPE from XML.
  *
  * @param[in]  inserts            Pointer to SQL buffer.
  * @param[in]  cpe_item           CPE item XML element.
@@ -2081,14 +2220,408 @@ insert_scap_cpe_details (inserts_t *inserts, element_t cpe_item)
 }
 
 /**
- * @brief Update SCAP CPEs from a file.
+ * @brief Try to skip to the products list in a CPEs JSON parser.
+ *
+ * @param[in]  parser      Parser to skip elements in.
+ * @param[in]  event       Parser event structure.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+scap_cpes_json_skip_to_products (gvm_json_pull_parser_t *parser,
+                                 gvm_json_pull_event_t *event)
+{
+  gvm_json_pull_parser_next (parser, event);
+  if (event->type == GVM_JSON_PULL_EVENT_ERROR)
+    {
+      g_warning ("%s: Parser error: %s", __func__, event->error_message);
+      return -1;
+    }
+  else if (event->type != GVM_JSON_PULL_EVENT_OBJECT_START)
+    {
+      g_warning ("%s: CPEs file content is not a JSON object.", __func__);
+      return -1;
+    }
+
+  gboolean products_found = FALSE;
+  while (!products_found)
+    {
+      gvm_json_pull_parser_next (parser, event);
+      gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event->path);
+      if (event->type == GVM_JSON_PULL_EVENT_ARRAY_START && path_tail &&
+          path_tail->key && strcmp (path_tail->key, "products") == 0)
+        {
+          products_found = TRUE;
+        }
+      else if (event->type == GVM_JSON_PULL_EVENT_ERROR)
+        {
+          g_warning ("%s: Parser error: %s", __func__, event->error_message);
+          return -1;
+        }
+      else if (event->type == GVM_JSON_PULL_EVENT_OBJECT_END)
+        {
+          g_warning ("%s: Unexpected json object end.", __func__);
+          return -1;
+        }
+    }
+  gvm_json_pull_parser_next (parser, event);
+
+  return 0;
+}
+
+/**
+ * @brief Insert a SCAP CPE from JSON.
+ *
+ * @param[in]  inserts            Pointer to SQL buffer.
+ * @param[in]  product_item       JSON object from the products list.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+handle_json_cpe_item (inserts_t *inserts, cJSON *product_item)
+{
+  cJSON *cpe_item;
+  char *name, *cpe_name_id, *last_modified, *title_text;
+  char *deprecated_by;
+  gchar *quoted_name, *quoted_title, *quoted_cpe_name_id;
+  gchar *quoted_deprecated_by;
+  cJSON *titles, *title;
+  time_t modification_time;
+  int deprecated;
+  int first;
+
+  assert (inserts);
+
+  cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
+  if (! cJSON_IsObject (cpe_item))
+    {
+      g_warning ("%s: 'cpe' field in product missing or not an object",
+                 __func__);
+      return -1;
+    }
+
+  name = json_object_item_string (cpe_item, "cpeName");
+  if (name == NULL)
+    {
+      g_warning ("%s: 'cpeName' field missing or not a string", __func__);
+      return -1;
+    }
+
+  cpe_name_id = json_object_item_string (cpe_item, "cpeNameId");
+  if (cpe_name_id == NULL)
+    {
+      g_warning ("%s: 'cpeNameId' field missing or not a string", __func__);
+      return -1;
+    }
+
+  last_modified = json_object_item_string (cpe_item, "lastModified");
+  if (last_modified == NULL)
+    {
+      g_warning ("%s: 'lastModified' field missing or not a string", __func__);
+      return -1;
+    }
+  modification_time = parse_iso_time (last_modified);
+
+  titles = cJSON_GetObjectItemCaseSensitive (cpe_item, "titles");
+  if (! cJSON_IsArray (titles))
+    {
+      g_warning ("%s: 'titles' field missing or not an array", __func__);
+      return -1;
+    }
+
+  title_text = NULL;
+  cJSON_ArrayForEach (title, titles)
+    {
+      gchar *lang = json_object_item_string (title, "lang");
+      if (lang && strcmp (lang, "en") == 0)
+        {
+          title_text = json_object_item_string (title, "title");
+          break;
+        }
+    }
+
+  deprecated = json_object_item_boolean (cpe_item, "deprecated", -1);
+  if (deprecated == -1)
+    {
+      g_warning ("%s: 'deprecated' field missing or not a boolean", __func__);
+      return -1;
+    }
+
+  deprecated_by = NULL;
+  if (deprecated)
+    {
+      /* CPEs can have multiple deprecatedBy entries,
+       *  but for the GMP field only the first one is used */
+      cJSON *deprecated_by_array, *first_deprecated_by;
+      deprecated_by_array = cJSON_GetObjectItemCaseSensitive (cpe_item,
+                                                              "deprecatedBy");
+      if (! cJSON_IsArray (deprecated_by_array))
+        {
+          g_warning ("%s: 'deprecatedBy' field missing or not an array",
+                     __func__);
+          return -1;
+        }
+      else if (cJSON_GetArraySize (deprecated_by_array) == 0)
+        {
+          g_warning ("%s: 'deprecatedBy' array is empty",
+                     __func__);
+          return -1;
+        }
+
+      first_deprecated_by = cJSON_GetArrayItem (deprecated_by_array, 0);
+      deprecated_by = json_object_item_string (first_deprecated_by, "cpeName");
+      if (deprecated_by == NULL)
+        {
+          g_warning ("%s: Could not get 'cpeName' string from 'deprecatedBy'",
+                     __func__);
+          return -1;
+        }
+    }
+
+  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
+  quoted_cpe_name_id = sql_quote (cpe_name_id);
+  quoted_title = sql_quote (title_text ? title_text : "");
+  quoted_deprecated_by
+    = deprecated_by ? fs_to_uri_convert_and_quote_cpe_name (deprecated_by)
+                    : NULL;
+
+  first = inserts_check_size (inserts);
+
+  g_string_append_printf (inserts->statement,
+                          "%s ('%s', '%s', '%s', %li, %li, %d, '%s', '%s')",
+                          first ? "" : ",",
+                          quoted_name,
+                          quoted_name,
+                          quoted_title,
+                          modification_time,
+                          modification_time,
+                          deprecated,
+                          quoted_deprecated_by ? quoted_deprecated_by : "",
+                          quoted_cpe_name_id);
+
+  inserts->current_chunk_size++;
+
+  g_free (quoted_title);
+  g_free (quoted_name);
+  g_free (quoted_cpe_name_id);
+  g_free (quoted_deprecated_by);
+
+  return 0;
+}
+
+/**
+ * @brief Insert a SCAP CPE from JSON.
+ *
+ * @param[in]  inserts            Pointer to SQL buffer.
+ * @param[in]  product_item       JSON object from the products list.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
+{
+  cJSON *cpe_item, *refs, *refs_item;
+  gchar *name, *quoted_name;
+
+  assert (inserts);
+
+  cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
+  if (! cJSON_IsObject (cpe_item))
+    {
+      g_warning ("%s: 'cpe' field in product missing or not an object",
+                 __func__);
+      return -1;
+    }
+
+  name = json_object_item_string (cpe_item, "cpeName");
+  if (name == NULL)
+    {
+      g_warning ("%s: 'cpeName' field missing or not a string", __func__);
+      return -1;
+    }
+
+  refs = cJSON_GetObjectItemCaseSensitive (cpe_item, "refs");
+  if (! cJSON_IsArray (refs))
+    {
+      g_debug ("%s: 'refs' field missing or not an array", __func__);
+      return 0;
+    }
+
+  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
+  cJSON_ArrayForEach (refs_item, refs)
+    {
+      int first;
+      char *ref, *type;
+      gchar *quoted_ref, *quoted_type;
+      ref = json_object_item_string (refs_item, "ref");
+      if (ref == NULL)
+        {
+          g_warning ("%s: 'ref' field missing or not a string", __func__);
+          g_free (quoted_name);
+          return -1;
+        }
+      type = json_object_item_string (refs_item, "type");
+      quoted_ref = sql_quote (ref ? ref : "");
+      quoted_type = sql_quote (type ? type : "");
+      
+      first = inserts_check_size (inserts);
+
+      g_string_append_printf (inserts->statement,
+                              "%s ('%s', '%s', '%s')",
+                              first ? "" : ",",
+                              quoted_name,
+                              quoted_ref,
+                              quoted_type);
+
+      inserts->current_chunk_size++;
+    }
+  g_free (quoted_name);
+
+  return 0;
+}
+
+/**
+ * @brief Update SCAP CPEs from a JSON file.
  *
  * @param[in]  path             Path to file.
  *
  * @return 0 success, -1 error.
  */
 static int
-update_scap_cpes_from_file (const gchar *path)
+update_scap_cpes_from_json_file (const gchar *path)
+{
+  inserts_t inserts;
+  gvm_json_pull_parser_t parser;
+  gvm_json_pull_event_t event;
+  FILE *json_stream = fopen (path, "r");
+  if (json_stream == NULL)
+    {
+      g_warning ("%s: Could not open file '%s': %s",
+                 __func__, path, strerror(errno));
+      return -1;
+    }
+
+  gvm_json_pull_parser_init (&parser, json_stream);
+  gvm_json_pull_event_init (&event);
+  if (scap_cpes_json_skip_to_products (&parser, &event))
+    {
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (json_stream);
+      return -1;
+    }
+
+  sql_begin_immediate ();
+  inserts_init (&inserts,
+                CPE_MAX_CHUNK_SIZE,
+                setting_secinfo_sql_buffer_threshold_bytes (),
+                "INSERT INTO scap2.cpes"
+                " (uuid, name, title, creation_time,"
+                "  modification_time, deprecated, deprecated_by_id,"
+                "  cpe_name_id)"
+                " VALUES",
+                " ON CONFLICT (uuid) DO UPDATE"
+                " SET name = EXCLUDED.name,"
+                "     title = EXCLUDED.title,"
+                "     creation_time = EXCLUDED.creation_time,"
+                "     modification_time = EXCLUDED.modification_time,"
+                "     deprecated = EXCLUDED.deprecated,"
+                "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
+                "     cpe_name_id = EXCLUDED.cpe_name_id");
+
+  while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
+    {
+      gchar *error_message;
+      cJSON *entry = gvm_json_pull_expand_container (&parser, &error_message);
+      if (error_message)
+        {
+          g_warning ("%s: Error expanding CVE item: %s", __func__, error_message);
+          gvm_json_pull_event_cleanup (&event);
+          gvm_json_pull_parser_cleanup (&parser);
+          cJSON_Delete (entry);
+          fclose (json_stream);
+          sql_commit ();
+          return -1;
+        }
+      if (handle_json_cpe_item (&inserts, entry))
+        {
+          gvm_json_pull_event_cleanup (&event);
+          gvm_json_pull_parser_cleanup (&parser);
+          cJSON_Delete (entry);
+          fclose (json_stream);
+          sql_commit ();
+          return -1;
+        }
+      cJSON_Delete (entry);
+      gvm_json_pull_parser_next (&parser, &event);
+    }
+  inserts_run (&inserts, TRUE);
+  sql_commit ();
+  gvm_json_pull_parser_cleanup (&parser);
+
+  // Reset and insert refs
+  fseek (json_stream, 0, SEEK_SET);
+  gvm_json_pull_parser_init (&parser, json_stream);
+
+  if (scap_cpes_json_skip_to_products (&parser, &event))
+    {
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (json_stream);
+      return -1;
+    }
+
+  sql_begin_immediate ();
+  inserts_init (&inserts, 10,
+                setting_secinfo_sql_buffer_threshold_bytes (),
+                "INSERT INTO scap2.cpe_refs (cpe, ref, type)"
+                " SELECT scap2.cpes.id, new_refs.ref, new_refs.type"
+                " FROM scap2.cpes JOIN (VALUES ",
+                ") AS new_refs (cpe_name, ref, type)"
+                " ON scap2.cpes.name = cpe_name;");
+
+  while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
+    {
+      gchar *error_message;
+      cJSON *entry = gvm_json_pull_expand_container (&parser, &error_message);
+      if (error_message)
+        {
+          g_warning ("%s: Error expanding CVE item: %s", __func__, error_message);
+          gvm_json_pull_event_cleanup (&event);
+          gvm_json_pull_parser_cleanup (&parser);
+          cJSON_Delete (entry);
+          fclose (json_stream);
+          sql_commit ();
+          return -1;
+        }
+      if (handle_json_cpe_refs (&inserts, entry))
+        {
+          gvm_json_pull_event_cleanup (&event);
+          gvm_json_pull_parser_cleanup (&parser);
+          cJSON_Delete (entry);
+          fclose (json_stream);
+          sql_commit ();
+          return -1;
+        }
+      cJSON_Delete (entry);
+      gvm_json_pull_parser_next (&parser, &event);
+    }
+  inserts_run (&inserts, TRUE);
+  sql_commit ();
+  gvm_json_pull_parser_cleanup (&parser);
+
+  return 0;
+}
+
+/**
+ * @brief Update SCAP CPEs from an XML file.
+ *
+ * @param[in]  path             Path to file.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_cpes_from_xml_file (const gchar *path)
 {
   int ret;
   element_t cpe_item;
@@ -2287,21 +2820,39 @@ update_scap_cpes ()
   int ret;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                "official-cpe-dictionary_v2.2.xml",
+                                "nvd-cpes.json",
                                 NULL);
 
   if (g_stat (full_path, &state))
     {
-      g_warning ("%s: No CPE dictionary found at %s",
+      g_warning ("%s: No JSON CPE dictionary found at %s",
                  __func__,
                  full_path);
       g_free (full_path);
-      return -1;
+
+      full_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                    "official-cpe-dictionary_v2.2.xml",
+                                    NULL);
+
+      if (g_stat (full_path, &state))
+        {
+          g_warning ("%s: No CPE dictionary found at %s",
+                    __func__,
+                    full_path);
+          g_free (full_path);
+          return -1;
+        }
+
+      ret = update_scap_cpes_from_xml_file (full_path);
+      if (ret)
+        return -1;
+
+      return 0;
     }
 
   g_info ("Updating CPEs");
 
-  ret = update_scap_cpes_from_file (full_path);
+  ret = update_scap_cpes_from_json_file (full_path);
   if (ret)
     return -1;
 
@@ -2655,48 +3206,6 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
 
   g_free (quoted_id);
   return 0;
-}
-
-/**
- * @brief Get the string value for a specified key from a JSON object.
- *
- * @param[in]  object  JSON object
- * @param[in]  key     The key of the string in the JSON object.
- *
- * @return The string out of the JSON object with key "key", if any.
- *         NULL otherwise.
- */
-static char*
-json_object_item_string (cJSON *object, char *key)
-{
-  cJSON *value_json;
-
-  value_json = cJSON_GetObjectItemCaseSensitive(object, key);
-  if (cJSON_IsString(value_json))
-    return value_json->valuestring;
-  return NULL;
-}
-
-/**
- * @brief Get the double value for a specified key from a JSON object.
- *
- * @param[in]  object    JSON object
- * @param[in]  key       The key of the double value in the JSON object.
- * @param[in]  fallback  The fallback value if the double value is not
- *                       available.
- *
- * @return The double value out of the JSON object with key "key", if any.
- *         The fallback value otherwise.
- */
-static double
-json_object_item_double (cJSON *object, char *key, double fallback)
-{
-  cJSON *value_json;
-
-  value_json = cJSON_GetObjectItemCaseSensitive(object, key);
-  if (cJSON_IsNumber(value_json))
-    return value_json->valuedouble;
-  return fallback;
 }
 
 /**
