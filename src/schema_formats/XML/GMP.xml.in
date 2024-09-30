@@ -12785,9 +12785,9 @@ END:VCALENDAR
             <summary>Number of CVEs referencing this CPE</summary>
           </column>
           <column>
-            <name>nvd_id</name>
-            <type>integer</type>
-            <summary>NVD ID of the CVE</summary>
+            <name>cpe_name_id</name>
+            <type>uuid</type>
+            <summary>NVD assigned cpeNameId of the CPE</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -13012,18 +13012,19 @@ END:VCALENDAR
         <ele>
           <name>cpe</name>
           <pattern>
-            <e>nvd_id</e>
+            <e>cpe_name_id</e>
             <o><e>title</e></o>
             <e>severity</e>
             <e>cve_refs</e>
-            <e>status</e>
+            <e>deprecated</e>
             <o><e>cves</e></o>
+            <o><e>references</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CPE info element</summary>
           <ele>
-            <name>nvd_id</name>
-            <summary>The NVD ID of the CPE</summary>
+            <name>cpe_name_id</name>
+            <summary>NVD assigned cpeNameId of the CPE</summary>
             <pattern>
               text
             </pattern>
@@ -13050,10 +13051,10 @@ END:VCALENDAR
             </pattern>
           </ele>
           <ele>
-            <name>status</name>
-            <summary>The status of this CPE</summary>
+            <name>deprecated</name>
+            <summary>Whether the CPE is deprecated</summary>
             <pattern>
-              text
+              <t>boolean</t>
             </pattern>
           </ele>
           <ele>
@@ -13066,6 +13067,26 @@ END:VCALENDAR
               <name>cve</name>
               <summary>CVE referring to this CPE</summary>
               <pattern>
+                text
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>references</name>
+            <summary>References of this CPE. Only when details were requested</summary>
+            <pattern>
+              <any><e>reference</e></any>
+            </pattern>
+            <ele>
+              <name>reference</name>
+              <summary>Reference of the CPE. Text contains type</summary>
+              <pattern>
+                <attrib>
+                  <name>href</name>
+                  <type>text</type>
+                  <summary>Reference URL</summary>
+                  <required>1</required>
+                </attrib>
                 text
               </pattern>
             </ele>
