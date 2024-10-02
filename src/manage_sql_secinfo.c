@@ -697,6 +697,28 @@ cve_info_filter_columns ()
 }
 
 /**
+ * @brief Initialise an iterator listing CPEs another CPE is deprecated_by.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  cpe         CPE to get which other CPEs it's deprecated by.
+ */
+void
+init_cpe_deprecated_by_iterator (iterator_t *iterator, const char *cpe)
+{
+  gchar *quoted_cpe;
+  assert (cpe);
+  quoted_cpe = sql_quote (cpe);
+  init_iterator (iterator,
+                 "SELECT deprecated_by FROM cpes_deprecated_by"
+                 " WHERE cpe = '%s'"
+                 " ORDER BY deprecated_by;",
+                 quoted_cpe);
+  g_free (quoted_cpe);
+}
+
+DEF_ACCESS (cpe_deprecated_by_iterator_deprecated_by, 0);
+
+/**
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.
  *
  * @param[in]  iterator    Iterator.
@@ -2272,19 +2294,19 @@ scap_cpes_json_skip_to_products (gvm_json_pull_parser_t *parser,
 /**
  * @brief Insert a SCAP CPE from JSON.
  *
- * @param[in]  inserts            Pointer to SQL buffer.
+ * @param[in]  inserts            Pointer to SQL buffer for main CPE entries.
+ * @param[in]  deprecated_by_inserts  Pointer to SQL buffer for deprecated_by.
  * @param[in]  product_item       JSON object from the products list.
  *
  * @return 0 success, -1 error.
  */
 static int
-handle_json_cpe_item (inserts_t *inserts, cJSON *product_item)
+handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
+                      cJSON *product_item)
 {
   cJSON *cpe_item;
   char *name, *cpe_name_id, *last_modified, *title_text;
-  char *deprecated_by;
   gchar *quoted_name, *quoted_title, *quoted_cpe_name_id;
-  gchar *quoted_deprecated_by;
   cJSON *titles, *title;
   time_t modification_time;
   int deprecated;
@@ -2347,48 +2369,70 @@ handle_json_cpe_item (inserts_t *inserts, cJSON *product_item)
       return -1;
     }
 
-  deprecated_by = NULL;
+  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
   if (deprecated)
     {
       /* CPEs can have multiple deprecatedBy entries,
        *  but for the GMP field only the first one is used */
-      cJSON *deprecated_by_array, *first_deprecated_by;
+      cJSON *deprecated_by_array, *deprecated_by_item;
+      char *deprecated_by_id;
+      gchar *quoted_deprecated_by_id;
       deprecated_by_array = cJSON_GetObjectItemCaseSensitive (cpe_item,
                                                               "deprecatedBy");
       if (! cJSON_IsArray (deprecated_by_array))
         {
           g_warning ("%s: 'deprecatedBy' field missing or not an array",
                      __func__);
+          g_free (quoted_name);
           return -1;
         }
       else if (cJSON_GetArraySize (deprecated_by_array) == 0)
         {
           g_warning ("%s: 'deprecatedBy' array is empty",
                      __func__);
+          g_free (quoted_name);
           return -1;
         }
 
-      first_deprecated_by = cJSON_GetArrayItem (deprecated_by_array, 0);
-      deprecated_by = json_object_item_string (first_deprecated_by, "cpeName");
-      if (deprecated_by == NULL)
+      cJSON_ArrayForEach (deprecated_by_item, deprecated_by_array)
         {
-          g_warning ("%s: Could not get 'cpeName' string from 'deprecatedBy'",
-                     __func__);
-          return -1;
+          deprecated_by_id = json_object_item_string (deprecated_by_item,
+                                                      "cpeName");
+          if (deprecated_by_id == NULL)
+            {
+              g_warning ("%s: 'cpeName' field in 'deprecatedBy' missing or not"
+                         " a string",
+                         __func__);
+              g_free (quoted_name);
+              return -1;
+            }
+
+          quoted_deprecated_by_id
+            = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id);
+
+          g_message ("%s deprecated by %s", quoted_name, quoted_deprecated_by_id);
+
+          first = inserts_check_size (deprecated_by_inserts);
+
+          g_string_append_printf (deprecated_by_inserts->statement,
+                                  "%s ('%s', '%s')",
+                                  first ? "" : ",",
+                                  quoted_name,
+                                  quoted_deprecated_by_id);
+
+          deprecated_by_inserts->current_chunk_size++;
+
+          g_free (quoted_deprecated_by_id);
         }
     }
 
-  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
   quoted_cpe_name_id = sql_quote (cpe_name_id);
   quoted_title = sql_quote (title_text ? title_text : "");
-  quoted_deprecated_by
-    = deprecated_by ? fs_to_uri_convert_and_quote_cpe_name (deprecated_by)
-                    : NULL;
 
   first = inserts_check_size (inserts);
 
   g_string_append_printf (inserts->statement,
-                          "%s ('%s', '%s', '%s', %li, %li, %d, '%s', '%s')",
+                          "%s ('%s', '%s', '%s', %li, %li, %d, '%s')",
                           first ? "" : ",",
                           quoted_name,
                           quoted_name,
@@ -2396,7 +2440,6 @@ handle_json_cpe_item (inserts_t *inserts, cJSON *product_item)
                           modification_time,
                           modification_time,
                           deprecated,
-                          quoted_deprecated_by ? quoted_deprecated_by : "",
                           quoted_cpe_name_id);
 
   inserts->current_chunk_size++;
@@ -2404,7 +2447,6 @@ handle_json_cpe_item (inserts_t *inserts, cJSON *product_item)
   g_free (quoted_title);
   g_free (quoted_name);
   g_free (quoted_cpe_name_id);
-  g_free (quoted_deprecated_by);
 
   return 0;
 }
@@ -2490,7 +2532,7 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
 static int
 update_scap_cpes_from_json_file (const gchar *path)
 {
-  inserts_t inserts;
+  inserts_t inserts, deprecated_by_inserts;
   gvm_json_pull_parser_t parser;
   gvm_json_pull_event_t event;
   FILE *json_stream = fopen (path, "r");
@@ -2517,7 +2559,7 @@ update_scap_cpes_from_json_file (const gchar *path)
                 setting_secinfo_sql_buffer_threshold_bytes (),
                 "INSERT INTO scap2.cpes"
                 " (uuid, name, title, creation_time,"
-                "  modification_time, deprecated, deprecated_by_id,"
+                "  modification_time, deprecated,"
                 "  cpe_name_id)"
                 " VALUES",
                 " ON CONFLICT (uuid) DO UPDATE"
@@ -2528,6 +2570,12 @@ update_scap_cpes_from_json_file (const gchar *path)
                 "     deprecated = EXCLUDED.deprecated,"
                 "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
                 "     cpe_name_id = EXCLUDED.cpe_name_id");
+
+  inserts_init (&deprecated_by_inserts, 10,
+                setting_secinfo_sql_buffer_threshold_bytes (),
+                "INSERT INTO scap2.cpes_deprecated_by (cpe, deprecated_by)"
+                " VALUES ",
+                "");
 
   while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
     {
@@ -2543,7 +2591,7 @@ update_scap_cpes_from_json_file (const gchar *path)
           sql_commit ();
           return -1;
         }
-      if (handle_json_cpe_item (&inserts, entry))
+      if (handle_json_cpe_item (&inserts, &deprecated_by_inserts, entry))
         {
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
@@ -2556,6 +2604,7 @@ update_scap_cpes_from_json_file (const gchar *path)
       gvm_json_pull_parser_next (&parser, &event);
     }
   inserts_run (&inserts, TRUE);
+  inserts_run (&deprecated_by_inserts, TRUE);
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
