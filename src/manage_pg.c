@@ -3538,6 +3538,11 @@ manage_db_init (const gchar *name)
            "  ref TEXT,"
            "  type TEXT);");
 
+      sql ("CREATE TABLE scap2.cpes_deprecated_by"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe TEXT,"
+           "  deprecated_by TEXT);");
+
       sql ("CREATE TABLE scap2.cpe_match_nodes"
            " (id SERIAL PRIMARY KEY,"
            "  parent_id INTEGER DEFAULT 0,"
