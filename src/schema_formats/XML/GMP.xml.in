@@ -13017,6 +13017,7 @@ END:VCALENDAR
             <e>severity</e>
             <e>cve_refs</e>
             <e>deprecated</e>
+            <any><e>deprecated_by</e></any>
             <o><e>cves</e></o>
             <o><e>references</e></o>
             <o><e>raw_data</e></o>
@@ -13055,6 +13056,18 @@ END:VCALENDAR
             <summary>Whether the CPE is deprecated</summary>
             <pattern>
               <t>boolean</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>deprecated_by</name>
+            <summary>Another CPE the current one is deprecated by</summary>
+            <pattern>
+              <attrib>
+                <name>cpe_id</name>
+                <type>uuid</type>
+                <summary>CPE id the current CPE is deprecated by</summary>
+                <required>1</required>
+              </attrib>
             </pattern>
           </ele>
           <ele>
