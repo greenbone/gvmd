@@ -3340,6 +3340,12 @@ manage_scap_update_time ();
 /* CPE. */
 
 void
+init_cpe_deprecated_by_iterator (iterator_t *, const char *);
+
+const char *
+cpe_deprecated_by_iterator_deprecated_by (iterator_t *);
+
+void
 init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
 
 int

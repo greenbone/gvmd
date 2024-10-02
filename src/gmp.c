@@ -13490,16 +13490,18 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
 
           if (get_info_data->details == 1)
             {
-              const char *deprecated_by_id
-                = cpe_info_iterator_deprecated_by_id (&info);
-              if (deprecated_by_id && strcmp (deprecated_by_id, ""))
+              iterator_t deprecated_by, cves, refs;
+
+              init_cpe_deprecated_by_iterator (&deprecated_by,
+                                               get_iterator_name (&info));
+              while (next (&deprecated_by))
                 {
                   xml_string_append (result,
-                                     "<deprecated_by>%s</deprecated_by>",
-                                     deprecated_by_id);
+                                     "<deprecated_by cpe_id=\"%s\"/>",
+                                     cpe_deprecated_by_iterator_deprecated_by
+                                      (&deprecated_by));
                 }
 
-              iterator_t cves, refs;
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
               while (next (&cves))
