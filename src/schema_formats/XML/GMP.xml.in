@@ -13129,6 +13129,8 @@ END:VCALENDAR
             <o><e>epss</e></o>
             <o><e>nvts</e></o>
             <o><e>cert</e></o>
+            <o><e>configuration_nodes</e></o>
+            <o><e>references</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CVE info element</summary>
@@ -13247,6 +13249,161 @@ END:VCALENDAR
               <pattern>
                 text
               </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>configuration_nodes</name>
+            <summary>List of configuration nodes. Only when details were requested</summary>
+            <pattern>
+              <any><e>node</e></any>
+            </pattern>
+            <ele>
+              <name>node</name>
+              <summary>A configuration node for the CVE</summary>
+              <pattern>
+                <e>operator</e>
+                <o><e>match_criteria</e></o>
+                <o><any><e>node</e></any></o>
+              </pattern>
+              <ele>
+                <name>operator</name>
+                <summary>The operator for the match criteria</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>match_criteria</name>
+                <summary>The match criteria for the node</summary>
+                <pattern>
+                  <e>match_string</e>
+                  <e>vulnerable</e>
+                  <e>version_start_including</e>
+                  <e>version_start_excluding</e>
+                  <e>version_end_including</e>
+                  <e>version_end_excluding</e>
+                  <e>matched_cpes</e>
+                </pattern>
+                <ele>
+                  <name>match_string</name>
+                  <summary>A CPE Match string</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>vulnerable</name>
+                  <summary>A true or false value, whether matching CPEs are considered vulnerable</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_start_including</name>
+                  <summary>From version (including)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_start_excluding</name>
+                  <summary>From version (excluding)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_end_including</name>
+                  <summary>Up to version (including)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_end_excluding</name>
+                  <summary>Up to version (exluding)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>matched_cpes</name>
+                  <summary>List of matching CPEs</summary>
+                  <pattern>
+                    <e>name</e>
+                    <e>deprecated</e>
+                    <o><e>deprecated_by</e></o>
+                  </pattern>
+                  <ele>
+                    <name>name</name>
+                    <summary>Name of the matching CPE</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>deprecated</name>
+                    <summary>A true or false value, whether the CPE is deprecated</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>deprecated_by</name>
+                    <summary>CPE ID the current CPE is deprecated by. Only when the CPE is deprecated</summary>
+                    <pattern>
+                      <attrib>
+                        <name>cpe_id</name>
+                        <type>uuid</type>
+                        <summary>CPE ID the current CPE is deprecated by</summary>
+                      </attrib>
+                    </pattern>
+                  </ele>
+                </ele>
+              </ele>
+              <ele>
+                <name>node</name>
+                <summary>Nodes can contain other nested nodes</summary>
+                <pattern>
+                  node
+                </pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>references</name>
+            <summary>References of this CVE. Only when details were requested</summary>
+            <pattern>
+              <any><e>reference</e></any>
+            </pattern>
+            <ele>
+              <name>reference</name>
+              <summary>Reference of the CVE</summary>
+              <pattern>
+                <e>url</e>
+                <e>tags</e>
+              </pattern>
+              <ele>
+                <name>url</name>
+                <summary>The URL of the reference</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>tags</name>
+                <summary>List of tags for the reference</summary>
+                <pattern>
+                  <o><any><e>tag</e></any></o>
+                </pattern>
+                <ele>
+                  <name>tag</name>
+                  <summary>Tag for a reference</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+              </ele>
             </ele>
           </ele>
           <ele>

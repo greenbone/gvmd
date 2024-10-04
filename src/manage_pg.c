@@ -3546,20 +3546,31 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE scap2.cpe_match_nodes"
            " (id SERIAL PRIMARY KEY,"
-           "  parent_id INTEGER DEFAULT 0,"
-           "  root_id INTEGER DEFAULT 0,"
-           "  cve_id INTEGER DEFAULT 0,"
-           "  operator text);");
+           "  root_id integer DEFAULT 0,"
+           "  cve_id integer DEFAULT 0,"
+           "  operator text,"
+           "  negate integer DEFAULT 0);");
+
+      sql ("CREATE TABLE scap2.cpe_nodes_match_criteria"
+           " (id SERIAL PRIMARY KEY,"
+           "  node_id integer DEFAULT 0,"
+           "  vulnerable integer DEFAULT 0,"
+           "  match_criteria_id text);");
 
       sql ("CREATE TABLE scap2.cpe_match_range"
            " (id SERIAL PRIMARY KEY,"
-           "  node_id INTEGER DEFAULT 0,"
-           "  vulnerable INTEGER DEFAULT 0,"
+           "  match_criteria_id text,"
            "  cpe text DEFAULT NULL,"
            "  version_start_incl text DEFAULT NULL,"
            "  version_start_excl text DEFAULT NULL,"
            "  version_end_incl text DEFAULT NULL,"
-           "  version_end_excl text DEFAULT NULL);");
+           "  version_end_excl text DEFAULT NULL,"
+           "  status text);");
+
+      sql ("CREATE TABLE scap2.cpe_matches"
+           " (id SERIAL PRIMARY KEY,"
+           "  match_criteria_id text,"               
+           "  cpe_name_id text);");
 
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
@@ -3575,6 +3586,11 @@ manage_db_init (const gchar *name)
            "  epss DOUBLE PRECISION,"
            "  percentile DOUBLE PRECISION);");
 
+      sql ("CREATE TABLE scap2.cve_references"
+           " (id SERIAL PRIMARY KEY,"
+           "  cve_id INTEGER,"
+           "  url text,"
+           "  tags text[]);");
 
       /* Init tables. */
 
@@ -3624,6 +3640,15 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.epss_scores"
            " ALTER cve SET NOT NULL,"
            " ADD UNIQUE (cve);");
+
+      sql ("ALTER TABLE scap2.cve_references"
+           " ALTER cve_id SET NOT NULL,"
+           " ALTER url SET NOT NULL,"
+           " ADD UNIQUE (cve_id, url);");
+
+      sql ("ALTER TABLE scap2.cpe_match_range"
+           " ADD UNIQUE (match_criteria_id);");
+
     }
   else
     {

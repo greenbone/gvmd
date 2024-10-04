@@ -1693,6 +1693,21 @@ app_locations_iterator_location (iterator_t*);
 void
 init_cpe_match_nodes_iterator (iterator_t*, const char *);
 
+void
+init_cve_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_cve_reference_iterator (iterator_t*, const char *);
+
+const char*
+cve_reference_iterator_url (iterator_t*);
+
+const char*
+cve_reference_iterator_tags (iterator_t*);
+
+const char*
+cve_reference_iterator_tags_count (iterator_t*);
+
 long long int
 cpe_match_nodes_iterator_root_id (iterator_t*);
 
@@ -1715,6 +1730,12 @@ const char*
 cpe_match_range_iterator_cpe (iterator_t*);
 
 const char*
+cpe_match_range_iterator_match_criteria_id (iterator_t*);
+
+const char*
+cpe_match_range_iterator_status (iterator_t*);
+
+const char*
 cpe_match_range_iterator_version_start_incl (iterator_t*);
 
 const char*
@@ -1728,6 +1749,12 @@ cpe_match_range_iterator_version_end_excl (iterator_t*);
 
 int
 cpe_match_range_iterator_vulnerable (iterator_t*);
+
+void
+init_cpe_match_range_matches_iterator (iterator_t*, const char *);
+
+const char*
+cpe_matches_cpe_name_id (iterator_t*);
 
 void
 init_host_details_cpe_product_iterator (iterator_t*, const char *, report_host_t);
