@@ -3390,6 +3390,96 @@ set_root_id (long int id, long int root_id)
 }
 
 /**
+ * @brief Handle the references of a CVE.
+ *
+ * @param[in]  cve_db_id            The id of the CVE the references belong to.
+ * @param[in]  reference_data_json  JSON array containing the references.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+handle_cve_references (resource_t cve_db_id, char * cve_id, cJSON* reference_data_json)
+{
+    cJSON *reference_data;
+    cJSON *tags;
+
+    cJSON_ArrayForEach(reference_data, reference_data_json)
+    {
+      array_t *tags_array = make_array ();
+      GString *tags_string;
+      char *url_value = json_object_item_string (reference_data, "url");
+      if (url_value == NULL)
+      {
+          g_warning("%s: url missing.", __func__);
+          return -1;
+      }
+      gchar *quoted_url = sql_quote (url_value);
+
+      tags = cJSON_GetObjectItemCaseSensitive(reference_data, "tags");
+      if (tags == NULL)
+      {
+          g_warning("%s: tags missing for %s.", __func__, cve_id);
+          return -1;
+      }
+
+      if (!cJSON_IsArray(tags))
+        {
+          g_warning("%s: tags for %s is not an array.", __func__, cve_id);
+          return -1;
+        }
+      else
+        {
+          tags_string = g_string_new ("{");
+
+          for (int i = 0; i < cJSON_GetArraySize(tags); i++)
+            {
+              cJSON *tag = cJSON_GetArrayItem(tags, i);
+              if (!cJSON_IsString(tag))
+                {
+                  g_warning("%s: tag for %s is not a string.", __func__, cve_id);
+                  return -1;
+                }
+              if (tag->valuestring == NULL || strlen(tag->valuestring) == 0)
+                {
+                  g_warning("%s: tag for %s is NULL or an empty string.", __func__, cve_id);
+                  return -1;
+                }
+              array_add (tags_array, tag->valuestring);
+            }
+
+          for (int i = 0; i < tags_array->len; i++)
+            {
+              gchar *tag = g_ptr_array_index (tags_array, i);
+              gchar *quoted_tag = sql_quote (tag);
+
+              g_string_append (tags_string, quoted_tag);
+
+              if (i < tags_array->len - 1)
+                g_string_append (tags_string, ",");
+
+              g_free (quoted_tag);
+            }
+          g_string_append (tags_string, "}");
+        }
+
+        sql("INSERT INTO scap2.cve_references"
+            " (cve_id, url, tags)"
+            " VALUES"
+            " (%llu, '%s', '%s')"
+            " ON CONFLICT (cve_id, url) DO UPDATE"
+            " SET tags = EXCLUDED.tags;",
+            cve_db_id,
+            quoted_url,
+            tags_string->str);
+
+      g_free (quoted_url);
+      g_string_free (tags_string, TRUE);
+      g_ptr_array_free (tags_array, TRUE);
+    }
+    return 0;
+}
+
+/**
  * @brief Load and add recursively all nodes of a match rule tree for a
  *        specific CVE. Build a match rule tree.
  *
@@ -3615,6 +3705,25 @@ handle_json_cve_item (cJSON *item)
       return -1;
     }
   load_nodes (0, cve_db_id, 0, nodes_json);
+
+  cJSON *references_json;
+  cJSON *reference_data_json;
+
+  references_json = cJSON_GetObjectItemCaseSensitive(cve_json, "references");
+  if (references_json == NULL)
+    {
+      g_warning("%s: references missing for %s.", __func__, cve_id);
+      return -1;
+    }
+  reference_data_json = cJSON_GetObjectItemCaseSensitive(references_json, "reference_data");
+  if (reference_data_json == NULL)
+    {
+      g_warning("%s: reference_data missing for %s.", __func__, cve_id);
+      return -1;
+    }
+
+  if (handle_cve_references (cve_db_id, cve_id, reference_data_json))
+    return -1;
 
   return 0;
 }

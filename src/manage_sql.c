@@ -20519,6 +20519,108 @@ init_cpe_match_nodes_iterator (iterator_t* iterator, const char *cpe)
 }
 
 /**
+ * @brief Initialize an iterator of CPE match nodes root_ids for a CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cve       The CVE contained in the match nodes.
+ */
+void
+init_cve_cpe_match_nodes_iterator (iterator_t* iterator, const char *cve)
+{
+  gchar *quoted_cve;
+  quoted_cve = sql_quote (cve);
+  init_iterator (iterator,
+                 "SELECT DISTINCT root_id"
+                 " FROM scap.cpe_match_nodes"
+                 " WHERE cve_id = (SELECT id from scap.cves where uuid = '%s');",
+                 quoted_cve);
+  g_free (quoted_cve);
+}
+
+/**
+ * @brief Initialize an iterator of CPEs for a product.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  uri_product  URI product
+ */
+void
+init_product_cpe_iterator (iterator_t* iterator, const char *uri_product)
+{
+  gchar *quoted_uri_product;
+  quoted_uri_product = sql_quote (uri_product);
+  init_iterator (iterator,
+                 "SELECT uuid, deprecated FROM scap.cpes"
+                 " WHERE uuid like '%s%s';",
+                 quoted_uri_product, "%");
+  g_free (quoted_uri_product);
+}
+
+/**
+ * @brief Initialize an iterator of references for a CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cve       The CVE with the references.
+ */
+void
+init_cve_reference_iterator (iterator_t* iterator, const char *cve)
+{
+  gchar *quoted_cve;
+  quoted_cve = sql_quote (cve);
+  init_iterator (iterator,
+                 "SELECT url, array_length(tags, 1), tags"
+                 " FROM scap.cve_references"
+                 " WHERE cve_id = (SELECT id from scap.cves where uuid = '%s');",
+                 quoted_cve);
+  g_free (quoted_cve);
+}
+
+/**
+ * @brief Get the UUID from a product CPE iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The UUID.
+ */
+DEF_ACCESS (product_cpe_iterator_uuid, 0);
+
+/**
+ * @brief Get deprecated status from a product CPE iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  Whether the cpe is deprecated.
+ */
+
+DEF_ACCESS (product_cpe_iterator_deprecated, 1);
+
+/**
+ * @brief Get a URL from a CVE reference iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The URL.
+ */
+DEF_ACCESS (cve_reference_iterator_url, 0);
+
+/**
+ * @brief Get the length of the tags array from a CVE reference iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  Length of the tags array.
+ */
+DEF_ACCESS (cve_reference_iterator_tags_count, 1);
+
+/**
+ * @brief Get the tags array from a CVE reference iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The tags array.
+ */
+DEF_ACCESS (cve_reference_iterator_tags, 2);
+
+/**
  * @brief Get a root id from an CPE match node iterator.
  *
  * @param[in]  iterator   Iterator.
@@ -20562,18 +20664,26 @@ cpe_match_node_childs_iterator_id (iterator_t* iterator)
 /**
  * @brief Initialize an iterator of match ranges of an CPE match node.
  *
- * @param[in]  iterator  Iterator.
- * @param[in]  node      The match node with match ranges.
+ * @param[in]  iterator     Iterator.
+ * @param[in]  node         The match node with match ranges.
+ * @param[in]  ascending    Whether to sort ascending or descending.
+ * @param[in]  sort_field   Field to sort on, or NULL for "id".*
  */
 void
-init_cpe_match_range_iterator (iterator_t* iterator, long long int node)
+init_cpe_match_range_iterator (iterator_t* iterator,
+                              long long int node,
+                              int ascending,
+                              const char* sort_field)
 {
   init_iterator (iterator,
                  "SELECT vulnerable, cpe, version_start_incl,"
                  " version_start_excl, version_end_incl, version_end_excl"
                  " FROM scap.cpe_match_range"
-                 " WHERE node_id = %llu;",
-                 node);
+                 " WHERE node_id = %llu"
+                 " ORDER BY %s %s;",
+                 node,
+                 sort_field ? sort_field : "cpe",
+                 ascending ? "ASC" : "DESC");
 }
 
 /**

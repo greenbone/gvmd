@@ -3109,7 +3109,7 @@ set_scanner_connection_retry (int new_retry)
 
 /* CVE tasks. */
 
-static int
+int
 check_version (const gchar *target, const gchar *start_incl, const gchar *start_excl, const gchar *end_incl, const gchar *end_excl)
 {
   int result;
@@ -3178,7 +3178,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
         return;
     }
   iterator_t cpe_match_ranges;
-  init_cpe_match_range_iterator (&cpe_match_ranges, node);
+  init_cpe_match_range_iterator (&cpe_match_ranges, node, 1, NULL);
   while (next (&cpe_match_ranges))
     {
       iterator_t cpe_host_details_products;
@@ -5938,29 +5938,6 @@ set_schedule_timeout (int new_timeout)
 void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 /**
- * @brief Compute the filename where a given CVE can be found.
- *
- * @param[in] item_id   Full CVE identifier ("CVE-YYYY-ZZZZ").
- *
- * @return A dynamically allocated string (to be g_free'd) containing the
- *         path to the desired file or NULL on error.
- */
-static char *
-get_cve_filename (char *item_id)
-{
-  int year;
-
-  if (sscanf (item_id, "%*3s-%d-%*d", &year) == 1)
-    {
-      /* CVEs before 2002 are stored in the 2002 file. */
-      if (year <= 2002)
-        year = 2002;
-      return g_strdup_printf (CVE_FILENAME_FMT, year);
-    }
-  return NULL;
-}
-
-/**
  * @brief Compute the filename where a given CERT-Bund Advisory can be found.
  *
  * @param[in] item_id   CERT-Bund identifier without version
@@ -6584,18 +6561,6 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
   if (g_ascii_strcasecmp ("CPE", type) == 0)
     {
       *result = cpe_details_xml(uid);
-    }
-  else if (g_ascii_strcasecmp ("CVE", type) == 0)
-    {
-      fname = get_cve_filename (uid);
-      if (fname)
-        {
-          gchar *cve;
-          cve = xsl_transform (CVE_GETBYNAME_XSL, fname, pnames, pvalues);
-          g_free (fname);
-          if (cve)
-            *result = cve;
-        }
     }
   else if (g_ascii_strcasecmp ("NVT", type) == 0)
     {
