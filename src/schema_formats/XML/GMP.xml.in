@@ -11525,8 +11525,26 @@ END:VCALENDAR
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>feed_owner_set</e>
+        <e>feed_roles_set</e>
+        <e>feed_resources_access</e>
         <any><e>feed</e></any>
       </pattern>
+      <ele>
+        <name>feed_owner_set</name>
+        <summary>Whether the feed owner is set</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+      <ele>
+        <name>feed_roles_set</name>
+        <summary>Whether the feed roles are set</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+      <ele>
+        <name>feed_resources_access</name>
+        <summary>Whether the user has access to feed resources</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
       <ele>
         <name>feed</name>
         <pattern>
@@ -11590,6 +11608,9 @@ END:VCALENDAR
       </request>
       <response>
         <get_feeds_response status_text="OK" status="200">
+          <feed_owner_set>1</feed_owner_set>
+          <feed_roles_set>1</feed_roles_set>
+          <feed_resources_access>1</feed_resources_access>
           <feed>
             <type>NVT</type>
             <name>Greenbone Security Feed</name>

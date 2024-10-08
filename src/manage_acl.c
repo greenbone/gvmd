@@ -462,6 +462,35 @@ acl_user_is_user (const char *uuid)
   return ret;
 }
 
+/**
+ * @brief Check whether a user has a given role.
+ *
+ * @param[in]  user_uuid  UUID of the user.
+ * @param[in]  role_uuid  UUID of the role.
+ *
+ * @return 1 if user has the given role, else 0.
+ */
+int
+acl_user_has_role (const char *user_uuid, const char *role_uuid)
+{
+  int ret;
+  gchar *quoted_role_uuid, *quoted_user_uuid;
+
+  quoted_role_uuid = sql_quote (role_uuid);
+  quoted_user_uuid = sql_quote (user_uuid);
+
+  ret = sql_int ("SELECT count (*) FROM role_users"
+                 " WHERE role = (SELECT id FROM roles"
+                 "               WHERE uuid = '%s')"
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
+                 quoted_role_uuid, quoted_user_uuid);
+
+  g_free (quoted_role_uuid);
+  g_free (quoted_user_uuid);
+  return ret;
+}
+
+
 /* TODO This is only predicatable for unique fields like "id".  If the field
  *      is "name" then "SELECT ... format" will choose arbitrarily between
  *      the resources that have the same name. */
