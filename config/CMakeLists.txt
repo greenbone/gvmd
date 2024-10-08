@@ -15,9 +15,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 if (NOT SYSTEMD_SERVICE_DIR)
-  set (SYSTEMD_SERVICE_DIR "/lib/systemd/system")
+  set (SYSTEMD_SERVICE_DIR "${LIBDIR}/systemd/system")
 endif (NOT SYSTEMD_SERVICE_DIR)
 
 if (NOT LOGROTATE_DIR)
