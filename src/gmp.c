@@ -12976,6 +12976,7 @@ static void
 handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
 {
   assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   if (acl_user_may ("get_feeds") == 0)
     {
@@ -12986,9 +12987,58 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  char *feed_owner_uuid, *feed_roles;
+  gboolean feed_owner_set, feed_import_roles_set, feed_resources_access;
+
+  feed_owner_set = feed_import_roles_set = feed_resources_access = FALSE;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
+
+  if (feed_owner_uuid != NULL && strlen (feed_owner_uuid) > 0)
+    feed_owner_set = TRUE;
+  else
+    g_warning ("%s: No feed owner set.", __func__);
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &feed_roles);
+
+  if (feed_roles != NULL && strlen (feed_roles) > 0)
+    feed_import_roles_set = TRUE;
+  else
+    g_warning ("%s: No feed import roles set.", __func__);
+
+  if (feed_owner_uuid != NULL && strcmp (feed_owner_uuid, current_credentials.uuid) == 0)
+    feed_resources_access = TRUE;
+  else if (feed_roles != NULL)
+    {
+      gchar **roles = g_strsplit (feed_roles, ",", -1);
+      gchar **role = roles;
+      while (*role)
+      {
+        if (acl_user_has_role (current_credentials.uuid, *role))
+          {
+            feed_resources_access = TRUE;
+            break;
+          }
+        role++;
+      }
+      g_strfreev (roles);
+    }
+
+  free (feed_roles);
+  free (feed_owner_uuid);
+
   SEND_TO_CLIENT_OR_FAIL ("<get_feeds_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feed_owner_set>%s</feed_owner_set>",
+                           feed_owner_set ? "1" : "0");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feed_roles_set>%s</feed_roles_set>",
+                           feed_import_roles_set ? "1" : "0");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feed_resources_access>%s</feed_resources_access>",
+                           feed_resources_access ? "1" : "0");
 
   if ((get_feeds_data->type == NULL)
       || (strcasecmp (get_feeds_data->type, "nvt") == 0))
