@@ -9727,16 +9727,16 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf (buffer, "<compliance>%s</compliance>", compliance);
 
   if (include_notes
-      && use_delta_fields 
-         ? result_iterator_delta_may_have_notes (results)
-         : result_iterator_may_have_notes (results))
-    buffer_result_notes_xml (buffer, result,
-                             selected_task, include_notes_details, lean);
+      && (use_delta_fields
+          ? result_iterator_delta_may_have_notes (results)
+          : result_iterator_may_have_notes (results)))
+      buffer_result_notes_xml (buffer, result,
+                              selected_task, include_notes_details, lean);
 
   if (include_overrides
-      && use_delta_fields 
-         ? result_iterator_delta_may_have_overrides (results) 
-         : result_iterator_may_have_overrides (results))
+      && (use_delta_fields
+          ? result_iterator_delta_may_have_overrides (results)
+          : result_iterator_may_have_overrides (results)))
     buffer_result_overrides_xml (buffer, result,
                                  selected_task, include_overrides_details,
                                  lean);
