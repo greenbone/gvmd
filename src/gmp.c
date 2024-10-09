@@ -9730,8 +9730,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       && (use_delta_fields
           ? result_iterator_delta_may_have_notes (results)
           : result_iterator_may_have_notes (results)))
-      buffer_result_notes_xml (buffer, result,
-                              selected_task, include_notes_details, lean);
+    buffer_result_notes_xml (buffer, result,
+                             selected_task, include_notes_details, lean);
 
   if (include_overrides
       && (use_delta_fields
