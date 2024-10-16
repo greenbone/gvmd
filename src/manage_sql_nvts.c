@@ -2245,8 +2245,7 @@ static int move_buffer_data(struct FILESTREAM *filestream){
 /**
  * @brief Update NVTs from Json response chunk by chunk
  *
- * @param[in]  curl_hnd      Curl handler to perform the request
- * @param[in]  res           Struct containing the response chunks
+ * @param[in]  conn                  Openvasd connector
  * @param[in]  scanner_feed_version  Version of feed from scanner.
  * @param[in]  rebuild               Whether we're rebuilding the tables.
  *
@@ -2308,11 +2307,12 @@ update_nvts_from_json_vts (openvasd_connector_t *connector,
   FILE *stream = NULL;
   struct FILESTREAM *filestream;
   nvti_t *nvti = NULL;
-  openvasd_curlm_t curl_hnd = NULL;
-  openvasd_stringstream res;
+  openvasd_curlm_t *curl_hnd = NULL;
+  openvasd_stringstream_t res;
 
-  init_openvasd_stringstream(&res);
-  resp = openvasd_get_vts_stream_init(connector, &curl_hnd, &res);
+  openvasd_stringstream_new (&res);
+  curl_hnd = openvasd_curlm_handler_new ();
+  resp = openvasd_get_vts_stream_init (connector, &curl_hnd, &res);
   if (resp->code < 0)
     {
       g_warning ("%s: failed to get VTs", __func__);
@@ -2341,8 +2341,7 @@ update_nvts_from_json_vts (openvasd_connector_t *connector,
   // First run for initial data in the stream
   running = openvasd_get_vts_stream (curl_hnd);
   fwrite (res.ptr, 1, res.len, stream);
-  g_free (res.ptr);
-  init_openvasd_stringstream(&res);
+  openvasd_stringstream_reset (&res);
   int break_flag = 0;
   while (running)
     {
@@ -2356,8 +2355,7 @@ update_nvts_from_json_vts (openvasd_connector_t *connector,
         {
           move_buffer_data (filestream);
           fwrite (res.ptr, 1, res.len, stream);
-          g_free (res.ptr);
-          init_openvasd_stringstream (&res);
+          openvasd_stringstream_reset (&res);
         }
 
       non_read_count = filestream->last_write - filestream->last_read;
@@ -2398,13 +2396,13 @@ update_nvts_from_json_vts (openvasd_connector_t *connector,
           break;
     }
 
-  gvm_json_pull_event_cleanup(&event);
-  gvm_json_pull_parser_cleanup(&parser);
-  fclose(stream);
+  gvm_json_pull_event_cleanup (&event);
+  gvm_json_pull_parser_cleanup (&parser);
+  fclose (stream);
 
-  g_free (res.ptr);
-  openvasd_curl_handler_close (&curl_hnd);
-  openvasd_response_free (resp);
+  openvasd_stringstream_cleanup (&res);
+  openvasd_curlm_handler_close (&curl_hnd);
+  openvasd_response_cleanup (resp);
 
 
   batch_end (vt_refs_batch);
@@ -2973,7 +2971,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
       ret = 0;
     }
 
-  openvasd_response_free (resp);
+  openvasd_response_cleanup (resp);
   openvasd_connector_free (&connector);
   return ret;
 }
