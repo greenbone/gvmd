@@ -7473,7 +7473,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
       ret = 0;
     }
 
-  openvasd_response_free (resp);
+  openvasd_response_cleanup (resp);
   openvasd_connector_free (&connector);
   return ret;
 }
@@ -8413,7 +8413,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
           *error = g_strdup_printf ("Failed to stop old report: %ld",
                                     response->code);
           openvasd_connector_free (&connection);
-          openvasd_response_free(response);
+          openvasd_response_cleanup(response);
           return -1;
         }
       response = openvasd_delete_scan (&connection);
@@ -8421,7 +8421,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_free(response);
+          openvasd_response_cleanup(response);
           openvasd_connector_free (&connection);
           return -1;
         }
@@ -8439,7 +8439,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_free(response);
+          openvasd_response_cleanup(response);
           openvasd_connector_free (&connection);
           return -1;
         }
@@ -8457,7 +8457,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_free(response);
+          openvasd_response_cleanup(response);
           openvasd_connector_free (&connection);
           return -1;
         }
@@ -8783,7 +8783,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
   g_hash_table_destroy (scanner_options);
   ret = response->code;
-  openvasd_response_free (response);
+  openvasd_response_cleanup (response);
 
   return ret;
 }
@@ -8978,7 +8978,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
       retry = connection_retry;
       gvm_sleep (5);
     }
-  openvasd_response_free (response);
+  openvasd_response_cleanup (response);
   openvasd_connector_free(&connector);
   return rc;
 }
