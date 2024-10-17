@@ -1589,6 +1589,8 @@ manage_create_sql_functions ()
            "         THEN $1 = 0"
            "         WHEN 'false'"
            "         THEN $1 = -1"
+           "         WHEN 'error'"
+           "         THEN $1 = -3"
            "         ELSE 0::boolean"
            "         END);"
            "$$ LANGUAGE SQL"
@@ -3525,14 +3527,28 @@ manage_db_init (const gchar *name)
            "  modification_time integer,"
            "  title text,"
            "  status text,"
-           "  deprecated_by_id INTEGER,"
+           "  deprecated_by_id TEXT,"
            "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
-           "  nvd_id text);");
+           "  nvd_id text,"
+           "  deprecated integer,"
+           "  cpe_name_id text);");
+
+      sql ("CREATE TABLE scap2.cpe_refs"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe INTEGER,"
+           "  ref TEXT,"
+           "  type TEXT);");
+
+      sql ("CREATE TABLE scap2.cpes_deprecated_by"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe TEXT,"
+           "  deprecated_by TEXT);");
 
       sql ("CREATE TABLE scap2.cpe_match_nodes"
            " (id SERIAL PRIMARY KEY,"
            "  parent_id INTEGER DEFAULT 0,"
+           "  root_id INTEGER DEFAULT 0,"
            "  cve_id INTEGER DEFAULT 0,"
            "  operator text);");
 
@@ -3540,11 +3556,11 @@ manage_db_init (const gchar *name)
            " (id SERIAL PRIMARY KEY,"
            "  node_id INTEGER DEFAULT 0,"
            "  vulnerable INTEGER DEFAULT 0,"
-           "  cpe text,"
-           "  version_start_incl text,"
-           "  version_start_excl text,"
-           "  version_end_incl text,"
-           "  version_end_excl text);");
+           "  cpe text DEFAULT NULL,"
+           "  version_start_incl text DEFAULT NULL,"
+           "  version_start_excl text DEFAULT NULL,"
+           "  version_end_incl text DEFAULT NULL,"
+           "  version_end_excl text DEFAULT NULL);");
 
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
@@ -3560,6 +3576,11 @@ manage_db_init (const gchar *name)
            "  epss DOUBLE PRECISION,"
            "  percentile DOUBLE PRECISION);");
 
+      sql ("CREATE TABLE scap2.cve_references"
+           " (id SERIAL PRIMARY KEY,"
+           "  cve_id INTEGER,"
+           "  url text,"
+           "  tags text[]);");
 
       /* Init tables. */
 
@@ -3609,6 +3630,13 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.epss_scores"
            " ALTER cve SET NOT NULL,"
            " ADD UNIQUE (cve);");
+
+      sql ("ALTER TABLE scap2.cve_references"
+           " ALTER cve_id SET NOT NULL,"
+           " ALTER url SET NOT NULL,"
+           " ADD UNIQUE (cve_id, url);");
+
+
     }
   else
     {
