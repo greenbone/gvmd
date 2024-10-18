@@ -3372,9 +3372,6 @@ cpe_info_iterator_cve_refs (iterator_t*);
 const char*
 cpe_info_iterator_cpe_name_id (iterator_t*);
 
-const char*
-cpe_info_iterator_deprecated_by_id (iterator_t*);
-
 gchar *
 cpe_details_xml (const char*);
 

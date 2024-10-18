@@ -101,8 +101,8 @@
  * @brief Filter columns for CVE iterator.
  */
 #define CPE_INFO_ITERATOR_FILTER_COLUMNS                    \
- { GET_ITERATOR_FILTER_COLUMNS, "title", "status",          \
-   "deprecated_by_id", "severity", "cves", "cpe_name_id",        \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "deprecated",      \
+   "severity", "cves", "cpe_name_id",                       \
    NULL }
 
 /**
@@ -115,7 +115,6 @@
    { "0", NULL, KEYWORD_TYPE_INTEGER },                         \
    { "title", NULL, KEYWORD_TYPE_STRING },                      \
    { "deprecated", NULL, KEYWORD_TYPE_INTEGER },                \
-   { "deprecated_by_id", NULL, KEYWORD_TYPE_INTEGER },          \
    { "severity", NULL, KEYWORD_TYPE_DOUBLE },                   \
    { "cve_refs", "cves", KEYWORD_TYPE_INTEGER },                \
    { "cpe_name_id", NULL, KEYWORD_TYPE_STRING },                \

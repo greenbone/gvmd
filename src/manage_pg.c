@@ -3525,7 +3525,6 @@ manage_db_init (const gchar *name)
            "  modification_time integer,"
            "  title text,"
            "  status text,"
-           "  deprecated_by_id TEXT,"
            "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
            "  nvd_id text,"

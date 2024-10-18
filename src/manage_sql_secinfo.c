@@ -572,17 +572,6 @@ DEF_ACCESS (cpe_info_iterator_title, GET_ITERATOR_COLUMN_COUNT);
 DEF_ACCESS (cpe_info_iterator_deprecated, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
- * @brief Get the first CPE the current one is deprecated by
- *        from a CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The first CPE the current one is deprecated by,
- *         or NULL if iteration is complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (cpe_info_iterator_deprecated_by_id, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Get the highest severity Score of all CVE's referencing this cpe.
  *
  * @param[in]  iterator  Iterator.
@@ -590,7 +579,7 @@ DEF_ACCESS (cpe_info_iterator_deprecated_by_id, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return The highest severity score of the CPE,
  *         or NULL if iteration is complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (cpe_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the Number of CVE's referencing this cpe from a CPE iterator.
@@ -600,7 +589,7 @@ DEF_ACCESS (cpe_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 3);
  * @return The Number of references to the CPE, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the NVD assigned cpeNameId for this CPE.
@@ -610,7 +599,7 @@ DEF_ACCESS (cpe_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return The NVD ID of this CPE, or NULL if iteration is
  *         complete. Freed by cleanup_iterator.
  */
-DEF_ACCESS (cpe_info_iterator_cpe_name_id, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (cpe_info_iterator_cpe_name_id, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the XML details / raw data for a given CPE ID.
@@ -2373,7 +2362,6 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
   if (deprecated)
     {
       cJSON *deprecated_by_array, *deprecated_by_item;
-      char *deprecated_by_id;
       gchar *quoted_deprecated_by_id;
       deprecated_by_array = cJSON_GetObjectItemCaseSensitive (cpe_item,
                                                               "deprecatedBy");
@@ -2394,6 +2382,7 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
 
       cJSON_ArrayForEach (deprecated_by_item, deprecated_by_array)
         {
+          char *deprecated_by_id;
           deprecated_by_id = json_object_item_string (deprecated_by_item,
                                                       "cpeName");
           if (deprecated_by_id == NULL)
@@ -2565,7 +2554,6 @@ update_scap_cpes_from_json_file (const gchar *path)
                 "     creation_time = EXCLUDED.creation_time,"
                 "     modification_time = EXCLUDED.modification_time,"
                 "     deprecated = EXCLUDED.deprecated,"
-                "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
                 "     cpe_name_id = EXCLUDED.cpe_name_id");
 
   inserts_init (&deprecated_by_inserts, 10,
@@ -2705,7 +2693,7 @@ update_scap_cpes_from_xml_file (const gchar *path)
                 setting_secinfo_sql_buffer_threshold_bytes (),
                 "INSERT INTO scap2.cpes"
                 " (uuid, name, title, creation_time,"
-                "  modification_time, status, deprecated_by_id,"
+                "  modification_time, status,"
                 "  nvd_id)"
                 " VALUES",
                 " ON CONFLICT (uuid) DO UPDATE"
@@ -2714,7 +2702,6 @@ update_scap_cpes_from_xml_file (const gchar *path)
                 "     creation_time = EXCLUDED.creation_time,"
                 "     modification_time = EXCLUDED.modification_time,"
                 "     status = EXCLUDED.status,"
-                "     deprecated_by_id = EXCLUDED.deprecated_by_id,"
                 "     nvd_id = EXCLUDED.nvd_id");
 
   cpe_item = xml_file_iterator_next (file_iterator, &error_message);
