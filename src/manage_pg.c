@@ -3513,7 +3513,7 @@ manage_db_init (const gchar *name)
            "  creation_time integer,"
            "  modification_time integer,"
            "  cvss_vector text,"
-           "  products text,"
+           "  products text DEFAULT '',"
            "  severity DOUBLE PRECISION DEFAULT 0);");
 
       sql ("CREATE TABLE scap2.cpes"
@@ -3650,11 +3650,12 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.cpes (severity);");
       sql ("CREATE INDEX cpes_by_uuid"
            " ON scap2.cpes (uuid);");
-
       sql ("CREATE INDEX afp_cpe_idx"
            " ON scap2.affected_products (cpe);");
       sql ("CREATE INDEX afp_cve_idx"
            " ON scap2.affected_products (cve);");
+      sql ("CREATE INDEX cpe_by_pattern_name ON scap2.cpes"
+           " USING btree(name text_pattern_ops);");
 
       sql ("CREATE INDEX epss_scores_by_cve"
            " ON scap2.epss_scores (cve);");

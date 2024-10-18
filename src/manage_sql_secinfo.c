@@ -51,6 +51,7 @@
 #include <cjson/cJSON.h>
 #include <gvm/base/gvm_sentry.h>
 #include <bsd/unistd.h>
+#include <gvm/util/compressutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/xmlutils.h>
@@ -78,6 +79,11 @@ static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
  * @brief Maximum number of rows in a EPSS INSERT.
  */
 #define EPSS_MAX_CHUNK_SIZE 10000
+
+/**
+ * @brief Maximum number of rows in a affected products INSERT.
+ */
+#define CVE_AFFECTED_PRODUCTS_MAX_CHUNK_SIZE 10000
 
 
 /* Headers. */
@@ -2788,6 +2794,7 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
         version_start_excl,
         version_end_incl,
         version_end_excl);
+
       g_free (quoted_cpe);
     }
 }
@@ -2798,12 +2805,12 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
  *
  * @param[in]  parent_id  The parent_id of the nodes to insert
  *                        (0 for the root node).
- * @param[in]  cveid      The id of the CVE the tree belongs to.
+ * @param[in]  cve_id     The id of the CVE the tree belongs to.
  * @param[in]  nodes      The JSON object that contains the rules for a
  *                        specific tree level.
  */
 static void
-load_nodes (resource_t parent_id, resource_t cveid, cJSON *nodes)
+load_nodes (resource_t parent_id, resource_t cve_id, cJSON *nodes)
 {
   cJSON *node;
   resource_t id;
@@ -2824,12 +2831,12 @@ load_nodes (resource_t parent_id, resource_t cveid, cJSON *nodes)
     {
       operator = cJSON_GetObjectItemCaseSensitive(node, "operator");
       if (operator)
-        id = save_node (parent_id, cveid, operator->valuestring);
+        id = save_node (parent_id, cve_id, operator->valuestring);
       cpe_match_rules = cJSON_GetObjectItemCaseSensitive(node, "cpe_match");
       if (cpe_match_rules)
         add_cpe_match_rules (id, cpe_match_rules);
       child_nodes = cJSON_GetObjectItemCaseSensitive(node, "children");
-      load_nodes (id, cveid, child_nodes);
+      load_nodes (id, cve_id, child_nodes);
     }
 }
 
@@ -3007,6 +3014,7 @@ handle_json_cve_item (cJSON *item)
       g_warning("%s: nodes missing for %s.", __func__, cve_id);
       return -1;
     }
+
   load_nodes (0, cve_db_id, nodes_json);
 
   return 0;
@@ -3328,6 +3336,216 @@ update_scap_cves ()
 }
 
 /**
+ * @brief Adds an affected products entry to an SQL inserts buffer.
+ *
+ * @param[in]       inserts    The SQL inserts buffer to add to.
+ * @param[in]       cve_id     The CVE id of the affected products entry.
+ * @param[in]       cpe        The CPE of the affected products entry.
+ *
+ * @param[in, out]  products   The list of products that belong to the CVE.
+ */
+static void
+insert_cve_affected_products_entry (inserts_t *inserts, result_t cve_id,
+                                    const char *cpe, GString *products)
+{
+  gchar *quoted_cpe;
+  result_t cpe_id;
+  int first = inserts_check_size (inserts);
+
+  quoted_cpe = sql_quote (cpe);
+  cpe_id = sql_int64_0 ("SELECT id FROM scap2.cpes"
+                        " WHERE uuid = '%s';",
+                        cpe);
+  if (cpe_id <= 0)
+    return;
+
+  g_string_append_printf (inserts->statement,
+                          "%s (%llu, %llu)",
+                          first ? "" : ",",
+                          cve_id,
+                          cpe_id);
+  g_string_append_printf (products, "%s ",
+                          quoted_cpe);
+  g_free (quoted_cpe);
+
+  inserts->current_chunk_size++;
+}
+
+/**
+ * @brief Checks a failure condition for validating EPSS JSON.
+ */
+#define EPSS_JSON_FAIL_IF(failure_condition, error_message)       \
+if (failure_condition) {                                          \
+  g_warning ("%s: %s", __func__, error_message);                  \
+  goto fail_insert;                                               \
+}
+
+/**
+ * @brief Updates the affected_products table in the SCAP database.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_cve_affected_products ()
+{
+  gchar *current_json_path;
+  gchar *error_message = NULL;
+  FILE *cve_affected_products_file;
+  cJSON *cve_entry;
+  gvm_json_pull_event_t event;
+  gvm_json_pull_parser_t parser;
+  inserts_t inserts;
+
+  current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                        "cve_affected_products.json.gz",
+                                        NULL);
+  cve_affected_products_file = gvm_gzip_open_file_reader (current_json_path);
+  if (cve_affected_products_file == NULL)
+    {
+      g_warning ("%s: Failed to open gzip file: %s",
+                 __func__,
+                 strerror (errno));
+      g_free (current_json_path);
+      return -1;
+    }
+
+  g_info ("Updating CVE affected products from %s", current_json_path);
+  g_free (current_json_path);
+
+  gvm_json_pull_event_init (&event);
+  gvm_json_pull_parser_init (&parser, cve_affected_products_file);
+
+  gvm_json_pull_parser_next (&parser, &event);
+
+  if (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
+    {
+      gboolean cve_affected_products_found = FALSE;
+      while (!cve_affected_products_found)
+        {
+          gvm_json_pull_parser_next (&parser, &event);
+	        gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
+	        if (event.type == GVM_JSON_PULL_EVENT_OBJECT_START
+              && path_tail && strcmp (path_tail->key, "cve_affected_products") == 0)
+            {
+              cve_affected_products_found = TRUE;
+            }
+          else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
+            {
+              g_warning ("%s: Parser error: %s", __func__, event.error_message);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (cve_affected_products_file);
+              return -1;
+            }
+          else if (event.type == GVM_JSON_PULL_EVENT_OBJECT_END
+                   && g_queue_is_empty (event.path))
+            {
+              g_warning ("%s: Unexpected json object end. Missing CVE affected products field", __func__);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (cve_affected_products_file);
+              return -1;
+            }
+        }
+
+      sql_begin_immediate ();
+      inserts_init (&inserts,
+                CVE_AFFECTED_PRODUCTS_MAX_CHUNK_SIZE,
+                setting_secinfo_sql_buffer_threshold_bytes (),
+                "INSERT INTO scap2.affected_products"
+                "  (cve, cpe)"
+                "  VALUES ",
+                " ON CONFLICT (cve, cpe) DO NOTHING");
+
+      gvm_json_pull_parser_next (&parser, &event);
+      while (event.type == GVM_JSON_PULL_EVENT_ARRAY_START)
+        {
+          gchar * quoted_cve;
+          result_t cve_id;
+
+          cve_entry = gvm_json_pull_expand_container (&parser, &error_message);
+
+          if (error_message)
+            {
+              g_warning ("%s: Error expanding CVE item: %s", __func__, error_message);
+              g_free (error_message);
+              goto fail_insert;
+            }
+
+          gvm_json_path_elem_t *tail = g_queue_peek_tail (event.path);
+          if (tail->key == NULL)
+            {
+              g_warning ("%s: Error in array key of CVE item.", __func__);
+              goto fail_insert;
+            }
+
+          quoted_cve = sql_quote (tail->key);
+          cve_id = sql_int64_0 ("SELECT id FROM scap2.cves"
+                                " WHERE uuid = '%s';",
+                                quoted_cve);
+          if (cve_id <= 0)
+            {
+              g_free (quoted_cve);
+              gvm_json_pull_parser_next (&parser, &event);
+              cJSON_Delete (cve_entry);
+              continue;
+            }
+
+          GString *products = g_string_new ("");
+          cJSON *affected_cpe;
+          cJSON_ArrayForEach(affected_cpe, cve_entry)
+            {
+              char *cpe = affected_cpe->valuestring;
+              if (cpe != NULL)
+                insert_cve_affected_products_entry (&inserts,
+                                                    cve_id,
+                                                    cpe,
+                                                    products);
+            }
+          sql ("UPDATE scap2.cves SET products = '%s' where id = %llu;",
+                products->str, cve_id);
+          g_free (quoted_cve);
+          g_string_free (products, TRUE);
+
+          gvm_json_pull_parser_next (&parser, &event);
+          cJSON_Delete (cve_entry);
+	    }
+    }
+  else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
+    {
+      g_warning ("%s: Parser error: %s", __func__, event.error_message);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (cve_affected_products_file);
+      return -1;
+    }
+  else
+    {
+      g_warning ("%s: CVE affected products file is not a JSON object.", __func__);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (cve_affected_products_file);
+      return -1;
+    }
+
+  inserts_run (&inserts, TRUE);
+  sql_commit ();
+  gvm_json_pull_event_cleanup (&event);
+  gvm_json_pull_parser_cleanup (&parser);
+  fclose (cve_affected_products_file);
+  return 0;
+
+fail_insert:
+  inserts_free (&inserts);
+  sql_rollback ();
+  cJSON_Delete (cve_entry);
+  gvm_json_pull_event_cleanup (&event);
+  gvm_json_pull_parser_cleanup (&parser);
+  fclose (cve_affected_products_file);
+  return -1;
+}
+
+/**
  * @brief Adds a EPSS score entry to an SQL inserts buffer.
  *
  * @param[in]  inserts      The SQL inserts buffer to add to.
@@ -3352,15 +3570,6 @@ insert_epss_score_entry (inserts_t *inserts, const char *cve,
   g_free (quoted_cve);
 
   inserts->current_chunk_size++;
-}
-
-/**
- * @brief Checks a failure condition for validating EPSS JSON.
- */
-#define EPSS_JSON_FAIL_IF(failure_condition, error_message)       \
-if (failure_condition) {                                          \
-  g_warning ("%s: %s", __func__, error_message);                  \
-  goto fail_insert;                                                 \
 }
 
 /**
@@ -4123,6 +4332,7 @@ update_scap_timestamp ()
 /**
  * @brief Update SCAP Max CVSS.
  */
+// static void
 static void
 update_scap_cvss ()
 {
@@ -4525,6 +4735,15 @@ update_scap (gboolean reset_scap_db)
   setproctitle ("Syncing SCAP: Updating CVEs");
 
   if (update_scap_cves () == -1)
+    {
+      abort_scap_update ();
+      return -1;
+    }
+
+  g_debug ("%s: update cve affected products", __func__);
+  setproctitle ("Syncing SCAP: Updating CVE affected products");
+
+  if (update_scap_cve_affected_products () == -1)
     {
       abort_scap_update ();
       return -1;
