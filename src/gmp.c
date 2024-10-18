@@ -13501,6 +13501,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                      cpe_deprecated_by_iterator_deprecated_by
                                       (&deprecated_by));
                 }
+              cleanup_iterator (&deprecated_by);
 
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);

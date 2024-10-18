@@ -424,11 +424,11 @@ json_object_item_double (cJSON *object, char *key, double fallback)
  * @brief Get the boolean value for a specified key from a JSON object.
  *
  * @param[in]  object    JSON object
- * @param[in]  key       The key of the double value in the JSON object.
+ * @param[in]  key       The key of the boolean value in the JSON object.
  * @param[in]  fallback  The fallback value if the boolean value is not
  *                       available.
  *
- * @return The double value out of the JSON object with key "key", if any.
+ * @return The boolean value out of the JSON object with key "key", if any.
  *         The fallback value otherwise.
  */
 static int
@@ -2372,8 +2372,6 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
   quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
   if (deprecated)
     {
-      /* CPEs can have multiple deprecatedBy entries,
-       *  but for the GMP field only the first one is used */
       cJSON *deprecated_by_array, *deprecated_by_item;
       char *deprecated_by_id;
       gchar *quoted_deprecated_by_id;
@@ -2410,8 +2408,6 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
           quoted_deprecated_by_id
             = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id);
 
-          g_message ("%s deprecated by %s", quoted_name, quoted_deprecated_by_id);
-
           first = inserts_check_size (deprecated_by_inserts);
 
           g_string_append_printf (deprecated_by_inserts->statement,
@@ -2420,8 +2416,7 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
                                   quoted_name,
                                   quoted_deprecated_by_id);
 
-          deprecated_by_inserts->current_chunk_size++;
-
+          deprecated_by_inserts->current_chunk_size++;   
           g_free (quoted_deprecated_by_id);
         }
     }
@@ -2516,6 +2511,8 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
                               quoted_type);
 
       inserts->current_chunk_size++;
+      g_free (quoted_ref);
+      g_free (quoted_type); 
     }
   g_free (quoted_name);
 
