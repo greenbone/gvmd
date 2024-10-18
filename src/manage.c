@@ -3274,8 +3274,6 @@ cve_scan_report_host_json (task_t task,
       const char *host_cpe;
       double severity;
 
-      g_message ("PROTO1: WHILE1");
-
       host_cpe = host_details_cpe_iterator_cpe (&host_details_cpe);
       cpe_product = uri_cpe_to_fs_product (host_cpe);
       init_cpe_match_nodes_iterator (&cpe_match_root_node, cpe_product);
