@@ -289,7 +289,7 @@ inserts_check_size (inserts_t *inserts)
       inserts->statements_size += inserts->statement->len;
       inserts->statement = NULL;
       inserts->current_chunk_size = 0;
-      
+
       if (inserts->max_statements_size
           && inserts-> statements_size >= inserts->max_statements_size)
         {
@@ -3069,8 +3069,8 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
         {
           gvm_json_pull_parser_next (&parser, &event);
           gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
-          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START && path_tail &&
-              path_tail->key && strcmp (path_tail->key, "CVE_Items") == 0)
+          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START && path_tail
+              && path_tail->key && strcmp (path_tail->key, "CVE_Items") == 0)
             {
               cve_items_found = TRUE;
             }
@@ -3399,7 +3399,7 @@ update_epss_scores ()
                     __func__, strerror (errno));
           ret = -1;
         }
-        g_free (current_json_path);
+      g_free (current_json_path);
       return ret;
     }
 
@@ -3428,8 +3428,8 @@ update_epss_scores ()
       while (!epss_scores_found)
         {
           gvm_json_pull_parser_next (&parser, &event);
-	        gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
-	        if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START
+          gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
+          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START
               && path_tail && strcmp (path_tail->key, "epss_scores") == 0)
             {
               epss_scores_found = TRUE;
@@ -3455,12 +3455,12 @@ update_epss_scores ()
 
       sql_begin_immediate ();
       inserts_init (&inserts,
-                EPSS_MAX_CHUNK_SIZE,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.epss_scores"
-                "  (cve, epss, percentile)"
-                "  VALUES ",
-                " ON CONFLICT (cve) DO NOTHING");
+                    EPSS_MAX_CHUNK_SIZE,
+                    setting_secinfo_sql_buffer_threshold_bytes (),
+                    "INSERT INTO scap2.epss_scores"
+                    "  (cve, epss, percentile)"
+                    "  VALUES ",
+                    " ON CONFLICT (cve) DO NOTHING");
 
       gvm_json_pull_parser_next (&parser, &event);
       while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
@@ -3499,13 +3499,13 @@ update_epss_scores ()
                             "Field 'percentile' in item is not a number");
 
           insert_epss_score_entry (&inserts,
-                                  cve_json->valuestring,
-                                  epss_json->valuedouble,
-                                  percentile_json->valuedouble);
+                                   cve_json->valuestring,
+                                   epss_json->valuedouble,
+                                   percentile_json->valuedouble);
 
           gvm_json_pull_parser_next (&parser, &event);
           cJSON_Delete (epss_entry);
-	      }
+        }
     }
   else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
     {
