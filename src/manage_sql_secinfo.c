@@ -2704,8 +2704,6 @@ json_object_item_double (cJSON *object, char *key, double fallback)
  *
  * @param[in]  parent_id  The parent_id of the node. If this value is 0,
  *                        the node is the root of the tree.
- * @param[in]  root_id    The id of the root of the tree. If this value
- *                        is 0, the node is the root of the tree.
  * @param[in]  cve_id     The id of the CVE to which the tree belongs.
  * @param[in]  operator   The operator for the match rules.
  *
@@ -2837,8 +2835,8 @@ set_root_id (long int id, long int root_id)
  *
  * @param[in]  parent_id  The parent id of the nodes to insert
  *                        (0 for the root node).
- * @param[in]  root_id    The root id of the nodes to insert
  * @param[in]  cveid      The id of the CVE the tree belongs to.
+ * @param[in]  root_id    The root id of the nodes to insert.
  * @param[in]  nodes      The JSON object that contains the rules for a
  *                        specific tree level.
  */
@@ -2864,14 +2862,12 @@ load_nodes (resource_t parent_id, resource_t cveid, resource_t root_id, cJSON *n
     {
       operator = cJSON_GetObjectItemCaseSensitive(node, "operator");
       if (operator && operator->valuestring)
-        {
-          id = save_node (parent_id, cveid, operator->valuestring);
-        }
+        id = save_node (parent_id, cveid, operator->valuestring);
       else
         return;
 
       if (parent_id == 0)
-          root_id = id;
+        root_id = id;
       set_root_id (id, root_id);
 
       cpe_match_rules = cJSON_GetObjectItemCaseSensitive(node, "cpe_match");

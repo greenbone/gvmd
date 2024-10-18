@@ -20513,8 +20513,8 @@ init_cpe_match_nodes_iterator (iterator_t* iterator, const char *cpe)
   init_iterator (iterator,
                  "SELECT DISTINCT root_id"
                  " FROM scap.cpe_match_nodes, scap.cpe_match_range"
-                 " WHERE cpe like '%s%s' AND scap.cpe_match_nodes.id = node_id;",
-                 quoted_cpe, "%");
+                 " WHERE cpe like '%s%%' AND scap.cpe_match_nodes.id = node_id;",
+                 quoted_cpe);
   g_free (quoted_cpe);
 }
 
@@ -22554,11 +22554,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
       g_string_append (levels_sql, ", 'error'");
       count++;
     }
-  if (strchr (levels, 'd'))
-    {
-      g_string_append (levels_sql, ", 'error'");
-      count++;
-    }
 
   if (count == 0)
     {
@@ -23288,8 +23283,6 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   min_qod_clause = where_qod (min_qod);
 
-  g_message ("PROTO1: %s", levels);
-  fflush (NULL);
   levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
                                      given_new_severity_sql
                                       ? given_new_severity_sql
