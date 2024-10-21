@@ -101,6 +101,7 @@
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_tls_certificates.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
@@ -128,6 +129,8 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
+#include <gvm/util/cpeutils.h>
+#include <gvm/util/versionutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -13253,6 +13256,178 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Print CPE match node with its matched CPEs.
+ *
+ * @param[in]  node     CPE match node to print.
+ * @param[in]  buffer   Buffer into which to print match node.
+ */
+static void
+print_cpe_match_nodes_xml(resource_t node, GString *buffer)
+{
+  iterator_t cpe_match_ranges;
+  gchar *operator;
+  operator = sql_string ("SELECT operator FROM scap.cpe_match_nodes WHERE id = %llu", node);
+  xml_string_append (buffer, "<operator>%s</operator>", operator);
+  init_cpe_match_range_iterator (&cpe_match_ranges, node, 1, "COALESCE(version_start_incl, version_start_excl)");
+  while (next (&cpe_match_ranges))
+    {
+      iterator_t cpes;
+      const gchar *vsi, *vse, *vei, *vee, *range_fs_cpe;
+      gchar *range_uri_product;
+
+      xml_string_append (buffer, "<match_criteria>");
+      range_fs_cpe = cpe_match_range_iterator_cpe (&cpe_match_ranges);
+      xml_string_append (buffer, "<match_string>%s</match_string>", range_fs_cpe);
+      xml_string_append (buffer, "<vulnerable>%s</vulnerable>",
+                         cpe_match_range_iterator_vulnerable (&cpe_match_ranges) != 0
+                         ? "1"
+                         : "0");
+      vsi = cpe_match_range_iterator_version_start_incl(&cpe_match_ranges);
+      vse = cpe_match_range_iterator_version_start_excl(&cpe_match_ranges);
+      vei = cpe_match_range_iterator_version_end_incl(&cpe_match_ranges);
+      vee = cpe_match_range_iterator_version_end_excl(&cpe_match_ranges);
+      xml_string_append (buffer,
+                         "<version_start_including>%s</version_start_including>",
+                         vsi ?: "");
+      xml_string_append (buffer,
+                         "<version_start_excluding>%s</version_start_excluding>",
+                         vse ?: "");
+      xml_string_append (buffer,
+                         "<version_end_including>%s</version_end_including>",
+                         vei ?: "");
+      xml_string_append (buffer,
+                         "<version_end_excluding>%s</version_end_excluding>",
+                         vee ?: "");
+      range_uri_product = fs_cpe_to_uri_product (range_fs_cpe);
+      init_product_cpe_iterator (&cpes, range_uri_product);
+      xml_string_append (buffer, "<matched_cpes>");
+
+      while (next (&cpes))
+        {
+          cpe_struct_t source, target;
+          const gchar *cpe;
+          gboolean matches;
+          cpe = product_cpe_iterator_uuid(&cpes);
+          cpe_struct_init (&source);
+          cpe_struct_init (&target);
+          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (cpe, &target);
+          matches = cpe_struct_match (source, target);
+          if (matches && check_version (target.version, vsi, vse, vei, vee))
+            {
+                xml_string_append (buffer, "<cpe>");
+                xml_string_append (buffer, "<name>%s</name>", cpe);
+
+                xml_string_append (buffer,
+                                  "<deprecated>%s</deprecated>",
+                                  product_cpe_iterator_deprecated (&cpes)
+                                  ? product_cpe_iterator_deprecated (&cpes)
+                                  : "0");
+              iterator_t deprecated_by;
+              init_cpe_deprecated_by_iterator (&deprecated_by,
+                                               product_cpe_iterator_uuid (&cpes));
+              while (next (&deprecated_by))
+                {
+                  xml_string_append (buffer,
+                                     "<deprecated_by cpe_id=\"%s\"/>",
+                                     cpe_deprecated_by_iterator_deprecated_by
+                                      (&deprecated_by));
+                }
+              xml_string_append (buffer, "</cpe>");
+              cleanup_iterator (&deprecated_by);
+            }
+        }
+
+      xml_string_append (buffer, "</matched_cpes>");
+      xml_string_append (buffer, "</match_criteria>");
+      cleanup_iterator (&cpes);
+      g_free (range_uri_product);
+    }
+    cleanup_iterator (&cpe_match_ranges);
+}
+/**
+ * @brief Print CVE affected software configurations
+ *
+ * @param[in]   cve_uuid  uuid of the CVE.
+ * @param[out]  result    Buffer into which to print.
+ *
+ */
+static void
+print_cve_affected_software_configs_xml (gchar *cve_uuid, GString *result)
+{
+  iterator_t cpe_match_root_nodes;
+  xml_string_append (result, "<configuration_nodes>");
+  init_cve_cpe_match_nodes_iterator (&cpe_match_root_nodes, cve_uuid);
+  while (next (&cpe_match_root_nodes))
+    {
+        result_t root_node;
+        iterator_t cpe_match_node_childs;
+        root_node = cpe_match_nodes_iterator_root_id (&cpe_match_root_nodes);
+        xml_string_append (result, "<node>");
+        print_cpe_match_nodes_xml(root_node, result);
+        init_cpe_match_node_childs_iterator (&cpe_match_node_childs, root_node);
+        while (next (&cpe_match_node_childs))
+          {
+            resource_t child_node;
+            child_node = cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
+            xml_string_append (result, "<node>");
+            print_cpe_match_nodes_xml(child_node, result);
+            xml_string_append (result, "</node>");
+          }
+        xml_string_append (result, "</node>");
+        cleanup_iterator (&cpe_match_node_childs);
+    }
+    xml_string_append (result, "</configuration_nodes>");
+    cleanup_iterator (&cpe_match_root_nodes);
+}
+
+/**
+ * @brief Print CVE references
+ *
+ * @param[in]   cve_uuid  uuid of the CVE.
+ * @param[out]  result    Buffer into which to print.
+ *
+ */
+static void
+print_cve_references_xml (gchar *cve_uuid, GString *result)
+{
+  iterator_t references;
+  init_cve_reference_iterator (&references, cve_uuid);
+  xml_string_append (result, "<references>");
+  while (next (&references))
+    {
+      xml_string_append (result, "<reference>");
+      xml_string_append (result, "<url>%s</url>", cve_reference_iterator_url (&references));
+      xml_string_append (result, "<tags>");
+      const char * tags_array = cve_reference_iterator_tags (&references);
+      if(tags_array && strlen(tags_array) > 2)
+        {
+          char *trimmed_array = g_strndup (tags_array + 1, strlen (tags_array) - 2);
+          gchar **tags, **current_tag;
+          tags = g_strsplit (trimmed_array, ",", -1);
+          current_tag = tags;
+          while (*current_tag)
+            {
+              if (strlen (*current_tag) > 2 && (*current_tag)[0] == '"' && (*current_tag)[strlen (*current_tag) - 1] == '"')
+                {
+                  char *trimmed_tag = g_strndup (*current_tag + 1, strlen (*current_tag) - 2);
+                  xml_string_append (result, "<tag>%s</tag>", trimmed_tag);
+                  g_free (trimmed_tag);
+                }
+              else
+                xml_string_append (result, "<tag>%s</tag>", *current_tag);
+              current_tag++;
+            }
+          g_strfreev (tags);
+          g_free (trimmed_array);
+        }
+      xml_string_append (result, "</tags>");
+      xml_string_append (result, "</reference>");
+    }
+  xml_string_append (result, "</references>");
+  cleanup_iterator (&references);
+}
+/**
  * @brief Handle end of GET_INFO element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -13473,24 +13648,35 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                "<title>%s</title>",
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
-                             "<nvd_id>%s</nvd_id>"
+                             "<cpe_name_id>%s</cpe_name_id>"
                              "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
-                             "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info)
-                              ? cpe_info_iterator_nvd_id (&info)
+                             "<deprecated>%s</deprecated>",
+                             cpe_info_iterator_cpe_name_id (&info)
+                              ? cpe_info_iterator_cpe_name_id (&info)
                               : "",
                              cpe_info_iterator_severity (&info)
                               ? cpe_info_iterator_severity (&info)
                               : "",
                              cpe_info_iterator_cve_refs (&info),
-                             cpe_info_iterator_status (&info)
-                              ? cpe_info_iterator_status (&info)
-                              : "");
+                             cpe_info_iterator_deprecated (&info)
+                              ? cpe_info_iterator_deprecated (&info)
+                              : "0");
 
           if (get_info_data->details == 1)
             {
-              iterator_t cves;
+              iterator_t deprecated_by, cves, refs;
+
+              init_cpe_deprecated_by_iterator (&deprecated_by,
+                                               get_iterator_name (&info));
+              while (next (&deprecated_by))
+                {
+                  xml_string_append (result,
+                                     "<deprecated_by cpe_id=\"%s\"/>",
+                                     cpe_deprecated_by_iterator_deprecated_by
+                                      (&deprecated_by));
+                }
+
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
               while (next (&cves))
@@ -13518,6 +13704,16 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                     : "");
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
+
+              g_string_append (result, "<references>");
+              init_cpe_reference_iterator (&refs, get_iterator_name (&info));
+              while (next (&refs))
+                xml_string_append (result,
+                                   "<reference href=\"%s\">%s</reference>",
+                                   cpe_reference_iterator_href (&refs),
+                                   cpe_reference_iterator_type (&refs));
+              cleanup_iterator (&refs);
+              g_string_append (result, "</references>");
             }
         }
       else if (g_strcmp0 ("cve", get_info_data->type) == 0)
@@ -13605,6 +13801,11 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                           "</warning>");
                 }
               g_string_append (result, "</cert>");
+
+              gchar *cve_uuid = g_strdup(get_iterator_uuid (&info));
+              print_cve_affected_software_configs_xml (cve_uuid, result);
+              print_cve_references_xml (cve_uuid, result);
+              g_free(cve_uuid);
             }
         }
       else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)

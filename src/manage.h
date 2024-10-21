@@ -1688,7 +1688,76 @@ void
 init_app_locations_iterator (iterator_t*, report_host_t, const gchar *);
 
 const char *
-app_locations_iterator_location (iterator_t *);
+app_locations_iterator_location (iterator_t*);
+
+void
+init_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_cve_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_product_cpe_iterator (iterator_t*, const char *);
+
+void
+init_cve_reference_iterator (iterator_t*, const char *);
+
+long long int
+cpe_match_nodes_iterator_root_id (iterator_t*);
+
+void
+init_host_details_cpe_iterator (iterator_t*, report_host_t);
+
+const char*
+host_details_cpe_iterator_cpe (iterator_t*);
+
+void
+init_cpe_match_node_childs_iterator (iterator_t*, long long int);
+
+long long int
+cpe_match_node_childs_iterator_id (iterator_t*);
+
+void
+init_cpe_match_range_iterator (iterator_t *, long long int, int, const char*);
+
+const char*
+cpe_match_range_iterator_cpe (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_start_incl (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_start_excl (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_end_incl (iterator_t*);
+
+const char*
+cpe_match_range_iterator_version_end_excl (iterator_t*);
+
+int
+cpe_match_range_iterator_vulnerable (iterator_t*);
+
+void
+init_host_details_cpe_product_iterator (iterator_t*, const char *, report_host_t);
+
+const char*
+host_details_cpe_product_iterator_value (iterator_t*);
+
+const char*
+product_cpe_iterator_uuid (iterator_t*);
+
+const char*
+product_cpe_iterator_deprecated (iterator_t*);
+
+const char*
+cve_reference_iterator_url (iterator_t*);
+
+const char*
+cve_reference_iterator_tags (iterator_t*);
+
+const char*
+cve_reference_iterator_tags_count (iterator_t*);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t);
@@ -1705,6 +1774,8 @@ prognosis_iterator_cve (iterator_t*);
 const char*
 prognosis_iterator_description (iterator_t*);
 
+int
+check_version (const gchar *, const gchar *, const gchar *, const gchar *, const gchar *);
 
 /* Targets. */
 
@@ -3340,6 +3411,12 @@ manage_scap_update_time ();
 /* CPE. */
 
 void
+init_cpe_deprecated_by_iterator (iterator_t *, const char *);
+
+const char *
+cpe_deprecated_by_iterator_deprecated_by (iterator_t *);
+
+void
 init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
 
 int
@@ -3355,22 +3432,32 @@ const char*
 cpe_info_iterator_title (iterator_t*);
 
 const char*
-cpe_info_iterator_status (iterator_t*);
+cpe_info_iterator_deprecated (iterator_t*);
 
 const char *
 cpe_info_iterator_severity (iterator_t*);
 
 const char*
-cpe_info_iterator_deprecated_by_id (iterator_t*);
-
-const char*
 cpe_info_iterator_cve_refs (iterator_t*);
 
 const char*
-cpe_info_iterator_nvd_id (iterator_t*);
+cpe_info_iterator_cpe_name_id (iterator_t*);
+
+const char*
+cpe_info_iterator_deprecated_by_id (iterator_t*);
 
 gchar *
 cpe_details_xml (const char*);
+
+void
+init_cpe_reference_iterator (iterator_t *, const char *);
+
+const char*
+cpe_reference_iterator_href (iterator_t *);
+
+const char*
+cpe_reference_iterator_type (iterator_t *);
+
 
 /* CVE. */
 
