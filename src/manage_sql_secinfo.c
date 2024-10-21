@@ -51,6 +51,7 @@
 #include <cjson/cJSON.h>
 #include <gvm/base/gvm_sentry.h>
 #include <bsd/unistd.h>
+#include <gvm/util/compressutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/xmlutils.h>
@@ -3046,7 +3047,7 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
 
   g_info ("Updating %s", full_path);
 
-  cve_file = fdopen (fd, "r");
+  cve_file = gvm_gzip_open_file_reader_fd (fd);
   if (cve_file == NULL)
     {
       g_warning ("%s: Failed to open CVE file: %s",
@@ -3283,7 +3284,8 @@ update_scap_cves ()
   gboolean read_json = FALSE;
   while ((cve_path = g_dir_read_name (dir)))
     {
-      if (fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0)
+      if (fnmatch ("nvdcve-1.1-*.json.gz", cve_path, 0) == 0 ||
+          fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0)
         {
           read_json = TRUE;
           break;
@@ -3294,7 +3296,9 @@ update_scap_cves ()
   count = 0;
   while ((cve_path = g_dir_read_name (dir)))
     {
-      if ((fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0) && read_json)
+      if ((fnmatch ("nvdcve-1.1-*.json.gz", cve_path, 0) == 0 ||
+           fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0)
+          && read_json)
         {
           if (update_cve_json (cve_path, hashed_cpes))
             {
@@ -3380,9 +3384,18 @@ update_epss_scores ()
   inserts_t inserts;
 
   current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                        "epss-scores-current.json",
+                                        "epss-scores-current.json.gz",
                                         NULL);
   int fd = open(current_json_path, O_RDONLY);
+
+  if (fd < 0 && errno == ENOENT)
+    {
+      g_free (current_json_path);
+      current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                            "epss-scores-current.json",
+                                            NULL);
+      fd = open(current_json_path, O_RDONLY);
+    }
 
   if (fd < 0)
     {
@@ -3403,7 +3416,7 @@ update_epss_scores ()
       return ret;
     }
 
-  epss_scores_file = fdopen(fd, "r");
+  epss_scores_file = gvm_gzip_open_file_reader_fd (fd);
   if (epss_scores_file == NULL)
     {
       g_warning ("%s: Failed to convert file descriptor to FILE*: %s",
