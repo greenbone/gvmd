@@ -2744,7 +2744,6 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
 
   cJSON_ArrayForEach(match_rule, match_rules)
     {
-      char *quoted_cpe = NULL;
       char *sql_cpe = NULL;
       vulnerable = FALSE;
       version_start_incl = NULL;
@@ -2760,7 +2759,7 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
       cpe_js = cJSON_GetObjectItemCaseSensitive(match_rule, "cpe23Uri");
       if (cpe_js != NULL && strcmp (cpe_js->valuestring, "(null)"))
         {
-          quoted_cpe = sql_quote (cpe_js->valuestring);
+          char *quoted_cpe = sql_quote (cpe_js->valuestring);
           sql_cpe = g_strdup_printf ("'%s'", quoted_cpe);
           g_free (quoted_cpe);
         }
