@@ -22549,11 +22549,6 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
       g_string_append (levels_sql, ", 'false'");
       count++;
     }
-  if (strchr (levels, 'e'))
-    {
-      g_string_append (levels_sql, ", 'error'");
-      count++;
-    }
 
   if (count == 0)
     {
