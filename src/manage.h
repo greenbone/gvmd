@@ -3385,6 +3385,12 @@ manage_scap_update_time ();
 /* CPE. */
 
 void
+init_cpe_deprecated_by_iterator (iterator_t *, const char *);
+
+const char *
+cpe_deprecated_by_iterator_deprecated_by (iterator_t *);
+
+void
 init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
 
 int
@@ -3400,22 +3406,29 @@ const char*
 cpe_info_iterator_title (iterator_t*);
 
 const char*
-cpe_info_iterator_status (iterator_t*);
+cpe_info_iterator_deprecated (iterator_t*);
 
 const char *
 cpe_info_iterator_severity (iterator_t*);
 
 const char*
-cpe_info_iterator_deprecated_by_id (iterator_t*);
-
-const char*
 cpe_info_iterator_cve_refs (iterator_t*);
 
 const char*
-cpe_info_iterator_nvd_id (iterator_t*);
+cpe_info_iterator_cpe_name_id (iterator_t*);
 
 gchar *
 cpe_details_xml (const char*);
+
+void
+init_cpe_reference_iterator (iterator_t *, const char *);
+
+const char*
+cpe_reference_iterator_href (iterator_t *);
+
+const char*
+cpe_reference_iterator_type (iterator_t *);
+
 
 /* CVE. */
 

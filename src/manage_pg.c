@@ -3527,10 +3527,22 @@ manage_db_init (const gchar *name)
            "  modification_time integer,"
            "  title text,"
            "  status text,"
-           "  deprecated_by_id INTEGER,"
            "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
-           "  nvd_id text);");
+           "  nvd_id text,"
+           "  deprecated integer,"
+           "  cpe_name_id text);");
+
+      sql ("CREATE TABLE scap2.cpe_refs"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe INTEGER,"
+           "  ref TEXT,"
+           "  type TEXT);");
+
+      sql ("CREATE TABLE scap2.cpes_deprecated_by"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe TEXT,"
+           "  deprecated_by TEXT);");
 
       sql ("CREATE TABLE scap2.cpe_match_nodes"
            " (id SERIAL PRIMARY KEY,"
