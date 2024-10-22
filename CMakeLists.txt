@@ -20,7 +20,7 @@ cmake_minimum_required (VERSION 3.0)
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
 project (gvm
-         VERSION 23.10.1
+         VERSION 24.0.1
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -103,7 +103,7 @@ include (CPack)
 
 set (GVMD_DATABASE_VERSION 256)
 
-set (GVMD_SCAP_DATABASE_VERSION 21)
+set (GVMD_SCAP_DATABASE_VERSION 22)
 
 set (GVMD_CERT_DATABASE_VERSION 8)
 
@@ -248,7 +248,7 @@ endif (NOT CVSS3_RATINGS)
 add_definitions (-DCVSS3_RATINGS=${CVSS3_RATINGS})
 
 if (NOT COMPLIANCE_REPORTS)
-  set (COMPLIANCE_REPORTS 0)
+  set (COMPLIANCE_REPORTS 1)
 endif (NOT COMPLIANCE_REPORTS)
 add_definitions (-DCOMPLIANCE_REPORTS=${COMPLIANCE_REPORTS})
 

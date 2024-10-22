@@ -9727,16 +9727,16 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf (buffer, "<compliance>%s</compliance>", compliance);
 
   if (include_notes
-      && use_delta_fields 
-         ? result_iterator_delta_may_have_notes (results)
-         : result_iterator_may_have_notes (results))
+      && (use_delta_fields
+          ? result_iterator_delta_may_have_notes (results)
+          : result_iterator_may_have_notes (results)))
     buffer_result_notes_xml (buffer, result,
                              selected_task, include_notes_details, lean);
 
   if (include_overrides
-      && use_delta_fields 
-         ? result_iterator_delta_may_have_overrides (results) 
-         : result_iterator_may_have_overrides (results))
+      && (use_delta_fields
+          ? result_iterator_delta_may_have_overrides (results)
+          : result_iterator_may_have_overrides (results)))
     buffer_result_overrides_xml (buffer, result,
                                  selected_task, include_overrides_details,
                                  lean);
@@ -10193,6 +10193,10 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
   g_string_append_printf (xml, "<aggregate>");
 
   g_string_append_printf (xml,
+                          "<data_type>%s</data_type>",
+                          type);
+
+  g_string_append_printf (xml,
                           "<group_column>%s</group_column>",
                           group_column);
 
@@ -10508,6 +10512,10 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
   int has_groups = 0;
 
   g_string_append_printf (xml, "<aggregate>");
+
+  g_string_append_printf (xml,
+                          "<data_type>%s</data_type>",
+                          type);
 
   for (index = 0; index < data_columns->len ;index ++)
     {
@@ -12976,6 +12984,7 @@ static void
 handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
 {
   assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   if (acl_user_may ("get_feeds") == 0)
     {
@@ -12986,9 +12995,52 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  char *feed_owner_uuid, *feed_roles;
+  gboolean feed_owner_set, feed_import_roles_set, feed_resources_access;
+
+  feed_owner_set = feed_import_roles_set = feed_resources_access = FALSE;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
+
+  if (feed_owner_uuid != NULL && strlen (feed_owner_uuid) > 0)
+    feed_owner_set = TRUE;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &feed_roles);
+
+  if (feed_roles != NULL && strlen (feed_roles) > 0)
+    feed_import_roles_set = TRUE;
+
+  if (feed_owner_uuid != NULL && strcmp (feed_owner_uuid, current_credentials.uuid) == 0)
+    feed_resources_access = TRUE;
+  else if (feed_roles != NULL)
+    {
+      gchar **roles = g_strsplit (feed_roles, ",", -1);
+      gchar **role = roles;
+      while (*role)
+      {
+        if (acl_user_has_role (current_credentials.uuid, *role))
+          {
+            feed_resources_access = TRUE;
+            break;
+          }
+        role++;
+      }
+      g_strfreev (roles);
+    }
+
+  free (feed_roles);
+  free (feed_owner_uuid);
+
   SEND_TO_CLIENT_OR_FAIL ("<get_feeds_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feed_owner_set>%s</feed_owner_set>"
+                           "<feed_roles_set>%s</feed_roles_set>"
+                           "<feed_resources_access>%s</feed_resources_access>",
+                           feed_owner_set ? "1" : "0",
+                           feed_import_roles_set ? "1" : "0",
+                           feed_resources_access ? "1" : "0");
 
   if ((get_feeds_data->type == NULL)
       || (strcasecmp (get_feeds_data->type, "nvt") == 0))
@@ -13421,24 +13473,36 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                "<title>%s</title>",
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
-                             "<nvd_id>%s</nvd_id>"
+                             "<cpe_name_id>%s</cpe_name_id>"
                              "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
-                             "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info)
-                              ? cpe_info_iterator_nvd_id (&info)
+                             "<deprecated>%s</deprecated>",
+                             cpe_info_iterator_cpe_name_id (&info)
+                              ? cpe_info_iterator_cpe_name_id (&info)
                               : "",
                              cpe_info_iterator_severity (&info)
                               ? cpe_info_iterator_severity (&info)
                               : "",
                              cpe_info_iterator_cve_refs (&info),
-                             cpe_info_iterator_status (&info)
-                              ? cpe_info_iterator_status (&info)
-                              : "");
+                             cpe_info_iterator_deprecated (&info)
+                              ? cpe_info_iterator_deprecated (&info)
+                              : "0");
 
           if (get_info_data->details == 1)
             {
-              iterator_t cves;
+              iterator_t deprecated_by, cves, refs;
+
+              init_cpe_deprecated_by_iterator (&deprecated_by,
+                                               get_iterator_name (&info));
+              while (next (&deprecated_by))
+                {
+                  xml_string_append (result,
+                                     "<deprecated_by cpe_id=\"%s\"/>",
+                                     cpe_deprecated_by_iterator_deprecated_by
+                                      (&deprecated_by));
+                }
+              cleanup_iterator (&deprecated_by);
+
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
               while (next (&cves))
@@ -13466,6 +13530,16 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                     : "");
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
+
+              g_string_append (result, "<references>");
+              init_cpe_reference_iterator (&refs, get_iterator_name (&info));
+              while (next (&refs))
+                xml_string_append (result,
+                                   "<reference href=\"%s\">%s</reference>",
+                                   cpe_reference_iterator_href (&refs),
+                                   cpe_reference_iterator_type (&refs));
+              cleanup_iterator (&refs);
+              g_string_append (result, "</references>");
             }
         }
       else if (g_strcmp0 ("cve", get_info_data->type) == 0)
