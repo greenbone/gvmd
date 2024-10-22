@@ -2252,7 +2252,7 @@ static int move_buffer_data(struct FILESTREAM *filestream){
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 static int
-update_nvts_from_json_vts (openvasd_connector_t *connector,
+update_nvts_from_json_vts (openvasd_connector_t connector,
                            const gchar *scanner_feed_version,
                            int rebuild)
 {
@@ -2831,18 +2831,18 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
       return -1;
     }
 
- ret = update_nvts_from_json_vts (&connector, scanner_feed_version,
+ ret = update_nvts_from_json_vts (connector, scanner_feed_version,
                                    rebuild);
   if (ret)
     {
-      openvasd_connector_free (&connector);
+      openvasd_connector_free (connector);
       return ret;
     }
 
   /* Update scanner preferences */
   // TODO: update scanner preferences
 
-  resp = openvasd_get_vts (&connector);
+  resp = openvasd_get_vts (connector);
   if (resp->code != 200)
     {
       g_warning ("%s: failed to get scanner preferences", __func__);
@@ -2850,9 +2850,9 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
     }
   GSList *scan_prefs = NULL;
 
-  openvasd_parsed_scans_preferences (&connector, &scan_prefs);
+  openvasd_parsed_scans_preferences (connector, &scan_prefs);
   g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
-  openvasd_connector_free (&connector);
+  openvasd_connector_free (connector);
 
   GString *prefs_sql;
   GSList *point;
@@ -2956,7 +2956,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   if (!connector)
     return 1;
 
-  resp = openvasd_get_health_ready (&connector);
+  resp = openvasd_get_health_ready (connector);
   if (resp->code == -1)
     {
       g_warning ("%s: failed to connect to %s:%d", __func__,
@@ -2972,7 +2972,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
     }
 
   openvasd_response_cleanup (resp);
-  openvasd_connector_free (&connector);
+  openvasd_connector_free (connector);
   return ret;
 }
 

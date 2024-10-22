@@ -43201,19 +43201,19 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
 
   connection = openvasd_connector_new();
 
-  openvasd_connector_builder (&connection, OPENVASD_SERVER, server);
-  openvasd_connector_builder (&connection, OPENVASD_CA_CERT, ca_pub);
-  openvasd_connector_builder (&connection, OPENVASD_KEY, key_priv);
-  openvasd_connector_builder (&connection, OPENVASD_CERT, key_pub);
-  openvasd_connector_builder (&connection, OPENVASD_PORT, (void *) &port);
+  openvasd_connector_builder (connection, OPENVASD_SERVER, server);
+  openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
+  openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
+  openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
+  openvasd_connector_builder (connection, OPENVASD_PORT, (void *) &port);
 
   if (!connection)
     return 1;
 
   *desc = g_strdup_printf("Openvasd Sensor on htt://%s:%d", server, port);
-  if (openvasd_parsed_scans_preferences (&connection, params) < 0)
+  if (openvasd_parsed_scans_preferences (connection, params) < 0)
     return 1;
-  openvasd_connector_free (&connection);
+  openvasd_connector_free (connection);
   return 0;
 }
 
@@ -59930,14 +59930,14 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
 
   connection = openvasd_connector_new();
 
-  openvasd_connector_builder (&connection, OPENVASD_SERVER, server);
-  openvasd_connector_builder (&connection, OPENVASD_CA_CERT, ca_pub);
-  openvasd_connector_builder (&connection, OPENVASD_KEY, key_priv);
-  openvasd_connector_builder (&connection, OPENVASD_CERT, key_pub);
-  openvasd_connector_builder (&connection, OPENVASD_PORT, (void *) &port);
+  openvasd_connector_builder (connection, OPENVASD_SERVER, server);
+  openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
+  openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
+  openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
+  openvasd_connector_builder (connection, OPENVASD_PORT, (void *) &port);
 
   if (scan_id && scan_id[0] != '\0')
-    openvasd_connector_builder (&connection, OPENVASD_SCAN_ID, scan_id);
+    openvasd_connector_builder (connection, OPENVASD_SCAN_ID, scan_id);
 
   g_free (server);
   g_free (ca_pub);

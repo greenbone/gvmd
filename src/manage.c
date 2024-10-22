@@ -7572,7 +7572,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   if (!connector)
     return 1;
 
-  resp = openvasd_get_health_ready (&connector);
+  resp = openvasd_get_health_ready (connector);
   if (resp->code == -1)
     {
       g_warning ("%s: failed to connect to %s:%d", __func__,
@@ -7588,7 +7588,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
     }
 
   openvasd_response_cleanup (resp);
-  openvasd_connector_free (&connector);
+  openvasd_connector_free (connector);
   return ret;
 }
 
@@ -8443,17 +8443,17 @@ stop_openvasd_task (task_t task)
   current_scanner_task = task;
   global_current_report = task_running_report (task);
   set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
-  response = openvasd_stop_scan (&connector);
+  response = openvasd_stop_scan (connector);
   if (response->code < 0)
     {
       ret = -1;
       g_free (scan_id);
       goto end_stop_openvasd;
     }
-  response = openvasd_delete_scan (&connector);
+  response = openvasd_delete_scan (connector);
   g_free (scan_id);
 end_stop_openvasd:
-  openvasd_connector_free(&connector);
+  openvasd_connector_free (connector);
   set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_STOPPED);
   if (scan_report)
@@ -8498,20 +8498,20 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
       *error = g_strdup ("Could not connect to Openvasd Scanner");
       return -1;
     }
-  status = openvasd_parsed_scan_status (&connection);
+  status = openvasd_parsed_scan_status (connection);
 
   if (status->status == OPENVASD_SCAN_STATUS_ERROR)
     {
       if (status->response_code == 404)
         {
           g_debug ("%s: Scan %s not found", __func__, scan_id);
-          openvasd_connector_free (&connection);
+          openvasd_connector_free (connection);
           trim_partial_report (global_current_report);
           return 1;
         }
       g_warning ("%s: Error getting status of scan %s: %ld",
                  __func__, scan_id, status->response_code);
-      openvasd_connector_free (&connection);
+      openvasd_connector_free (connection);
       return -1;
     }
   else if (status->status == OPENVASD_SCAN_STATUS_RUNNING
@@ -8521,25 +8521,25 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
        * or storing the results, so some may be missing. */
-      response = openvasd_stop_scan (&connection);
+      response = openvasd_stop_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to stop old report: %ld",
                                     response->code);
-          openvasd_connector_free (&connection);
+          openvasd_connector_free (connection);
           openvasd_response_cleanup(response);
           return -1;
         }
-      response = openvasd_delete_scan (&connection);
+      response = openvasd_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
           openvasd_response_cleanup(response);
-          openvasd_connector_free (&connection);
+          openvasd_connector_free (connection);
           return -1;
         }
-      openvasd_connector_free (&connection);
+      openvasd_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
     }
@@ -8548,16 +8548,16 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
       /* OSP can't stop an already finished/interrupted scan,
        * but it must be delete to be resumed. */
       g_debug ("%s: Scan %s finished", __func__, scan_id);
-     response = openvasd_delete_scan (&connection);
+     response = openvasd_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
           openvasd_response_cleanup(response);
-          openvasd_connector_free (&connection);
+          openvasd_connector_free (connection);
           return -1;
         }
-      openvasd_connector_free (&connection);
+      openvasd_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
     }
@@ -8566,23 +8566,23 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
     {
       g_debug ("%s: Scan %s stopped or interrupted",
                __func__, scan_id);
-    response = openvasd_delete_scan (&connection);
+    response = openvasd_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
           openvasd_response_cleanup(response);
-          openvasd_connector_free (&connection);
+          openvasd_connector_free (connection);
           return -1;
         }
-      openvasd_connector_free (&connection);
+      openvasd_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
     }
 
   g_warning ("%s: Unexpected scanner status %d", __func__, status->status);
   *error = g_strdup_printf ("Unexpected scanner status %d", status->status);
-  openvasd_connector_free (&connection);
+  openvasd_connector_free (connection);
 
   return -1;
 }
@@ -8891,7 +8891,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   scan_config =
     openvasd_build_scan_config_json(openvasd_target, scanner_options, vts);
 
-  response = openvasd_start_scan (&connection, scan_config);
+  response = openvasd_start_scan (connection, scan_config);
   openvasd_target_free(openvasd_target);
   // Credentials are freed with target
   g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
@@ -8943,7 +8943,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
           break;
         }
 
-      progress = openvasd_get_scan_progress (&connector);
+      progress = openvasd_get_scan_progress (connector);
 
       if (progress < 0 || progress > 100)
         {
@@ -8966,14 +8966,14 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
-          response = openvasd_delete_scan(&connector);
+          response = openvasd_delete_scan(connector);
           rc = -1;
           break;
         }
       else
         {
           /* Get the full openvasd report. */
-          progress = openvasd_get_scan_progress (&connector);
+          progress = openvasd_get_scan_progress (connector);
 
           if (progress < 0 || progress > 100)
             {
@@ -9010,12 +9010,12 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
 
               set_report_slave_progress (report, progress);
 
-              openvasd_parsed_results (&connector, result_start,
+              openvasd_parsed_results (connector, result_start,
                                        result_end, &results);
               result_start += g_slist_length (results);
 
               gvm_sleep(1);
-              openvasd_scan_status = openvasd_parsed_scan_status (&connector);
+              openvasd_scan_status = openvasd_parsed_scan_status (connector);
               start_time = openvasd_scan_status->start_time;
               end_time = openvasd_scan_status->end_time;
               current_status = openvasd_scan_status->status;
@@ -9024,8 +9024,10 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
 
               if (g_slist_length(results))
                 {
-                  parse_openvasd_report (task, report, results,
-                                         start_time, end_time);
+                  parse_openvasd_report (task, report, results, start_time,
+                                         end_time);
+                  g_slist_free_full (results,
+                                     (GDestroyNotify) openvasd_result_free);
                 }
               if (current_status == OPENVASD_SCAN_STATUS_STORED)
                 {
@@ -9045,7 +9047,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                      "Task interrupted unexpectedly", "", "",
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
-                  response = openvasd_delete_scan (&connector);
+                  response = openvasd_delete_scan (connector);
                   rc = -3;
                   break;
                 }
@@ -9067,14 +9069,14 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                      "Scan stopped unexpectedly by the server", "", "",
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
-                  response = openvasd_delete_scan (&connector);
+                  response = openvasd_delete_scan (connector);
                   rc = -1;
                   break;
                 }
               else if (progress == 100
                        && current_status == OPENVASD_SCAN_STATUS_SUCCEEDED)
                 {
-                  response = openvasd_delete_scan (&connector);
+                  response = openvasd_delete_scan (connector);
                   rc = response->code;
                   break;
                 }
@@ -9093,7 +9095,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
       gvm_sleep (5);
     }
   openvasd_response_cleanup (response);
-  openvasd_connector_free(&connector);
+  openvasd_connector_free(connector);
   return rc;
 }
 
