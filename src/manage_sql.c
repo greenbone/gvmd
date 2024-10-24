@@ -20447,6 +20447,198 @@ app_locations_iterator_location (iterator_t *iterator)
 }
 
 /**
+ * @brief Initialize an iterator of CPEs for a report's host.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  report_host  Report host.
+ */
+void
+init_host_details_cpe_iterator (iterator_t *iterator, report_host_t report_host)
+{
+  init_iterator (iterator,
+                 "SELECT DISTINCT LOWER (value) FROM report_host_details"
+                 " WHERE name = 'App' and report_host = %llu;",
+                 report_host);
+}
+
+/**
+ * @brief Get a CPE from an CPE iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The CPE.
+ */
+DEF_ACCESS (host_details_cpe_iterator_cpe, 0);
+
+/**
+ * @brief Initialize an iterator of CPEs for a product of a report's host.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  product      The product for which to get the CPEs.
+ * @param[in]  report_host  Report host.
+ */
+void
+init_host_details_cpe_product_iterator (iterator_t* iterator, const char *product, report_host_t report_host)
+{
+  gchar *quoted_product;
+  quoted_product = sql_quote (product);
+  init_iterator (iterator,
+                 "SELECT DISTINCT LOWER (value) FROM report_host_details"
+                 " WHERE name = 'App' AND report_host = %llu"
+                 " AND value like '%s%s';",
+                 report_host, quoted_product, "%");
+  g_free (quoted_product);
+}
+
+/**
+ * @brief Get a CPE from an CPE product iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The CPE.
+ */
+DEF_ACCESS (host_details_cpe_product_iterator_value, 0);
+
+/**
+ * @brief Initialize an iterator of root_ids of CPE match nodes.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cpe       The cpe contained in the match nodes.
+ */
+void
+init_cpe_match_nodes_iterator (iterator_t* iterator, const char *cpe)
+{
+  gchar *quoted_cpe;
+  quoted_cpe = sql_quote (cpe);
+  init_iterator (iterator,
+                 "SELECT DISTINCT root_id"
+                 " FROM scap.cpe_match_nodes, scap.cpe_match_range"
+                 " WHERE cpe like '%s%%' AND scap.cpe_match_nodes.id = node_id;",
+                 quoted_cpe);
+  g_free (quoted_cpe);
+}
+
+/**
+ * @brief Get a root id from an CPE match node iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The root id.
+ */
+long long int
+cpe_match_nodes_iterator_root_id (iterator_t* iterator)
+{
+  return iterator_int64 (iterator, 0);
+}
+
+/**
+ * @brief Initialize an iterator of childs of an CPE match node.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  node      The match node with the childs.
+ */
+void
+init_cpe_match_node_childs_iterator (iterator_t* iterator, long long int node)
+{
+  init_iterator (iterator,
+                 "SELECT id FROM scap.cpe_match_nodes"
+                 " WHERE parent_id = %llu;",
+                 node);
+}
+
+/**
+ * @brief Get a child from an CPE match node childs iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The id of the child node.
+ */
+long long int
+cpe_match_node_childs_iterator_id (iterator_t* iterator)
+{
+  return iterator_int64 (iterator, 0);
+}
+
+/**
+ * @brief Initialize an iterator of match ranges of an CPE match node.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  node      The match node with match ranges.
+ */
+void
+init_cpe_match_range_iterator (iterator_t* iterator, long long int node)
+{
+  init_iterator (iterator,
+                 "SELECT vulnerable, cpe, version_start_incl,"
+                 " version_start_excl, version_end_incl, version_end_excl"
+                 " FROM scap.cpe_match_range"
+                 " WHERE node_id = %llu;",
+                 node);
+}
+
+/**
+ * @brief Return if the CPE of the actual match node is vulnerable.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  1 if the match node is vulnerable, 0 otherwise.
+ */
+int
+cpe_match_range_iterator_vulnerable (iterator_t* iterator)
+{
+  return iterator_int64 (iterator, 0);
+}
+
+/**
+ * @brief Return the CPE of the actual match node.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The CPE of the actual match node.
+ */
+DEF_ACCESS (cpe_match_range_iterator_cpe, 1);
+
+/**
+ * @brief Return the start included version of the actual match node.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The start included version of the actual match node, if any.
+ *           NULL otherwise.
+ */
+DEF_ACCESS (cpe_match_range_iterator_version_start_incl, 2);
+
+/**
+ * @brief Return the start excluded version of the actual match node.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The start excluded version of the actual match node, if any.
+ *           NULL otherwise.
+ */
+DEF_ACCESS (cpe_match_range_iterator_version_start_excl, 3);
+
+/**
+ * @brief Return the end included version of the actual match node.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The end included version of the actual match node, if any.
+ *           NULL otherwise.
+ */
+DEF_ACCESS (cpe_match_range_iterator_version_end_incl, 4);
+
+/**
+ * @brief Return the end excluded version of the actual match node.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The end excluded version of the actual match node, if any.
+ *           NULL otherwise.
+ */
+DEF_ACCESS (cpe_match_range_iterator_version_end_excl, 5);
+
+/**
  * @brief Initialise a report host prognosis iterator.
  *
  * @param[in]  iterator     Iterator.
