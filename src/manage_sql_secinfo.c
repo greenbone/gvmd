@@ -3288,7 +3288,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @brief Save the node of a cve match rule tree.
  *
  * @param[in]  parent_id  The parent_id of the node. If this value is 0,
- *                        this node is the root of the tree.
+ *                        the node is the root of the tree.
  * @param[in]  cve_id     The id of the CVE to which the tree belongs.
  * @param[in]  operator   The operator for the match rules.
  *
@@ -3322,7 +3322,6 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
   cJSON *cpe_js;
 
   gboolean vulnerable = FALSE;
-  char * cpe = NULL;
   char * version_start_incl = NULL;
   char * version_start_excl = NULL;
   char * version_end_incl = NULL;
@@ -3330,9 +3329,8 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
 
   cJSON_ArrayForEach(match_rule, match_rules)
     {
-      char *quoted_cpe;
+      char *sql_cpe = NULL;
       vulnerable = FALSE;
-      cpe = NULL;
       version_start_incl = NULL;
       version_start_excl = NULL;
       version_end_incl = NULL;
@@ -3342,22 +3340,40 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
         vulnerable = TRUE;
       else
         vulnerable = FALSE;
+
       cpe_js = cJSON_GetObjectItemCaseSensitive(match_rule, "cpe23Uri");
-      if (cpe_js != NULL)
-        cpe = cpe_js->valuestring;
-      quoted_cpe = sql_quote (cpe);
+      if (cpe_js != NULL && strcmp (cpe_js->valuestring, "(null)"))
+        {
+          char *quoted_cpe = sql_quote (cpe_js->valuestring);
+          sql_cpe = g_strdup_printf ("'%s'", quoted_cpe);
+          g_free (quoted_cpe);
+        }
+      else
+        sql_cpe = g_strdup ("NULL");
+
       ver_se = cJSON_GetObjectItemCaseSensitive(match_rule, "versionStartIncluding");
-      if (ver_se != NULL)
-        version_start_incl = ver_se->valuestring;
+      if (ver_se != NULL && strcmp (ver_se->valuestring, "(null)"))
+        version_start_incl = g_strdup_printf ("'%s'", ver_se->valuestring);
+      else
+        version_start_incl = g_strdup ("NULL");
+
       ver_se = cJSON_GetObjectItemCaseSensitive(match_rule, "versionStartExcluding");
-      if (ver_se != NULL)
-        version_start_excl = ver_se->valuestring;
+      if (ver_se != NULL && strcmp (ver_se->valuestring, "(null)"))
+        version_start_excl = g_strdup_printf ("'%s'", ver_se->valuestring);
+      else
+        version_start_excl = g_strdup ("NULL");
+
       ver_se = cJSON_GetObjectItemCaseSensitive(match_rule, "versionEndIncluding");
-      if (ver_se != NULL)
-        version_end_incl = ver_se->valuestring;
+      if (ver_se != NULL && strcmp (ver_se->valuestring, "(null)"))
+        version_end_incl = g_strdup_printf ("'%s'", ver_se->valuestring);
+      else
+        version_end_incl = g_strdup ("NULL");
+
       ver_se = cJSON_GetObjectItemCaseSensitive(match_rule, "versionEndExcluding");
-      if (ver_se != NULL)
-        version_end_excl = ver_se->valuestring;
+      if (ver_se != NULL && strcmp (ver_se->valuestring, "(null)"))
+        version_end_excl = g_strdup_printf ("'%s'", ver_se->valuestring);
+      else
+        version_end_excl = g_strdup ("NULL");
 
       sql
        ("INSERT INTO scap2.cpe_match_range"
@@ -3365,30 +3381,51 @@ add_cpe_match_rules (result_t id, cJSON *match_rules)
         "  version_start_incl, version_start_excl,"
         "  version_end_incl, version_end_excl)"
         " VALUES"
-        " (%llu, %d, '%s', '%s', '%s', '%s', '%s')",
+        " (%llu, %d, %s, %s, %s, %s, %s)",
         id,
         vulnerable ? 1 : 0,
-        quoted_cpe,
-        version_start_incl,
-        version_start_excl,
-        version_end_incl,
-        version_end_excl);
-      g_free (quoted_cpe);
+        sql_cpe ? sql_cpe : "",
+        version_start_incl ? version_start_incl : "",
+        version_start_excl ? version_start_excl : "",
+        version_end_incl ? version_end_incl : "",
+        version_end_excl ? version_end_excl : "");
+
+      g_free (sql_cpe);
+      g_free (version_start_incl);
+      g_free (version_start_excl);
+      g_free (version_end_incl);
+      g_free (version_end_excl);
     }
+}
+
+/**
+ * @brief Set the root id for a node of a cve match rule tree.
+ *
+ * @param[in]  id       The id of the node for which the root id is to be set.
+ * @param[in]  root_id  The id of the root of the tree this node belongs to.
+ */
+static void
+set_root_id (long int id, long int root_id)
+{
+  sql ("UPDATE scap2.cpe_match_nodes set root_id = %i"
+       " WHERE id = %i;",
+       root_id,
+       id);
 }
 
 /**
  * @brief Load and add recursively all nodes of a match rule tree for a
  *        specific CVE. Build a match rule tree.
  *
- * @param[in]  parent_id  The parent_id of the nodes to insert
+ * @param[in]  parent_id  The parent id of the nodes to insert
  *                        (0 for the root node).
  * @param[in]  cveid      The id of the CVE the tree belongs to.
+ * @param[in]  root_id    The root id of the nodes to insert.
  * @param[in]  nodes      The JSON object that contains the rules for a
  *                        specific tree level.
  */
 static void
-load_nodes (resource_t parent_id, resource_t cveid, cJSON *nodes)
+load_nodes (resource_t parent_id, resource_t cveid, resource_t root_id, cJSON *nodes)
 {
   cJSON *node;
   resource_t id;
@@ -3408,13 +3445,20 @@ load_nodes (resource_t parent_id, resource_t cveid, cJSON *nodes)
   cJSON_ArrayForEach(node, nodes)
     {
       operator = cJSON_GetObjectItemCaseSensitive(node, "operator");
-      if (operator)
+      if (operator && operator->valuestring)
         id = save_node (parent_id, cveid, operator->valuestring);
+      else
+        return;
+
+      if (parent_id == 0)
+        root_id = id;
+      set_root_id (id, root_id);
+
       cpe_match_rules = cJSON_GetObjectItemCaseSensitive(node, "cpe_match");
       if (cpe_match_rules)
         add_cpe_match_rules (id, cpe_match_rules);
       child_nodes = cJSON_GetObjectItemCaseSensitive(node, "children");
-      load_nodes (id, cveid, child_nodes);
+      load_nodes (id, cveid, root_id, child_nodes);
     }
 }
 
@@ -3592,7 +3636,7 @@ handle_json_cve_item (cJSON *item)
       g_warning("%s: nodes missing for %s.", __func__, cve_id);
       return -1;
     }
-  load_nodes (0, cve_db_id, nodes_json);
+  load_nodes (0, cve_db_id, 0, nodes_json);
 
   return 0;
 }
