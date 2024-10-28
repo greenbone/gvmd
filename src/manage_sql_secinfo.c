@@ -2926,13 +2926,12 @@ update_scap_cpes ()
   g_info ("Updating CPEs");
 
   ret = update_scap_cpes_from_json_file (full_path);
-  if (ret)
-    {
-      g_free (full_path);
-      return -1;
-    }
 
   g_free (full_path);
+
+  if (ret)
+    return -1;
+
   return 0;
 }
 
