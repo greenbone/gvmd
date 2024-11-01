@@ -2307,12 +2307,8 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
   FILE *stream = NULL;
   struct FILESTREAM *filestream;
   nvti_t *nvti = NULL;
-  openvasd_curlm_t *curl_hnd = NULL;
-  openvasd_stringstream_t res;
 
-  openvasd_stringstream_new (&res);
-  curl_hnd = openvasd_curlm_handler_new ();
-  resp = openvasd_get_vts_stream_init (connector, &curl_hnd, &res);
+  resp = openvasd_get_vt_stream_init (connector);
   if (resp->code < 0)
     {
       g_warning ("%s: failed to get VTs", __func__);
@@ -2339,23 +2335,25 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
   gvm_json_pull_event_init (&event);
 
   // First run for initial data in the stream
-  running = openvasd_get_vts_stream (curl_hnd);
-  fwrite (res.ptr, 1, res.len, stream);
-  openvasd_stringstream_reset (&res);
+  running = openvasd_get_vt_stream (connector);
+  fwrite (openvasd_vt_stream_str (connector), 1,
+          openvasd_vt_stream_len (connector), stream);
+
+  openvasd_reset_vt_stream (connector);
   int break_flag = 0;
   while (running)
     {
       size_t non_read_count = 0;
       // Ensure a big chunk of data.
       // Realloc is expensive therefore we realloc with bigger chuncks
-      while (running > 0 && res.len < GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
-          running = openvasd_get_vts_stream (curl_hnd);
+      while (running > 0 && openvasd_vt_stream_len (connector) < GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
+          running = openvasd_get_vt_stream (connector);
 
-      if (res.len > 0)
+      if (openvasd_vt_stream_len (connector) > 0)
         {
           move_buffer_data (filestream);
-          fwrite (res.ptr, 1, res.len, stream);
-          openvasd_stringstream_reset (&res);
+          fwrite (openvasd_vt_stream_str (connector), 1, openvasd_vt_stream_len (connector), stream);
+          openvasd_reset_vt_stream (connector);
         }
 
       non_read_count = filestream->last_write - filestream->last_read;
@@ -2400,10 +2398,7 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
   gvm_json_pull_parser_cleanup (&parser);
   fclose (stream);
 
-  openvasd_stringstream_cleanup (&res);
-  openvasd_curlm_handler_close (&curl_hnd);
   openvasd_response_cleanup (resp);
-
 
   batch_end (vt_refs_batch);
   batch_end (vt_sevs_batch);
