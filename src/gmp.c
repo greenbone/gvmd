@@ -13283,13 +13283,12 @@ print_cpe_match_nodes_xml(resource_t node, GString *buffer)
   init_cpe_match_range_iterator (&cpe_match_ranges, node);
   while (next (&cpe_match_ranges))
     {
-      const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *range_uri_product;
+      const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *match_string;
 
       xml_string_append (buffer, "<match_criteria>");
       match_criteria_id = cpe_match_range_iterator_match_criteria_id (&cpe_match_ranges);
-      range_uri_product 
-        = fs_cpe_to_uri_cpe (cpe_match_range_iterator_cpe (&cpe_match_ranges));
-      xml_string_append (buffer, "<match_string>%s</match_string>", range_uri_product?: "");
+      match_string = cpe_match_range_iterator_cpe (&cpe_match_ranges);
+      xml_string_append (buffer, "<match_string>%s</match_string>", match_string?: "");
       xml_string_append (buffer, "<vulnerable>%s</vulnerable>",
                          cpe_match_range_iterator_vulnerable (&cpe_match_ranges) != 0
                          ? "1"
@@ -13334,8 +13333,7 @@ print_cpe_match_nodes_xml(resource_t node, GString *buffer)
           }
           cleanup_iterator (&cpes);
 
-          xml_string_append (buffer, "<cpe>");
-          xml_string_append (buffer, "<name>%s</name>", cpe?: "");
+          xml_string_append (buffer, "<cpe id=\"%s\">", cpe?: "");
           xml_string_append (buffer,
                             "<deprecated>%s</deprecated>",
                              deprecated ? "1" : "0");

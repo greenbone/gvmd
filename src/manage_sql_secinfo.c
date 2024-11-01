@@ -3492,7 +3492,7 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id, cJSON* configura
               sql("INSERT INTO scap2.cpe_nodes_match_criteria"
                   " (node_id, vulnerable, match_criteria_id)"
                   " VALUES"
-                  " (%llu, %d, lower ('%s'))",
+                  " (%llu, %d, '%s')",
                   id,
                   vulnerable ? 1 : 0,
                   quoted_match_criteria_id);
@@ -4085,12 +4085,12 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
     quoted_version_end_excl = g_strdup_printf ("'%s'", ver_se);
 
   quoted_match_criteria_id = sql_quote (match_criteria_id);
-  quoted_criteria = sql_quote (criteria);
+  quoted_criteria = fs_to_uri_convert_and_quote_cpe_name (criteria);
 
   first = inserts_check_size (inserts);
 
   g_string_append_printf (inserts->statement,
-                          "%s (lower('%s'), '%s', %s, %s, %s, %s, '%s')",
+                          "%s ('%s', '%s', %s, %s, %s, %s, '%s')",
                           first ? "" : ",",
                           quoted_match_criteria_id,
                           quoted_criteria,
@@ -4130,7 +4130,7 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
           first = inserts_check_size (matches_inserts);
 
           g_string_append_printf (matches_inserts->statement,
-                                "%s (lower('%s'), lower('%s'))",
+                                "%s ('%s', '%s')",
                                 first ? "" : ",",
                                 quoted_match_criteria_id,
                                 quoted_cpe_name_id);
