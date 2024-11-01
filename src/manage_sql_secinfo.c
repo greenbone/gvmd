@@ -2522,21 +2522,35 @@ update_scap_cpes_from_json_file (const gchar *path)
   inserts_t inserts, deprecated_by_inserts;
   gvm_json_pull_parser_t parser;
   gvm_json_pull_event_t event;
-  FILE *json_stream = fopen (path, "r");
-  if (json_stream == NULL)
+  FILE *cpe_file;
+
+  int fd = open (path, O_RDONLY);
+
+  if (fd < 0)
     {
-      g_warning ("%s: Could not open file '%s': %s",
+      g_warning ("%s: Failed to open CPE file '%s': %s",
                  __func__, path, strerror(errno));
       return -1;
     }
 
-  gvm_json_pull_parser_init (&parser, json_stream);
+  g_info ("Updating %s", path);
+
+  cpe_file = gvm_gzip_open_file_reader_fd (fd);
+  if (cpe_file == NULL)
+    {
+      g_warning ("%s: Failed to open CPE file: %s",
+                 __func__,
+                 strerror (errno));
+      return -1;
+    }
+
+  gvm_json_pull_parser_init (&parser, cpe_file);
   gvm_json_pull_event_init (&event);
   if (scap_cpes_json_skip_to_products (&parser, &event))
     {
       gvm_json_pull_event_cleanup (&event);
       gvm_json_pull_parser_cleanup (&parser);
-      fclose (json_stream);
+      fclose (cpe_file);
       return -1;
     }
 
@@ -2573,7 +2587,7 @@ update_scap_cpes_from_json_file (const gchar *path)
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
-          fclose (json_stream);
+          fclose (cpe_file);
           sql_commit ();
           return -1;
         }
@@ -2582,7 +2596,7 @@ update_scap_cpes_from_json_file (const gchar *path)
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
-          fclose (json_stream);
+          fclose (cpe_file);
           sql_commit ();
           return -1;
         }
@@ -2595,14 +2609,31 @@ update_scap_cpes_from_json_file (const gchar *path)
   gvm_json_pull_parser_cleanup (&parser);
 
   // Reset and insert refs
-  fseek (json_stream, 0, SEEK_SET);
-  gvm_json_pull_parser_init (&parser, json_stream);
+  fclose (cpe_file);
+  fd = open (path, O_RDONLY);
+
+  if (fd < 0)
+    {
+      g_warning ("%s: Failed to open CPE file '%s': %s",
+                 __func__, path, strerror(errno));
+      return -1;
+    }
+
+  cpe_file = gvm_gzip_open_file_reader_fd (fd);
+  if (cpe_file == NULL)
+    {
+      g_warning ("%s: Failed to open CPE file: %s",
+                 __func__,
+                 strerror (errno));
+      return -1;
+    }
+  gvm_json_pull_parser_init (&parser, cpe_file);
 
   if (scap_cpes_json_skip_to_products (&parser, &event))
     {
       gvm_json_pull_event_cleanup (&event);
       gvm_json_pull_parser_cleanup (&parser);
-      fclose (json_stream);
+      fclose (cpe_file);
       return -1;
     }
 
@@ -2625,7 +2656,7 @@ update_scap_cpes_from_json_file (const gchar *path)
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
-          fclose (json_stream);
+          fclose (cpe_file);
           sql_commit ();
           return -1;
         }
@@ -2634,7 +2665,7 @@ update_scap_cpes_from_json_file (const gchar *path)
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
-          fclose (json_stream);
+          fclose (cpe_file);
           sql_commit ();
           return -1;
         }
@@ -2645,6 +2676,7 @@ update_scap_cpes_from_json_file (const gchar *path)
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
+  fclose (cpe_file);
   return 0;
 }
 
@@ -2854,8 +2886,15 @@ update_scap_cpes ()
   int ret;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                "nvd-cpes.json",
+                                "nvd-cpes.json.gz",
                                 NULL);
+  if (g_stat (full_path, &state))
+    {
+      g_free (full_path);
+      full_path = g_build_filename (GVM_SCAP_DATA_DIR,
+                                    "nvd-cpes.json",
+                                    NULL);
+    }
 
   if (g_stat (full_path, &state))
     {
@@ -2887,6 +2926,9 @@ update_scap_cpes ()
   g_info ("Updating CPEs");
 
   ret = update_scap_cpes_from_json_file (full_path);
+
+  g_free (full_path);
+
   if (ret)
     return -1;
 
