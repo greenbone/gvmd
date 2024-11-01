@@ -3961,8 +3961,8 @@ update_scap_cves ()
   gboolean read_json = FALSE;
   while ((cve_path = g_dir_read_name (dir)))
     {
-      if (fnmatch ("nvdcve-1.1-*.json.gz", cve_path, 0) == 0 ||
-          fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0)
+      if (fnmatch ("nvdcve-2.0-*.json.gz", cve_path, 0) == 0 ||
+          fnmatch ("nvdcve-2.0-*.json", cve_path, 0) == 0)
         {
           read_json = TRUE;
           break;
@@ -3973,8 +3973,8 @@ update_scap_cves ()
   count = 0;
   while ((cve_path = g_dir_read_name (dir)))
     {
-      if ((fnmatch ("nvdcve-1.1-*.json.gz", cve_path, 0) == 0 ||
-           fnmatch ("nvdcve-1.1-*.json", cve_path, 0) == 0)
+      if ((fnmatch ("nvdcve-2.0-*.json.gz", cve_path, 0) == 0 ||
+           fnmatch ("nvdcve-2.0-*.json", cve_path, 0) == 0)
           && read_json)
         {
           if (update_cve_json (cve_path, hashed_cpes))
