@@ -2826,8 +2826,8 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
       return -1;
     }
 
- ret = update_nvts_from_json_vts (connector, scanner_feed_version,
-                                   rebuild);
+  ret = update_nvts_from_json_vts (connector, scanner_feed_version, rebuild);
+
   if (ret)
     {
       openvasd_connector_free (connector);
@@ -3159,19 +3159,27 @@ manage_sync_nvts (int (*fork_update_nvt_cache) (pid_t*))
 int
 update_or_rebuild_nvts (int update)
 {
-gchar *db_feed_version, *scanner_feed_version;
+  gchar *db_feed_version = NULL;
+  gchar *scanner_feed_version = NULL;
 #if OPENVASD
- int ret = 0;
- const char *update_socket = NULL;
- nvts_feed_version_status_internal (update_socket,
-                                    &db_feed_version,
-                                    &scanner_feed_version);
+  int ret = 0;
+  const char *update_socket = NULL;
+
+  ret = nvts_feed_version_status_internal (update_socket,
+                                           &db_feed_version,
+                                           &scanner_feed_version);
+  if (ret == -1)
+    {
+      g_warning ("Failed to get scanner feed version.");
+      return -3;
+    }
 
   g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
 
   if (update == 0)
     set_nvts_feed_version ("0");
-  ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT, db_feed_version,
+  ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
+                                   db_feed_version,
                                    scanner_feed_version, 0);
   if (ret != 0)
     ret = -1;
