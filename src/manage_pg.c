@@ -3649,6 +3649,10 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.cpe_match_range"
            " ADD UNIQUE (match_criteria_id);");
 
+      sql ("ALTER TABLE scap2.cpe_matches"
+           " ALTER match_criteria_id SET NOT NULL,"
+           " ALTER cpe_name_id SET NOT NULL,"
+           " ADD UNIQUE (match_criteria_id, cpe_name_id);");
     }
   else
     {

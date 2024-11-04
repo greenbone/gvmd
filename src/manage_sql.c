@@ -20511,10 +20511,12 @@ init_cpe_match_nodes_iterator (iterator_t* iterator, const char *cpe)
   gchar *quoted_cpe;
   quoted_cpe = sql_quote (cpe);
   init_iterator (iterator,
-                 " SELECT DISTINCT n.root_id"
+                 "SELECT DISTINCT n.root_id"
                  " FROM scap.cpe_match_nodes n"
-                 " JOIN scap.cpe_nodes_match_criteria c ON n.id = c.node_id"
-                 " JOIN scap.cpe_match_range r ON c.match_criteria = r.match_criteria_id"
+                 " JOIN scap.cpe_nodes_match_criteria c"
+                 " ON n.id = c.node_id"
+                 " JOIN scap.cpe_match_range r"
+                 " ON c.match_criteria = r.match_criteria_id"
                  " WHERE cpe like '%s%%';",
                  quoted_cpe);
   g_free (quoted_cpe);
@@ -20534,7 +20536,8 @@ init_cve_cpe_match_nodes_iterator (iterator_t* iterator, const char *cve)
   init_iterator (iterator,
                  "SELECT DISTINCT root_id"
                  " FROM scap.cpe_match_nodes"
-                 " WHERE cve_id = (SELECT id from scap.cves where uuid = '%s');",
+                 " WHERE cve_id = (SELECT id FROM scap.cves"
+                 " WHERE uuid = '%s');",
                  quoted_cve);
   g_free (quoted_cve);
 }
@@ -20553,7 +20556,8 @@ init_cve_reference_iterator (iterator_t* iterator, const char *cve)
   init_iterator (iterator,
                  "SELECT url, array_length(tags, 1), tags"
                  " FROM scap.cve_references"
-                 " WHERE cve_id = (SELECT id from scap.cves where uuid = '%s');",
+                 " WHERE cve_id = (SELECT id FROM scap.cves"
+                 " WHERE uuid = '%s');",
                  quoted_cve);
   g_free (quoted_cve);
 }
@@ -20736,7 +20740,8 @@ DEF_ACCESS (cpe_match_range_iterator_version_end_excl, 7);
  * @param[in]  match_criteria_id  The match criteria id to get the matches for.
  */
 void
-init_cpe_match_range_matches_iterator (iterator_t* iterator, const char *match_criteria_id)
+init_cpe_match_range_matches_iterator (iterator_t* iterator,
+                                       const char *match_criteria_id)
 {
   init_iterator (iterator,
                  "SELECT cpe_name_id"

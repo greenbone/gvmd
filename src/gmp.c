@@ -13261,15 +13261,17 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
  * @param[in]  buffer   Buffer into which to print match node.
  */
 static void
-print_cpe_match_nodes_xml(resource_t node, GString *buffer)
+print_cpe_match_nodes_xml (resource_t node, GString *buffer)
 {
   iterator_t cpe_match_nodes, cpe_match_ranges;
-  const char *operator = NULL;
-  int negate = 0;
 
   init_iterator (&cpe_match_nodes,
-                 "SELECT operator, negate FROM scap.cpe_match_nodes WHERE id = %llu;", 
+                 "SELECT operator, negate"
+                 " FROM scap.cpe_match_nodes WHERE id = %llu;",
                  node);
+
+  const char *operator = NULL;
+  int negate = 0;
   while (next (&cpe_match_nodes))
     {
       operator = iterator_string (&cpe_match_nodes, 0);
@@ -13286,17 +13288,23 @@ print_cpe_match_nodes_xml(resource_t node, GString *buffer)
       const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *match_string;
 
       xml_string_append (buffer, "<match_criteria>");
-      match_criteria_id = cpe_match_range_iterator_match_criteria_id (&cpe_match_ranges);
+      match_criteria_id
+        = cpe_match_range_iterator_match_criteria_id (&cpe_match_ranges);
       match_string = cpe_match_range_iterator_cpe (&cpe_match_ranges);
-      xml_string_append (buffer, "<match_string>%s</match_string>", match_string?: "");
-      xml_string_append (buffer, "<vulnerable>%s</vulnerable>",
+
+      xml_string_append (buffer,
+                         "<match_string>%s</match_string>",
+                         match_string?: "");
+      xml_string_append (buffer,
+                         "<vulnerable>%s</vulnerable>",
                          cpe_match_range_iterator_vulnerable (&cpe_match_ranges) != 0
                          ? "1"
                          : "0");
-      vsi = cpe_match_range_iterator_version_start_incl(&cpe_match_ranges);
-      vse = cpe_match_range_iterator_version_start_excl(&cpe_match_ranges);
-      vei = cpe_match_range_iterator_version_end_incl(&cpe_match_ranges);
-      vee = cpe_match_range_iterator_version_end_excl(&cpe_match_ranges);
+
+      vsi = cpe_match_range_iterator_version_start_incl (&cpe_match_ranges);
+      vse = cpe_match_range_iterator_version_start_excl (&cpe_match_ranges);
+      vei = cpe_match_range_iterator_version_end_incl (&cpe_match_ranges);
+      vee = cpe_match_range_iterator_version_end_excl (&cpe_match_ranges);
 
       xml_string_append (buffer,
                          "<version_start_including>%s</version_start_including>", 
@@ -13335,7 +13343,7 @@ print_cpe_match_nodes_xml(resource_t node, GString *buffer)
 
           xml_string_append (buffer, "<cpe id=\"%s\">", cpe?: "");
           xml_string_append (buffer,
-                            "<deprecated>%s</deprecated>",
+                             "<deprecated>%s</deprecated>",
                              deprecated ? "1" : "0");
           if (deprecated)
             {
@@ -13366,7 +13374,7 @@ print_cpe_match_nodes_xml(resource_t node, GString *buffer)
  *
  */
 static void
-print_cve_affected_software_configs_xml (gchar *cve_uuid, GString *result)
+print_cve_configurations_xml (const gchar *cve_uuid, GString *result)
 {
   iterator_t cpe_match_root_nodes;
   xml_string_append (result, "<configuration_nodes>");
@@ -13377,14 +13385,15 @@ print_cve_affected_software_configs_xml (gchar *cve_uuid, GString *result)
         iterator_t cpe_match_node_childs;
         root_node = cpe_match_nodes_iterator_root_id (&cpe_match_root_nodes);
         xml_string_append (result, "<node>");
-        print_cpe_match_nodes_xml(root_node, result);
+        print_cpe_match_nodes_xml (root_node, result);
         init_cpe_match_node_childs_iterator (&cpe_match_node_childs, root_node);
         while (next (&cpe_match_node_childs))
           {
             resource_t child_node;
-            child_node = cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
+            child_node =
+              cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
             xml_string_append (result, "<node>");
-            print_cpe_match_nodes_xml(child_node, result);
+            print_cpe_match_nodes_xml (child_node, result);
             xml_string_append (result, "</node>");
           }
         xml_string_append (result, "</node>");
@@ -13402,7 +13411,7 @@ print_cve_affected_software_configs_xml (gchar *cve_uuid, GString *result)
  *
  */
 static void
-print_cve_references_xml (gchar *cve_uuid, GString *result)
+print_cve_references_xml (const gchar *cve_uuid, GString *result)
 {
   iterator_t references;
   init_cve_reference_iterator (&references, cve_uuid);
@@ -13410,20 +13419,26 @@ print_cve_references_xml (gchar *cve_uuid, GString *result)
   while (next (&references))
     {
       xml_string_append (result, "<reference>");
-      xml_string_append (result, "<url>%s</url>", cve_reference_iterator_url (&references));
+      xml_string_append (result,
+                         "<url>%s</url>",
+                         cve_reference_iterator_url (&references));
       xml_string_append (result, "<tags>");
       const char * tags_array = cve_reference_iterator_tags (&references);
-      if(tags_array && strlen(tags_array) > 2)
+      if(tags_array && strlen (tags_array) > 2)
         {
-          char *trimmed_array = g_strndup (tags_array + 1, strlen (tags_array) - 2);
+          char *trimmed_array
+            = g_strndup (tags_array + 1, strlen (tags_array) - 2);
           gchar **tags, **current_tag;
           tags = g_strsplit (trimmed_array, ",", -1);
           current_tag = tags;
           while (*current_tag)
             {
-              if (strlen (*current_tag) > 2 && (*current_tag)[0] == '"' && (*current_tag)[strlen (*current_tag) - 1] == '"')
+              if (strlen (*current_tag) > 2
+                  && (*current_tag)[0] == '"'
+                  && (*current_tag)[strlen (*current_tag) - 1] == '"')
                 {
-                  char *trimmed_tag = g_strndup (*current_tag + 1, strlen (*current_tag) - 2);
+                  char *trimmed_tag = g_strndup (*current_tag + 1,
+                                                 strlen (*current_tag) - 2);
                   xml_string_append (result, "<tag>%s</tag>", trimmed_tag);
                   g_free (trimmed_tag);
                 }
@@ -13816,10 +13831,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                 }
               g_string_append (result, "</cert>");
 
-              gchar *cve_uuid = g_strdup(get_iterator_uuid (&info));
-              print_cve_affected_software_configs_xml (cve_uuid, result);
+              const gchar *cve_uuid = get_iterator_uuid (&info);
+              print_cve_configurations_xml (cve_uuid, result);
               print_cve_references_xml (cve_uuid, result);
-              g_free(cve_uuid);
             }
         }
       else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)

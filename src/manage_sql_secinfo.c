@@ -3289,7 +3289,7 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  *
  * @param[in]  cve_id     The id of the CVE to which the tree belongs.
  * @param[in]  operator   The operator for the match rules.
- * @param[in]  negate     Whether the match rules are negated.
+ * @param[in]  negate     Whether the operator is negated.
  *
  * @return The (database) id of the node.
  */
@@ -3332,75 +3332,80 @@ set_root_id (long int id, long int root_id)
  * @return 0 on success, -1 on error.
  */
 static int
-handle_cve_references (resource_t cve_db_id, char * cve_id, cJSON* reference_json)
+handle_cve_references (resource_t cve_db_id, char * cve_id,
+                       cJSON* reference_json)
 {
     cJSON *reference_data;
     cJSON *tags;
 
-    cJSON_ArrayForEach(reference_data, reference_json)
-    {
-      GString *tags_string;
-      char *url_value = json_object_item_string (reference_data, "url");
-      if (url_value == NULL)
+    cJSON_ArrayForEach (reference_data, reference_json)
       {
-          g_warning("%s: url missing in reference for %s.", __func__, cve_id);
-          return -1;
-      }
-
-      tags = cJSON_GetObjectItemCaseSensitive(reference_data, "tags");
-      if (cJSON_IsArray(tags))
+        GString *tags_string;
+        char *url_value = json_object_item_string (reference_data, "url");
+        if (url_value == NULL)
         {
-          array_t *tags_array = make_array ();
-          tags_string = g_string_new ("{");
-
-          for (int i = 0; i < cJSON_GetArraySize(tags); i++)
-            {
-              cJSON *tag = cJSON_GetArrayItem(tags, i);
-              if (!cJSON_IsString(tag))
-                {
-                  g_warning("%s: tag for %s is NULL or not a string.", __func__, cve_id);
-                  return -1;
-                }
-              if ((strcmp (tag->valuestring, "(null)") == 0) || strlen(tag->valuestring) == 0)
-                {
-                  g_warning("%s: tag for %s is an empty string or has value (null).", __func__, cve_id);
-                  return -1;
-                }
-              array_add (tags_array, tag->valuestring);
-            }
-
-          for (int i = 0; i < tags_array->len; i++)
-            {
-              gchar *tag = g_ptr_array_index (tags_array, i);
-              gchar *quoted_tag = sql_quote (tag);
-
-              g_string_append (tags_string, quoted_tag);
-
-              if (i < tags_array->len - 1)
-                g_string_append (tags_string, ",");
-
-              g_free (quoted_tag);
-            }
-          g_string_append (tags_string, "}");
-          g_ptr_array_free (tags_array, TRUE);
+            g_warning ("%s: url missing in reference for %s.",
+                       __func__, cve_id);
+            return -1;
         }
 
-        gchar *quoted_url = sql_quote (url_value);
+        tags = cJSON_GetObjectItemCaseSensitive (reference_data, "tags");
+        if (cJSON_IsArray (tags))
+          {
+            array_t *tags_array = make_array ();
+            tags_string = g_string_new ("{");
 
-        sql("INSERT INTO scap2.cve_references"
-            " (cve_id, url, tags)"
-            " VALUES"
-            " (%llu, '%s', '%s')"
-            " ON CONFLICT (cve_id, url) DO UPDATE"
-            " SET tags = EXCLUDED.tags;",
-            cve_db_id,
-            quoted_url,
-            tags_string->str ?: "{}");
+            for (int i = 0; i < cJSON_GetArraySize (tags); i++)
+              {
+                cJSON *tag = cJSON_GetArrayItem (tags, i);
+                if (!cJSON_IsString (tag))
+                  {
+                    g_warning ("%s: tag for %s is NULL or not a string.",
+                               __func__, cve_id);
+                    return -1;
+                  }
+                if ((strcmp (tag->valuestring, "(null)") == 0)
+                     || strlen (tag->valuestring) == 0)
+                  {
+                    g_warning ("%s: tag for %s is empty string or NULL.",
+                               __func__, cve_id);
+                    return -1;
+                  }
+                array_add (tags_array, tag->valuestring);
+              }
 
-      g_free (quoted_url);
-      if (tags_string)
-        g_string_free (tags_string, TRUE);
-    }
+            for (int i = 0; i < tags_array->len; i++)
+              {
+                gchar *tag = g_ptr_array_index (tags_array, i);
+                gchar *quoted_tag = sql_quote (tag);
+
+                g_string_append (tags_string, quoted_tag);
+
+                if (i < tags_array->len - 1)
+                  g_string_append (tags_string, ",");
+
+                g_free (quoted_tag);
+              }
+            g_string_append (tags_string, "}");
+            g_ptr_array_free (tags_array, TRUE);
+          }
+
+          gchar *quoted_url = sql_quote (url_value);
+
+          sql ("INSERT INTO scap2.cve_references"
+               " (cve_id, url, tags)"
+               " VALUES"
+               " (%llu, '%s', '%s')"
+               " ON CONFLICT (cve_id, url) DO UPDATE"
+               " SET tags = EXCLUDED.tags;",
+               cve_db_id,
+               quoted_url,
+               tags_string->str ?: "{}");
+
+        g_free (quoted_url);
+        if (tags_string)
+          g_string_free (tags_string, TRUE);
+      }
     return 0;
 }
 
@@ -3414,7 +3419,8 @@ handle_cve_references (resource_t cve_db_id, char * cve_id, cJSON* reference_jso
  * @return 0 on success, -1 on error.
  */
 static int
-handle_cve_configurations (resource_t cve_db_id, char * cve_id, cJSON* configurations_json)
+handle_cve_configurations (resource_t cve_db_id, char * cve_id,
+                           cJSON* configurations_json)
 {
   cJSON *configuration_item;
 
@@ -3425,16 +3431,18 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id, cJSON* configura
       char *config_operator;
       int negate;
       
-      nodes_array = cJSON_GetObjectItemCaseSensitive (configuration_item, "nodes");
+      nodes_array = cJSON_GetObjectItemCaseSensitive (configuration_item,
+                                                      "nodes");
       if (!cJSON_IsArray (nodes_array))
         {
-          g_warning("%s: 'nodes' field missing or not an array for %s.",
+          g_warning ("%s: 'nodes' field missing or not an array for %s.",
                     __func__, cve_id);
           return -1;
         }
 
       root_id = -1;
-      config_operator = json_object_item_string (configuration_item, "operator");
+      config_operator = json_object_item_string (configuration_item,
+                                                 "operator");
       if (config_operator)
         {
           negate = json_object_item_boolean (configuration_item, "negate", 0);
@@ -3449,47 +3457,55 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id, cJSON* configura
           node_operator = json_object_item_string (node_item, "operator");
           if (node_operator == NULL)
             {
-              g_warning("%s: operator missing for %s.", __func__, cve_id);
+              g_warning ("%s: operator missing for %s.", __func__, cve_id);
               return -1;
             }
           
           negate = json_object_item_boolean (node_item, "negate", 0);
 
           cJSON *cpe_matches_array;
-          cpe_matches_array = cJSON_GetObjectItemCaseSensitive (node_item, "cpeMatch");
+          cpe_matches_array = cJSON_GetObjectItemCaseSensitive (node_item,
+                                                                "cpeMatch");
           if (!cJSON_IsArray (cpe_matches_array))
             {
-              g_warning("%s: cpeMatch missing or not an array for %s.", __func__, cve_id);
+              g_warning ("%s: cpeMatch missing or not an array for %s.",
+                         __func__, cve_id);
               return -1;
             }
 
           id = save_node (cve_db_id, node_operator, negate);
-          if(root_id < 0)
+
+          if (root_id < 0)
             root_id = id;
+
           set_root_id (id, root_id);
           
           cJSON *cpe_match_item;
-          cJSON_ArrayForEach(cpe_match_item, cpe_matches_array)
+          cJSON_ArrayForEach (cpe_match_item, cpe_matches_array)
             {
               char *match_criteria_id;
               int vulnerable;
               gchar *quoted_match_criteria_id;
 
-              vulnerable = json_object_item_boolean (cpe_match_item, "vulnerable", -1);
+              vulnerable = json_object_item_boolean (cpe_match_item,
+                                                     "vulnerable", -1);
               if (vulnerable == -1)
                 {
-                  g_warning("%s: vulnerable missing in cpeMatch for %s.", __func__, cve_id);
+                  g_warning ("%s: vulnerable missing in cpeMatch for %s.",
+                             __func__, cve_id);
                   return -1;
                 }
-              match_criteria_id = json_object_item_string (cpe_match_item, "matchCriteriaId");
+              match_criteria_id = json_object_item_string (cpe_match_item,
+                                                           "matchCriteriaId");
               if (match_criteria_id == NULL)
                 {
-                  g_warning("%s: matchCriteriaId missing in cpeMatch for %s.", __func__, cve_id);
+                  g_warning ("%s: matchCriteriaId missing in cpeMatch for %s.",
+                             __func__, cve_id);
                   return -1;
                 }
               quoted_match_criteria_id = sql_quote (match_criteria_id);
 
-              sql("INSERT INTO scap2.cpe_nodes_match_criteria"
+              sql ("INSERT INTO scap2.cpe_nodes_match_criteria"
                   " (node_id, vulnerable, match_criteria_id)"
                   " VALUES"
                   " (%llu, %d, '%s')",
@@ -3523,13 +3539,13 @@ handle_json_cve_item (cJSON *item)
   cve_json = cJSON_GetObjectItemCaseSensitive (item, "cve");
   if (!cJSON_IsObject (cve_json))
     {
-      g_warning("%s: 'cve' field is missing or not an object.", __func__);
+      g_warning ("%s: 'cve' field is missing or not an object.", __func__);
       return -1;
     }
   cve_id = json_object_item_string (cve_json, "id");
   if (cve_id == NULL)
     {
-      g_warning("%s: cve id missing.", __func__);
+      g_warning ("%s: cve id missing.", __func__);
       return -1;
     }
 
@@ -3548,7 +3564,7 @@ handle_json_cve_item (cJSON *item)
   modified = json_object_item_string (cve_json, "lastModified");
   if (modified == NULL)
     {
-      g_warning("%s: lastModifiedDate missing for %s.", __func__, cve_id);
+      g_warning ("%s: lastModifiedDate missing for %s.", __func__, cve_id);
       return -1;
     }
   modified_time = parse_iso_time (modified);
@@ -3556,20 +3572,28 @@ handle_json_cve_item (cJSON *item)
   cJSON *metrics_json;
   cJSON *cvss_metric_array;
 
-  metrics_json = cJSON_GetObjectItemCaseSensitive(cve_json, "metrics");
+  metrics_json = cJSON_GetObjectItemCaseSensitive (cve_json, "metrics");
   if (!cJSON_IsObject (metrics_json))
     {
-      g_warning("%s: Metrics missing or not an object for %s.", __func__, cve_id);
+      g_warning ("%s: Metrics missing or not an object for %s.",
+                 __func__, cve_id);
       return -1;
     }
 
   gboolean cvss_metric_found = FALSE;
   
-  const char *cvss_metric_keys[] = {"cvssMetricV40", "cvssMetricV31", "cvssMetricV30", "cvssMetricV2"};
+  const char *cvss_metric_keys[] = {
+    "cvssMetricV40",
+    "cvssMetricV31",
+    "cvssMetricV30",
+    "cvssMetricV2"};
+
   for (int i = 0; i < 4; i++)
     {
-      cvss_metric_array = cJSON_GetObjectItemCaseSensitive(metrics_json, cvss_metric_keys[i]);
-      if (cJSON_IsArray (cvss_metric_array) && cJSON_GetArraySize(cvss_metric_array) > 0)
+      cvss_metric_array
+        = cJSON_GetObjectItemCaseSensitive (metrics_json, cvss_metric_keys[i]);
+      if (cJSON_IsArray (cvss_metric_array)
+          && cJSON_GetArraySize (cvss_metric_array) > 0)
         {
           cvss_metric_found = TRUE;
           break;
@@ -3587,28 +3611,33 @@ handle_json_cve_item (cJSON *item)
           source_type = json_object_item_string (cvss_metric_item, "type");
           if (source_type == NULL)
             {
-              g_warning("%s: type missing in CVSS metric for %s.", __func__, cve_id);
+              g_warning ("%s: type missing in CVSS metric for %s.",
+                         __func__, cve_id);
               return -1;
             }
           else if (strcmp (source_type, "Primary"))
             continue;
 
-          cvss_json = cJSON_GetObjectItemCaseSensitive(cvss_metric_item, "cvssData");
+          cvss_json = cJSON_GetObjectItemCaseSensitive (cvss_metric_item,
+                                                        "cvssData");
           if (!cJSON_IsObject (cvss_json))
             {
-              g_warning("%s: cvssData missing or not an object for %s.", __func__, cve_id);
+              g_warning ("%s: cvssData missing or not an object for %s.",
+                         __func__, cve_id);
               return -1;
             }
-          score_dbl = json_object_item_double (cvss_json, "baseScore", SEVERITY_MISSING);
+          score_dbl = json_object_item_double (cvss_json,
+                                               "baseScore",
+                                               SEVERITY_MISSING);
           if (score_dbl == SEVERITY_MISSING)
             {
-              g_warning("%s: baseScore missing for %s.", __func__, cve_id);
+              g_warning ("%s: baseScore missing for %s.", __func__, cve_id);
               return -1;
             }
           vector = json_object_item_string (cvss_json, "vectorString");
           if (vector == NULL)
             {
-              g_warning("%s: vectorString missing for %s.", __func__, cve_id);
+              g_warning ("%s: vectorString missing for %s.", __func__, cve_id);
               return -1;
             }
         }
@@ -3623,17 +3652,20 @@ handle_json_cve_item (cJSON *item)
   cJSON *description_item_json;
   char *description_value;
 
-  descriptions_json = cJSON_GetObjectItemCaseSensitive(cve_json, "descriptions");
-  if (!cJSON_IsArray(descriptions_json))
+  descriptions_json = cJSON_GetObjectItemCaseSensitive (cve_json,
+                                                        "descriptions");
+  if (!cJSON_IsArray (descriptions_json))
     {
-      g_warning("%s: descriptions for %s is missing or not an array.", __func__, cve_id);
+      g_warning ("%s: descriptions for %s is missing or not an array.",
+                 __func__, cve_id);
       return -1;
     }
   cJSON_ArrayForEach (description_item_json, descriptions_json)
     {
       char *lang = json_object_item_string (description_item_json, "lang");
-      if (lang != NULL && strcmp(lang, "en") == 0)
-        description_value = json_object_item_string (description_item_json, "value");
+      if (lang != NULL && strcmp (lang, "en") == 0)
+        description_value = json_object_item_string (description_item_json,
+                                                     "value");
     }
 
   char *quoted_description = sql_quote (description_value);
@@ -3666,10 +3698,12 @@ handle_json_cve_item (cJSON *item)
   g_free (quoted_description);
 
   cJSON *configurations_array;
-  configurations_array = cJSON_GetObjectItemCaseSensitive(cve_json, "configurations");
-  if (! cJSON_IsArray(configurations_array))
+  configurations_array = cJSON_GetObjectItemCaseSensitive (cve_json,
+                                                           "configurations");
+  if (!cJSON_IsArray (configurations_array))
     {
-      g_warning("%s: configurations for %s is missing or not an array.", __func__, cve_id);
+      g_warning ("%s: configurations for %s is missing or not an array.",
+                 __func__, cve_id);
       return -1;
     }
 
@@ -3677,10 +3711,11 @@ handle_json_cve_item (cJSON *item)
     return -1;
 
   cJSON *references_array;
-  references_array = cJSON_GetObjectItemCaseSensitive(cve_json, "references");
-  if (!cJSON_IsArray(references_array))
+  references_array = cJSON_GetObjectItemCaseSensitive (cve_json, "references");
+  if (!cJSON_IsArray (references_array))
     {
-      g_warning("%s: references for %s is missing or not an array.", __func__, cve_id);
+      g_warning ("%s: references for %s is missing or not an array.",
+                 __func__, cve_id);
       return -1;
     }
 
@@ -4031,7 +4066,8 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
   assert (inserts);
   assert (matches_inserts);
 
-  match_string = cJSON_GetObjectItemCaseSensitive (match_string_item, "matchString");
+  match_string = cJSON_GetObjectItemCaseSensitive (match_string_item,
+                                                   "matchString");
   if (!cJSON_IsObject (match_string))
     {
       g_warning ("%s: 'matchString' field is missing or not an object",
@@ -4046,10 +4082,12 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
       return -1;
     }
 
-  match_criteria_id = json_object_item_string (match_string, "matchCriteriaId");
+  match_criteria_id = json_object_item_string (match_string,
+                                               "matchCriteriaId");
   if (match_criteria_id == NULL)
     {
-      g_warning ("%s: 'matchCriteriaId' field missing or not a string", __func__);
+      g_warning ("%s: 'matchCriteriaId' field missing or not a string",
+                 __func__);
       return -1;
     }
 
@@ -4120,7 +4158,8 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
           cpe_name_id = json_object_item_string (match_item, "cpeNameId");
           if (cpe_name_id == NULL)
             {
-              g_warning ("%s: 'cpeNameId' field missing or not a string", __func__);
+              g_warning ("%s: 'cpeNameId' field missing or not a string",
+                         __func__);
               g_free (quoted_match_criteria_id);
               return -1;
             }
@@ -4235,7 +4274,8 @@ update_scap_cpe_match_strings ()
           else if (event.type == GVM_JSON_PULL_EVENT_OBJECT_END
                    && g_queue_is_empty (event.path))
             {
-              g_warning ("%s: Unexpected json object end. Missing CPE matched strings field", __func__);
+              g_warning ("%s: Unexpected json object end. Missing matchStrings field",
+                         __func__);
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (cpe_match_strings_file);
@@ -4271,27 +4311,31 @@ update_scap_cpe_match_strings ()
       while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
         {
           gchar *error_message;
-          cJSON *cpe_match_string_item = gvm_json_pull_expand_container (&parser, &error_message);
+          cJSON *cpe_match_string_item
+            = gvm_json_pull_expand_container (&parser, &error_message);
           if (error_message)
             {
-              g_warning ("%s: Error expanding match string item: %s", __func__, error_message);
+              g_warning ("%s: Error expanding match string item: %s",
+                         __func__, error_message);
               cJSON_Delete (cpe_match_string_item);
               inserts_free (&inserts);
               inserts_free (&matches_inserts);
               sql_commit ();
-              g_warning ("Update of cpe match strings failed");
+              g_warning ("Update of CPE match strings failed");
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (cpe_match_strings_file);
               return -1;
             }
-          if (handle_json_cpe_match_string (&inserts, &matches_inserts, cpe_match_string_item))
+          if (handle_json_cpe_match_string (&inserts,
+                                            &matches_inserts,
+                                            cpe_match_string_item))
             {
               cJSON_Delete (cpe_match_string_item);
               inserts_free (&inserts);
               inserts_free (&matches_inserts);
               sql_commit ();
-              g_warning ("Update of cpe match strings failed");
+              g_warning ("Update of CPE match strings failed");
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (cpe_match_strings_file);
@@ -4311,7 +4355,8 @@ update_scap_cpe_match_strings ()
     }
   else
     {
-      g_warning ("%s: CVE affected products file is not a JSON object.", __func__);
+      g_warning ("%s: CVE match strings file is not a JSON object.",
+                 __func__);
       gvm_json_pull_event_cleanup (&event);
       gvm_json_pull_parser_cleanup (&parser);
       fclose (cpe_match_strings_file);

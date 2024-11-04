@@ -13262,12 +13262,20 @@ END:VCALENDAR
               <summary>A configuration node for the CVE</summary>
               <pattern>
                 <e>operator</e>
+                <e>negate</e>
                 <o><e>match_criteria</e></o>
                 <o><any><e>node</e></any></o>
               </pattern>
               <ele>
                 <name>operator</name>
                 <summary>The operator for the match criteria</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>negate</name>
+                <summary>A true or false value, whether the operator is negated</summary>
                 <pattern>
                   text
                 </pattern>
