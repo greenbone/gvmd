@@ -2325,9 +2325,6 @@ gvmd (int argc, char** argv, char *env[])
 #if CVSS3_RATINGS == 1
       printf ("CVSS3 severity ratings enabled\n");
 #endif
-#if COMPLIANCE_REPORTS == 1
-      printf ("Compliance reports enabled\n");
-#endif
       printf ("Copyright (C) 2009-2021 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
