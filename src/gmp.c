@@ -13282,29 +13282,31 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
   xml_string_append (buffer, "<operator>%s</operator>", operator?: "");
   xml_string_append (buffer, "<negate>%s</negate>", negate? "1" : "0");
 
-  init_cpe_match_range_iterator (&cpe_match_ranges, node);
+  init_cpe_match_string_iterator (&cpe_match_ranges, node);
   while (next (&cpe_match_ranges))
     {
-      const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *match_string;
+      const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *criteria, *status;
 
-      xml_string_append (buffer, "<match_criteria>");
+      xml_string_append (buffer, "<match_string>");
       match_criteria_id
-        = cpe_match_range_iterator_match_criteria_id (&cpe_match_ranges);
-      match_string = cpe_match_range_iterator_cpe (&cpe_match_ranges);
+        = cpe_match_string_iterator_match_criteria_id (&cpe_match_ranges);
+      criteria = cpe_match_string_iterator_criteria (&cpe_match_ranges);
+      status = cpe_match_string_iterator_status (&cpe_match_ranges);
 
       xml_string_append (buffer,
-                         "<match_string>%s</match_string>",
-                         match_string?: "");
-      xml_string_append (buffer,
-                         "<vulnerable>%s</vulnerable>",
-                         cpe_match_range_iterator_vulnerable (&cpe_match_ranges) != 0
+                         "<criteria>%s</criteria>"
+                         "<vulnerable>%s</vulnerable>"
+                         "<status>%s</status>",
+                         criteria?: "",
+                         cpe_match_string_iterator_vulnerable (&cpe_match_ranges) != 0
                          ? "1"
-                         : "0");
+                         : "0",
+                         status?: "");
 
-      vsi = cpe_match_range_iterator_version_start_incl (&cpe_match_ranges);
-      vse = cpe_match_range_iterator_version_start_excl (&cpe_match_ranges);
-      vei = cpe_match_range_iterator_version_end_incl (&cpe_match_ranges);
-      vee = cpe_match_range_iterator_version_end_excl (&cpe_match_ranges);
+      vsi = cpe_match_string_iterator_version_start_incl (&cpe_match_ranges);
+      vse = cpe_match_string_iterator_version_start_excl (&cpe_match_ranges);
+      vei = cpe_match_string_iterator_version_end_incl (&cpe_match_ranges);
+      vee = cpe_match_string_iterator_version_end_excl (&cpe_match_ranges);
 
       xml_string_append (buffer,
                          "<version_start_including>%s</version_start_including>", 
@@ -13320,7 +13322,7 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
                          vee ?: "");
 
       iterator_t cpe_matches;
-      init_cpe_match_range_matches_iterator (&cpe_matches, match_criteria_id);
+      init_cpe_match_string_matches_iterator (&cpe_matches, match_criteria_id);
       xml_string_append (buffer, "<matched_cpes>");
 
       while (next (&cpe_matches))
@@ -13328,16 +13330,16 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
           iterator_t cpes;
 
           init_iterator (&cpes,
-                         "SELECT name, deprecated FROM scap.cpes"
+                         "SELECT deprecated FROM scap.cpes"
                          " WHERE cpe_name_id = '%s';",
                          cpe_matches_cpe_name_id(&cpe_matches));
 
-          const char* cpe = NULL;
+          const char* cpe = cpe_matches_cpe_name (&cpe_matches);
+
           int deprecated = 0;
           while (next (&cpes))
           {
-            cpe = iterator_string (&cpes, 0);
-            deprecated = iterator_int (&cpes, 1);
+            deprecated = iterator_int (&cpes, 0);
           }
           cleanup_iterator (&cpes);
 
@@ -13361,7 +13363,7 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
           xml_string_append (buffer, "</cpe>");
         }
       xml_string_append (buffer, "</matched_cpes>");
-      xml_string_append (buffer, "</match_criteria>");
+      xml_string_append (buffer, "</match_string>");
       cleanup_iterator (&cpe_matches);
     }
   cleanup_iterator (&cpe_match_ranges);

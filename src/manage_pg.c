@@ -3557,10 +3557,10 @@ manage_db_init (const gchar *name)
            "  vulnerable integer DEFAULT 0,"
            "  match_criteria_id text);");
 
-      sql ("CREATE TABLE scap2.cpe_match_range"
+      sql ("CREATE TABLE scap2.cpe_match_strings"
            " (id SERIAL PRIMARY KEY,"
            "  match_criteria_id text,"
-           "  cpe text DEFAULT NULL,"
+           "  criteria text DEFAULT NULL,"
            "  version_start_incl text DEFAULT NULL,"
            "  version_start_excl text DEFAULT NULL,"
            "  version_end_incl text DEFAULT NULL,"
@@ -3570,7 +3570,8 @@ manage_db_init (const gchar *name)
       sql ("CREATE TABLE scap2.cpe_matches"
            " (id SERIAL PRIMARY KEY,"
            "  match_criteria_id text,"               
-           "  cpe_name_id text);");
+           "  cpe_name_id text,"
+           "  cpe_name text);");
 
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
@@ -3646,7 +3647,7 @@ manage_db_add_constraints (const gchar *name)
            " ALTER url SET NOT NULL,"
            " ADD UNIQUE (cve_id, url);");
 
-      sql ("ALTER TABLE scap2.cpe_match_range"
+      sql ("ALTER TABLE scap2.cpe_match_strings"
            " ADD UNIQUE (match_criteria_id);");
 
       sql ("ALTER TABLE scap2.cpe_matches"

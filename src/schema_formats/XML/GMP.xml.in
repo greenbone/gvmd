@@ -13263,7 +13263,7 @@ END:VCALENDAR
               <pattern>
                 <e>operator</e>
                 <e>negate</e>
-                <o><e>match_criteria</e></o>
+                <o><e>match_string</e></o>
                 <o><any><e>node</e></any></o>
               </pattern>
               <ele>
@@ -13281,10 +13281,10 @@ END:VCALENDAR
                 </pattern>
               </ele>
               <ele>
-                <name>match_criteria</name>
-                <summary>The match criteria for the node</summary>
+                <name>match_string</name>
+                <summary>The match string for the node</summary>
                 <pattern>
-                  <e>match_string</e>
+                  <e>criteria</e>
                   <e>vulnerable</e>
                   <e>version_start_including</e>
                   <e>version_start_excluding</e>
@@ -13293,8 +13293,8 @@ END:VCALENDAR
                   <e>matched_cpes</e>
                 </pattern>
                 <ele>
-                  <name>match_string</name>
-                  <summary>A CPE Match string</summary>
+                  <name>criteria</name>
+                  <summary>A CPE match criteria</summary>
                   <pattern>
                     text
                   </pattern>

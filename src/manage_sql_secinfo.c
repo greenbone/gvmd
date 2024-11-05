@@ -4060,7 +4060,7 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
   char *criteria, *match_criteria_id, *status, *ver_se;
   gchar *quoted_version_start_incl, *quoted_version_start_excl;
   gchar *quoted_version_end_incl, *quoted_version_end_excl;
-  gchar *quoted_criteria, *quoted_match_criteria_id, *quoted_cpe_name_id;
+  gchar *quoted_criteria, *quoted_match_criteria_id;
   int first;
 
   assert (inserts);
@@ -4153,7 +4153,8 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
       cJSON *match_item;
       cJSON_ArrayForEach (match_item, matches_array)
         {
-          char *cpe_name_id;
+          char *cpe_name_id, *cpe_name;
+          gchar *quoted_cpe_name_id, *quoted_cpe_name;
 
           cpe_name_id = json_object_item_string (match_item, "cpeNameId");
           if (cpe_name_id == NULL)
@@ -4164,19 +4165,31 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
               return -1;
             }
 
+          cpe_name = json_object_item_string (match_item, "cpeName");
+          if (cpe_name == NULL)
+            {
+              g_warning ("%s: 'cpe_name' field missing or not a string",
+                         __func__);
+              g_free (quoted_match_criteria_id);
+              return -1;
+            }
+
           quoted_cpe_name_id = sql_quote (cpe_name_id);
+          quoted_cpe_name = fs_to_uri_convert_and_quote_cpe_name (cpe_name);
 
           first = inserts_check_size (matches_inserts);
 
           g_string_append_printf (matches_inserts->statement,
-                                "%s ('%s', '%s')",
+                                "%s ('%s', '%s', '%s')",
                                 first ? "" : ",",
                                 quoted_match_criteria_id,
-                                quoted_cpe_name_id);
+                                quoted_cpe_name_id,
+                                quoted_cpe_name);
 
           matches_inserts->current_chunk_size++;
 
           g_free (quoted_cpe_name_id);
+          g_free (quoted_cpe_name);
         }
     }
 
@@ -4287,13 +4300,13 @@ update_scap_cpe_match_strings ()
       inserts_init (&inserts,
                 CPE_MAX_CHUNK_SIZE,
                 setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpe_match_range"
-                "  (match_criteria_id, cpe, version_start_incl,"
+                "INSERT INTO scap2.cpe_match_strings"
+                "  (match_criteria_id, criteria, version_start_incl,"
                 "   version_start_excl, version_end_incl, version_end_excl,"
                 "   status)"
                 "  VALUES ",
                 " ON CONFLICT (match_criteria_id) DO UPDATE"
-                " SET cpe = EXCLUDED.cpe,"                
+                " SET criteria = EXCLUDED.criteria,"
                 "     version_start_incl = EXCLUDED.version_start_incl,"
                 "     version_start_excl = EXCLUDED.version_start_excl,"
                 "     version_end_incl = EXCLUDED.version_end_incl,"
@@ -4303,7 +4316,7 @@ update_scap_cpe_match_strings ()
       inserts_init (&matches_inserts, 10,
                 setting_secinfo_sql_buffer_threshold_bytes (),
                 "INSERT INTO scap2.cpe_matches" 
-                "  (match_criteria_id, cpe_name_id)"
+                "  (match_criteria_id, cpe_name_id, cpe_name)"
                 "  VALUES ",              
                 "");
 

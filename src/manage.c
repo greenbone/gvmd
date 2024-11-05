@@ -3180,7 +3180,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
         return;
     }
 
-  init_cpe_match_range_iterator (&cpe_match_ranges, node);
+  init_cpe_match_string_iterator (&cpe_match_ranges, node);
   while (next (&cpe_match_ranges))
     {
       iterator_t cpe_host_details_products;
@@ -3188,11 +3188,11 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
       gchar *range_uri_product;
       gchar *vsi, *vse, *vei, *vee;
       range_fs_cpe = vsi = vse = vei = vee = NULL;
-      range_fs_cpe = g_strdup (cpe_match_range_iterator_cpe (&cpe_match_ranges));
-      vsi = g_strdup (cpe_match_range_iterator_version_start_incl (&cpe_match_ranges));
-      vse = g_strdup (cpe_match_range_iterator_version_start_excl (&cpe_match_ranges));
-      vei = g_strdup (cpe_match_range_iterator_version_end_incl (&cpe_match_ranges));
-      vee = g_strdup (cpe_match_range_iterator_version_end_excl (&cpe_match_ranges));
+      range_fs_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
+      vsi = g_strdup (cpe_match_string_iterator_version_start_incl (&cpe_match_ranges));
+      vse = g_strdup (cpe_match_string_iterator_version_start_excl (&cpe_match_ranges));
+      vei = g_strdup (cpe_match_string_iterator_version_end_incl (&cpe_match_ranges));
+      vee = g_strdup (cpe_match_string_iterator_version_end_excl (&cpe_match_ranges));
       range_uri_product = fs_cpe_to_uri_product (range_fs_cpe);
       init_host_details_cpe_product_iterator (&cpe_host_details_products, range_uri_product, report_host);
       while (next (&cpe_host_details_products))
@@ -3216,7 +3216,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           cpe_struct_free (&source);
           cpe_struct_free (&target);
         }
-      if (*match && cpe_match_range_iterator_vulnerable (&cpe_match_ranges) == 1)
+      if (*match && cpe_match_string_iterator_vulnerable (&cpe_match_ranges) == 1)
         {
           cpe_struct_t source, target;
           cpe_struct_init (&source);

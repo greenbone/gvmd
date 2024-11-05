@@ -1724,37 +1724,40 @@ long long int
 cpe_match_node_childs_iterator_id (iterator_t*);
 
 void
-init_cpe_match_range_iterator (iterator_t*, long long int);
+init_cpe_match_string_iterator (iterator_t*, long long int);
 
 const char*
-cpe_match_range_iterator_cpe (iterator_t*);
+cpe_match_string_iterator_criteria (iterator_t*);
 
 const char*
-cpe_match_range_iterator_match_criteria_id (iterator_t*);
+cpe_match_string_iterator_match_criteria_id (iterator_t*);
 
 const char*
-cpe_match_range_iterator_status (iterator_t*);
+cpe_match_string_iterator_status (iterator_t*);
 
 const char*
-cpe_match_range_iterator_version_start_incl (iterator_t*);
+cpe_match_string_iterator_version_start_incl (iterator_t*);
 
 const char*
-cpe_match_range_iterator_version_start_excl (iterator_t*);
+cpe_match_string_iterator_version_start_excl (iterator_t*);
 
 const char*
-cpe_match_range_iterator_version_end_incl (iterator_t*);
+cpe_match_string_iterator_version_end_incl (iterator_t*);
 
 const char*
-cpe_match_range_iterator_version_end_excl (iterator_t*);
+cpe_match_string_iterator_version_end_excl (iterator_t*);
 
 int
-cpe_match_range_iterator_vulnerable (iterator_t*);
+cpe_match_string_iterator_vulnerable (iterator_t*);
 
 void
-init_cpe_match_range_matches_iterator (iterator_t*, const char *);
+init_cpe_match_string_matches_iterator (iterator_t*, const char *);
 
 const char*
 cpe_matches_cpe_name_id (iterator_t*);
+
+const char*
+cpe_matches_cpe_name (iterator_t*);
 
 void
 init_host_details_cpe_product_iterator (iterator_t*, const char *, report_host_t);
