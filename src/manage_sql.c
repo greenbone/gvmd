@@ -20498,20 +20498,91 @@ DEF_ACCESS (host_details_cpe_product_iterator_value, 0);
  * @brief Initialize an iterator of root_ids of CPE match nodes.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  cpe       The cpe contained in the match nodes.
+ * @param[in]  criteria  The criteria for the match nodes.
  */
 void
-init_cpe_match_nodes_iterator (iterator_t* iterator, const char *cpe)
+init_cpe_match_nodes_iterator (iterator_t* iterator, const char *criteria)
 {
-  gchar *quoted_cpe;
-  quoted_cpe = sql_quote (cpe);
+  gchar *quoted_criteria;
+  quoted_criteria = sql_quote (criteria);
+  init_iterator (iterator,
+                 "SELECT DISTINCT n.root_id"
+                 " FROM scap.cpe_match_nodes n"
+                 " JOIN scap.cpe_nodes_match_criteria c"
+                 " ON n.id = c.node_id"
+                 " JOIN scap.cpe_match_strings r"
+                 " ON c.match_criteria = r.match_criteria_id"
+                 " WHERE criteria like '%s%%';",
+                 quoted_criteria);
+  g_free (quoted_criteria);
+}
+
+/**
+ * @brief Initialize an iterator of CPE match nodes root_ids for a CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cve       The CVE contained in the match nodes.
+ */
+void
+init_cve_cpe_match_nodes_iterator (iterator_t* iterator, const char *cve)
+{
+  gchar *quoted_cve;
+  quoted_cve = sql_quote (cve);
   init_iterator (iterator,
                  "SELECT DISTINCT root_id"
-                 " FROM scap.cpe_match_nodes, scap.cpe_match_range"
-                 " WHERE cpe like '%s%%' AND scap.cpe_match_nodes.id = node_id;",
-                 quoted_cpe);
-  g_free (quoted_cpe);
+                 " FROM scap.cpe_match_nodes"
+                 " WHERE cve_id = (SELECT id FROM scap.cves"
+                 " WHERE uuid = '%s');",
+                 quoted_cve);
+  g_free (quoted_cve);
 }
+
+/**
+ * @brief Initialize an iterator of references for a CVE.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  cve       The CVE with the references.
+ */
+void
+init_cve_reference_iterator (iterator_t* iterator, const char *cve)
+{
+  gchar *quoted_cve;
+  quoted_cve = sql_quote (cve);
+  init_iterator (iterator,
+                 "SELECT url, array_length(tags, 1), tags"
+                 " FROM scap.cve_references"
+                 " WHERE cve_id = (SELECT id FROM scap.cves"
+                 " WHERE uuid = '%s');",
+                 quoted_cve);
+  g_free (quoted_cve);
+}
+
+/**
+ * @brief Get a URL from a CVE reference iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The URL.
+ */
+DEF_ACCESS (cve_reference_iterator_url, 0);
+
+/**
+ * @brief Get the length of the tags array from a CVE reference iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  Length of the tags array.
+ */
+DEF_ACCESS (cve_reference_iterator_tags_count, 1);
+
+/**
+ * @brief Get the tags array from a CVE reference iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The tags array.
+ */
+DEF_ACCESS (cve_reference_iterator_tags, 2);
 
 /**
  * @brief Get a root id from an CPE match node iterator.
@@ -20537,7 +20608,8 @@ init_cpe_match_node_childs_iterator (iterator_t* iterator, long long int node)
 {
   init_iterator (iterator,
                  "SELECT id FROM scap.cpe_match_nodes"
-                 " WHERE parent_id = %llu;",
+                 " WHERE root_id = %llu"
+                 " AND root_id <> id;",
                  node);
 }
 
@@ -20555,83 +20627,149 @@ cpe_match_node_childs_iterator_id (iterator_t* iterator)
 }
 
 /**
- * @brief Initialize an iterator of match ranges of an CPE match node.
+ * @brief Initialize an iterator of match strings of an CPE match node.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  node      The match node with match ranges.
+ * @param[in]  node      The match node with match strings.
  */
 void
-init_cpe_match_range_iterator (iterator_t* iterator, long long int node)
+init_cpe_match_string_iterator (iterator_t* iterator, long long int node)
 {
   init_iterator (iterator,
-                 "SELECT vulnerable, cpe, version_start_incl,"
-                 " version_start_excl, version_end_incl, version_end_excl"
-                 " FROM scap.cpe_match_range"
-                 " WHERE node_id = %llu;",
+                 "SELECT n.vulnerable, r.criteria, r.match_criteria_id, r.status,"
+                 " r.version_start_incl, r.version_start_excl,"
+                 " r.version_end_incl, r.version_end_excl"
+                 " FROM scap.cpe_match_strings r"
+                 " JOIN scap.cpe_nodes_match_criteria n"
+                 " ON r.match_criteria_id = n.match_criteria_id"
+                 " WHERE n.node_id = %llu;",
                  node);
 }
 
 /**
- * @brief Return if the CPE of the actual match node is vulnerable.
+ * @brief Return if the match criteria is vulnerable.
  *
  * @param[in]  iterator   Iterator.
  *
- * @return  1 if the match node is vulnerable, 0 otherwise.
+ * @return  1 if the match criteria is vulnerable, 0 otherwise.
  */
 int
-cpe_match_range_iterator_vulnerable (iterator_t* iterator)
+cpe_match_string_iterator_vulnerable (iterator_t* iterator)
 {
   return iterator_int64 (iterator, 0);
 }
 
 /**
- * @brief Return the CPE of the actual match node.
+ * @brief Return the criteria of the CPE match string.
  *
  * @param[in]  iterator   Iterator.
  *
- * @return   The CPE of the actual match node.
+ * @return   The criteria of the match string.
  */
-DEF_ACCESS (cpe_match_range_iterator_cpe, 1);
+DEF_ACCESS (cpe_match_string_iterator_criteria, 1);
 
 /**
- * @brief Return the start included version of the actual match node.
+ * @brief Return the match criteria id of the CPE match string.
  *
  * @param[in]  iterator   Iterator.
  *
- * @return   The start included version of the actual match node, if any.
- *           NULL otherwise.
+ * @return   The match criteria id, if any. NULL otherwise.
  */
-DEF_ACCESS (cpe_match_range_iterator_version_start_incl, 2);
+DEF_ACCESS (cpe_match_string_iterator_match_criteria_id, 2);
 
 /**
- * @brief Return the start excluded version of the actual match node.
+ * @brief Return the status of the CPE match criteria.
  *
  * @param[in]  iterator   Iterator.
  *
- * @return   The start excluded version of the actual match node, if any.
+ * @return   The status of the CPE match criteria, if any.
  *           NULL otherwise.
  */
-DEF_ACCESS (cpe_match_range_iterator_version_start_excl, 3);
+DEF_ACCESS (cpe_match_string_iterator_status, 3);
 
 /**
- * @brief Return the end included version of the actual match node.
+ * @brief Return the start included version of the match criteria.
  *
  * @param[in]  iterator   Iterator.
  *
- * @return   The end included version of the actual match node, if any.
+ * @return   The start included version of the match criteria, if any.
  *           NULL otherwise.
  */
-DEF_ACCESS (cpe_match_range_iterator_version_end_incl, 4);
+DEF_ACCESS (cpe_match_string_iterator_version_start_incl, 4);
 
 /**
- * @brief Return the end excluded version of the actual match node.
+ * @brief Return the start excluded version of the match criteria.
  *
  * @param[in]  iterator   Iterator.
  *
- * @return   The end excluded version of the actual match node, if any.
+ * @return   The start excluded version of the match criteria, if any.
  *           NULL otherwise.
  */
-DEF_ACCESS (cpe_match_range_iterator_version_end_excl, 5);
+DEF_ACCESS (cpe_match_string_iterator_version_start_excl, 5);
+
+/**
+ * @brief Return the end included version of the match criteria.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The end included version of the match criteria, if any.
+ *           NULL otherwise.
+ */
+DEF_ACCESS (cpe_match_string_iterator_version_end_incl, 6);
+
+/**
+ * @brief Return the end excluded version of the match criteria.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return   The end excluded version of the match criteria, if any.
+ *           NULL otherwise.
+ */
+DEF_ACCESS (cpe_match_string_iterator_version_end_excl, 7);
+
+/**
+ * @brief Initialize an iterator of CPE matches for a match string
+ *        given a match criteria id.
+ *
+ * @param[in]  iterator           Iterator.
+ * @param[in]  match_criteria_id  The match criteria id to get the matches for.
+ */
+void
+init_cpe_match_string_matches_iterator (iterator_t* iterator,
+                                       const char *match_criteria_id)
+{
+  init_iterator (iterator,
+                 "SELECT cpe_name_id, cpe_name"
+                 " FROM scap.cpe_matches"
+                 " WHERE match_criteria_id = '%s'",
+                 match_criteria_id);
+}
+
+/**
+ * @brief Get the CPE name id from a CPE match string matches iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The CPE name id.
+ */
+const char *
+cpe_matches_cpe_name_id (iterator_t* iterator)
+{
+  return iterator_string (iterator, 0);
+}
+
+/**
+ * @brief Get the CPE name from a CPE match string matches iterator.
+ *
+ * @param[in]  iterator   Iterator.
+ *
+ * @return  The CPE name id.
+ */
+const char *
+cpe_matches_cpe_name (iterator_t* iterator)
+{
+  return iterator_string (iterator, 1);
+}
 
 /**
  * @brief Initialise a report host prognosis iterator.
