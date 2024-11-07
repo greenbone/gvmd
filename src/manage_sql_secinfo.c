@@ -4044,6 +4044,31 @@ update_scap_cves ()
 }
 
 /**
+ * @brief Update SCAP affected products.
+ *
+ * Assume that the databases are attached.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_scap_affected_products ()
+{
+  g_info ("Updating affected products");
+
+  sql ("INSERT INTO scap2.affected_products"
+       "  SELECT DISTINCT scap2.cpe_match_nodes.cve_id, scap2.cpes.id"
+       "    FROM scap2.cpe_match_nodes, scap2.cpe_nodes_match_criteria,"
+       "         scap2.cpe_matches, scap2.cpes"
+       "    WHERE scap2.cpe_match_nodes.id = scap2.cpe_nodes_match_criteria.node_id"
+       "      AND scap2.cpe_nodes_match_criteria.vulnerable = 1"
+       "      AND scap2.cpe_nodes_match_criteria.match_criteria_id ="
+       "            scap2.cpe_matches.match_criteria_id"
+       "      AND scap2.cpe_matches.cpe_name_id = scap2.cpes.cpe_name_id;");
+
+  return 0;
+}
+
+/**
  * @brief Insert a SCAP CPE match string from JSON.
  *
  * @param[in]  inserts          Pointer to SQL buffer for match string entries.
@@ -5601,6 +5626,15 @@ update_scap (gboolean reset_scap_db)
   setproctitle ("Syncing SCAP: Updating CVEs");
 
   if (update_scap_cves () == -1)
+    {
+      abort_scap_update ();
+      return -1;
+    }
+
+  g_debug ("%s: update affected_products", __func__);
+  setproctitle ("Syncing SCAP: Updating affected products");
+
+  if (update_scap_affected_products () == -1)
     {
       abort_scap_update ();
       return -1;
