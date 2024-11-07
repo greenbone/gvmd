@@ -340,9 +340,6 @@ setting_dynamic_severity_int ();
 static char *
 setting_timezone ();
 
-static int
-setting_delta_reports_version_int ();
-
 static double
 task_severity_double (task_t, int, int, int);
 
@@ -6535,82 +6532,6 @@ set_current_encryption_key_uid (const char *new_uid)
        quoted_new_uid);
 
   g_free (quoted_new_uid);
-}
-
-
-
-/* Collation. */
-
-/**
- * @brief Compare two number strings for collate_ip.
- *
- * @param[in]  one_arg  First string.
- * @param[in]  two_arg  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-static int
-collate_ip_compare (const char *one_arg, const char *two_arg)
-{
-  int one = atoi (one_arg);
-  int two = atoi (two_arg);
-  return one == two ? 0 : (one < two ? -1 : 1);
-}
-
-/**
- * @brief Collate two IP addresses.
- *
- * For example, 127.0.0.2 is less than 127.0.0.3 and 127.0.0.10.
- *
- * Only works correctly for IPv4 addresses.
- *
- * @param[in]  data     Dummy for callback.
- * @param[in]  one_len  Length of first IP (a string).
- * @param[in]  arg_one  First string.
- * @param[in]  two_len  Length of second IP (a string).
- * @param[in]  arg_two  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-static int
-collate_ip (void* data,
-            int one_len, const void* arg_one,
-            int two_len, const void* arg_two)
-{
-  int ret, one_dot, two_dot;
-  char one_a[4], one_b[4], one_c[4], one_d[4];
-  char two_a[4], two_b[4], two_c[4], two_d[4];
-  const char* one = (const char*) arg_one;
-  const char* two = (const char*) arg_two;
-
-  if ((sscanf (one, "%3[0-9].%3[0-9].%3[0-9].%n%3[0-9]",
-               one_a, one_b, one_c, &one_dot, one_d)
-       == 4)
-      && (sscanf (two, "%3[0-9].%3[0-9].%3[0-9].%n%3[0-9]",
-                  two_a, two_b, two_c, &two_dot, two_d)
-          == 4))
-    {
-      ret = collate_ip_compare (one_a, two_a);
-      if (ret) return ret < 0 ? -1 : 1;
-
-      ret = collate_ip_compare (one_b, two_b);
-      if (ret) return ret < 0 ? -1 : 1;
-
-      ret = collate_ip_compare (one_c, two_c);
-      if (ret) return ret < 0 ? -1 : 1;
-
-      /* Ensure that the last number is limited to digits in the arg. */
-      one_d[one_len - one_dot] = '\0';
-      two_d[two_len - two_dot] = '\0';
-
-      ret = collate_ip_compare (one_d, two_d);
-      if (ret) return ret < 0 ? -1 : 1;
-
-      return 0;
-    }
-
-  ret = strncmp (one, two, MIN (one_len, two_len));
-  return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
 }
 
 
@@ -16094,17 +16015,6 @@ check_db_settings ()
          "  '" ROLE_UUID_ADMIN "," ROLE_UUID_USER "');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '" SETTING_UUID_DELTA_REPORTS_VERSION "'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('" SETTING_UUID_DELTA_REPORTS_VERSION "', NULL,"
-         "  'Delta Reports Version',"
-         "  'Version of the generation of the Delta Reports.',"
-         "  '2' );");
-
-  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '" SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -23999,37 +23909,6 @@ DEF_ACCESS (result_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (result_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
- * @brief Get the original type from a result iterator.
- *
- * This is the column 'type'.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The original type of the result.  Caller must only use before calling
- *         cleanup_iterator.
- */
-static
-DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the type from a result iterator.
- *
- * This is the overridden type.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The type of the result.  Caller must only use before calling
- *         cleanup_iterator.
- */
-static const char*
-result_iterator_type (iterator_t *iterator)
-{
-  if (iterator->done) return NULL;
-  /* new_type */
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-}
-
-/**
  * @brief Get the descr from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -26979,492 +26858,6 @@ void buffer_results_xml (GString *, iterator_t *, task_t, int, int, int,
                          int, int, int, int);
 
 /**
- * @brief Comparison returns.
- */
-typedef enum
-{
-  COMPARE_RESULTS_CHANGED,
-  COMPARE_RESULTS_ERROR,
-  COMPARE_RESULTS_GONE,
-  COMPARE_RESULTS_NEW,
-  COMPARE_RESULTS_SAME
-} compare_results_t;
-
-/**
- * @brief Return the sort order of two results.
- *
- * @param[in]  results        Iterator containing first result.
- * @param[in]  delta_results  Iterator containing second result.
- * @param[in]  sort_order     Whether to sort ascending or descending.
- * @param[in]  sort_field     Field to sort on, or NULL for "type".
- *
- * @return < 0 if first comes before second, 0 if equal, > 0 if first comes
- *         after second.
- */
-static compare_results_t
-result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
-            const char* sort_field)
-{
-  const char *host, *delta_host, *port, *delta_port;
-  const char *nvt, *delta_nvt, *name, *delta_name, *descr, *delta_descr;
-  int ret;
-  double severity, delta_severity;
-
-  if (sort_field == NULL)
-    sort_field = "type";
-
-  g_debug ("   delta: %s: sort_order: %i", __func__, sort_order);
-  g_debug ("   delta: %s: sort_field: %s", __func__, sort_field);
-
-  host = result_iterator_host (results);
-  delta_host = result_iterator_host (delta_results);
-
-  port = result_iterator_port (results);
-  delta_port = result_iterator_port (delta_results);
-
-  severity = result_iterator_severity_double (results);
-  delta_severity = result_iterator_severity_double (delta_results);
-
-  nvt = result_iterator_nvt_oid (results);
-  delta_nvt = result_iterator_nvt_oid (delta_results);
-
-  name = result_iterator_nvt_name (results);
-  delta_name = result_iterator_nvt_name (delta_results);
-
-  descr = result_iterator_descr (results);
-  delta_descr = result_iterator_descr (delta_results);
-
-  /* For delta reports to work correctly, the order must be the same as in
-   * init_delta_iterators, except that description should not be checked
-   * unless it is the sort_field.
-   *
-   * If description is not the sort_field it is checked after the result_cmp
-   * in compare_results. */
-
-  /* Check sort_field first, also using sort_order (0 is descending). */
-  if (strcmp (sort_field, "host") == 0)
-    {
-      ret = collate_ip (NULL,
-                        strlen (host), host, strlen (delta_host), delta_host);
-      if (sort_order == 0)
-        ret = -ret;
-      g_debug ("   delta: %s: host (%s): %s VS %s (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               host, delta_host, ret);
-      if (ret)
-        return ret;
-    }
-  else if (strcmp (sort_field, "port") == 0
-           || strcmp (sort_field, "location") == 0)
-    {
-      ret = strcmp (port, delta_port);
-      if (sort_order == 0)
-        ret = -ret;
-      g_debug ("   delta: %s: port (%s): %s VS %s (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               port, delta_port, ret);
-      if (ret)
-        return ret;
-    }
-  else if (strcmp (sort_field, "severity") == 0)
-    {
-      if (severity > delta_severity)
-        ret = sort_order ? 1 : -1;
-      else if (severity < delta_severity)
-        ret = sort_order ? -1 : 1;
-      else
-        ret = 0;
-      g_debug ("   delta: %s: severity (%s): %f VS %f (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               severity, delta_severity, ret);
-      if (ret)
-        return ret;
-    }
-  /* NVT OID, not name/vulnerability. */
-  else if (strcmp (sort_field, "nvt") == 0)
-    {
-      ret = strcmp (nvt, delta_nvt);
-      if (sort_order)
-        ret = -ret;
-      g_debug ("   delta: %s: nvt (%s): %s VS %s (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               nvt, delta_nvt, ret);
-      if (ret)
-        return ret;
-    }
-  else if (strcmp (sort_field, "description") == 0)
-    {
-      ret = strcmp (descr, delta_descr);
-      if (sort_order == 0)
-        ret = -ret;
-      g_debug ("   delta: %s: description (%s): %s VS %s (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               descr, delta_descr, ret);
-      if (ret)
-        return ret;
-    }
-  else if (strcmp (sort_field, "type") == 0)
-    {
-      const char *type, *delta_type;
-
-      type = result_iterator_type (results);
-      delta_type = result_iterator_type (delta_results);
-
-      ret = strcmp (type, delta_type);
-      if (sort_order == 0)
-        ret = -ret;
-      g_debug ("   delta: %s: type (%s): %s VS %s (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               descr, delta_descr, ret);
-      if (ret)
-        return ret;
-    }
-  else if (strcmp (sort_field, "original_type") == 0)
-    {
-      const char *type, *delta_type;
-
-      type = result_iterator_original_type (results);
-      delta_type = result_iterator_original_type (delta_results);
-
-      ret = strcmp (type, delta_type);
-      if (sort_order == 0)
-        ret = -ret;
-      g_debug ("   delta: %s: original_type (%s): %s VS %s (%i)",
-               __func__, sort_order ? "desc" : "asc",
-               descr, delta_descr, ret);
-      if (ret)
-        return ret;
-    }
-  else
-    {
-      /* Default to "vulnerability" (a.k.a "name") for unknown sort fields.
-       *
-       * Also done in print_report_xml_start, so this is just a safety check. */
-      ret = strcmp (name ? name : "", delta_name ? delta_name : "");
-      if (sort_order == 0)
-        ret = -ret;
-      if (ret)
-        return ret;
-    }
-
-  /* Check remaining fields */
-  if (strcmp (sort_field, "host"))
-    {
-      ret = collate_ip (NULL,
-                        strlen (host), host, strlen (delta_host), delta_host);
-      g_debug ("   delta: %s: host: %s VS %s (%i)",
-               __func__, host, delta_host, ret);
-      if (ret)
-        return ret;
-    }
-  if (strcmp (sort_field, "port")
-      && strcmp (sort_field, "location"))
-    {
-      ret = strcmp (port, delta_port);
-      g_debug ("   delta: %s: port: %s VS %s (%i)",
-               __func__, port, delta_port, ret);
-      if (ret)
-        return ret;
-    }
-  if (strcmp (sort_field, "severity"))
-    {
-      if (severity > delta_severity)
-        ret = 1;
-      else if (severity < delta_severity)
-        ret = -1;
-      else
-        ret = 0;
-      g_debug ("   delta: %s: severity: %f VS %f (%i)",
-               __func__, severity, delta_severity, ret);
-      if (ret)
-        return ret;
-    }
-  if (strcmp (sort_field, "nvt"))
-    {
-      ret = strcmp (nvt, delta_nvt);
-      g_debug ("   delta: %s: nvt: %s VS %s (%i)",
-               __func__, nvt, delta_nvt, ret);
-      if (ret)
-        return ret;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Test if two strings are equal, ignoring whitespace.
- *
- * @param[in]  one  First string.
- * @param[in]  two  Second string.
- *
- * @return 1 if equal, else 0.
- */
-static int
-streq_ignore_ws (const gchar *one, const gchar *two)
-{
-  if (one == NULL)
-    return two == NULL;
-  if (two == NULL)
-    return 0;
-
-  while (1)
-    {
-      /* Skip space in both. */
-      while (isspace (*one))
-        one++;
-      while (isspace (*two))
-        two++;
-
-      /* Check for end. */
-      if (*one == '\0')
-        break;
-      if (*two == '\0')
-        return 0;
-
-      /* Compare. */
-      if (*one != *two)
-        return 0;
-
-      /* Next. */
-      one++;
-      two++;
-    }
-  if (*two)
-    return 0;
-  return 1;
-}
-
-/**
- * @brief Compare two results.
- *
- * @param[in]  results        Iterator containing first result.
- * @param[in]  delta_results  Iterator containing second result.
- * @param[in]  sort_order     Whether to sort ascending or descending.
- * @param[in]  sort_field     Field to sort on, or NULL for "type".
- *
- * @return Result of comparison.
- */
-static compare_results_t
-compare_results (iterator_t *results, iterator_t *delta_results, int sort_order,
-                 const char* sort_field)
-{
-  int ret;
-  const char *descr, *delta_descr;
-
-  g_debug ("   delta: %s", __func__);
-
-  ret = result_cmp (results, delta_results, sort_order, sort_field);
-  if (ret > 0)
-    /* The delta result sorts first, so it is new. */
-    return COMPARE_RESULTS_NEW;
-  if (ret < 0)
-    /* The 'results' result sorts first, so it has gone. */
-    return COMPARE_RESULTS_GONE;
-
-  descr = result_iterator_descr (results);
-  delta_descr = result_iterator_descr (delta_results);
-
-  g_debug ("   delta: %s: descr: %s VS %s (%i)",
-          __func__,
-          descr ? descr : "NULL",
-          delta_descr ? delta_descr : "NULL",
-          (descr && delta_descr) ? strcmp (descr, delta_descr) : 0);
-
-  /* This comparison ignores whitespace to match the diff output created by
-   * strdiff in gmp.c.  The down side of this is that the comparison may be
-   * affected by the locale.
-   *
-   * An alternate would be to use the strdiff result as the comparison, but
-   * strdiff is only called for the results on the page (and not for the
-   * rest of the results, which must also be compared for the counts).
-   * Using strdiff for all results could also be slow, because it's running
-   * the diff command. */
-  if (descr && delta_descr && (streq_ignore_ws (descr, delta_descr) == 0))
-    return COMPARE_RESULTS_CHANGED;
-
-  return COMPARE_RESULTS_SAME;
-}
-
-/**
- * @brief Compare two results, optionally writing associated XML to a buffer.
- *
- * This is called with buffer NULL to compare results after the page limit
- * (filter keyword "max") is reached.  These results need to be compared to be
- * included in the counts.
- *
- * @param[in]  buffer         Buffer.  NULL to skip writing to buffer.
- * @param[in]  results        Iterator containing first result.
- * @param[in]  delta_results  Iterator containing second result.
- * @param[in]  task           Task associated with report.
- * @param[in]  notes              Whether to include notes.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[in]  sort_order     Whether to sort ascending or descending.
- * @param[in]  sort_field     Field to sort on, or NULL for "type".
- * @param[in]  changed        Whether to include changed results.
- * @param[in]  gone           Whether to include gone results.
- * @param[in]  new            Whether to include new results.
- * @param[in]  same           Whether to include same results.
- * @param[in]  max_results    Value to decrement if result is buffered.
- * @param[in]  first_result   Skip result and decrement if positive.
- * @param[in]  used           0 if used, 1 if skipped.
- * @param[in]  would_use      0 if would use (first_result aside), 1 if skipped.
- *
- * @return Result of comparison.
- */
-static compare_results_t
-compare_and_buffer_results (GString *buffer, iterator_t *results,
-                            iterator_t *delta_results, task_t task, int notes,
-                            int notes_details, int overrides,
-                            int overrides_details, int sort_order,
-                            const char* sort_field, int changed, int gone,
-                            int new, int same, int *max_results,
-                            int *first_result, int *used, int *would_use)
-{
-  compare_results_t state;
-  state = compare_results (results, delta_results, sort_order, sort_field);
-  *used = 0;
-  *would_use = 0;
-  switch (state)
-    {
-      case COMPARE_RESULTS_CHANGED:
-        if (changed)
-          {
-            *would_use = 1;
-            if (*first_result)
-              {
-                g_debug ("   delta: skip");
-                (*first_result)--;
-                break;
-              }
-            *used = 1;
-            (*max_results)--;
-            if (buffer)
-              buffer_results_xml (buffer,
-                                  results,
-                                  task,
-                                  notes,
-                                  notes_details,
-                                  overrides,
-                                  overrides_details,
-                                  0,
-                                  0,
-                                  0,
-                                  "changed",
-                                  delta_results,
-                                  /* This is the only case that uses 1. */
-                                  1,  /* Whether result is "changed". */
-                                  -1,
-                                  0,  /* Lean. */
-                                  0); /* Delta fields. */
-          }
-        break;
-
-      case COMPARE_RESULTS_GONE:
-        if (gone)
-          {
-            *would_use = 1;
-            if (*first_result)
-              {
-                g_debug ("   delta: skip");
-                (*first_result)--;
-                break;
-              }
-            *used = 1;
-            (*max_results)--;
-            if (buffer)
-              buffer_results_xml (buffer,
-                                  results,
-                                  task,
-                                  notes,
-                                  notes_details,
-                                  overrides,
-                                  overrides_details,
-                                  0,
-                                  0,
-                                  0,
-                                  "gone",
-                                  delta_results,
-                                  0,
-                                  -1,
-                                  0,  /* Lean. */
-                                  0); /* Delta fields. */
-          }
-        break;
-
-      case COMPARE_RESULTS_NEW:
-        if (new)
-          {
-            *would_use = 1;
-            if (*first_result)
-              {
-                g_debug ("   delta: skip");
-                (*first_result)--;
-                break;
-              }
-            *used = 1;
-            (*max_results)--;
-            if (buffer)
-              buffer_results_xml (buffer,
-                                  delta_results,
-                                  task,
-                                  notes,
-                                  notes_details,
-                                  overrides,
-                                  overrides_details,
-                                  0,
-                                  0,
-                                  0,
-                                  "new",
-                                  delta_results,
-                                  0,
-                                  -1,
-                                  0,  /* Lean. */
-                                  0); /* Delta fields. */
-          }
-        break;
-
-      case COMPARE_RESULTS_SAME:
-        if (same)
-          {
-            *would_use = 1;
-            if (*first_result)
-              {
-                g_debug ("   delta: skip");
-                (*first_result)--;
-                break;
-              }
-            *used = 1;
-            (*max_results)--;
-            if (buffer)
-              buffer_results_xml (buffer,
-                                  results,
-                                  task,
-                                  notes,
-                                  notes_details,
-                                  overrides,
-                                  overrides_details,
-                                  0,
-                                  0,
-                                  0,
-                                  "same",
-                                  delta_results,
-                                  0,
-                                  -1,
-                                  0,  /* Lean. */
-                                  0); /* Delta fields. */
-          }
-        break;
-
-      default:
-        return COMPARE_RESULTS_ERROR;
-    }
-
-  return state;
-}
-
-/**
  * @brief Write XML to a file or close stream and return.
  *
  * @param[in]   stream  Stream to write to.
@@ -28869,114 +28262,6 @@ print_report_host_xml (FILE *stream,
 }
 
 /**
- * @brief Init delta iterators for print_report_xml.
- *
- * @param[in]  report         The report.
- * @param[in]  results        Report result iterator.
- * @param[in]  delta          Delta report.
- * @param[in]  delta_results  Delta report result iterator.
- * @param[in]  get            GET command data.
- * @param[in]  term           Filter term.
- * @param[out] sort_field     Sort field.
- *
- * @return 0 on success, -1 error.
- */
-static int
-init_delta_iterators (report_t report, iterator_t *results, report_t delta,
-                      iterator_t *delta_results, const get_data_t *get,
-                      const char *term, const char *sort_field)
-{
-  int res;
-  gchar *order;
-  get_data_t delta_get;
-
-  /*
-   * Order must be the same as in result_cmp, except for description
-   *  which isn't checked there.
-   */
-  if ((strcmp (sort_field, "name") == 0)
-      || (strcmp (sort_field, "vulnerability") == 0))
-    order = g_strdup (", host, port, severity, nvt, description");
-  else if (strcmp (sort_field, "host") == 0)
-    order = g_strdup (", port, severity, nvt, description");
-  else if ((strcmp (sort_field, "port") == 0)
-           || (strcmp (sort_field, "location") == 0))
-    order = g_strdup (", host, severity, nvt, description");
-  else if (strcmp (sort_field, "severity") == 0)
-    order = g_strdup (", host, port, nvt, description");
-  else if (strcmp (sort_field, "nvt") == 0)
-    order = g_strdup (", host, port, severity, description");
-  else
-    order = g_strdup (", host, port, severity, nvt, description");
-
-  delta_get = *get;
-  delta_get.filt_id = NULL;
-  delta_get.filter = g_strdup_printf ("rows=-1 first=1 sort=%s %s",
-                                      sort_field, term);
-  ignore_max_rows_per_page = 1;
-
-#if 0
-  /* For debugging. */
-
-  iterator_t results2;
-
-  res = init_result_get_iterator (results, &delta_get, report, NULL, order);
-  if (res)
-    return -1;
-
-  res = init_result_get_iterator (&results2, &delta_get, delta, NULL, order);
-  if (res)
-    return -1;
-
-  g_debug ("   delta: %s: REPORT 1:", __func__);
-  while (next (results))
-    g_debug ("   delta: %s: %s   %s   %s   %s   %.30s",
-            __func__,
-            result_iterator_nvt_name (results),
-            result_iterator_host (results),
-            result_iterator_type (results),
-            result_iterator_port (results),
-            result_iterator_descr (results));
-  cleanup_iterator (results);
-  g_debug ("   delta: %s: REPORT 1 END", __func__);
-
-  g_debug ("   delta: %s: REPORT 2:", __func__);
-  while (next (&results2))
-    g_debug ("   delta: %s: %s   %s   %s   %s   %.30s",
-            __func__,
-            result_iterator_nvt_name (&results2),
-            result_iterator_host (&results2),
-            result_iterator_type (&results2),
-            result_iterator_port (&results2),
-            result_iterator_descr (&results2));
-  cleanup_iterator (&results2);
-  g_debug ("   delta: %s: REPORT 2 END", __func__);
-#endif
-
-  res = init_result_get_iterator (results, &delta_get, report, NULL, order);
-  if (res)
-    {
-      ignore_max_rows_per_page = 0;
-      g_free (order);
-      return -1;
-    }
-
-  res = init_result_get_iterator (delta_results, &delta_get, delta, NULL, order);
-  if (res)
-    {
-      ignore_max_rows_per_page = 0;
-      g_free (order);
-      return -1;
-    }
-
-  g_free (delta_get.filter);
-  ignore_max_rows_per_page = 0;
-  g_free (order);
-
-  return 0;
-}
-
-/**
  * @brief Init v2 delta iterator for print_report_xml.
  *
  * @param[in]  report         The report.
@@ -29180,726 +28465,6 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
 }
 
 /**
- * @brief Print delta results for print_report_xml.
- *
- * @param[in]  out            File stream to write to.
- * @param[in]  results        Report result iterator.
- * @param[in]  delta_results  Delta report result iterator.
- * @param[in]  delta_states   String describing delta states to include in count
- *                            (for example, "sngc" Same, New, Gone and Changed).
- *                            All levels if NULL.
- * @param[in]  first_result   First result.
- * @param[in]  max_results    Max results.
- * @param[in]  task           The task.
- * @param[in]  notes          Whether to include notes.
- * @param[in]  notes_details  Whether to include note details.
- * @param[in]  overrides          Whether to include overrides.
- * @param[in]  overrides_details  Whether to include override details.
- * @param[in]  sort_order         Sort order.
- * @param[in]  sort_field         Sort field.
- * @param[in]  result_hosts_only  Whether to only include hosts with results.
- * @param[in]  orig_filtered_result_count  Result count.
- * @param[in]  filtered_result_count       Result count.
- * @param[in]  orig_f_holes   Result count.
- * @param[in]  f_holes        Result count.
- * @param[in]  orig_f_infos   Result count.
- * @param[in]  f_infos        Result count.
- * @param[in]  orig_f_logs    Result count.
- * @param[in]  f_logs         Result count.
- * @param[in]  orig_f_warnings  Result count.
- * @param[in]  f_warnings       Result count.
- * @param[in]  orig_f_false_positives  Result count.
- * @param[in]  f_false_positives       Result count.
- * @param[in]  result_hosts   Result hosts.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_delta_xml (FILE *out, iterator_t *results,
-                        iterator_t *delta_results, const char *delta_states,
-                        int first_result, int max_results, task_t task,
-                        int notes, int notes_details, int overrides,
-                        int overrides_details, int sort_order,
-                        const char *sort_field, int result_hosts_only,
-                        int *orig_filtered_result_count,
-                        int *filtered_result_count,
-                        int *orig_f_holes, int *f_holes,
-                        int *orig_f_infos, int *f_infos,
-                        int *orig_f_logs, int *f_logs,
-                        int *orig_f_warnings, int *f_warnings,
-                        int *orig_f_false_positives, int *f_false_positives,
-                        array_t *result_hosts)
-{
-  gboolean done, delta_done;
-  int changed, gone, new, same;
-  /* A tree of host, tree pairs, where the inner tree is a sorted tree
-   * of port, threat pairs. */
-  GTree *ports;
-  gchar *msg;
-
-  *orig_f_holes = *f_holes;
-  *orig_f_infos = *f_infos;
-  *orig_f_logs = *f_logs;
-  *orig_f_warnings = *f_warnings;
-  *orig_f_false_positives = *f_false_positives;
-  *orig_filtered_result_count = *filtered_result_count;
-
-  changed = (strchr (delta_states, 'c') != NULL);
-  gone = (strchr (delta_states, 'g') != NULL);
-  new = (strchr (delta_states, 'n') != NULL);
-  same = (strchr (delta_states, 's') != NULL);
-
-  ports = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, g_free,
-                           (GDestroyNotify) free_host_ports);
-
-  /* Compare the results in the two iterators, which are sorted. */
-
-  g_debug ("   delta: %s: start", __func__);
-  g_debug ("   delta: %s: sort_field: %s", __func__, sort_field);
-  g_debug ("   delta: %s: sort_order: %i", __func__, sort_order);
-  g_debug ("   delta: %s: max_results: %i", __func__, max_results);
-  done = !next (results);
-  delta_done = !next (delta_results);
-  while (1)
-    {
-      GString *buffer;
-      compare_results_t state;
-      int used, would_use;
-
-      if (max_results == 0)
-        break;
-
-      if (done)
-        {
-          if (delta_done)
-            break;
-          if (new)
-            /* Extra results in 'delta_results'. */
-            do
-              {
-                const char *level;
-
-                g_debug ("   delta: %s: extra from report 2: %s",
-                        __func__,
-                        result_iterator_nvt_oid (results));
-
-                if (first_result)
-                  {
-                    g_debug ("   delta: skip");
-                    first_result--;
-                    continue;
-                  }
-
-                /* Increase the result count. */
-                level = result_iterator_level (delta_results);
-                (*orig_filtered_result_count)++;
-                (*filtered_result_count)++;
-                if (strcmp (level, "High") == 0)
-                  {
-                    (*orig_f_holes)++;
-                    (*f_holes)++;
-                  }
-                else if (strcmp (level, "Medium") == 0)
-                  {
-                    (*orig_f_warnings)++;
-                    (*f_warnings)++;
-                  }
-                else if (strcmp (level, "Low") == 0)
-                  {
-                    (*orig_f_infos)++;
-                    (*f_infos)++;
-                  }
-                else if (strcmp (level, "Log") == 0)
-                  {
-                    (*orig_f_logs)++;
-                    (*f_logs)++;
-                  }
-                else if (strcmp (level, "False Positive") == 0)
-                  {
-                    (*orig_f_false_positives)++;
-                    (*f_false_positives)++;
-                  }
-
-                g_debug ("   delta: %s: extra from report 2: %s",
-                        __func__,
-                        result_iterator_nvt_oid (delta_results));
-                buffer = g_string_new ("");
-                buffer_results_xml (buffer,
-                                    delta_results,
-                                    task,
-                                    notes,
-                                    notes_details,
-                                    overrides,
-                                    overrides_details,
-                                    0,
-                                    0,
-                                    0,
-                                    "new",
-                                    NULL,
-                                    0,
-                                    -1,
-                                    0,  /* Lean. */
-                                    0); /* Delta fields. */
-                if (fprintf (out, "%s", buffer->str) < 0)
-                  return -1;
-                g_string_free (buffer, TRUE);
-                if (result_hosts_only)
-                  array_add_new_string (result_hosts,
-                                        result_iterator_host (delta_results));
-                add_port (ports, delta_results);
-                max_results--;
-                if (max_results == 0)
-                  break;
-              }
-            while (next (delta_results));
-          delta_done = TRUE;
-          break;
-        }
-
-      if (delta_done)
-        {
-          /* Extra results in 'results'. */
-          if (gone)
-            do
-              {
-                g_debug ("   delta: %s: extra from report 1: %s",
-                        __func__,
-                        result_iterator_nvt_oid (results));
-                if (first_result)
-                  {
-                    g_debug ("   delta: skip");
-                    first_result--;
-                    continue;
-                  }
-                buffer = g_string_new ("");
-                buffer_results_xml (buffer,
-                                    results,
-                                    task,
-                                    notes,
-                                    notes_details,
-                                    overrides,
-                                    overrides_details,
-                                    0,
-                                    0,
-                                    0,
-                                    "gone",
-                                    NULL,
-                                    0,
-                                    -1,
-                                    0,  /* Lean. */
-                                    0); /* Delta fields. */
-                if (fprintf (out, "%s", buffer->str) < 0)
-                  return -1;
-                g_string_free (buffer, TRUE);
-                if (result_hosts_only)
-                  array_add_new_string (result_hosts,
-                                        result_iterator_host (results));
-                add_port (ports, results);
-                max_results--;
-                if (max_results == 0)
-                  break;
-              }
-            while (next (results));
-          else
-            do
-              {
-                const char *level;
-
-                /* Decrease the result count. */
-                level = result_iterator_level (results);
-                (*orig_filtered_result_count)--;
-                (*filtered_result_count)--;
-                if (strcmp (level, "High") == 0)
-                  {
-                    (*orig_f_holes)--;
-                    (*f_holes)--;
-                  }
-                else if (strcmp (level, "Medium") == 0)
-                  {
-                    (*orig_f_warnings)--;
-                    (*f_warnings)--;
-                  }
-                else if (strcmp (level, "Low") == 0)
-                  {
-                    (*orig_f_infos)--;
-                    (*f_infos)--;
-                  }
-                else if (strcmp (level, "Log") == 0)
-                  {
-                    (*orig_f_logs)--;
-                    (*f_logs)--;
-                  }
-                else if (strcmp (level, "False Positive") == 0)
-                  {
-                    (*orig_f_false_positives)--;
-                    (*f_false_positives)--;
-                  }
-              }
-            while (next (results));
-          done = TRUE;
-          break;
-        }
-
-      /* Compare the two results. */
-
-      buffer = g_string_new ("");
-      state = compare_and_buffer_results (buffer,
-                                          results,
-                                          delta_results,
-                                          task,
-                                          notes,
-                                          notes_details,
-                                          overrides,
-                                          overrides_details,
-                                          sort_order,
-                                          sort_field,
-                                          changed,
-                                          gone,
-                                          new,
-                                          same,
-                                          &max_results,
-                                          &first_result,
-                                          &used,
-                                          &would_use);
-      if (state == COMPARE_RESULTS_ERROR)
-        {
-          g_warning ("%s: compare_and_buffer_results failed",
-                     __func__);
-          return -1;
-        }
-      if (fprintf (out, "%s", buffer->str) < 0)
-        return -1;
-      g_string_free (buffer, TRUE);
-
-      if ((used == 0)
-          && ((state == COMPARE_RESULTS_GONE)
-              || (state == COMPARE_RESULTS_SAME)
-              || (state == COMPARE_RESULTS_CHANGED)))
-        {
-          const char *level;
-
-          /* Decrease the result count. */
-          level = result_iterator_level (results);
-          (*filtered_result_count)--;
-          if (strcmp (level, "High") == 0)
-            {
-              (*f_holes)--;
-            }
-          else if (strcmp (level, "Medium") == 0)
-            {
-              (*f_warnings)--;
-            }
-          else if (strcmp (level, "Low") == 0)
-            {
-              (*f_infos)--;
-            }
-          else if (strcmp (level, "Log") == 0)
-            {
-              (*f_logs)--;
-            }
-          else if (strcmp (level, "False Positive") == 0)
-            {
-              (*f_false_positives)--;
-            }
-        }
-
-      if ((would_use == 0)
-          && ((state == COMPARE_RESULTS_GONE)
-              || (state == COMPARE_RESULTS_SAME)
-              || (state == COMPARE_RESULTS_CHANGED)))
-        {
-          const char *level;
-
-          /* Decrease the result count. */
-          level = result_iterator_level (results);
-          (*orig_filtered_result_count)--;
-          if (strcmp (level, "High") == 0)
-            {
-              (*orig_f_holes)--;
-            }
-          else if (strcmp (level, "Medium") == 0)
-            {
-              (*orig_f_warnings)--;
-            }
-          else if (strcmp (level, "Low") == 0)
-            {
-              (*orig_f_infos)--;
-            }
-          else if (strcmp (level, "Log") == 0)
-            {
-              (*orig_f_logs)--;
-            }
-          else if (strcmp (level, "False Positive") == 0)
-            {
-              (*orig_f_false_positives)--;
-            }
-        }
-
-      /* Move on to the next. */
-
-      if (state == COMPARE_RESULTS_GONE)
-        {
-          /* "Used" just the 'results' result. */
-          if (used)
-            {
-              if (result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host (results));
-              add_port (ports, results);
-            }
-          done = !next (results);
-        }
-      else if ((state == COMPARE_RESULTS_SAME)
-               || (state == COMPARE_RESULTS_CHANGED))
-        {
-          /* "Used" both results. */
-          if (used)
-            {
-              if (result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host (results));
-              add_port (ports, results);
-            }
-          done = !next (results);
-          delta_done = !next (delta_results);
-        }
-      else if (state == COMPARE_RESULTS_NEW)
-        {
-          if (would_use)
-            {
-              const char *level;
-
-              /* Would have "used" just the 'delta_results' result, on
-               * an earlier page. */
-
-              /* Increase the result count. */
-              level = result_iterator_level (delta_results);
-              (*orig_filtered_result_count)++;
-              if (strcmp (level, "High") == 0)
-                {
-                  (*orig_f_holes)++;
-                }
-              else if (strcmp (level, "Medium") == 0)
-                {
-                  (*orig_f_warnings)++;
-                }
-              else if (strcmp (level, "Low") == 0)
-                {
-                  (*orig_f_infos)++;
-                }
-              else if (strcmp (level, "Log") == 0)
-                {
-                  (*orig_f_logs)++;
-                }
-              else if (strcmp (level, "False Positive") == 0)
-                {
-                  (*orig_f_false_positives)++;
-                }
-            }
-
-          if (used)
-            {
-              const char *level;
-
-              /* "Used" just the 'delta_results' result. */
-
-              /* Increase the result count. */
-              level = result_iterator_level (delta_results);
-              (*filtered_result_count)++;
-              if (strcmp (level, "High") == 0)
-                {
-                  (*f_holes)++;
-                }
-              else if (strcmp (level, "Medium") == 0)
-                {
-                  (*f_warnings)++;
-                }
-              else if (strcmp (level, "Low") == 0)
-                {
-                  (*f_infos)++;
-                }
-              else if (strcmp (level, "Log") == 0)
-                {
-                  (*f_logs)++;
-                }
-              else if (strcmp (level, "False Positive") == 0)
-                {
-                  (*f_false_positives)++;
-                }
-
-              if (result_hosts_only)
-                array_add_new_string (result_hosts,
-                                      result_iterator_host
-                                       (delta_results));
-
-              add_port (ports, delta_results);
-            }
-          delta_done = !next (delta_results);
-        }
-      else
-        assert (0);
-    }
-
-  /* Compare remaining results, for the filtered report counts. */
-
-  g_debug ("   delta: %s: counting rest", __func__);
-  while (1)
-    {
-      compare_results_t state;
-      int used, would_use;
-
-      if (done)
-        {
-          if (delta_done)
-            break;
-          if (new)
-            /* Extra results in 'delta_results'. */
-            do
-              {
-                const char *level;
-
-                g_debug ("   delta: %s: extra from report 2: %s",
-                        __func__,
-                        result_iterator_nvt_oid (delta_results));
-
-                /* Increase the result count. */
-                level = result_iterator_level (delta_results);
-                (*orig_filtered_result_count)++;
-                if (strcmp (level, "High") == 0)
-                  {
-                    (*orig_f_holes)++;
-                  }
-                else if (strcmp (level, "Medium") == 0)
-                  {
-                    (*orig_f_warnings)++;
-                  }
-                else if (strcmp (level, "Low") == 0)
-                  {
-                    (*orig_f_infos)++;
-                  }
-                else if (strcmp (level, "Log") == 0)
-                  {
-                    (*orig_f_logs)++;
-                  }
-                else if (strcmp (level, "False Positive") == 0)
-                  {
-                    (*orig_f_false_positives)++;
-                  }
-              }
-            while (next (delta_results));
-          break;
-        }
-
-      if (delta_done)
-        {
-          /* Extra results in 'results'. */
-          if (gone)
-            do
-              {
-                g_debug ("   delta: %s: extra from report 1: %s",
-                        __func__,
-                        result_iterator_nvt_oid (results));
-
-                /* It's in the count already. */
-              }
-            while (next (results));
-          else
-            do
-              {
-                const char *level;
-
-                /* Decrease the result count. */
-                level = result_iterator_level (results);
-                (*orig_filtered_result_count)--;
-                if (strcmp (level, "High") == 0)
-                  {
-                    (*orig_f_holes)--;
-                  }
-                else if (strcmp (level, "Medium") == 0)
-                  {
-                    (*orig_f_warnings)--;
-                  }
-                else if (strcmp (level, "Low") == 0)
-                  {
-                    (*orig_f_infos)--;
-                  }
-                else if (strcmp (level, "Log") == 0)
-                  {
-                    (*orig_f_logs)--;
-                  }
-                else if (strcmp (level, "False Positive") == 0)
-                  {
-                    (*orig_f_false_positives)--;
-                  }
-              }
-            while (next (results));
-          break;
-        }
-
-      /* Compare the two results. */
-
-      state = compare_and_buffer_results (NULL,
-                                          results,
-                                          delta_results,
-                                          task,
-                                          notes,
-                                          notes_details,
-                                          overrides,
-                                          overrides_details,
-                                          sort_order,
-                                          sort_field,
-                                          changed,
-                                          gone,
-                                          new,
-                                          same,
-                                          &max_results,
-                                          &first_result,
-                                          &used,
-                                          &would_use);
-      if (state == COMPARE_RESULTS_ERROR)
-        {
-          g_warning ("%s: compare_and_buffer_results failed",
-                     __func__);
-          return -1;
-        }
-
-      if (state == COMPARE_RESULTS_NEW)
-        {
-          if (used)
-            {
-              const char *level;
-
-              /* "Used" just the 'delta_results' result. */
-
-              /* Increase the result count. */
-              level = result_iterator_level (delta_results);
-              (*orig_filtered_result_count)++;
-              if (strcmp (level, "High") == 0)
-                {
-                  (*orig_f_holes)++;
-                }
-              else if (strcmp (level, "Medium") == 0)
-                {
-                  (*orig_f_warnings)++;
-                }
-              else if (strcmp (level, "Low") == 0)
-                {
-                  (*orig_f_infos)++;
-                }
-              else if (strcmp (level, "Log") == 0)
-                {
-                  (*orig_f_logs)++;
-                }
-              else if (strcmp (level, "False Positive") == 0)
-                {
-                  (*orig_f_false_positives)++;
-                }
-            }
-        }
-      else if (used)
-        {
-          /* It's in the count already. */
-        }
-      else
-        {
-          const char *level;
-
-          /* Decrease the result count. */
-          level = result_iterator_level (results);
-          (*orig_filtered_result_count)--;
-          if (strcmp (level, "High") == 0)
-            {
-              (*orig_f_holes)--;
-            }
-          else if (strcmp (level, "Medium") == 0)
-            {
-              (*orig_f_warnings)--;
-            }
-          else if (strcmp (level, "Low") == 0)
-            {
-              (*orig_f_infos)--;
-            }
-          else if (strcmp (level, "Log") == 0)
-            {
-              (*orig_f_logs)--;
-            }
-          else if (strcmp (level, "False Positive") == 0)
-            {
-              (*orig_f_false_positives)--;
-            }
-        }
-
-      /* Move on to the next. */
-
-      if (state == COMPARE_RESULTS_GONE)
-        {
-          /* "Used" just the 'results' result. */
-          done = !next (results);
-        }
-      else if ((state == COMPARE_RESULTS_SAME)
-               || (state == COMPARE_RESULTS_CHANGED))
-        {
-          /* "Used" both results. */
-          done = !next (results);
-          delta_done = !next (delta_results);
-        }
-      else if (state == COMPARE_RESULTS_NEW)
-        {
-          /* "Used" just the 'delta_results' result. */
-          delta_done = !next (delta_results);
-        }
-      else
-        assert (0);
-    }
-  msg = g_markup_printf_escaped ("</results>");
-  if (fprintf (out, "%s", msg) < 0)
-    {
-      g_free (msg);
-      fclose (out);
-      return -1;
-    }
-  g_free (msg);
-
-  /* Write ports to file. */
-
-  msg = g_markup_printf_escaped ("<ports"
-                                 " start=\"%i\""
-                                 " max=\"%i\">",
-                                 /* Add 1 for 1 indexing. */
-                                 first_result + 1,
-                                 max_results);
-  if (fprintf (out, "%s", msg) < 0)
-    {
-      g_free (msg);
-      fclose (out);
-      return -1;
-    }
-  g_free (msg);
-  if (sort_field == NULL || strcmp (sort_field, "port"))
-    {
-      if (sort_order)
-        g_tree_foreach (ports, print_host_ports_by_severity_asc, out);
-      else
-        g_tree_foreach (ports, print_host_ports_by_severity_desc, out);
-    }
-  else if (sort_order)
-    g_tree_foreach (ports, print_host_ports, out);
-  else
-    g_tree_foreach (ports, print_host_ports_desc, out);
-  g_tree_destroy (ports);
-  msg = g_markup_printf_escaped ("</ports>");
-  if (fprintf (out, "%s", msg) < 0)
-    {
-      g_free (msg);
-      fclose (out);
-      return -1;
-    }
-  g_free (msg);
-
-  return 0;
-}
-
-/**
  * @brief Print v2 delta results for print_report_xml.
  *
  * @param[in]  out            File stream to write to.
@@ -29953,7 +28518,7 @@ print_v2_report_delta_xml (FILE *out, iterator_t *results,
                         int *orig_f_warnings, int *f_warnings,
                         int *orig_f_false_positives, int *f_false_positives,
                         int *f_compliance_yes, int *f_compliance_no,
-                        int *f_compliance_incomplete, 
+                        int *f_compliance_incomplete,
                         int *f_compliance_undefined, int *f_compliance_count,
                         array_t *result_hosts)
 {
@@ -30171,8 +28736,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_compliance_incomplete, f_compliance_undefined;
   int f_compliance_count;
 
-  int delta_reports_version = 0;
-
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
@@ -30263,11 +28826,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &search_phrase_exact, &notes, &overrides,
                                      &apply_overrides, &zone);
     }
-
-  if (delta) {
-    delta_reports_version = setting_delta_reports_version_int ();
-    g_debug ("%s: delta reports version %d", __func__, delta_reports_version);
-  }
 
   max_results = manage_max_rows (max_results);
 
@@ -30378,8 +28936,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
-  count_filtered = (delta == 0 && ignore_pagination && get->details)
-                   || (delta_reports_version == 2);
+  count_filtered = (delta || (ignore_pagination && get->details));
 
   if (report)
     {
@@ -30460,56 +29017,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   g_free (term);
   term = clean;
-
-  if (delta
-      && sort_field 
-      && (delta_reports_version == 1)
-      /* These are all checked in result_cmp. */
-      && strcmp (sort_field, "name")
-      && strcmp (sort_field, "vulnerability")
-      && strcmp (sort_field, "host")
-      && strcmp (sort_field, "port")
-      && strcmp (sort_field, "location")
-      && strcmp (sort_field, "severity")
-      && strcmp (sort_field, "nvt")
-      && strcmp (sort_field, "description")
-      && strcmp (sort_field, "type")
-      && strcmp (sort_field, "original_type"))
-    {
-      gchar *new_term;
-
-      if ((strcmp (sort_field, "task") == 0)
-          || (strcmp (sort_field, "task_id") == 0)
-          || (strcmp (sort_field, "report_id") == 0))
-        {
-          /* These don't affect delta report, so sort by vulnerability. */
-          g_free (sort_field);
-          sort_field = g_strdup ("vulnerability");
-        }
-      else
-        {
-          /* The remaining filterable fields for the result iterator, all of
-           * which may be used as a sort field.  These could be added to
-           * result_cmp.  For now sort by vulnerability. */
-#if 0
-          "uuid", "comment", "created", "modified", "_owner",
-          "cvss_base", "nvt_version", "original_severity", "date",
-          "solution_type", "qod", "qod_type", "cve", "hostname", "path"
-#endif
-          g_free (sort_field);
-          sort_field = g_strdup ("vulnerability");
-        }
-
-      /* Adjust "term" to match sort_field, because "term" will be used in the
-       * REPORT XML FILTERS (sent by buffer_get_filter_xml below). */
-      new_term = g_strdup_printf ("sort=%s %s",
-                                  sort_field,
-                                  term);
-      g_free (term);
-      term = new_term;
-      /* Similarly, the order will now be ascending. */
-      sort_order = 1;
-    }
 
   if (filter_term_return)
     *filter_term_return = g_strdup (term);
@@ -30873,27 +29380,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (delta_reports_version == 1) 
+      if (init_v2_delta_iterator (report, &results, delta,
+                                  get, term, sort_field))
         {
-          if (init_delta_iterators (report, &results, delta, 
-                                    &delta_results, get, 
-                                    term, sort_field))
-            {
-              g_free (term);
-              g_hash_table_destroy (f_host_ports);
-              return -1;
-            }
           g_free (term);
-        } 
-      else 
-        {      
-          if (init_v2_delta_iterator (report, &results, delta,
-                                      get, term, sort_field))
-            {
-              g_free (term);
-              g_hash_table_destroy (f_host_ports);
-              return -1;
-            }
+          g_hash_table_destroy (f_host_ports);
+          return -1;
         }
     }
   else if (get->details)
@@ -30956,52 +29448,28 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (delta_reports_version == 1) 
-        {
-          if (print_report_delta_xml (out, &results, &delta_results, 
-                                      delta_states,
-                                      ignore_pagination ? 0 : first_result,
-                                      ignore_pagination ? -1 : max_results,
-                                      task, notes,
-                                      notes_details, overrides, 
-                                      overrides_details, sort_order,
-                                      sort_field, result_hosts_only,
-                                      &orig_filtered_result_count,
-                                      &filtered_result_count,
-                                      &orig_f_holes, &f_holes,
-                                      &orig_f_infos, &f_infos,
-                                      &orig_f_logs, &f_logs,
-                                      &orig_f_warnings, &f_warnings,
-                                      &orig_f_false_positives, 
-                                      &f_false_positives,
-                                      result_hosts))
-          goto failed_delta_report;
-        } 
-      else 
-        {
-          if (print_v2_report_delta_xml (out, &results, delta_states,
-                                        ignore_pagination ? 0 : first_result,
-                                        ignore_pagination ? -1 : max_results,
-                                        task, notes,
-                                        notes_details, overrides, 
-                                        overrides_details, sort_order, 
-                                        sort_field, result_hosts_only,
-                                        &orig_filtered_result_count,
-                                        &filtered_result_count,
-                                        &orig_f_holes, &f_holes,
-                                        &orig_f_infos, &f_infos,
-                                        &orig_f_logs, &f_logs,
-                                        &orig_f_warnings, &f_warnings,
-                                        &orig_f_false_positives, 
-                                        &f_false_positives,
-                                        &f_compliance_yes,
-                                        &f_compliance_no,
-                                        &f_compliance_incomplete,
-                                        &f_compliance_undefined,
-                                        &f_compliance_count,
-                                        result_hosts))
-            goto failed_delta_report;
-        }
+      if (print_v2_report_delta_xml (out, &results, delta_states,
+                                    ignore_pagination ? 0 : first_result,
+                                    ignore_pagination ? -1 : max_results,
+                                    task, notes,
+                                    notes_details, overrides,
+                                    overrides_details, sort_order,
+                                    sort_field, result_hosts_only,
+                                    &orig_filtered_result_count,
+                                    &filtered_result_count,
+                                    &orig_f_holes, &f_holes,
+                                    &orig_f_infos, &f_infos,
+                                    &orig_f_logs, &f_logs,
+                                    &orig_f_warnings, &f_warnings,
+                                    &orig_f_false_positives,
+                                    &f_false_positives,
+                                    &f_compliance_yes,
+                                    &f_compliance_no,
+                                    &f_compliance_incomplete,
+                                    &f_compliance_undefined,
+                                    &f_compliance_count,
+                                    result_hosts))
+        goto failed_delta_report;
     }
   else if (get->details)
     {
@@ -31142,8 +29610,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   if (get->details)
     cleanup_iterator (&results);
-  if (delta && get->details && delta_reports_version == 1)
-    cleanup_iterator (&delta_results);
 
   /* Print result counts and severity. */
 
@@ -31293,12 +29759,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           iterator_t hosts;
           init_report_host_iterator (&hosts, report, result_host, 0);
           present = next (&hosts);
-          if (delta && (present == FALSE) && delta_reports_version == 1)
-            {
-              cleanup_iterator (&hosts);
-              init_report_host_iterator (&hosts, delta, result_host, 0);
-              present = next (&hosts);
-            }
           if (present)
             {
                 if (print_report_host_xml (out,
@@ -53191,21 +51651,6 @@ setting_auto_cache_rebuild_int ()
 }
 
 /**
- * @brief Return user setting as int.
- *
- * @return User setting.
- */
-static int
-setting_delta_reports_version_int ()
-{
-  int version;
-
-  setting_value_int (SETTING_UUID_DELTA_REPORTS_VERSION, &version);
-
-  return version;
-}
-
-/**
  * @brief Initialise a setting iterator, including observed settings.
  *
  * @param[in]  iterator    Iterator.
@@ -54108,8 +52553,6 @@ setting_name (const gchar *uuid)
     return "Feed Import Owner";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
     return "Feed Import Roles";
-  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
-    return "Delta Reports Version";
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "SecInfo SQL Buffer Threshold";
 
@@ -54149,8 +52592,6 @@ setting_description (const gchar *uuid)
     return "User who is given ownership of new resources from feed.";
   if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
     return "Roles given access to new resources from feed.";
-  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
-    return "Version of the generation of the Delta Reports.";
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "Buffer size threshold in MiB for running buffered SQL statements"
            " in SecInfo updates before the end of the file being processed.";
@@ -54239,12 +52680,6 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
           point++;
         }
       g_strfreev (split);
-    }
-
-  if (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
-    {
-      if (strcmp(value, "1") != 0 && strcmp(value, "2") != 0)
-        return 1;
     }
 
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
@@ -54349,7 +52784,6 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
-      && strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION)
       && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
     {
       fprintf (stderr, "Error in setting UUID.\n");
@@ -54377,7 +52811,6 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_DELTA_REPORTS_VERSION) == 0)
           || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0))
         {
           sql_rollback ();

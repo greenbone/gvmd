@@ -138,11 +138,6 @@
 #define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
 
 /**
- * @brief UUID of 'Delta Reports Version' setting.
- */
-#define SETTING_UUID_DELTA_REPORTS_VERSION "985a0c05-2140-4e66-9989-ce9a0906a5a9"
-
-/**
  * @brief UUID of 'SecInfo SQL Buffer Threshold' setting.
  */
 #define SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "316275a9-3629-49ad-9cea-5b3ab155b93f"
