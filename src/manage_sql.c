@@ -28262,7 +28262,7 @@ print_report_host_xml (FILE *stream,
 }
 
 /**
- * @brief Init v2 delta iterator for print_report_xml.
+ * @brief Init delta iterator for print_report_xml.
  *
  * @param[in]  report         The report.
  * @param[in]  results        Report result iterator.
@@ -28274,9 +28274,9 @@ print_report_host_xml (FILE *stream,
  * @return 0 on success, -1 error.
  */
 static int
-init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta, 
-                      const get_data_t *get, const char *term,
-                      const char *sort_field)
+init_delta_iterator (report_t report, iterator_t *results, report_t delta,
+                     const get_data_t *get, const char *term,
+                     const char *sort_field)
 {
   int ret;
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
@@ -28465,7 +28465,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
 }
 
 /**
- * @brief Print v2 delta results for print_report_xml.
+ * @brief Print delta results for print_report_xml.
  *
  * @param[in]  out            File stream to write to.
  * @param[in]  results        Report result iterator.
@@ -28504,7 +28504,7 @@ init_v2_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @return 0 on success, -1 error.
  */
 static int
-print_v2_report_delta_xml (FILE *out, iterator_t *results,
+print_report_delta_xml (FILE *out, iterator_t *results,
                         const char *delta_states,
                         int first_result, int max_results, task_t task,
                         int notes, int notes_details, int overrides,
@@ -29380,7 +29380,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (init_v2_delta_iterator (report, &results, delta,
+      if (init_delta_iterator (report, &results, delta,
                                   get, term, sort_field))
         {
           g_free (term);
@@ -29448,27 +29448,27 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-      if (print_v2_report_delta_xml (out, &results, delta_states,
-                                    ignore_pagination ? 0 : first_result,
-                                    ignore_pagination ? -1 : max_results,
-                                    task, notes,
-                                    notes_details, overrides,
-                                    overrides_details, sort_order,
-                                    sort_field, result_hosts_only,
-                                    &orig_filtered_result_count,
-                                    &filtered_result_count,
-                                    &orig_f_holes, &f_holes,
-                                    &orig_f_infos, &f_infos,
-                                    &orig_f_logs, &f_logs,
-                                    &orig_f_warnings, &f_warnings,
-                                    &orig_f_false_positives,
-                                    &f_false_positives,
-                                    &f_compliance_yes,
-                                    &f_compliance_no,
-                                    &f_compliance_incomplete,
-                                    &f_compliance_undefined,
-                                    &f_compliance_count,
-                                    result_hosts))
+      if (print_report_delta_xml (out, &results, delta_states,
+                                  ignore_pagination ? 0 : first_result,
+                                  ignore_pagination ? -1 : max_results,
+                                  task, notes,
+                                  notes_details, overrides,
+                                  overrides_details, sort_order,
+                                  sort_field, result_hosts_only,
+                                  &orig_filtered_result_count,
+                                  &filtered_result_count,
+                                  &orig_f_holes, &f_holes,
+                                  &orig_f_infos, &f_infos,
+                                  &orig_f_logs, &f_logs,
+                                  &orig_f_warnings, &f_warnings,
+                                  &orig_f_false_positives,
+                                  &f_false_positives,
+                                  &f_compliance_yes,
+                                  &f_compliance_no,
+                                  &f_compliance_incomplete,
+                                  &f_compliance_undefined,
+                                  &f_compliance_count,
+                                  result_hosts))
         goto failed_delta_report;
     }
   else if (get->details)
