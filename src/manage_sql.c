@@ -20511,7 +20511,7 @@ init_cpe_match_nodes_iterator (iterator_t* iterator, const char *criteria)
                  " JOIN scap.cpe_nodes_match_criteria c"
                  " ON n.id = c.node_id"
                  " JOIN scap.cpe_match_strings r"
-                 " ON c.match_criteria = r.match_criteria_id"
+                 " ON c.match_criteria_id = r.match_criteria_id"
                  " WHERE criteria like '%s%%';",
                  quoted_criteria);
   g_free (quoted_criteria);
