@@ -4047,10 +4047,8 @@ update_scap_cves ()
  * @brief Update SCAP affected products.
  *
  * Assume that the databases are attached.
- *
- * @return 0 success, -1 error.
  */
-static int
+static void
 update_scap_affected_products ()
 {
   g_info ("Updating affected products");
@@ -4064,8 +4062,6 @@ update_scap_affected_products ()
        "      AND scap2.cpe_nodes_match_criteria.match_criteria_id ="
        "            scap2.cpe_matches.match_criteria_id"
        "      AND scap2.cpe_matches.cpe_name_id = scap2.cpes.cpe_name_id;");
-
-  return 0;
 }
 
 /**
@@ -5634,11 +5630,7 @@ update_scap (gboolean reset_scap_db)
   g_debug ("%s: update affected_products", __func__);
   setproctitle ("Syncing SCAP: Updating affected products");
 
-  if (update_scap_affected_products () == -1)
-    {
-      abort_scap_update ();
-      return -1;
-    }
+  update_scap_affected_products ();
 
   g_debug ("%s: updating user defined data", __func__);
 
