@@ -2081,7 +2081,7 @@ static int
 insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata,
                  int modification_time)
 {
-  gchar *name, *status, *deprecated, *nvd_id;
+  gchar *name, *status, *nvd_id;
   gchar *quoted_name, *quoted_title, *quoted_status, *quoted_nvd_id;
   element_t title;
   int first;
@@ -2103,27 +2103,12 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
       return -1;
     }
 
-  deprecated = element_attribute (item_metadata,
-                                 "deprecated-by-nvd-id");
-  if (deprecated
-      && (g_regex_match_simple ("^[0-9]+$", (gchar *) deprecated, 0, 0)
-          == 0))
-    {
-      g_warning ("%s: invalid deprecated-by-nvd-id: %s",
-                 __func__,
-                 deprecated);
-      g_free (name);
-      g_free (status);
-      return -1;
-    }
-
   nvd_id = element_attribute (item_metadata, "nvd-id");
   if (nvd_id == NULL)
     {
       g_warning ("%s: nvd_id missing", __func__);
       g_free (name);
       g_free (status);
-      g_free (deprecated);
       return -1;
     }
 
@@ -2163,7 +2148,7 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
   first = inserts_check_size (inserts);
 
   g_string_append_printf (inserts->statement,
-                          "%s ('%s', '%s', '%s', %i, %i, '%s', %s, '%s')",
+                          "%s ('%s', '%s', '%s', %i, %i, '%s', '%s')",
                           first ? "" : ",",
                           quoted_name,
                           quoted_name,
@@ -2171,7 +2156,6 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
                           modification_time,
                           modification_time,
                           quoted_status,
-                          deprecated ? deprecated : "NULL",
                           quoted_nvd_id);
 
   inserts->current_chunk_size++;
@@ -2180,7 +2164,6 @@ insert_scap_cpe (inserts_t *inserts, element_t cpe_item, element_t item_metadata
   g_free (quoted_name);
   g_free (quoted_status);
   g_free (quoted_nvd_id);
-  g_free (deprecated);
 
   return 0;
 }
