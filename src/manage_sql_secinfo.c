@@ -3406,6 +3406,7 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
                            cJSON* configurations_json)
 {
   cJSON *configuration_item;
+  GString *software = g_string_new ("");
 
   cJSON_ArrayForEach (configuration_item, configurations_json)
     {
@@ -3495,11 +3496,30 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
                   id,
                   vulnerable ? 1 : 0,
                   quoted_match_criteria_id);
-              
+
+              if (vulnerable)
+                {
+                  iterator_t cpe_matches;
+                  init_cpe_match_string_matches_iterator (&cpe_matches, quoted_match_criteria_id);
+                  while (next (&cpe_matches))
+                    g_string_append_printf (software, "%s ", cpe_matches_cpe_name (&cpe_matches));
+                  cleanup_iterator (&cpe_matches);
+                }
               g_free (quoted_match_criteria_id);          
             }
         }
     }
+    if (software->len > 0)
+      {
+        gchar *quoted_software = sql_quote (software->str);
+        sql ("UPDATE scap2.cves"
+             " SET products = '%s'"
+             " WHERE id = %llu;",
+             quoted_software, cve_db_id);
+        g_free (quoted_software);
+      }
+    g_string_free (software, TRUE);
+
  return 0;
 }
 
