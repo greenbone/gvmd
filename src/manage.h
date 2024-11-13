@@ -2323,6 +2323,10 @@ init_credential_iterator_one (iterator_t*, credential_t);
 int
 init_credential_iterator (iterator_t*, get_data_t *);
 
+int
+init_credential_iterator_format (iterator_t*, const get_data_t *,
+                                 credential_format_t);
+
 const char*
 credential_iterator_login (iterator_t*);
 
