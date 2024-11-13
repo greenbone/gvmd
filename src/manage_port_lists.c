@@ -280,7 +280,7 @@ should_sync_port_list_from_path (const char *path, gboolean rebuild,
   if (resource_id_deprecated ("port_list", uuid))
     {
       find_port_list_no_acl (uuid, port_list);
-      
+
       if (rebuild)
         {
           return 1;

@@ -3672,12 +3672,12 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
-  
+
   if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
     {
       set_task_interrupted (task,
                               "Failed to exclude hosts."
-                              "  Interrupting scan.");      
+                              "  Interrupting scan.");
       set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
       gvm_hosts_free (gvm_hosts);
       free (exclude_hosts);
@@ -5480,12 +5480,12 @@ feed_sync_required ()
 
 /**
  * @brief Wait for memory
- * 
+ *
  * @param[in]  check_func  Function to check memory, should return 1 if enough.
  * @param[in]  retries     Number of retries.
  * @param[in]  min_mem     Minimum memory in MiB, for logging only
  * @param[in]  action      Short descriptor of action waiting for memory.
- * 
+ *
  * @return 0 if enough memory is available, 1 gave up
  */
 static int
@@ -6462,7 +6462,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       if (nvt_iterator_epss_cve (nvts))
         {
-          buffer_xml_append_printf 
+          buffer_xml_append_printf
              (buffer,
               "<epss>"
               "<max_severity>"
@@ -6475,7 +6475,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_epss_severity (nvts));
@@ -6495,7 +6495,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_max_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_max_epss_severity (nvts));
@@ -6860,7 +6860,7 @@ set_mem_wait_retries (int new_retries)
 
 /**
  * @brief Check if the minimum memory for feed updates is available
- * 
+ *
  * @return 1 if minimum memory amount is available, 0 if not
  */
 int

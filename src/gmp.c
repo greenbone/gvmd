@@ -5513,7 +5513,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_reports_data->config_id);
-            
+
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
 
@@ -5604,7 +5604,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                 "type", &typebuf))
               get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_RESOURCE_NAMES);
-          }             
+          }
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -8451,7 +8451,7 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
       buffer_xml_append_printf (buffer,
                                 "<creation_time>%s</creation_time>",
                                 iso_if_time (get_iterator_creation_time (overrides)));
-                                    
+
       buffer_xml_append_printf (buffer,
                                 "<modification_time>%s</modification_time>",
                                 iso_if_time (get_iterator_modification_time (overrides)));
@@ -9353,9 +9353,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  *
  */
 void
-buffer_diff(GString *buffer, const char *descr, const char *delta_descr) 
+buffer_diff(GString *buffer, const char *descr, const char *delta_descr)
 {
-  
+
   gchar *diff = strdiff (descr ? descr : "",
                   delta_descr ? delta_descr : "");
   if (diff)
@@ -9428,7 +9428,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   report_t report;
   task_t selected_task;
   time_t creation_time;
-  
+
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
   host = result_iterator_host (results);
@@ -9503,7 +9503,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       const char *owner_name;
       time_t modification_time;
-     
+
       if (use_delta_fields)
         {
           owner_name = result_iterator_delta_owner_name (results);
@@ -9545,7 +9545,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_delta_task (results);
-          
+
           result_task_name = task_name(result_iterator_delta_task (results));
           result_report_id = report_uuid(result_iterator_delta_report (results));
         }
@@ -9553,7 +9553,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_task (results);
-          
+
           result_task_name = task_name (result_iterator_task (results));
           result_report_id = report_uuid (result_iterator_report (results));
         }
@@ -9674,14 +9674,14 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       const char *nvt_version, *level;
       if (use_delta_fields)
         {
-          nvt_version = result_iterator_delta_nvt_version (results); 
+          nvt_version = result_iterator_delta_nvt_version (results);
           level = result_iterator_delta_level (results);
-        } 
+        }
       else
         {
           nvt_version = result_iterator_scan_nvt_version (results);
           level = result_iterator_level (results);
-        }     
+        }
       buffer_xml_append_printf
       (buffer,
         "<scan_nvt_version>%s</scan_nvt_version>"
@@ -9712,7 +9712,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       /* Only send the original severity if it has changed. */
       if (strncmp (original_severity,
-                    severity,          
+                    severity,
                     /* Avoid rounding differences. */
                     3))
         buffer_xml_append_printf (buffer,
@@ -9749,7 +9749,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (delta_state)
         g_string_append_printf (buffer, "%s", delta_state);
 
-      if(delta_results) { 
+      if(delta_results) {
         /* delta reports version 1 */
         if (changed)
           {
@@ -9768,8 +9768,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             g_free (delta_nl_descr);
           }
       } else {
-        /* delta reports version 2 */        
-        if (changed) 
+        /* delta reports version 2 */
+        if (changed)
           {
             gchar *delta_nl_descr;
             const char *delta_descr;
@@ -9812,8 +9812,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
-  if (use_delta_fields 
-      ? result_iterator_delta_may_have_tickets (results) 
+  if (use_delta_fields
+      ? result_iterator_delta_may_have_tickets (results)
       : result_iterator_may_have_tickets (results))
     buffer_result_tickets_xml (buffer, result);
 
@@ -13304,7 +13304,7 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
       vee = cpe_match_string_iterator_version_end_excl (&cpe_match_ranges);
 
       xml_string_append (buffer,
-                         "<version_start_including>%s</version_start_including>", 
+                         "<version_start_including>%s</version_start_including>",
                          vsi ?: "");
       xml_string_append (buffer,
                          "<version_start_excluding>%s</version_start_excluding>",
@@ -15536,7 +15536,7 @@ print_report_config_params (gmp_parser_t *gmp_parser, GError **error,
 
           SENDF_TO_CLIENT_OR_FAIL
             ("</type><value using_default=\"%d\">%s",
-              report_config_param_iterator_using_default (&params), 
+              report_config_param_iterator_using_default (&params),
               value ? value : "");
           if (value)
             {
@@ -15711,27 +15711,27 @@ handle_get_report_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           SEND_TO_CLIENT_OR_FAIL ("<orphan>1</orphan>");
         }
-      
-      SENDF_TO_CLIENT_OR_FAIL 
+
+      SENDF_TO_CLIENT_OR_FAIL
         ("<report_format id=\"%s\">",
           report_config_iterator_report_format_id (&report_configs)
         );
-      
+
       if (!orphan)
         {
-          SENDF_TO_CLIENT_OR_FAIL 
+          SENDF_TO_CLIENT_OR_FAIL
             ("<name>%s</name>",
               report_config_iterator_report_format_name (&report_configs)
             );
-            
+
           if (report_config_iterator_report_format_readable (&report_configs) == 0)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
             }
         }
-      
+
       SENDF_TO_CLIENT_OR_FAIL ("</report_format>");
-      
+
       print_report_config_params (gmp_parser, error,
                                   report_config_param_iterator_rowid (
                                     &report_configs
@@ -16114,16 +16114,16 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
- * @brief Assign resource iterator with an init iterator based on the type 
+ * @brief Assign resource iterator with an init iterator based on the type
  * in the get command data.
  *
  * @param[in]  resource_names_data   data for get_resource_names command.
  * @param[out] iterator              address of iterator function pointer.
- * 
+ *
  * @return 1 if type is invalid, else 0.
  */
 int
-select_resource_iterator (get_resource_names_data_t *resource_names_data, 
+select_resource_iterator (get_resource_names_data_t *resource_names_data,
                           int (**iterator) (iterator_t*, get_data_t *))
 {
     if (g_strcmp0 ("cpe", resource_names_data->type) == 0)
@@ -16173,7 +16173,7 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("group", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_group_iterator;
-    }                
+    }
   else if (g_strcmp0 ("note", resource_names_data->type) == 0)
     {
       *iterator = init_note_iterator_all;
@@ -16181,41 +16181,41 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("override", resource_names_data->type) == 0)
     {
       *iterator = init_override_iterator_all;
-    }                
+    }
   else if (g_strcmp0 ("permission", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_permission_iterator;
-    }                
+    }
   else if (g_strcmp0 ("port_list", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_port_list_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-      get_data_set_extra (&resource_names_data->get, 
+      get_data_set_extra (&resource_names_data->get,
                           "usage_type",
                           g_strdup ("scan"));
-    }                
+    }
   else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-      get_data_set_extra (&resource_names_data->get, 
+      get_data_set_extra (&resource_names_data->get,
                           "usage_type",
                           g_strdup ("audit"));
     }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_format_iterator;
-    }                
+    }
   else if (g_strcmp0 ("role", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_role_iterator;
-    }                
+    }
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
@@ -16233,15 +16233,15 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
-    }                
+    }
   else if (g_strcmp0 ("schedule", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_schedule_iterator;
-    }                
+    }
   else if (g_strcmp0 ("target", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_target_iterator;
-    }                
+    }
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
@@ -16259,11 +16259,11 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
-    } 
+    }
   else if (g_strcmp0 ("user", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_user_iterator;
-    }         
+    }
   else
     {
       return 1;
@@ -16294,10 +16294,10 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0) 
+  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0)
           ||(g_strcmp0 ("os", get_resource_names_data->type) == 0))
        && (acl_user_may ("get_assets") == 0))
-      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
+      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0)
           && (acl_user_may ("get_results") == 0))
       || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
@@ -16345,9 +16345,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
         get_resource_names_data_reset (get_resource_names_data);
         set_client_state (CLIENT_AUTHENTIC);
         return;
-    }    
+    }
 
-  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
+  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator))
     {
       if (send_find_error_to_client ("get_resource_names", "type",
                                      get_resource_names_data->type, gmp_parser))
@@ -16372,7 +16372,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
               error_send_to_client (error);
               return;
             }
-          break;          
+          break;
         case 2:
           if (send_find_error_to_client
                ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
@@ -16391,7 +16391,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
-  
+
   SEND_GET_START ("resource_name");
   SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>", get_resource_names_data->type);
 
@@ -16399,8 +16399,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
     {
       GString *result;
       result = g_string_new ("");
-      
-      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0) 
+
+      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
                                       "<resource id=\"%s\">"
@@ -16410,8 +16410,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                         : "",
                                       tls_certificate_iterator_subject_dn (&resource)
                                         ? tls_certificate_iterator_subject_dn (&resource)
-                                        : "");          
-        } 
+                                        : "");
+        }
       else if (g_strcmp0 ("override", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
@@ -16422,9 +16422,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                           : "",
                                         override_iterator_nvt_name (&resource)
                                           ? override_iterator_nvt_name (&resource)
-                                          : "");          
+                                          : "");
         }
-      else 
+      else
         {
             buffer_xml_append_printf (result,
                                         "<resource id=\"%s\">"
@@ -20443,7 +20443,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_RESOURCE_NAMES:
         handle_get_resource_names (gmp_parser, error);
-        break;        
+        break;
 
       case CLIENT_GET_RESULTS:
         handle_get_results (gmp_parser, error);

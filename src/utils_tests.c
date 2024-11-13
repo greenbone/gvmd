@@ -109,25 +109,25 @@ Ensure (utils, gvm_sleep_sleep_for_1)
   assert_that (timespec_subtract (&end, &start), is_greater_than (NANOSECONDS - 1));
 }
 
-Ensure (utils, strescape_check_utf_8_no_exceptions) 
+Ensure (utils, strescape_check_utf_8_no_exceptions)
 {
   const char *utf8_input = "Äöü\n123\\UTF-8\x04";
   const char *utf8_expected = "Äöü\\n123\\\\UTF-8\\004";
   const char *cp850_input = "\x8E\x94\x81\n123\\CP850\x04";
   const char *cp850_expected = "\\216\\224\\201\\n123\\\\CP850\\004";
-  
+
   assert_that (g_utf8_validate (utf8_input, -1, NULL), is_true);
   gchar *output = strescape_check_utf8 (utf8_input, NULL);
-  assert_that (output, is_equal_to_string (utf8_expected)); 
+  assert_that (output, is_equal_to_string (utf8_expected));
   g_free (output);
 
   assert_that (g_utf8_validate (cp850_input, -1, NULL), is_false);
   output = strescape_check_utf8 (cp850_input, NULL);
-  assert_that (output, is_equal_to_string (cp850_expected)); 
+  assert_that (output, is_equal_to_string (cp850_expected));
   g_free (output);
 }
 
-Ensure (utils, strescape_check_utf_8_with_exceptions) 
+Ensure (utils, strescape_check_utf_8_with_exceptions)
 {
   const char *utf8_input = "Äöü\n123\\UTF-8\x04";
   const char *utf8_expected = "Äöü\n123\\\\UTF-8\\004";
@@ -136,12 +136,12 @@ Ensure (utils, strescape_check_utf_8_with_exceptions)
 
   assert_that (g_utf8_validate (utf8_input, -1, NULL), is_true);
   gchar *output = strescape_check_utf8 (utf8_input, "\t\n\r");
-  assert_that (output, is_equal_to_string (utf8_expected)); 
+  assert_that (output, is_equal_to_string (utf8_expected));
   g_free (output);
 
   assert_that (g_utf8_validate (cp850_input, -1, NULL), is_false);
   output = strescape_check_utf8 (cp850_input, "\t\n\r");
-  assert_that (output, is_equal_to_string (cp850_expected)); 
+  assert_that (output, is_equal_to_string (cp850_expected));
   g_free (output);
 }
 
@@ -164,7 +164,7 @@ main (int argc, char **argv)
   add_test_with_context (suite, utils, parse_iso_time_tz_with_z);
   add_test_with_context (suite, utils, parse_iso_time_tz_with_fallback_tz);
   add_test_with_context (suite, utils, parse_iso_time_tz_variants);
-  
+
   add_test_with_context (suite, utils, strescape_check_utf_8_no_exceptions);
   add_test_with_context (suite, utils, strescape_check_utf_8_with_exceptions);
 

@@ -291,7 +291,7 @@ inserts_check_size (inserts_t *inserts)
       inserts->statements_size += inserts->statement->len;
       inserts->statement = NULL;
       inserts->current_chunk_size = 0;
-      
+
       if (inserts->max_statements_size
           && inserts-> statements_size >= inserts->max_statements_size)
         {
@@ -1019,7 +1019,7 @@ init_cert_bund_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 }
 
 /**
- * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator not 
+ * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator not
  *        limited to a name.
  *
  * @param[in]  iterator        Iterator.
@@ -1243,7 +1243,7 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 }
 
 /**
- * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator 
+ * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator
  *        not limited to a name.
  *
  * @param[in]  iterator        Iterator.
@@ -2389,7 +2389,7 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
                                   quoted_name,
                                   quoted_deprecated_by_id);
 
-          deprecated_by_inserts->current_chunk_size++;   
+          deprecated_by_inserts->current_chunk_size++;
           g_free (quoted_deprecated_by_id);
         }
     }
@@ -2473,7 +2473,7 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
       type = json_object_item_string (refs_item, "type");
       quoted_ref = sql_quote (ref ? ref : "");
       quoted_type = sql_quote (type ? type : "");
-      
+
       first = inserts_check_size (inserts);
 
       g_string_append_printf (inserts->statement,
@@ -2485,7 +2485,7 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
 
       inserts->current_chunk_size++;
       g_free (quoted_ref);
-      g_free (quoted_type); 
+      g_free (quoted_type);
     }
   g_free (quoted_name);
 
@@ -3005,7 +3005,7 @@ insert_cve_products (element_t list, resource_t cve,
 
       product_element = element_next (product_element);
     }
-  
+
   /* Add new CPEs. */
 
   first_product = first_affected = 1;
@@ -3031,7 +3031,7 @@ insert_cve_products (element_t list, resource_t cve,
 
   if (first_product == 0)
     {
-      /* Run the SQL for inserting new CPEs and add them to hashed_cpes 
+      /* Run the SQL for inserting new CPEs and add them to hashed_cpes
        * so they can be looked up quickly when adding affected_products.
        */
       iterator_t inserted_cpes;
@@ -3414,7 +3414,7 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
       resource_t id, root_id;
       char *config_operator;
       int negate;
-      
+
       nodes_array = cJSON_GetObjectItemCaseSensitive (configuration_item,
                                                       "nodes");
       if (!cJSON_IsArray (nodes_array))
@@ -3444,7 +3444,7 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
               g_warning ("%s: operator missing for %s.", __func__, cve_id);
               return -1;
             }
-          
+
           negate = json_object_item_boolean (node_item, "negate", 0);
 
           cJSON *cpe_matches_array;
@@ -3463,7 +3463,7 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
             root_id = id;
 
           set_root_id (id, root_id);
-          
+
           cJSON *cpe_match_item;
           cJSON_ArrayForEach (cpe_match_item, cpe_matches_array)
             {
@@ -3505,7 +3505,7 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
                     g_string_append_printf (software, "%s ", cpe_matches_cpe_name (&cpe_matches));
                   cleanup_iterator (&cpe_matches);
                 }
-              g_free (quoted_match_criteria_id);          
+              g_free (quoted_match_criteria_id);
             }
         }
     }
@@ -3584,7 +3584,7 @@ handle_json_cve_item (cJSON *item)
     }
 
   gboolean cvss_metric_found = FALSE;
-  
+
   const char *cvss_metric_keys[] = {
     "cvssMetricV40",
     "cvssMetricV31",
@@ -4127,7 +4127,7 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
     quoted_version_start_incl = g_strdup ("NULL");
   else
     quoted_version_start_incl = g_strdup_printf ("'%s'", ver_se);
-    
+
   ver_se = json_object_item_string (match_string, "versionStartExcluding");
   if (ver_se == NULL)
     quoted_version_start_excl = g_strdup ("NULL");
@@ -4171,7 +4171,7 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
   g_free (quoted_version_end_excl);
 
   matches_array = cJSON_GetObjectItemCaseSensitive (match_string, "matches");
-  
+
   if (cJSON_IsArray (matches_array) && cJSON_GetArraySize (matches_array) > 0)
     {
       cJSON *match_item;
@@ -4339,9 +4339,9 @@ update_scap_cpe_match_strings ()
 
       inserts_init (&matches_inserts, 10,
                 setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpe_matches" 
+                "INSERT INTO scap2.cpe_matches"
                 "  (match_criteria_id, cpe_name_id, cpe_name)"
-                "  VALUES ",              
+                "  VALUES ",
                 "");
 
       gvm_json_pull_parser_next (&parser, &event);
@@ -4376,7 +4376,7 @@ update_scap_cpe_match_strings ()
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (cpe_match_strings_file);
-              return -1;            
+              return -1;
             }
           cJSON_Delete (cpe_match_string_item);
           gvm_json_pull_parser_next (&parser, &event);
@@ -4447,7 +4447,7 @@ if (failure_condition) {                                          \
 
 /**
  * @brief Updates the base EPSS scores table in the SCAP database.
- * 
+ *
  * @return 0 success, -1 error.
  */
 static int
@@ -5311,7 +5311,7 @@ update_vt_scap_extra_data ()
        " WHERE epss_candidates.vt_oid = nvts.oid"
        "   AND epss_candidates.rank = 1;");
 }
- 
+
 /**
  * @brief Update CERT data that depends on SCAP.
  */

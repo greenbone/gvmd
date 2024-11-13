@@ -294,7 +294,7 @@ cache_all_permissions_for_users (GArray*);
 static void
 report_cache_counts (report_t, int, int, const char*);
 
-static gchar * 
+static gchar *
 reports_extra_where (int, const char *, const char *);
 
 static int
@@ -2037,8 +2037,8 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  compliance_levels   String describing compliance levels
  *                             to include in count (for example, "yniu" for
  *                             "yes" (compliant), "n" for "no" (not compliant),
- *                             "i" for "incomplete" and "u" for "undefined" 
- *                              (without compliance information). 
+ *                             "i" for "incomplete" and "u" for "undefined"
+ *                              (without compliance information).
  *                              All levels if NULL.
  * @param[out]  delta_states   String describing delta states to include in count
  *                             (for example, "sngc" Same, New, Gone and Changed).
@@ -2056,9 +2056,9 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **sort_field, int *sort_order,
                                int *result_hosts_only, gchar **min_qod,
                                gchar **levels, gchar **compliance_levels,
-                               gchar **delta_states, gchar **search_phrase, 
-                               int *search_phrase_exact, int *notes, 
-                               int *overrides, int *apply_overrides, 
+                               gchar **delta_states, gchar **search_phrase,
+                               int *search_phrase_exact, int *notes,
+                               int *overrides, int *apply_overrides,
                                gchar **zone)
 {
   keyword_t **point;
@@ -16177,7 +16177,7 @@ check_db_versions ()
   else
     {
       int supported;
-      
+
       supported = manage_scap_db_supported_version ();
       if (scap_db_version != supported)
         {
@@ -21863,7 +21863,7 @@ report_compliance_by_uuid (const char *report_id,
                    " WHERE report = %llu"
                    " AND description NOT LIKE 'Compliant:%%';",
                    report);
-    }    
+    }
 
   g_free (quoted_uuid);
 }
@@ -22277,7 +22277,7 @@ report_iterator_opts_table (int override, int min_qod)
  * @brief Return SQL WHERE for restricting a SELECT to compliance statuses.
  *
  * @param[in]  compliance  String describing compliance statuses of reports
- *                         to include (for example, "yniu" for yes (compliant), 
+ *                         to include (for example, "yniu" for yes (compliant),
  *                         no (not compliant), i (incomplete) and u (undefined))
  *                         All compliance statuses if NULL.
  *
@@ -22351,7 +22351,7 @@ reports_extra_where (int trash, const gchar *filter, const char *usage_type)
     {
       trash_clause = g_strdup_printf (" AND (SELECT hidden FROM tasks"
                                       "      WHERE tasks.id = task)"
-                                      "     = 2");    
+                                      "     = 2");
     }
   else
     {
@@ -22460,7 +22460,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   extra_tables = report_iterator_opts_table (overrides, min_qod);
   usage_type = get_data_get_extra (get, "usage_type");
 
-  extra_where = reports_extra_where (get->trash, 
+  extra_where = reports_extra_where (get->trash,
                                      filter ? filter : get->filter,
                                      usage_type);
 
@@ -22616,7 +22616,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 /**
  * @brief Return SQL WHERE for restricting a SELECT to compliance levels.
  *
- * @param[in]  levels  String describing compliance levels to include in 
+ * @param[in]  levels  String describing compliance levels to include in
  *                     report (for example, "yniu" for "yes, "no", "incomplete"
  *                     and "undefined").  All levels if NULL.
  *
@@ -23620,14 +23620,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @param[in]  apply_overrides   Whether to apply overrides.
  * @param[in]  dynamic_severity  Whether to use dynamic severity.
  * @param[in]  nvts_table        NVTS table.
- * @param[in]  results_table     Results table. 
+ * @param[in]  results_table     Results table.
  *
  * @return SQL clause for FROM.
  */
 static gchar *
-result_iterator_lateral (int apply_overrides, 
-                         int dynamic_severity, 
-                         const char *results_table, 
+result_iterator_lateral (int apply_overrides,
+                         int dynamic_severity,
+                         const char *results_table,
                          const char *nvts_table)
 {
   if (apply_overrides && dynamic_severity)
@@ -23642,11 +23642,11 @@ result_iterator_lateral (int apply_overrides,
       "                         ov_old_severity)"
       "                   LIMIT 1),"
       "                  (SELECT curr_severity FROM curr LIMIT 1))"
-      " AS new_severity)", 
+      " AS new_severity)",
       results_table,
       nvts_table,
       results_table,
-      results_table, 
+      results_table,
       results_table);
 
   if (apply_overrides)
@@ -23832,7 +23832,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
 
-  lateral_clause = result_iterator_lateral (apply_overrides, 
+  lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
                                             "nvts");
@@ -26215,19 +26215,19 @@ report_compliance_from_counts (const int* yes_count,
  * @param[in]   get                  Get data.
  * @param[out]  f_compliance_yes     Compliant results count after filtering.
  * @param[out]  f_compliance_no      Incompliant results count after filtering.
- * @param[out]  f_compliance_incomplete  Incomplete results count 
+ * @param[out]  f_compliance_incomplete  Incomplete results count
  *                                       after filtering.
- * @param[out]  f_compliance_undefined   Undefined results count 
+ * @param[out]  f_compliance_undefined   Undefined results count
  *                                       after filtering.
  *
  * @return 0 on success, -1 on error.
  */
 static int
-report_compliance_f_counts (report_t report, 
-                            const get_data_t* get, 
-                            int* f_compliance_yes, 
-                            int* f_compliance_no, 
-                            int* f_compliance_incomplete, 
+report_compliance_f_counts (report_t report,
+                            const get_data_t* get,
+                            int* f_compliance_yes,
+                            int* f_compliance_no,
+                            int* f_compliance_incomplete,
                             int* f_compliance_undefined)
 {
   if (report == 0)
@@ -26262,7 +26262,7 @@ report_compliance_f_counts (report_t report,
       else if (strcasecmp (compliance, "no") == 0)
         {
           no_count++;
-        }      
+        }
       else if (strcasecmp (compliance, "incomplete") == 0)
         {
           incomplete_count++;
@@ -26270,7 +26270,7 @@ report_compliance_f_counts (report_t report,
       else if (strcasecmp (compliance, "undefined") == 0)
         {
           undefined_count++;
-        }      
+        }
 
     }
 
@@ -26301,11 +26301,11 @@ report_compliance_f_counts (report_t report,
  * @return 0 on success, -1 on error.
  */
 static int
-report_compliance_counts (report_t report, 
+report_compliance_counts (report_t report,
                           const get_data_t* get,
-                          int* compliance_yes, 
+                          int* compliance_yes,
                           int* compliance_no,
-                          int* compliance_incomplete, 
+                          int* compliance_incomplete,
                           int* compliance_undefined)
 {
   if (report == 0)
@@ -26313,7 +26313,7 @@ report_compliance_counts (report_t report,
 
   report_compliance_by_uuid (report_uuid(report),
                              compliance_yes,
-                             compliance_no, 
+                             compliance_no,
                              compliance_incomplete,
                              compliance_undefined);
 
@@ -27550,7 +27550,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream,
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_tls_certificates_xml (report_host_t report_host, 
+print_report_host_tls_certificates_xml (report_host_t report_host,
                                         const char *host_ip,
                                         FILE *stream)
 {
@@ -27572,14 +27572,14 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
                  "        OR source_description = 'SSL Certificate')",
                  report_host);
 
-  while (next (&tls_certs)) 
+  while (next (&tls_certs))
     {
       const char *certificate_prefixed, *certificate_b64;
       gsize certificate_size;
       unsigned char *certificate;
       const char *scanner_fpr_prefixed, *scanner_fpr;
       gchar *quoted_scanner_fpr;
-      char *ssldetails;       
+      char *ssldetails;
       iterator_t ports;
       gboolean valid;
       time_t now;
@@ -27642,7 +27642,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
 
       now = time (NULL);
 
-      if((expiration_time >= now || expiration_time == -1) 
+      if((expiration_time >= now || expiration_time == -1)
          && (activation_time <= now || activation_time == -1))
         {
           valid = TRUE;
@@ -27692,7 +27692,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       g_free (serial);
 
       free (hostname);
-    
+
       init_iterator (&ports,
                      "SELECT value FROM report_host_details"
                      " WHERE report_host = %llu"
@@ -27700,7 +27700,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
                      "   AND value LIKE '%%:%%:%s'",
                      report_host,
                      quoted_scanner_fpr);
-     
+
       PRINT (stream, "<ports>");
 
       while (next (&ports))
@@ -27719,10 +27719,10 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       PRINT (stream, "</ports>");
 
       PRINT (stream, "</tls_certificate>");
-      
+
       g_free (quoted_scanner_fpr);
-      cleanup_iterator (&ports);   
-    
+      cleanup_iterator (&ports);
+
     }
     cleanup_iterator (&tls_certs);
 
@@ -28331,7 +28331,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  lateral_clause);                                                         
+                                  lateral_clause);
 
   g_free (lateral_clause);
 
@@ -28355,24 +28355,24 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
 
   extra_with = g_strdup_printf(" comparison AS ("
     " WITH r1a as (SELECT results.id, description, host, report, port,"
-    "              severity, nvt, results.qod, results.uuid, hostname," 
+    "              severity, nvt, results.qod, results.uuid, hostname,"
     "              path, r1_lateral.new_severity as new_severity "
     "       FROM results "
     "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
     "       AS nvts_cols"
     "       ON nvts_cols.nvts_oid = results.nvt"
-    "       %s, LATERAL %s AS r1_lateral" 
+    "       %s, LATERAL %s AS r1_lateral"
     "       WHERE report = %llu),"
-    " r2a as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
-    "        FROM results" 
+    " r2a as (SELECT results.*, r2_lateral.new_severity AS new_severity"
+    "        FROM results"
     "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
-    "        AS nvts_cols" 
-    "        ON nvts_cols.nvts_oid = results.nvt" 
-    "        %s, LATERAL %s AS r2_lateral" 
+    "        AS nvts_cols"
+    "        ON nvts_cols.nvts_oid = results.nvt"
+    "        %s, LATERAL %s AS r2_lateral"
     "        WHERE report = %llu),"
     " r1 as (SELECT DISTINCT ON (r1a.id) r1a.*, r2a.id as r2id, row_number() over w1 as r1_rank"
     "        FROM r1a LEFT JOIN r2a ON r1a.host = r2a.host"
-    "        AND normalize_port(r1a.port) = normalize_port(r2a.port)" 
+    "        AND normalize_port(r1a.port) = normalize_port(r2a.port)"
     "        AND r1a.nvt = r2a.nvt "
     "        AND (r1a.new_severity = 0) = (r2a.new_severity = 0)"
     "        AND (r1a.description = r2a.description)"
@@ -28381,15 +28381,15 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "        ORDER BY r1a.id),"
     " r2 as (SELECT DISTINCT ON (r2a.id) r2a.*, r1a.id as r1id, row_number() over w2 as r2_rank"
     "        FROM r2a LEFT JOIN r1a ON r2a.host = r1a.host"
-    "        AND normalize_port(r2a.port) = normalize_port(r1a.port)" 
+    "        AND normalize_port(r2a.port) = normalize_port(r1a.port)"
     "        AND r2a.nvt = r1a.nvt "
     "        AND (r2a.new_severity = 0) = (r1a.new_severity = 0)"
     "        AND (r2a.description = r1a.description)"
     "        WINDOW w2 AS (PARTITION BY r2a.host, normalize_port(r2a.port),"
     "                      r2a.nvt, r2a.new_severity = 0, r1a.id is null ORDER BY r1a.id)"
     "        ORDER BY r2a.id)"
-    " (SELECT r1.id AS result1_id," 
-    " r2.id AS result2_id," 
+    " (SELECT r1.id AS result1_id,"
+    " r2.id AS result2_id,"
     " compare_results("
     "  r1.description,"
     "  r2.description,"
@@ -28413,13 +28413,13 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
     " r2.owner AS delta_owner,"
     " r2.path AS delta_path,"
     " r2.host AS delta_host,"
-      RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
+      RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report")
     "   AS delta_hostname,"
     " r2.nvt_version AS delta_nvt_version"
     " FROM r1"
     " FULL OUTER JOIN r2"
     " ON r1.host = r2.host"
-    " AND normalize_port(r1.port) = normalize_port(r2.port)" 
+    " AND normalize_port(r1.port) = normalize_port(r2.port)"
     " AND r1.nvt = r2.nvt "
     " AND (r1.new_severity = 0) = (r2.new_severity = 0)"
     " AND ((r1id IS NULL AND r2id IS NULL) OR"
@@ -28613,12 +28613,12 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         0,
                         state,
                         NULL,
-                        (strcmp (state, "changed") == 0), 
+                        (strcmp (state, "changed") == 0),
                         -1,
                         0,  /* Lean. */
                         0); /* Delta fields. */
- 
-    if (fprintf (out, "%s", buffer->str) < 0) 
+
+    if (fprintf (out, "%s", buffer->str) < 0)
       {
         g_string_free (buffer, TRUE);
         g_tree_destroy (ports);
@@ -28810,8 +28810,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &compliance_levels,
-                                     &delta_states, &search_phrase, 
-                                     &search_phrase_exact, &notes, 
+                                     &delta_states, &search_phrase,
+                                     &search_phrase_exact, &notes,
                                      &overrides, &apply_overrides, &zone);
     }
   else
@@ -28822,7 +28822,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &compliance_levels,
-                                     &delta_states, &search_phrase, 
+                                     &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes, &overrides,
                                      &apply_overrides, &zone);
     }
@@ -28944,7 +28944,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       if (strcmp (tsk_usage_type, "audit"))
         {
           if (delta == 0)
-            {         
+            {
               int total_holes, total_infos, total_logs;
               int total_warnings, total_false_positives;
               get_data_t *all_results_get;
@@ -28980,7 +28980,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               filtered_result_count = holes + infos + logs + warnings
                                       + false_positives;
 
-            }          
+            }
         }
       /* Get report run status. */
 
@@ -29845,7 +29845,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               report_host_t report_host = host_iterator_report_host(&hosts);
 
-              if (print_report_host_tls_certificates_xml(report_host, 
+              if (print_report_host_tls_certificates_xml(report_host,
                                                          result_host,
                                                          out))
                 {
@@ -29865,15 +29865,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       const char *host;
       iterator_t hosts;
       init_report_host_iterator (&hosts, report, NULL, 0);
-      
+
       PRINT (out, "<tls_certificates>");
-      
+
       while (next (&hosts))
         {
           report_host_t report_host = host_iterator_report_host(&hosts);
           host = host_iterator_host (&hosts);
 
-          if (print_report_host_tls_certificates_xml(report_host, 
+          if (print_report_host_tls_certificates_xml(report_host,
                                                      host,
                                                      out))
             {
@@ -47631,7 +47631,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     return 4;
 
   db_type = type_db_name (type);
-  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type))) 
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
     {
       if (!valid_subtype (type))
         return 3;
@@ -56024,7 +56024,7 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     resource_permission = g_strdup ("get_info");
   else if (type_is_asset_subtype (type))
     resource_permission = g_strdup ("get_assets");
-  else if (type_is_report_subtype (type)) 
+  else if (type_is_report_subtype (type))
     {
       resource_permission = g_strdup ("get_reports");
       type = g_strdup("report");
@@ -56336,7 +56336,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             g_free (resources_get.filter);
             g_free (resources_get.type);
             if (resources_get.extra_params)
-              g_hash_table_destroy (resources_get.extra_params);           
+              g_hash_table_destroy (resources_get.extra_params);
             return -1;
         }
     }
@@ -56345,7 +56345,7 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   g_free (resources_get.filter);
   g_free (resources_get.type);
   if (resources_get.extra_params)
-      g_hash_table_destroy (resources_get.extra_params);  
+      g_hash_table_destroy (resources_get.extra_params);
 
   ret = 2;
   while (next (&resources))
@@ -56462,11 +56462,11 @@ create_tag (const char * name, const char * comment, const char * value,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      if (!valid_subtype (lc_resource_type)) 
+      if (!valid_subtype (lc_resource_type))
         {
           g_free (lc_resource_type);
           sql_rollback ();
-          return -1;          
+          return -1;
         }
     }
 
@@ -56700,7 +56700,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       if (!valid_subtype (lc_resource_type))
         {
           sql_rollback ();
-          return -1;          
+          return -1;
         }
     }
 
@@ -57672,7 +57672,7 @@ type_extra_where (const char *type, int trash, const char *filter,
         usage_type = g_hash_table_lookup (extra_params, "usage_type");
       else
         usage_type = NULL;
-      
+
       extra_where = reports_extra_where (trash, filter, usage_type);
     }
   else if (strcasecmp (type, "RESULT") == 0)
@@ -57809,9 +57809,9 @@ type_build_select (const char *type, const char *columns_str,
 
       original = opts_table;
 
-      lateral_clause = result_iterator_lateral (overrides, 
-                                                dynamic, 
-                                                "results", 
+      lateral_clause = result_iterator_lateral (overrides,
+                                                dynamic,
+                                                "results",
                                                 "nvts");
 
       opts_table = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
