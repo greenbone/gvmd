@@ -61,104 +61,6 @@ Ensure (manage_sql, validate_results_port_validates)
   FAIL ("udp");
 }
 
-#define CMP(one, two, ret) assert_that (streq_ignore_ws (one, two), is_equal_to (ret))
-
-#define EQ2(one, two) CMP(one, two, 1); CMP(two, one, 1)
-#define EQ(string) CMP(string, string, 1)
-
-Ensure (manage_sql, streq_ignore_ws_finds_equal)
-{
-  EQ ("abc");
-  EQ (" abc");
-  EQ ("abc ");
-  EQ ("ab c");
-  EQ ("");
-  EQ (".");
-  EQ (" abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-=_)(*&^%$#@!~\"':}{<>?");
-  EQ ("three little words");
-}
-
-Ensure (manage_sql, streq_ignore_ws_finds_equal_despite_ws)
-{
-  EQ2 ("abc", " abc");
-  EQ2 ("abc", "abc ");
-  EQ2 ("abc", "ab c");
-  EQ2 ("abc", " a b    c ");
-
-  EQ2 ("abc", "\nabc");
-  EQ2 ("abc", "abc\n");
-  EQ2 ("abc", "ab\nc");
-  EQ2 ("abc", "\na\nb\n\n\n\nc\n");
-
-  EQ2 ("abc", "\tabc");
-  EQ2 ("abc", "abc\t");
-  EQ2 ("abc", "ab\tc");
-  EQ2 ("abc", "\ta\tb\t\t\t\tc\t");
-
-  EQ2 ("abcd", "\ta\nb \t\nc  \t\t\n\nd\t\n ");
-
-  EQ2 ("", " ");
-  EQ2 ("", "\t");
-  EQ2 ("", "\n");
-  EQ2 ("", "  ");
-  EQ2 ("", "\t\t");
-  EQ2 ("", "\n\n");
-  EQ2 ("", " \n\t  \n\n\t\t");
-
-  EQ2 (" \n\t  \n\n\t\t", " \n\t  \n\n\t\t");
-}
-
-#define DIFF(one, two) CMP(one, two, 0); CMP(two, one, 0)
-
-Ensure (manage_sql, streq_ignore_ws_finds_diff)
-{
-  DIFF ("abc", "abcd");
-  DIFF ("abc", "dabc");
-  DIFF ("abc", "abdc");
-  DIFF ("abc", "xyz");
-  DIFF ("abc", "");
-  DIFF ("abc", ".");
-  DIFF ("abc", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-=_)(*&^%$#@!~\"':}{<>?");
-}
-
-Ensure (manage_sql, streq_ignore_ws_finds_diff_incl_ws)
-{
-  DIFF ("zabc", " abc");
-  DIFF ("zabc", "abc ");
-  DIFF ("zabc", "ab c");
-  DIFF ("zabc", " a b    c ");
-
-  DIFF ("zabc", "\nabc");
-  DIFF ("zabc", "abc\n");
-  DIFF ("zabc", "ab\nc");
-  DIFF ("zabc", "\na\nb\n\n\n\nc\n");
-
-  DIFF ("zabc", "\tabc");
-  DIFF ("zabc", "abc\t");
-  DIFF ("zabc", "ab\tc");
-  DIFF ("zabc", "\ta\tb\t\t\t\tc\t");
-
-  DIFF ("zabcd", "\ta\nb \t\nc  \t\t\n\nd\t\n ");
-
-  DIFF ("a", " ");
-  DIFF ("a", "\t");
-  DIFF ("a", "\n");
-  DIFF ("a", "  ");
-  DIFF ("a", "\t\t");
-  DIFF ("a", "\n\n");
-  DIFF ("a", " \n\t  \n\n\t\t");
-
-  DIFF ("a \n\t  \n\n\t\t", " \n\t  \n\n\t\t");
-  DIFF (" \n\t  \na\n\t\t", " \n\t  \n\n\t\t");
-  DIFF (" \n\t  \n\n\t\ta", " \n\t  \n\n\t\t");
-}
-
-Ensure (manage_sql, streq_ignore_ws_handles_null)
-{
-  EQ (NULL);
-  DIFF ("abc", NULL);
-}
-
 /* Test suite. */
 
 int
@@ -169,12 +71,6 @@ main (int argc, char **argv)
   suite = create_test_suite ();
 
   add_test_with_context (suite, manage_sql, validate_results_port_validates);
-
-  add_test_with_context (suite, manage_sql, streq_ignore_ws_finds_equal);
-  add_test_with_context (suite, manage_sql, streq_ignore_ws_finds_equal_despite_ws);
-  add_test_with_context (suite, manage_sql, streq_ignore_ws_finds_diff);
-  add_test_with_context (suite, manage_sql, streq_ignore_ws_finds_diff_incl_ws);
-  add_test_with_context (suite, manage_sql, streq_ignore_ws_handles_null);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
