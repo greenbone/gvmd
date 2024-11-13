@@ -68,7 +68,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </description>
     <pattern>xsd:token { pattern = "y?n?i?u?" }</pattern>
   </type>
-  @IF_COMPLIANCE_REPORTS@
   <type>
     <name>compliance_status</name>
     <summary>A compliance status</summary>
@@ -76,7 +75,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       xsd:token { pattern = "yes|no|incomplete|undefined" }
     </pattern>
   </type>
-  @ENDIF_COMPLIANCE_REPORTS@
   <type>
     <name>ctime</name>
     <summary>A date and time, in the C `ctime' format</summary>
@@ -2025,16 +2023,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>permissions</e>
             <o><e>user_tags</e></o>
             <e>scan_run_status</e>
-            @IF_COMPLIANCE_REPORTS@
             <o>
-            @ENDIF_COMPLIANCE_REPORTS@
             <e>result_count</e>
             <e>severity</e>
-            @IF_COMPLIANCE_REPORTS@
             </o>
             <o><e>compliance_count</e></o>
             <o><e>compliance</e></o>
-            @ENDIF_COMPLIANCE_REPORTS@
             <e>task</e>
             <e>ports</e>
             <e>results</e>
@@ -2468,7 +2462,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
         </ele>
       </ele>
-      @IF_COMPLIANCE_REPORTS@
       <ele>
         <name>compliance_count</name>
         <summary>Counts of compliance results. Only for reports of an audit task.</summary>
@@ -2577,7 +2570,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
         </ele>
       </ele>
-      @ENDIF_COMPLIANCE_REPORTS@
       <ele>
         <name>severity</name>
         <pattern>
@@ -2595,7 +2587,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Maximum severity of the report after filtering</summary>
         </ele>
       </ele>
-      @IF_COMPLIANCE_REPORTS@
       <ele>
         <name>compliance</name>
         <pattern>
@@ -2613,7 +2604,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Compliance of the report after filtering ("yes", "no", "incomplete" or "undefined")</summary>
         </ele>
       </ele>
-      @ENDIF_COMPLIANCE_REPORTS@
       <ele>
         <name>task</name>
         <pattern>
@@ -2875,15 +2865,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>start</e>
           <e>end</e>
           <e>port_count</e>
-          @IF_COMPLIANCE_REPORTS@
           <o>
-          @ENDIF_COMPLIANCE_REPORTS@
           <e>result_count</e>
-          @IF_COMPLIANCE_REPORTS@
           </o>
           <o><e>compliance_count</e></o>
           <o><e>host_compliance</e></o>
-          @ENDIF_COMPLIANCE_REPORTS@
           <any><e>detail</e></any>
         </pattern>
         <ele>
@@ -3001,7 +2987,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </ele>
           </ele>
         </ele>
-        @IF_COMPLIANCE_REPORTS@
         <ele>
           <name>compliance_count</name>
           <summary>Only for audit reports</summary>
@@ -3071,7 +3056,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Only for audit reports. Host compliance</summary>
           <pattern><t>compliance_status</t></pattern>
         </ele>
-        @ENDIF_COMPLIANCE_REPORTS@
         <ele>
           <name>detail</name>
           <summary>A detail associated with the host</summary>
@@ -12785,9 +12769,9 @@ END:VCALENDAR
             <summary>Number of CVEs referencing this CPE</summary>
           </column>
           <column>
-            <name>nvd_id</name>
-            <type>integer</type>
-            <summary>NVD ID of the CVE</summary>
+            <name>cpe_name_id</name>
+            <type>uuid</type>
+            <summary>NVD assigned cpeNameId of the CPE</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -13012,18 +12996,20 @@ END:VCALENDAR
         <ele>
           <name>cpe</name>
           <pattern>
-            <e>nvd_id</e>
+            <e>cpe_name_id</e>
             <o><e>title</e></o>
             <e>severity</e>
             <e>cve_refs</e>
-            <e>status</e>
+            <e>deprecated</e>
+            <any><e>deprecated_by</e></any>
             <o><e>cves</e></o>
+            <o><e>references</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CPE info element</summary>
           <ele>
-            <name>nvd_id</name>
-            <summary>The NVD ID of the CPE</summary>
+            <name>cpe_name_id</name>
+            <summary>NVD assigned cpeNameId of the CPE</summary>
             <pattern>
               text
             </pattern>
@@ -13050,10 +13036,22 @@ END:VCALENDAR
             </pattern>
           </ele>
           <ele>
-            <name>status</name>
-            <summary>The status of this CPE</summary>
+            <name>deprecated</name>
+            <summary>Whether the CPE is deprecated</summary>
             <pattern>
-              text
+              <t>boolean</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>deprecated_by</name>
+            <summary>Another CPE the current one is deprecated by</summary>
+            <pattern>
+              <attrib>
+                <name>cpe_id</name>
+                <type>uuid</type>
+                <summary>CPE id the current CPE is deprecated by</summary>
+                <required>1</required>
+              </attrib>
             </pattern>
           </ele>
           <ele>
@@ -13066,6 +13064,26 @@ END:VCALENDAR
               <name>cve</name>
               <summary>CVE referring to this CPE</summary>
               <pattern>
+                text
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>references</name>
+            <summary>References of this CPE. Only when details were requested</summary>
+            <pattern>
+              <any><e>reference</e></any>
+            </pattern>
+            <ele>
+              <name>reference</name>
+              <summary>Reference of the CPE. Text contains type</summary>
+              <pattern>
+                <attrib>
+                  <name>href</name>
+                  <type>text</type>
+                  <summary>Reference URL</summary>
+                  <required>1</required>
+                </attrib>
                 text
               </pattern>
             </ele>
@@ -13095,6 +13113,8 @@ END:VCALENDAR
             <o><e>epss</e></o>
             <o><e>nvts</e></o>
             <o><e>cert</e></o>
+            <o><e>configuration_nodes</e></o>
+            <o><e>references</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CVE info element</summary>
@@ -13213,6 +13233,169 @@ END:VCALENDAR
               <pattern>
                 text
               </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>configuration_nodes</name>
+            <summary>List of configuration nodes. Only when details were requested</summary>
+            <pattern>
+              <any><e>node</e></any>
+            </pattern>
+            <ele>
+              <name>node</name>
+              <summary>A configuration node for the CVE</summary>
+              <pattern>
+                <e>operator</e>
+                <e>negate</e>
+                <o><e>match_string</e></o>
+                <o><any><e>node</e></any></o>
+              </pattern>
+              <ele>
+                <name>operator</name>
+                <summary>The operator for the match criteria</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>negate</name>
+                <summary>A true or false value, whether the operator is negated</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>match_string</name>
+                <summary>The match string for the node</summary>
+                <pattern>
+                  <e>criteria</e>
+                  <e>vulnerable</e>
+                  <e>version_start_including</e>
+                  <e>version_start_excluding</e>
+                  <e>version_end_including</e>
+                  <e>version_end_excluding</e>
+                  <e>matched_cpes</e>
+                </pattern>
+                <ele>
+                  <name>criteria</name>
+                  <summary>A CPE match criteria</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>vulnerable</name>
+                  <summary>A true or false value, whether matching CPEs are considered vulnerable</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_start_including</name>
+                  <summary>From version (including)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_start_excluding</name>
+                  <summary>From version (excluding)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_end_including</name>
+                  <summary>Up to version (including)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_end_excluding</name>
+                  <summary>Up to version (exluding)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>matched_cpes</name>
+                  <summary>List of matching CPEs</summary>
+                  <pattern>
+                    <e>name</e>
+                    <e>deprecated</e>
+                    <o><e>deprecated_by</e></o>
+                  </pattern>
+                  <ele>
+                    <name>name</name>
+                    <summary>Name of the matching CPE</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>deprecated</name>
+                    <summary>A true or false value, whether the CPE is deprecated</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>deprecated_by</name>
+                    <summary>CPE ID the current CPE is deprecated by. Only when the CPE is deprecated</summary>
+                    <pattern>
+                      <attrib>
+                        <name>cpe_id</name>
+                        <type>uuid</type>
+                        <summary>CPE ID the current CPE is deprecated by</summary>
+                      </attrib>
+                    </pattern>
+                  </ele>
+                </ele>
+              </ele>
+              <ele>
+                <name>node</name>
+                <summary>Nodes can contain other nested nodes</summary>
+                <pattern>
+                  node
+                </pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>references</name>
+            <summary>References of this CVE. Only when details were requested</summary>
+            <pattern>
+              <any><e>reference</e></any>
+            </pattern>
+            <ele>
+              <name>reference</name>
+              <summary>Reference of the CVE</summary>
+              <pattern>
+                <e>url</e>
+                <e>tags</e>
+              </pattern>
+              <ele>
+                <name>url</name>
+                <summary>The URL of the reference</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>tags</name>
+                <summary>List of tags for the reference</summary>
+                <pattern>
+                  <o><any><e>tag</e></any></o>
+                </pattern>
+                <ele>
+                  <name>tag</name>
+                  <summary>Tag for a reference</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+              </ele>
             </ele>
           </ele>
           <ele>
@@ -17995,13 +18178,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Minimum QoD of the results</summary>
           </option>
-          @IF_COMPLIANCE_REPORTS@
           <option>
             <name>report_compliance_levels</name>
             <type>compliance_levels</type>
             <summary>report compliance level to select</summary>
           </option>
-          @ENDIF_COMPLIANCE_REPORTS@   
           <column>
             <name>tag</name>
             <type>text</type>
@@ -18147,7 +18328,6 @@ END:VCALENDAR
             <type>iso_time</type>
             <summary>Scan end time</summary>
           </column>
-          @IF_COMPLIANCE_REPORTS@
           <column>
             <name>compliance_yes</name>
             <type>integer</type>
@@ -18168,7 +18348,6 @@ END:VCALENDAR
             <type>compliance_status</type>
             <summary>Compliance state of the report. Can be yes, no, incomplete or undefined</summary>
           </column>
-          @ENDIF_COMPLIANCE_REPORTS@      
         </filter_keywords>
       </attrib>
       <attrib>
@@ -18238,7 +18417,6 @@ END:VCALENDAR
         </summary>
         <type>boolean</type>
       </attrib>
-      @IF_COMPLIANCE_REPORTS@
       <attrib>
           <name>usage_type</name>
           <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
@@ -18250,7 +18428,6 @@ END:VCALENDAR
             </alts>
           </type>
       </attrib>
-      @ENDIF_COMPLIANCE_REPORTS@
     </pattern>
     <response>
       <pattern>
@@ -22971,15 +23148,11 @@ END:VCALENDAR
               </attrib>
               <e>timestamp</e>
               <e>scan_end</e>
-              @IF_COMPLIANCE_REPORTS@
               <o>
-              @ENDIF_COMPLIANCE_REPORTS@
               <e>result_count</e>
               <e>severity</e>
-              @IF_COMPLIANCE_REPORTS@
               </o>
               <o><e>compliance_count</e></o>
-              @ENDIF_COMPLIANCE_REPORTS@
             </pattern>
             <ele>
               <name>timestamp</name>
@@ -23025,7 +23198,6 @@ END:VCALENDAR
               <pattern><t>severity</t></pattern>
               <summary>Maximum severity of the report</summary>
             </ele>
-            @IF_COMPLIANCE_REPORTS@
             <ele>
               <name>compliance_count</name>
               <summary>Complaince counts. Only for audit tasks</summary>
@@ -23052,7 +23224,6 @@ END:VCALENDAR
                 <pattern><t>integer</t></pattern>
               </ele>
             </ele>
-            @ENDIF_COMPLIANCE_REPORTS@
           </ele>
         </ele>
         <ele>

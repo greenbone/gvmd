@@ -103,7 +103,7 @@ include (CPack)
 
 set (GVMD_DATABASE_VERSION 256)
 
-set (GVMD_SCAP_DATABASE_VERSION 21)
+set (GVMD_SCAP_DATABASE_VERSION 22)
 
 set (GVMD_CERT_DATABASE_VERSION 8)
 
@@ -249,25 +249,12 @@ if (NOT CVSS3_RATINGS)
 endif (NOT CVSS3_RATINGS)
 add_definitions (-DCVSS3_RATINGS=${CVSS3_RATINGS})
 
-if (NOT COMPLIANCE_REPORTS)
-  set (COMPLIANCE_REPORTS 1)
-endif (NOT COMPLIANCE_REPORTS)
-add_definitions (-DCOMPLIANCE_REPORTS=${COMPLIANCE_REPORTS})
-
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message ("-- Log file: ${GVMD_LOG_FILE}")
 
 ## Version
 
 set (GVMD_VERSION "${PROJECT_VERSION_STRING}")
-
-if (COMPLIANCE_REPORTS EQUAL 1)
-  set(IF_COMPLIANCE_REPORTS "")
-  set(ENDIF_COMPLIANCE_REPORTS "")
-elseif (COMPLIANCE_REPORTS EQUAL 0)
-  set(IF_COMPLIANCE_REPORTS "<!--")
-  set(ENDIF_COMPLIANCE_REPORTS "-->")
-endif()
 
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)
