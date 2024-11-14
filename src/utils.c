@@ -1029,7 +1029,7 @@ wait_for_pid (pid_t pid, const char *context)
 
 /**
  * @brief Get the available physical memory in bytes.
- * 
+ *
  * @return The available memory
  */
 guint64
@@ -1041,7 +1041,7 @@ phys_mem_available ()
 
 /**
  * @brief Get the total physical memory in bytes.
- * 
+ *
  * @return The total memory
  */
 guint64

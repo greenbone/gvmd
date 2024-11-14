@@ -2409,10 +2409,10 @@ report_format_param_type_min (report_format_t report_format, const char *name)
 
 /**
  * @brief Checks if the value of a report format param is a valid option.
- * 
+ *
  * @param[in]  param  The report format param to check.
  * @param[in]  value  The value to check.
- * 
+ *
  * @return 1 if the value is one of the allowed options, 0 if not.
  */
 static int
@@ -2983,7 +2983,7 @@ report_format_iterator_trust_time (iterator_t* iterator)
  *
  * @return Time report format was verified.
  */
-int 
+int
 report_format_iterator_configurable (iterator_t* iterator)
 {
   int ret;

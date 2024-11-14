@@ -2474,7 +2474,7 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Set number of retries waiting for memory */
   set_mem_wait_retries (mem_wait_retries);
-  
+
   /* Set minimum memory for feed updates */
   set_min_mem_feed_update (min_mem_feed_update);
 

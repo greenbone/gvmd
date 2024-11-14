@@ -54,7 +54,7 @@ find_report_config_with_permission (const char *uuid,
 
 /**
  * @brief Free a report config parameter data struct.
- * 
+ *
  * @param[in]  param  The parameter to free.
  */
 void

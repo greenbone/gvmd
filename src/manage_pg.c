@@ -871,13 +871,13 @@ manage_create_sql_functions ()
        "       OR qod2 is null"
        "  THEN RETURN 'new';"
        "  WHEN description1 != description2"
-       "       OR severity1 != severity2" 
+       "       OR severity1 != severity2"
        "       OR qod1 != qod2"
        "       OR hostname1 != hostname2"
        "       OR path1 != path2"
        "  THEN RETURN 'changed';"
        "  ELSE RETURN 'same';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -890,7 +890,7 @@ manage_create_sql_functions ()
        "  WHEN port = 'package'"
        "  THEN RETURN 'general/tcp';"
        "  ELSE RETURN port;"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -913,7 +913,7 @@ manage_create_sql_functions ()
        "        AND description LIKE 'Compliant:%%YES%%') > 0"
        "  THEN RETURN 'yes';"
        "  ELSE RETURN 'undefined';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -925,7 +925,7 @@ manage_create_sql_functions ()
        " DECLARE count integer := 0;"
        " BEGIN"
        "   WITH compliance_count AS"
-       "   (SELECT count(*) AS total FROM results WHERE report = report_id"                        
+       "   (SELECT count(*) AS total FROM results WHERE report = report_id"
        "        AND description LIKE 'Compliant:%%' || compliance || '%%')"
        "   SELECT total FROM compliance_count"
        "   INTO count;"
@@ -934,7 +934,7 @@ manage_create_sql_functions ()
        " $$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
- /* Functions in SQL. */       
+ /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "                WHERE table_catalog = '%s'"
@@ -1996,7 +1996,7 @@ create_indexes_nvt ()
        "                     'nvts', 'cvss_base');");
   sql ("SELECT create_index ('nvts_by_solution_type',"
        "                     'nvts', 'solution_type');");
-  
+
   sql ("SELECT create_index ('vt_refs_by_vt_oid',"
        "                     'vt_refs', 'vt_oid');");
 
@@ -3569,7 +3569,7 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE scap2.cpe_matches"
            " (id SERIAL PRIMARY KEY,"
-           "  match_criteria_id text,"               
+           "  match_criteria_id text,"
            "  cpe_name_id text,"
            "  cpe_name text);");
 

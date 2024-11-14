@@ -1416,7 +1416,7 @@ int
 init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
 int
-init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);                         
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1808,7 +1808,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **, 
+                               int *, gchar **, gchar **, gchar **, gchar **,
                                gchar **, int *, int *, int *, int *, gchar **);
 
 gchar *
@@ -2664,7 +2664,7 @@ init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
 
 int
-init_override_iterator_all (iterator_t* iterator, get_data_t *get);                        
+init_override_iterator_all (iterator_t* iterator, get_data_t *get);
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
