@@ -49,6 +49,4 @@ gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value "$uid"
 
 echo "starting gvmd"
 gvmd $GVMD_ARGS ||
-    (cat /var/log/gvm/gvmd.log && exit 1)
-
-tail -f /var/log/gvm/gvmd.log
+    (echo "Starting gvmd failed" && exit 1)
