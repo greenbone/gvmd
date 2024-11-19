@@ -18,7 +18,7 @@
 
 [ -z "$USER" ] && USER="admin"
 [ -z "$PASSWORD" ] && PASSWORD="admin"
-[ -z "$GVMD_ARGS" ] && GVMD_ARGS="--listen-mode=666"
+[ -z "$GVMD_ARGS" ] && GVMD_ARGS="-f --listen-mode=666"
 [ -z "$GVMD_USER" ] && GVMD_USER="gvmd"
 [ -z "$PGRES_DATA" ] && PGRES_DATA="/var/lib/postgresql"
 
