@@ -35916,7 +35916,10 @@ create_credential (const char* name, const char* comment, const char* login,
       if (key_private)
         key_private_truncated = truncate_private_key (key_private);
       else
-        return 3;
+        {
+          sql_rollback ();
+          return 3;
+        }
 
       generated_key_public = gvm_ssh_public_from_private
                                 (key_private_truncated
@@ -35926,6 +35929,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (generated_key_public == NULL)
         {
           g_free (key_private_truncated);
+          sql_rollback ();
           return 3;
         }
       g_free (generated_key_public);
