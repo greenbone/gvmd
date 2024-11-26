@@ -127,7 +127,7 @@ init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const db_conn_info_t *, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int, int);
 
 void
 init_manage_process (const db_conn_info_t*);

@@ -4532,11 +4532,16 @@ update_config (config_t config, const gchar *name,
 
 /**
  * @brief Check configs, for startup.
+ *
+ * @param[in] avoid_db_check_inserts  Whether to avoid inserts.
  */
 void
-check_db_configs ()
+check_db_configs (int avoid_db_check_inserts)
 {
   migrate_predefined_configs ();
+
+  if (avoid_db_check_inserts)
+    return;
 
   if (sync_configs_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync configs with feed", __func__);
