@@ -448,7 +448,7 @@ void
 check_alerts ();
 
 int
-manage_option_setup (GSList *, const db_conn_info_t *);
+manage_option_setup (GSList *, const db_conn_info_t *, int);
 
 void
 manage_option_cleanup ();

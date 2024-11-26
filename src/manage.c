@@ -978,7 +978,8 @@ int
 manage_create_encryption_key (GSList *log_config,
                               const db_conn_info_t *database)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.");
@@ -1042,7 +1043,8 @@ manage_set_encryption_key (GSList *log_config,
                            const db_conn_info_t *database,
                            const char *uid)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.\n");
@@ -5707,7 +5709,8 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       if (error_msg)
