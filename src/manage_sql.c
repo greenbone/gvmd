@@ -35707,6 +35707,8 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  auth_algorithm     SNMP authentication algorithm, or NULL.
  * @param[in]  privacy_password   SNMP privacy password.
  * @param[in]  privacy_algorithm  SNMP privacy algorithm.
+ * @param[in]  kdc             Kerberos KDC (key distribution centers).
+ * @param[in]  realm           Kerberos realm.
  * @param[in]  given_type      Credential type or NULL.
  * @param[in]  allow_insecure  Whether to allow insecure uses.
  * @param[out] credential      Created Credential.
@@ -35720,6 +35722,7 @@ validate_credential_username_for_format (const gchar *username,
  *         14 privacy algorithm missing,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
  *         17 invalid certificate, 18 cannot determine type,
+ *         19 key distribution center missing, 20 realm missing,
  *         99 permission denied, -1 error.
  */
 int
@@ -35729,6 +35732,7 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
+                   const char* kdc, const char *realm,
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -35775,7 +35779,8 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "snmp")
           && strcmp (given_type, "smime")
           && strcmp (given_type, "up")
-          && strcmp (given_type, "usk"))
+          && strcmp (given_type, "usk")
+          && strcmp (given_type, "krb5"))
         {
           sql_rollback ();
           return 4;
@@ -35790,6 +35795,8 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("cc");
   else if (login && key_private)
     quoted_type = g_strdup ("usk");
+  else if (login && given_password && (realm || kdc))
+    quoted_type = g_strdup ("krb5");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
   else if (login && key_private == NULL && given_password == NULL)
@@ -35810,7 +35817,8 @@ create_credential (const char* name, const char* comment, const char* login,
       && (strcmp (quoted_type, "cc") == 0
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
-          || strcmp (quoted_type, "snmp") == 0))
+          || strcmp (quoted_type, "snmp") == 0
+          || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
   using_snmp_v3 = 0;
@@ -35824,7 +35832,8 @@ create_credential (const char* name, const char* comment, const char* login,
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
            && (strcmp (quoted_type, "up") == 0
-               || strcmp (quoted_type, "pw") == 0))
+               || strcmp (quoted_type, "pw") == 0
+               || strcmp (quoted_type, "krb5") == 0))
       // (username) password requires a password
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
@@ -35838,6 +35847,12 @@ create_credential (const char* name, const char* comment, const char* login,
   else if (key_public == NULL && auto_generate == 0
            && strcmp (quoted_type, "pgp") == 0)
     ret = 9;
+  else if (kdc == NULL && auto_generate == 0
+           && strcmp (quoted_type, "krb5") == 0)
+    ret = 19;
+  else if (realm == NULL && auto_generate == 0
+           && strcmp (quoted_type, "krb5") == 0)
+    ret = 20;
   else if (strcmp (quoted_type, "snmp") == 0)
     {
       if (login || given_password || auth_algorithm
@@ -35913,9 +35928,10 @@ create_credential (const char* name, const char* comment, const char* login,
                            "username", login);
     }
 
+  if (kdc)
+    set_credential_data (new_credential, "kdc", kdc);
   if (key_public)
     set_credential_data (new_credential, "public_key", key_public);
-
   if (certificate)
     {
       gchar *certificate_truncated;
@@ -35936,6 +35952,8 @@ create_credential (const char* name, const char* comment, const char* login,
   if (privacy_algorithm)
     set_credential_data (new_credential,
                          "privacy_algorithm", privacy_algorithm);
+  if (realm)
+    set_credential_data (new_credential, "realm", realm);
 
   g_free (quoted_type);
 
@@ -36214,6 +36232,8 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   auth_algorithm      Authentication algorithm of Credential.
  * @param[in]   privacy_password    Privacy password of Credential.
  * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
+ * @param[in]   kdc                 Kerberos KDC (key distribution centers).
+ * @param[in]   realm               Kerberos realm.
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
@@ -36233,6 +36253,7 @@ modify_credential (const char *credential_id,
                    const char* certificate,
                    const char* community, const char* auth_algorithm,
                    const char* privacy_password, const char* privacy_algorithm,
+                   const char* kdc, const char* realm,
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -36508,6 +36529,15 @@ modify_credential (const char *credential_id,
         {
           set_credential_data (credential, "secret", "");
         }
+      else if (strcmp (type, "krb5") == 0)
+        {
+          if (password)
+            set_credential_password (credential, password);
+          if (kdc)
+            set_credential_data (credential, "kdc", kdc);
+          if (realm)
+            set_credential_data (credential, "realm", realm);
+        }
       else
         {
           g_warning ("%s: Unknown credential type: %s", __func__, type);
@@ -36702,6 +36732,14 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'public_key')",           \
      NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'kdc')"       ,           \
+     "kdc",                                                                   \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'realm')",                \
+     "realm",                                                                 \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_data"                                    \
@@ -37285,20 +37323,20 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __func__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-  else if (strcmp (type, "community") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
-  else if (strcmp (type, "privacy_password") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  else if (strcmp (type, "community") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __func__, type);
@@ -37398,6 +37436,27 @@ DEF_ACCESS (credential_iterator_privacy_algorithm,
  */
 DEF_ACCESS (credential_iterator_public_key,
             GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the key distribution center from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Key distribution center, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_kdc,
+            GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get the realm from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Realm, or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_realm,
+            GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Get the password from a Credential iterator.
