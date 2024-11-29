@@ -5754,7 +5754,8 @@ manage_rebuild_scap (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Rebuilding SCAP data");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return -1;
 

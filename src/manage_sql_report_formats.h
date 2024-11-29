@@ -83,7 +83,7 @@ int
 migrate_predefined_report_formats ();
 
 int
-check_db_report_formats ();
+check_db_report_formats (int);
 
 int
 check_db_report_formats_trash ();
