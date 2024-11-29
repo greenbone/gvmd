@@ -74,6 +74,6 @@ update_port_list (port_list_t, const gchar *, const gchar *, array_t *,
                   const gchar *);
 
 void
-check_db_port_lists ();
+check_db_port_lists (int);
 
 #endif /* not _GVMD_MANAGE_SQL_PORT_LISTS_H */

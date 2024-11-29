@@ -933,13 +933,15 @@ cert_check_time ()
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Database.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -3 database needs to be initialised from server,
  *         -5 database is too new.
  */
 int
-manage_option_setup (GSList *log_config, const db_conn_info_t *database)
+manage_option_setup (GSList *log_config, const db_conn_info_t *database,
+                     int avoid_db_check_inserts)
 {
   int ret;
 
@@ -950,7 +952,8 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database)
     }
 
   ret = init_manage_helper (log_config, database,
-                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
+                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                            avoid_db_check_inserts);
   assert (ret != -4);
   switch (ret)
     {
@@ -6167,10 +6170,9 @@ manage_cert_db_version ()
 void
 set_db_version (int version)
 {
-  sql ("DELETE FROM %s.meta WHERE name = 'database_version';",
-       sql_schema ());
   sql ("INSERT INTO %s.meta (name, value)"
-       " VALUES ('database_version', '%i');",
+       " VALUES ('database_version', '%i')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
        sql_schema (),
        version);
 }
@@ -6416,7 +6418,8 @@ manage_encrypt_all_credentials (GSList *log_config,
 
   g_info ("   (Re-)encrypting all credentials.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -6457,7 +6460,8 @@ manage_decrypt_all_credentials (GSList *log_config,
 
   g_info ("   Decrypting all credentials.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -6796,7 +6800,8 @@ manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Checking alerts.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -16775,11 +16780,11 @@ manage_migrate_relay_sensors ()
  * Only called by init_manage_internal, and ultimately only by the main process.
  *
  * @param[in]  check_encryption_key  Whether to check encryption key.
- *
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  * @return 0 success, -1 error.
  */
 static int
-check_db (int check_encryption_key)
+check_db (int check_encryption_key, int avoid_db_check_inserts)
 {
   /* The file locks managed at startup ensure that this is the only Manager
    * process accessing the db.  Nothing else should be accessing the db, access
@@ -16790,19 +16795,25 @@ check_db (int check_encryption_key)
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
-  check_db_roles ();
-  check_db_nvt_selectors ();
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_roles ();
+      check_db_nvt_selectors ();
+    }
   check_db_nvts ();
-  check_db_port_lists ();
+  check_db_port_lists (avoid_db_check_inserts);
   clean_auth_cache ();
-  if (check_db_scanners ())
+  if (avoid_db_check_inserts == 0 && check_db_scanners ())
     goto fail;
-  if (check_db_report_formats ())
+  if (check_db_report_formats (avoid_db_check_inserts))
     goto fail;
   if (check_db_report_formats_trash ())
     goto fail;
-  check_db_permissions ();
-  check_db_settings ();
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_permissions ();
+      check_db_settings ();
+    }
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
     goto fail;
@@ -16969,6 +16980,7 @@ cleanup_tables ()
  *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
@@ -16983,7 +16995,8 @@ init_manage_internal (GSList *log_config,
                       int stop_tasks,
                       manage_connection_forker_t fork_connection,
                       int skip_db_check,
-                      int check_encryption_key)
+                      int check_encryption_key,
+                      int avoid_db_check_inserts)
 {
   int ret;
 
@@ -17069,7 +17082,7 @@ init_manage_internal (GSList *log_config,
        *   2 a helper processes (--create-user, --get-users, etc) when the
        *     main process is not running. */
 
-      ret = check_db (check_encryption_key);
+      ret = check_db (check_encryption_key, avoid_db_check_inserts);
       if (ret)
         return ret;
 
@@ -17077,8 +17090,10 @@ init_manage_internal (GSList *log_config,
 
       /* Set max_hosts in db, so database server side can access it. */
 
-      sql ("DELETE FROM meta WHERE name = 'max_hosts';");
-      sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
+      sql ("INSERT INTO meta (name, value)"
+           " VALUES ('max_hosts', %i)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           max_hosts);
     }
 
   if (stop_tasks)
@@ -17092,7 +17107,7 @@ init_manage_internal (GSList *log_config,
 
   if (skip_db_check == 0)
     /* Requires NVT cache. */
-    check_db_configs ();
+    check_db_configs (avoid_db_check_inserts);
 
   sql_close ();
   gvmd_db_conn_info.name = database->name ? g_strdup (database->name) : NULL;
@@ -17146,7 +17161,8 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
                                1,  /* Stop active tasks. */
                                fork_connection,
                                skip_db_check,
-                               1); /* Check encryption key if checking db. */
+                               1, /* Check encryption key if checking db. */
+                               0  /* Do not avoid inserts if checking db. */);
 }
 
 /**
@@ -17158,7 +17174,8 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  *
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
- * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  max_ips_per_target   Max number of IPs per target.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
@@ -17166,7 +17183,7 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
-                    int max_ips_per_target)
+                    int max_ips_per_target, int avoid_db_check_inserts)
 {
   return init_manage_internal (log_config,
                                database,
@@ -17183,7 +17200,8 @@ init_manage_helper (GSList *log_config, const db_conn_info_t *database,
                                lockfile_locked ("gvm-serving")
                                 ? 1    /* Skip DB check. */
                                 : 0,   /* Do DB check. */
-                               0);  /* Dummy. */
+                               0, /* Dummy. */
+                               avoid_db_check_inserts);
 }
 
 /**
@@ -41479,7 +41497,8 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Creating scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -41668,7 +41687,8 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
       return 3;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -41736,7 +41756,8 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Modifying scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -41955,7 +41976,8 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Verifying scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -43440,7 +43462,8 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Getting scanners.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -47379,7 +47402,8 @@ manage_get_roles (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Getting roles.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -54054,7 +54078,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       return 3;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -54209,7 +54234,8 @@ manage_create_user (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Creating user.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -54299,7 +54325,8 @@ manage_delete_user (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Deleting user.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -54364,7 +54391,8 @@ manage_get_users (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Getting users.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -54468,7 +54496,8 @@ manage_set_password (GSList *log_config, const db_conn_info_t *database,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -59483,7 +59512,15 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       return 1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  int avoid_db_check_inserts = 0;
+  /* The optimize=cleanup-sequences option may be used if a sequence has
+   * already reached its maximum value, so avoid any inserts that may cause
+   * a sequence maximum error. *
+   */
+  if (strcasecmp (name, "cleanup-sequences") == 0)
+    avoid_db_check_inserts = 1;
+
+  ret = manage_option_setup (log_config, database, avoid_db_check_inserts);
   if (ret)
     return ret;
 
