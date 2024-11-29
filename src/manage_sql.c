@@ -15840,16 +15840,11 @@ manage_update_nvti_cache ()
 /**
  * @brief Ensure the predefined scanner exists.
  *
- * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
- *
  * @return 0 if success, -1 if error.
  */
 static int
-check_db_scanners (int avoid_db_check_inserts)
+check_db_scanners ()
 {
-  if (avoid_db_check_inserts)
-    return 0;
-  
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
@@ -15878,16 +15873,11 @@ check_db_scanners (int avoid_db_check_inserts)
 /**
  * @brief Initialize the default settings.
  *
- * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
- *
  * Ensure all the default manager settings exist.
  */
 static void
-check_db_settings (int avoid_db_check_inserts)
+check_db_settings ()
 {
-  if (avoid_db_check_inserts)
-    return;
-
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
                " AND " ACL_IS_GLOBAL () ";")
@@ -16234,15 +16224,10 @@ check_db_versions ()
 
 /**
  * @brief Ensures the sanity of nvts cache in DB.
- *
- * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
  */
 static void
-check_db_nvt_selectors (int avoid_db_check_inserts)
+check_db_nvt_selectors ()
 {
-  if (avoid_db_check_inserts)
-    return;
-
   /* Ensure every part of the predefined selector exists.
    * This restores entries lost due to the error solved 2010-08-13 by r8805. */
   if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
@@ -16379,15 +16364,10 @@ add_permissions_on_globals (const gchar *role_uuid)
 
 /**
  * @brief Ensure the predefined permissions exists.
- *
- * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
  */
 static void
-check_db_permissions (int avoid_db_check_inserts)
+check_db_permissions ()
 {
-  if (avoid_db_check_inserts)
-    return;
-  
   command_t *command;
 
   if (sql_int ("SELECT count(*) FROM permissions"
@@ -16546,15 +16526,10 @@ check_db_permissions (int avoid_db_check_inserts)
 
 /**
  * @brief Ensure the predefined roles exists.
- *
- * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
  */
 static void
-check_db_roles (int avoid_db_check_inserts)
+check_db_roles ()
 {
-  if (avoid_db_check_inserts)
-    return;
-  
   if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "';")
       == 0)
     sql ("INSERT INTO roles"
@@ -16725,19 +16700,25 @@ check_db (int check_encryption_key, int avoid_db_check_inserts)
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
-  check_db_roles (avoid_db_check_inserts);
-  check_db_nvt_selectors (avoid_db_check_inserts);
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_roles ();
+      check_db_nvt_selectors ();
+    }
   check_db_nvts ();
   check_db_port_lists (avoid_db_check_inserts);
   clean_auth_cache ();
-  if (check_db_scanners (avoid_db_check_inserts))
+  if (avoid_db_check_inserts == 0 && check_db_scanners ())
     goto fail;
   if (check_db_report_formats (avoid_db_check_inserts))
     goto fail;
   if (check_db_report_formats_trash ())
     goto fail;
-  check_db_permissions (avoid_db_check_inserts);
-  check_db_settings (avoid_db_check_inserts);
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_permissions ();
+      check_db_settings ();
+    }
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
     goto fail;
@@ -17086,7 +17067,7 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
                                fork_connection,
                                skip_db_check,
                                1, /* Check encryption key if checking db. */
-                               0  /* Do not avoid inserts if checking db. */); 
+                               0  /* Do not avoid inserts if checking db. */);
 }
 
 /**
@@ -17125,7 +17106,7 @@ init_manage_helper (GSList *log_config, const db_conn_info_t *database,
                                 ? 1    /* Skip DB check. */
                                 : 0,   /* Do DB check. */
                                0, /* Dummy. */
-                               avoid_db_check_inserts);  
+                               avoid_db_check_inserts);
 }
 
 /**
@@ -58328,7 +58309,7 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
    */
   if (strcasecmp (name, "cleanup-sequences") == 0)
     avoid_db_check_inserts = 1;
-  
+
   ret = manage_option_setup (log_config, database, avoid_db_check_inserts);
   if (ret)
     return ret;
