@@ -32663,6 +32663,8 @@ target_login_port (target_t target, const char* type)
  *         10 invalid SMB credential type, 11 invalid ESXi credential type,
  *         12 invalid SNMP credential type, 13 port range or port list required,
  *         14 SSH elevate credential without an SSH credential,
+ *         15 elevate credential must be different from the SSH credential,
+ *         16 invalid Kerberos 5 credential type,
  *         99 permission denied, -1 error.
  */
 int
@@ -32673,6 +32675,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t ssh_elevate_credential,
                const char* ssh_port, credential_t smb_credential,
                credential_t esxi_credential, credential_t snmp_credential,
+               credential_t krb5_credential,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
                const char *allow_simultaneous_ips,
@@ -32937,6 +32940,22 @@ create_target (const char* name, const char* asset_hosts_filter,
            new_target, snmp_credential, "0");
     }
 
+  if (krb5_credential)
+    {
+      gchar *type = credential_type (krb5_credential);
+      if (strcmp (type, "krb5"))
+        {
+          sql_rollback ();
+          return 16;
+        }
+      g_free (type);
+
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'krb5', %llu, %s);",
+           new_target, krb5_credential, "0");
+    }
+
   sql_commit ();
 
   return 0;
@@ -33134,6 +33153,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   smb_credential_id  SMB credential.
  * @param[in]   esxi_credential_id  ESXi credential.
  * @param[in]   snmp_credential_id  SNMP credential.
+ * @param[in]   krb5_credential_id  Kerberos 5 credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -33152,6 +33172,9 @@ delete_target (const char *target_id, int ultimate)
  *         22 failed to find SSH elevate cred, 23 invalid SSH elevate
  *         credential type, 24 SSH elevate credential without SSH credential,
  *         25 SSH elevate credential equals SSH credential,
+ *         26 failed to find Kerberos 5 credential,
+ *         27 invalid Kerberos 5 credential type,
+ *         28 cannot use both SMB and Kerberos 5 credential,
  *         99 permission denied, -1 error.
  */
 int
@@ -33161,6 +33184,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *ssh_elevate_credential_id,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
+               const char *krb5_credential_id,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
                const char *allow_simultaneous_ips)
@@ -33168,6 +33192,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   target_t target;
   credential_t ssh_credential = 0;
   credential_t ssh_elevate_credential = 0;
+  credential_t smb_credential;
+  credential_t krb5_credential;
 
   assert (target_id);
 
@@ -33401,8 +33427,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (smb_credential_id)
     {
-      credential_t smb_credential;
-
       if (target_in_use (target))
         {
           sql_rollback ();
@@ -33440,6 +33464,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       else
         set_target_login_data (target, "smb", 0, 0);
     }
+  else
+    smb_credential = target_smb_credential (target);
 
   if (esxi_credential_id)
     {
@@ -33542,6 +33568,54 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           sql_rollback ();
           return 25;
         }
+    }
+
+  if (krb5_credential_id)
+    {
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      krb5_credential = 0;
+      if (strcmp (krb5_credential_id, "0"))
+        {
+          gchar *type;
+          if (find_credential_with_permission (krb5_credential_id,
+                                               &krb5_credential,
+                                               "get_credentials"))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          if (krb5_credential == 0)
+            {
+              sql_rollback ();
+              return 26;
+            }
+
+          type = credential_type (krb5_credential);
+          if (strcmp (type, "krb5"))
+            {
+              sql_rollback ();
+              return 27;
+            }
+          g_free (type);
+
+          set_target_login_data (target, "krb5", krb5_credential, 0);
+        }
+      else
+        set_target_login_data (target, "krb5", 0, 0);
+    }
+  else
+    krb5_credential = target_krb5_credential (target);
+
+  if (smb_credential && krb5_credential)
+    {
+      sql_rollback ();
+      return 28;
     }
 
   if (exclude_hosts)
@@ -33707,6 +33781,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('krb5' AS text))",                     \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "allow_simultaneous_ips",                                 \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
@@ -33753,6 +33833,15 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      "          WHERE target = targets.id"                     \
      "          AND type = CAST ('elevate' AS text)))",        \
      "ssh_elevate_credential",                                 \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('krb5' AS text)))",           \
+     "krb5_credential",                                        \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
@@ -33830,6 +33919,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                              \
      KEYWORD_TYPE_INTEGER },                                            \
    { "trash_target_credential_location (id, CAST ('elevate' AS text))", \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "target_credential (id, 1, CAST ('krb5' AS text))",                \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('krb5' AS text))",    \
      NULL,                                                              \
      KEYWORD_TYPE_INTEGER },                                            \
    { "allow_simultaneous_ips",                                          \
@@ -34187,6 +34282,38 @@ target_iterator_ssh_elevate_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the Kerberos 5 LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Kerberos 5 LSC credential.
+ */
+int
+target_iterator_krb5_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 20);
+  return ret;
+}
+
+/**
+ * @brief Get the Kerberos 5 LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Kerberos 5 LSC credential.
+ */
+int
+target_iterator_krb5_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
+
+/**
  * @brief Get the allow_simultaneous_ips value from a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -34194,7 +34321,7 @@ target_iterator_ssh_elevate_trash (iterator_t* iterator)
  * @return allow_simult_ips_same_host or NULL if iteration is complete.
  */
 DEF_ACCESS (target_iterator_allow_simultaneous_ips,
-            GET_ITERATOR_COLUMN_COUNT + 20);
+            GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Return the UUID of a tag.
@@ -34455,6 +34582,19 @@ credential_t
 target_ssh_elevate_credential (target_t target)
 {
   return target_credential (target, "elevate");
+}
+
+/**
+ * @brief Return the Kerberos 5 credential associated with a target, if any.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Kerberos 5 credential if any, else 0.
+ */
+credential_t
+target_krb5_credential (target_t target)
+{
+  return target_credential (target, "krb5");
 }
 
 /**
