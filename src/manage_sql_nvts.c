@@ -2654,7 +2654,8 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
         return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       feed_lockfile_unlock (&lockfile);
@@ -2727,7 +2728,8 @@ manage_dump_vt_verification (GSList *log_config,
         return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       feed_lockfile_unlock (&lockfile);

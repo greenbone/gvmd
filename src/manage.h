@@ -127,7 +127,7 @@ init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const db_conn_info_t *, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int, int);
 
 void
 init_manage_process (const db_conn_info_t*);
@@ -2293,7 +2293,7 @@ int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*, credential_t*);
+                   const char*, const char*, const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,
@@ -2303,7 +2303,7 @@ int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*);
+                   const char*, const char*, const char*);
 
 int
 delete_credential (const char *, int);
@@ -2343,6 +2343,12 @@ credential_iterator_privacy_password (iterator_t*);
 
 const char*
 credential_iterator_public_key (iterator_t*);
+
+const char*
+credential_iterator_kdc (iterator_t*);
+
+const char*
+credential_iterator_realm (iterator_t*);
 
 const char*
 credential_iterator_private_key (iterator_t*);

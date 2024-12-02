@@ -930,13 +930,15 @@ cert_check_time ()
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Database.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -3 database needs to be initialised from server,
  *         -5 database is too new.
  */
 int
-manage_option_setup (GSList *log_config, const db_conn_info_t *database)
+manage_option_setup (GSList *log_config, const db_conn_info_t *database,
+                     int avoid_db_check_inserts)
 {
   int ret;
 
@@ -947,7 +949,8 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database)
     }
 
   ret = init_manage_helper (log_config, database,
-                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
+                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                            avoid_db_check_inserts);
   assert (ret != -4);
   switch (ret)
     {
@@ -6159,10 +6162,9 @@ manage_cert_db_version ()
 void
 set_db_version (int version)
 {
-  sql ("DELETE FROM %s.meta WHERE name = 'database_version';",
-       sql_schema ());
   sql ("INSERT INTO %s.meta (name, value)"
-       " VALUES ('database_version', '%i');",
+       " VALUES ('database_version', '%i')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
        sql_schema (),
        version);
 }
@@ -6408,7 +6410,8 @@ manage_encrypt_all_credentials (GSList *log_config,
 
   g_info ("   (Re-)encrypting all credentials.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -6449,7 +6452,8 @@ manage_decrypt_all_credentials (GSList *log_config,
 
   g_info ("   Decrypting all credentials.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -6712,7 +6716,8 @@ manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Checking alerts.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -16680,11 +16685,11 @@ manage_migrate_relay_sensors ()
  * Only called by init_manage_internal, and ultimately only by the main process.
  *
  * @param[in]  check_encryption_key  Whether to check encryption key.
- *
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  * @return 0 success, -1 error.
  */
 static int
-check_db (int check_encryption_key)
+check_db (int check_encryption_key, int avoid_db_check_inserts)
 {
   /* The file locks managed at startup ensure that this is the only Manager
    * process accessing the db.  Nothing else should be accessing the db, access
@@ -16695,19 +16700,25 @@ check_db (int check_encryption_key)
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
-  check_db_roles ();
-  check_db_nvt_selectors ();
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_roles ();
+      check_db_nvt_selectors ();
+    }
   check_db_nvts ();
-  check_db_port_lists ();
+  check_db_port_lists (avoid_db_check_inserts);
   clean_auth_cache ();
-  if (check_db_scanners ())
+  if (avoid_db_check_inserts == 0 && check_db_scanners ())
     goto fail;
-  if (check_db_report_formats ())
+  if (check_db_report_formats (avoid_db_check_inserts))
     goto fail;
   if (check_db_report_formats_trash ())
     goto fail;
-  check_db_permissions ();
-  check_db_settings ();
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_permissions ();
+      check_db_settings ();
+    }
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
     goto fail;
@@ -16874,6 +16885,7 @@ cleanup_tables ()
  *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
@@ -16888,7 +16900,8 @@ init_manage_internal (GSList *log_config,
                       int stop_tasks,
                       manage_connection_forker_t fork_connection,
                       int skip_db_check,
-                      int check_encryption_key)
+                      int check_encryption_key,
+                      int avoid_db_check_inserts)
 {
   int ret;
 
@@ -16974,7 +16987,7 @@ init_manage_internal (GSList *log_config,
        *   2 a helper processes (--create-user, --get-users, etc) when the
        *     main process is not running. */
 
-      ret = check_db (check_encryption_key);
+      ret = check_db (check_encryption_key, avoid_db_check_inserts);
       if (ret)
         return ret;
 
@@ -16982,8 +16995,10 @@ init_manage_internal (GSList *log_config,
 
       /* Set max_hosts in db, so database server side can access it. */
 
-      sql ("DELETE FROM meta WHERE name = 'max_hosts';");
-      sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
+      sql ("INSERT INTO meta (name, value)"
+           " VALUES ('max_hosts', %i)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           max_hosts);
     }
 
   if (stop_tasks)
@@ -16997,7 +17012,7 @@ init_manage_internal (GSList *log_config,
 
   if (skip_db_check == 0)
     /* Requires NVT cache. */
-    check_db_configs ();
+    check_db_configs (avoid_db_check_inserts);
 
   sql_close ();
   gvmd_db_conn_info.name = database->name ? g_strdup (database->name) : NULL;
@@ -17051,7 +17066,8 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
                                1,  /* Stop active tasks. */
                                fork_connection,
                                skip_db_check,
-                               1); /* Check encryption key if checking db. */
+                               1, /* Check encryption key if checking db. */
+                               0  /* Do not avoid inserts if checking db. */);
 }
 
 /**
@@ -17063,7 +17079,8 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  *
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
- * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  max_ips_per_target   Max number of IPs per target.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
@@ -17071,7 +17088,7 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
-                    int max_ips_per_target)
+                    int max_ips_per_target, int avoid_db_check_inserts)
 {
   return init_manage_internal (log_config,
                                database,
@@ -17088,7 +17105,8 @@ init_manage_helper (GSList *log_config, const db_conn_info_t *database,
                                lockfile_locked ("gvm-serving")
                                 ? 1    /* Skip DB check. */
                                 : 0,   /* Do DB check. */
-                               0);  /* Dummy. */
+                               0, /* Dummy. */
+                               avoid_db_check_inserts);
 }
 
 /**
@@ -35670,6 +35688,8 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  auth_algorithm     SNMP authentication algorithm, or NULL.
  * @param[in]  privacy_password   SNMP privacy password.
  * @param[in]  privacy_algorithm  SNMP privacy algorithm.
+ * @param[in]  kdc             Kerberos KDC (key distribution centers).
+ * @param[in]  realm           Kerberos realm.
  * @param[in]  given_type      Credential type or NULL.
  * @param[in]  allow_insecure  Whether to allow insecure uses.
  * @param[out] credential      Created Credential.
@@ -35683,6 +35703,7 @@ validate_credential_username_for_format (const gchar *username,
  *         14 privacy algorithm missing,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
  *         17 invalid certificate, 18 cannot determine type,
+ *         19 key distribution center missing, 20 realm missing,
  *         99 permission denied, -1 error.
  */
 int
@@ -35692,6 +35713,7 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
+                   const char* kdc, const char *realm,
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -35738,7 +35760,8 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "snmp")
           && strcmp (given_type, "smime")
           && strcmp (given_type, "up")
-          && strcmp (given_type, "usk"))
+          && strcmp (given_type, "usk")
+          && strcmp (given_type, "krb5"))
         {
           sql_rollback ();
           return 4;
@@ -35753,6 +35776,8 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("cc");
   else if (login && key_private)
     quoted_type = g_strdup ("usk");
+  else if (login && given_password && (realm || kdc))
+    quoted_type = g_strdup ("krb5");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
   else if (login && key_private == NULL && given_password == NULL)
@@ -35774,7 +35799,8 @@ create_credential (const char* name, const char* comment, const char* login,
       && (strcmp (quoted_type, "cc") == 0
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
-          || strcmp (quoted_type, "snmp") == 0))
+          || strcmp (quoted_type, "snmp") == 0
+          || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
   using_snmp_v3 = 0;
@@ -35788,7 +35814,8 @@ create_credential (const char* name, const char* comment, const char* login,
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
            && (strcmp (quoted_type, "up") == 0
-               || strcmp (quoted_type, "pw") == 0))
+               || strcmp (quoted_type, "pw") == 0
+               || strcmp (quoted_type, "krb5") == 0))
       // (username) password requires a password
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
@@ -35802,6 +35829,12 @@ create_credential (const char* name, const char* comment, const char* login,
   else if (key_public == NULL && auto_generate == 0
            && strcmp (quoted_type, "pgp") == 0)
     ret = 9;
+  else if (kdc == NULL && auto_generate == 0
+           && strcmp (quoted_type, "krb5") == 0)
+    ret = 19;
+  else if (realm == NULL && auto_generate == 0
+           && strcmp (quoted_type, "krb5") == 0)
+    ret = 20;
   else if (strcmp (quoted_type, "snmp") == 0)
     {
       if (login || given_password || auth_algorithm
@@ -35877,9 +35910,10 @@ create_credential (const char* name, const char* comment, const char* login,
                            "username", login);
     }
 
+  if (kdc)
+    set_credential_data (new_credential, "kdc", kdc);
   if (key_public)
     set_credential_data (new_credential, "public_key", key_public);
-
   if (certificate)
     {
       gchar *certificate_truncated;
@@ -35900,6 +35934,8 @@ create_credential (const char* name, const char* comment, const char* login,
   if (privacy_algorithm)
     set_credential_data (new_credential,
                          "privacy_algorithm", privacy_algorithm);
+  if (realm)
+    set_credential_data (new_credential, "realm", realm);
 
   g_free (quoted_type);
 
@@ -36182,6 +36218,8 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   auth_algorithm      Authentication algorithm of Credential.
  * @param[in]   privacy_password    Privacy password of Credential.
  * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
+ * @param[in]   kdc                 Kerberos KDC (key distribution centers).
+ * @param[in]   realm               Kerberos realm.
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
@@ -36201,6 +36239,7 @@ modify_credential (const char *credential_id,
                    const char* certificate,
                    const char* community, const char* auth_algorithm,
                    const char* privacy_password, const char* privacy_algorithm,
+                   const char* kdc, const char* realm,
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -36476,6 +36515,15 @@ modify_credential (const char *credential_id,
         {
           set_credential_data (credential, "secret", "");
         }
+      else if (strcmp (type, "krb5") == 0)
+        {
+          if (password)
+            set_credential_password (credential, password);
+          if (kdc)
+            set_credential_data (credential, "kdc", kdc);
+          if (realm)
+            set_credential_data (credential, "realm", realm);
+        }
       else
         {
           g_warning ("%s: Unknown credential type: %s", __func__, type);
@@ -36670,6 +36718,14 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'public_key')",           \
      NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'kdc')"       ,           \
+     "kdc",                                                                   \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'realm')",                \
+     "realm",                                                                 \
      KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_data"                                    \
@@ -37253,20 +37309,20 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __func__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-  else if (strcmp (type, "community") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
-  else if (strcmp (type, "privacy_password") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  else if (strcmp (type, "community") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __func__, type);
@@ -37366,6 +37422,27 @@ DEF_ACCESS (credential_iterator_privacy_algorithm,
  */
 DEF_ACCESS (credential_iterator_public_key,
             GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the key distribution center from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Key distribution center, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_kdc,
+            GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get the realm from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Realm, or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_realm,
+            GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Get the password from a Credential iterator.
@@ -40250,7 +40327,8 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Creating scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -40439,7 +40517,8 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
       return 3;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -40507,7 +40586,8 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Modifying scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -40726,7 +40806,8 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Verifying scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -42211,7 +42292,8 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Getting scanners.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -46150,7 +46232,8 @@ manage_get_roles (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Getting roles.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -52795,7 +52878,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       return 3;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -52949,7 +53033,8 @@ manage_create_user (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Creating user.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -53039,7 +53124,8 @@ manage_delete_user (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Deleting user.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -53104,7 +53190,8 @@ manage_get_users (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Getting users.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -53208,7 +53295,8 @@ manage_set_password (GSList *log_config, const db_conn_info_t *database,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -58219,7 +58307,15 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       return 1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  int avoid_db_check_inserts = 0;
+  /* The optimize=cleanup-sequences option may be used if a sequence has
+   * already reached its maximum value, so avoid any inserts that may cause
+   * a sequence maximum error. *
+   */
+  if (strcasecmp (name, "cleanup-sequences") == 0)
+    avoid_db_check_inserts = 1;
+
+  ret = manage_option_setup (log_config, database, avoid_db_check_inserts);
   if (ret)
     return ret;
 

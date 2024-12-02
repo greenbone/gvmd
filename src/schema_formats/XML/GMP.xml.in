@@ -3987,12 +3987,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>copy</e></o>
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
+      <o><e>kdc</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>community</e></o>
       <o><e>privacy</e></o>
+      <o><e>realm</e></o>
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -4027,6 +4029,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>kdc</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos KDC (key distribution center(s))</summary>
     </ele>
     <ele>
       <name>key</name>
@@ -4115,10 +4122,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
     </ele>
     <ele>
+      <name>realm</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos realm</summary>
+    </ele>
+    <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
       <description>
         <p>cc: Client certificate</p>
+        <p>krb5: Kerberos 5</p>
         <p>pgp: PGP encryption key</p>
         <p>pw: Password only</p>
         <p>smime: S/MIME certificate</p>
@@ -4129,6 +4142,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         <alts>
           <alt>cc</alt>
+          <alt>krb5</alt>
           <alt>pgp</alt>
           <alt>pw</alt>
           <alt>smime</alt>
@@ -10911,6 +10925,8 @@ END:VCALENDAR
               <e>certificate</e>
             </or>
           </o>
+          <o><e>kdc</e></o>
+          <o><e>realm</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -11037,6 +11053,7 @@ END:VCALENDAR
           <summary>The type of the credential</summary>
           <description>
             <p>cc: Client certificate</p>
+            <p>krb5: Kerberos 5</p>
             <p>pgp: PGP encryption key</p>
             <p>pw: Password only</p>
             <p>smime: S/MIME certificate</p>
@@ -11047,6 +11064,7 @@ END:VCALENDAR
           <pattern>
             <alts>
               <alt>cc</alt>
+              <alt>krb5</alt>
               <alt>pgp</alt>
               <alt>pw</alt>
               <alt>smime</alt>
@@ -11198,6 +11216,16 @@ END:VCALENDAR
         <ele>
           <name>certificate</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>kdc</name>
+          <pattern>text</pattern>
+          <summary>The Kerberos KDC (key distribution center(s))</summary>
+        </ele>
+        <ele>
+          <name>realm</name>
+          <pattern>text</pattern>
+          <summary>The Kerberos realm</summary>
         </ele>
       </ele>
       <ele>
@@ -26744,12 +26772,14 @@ END:VCALENDAR
       <o><e>name</e></o>
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
+      <o><e>kdc</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>community</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>privacy</e></o>
+      <o><e>realm</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -26776,6 +26806,11 @@ END:VCALENDAR
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>kdc</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos KDC (key distribution center(s))</summary>
     </ele>
     <ele>
       <name>key</name>
@@ -26862,6 +26897,11 @@ END:VCALENDAR
           text
         </pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>realm</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos realm</summary>
     </ele>
     <response>
       <pattern>
