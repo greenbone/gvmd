@@ -35760,6 +35760,7 @@ create_credential (const char* name, const char* comment, const char* login,
   else
     {
       g_warning ("%s: Cannot determine type of new credential", __func__);
+      sql_rollback ();
       return 18;
     }
 
