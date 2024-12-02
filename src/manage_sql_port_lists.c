@@ -2652,11 +2652,16 @@ update_port_list (port_list_t port_list, const gchar *name,
 
 /**
  * @brief Check port lists, for startup.
+ *
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
  */
 void
-check_db_port_lists ()
+check_db_port_lists (int avoid_db_check_inserts)
 {
   migrate_predefined_port_lists ();
+
+  if (avoid_db_check_inserts)
+    return;
 
   if (sync_port_lists_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync port lists with feed", __func__);
