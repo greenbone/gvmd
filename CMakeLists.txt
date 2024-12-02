@@ -20,7 +20,7 @@ cmake_minimum_required (VERSION 3.0)
 message ("-- Configuring Greenbone Vulnerability Manager...")
 
 project (gvm
-         VERSION 23.7.1
+         VERSION 24.0.1
          LANGUAGES C)
 
 if (POLICY CMP0005)
@@ -103,7 +103,7 @@ include (CPack)
 
 set (GVMD_DATABASE_VERSION 256)
 
-set (GVMD_SCAP_DATABASE_VERSION 21)
+set (GVMD_SCAP_DATABASE_VERSION 22)
 
 set (GVMD_CERT_DATABASE_VERSION 8)
 
@@ -163,11 +163,13 @@ if (NOT GVMD_STATE_DIR)
   set (GVMD_STATE_DIR  "${GVM_STATE_DIR}/gvmd")
 endif (NOT GVMD_STATE_DIR)
 
-if (NOT GVM_LOG_DIR)
-  set (GVM_LOG_DIR    "${LOCALSTATEDIR}/log/gvm")
-else (NOT GVM_LOG_DIR)
-  set (GVM_LOG_DIR    "${GVM_LOG_DIR}")
-endif (NOT GVM_LOG_DIR)
+if (NOT GVMD_LOG_FILE)
+  if (GVM_LOG_DIR)
+    set (GVMD_LOG_FILE "${GVM_LOG_DIR}/gvmd.log")
+  else (GVM_LOG_DIR)
+    set (GVMD_LOG_FILE "-")
+  endif (GVM_LOG_DIR)
+endif (NOT GVMD_LOG_FILE)
 
 set (GVM_SCAP_RES_DIR "${GVM_DATA_DIR}/scap")
 set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
@@ -247,8 +249,8 @@ if (NOT CVSS3_RATINGS)
 endif (NOT CVSS3_RATINGS)
 add_definitions (-DCVSS3_RATINGS=${CVSS3_RATINGS})
 
-
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message ("-- Log file: ${GVMD_LOG_FILE}")
 
 ## Version
 
@@ -402,7 +404,7 @@ install (FILES src/alert_methods/vFire/alert
          DESTINATION ${GVMD_DATA_DIR}/global_alert_methods/159f79a5-fce8-4ec5-aa49-7d17a77739a3/
          PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
- install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${GVMD_DATA_DIR}/wizards)")
+install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${GVMD_DATA_DIR}/wizards)")
 
 install (FILES src/wizards/quick_first_scan.xml
                src/wizards/get_tasks_deep.xml

@@ -1979,6 +1979,7 @@ update_nvts_from_vts (element_t *get_vts_response,
   if (rebuild) {
     sql ("DROP VIEW IF EXISTS results_autofp;");
     sql ("DROP VIEW vulns;");
+    sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
     sql ("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
 
     sql ("ALTER TABLE vt_refs_rebuild RENAME TO vt_refs;");
@@ -1987,6 +1988,9 @@ update_nvts_from_vts (element_t *get_vts_response,
     sql ("ALTER TABLE nvts_rebuild RENAME TO nvts;");
 
     create_view_vulns ();
+
+    create_indexes_nvt ();
+
     create_view_result_vt_epss ();
   }
 
@@ -2650,7 +2654,8 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
         return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       feed_lockfile_unlock (&lockfile);
@@ -2723,7 +2728,8 @@ manage_dump_vt_verification (GSList *log_config,
         return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       feed_lockfile_unlock (&lockfile);

@@ -48,6 +48,7 @@
 
 #include "debug_utils.h"
 #include "gmp_base.h"
+#include "ipc.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_configs.h"
@@ -59,6 +60,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <assert.h>
@@ -85,9 +87,11 @@
 #include <gvm/base/hosts.h>
 #include <bsd/unistd.h>
 #include <gvm/osp/osp.h>
+#include <gvm/util/cpeutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
+#include <gvm/util/versionutils.h>
 #include <gvm/gmp/gmp.h>
 
 #undef G_LOG_DOMAIN
@@ -183,6 +187,21 @@ static gchar *feed_lock_path = NULL;
  * @brief Number of seconds to wait for the feed lock to be released.
  */
 static int feed_lock_timeout = 0;
+
+/**
+ * @brief Maximum number of concurrent scan updates.
+ */
+static int max_concurrent_scan_updates = 0;
+
+/**
+ * @brief Retries for waiting for memory to be available.
+ */
+static int mem_wait_retries = 0;
+
+/**
+ * @brief Minimum available memory in MiB for running a feed update.
+ */
+static int min_mem_feed_update = 0;
 
 /**
  * @brief Path to the relay mapper executable, NULL to disable relays.
@@ -352,6 +371,7 @@ truncate_private_key (const gchar* private_key)
  *
  * @param[in]  certificate        The certificate to get data from.
  * @param[in]  certificate_len    Length of certificate, -1: null-terminated
+ * @param[in]  escape_dns         Whether to escape control characters in DNs.
  * @param[out] activation_time    Pointer to write activation time to.
  * @param[out] expiration_time    Pointer to write expiration time to.
  * @param[out] md5_fingerprint    Pointer for newly allocated MD5 fingerprint.
@@ -366,6 +386,7 @@ truncate_private_key (const gchar* private_key)
  */
 int
 get_certificate_info (const gchar* certificate, gssize certificate_len,
+                      gboolean escape_dns,
                       time_t* activation_time, time_t* expiration_time,
                       gchar** md5_fingerprint, gchar **sha256_fingerprint,
                       gchar **subject, gchar** issuer, gchar **serial,
@@ -508,7 +529,13 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           buffer = g_malloc (buffer_size);
           gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size);
 
-          *subject = buffer;
+          if (escape_dns)
+            {
+              *subject = strescape_check_utf8 (buffer, NULL);
+              g_free (buffer);
+            }
+          else
+            *subject = buffer;
         }
 
       if (issuer)
@@ -519,14 +546,20 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           buffer = g_malloc (buffer_size);
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
 
-          *issuer = buffer;
+          if (escape_dns)
+            {
+              *issuer = strescape_check_utf8 (buffer, NULL);
+              g_free (buffer);
+            }
+          else
+            *issuer = buffer;
         }
 
       if (serial)
         {
           int i;
           size_t buffer_size = 0;
-          gchar* buffer;
+          unsigned char *buffer;
           GString *string;
 
           string = g_string_new ("");
@@ -945,7 +978,8 @@ int
 manage_create_encryption_key (GSList *log_config,
                               const db_conn_info_t *database)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.");
@@ -1009,7 +1043,8 @@ manage_set_encryption_key (GSList *log_config,
                            const db_conn_info_t *database,
                            const char *uid)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.\n");
@@ -1832,6 +1867,40 @@ get_osp_scan_status (const char *scan_id, const char *host, int port,
 }
 
 /**
+ * @brief Handles the semaphore for the end of an OSP scan update.
+ *
+ * @param[in]  add_result_on_error  Whether to create an OSP result on error.
+ * @param[in]  task   The current task (for error result).
+ * @param[in]  report The current report (for error result).
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+osp_scan_semaphore_update_end (int add_result_on_error,
+                               task_t task, report_t report)
+{
+  if (max_concurrent_scan_updates == 0)
+    return 0;
+
+  if (semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0))
+    {
+      g_warning ("%s: error signaling scan update semaphore",
+                __func__);
+      if (add_result_on_error)
+        {
+          result_t result = make_osp_result
+            (task, "", "", "",
+              threat_message_type ("Error"),
+              "Error signaling scan update semaphore", "", "",
+              QOD_DEFAULT, NULL, NULL);
+          report_add_result (report, result);
+        }
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Handle an ongoing OSP scan, until success or failure.
  *
  * @param[in]   task      The task.
@@ -1864,7 +1933,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   rc = -1;
   while (retry >= 0)
     {
-      int run_status, progress;
+      int sem_op_ret, run_status, progress;
       osp_scan_status_t osp_scan_status;
 
       run_status = task_run_status (task);
@@ -1873,6 +1942,28 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
         {
           rc = -4;
           break;
+        }
+
+      if (max_concurrent_scan_updates)
+        {
+          sem_op_ret = semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 5);
+          if (sem_op_ret == 1)
+            continue;
+          else if (sem_op_ret)
+            {
+              g_warning ("%s: error waiting for scan update semaphore",
+                        __func__);
+              result_t result = make_osp_result
+                (task, "", "", "",
+                  threat_message_type ("Error"),
+                  "Error waiting for scan update semaphore", "", "",
+                  QOD_DEFAULT, NULL, NULL);
+              report_add_result (report, result);
+              delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                key_priv);
+              rc = -3;
+              break;
+            }
         }
 
       /* Get only the progress, without results and details. */
@@ -1887,10 +1978,18 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               g_warning ("Connection lost with the scanner at %s. "
                          "Trying again in 1 second.", host);
               gvm_sleep (1);
+              if (osp_scan_semaphore_update_end (TRUE, task, report))
+                {
+                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                   key_priv);
+                  rc = -3;
+                  break;
+                }
               continue;
             }
           else if (progress == -2)
             {
+              osp_scan_semaphore_update_end (FALSE, task, report);
               rc = -2;
               break;
             }
@@ -1900,6 +1999,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
+          osp_scan_semaphore_update_end (FALSE, task, report);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                            key_priv);
           rc = -1;
@@ -1918,11 +2018,19 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   retry--;
                   g_warning ("Connection lost with the scanner at %s. "
                              "Trying again in 1 second.", host);
+                  if (osp_scan_semaphore_update_end (TRUE, task, report))
+                    {
+                      delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                                       key_priv);
+                      rc = -3;
+                      break;
+                    }
                   gvm_sleep (1);
                   continue;
                 }
               else if (progress == -2)
                 {
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -2;
                   break;
                 }
@@ -1933,6 +2041,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                                   "Erroneous scan progress value", "", "",
                                   QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
+              osp_scan_semaphore_update_end (FALSE, task, report);
               rc = -1;
               break;
             }
@@ -1965,6 +2074,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -3;
                   break;
                 }
@@ -1976,6 +2086,13 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                       retry--;
                       g_warning ("Connection lost with the scanner at %s. "
                                  "Trying again in 1 second.", host);
+                      if (osp_scan_semaphore_update_end (TRUE, task, report))
+                        {
+                          delete_osp_scan (scan_id, host, port, ca_pub,
+                                           key_pub, key_priv);
+                          rc = -3;
+                          break;
+                        }
                       gvm_sleep (1);
                       continue;
                     }
@@ -1988,6 +2105,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -1;
                   break;
                 }
@@ -1996,6 +2114,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
                                    key_priv);
+                  osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = 0;
                   break;
                 }
@@ -2008,6 +2127,14 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   started = TRUE;
                 }
             }
+        }
+
+      if (osp_scan_semaphore_update_end (TRUE, task, report))
+        {
+          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
+                           key_priv);
+          rc = -3;
+          break;
         }
 
       retry = connection_retry;
@@ -2877,9 +3004,25 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
       set_task_run_status (task, TASK_STATUS_PROCESSING);
       set_report_scan_run_status (global_current_report,
                                   TASK_STATUS_PROCESSING);
+
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
       hosts_set_identifiers (global_current_report);
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
+
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
       hosts_set_max_severity (global_current_report, NULL, NULL);
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
+
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
       hosts_set_details (global_current_report);
+      if (max_concurrent_scan_updates)
+        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
+
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
@@ -2968,6 +3111,280 @@ set_scanner_connection_retry (int new_retry)
 
 /* CVE tasks. */
 
+static int
+check_version (const gchar *target, const gchar *start_incl, const gchar *start_excl, const gchar *end_incl, const gchar *end_excl)
+{
+  int result;
+
+  if (start_incl != NULL)
+    {
+      result = cmp_versions (start_incl, target);
+      if (result == -5)
+        return -1;
+      if (result > 0)
+        {
+          return 0;
+        }
+    }
+  if (start_excl != NULL)
+    {
+      result = cmp_versions (start_excl, target);
+      if (result == -5)
+        return -1;
+      if (result >= 0)
+        {
+          return 0;
+        }
+    }
+
+  if (end_incl != NULL)
+    {
+      result = cmp_versions (end_incl, target);
+      if (result == -5)
+        return -1;
+      if (result < 0)
+        {
+          return 0;
+        }
+    }
+
+  if (end_excl != NULL)
+    {
+      result = cmp_versions (end_excl, target);
+      if (result == -5)
+        return -1;
+      if (result <= 0)
+        {
+          return 0;
+        }
+    }
+
+  return (1);
+}
+
+static void
+check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable, report_host_t report_host, const char *host_cpe)
+{
+  iterator_t cpe_match_node_childs;
+  gchar *operator;
+  iterator_t cpe_match_ranges;
+
+  operator = sql_string ("SELECT operator FROM scap.cpe_match_nodes WHERE id = %llu", node);
+  init_cpe_match_node_childs_iterator (&cpe_match_node_childs, node);
+  while (next (&cpe_match_node_childs))
+    {
+      long long int child_node;
+      child_node = cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
+      check_cpe_match_rule (child_node, match, vulnerable, report_host, host_cpe);
+      if (strcmp (operator, "AND") == 0 && !(*match))
+        return;
+      if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
+        return;
+    }
+
+  init_cpe_match_string_iterator (&cpe_match_ranges, node);
+  while (next (&cpe_match_ranges))
+    {
+      iterator_t cpe_host_details_products;
+      gchar *range_fs_cpe;
+      gchar *range_uri_product;
+      gchar *vsi, *vse, *vei, *vee;
+      range_fs_cpe = vsi = vse = vei = vee = NULL;
+      range_fs_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
+      vsi = g_strdup (cpe_match_string_iterator_version_start_incl (&cpe_match_ranges));
+      vse = g_strdup (cpe_match_string_iterator_version_start_excl (&cpe_match_ranges));
+      vei = g_strdup (cpe_match_string_iterator_version_end_incl (&cpe_match_ranges));
+      vee = g_strdup (cpe_match_string_iterator_version_end_excl (&cpe_match_ranges));
+      range_uri_product = fs_cpe_to_uri_product (range_fs_cpe);
+      init_host_details_cpe_product_iterator (&cpe_host_details_products, range_uri_product, report_host);
+      while (next (&cpe_host_details_products))
+        {
+          cpe_struct_t source, target;
+          const char *host_details_cpe;
+          gboolean matches;
+          host_details_cpe = host_details_cpe_product_iterator_value (&cpe_host_details_products);
+          cpe_struct_init (&source);
+          cpe_struct_init (&target);
+          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (host_details_cpe, &target);
+          matches = cpe_struct_match (&source, &target);
+          if (matches)
+            {
+              int result;
+              result = check_version (target.version, vsi, vse, vei, vee);
+              if (result == 1)
+                *match = TRUE;
+            }
+          cpe_struct_free (&source);
+          cpe_struct_free (&target);
+        }
+      if (*match && cpe_match_string_iterator_vulnerable (&cpe_match_ranges) == 1)
+        {
+          cpe_struct_t source, target;
+          cpe_struct_init (&source);
+          cpe_struct_init (&target);
+          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (host_cpe, &target);
+          if (cpe_struct_match (&source, &target))
+            *vulnerable = TRUE;
+          cpe_struct_free (&source);
+          cpe_struct_free (&target);
+        }
+      g_free (range_uri_product);
+      g_free (range_fs_cpe);
+      g_free (vsi);
+      g_free (vse);
+      g_free (vei);
+      g_free (vee);
+      if (strcmp (operator, "AND") == 0 && !(*match))
+        return;
+      if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
+        return;
+    }
+}
+
+/**
+ * @brief Perform the json CVE "scan" for the found report host.
+ *
+ * @param[in]  task        Task.
+ * @param[in]  report      The report to add the host, results and details to.
+ * @param[in]  report_host The report host.
+ * @param[in]  ip          The ip of the report host.
+ * @param[in]  start_time  The start time of the scan.
+ *
+ * @param[out] prognosis_report_host  The report_host with prognosis results
+ *                                    and host details.
+ * @param[out] results                The results of the scan.
+ */
+static void
+cve_scan_report_host_json (task_t task,
+                           report_t report,
+                           report_host_t report_host,
+                           gchar *ip,
+                           int start_time,
+                           int *prognosis_report_host,
+                           GArray *results)
+{
+  iterator_t host_details_cpe;
+  init_host_details_cpe_iterator (&host_details_cpe, report_host);
+  while (next (&host_details_cpe))
+    {
+      iterator_t cpe_match_root_node;
+      iterator_t locations_iter;
+      result_t result;
+      char *cpe_product;
+      const char *host_cpe;
+      double severity;
+
+      host_cpe = host_details_cpe_iterator_cpe (&host_details_cpe);
+      cpe_product = uri_cpe_to_fs_product (host_cpe);
+      init_cpe_match_nodes_iterator (&cpe_match_root_node, cpe_product);
+      while (next (&cpe_match_root_node))
+        {
+          result_t root_node;
+          gboolean match, vulnerable;
+          const char *app, *cve;
+
+          vulnerable = FALSE;
+          match = FALSE;
+          root_node = cpe_match_nodes_iterator_root_id (&cpe_match_root_node);
+          check_cpe_match_rule (root_node, &match, &vulnerable, report_host, host_cpe);
+          if (match && vulnerable)
+            {
+              GString *locations;
+              gchar *desc;
+
+              if (*prognosis_report_host == 0)
+                *prognosis_report_host = manage_report_host_add (report,
+                                                                 ip,
+                                                                 start_time,
+                                                                 0);
+
+              severity = sql_double ("SELECT severity FROM scap.cves, scap.cpe_match_nodes"
+                                     " WHERE scap.cves.id = scap.cpe_match_nodes.cve_id"
+                                     " AND scap.cpe_match_nodes.id = %llu;",
+                                     root_node);
+
+              app = host_cpe;
+              cve = sql_string ("SELECT name FROM scap.cves, scap.cpe_match_nodes"
+                                " WHERE scap.cves.id = cpe_match_nodes.cve_id"
+                                " AND scap.cpe_match_nodes.id = %llu;",
+                                root_node);
+              locations = g_string_new ("");
+
+              insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                         "CVE Scanner", "App", app, NULL);
+
+              init_app_locations_iterator (&locations_iter, report_host, app);
+
+              while (next (&locations_iter))
+                {
+                  const char *location;
+                  location = app_locations_iterator_location (&locations_iter);
+
+                  if (location == NULL)
+                    {
+                      g_warning ("%s: Location is null for ip %s, app %s",
+                                 __func__, ip, app);
+                      continue;
+                    }
+
+                  if (locations->len)
+                    {
+                      g_string_append (locations, ", ");
+                    }
+                  g_string_append (locations, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", app, location, NULL);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_at",
+                                             location, NULL);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_by",
+                                             /* Detected by itself. */
+                                             cve, NULL);
+                }
+
+              const char *description;
+              description = sql_string ("SELECT description FROM scap.cves, scap.cpe_match_nodes"
+                                        " WHERE scap.cves.id = scap.cpe_match_nodes.cve_id"
+                                        " AND scap.cpe_match_nodes.id = %llu;",
+                                        root_node);
+
+              desc = g_strdup_printf ("The host carries the product: %s\n"
+                                      "It is vulnerable according to: %s.\n"
+                                      "%s%s%s"
+                                      "\n"
+                                      "%s",
+                                      app,
+                                      cve,
+                                      locations->len
+                                       ? "The product was found at: "
+                                       : "",
+                                      locations->len ? locations->str : "",
+                                      locations->len ? ".\n" : "",
+                                      description);
+
+              g_debug ("%s: making result with severity %1.1f desc [%s]",
+                       __func__, severity, desc);
+
+              result = make_cve_result (task, ip, cve, severity, desc);
+              g_free (desc);
+
+              g_array_append_val (results, result);
+
+              g_string_free (locations, TRUE);
+
+            }
+        }
+      g_free (cpe_product);
+    }
+  cleanup_iterator (&host_details_cpe);
+}
+
 /**
  * @brief Perform a CVE "scan" on a host.
  *
@@ -3023,89 +3440,102 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
           results = g_array_new (TRUE, TRUE, sizeof (result_t));
           start_time = time (NULL);
           prognosis_report_host = 0;
-          init_host_prognosis_iterator (&prognosis, report_host);
-          while (next (&prognosis))
+
+          if (sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
+                           " WHERE table_schema = 'scap'"
+                           " AND table_name = 'cpe_match_nodes';") > 0)
             {
-              const char *app, *cve;
-              double severity;
-              gchar *desc;
-              iterator_t locations_iter;
-              GString *locations;
-              result_t result;
-
-              if (prognosis_report_host == 0)
-                prognosis_report_host = manage_report_host_add (report,
-                                                                ip,
-                                                                start_time,
-                                                                0);
-
-              severity = prognosis_iterator_cvss_double (&prognosis);
-
-              app = prognosis_iterator_cpe (&prognosis);
-              cve = prognosis_iterator_cve (&prognosis);
-              locations = g_string_new("");
-
-              insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                         "CVE Scanner", "App", app, NULL);
-
-              init_app_locations_iterator (&locations_iter, report_host, app);
-
-              while (next (&locations_iter))
+              // Use new JSON CVE scan
+              cve_scan_report_host_json (task, report, report_host, ip,
+                                         start_time, &prognosis_report_host,
+                                         results);
+            }
+          else
+            {
+              // Use XML CVE scan
+              init_host_prognosis_iterator (&prognosis, report_host);
+              while (next (&prognosis))
                 {
-                  const char *location;
-                  location = app_locations_iterator_location (&locations_iter);
+                  const char *app, *cve;
+                  double severity;
+                  gchar *desc;
+                  iterator_t locations_iter;
+                  GString *locations;
+                  result_t result;
 
-                  if (location == NULL)
+                  if (prognosis_report_host == 0)
+                    prognosis_report_host = manage_report_host_add (report,
+                                                                    ip,
+                                                                    start_time,
+                                                                    0);
+
+                  severity = prognosis_iterator_cvss_double (&prognosis);
+
+                  app = prognosis_iterator_cpe (&prognosis);
+                  cve = prognosis_iterator_cve (&prognosis);
+                  locations = g_string_new("");
+
+                  insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                             "CVE Scanner", "App", app, NULL);
+
+                  init_app_locations_iterator (&locations_iter, report_host, app);
+
+                  while (next (&locations_iter))
                     {
-                      g_warning ("%s: Location is null for ip %s, app %s",
-                                 __func__, ip, app);
-                      continue;
+                      const char *location;
+                      location = app_locations_iterator_location (&locations_iter);
+
+                      if (location == NULL)
+                        {
+                          g_warning ("%s: Location is null for ip %s, app %s",
+                                     __func__, ip, app);
+                          continue;
+                        }
+
+                      if (locations->len)
+                        g_string_append (locations, ", ");
+                      g_string_append (locations, location);
+
+                      insert_report_host_detail (report, ip, "cve", cve,
+                                                 "CVE Scanner", app, location, NULL);
+
+                      insert_report_host_detail (report, ip, "cve", cve,
+                                                 "CVE Scanner", "detected_at",
+                                                 location, NULL);
+
+                      insert_report_host_detail (report, ip, "cve", cve,
+                                                 "CVE Scanner", "detected_by",
+                                                 /* Detected by itself. */
+                                                 cve, NULL);
                     }
 
-                  if (locations->len)
-                    g_string_append (locations, ", ");
-                  g_string_append (locations, location);
+                  desc = g_strdup_printf ("The host carries the product: %s\n"
+                                          "It is vulnerable according to: %s.\n"
+                                          "%s%s%s"
+                                          "\n"
+                                          "%s",
+                                          app,
+                                          cve,
+                                          locations->len
+                                           ? "The product was found at: "
+                                           : "",
+                                          locations->len ? locations->str : "",
+                                          locations->len ? ".\n" : "",
+                                          prognosis_iterator_description
+                                           (&prognosis));
 
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", app, location, NULL);
+                  g_debug ("%s: making result with severity %1.1f desc [%s]",
+                           __func__, severity, desc);
 
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", "detected_at",
-                                             location, NULL);
+                  result = make_cve_result (task, ip, cve, severity, desc);
+                  g_free (desc);
 
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", "detected_by",
-                                             /* Detected by itself. */
-                                             cve, NULL);
+                  g_array_append_val (results, result);
+
+                  g_string_free (locations, TRUE);
                 }
-
-              desc = g_strdup_printf ("The host carries the product: %s\n"
-                                      "It is vulnerable according to: %s.\n"
-                                      "%s%s%s"
-                                      "\n"
-                                      "%s",
-                                      app,
-                                      cve,
-                                      locations->len
-                                       ? "The product was found at: "
-                                       : "",
-                                      locations->len ? locations->str : "",
-                                      locations->len ? ".\n" : "",
-                                      prognosis_iterator_description
-                                       (&prognosis));
-
-              g_debug ("%s: making result with severity %1.1f desc [%s]",
-                       __func__, severity, desc);
-
-              result = make_cve_result (task, ip, cve, severity, desc);
-              g_free (desc);
-
-              g_array_append_val (results, result);
-
-              g_string_free (locations, TRUE);
+              cleanup_iterator (&prognosis);
             }
-          cleanup_iterator (&prognosis);
-
           report_add_results_array (report, results);
           g_array_free (results, TRUE);
 
@@ -3244,12 +3674,12 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
-  
+
   if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
     {
       set_task_interrupted (task,
                               "Failed to exclude hosts."
-                              "  Interrupting scan.");      
+                              "  Interrupting scan.");
       set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
       gvm_hosts_free (gvm_hosts);
       free (exclude_hosts);
@@ -3988,6 +4418,8 @@ credential_full_type (const char* abbreviation)
     return NULL;
   else if (strcasecmp (abbreviation, "cc") == 0)
     return "client certificate";
+  else if (strcasecmp (abbreviation, "krb5") == 0)
+    return "Kerberos 5";
   else if (strcasecmp (abbreviation, "pw") == 0)
     return "password only";
   else if (strcasecmp (abbreviation, "snmp") == 0)
@@ -5050,7 +5482,52 @@ feed_sync_required ()
   return FALSE;
 }
 
+/**
+ * @brief Wait for memory
+ *
+ * @param[in]  check_func  Function to check memory, should return 1 if enough.
+ * @param[in]  retries     Number of retries.
+ * @param[in]  min_mem     Minimum memory in MiB, for logging only
+ * @param[in]  action      Short descriptor of action waiting for memory.
+ *
+ * @return 0 if enough memory is available, 1 gave up
+ */
+static int
+wait_for_mem (int check_func(),
+              int retries,
+              int min_mem,
+              const char *action)
+{
+  int retry_number = 0;
+  while (check_func () == 0)
+    {
+      if (retry_number == 0)
+        {
+          g_info ("%s: not enough memory for %s"
+                  " (%lld / %d) MiB",
+                  __func__,
+                  action,
+                  phys_mem_available () / 1048576llu,
+                  min_mem);
+        }
+      else
+        {
+          g_debug ("%s: waiting for memory for %s"
+                   " (%lld / %d) MiB",
+                   __func__,
+                   action,
+                   phys_mem_available () / 1048576llu,
+                   min_mem);
+        }
 
+      retry_number ++;
+      if (retry_number > retries)
+        return 1;
+
+      sleep (SCHEDULE_PERIOD);
+    }
+  return 0;
+}
 
 /**
  * @brief Perform any syncing that is due.
@@ -5074,7 +5551,11 @@ manage_sync (sigset_t *sigmask_current,
 
   if (feed_sync_required ())
     {
-      if (feed_lockfile_lock (&lockfile) == 0)
+      if (wait_for_mem (check_min_mem_feed_update,
+                        mem_wait_retries,
+                        min_mem_feed_update,
+                        "SecInfo feed sync") == 0
+          && feed_lockfile_lock (&lockfile) == 0)
         {
           pid_t nvts_pid, scap_pid, cert_pid;
           nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
@@ -5096,7 +5577,11 @@ manage_sync (sigset_t *sigmask_current,
           || should_sync_port_lists ()
           || should_sync_report_formats ()))
     {
-      if (feed_lockfile_lock (&lockfile) == 0)
+      if (wait_for_mem (check_min_mem_feed_update,
+                        mem_wait_retries,
+                        min_mem_feed_update,
+                        "data objects feed sync") == 0
+          && feed_lockfile_lock (&lockfile) == 0)
         {
           manage_sync_configs ();
           manage_sync_port_lists ();
@@ -5226,7 +5711,8 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       if (error_msg)
@@ -5981,7 +6467,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       if (nvt_iterator_epss_cve (nvts))
         {
-          buffer_xml_append_printf 
+          buffer_xml_append_printf
              (buffer,
               "<epss>"
               "<max_severity>"
@@ -5994,7 +6480,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_epss_severity (nvts));
@@ -6014,7 +6500,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_max_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_max_epss_severity (nvts));
@@ -6350,6 +6836,107 @@ set_feed_lock_timeout (int new_timeout)
     feed_lock_timeout = 0;
   else
     feed_lock_timeout = new_timeout;
+}
+
+/**
+ * @brief Get the number of retries when waiting for memory to be available.
+ *
+ * @return The current number of retries.
+ */
+int
+get_mem_wait_retries()
+{
+  return mem_wait_retries;
+}
+
+/**
+ * @brief Set the number of retries when waiting for memory to be available.
+ *
+ * @param[in]  new_retries The new number of retries.
+ */
+void
+set_mem_wait_retries (int new_retries)
+{
+  if (new_retries < 0)
+    min_mem_feed_update = 0;
+  else
+    min_mem_feed_update = new_retries;
+}
+
+/**
+ * @brief Check if the minimum memory for feed updates is available
+ *
+ * @return 1 if minimum memory amount is available, 0 if not
+ */
+int
+check_min_mem_feed_update ()
+{
+  if (min_mem_feed_update)
+    {
+      guint64 min_mem_bytes = (guint64)min_mem_feed_update * 1048576llu;
+      return phys_mem_available () >= min_mem_bytes ? 1 : 0;
+    }
+  return 1;
+}
+
+/**
+ * @brief Get the minimum memory for feed updates.
+ *
+ * @return The current minimum memory for feed updates in MiB.
+ */
+int
+get_min_mem_feed_update ()
+{
+  return min_mem_feed_update;
+}
+
+/**
+ * @brief Get the minimum memory for feed updates.
+ *
+ * @param[in]  new_min_mem The new minimum memory for feed updates in MiB.
+ */
+void
+set_min_mem_feed_update (int new_min_mem)
+{
+  guint64 min_mem_bytes = (guint64)new_min_mem * 1048576llu;
+  if (new_min_mem < 0)
+    min_mem_feed_update = 0;
+  else if (min_mem_bytes > phys_mem_total ())
+    {
+      g_warning ("%s: requested feed minimum memory limit (%d MiB)"
+                 " exceeds total physical memory (%lld MiB)."
+                 " The setting is ignored.",
+                 __func__,
+                 new_min_mem,
+                 phys_mem_total () / 1048576llu);
+    }
+  else
+    min_mem_feed_update = new_min_mem;
+}
+
+/**
+ * @brief Get the maximum number of concurrent scan updates.
+ *
+ * @return The current maximum number of concurrent scan updates.
+ */
+int
+get_max_concurrent_scan_updates ()
+{
+  return max_concurrent_scan_updates;
+}
+
+/**
+ * @brief Set the maximum number of concurrent scan updates.
+ *
+ * @param new_max The new maximum number of concurrent scan updates.
+ */
+void
+set_max_concurrent_scan_updates (int new_max)
+{
+  if (new_max < 0)
+    max_concurrent_scan_updates = 0;
+  else
+    max_concurrent_scan_updates = new_max;
 }
 
 /**

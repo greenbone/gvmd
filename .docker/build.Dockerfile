@@ -2,7 +2,7 @@
 ARG GVM_LIBS_VERSION=oldstable
 
 # We want gvm-libs to be ready so we use the build docker image of gvm-libs
-FROM greenbone/gvm-libs:$GVM_LIBS_VERSION
+FROM registry.community.greenbone.net/community/gvm-libs:${GVM_LIBS_VERSION}
 
 # This will make apt-get install without question
 ARG DEBIAN_FRONTEND=noninteractive
