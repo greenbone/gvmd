@@ -150,38 +150,30 @@ sql_quote (const char* string)
 }
 
 /**
- * @brief Quotes a string for use in SQL statements, also ASCII escaping it
- *         if it is not valid UTF-8.
+ * @brief Quotes a string for use in SQL statements, also ASCII escaping it.
  *
- * @param[in]  string  String to quote, has to be \\0 terminated.
+ * The ASCII escaping excludes characters 0x80 - 0xFF for valid UTF-8 strings
+ * and includes them otherwise.
+ *
+ * @param[in]  string       String to quote, has to be \\0 terminated.
+ * @param[in]  exceptions   Optional exceptions for the escaping.
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
 gchar*
-sql_ascii_escape_and_quote (const char* string)
+sql_ascii_escape_and_quote (const char* string, const char* exceptions)
 {
+  gchar *escaped_string;
   gchar *quoted_string;
 
   assert (string);
 
   if (string == NULL)
-    {
-      return NULL;
-    }
-  else if (g_utf8_validate (string, -1, NULL))
-    {
-      // Quote valid UTF-8 without ASCII escaping
-      quoted_string = sql_quote (string);
-    }
-  else
-    {
-      // Assume invalid UTF-8 uses a different, unknown encoding and
-      //  ASCII-escape it.
-      gchar *escaped_string;
-      escaped_string = g_strescape (string, "");
-      quoted_string = sql_quote (escaped_string);
-      g_free (escaped_string);
-    }
+    return NULL;
+
+  escaped_string = strescape_check_utf8 (string, exceptions);
+  quoted_string = sql_quote (escaped_string);
+  g_free (escaped_string);
 
   return quoted_string;
 }
@@ -216,7 +208,7 @@ sql_insert (const char *string)
  *
  * @return 0 success, 1 gave up (even when retry given),
  *         2 reserved (lock unavailable), 3 unique constraint violation,
- *         -1 error.
+ *         4 deadlock, -1 error.
  */
 int
 sqlv (int retry, char* sql, va_list args)
@@ -282,13 +274,14 @@ sql (char* sql, ...)
         continue;
       else if (ret == 4)
         {
-            if (deadlock_amount++ > DEADLOCK_THRESHOLD)
-              {
-                  g_warning("%s: %d deadlocks detected, waiting and retrying %s", __func__, deadlock_amount, sql);
-              }
-            gvm_usleep (DEADLOCK_SLEEP);
-            continue;
-         }
+          if (deadlock_amount++ > DEADLOCK_THRESHOLD)
+            {
+              g_warning("%s: %d deadlocks detected, waiting and retrying %s",
+                        __func__, deadlock_amount, sql);
+            }
+          gvm_usleep (DEADLOCK_SLEEP);
+          continue;
+        }
       else if (ret)
         abort();
       break;
@@ -363,6 +356,7 @@ int
 sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   int ret;
+  unsigned int deadlock_amount =  0;
 
   assert (stmt_return);
 
@@ -398,6 +392,16 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
         {
           /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (*stmt_return);
+          continue;
+        }
+      if (ret == -5)
+        {
+          if (deadlock_amount++ > DEADLOCK_THRESHOLD)
+            {
+              g_warning("%s: %d deadlocks detected, waiting and retrying %s",
+                        __func__, deadlock_amount, sql);
+            }
+          gvm_usleep (DEADLOCK_SLEEP);
           continue;
         }
       break;

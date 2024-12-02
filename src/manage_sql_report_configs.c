@@ -242,7 +242,7 @@ create_report_config (const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_report_format_id);
 
-  for (int i = 0; g_ptr_array_index (params, i); i++) 
+  for (int i = 0; g_ptr_array_index (params, i); i++)
     {
       report_config_param_data_t *param;
       param = g_ptr_array_index (params, i);
@@ -266,7 +266,7 @@ create_report_config (const char *name, const char *comment,
 
 /**
  * @brief Modify a report config.
- * 
+ *
  * @param[in]   report_config_id  UUID of report config to modify.
  * @param[in]   new_name          Name of report config.
  * @param[in]   new_comment       Comment of report config.
@@ -352,7 +352,7 @@ modify_report_config (const char *report_config_id,
           return 3;
         }
 
-      for (int i = 0; g_ptr_array_index (params, i); i++) 
+      for (int i = 0; g_ptr_array_index (params, i); i++)
         {
           report_config_param_data_t *param;
           param = g_ptr_array_index (params, i);
@@ -797,7 +797,7 @@ report_config_iterator_report_format_readable (iterator_t* iterator)
 
   if (iterator->done) return 0;
 
-  report_format_id 
+  report_format_id
     = report_config_iterator_report_format_id (iterator);
 
   if (report_format_id)
@@ -855,7 +855,7 @@ init_report_config_param_iterator (iterator_t *iterator,
                                    int trash)
 {
   report_format_t report_format;
-  
+
   report_format = report_config_report_format (report_config);
 
   init_iterator (iterator,
