@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <name>alive_test</name>
     <summary>An alive test</summary>
     <pattern>
-      xsd:token { pattern = "ICMP, TCP Service &amp; ARP Ping|TCP Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP Service Ping|ARP Ping|TCP Service Ping|ICMP Ping|Scan Config Default" }
+      xsd:token { pattern = "ICMP, TCP-ACK Service &amp; ARP Ping|TCP-ACK Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP-ACK Service Ping|ARP Ping|TCP-ACK Service Ping|TCP-SYN Service Ping|ICMP Ping|Consider Alive|Scan Config Default" }
     </pattern>
   </type>
   <type>
@@ -67,6 +67,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       (without compliance information). 
     </description>
     <pattern>xsd:token { pattern = "y?n?i?u?" }</pattern>
+  </type>
+  <type>
+    <name>compliance_status</name>
+    <summary>A compliance status</summary>
+    <pattern>
+      xsd:token { pattern = "yes|no|incomplete|undefined" }
+    </pattern>
   </type>
   <type>
     <name>ctime</name>
@@ -837,7 +844,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>port</e>
           <e>severity</e>
           <e>task</e>
-          <o><e>end_time</e></o>
+          <e>end_time</e>
           <o><e>result</e></o>
         </g>
       </o>
@@ -1010,7 +1017,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+        <e>name</e>
+        <e>trash</e>
       </pattern>
+      <ele>
+        <name>name</name>
+        <summary>Task name</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>trash</name>
+        <summary>Whether the task is in the trashcan</summary>
+        <type>boolean</type>
+      </ele>
     </ele>
     <ele>
       <name>active</name>
@@ -1025,114 +1044,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>result</name>
       <summary>Result to which note applies</summary>
-      <pattern>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-        <e>host</e>
-        <e>port</e>
-        <e>nvt</e>
-        <e>severity</e>
-        <e>threat</e>
-        <e>qod</e>
-        <e>description</e>
-      </pattern>
-      <ele>
-        <name>host</name>
-        <pattern>
-          <e>asset</e>
-          text
-        </pattern>
-        <ele>
-          <name>asset</name>
-          <summary>Asset linked to host</summary>
-          <pattern>
-            <attrib>
-              <name>asset_id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>port</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>nvt</name>
-        <pattern>
-          <attrib>
-            <name>oid</name>
-            <type>oid</type>
-            <required>1</required>
-          </attrib>
-          <e>name</e>
-          <e>type</e>
-          <e>cvss_base</e>
-          <e>severities</e>
-          <o><e>cve</e></o>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the NVT: nvt, cve, ...</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>cvss_base</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>severities</name>
-          <summary>Severity info of the NVT</summary>
-          <type>severities</type>
-        </ele>
-        <ele>
-          <name>cve</name>
-          <summary>CVE value associated with the NVT</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>severity</name>
-        <pattern>
-          <t>severity</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>threat</name>
-        <pattern>
-          <t>threat</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>qod</name>
-        <summary>The quality of detection (QoD) of the result</summary>
-        <pattern>
-          <e>value</e>
-          <e>type</e>
-        </pattern>
-        <ele>
-          <name>value</name>
-          <summary>The numeric QoD value</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The QoD type</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>description</name>
-        <pattern>text</pattern>
-      </ele>
+      <type>result</type>
     </ele>
   </element>
   <element>
@@ -1158,21 +1070,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>new_threat</e>
       <e>new_severity</e>
       <e>orphan</e>
-      <e>permissions</e>
       <o><e>user_tags</e></o>
       <o>
         <g>
           <e>hosts</e>
           <e>port</e>
           <e>task</e>
-          <o><e>end_time</e></o>
+          <e>end_time</e>
           <o><e>result</e></o>
         </g>
       </o>
     </pattern>
     <ele>
       <name>permissions</name>
-      <summary>Permissions that the current user has on the note</summary>
+      <summary>Permissions that the current user has on the override</summary>
       <pattern>
         <any><e>permission</e></any>
       </pattern>
@@ -1360,7 +1271,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+        <e>name</e>
+        <e>trash</e>
       </pattern>
+      <ele>
+        <name>name</name>
+        <summary>Task name</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>trash</name>
+        <summary>Whether the task is in the trashcan</summary>
+        <type>boolean</type>
+      </ele>
     </ele>
     <ele>
       <name>active</name>
@@ -1375,114 +1298,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>result</name>
       <summary>Result to which override applies</summary>
-      <pattern>
-        <attrib>
-          <name>id</name>
-          <type>uuid</type>
-          <required>1</required>
-        </attrib>
-        <e>host</e>
-        <e>port</e>
-        <e>nvt</e>
-        <e>threat</e>
-        <e>severity</e>
-        <e>qod</e>
-        <e>description</e>
-      </pattern>
-      <ele>
-        <name>host</name>
-        <pattern>
-          <e>asset</e>
-          text
-        </pattern>
-        <ele>
-          <name>asset</name>
-          <summary>Asset linked to host</summary>
-          <pattern>
-            <attrib>
-              <name>asset_id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>port</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>nvt</name>
-        <pattern>
-          <attrib>
-            <name>oid</name>
-            <type>oid</type>
-            <required>1</required>
-          </attrib>
-          <e>name</e>
-          <e>type</e>
-          <e>cvss_base</e>
-          <e>severities</e>
-          <o><e>cve</e></o>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the NVT: nvt, cve, ...</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>cvss_base</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>severities</name>
-          <summary>Severity score information of the NVT</summary>
-          <type>severities</type>
-        </ele>
-        <ele>
-          <name>cve</name>
-          <summary>CVE value associated with the NVT</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>threat</name>
-        <pattern>
-          <t>threat</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>severity</name>
-        <pattern>
-          <t>severity</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>qod</name>
-        <summary>The quality of detection (QoD) of the result</summary>
-        <pattern>
-          <e>value</e>
-          <e>type</e>
-        </pattern>
-        <ele>
-          <name>value</name>
-          <summary>The numeric QoD value</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The QoD type</summary>
-          <pattern>text</pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>description</name>
-        <pattern>text</pattern>
-      </ele>
+      <type>result</type>
     </ele>
   </element>
   <element>
@@ -1512,6 +1328,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>qod</e>
       <o><e>original_threat</e></o>
       <o><e>original_severity</e></o>
+      <e>compliance</e>
       <e>description</e>
       <o><e>delta</e></o>
       <o><e>detection</e></o>
@@ -1896,6 +1713,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern><t>severity</t></pattern>
     </ele>
     <ele>
+      <name>compliance</name>
+      <summary>Result compliance ("yes", "no", "incomplete" or "undefined")</summary>
+      <pattern><t>compliance_status</t></pattern>
+    </ele>    
+    <ele>
       <name>description</name>
       <summary>Description of the result</summary>
       <pattern>text</pattern>
@@ -2201,8 +2023,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <e>permissions</e>
             <o><e>user_tags</e></o>
             <e>scan_run_status</e>
+            <o>
             <e>result_count</e>
             <e>severity</e>
+            </o>
+            <o><e>compliance_count</e></o>
+            <o><e>compliance</e></o>
             <e>task</e>
             <e>ports</e>
             <e>results</e>
@@ -2637,6 +2463,114 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </ele>
       </ele>
       <ele>
+        <name>compliance_count</name>
+        <summary>Counts of compliance results. Only for reports of an audit task.</summary>
+        <description>
+          <p>
+            The text contains the full count. The total number of compliance results.
+          </p>
+        </description>
+        <pattern>
+          text
+          <e>full</e>
+          <e>filtered</e>
+          <e>yes</e>
+          <e>no</e>
+          <e>incomplete</e>
+          <e>undefined</e>
+        </pattern>
+        <ele>
+          <name>full</name>
+          <summary>Total number of compliance results</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of compliance results after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>yes</name>
+          <summary>
+            Number of "yes" results (compliant)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>no</name>
+          <summary>
+            Number of "no" results (not compliant)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>incomplete</name>
+          <summary>
+            Number of "incomplete" results (incomplete compliance)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>undefined</name>
+          <summary>
+            Number of "undefined" results (undefined compliance)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
         <name>severity</name>
         <pattern>
           <e>full</e>
@@ -2651,6 +2585,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>filtered</name>
           <pattern><t>severity</t></pattern>
           <summary>Maximum severity of the report after filtering</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>compliance</name>
+        <pattern>
+          <e>full</e>
+          <e>filtered</e>
+        </pattern>
+        <ele>
+          <name>full</name>
+          <pattern><t>compliance_status</t></pattern>
+          <summary>Compliance of the full report ("yes", "no", "incomplete" or "undefined")</summary>
+        </ele>
+        <ele>
+          <name>filtered</name>
+          <pattern><t>compliance_status</t></pattern>
+          <summary>Compliance of the report after filtering ("yes", "no", "incomplete" or "undefined")</summary>
         </ele>
       </ele>
       <ele>
@@ -2914,7 +2865,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>start</e>
           <e>end</e>
           <e>port_count</e>
+          <o>
           <e>result_count</e>
+          </o>
+          <o><e>compliance_count</e></o>
+          <o><e>host_compliance</e></o>
           <any><e>detail</e></any>
         </pattern>
         <ele>
@@ -3031,6 +2986,75 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>compliance_count</name>
+          <summary>Only for audit reports</summary>
+          <pattern>
+            <e>page</e>
+            <e>yes</e>
+            <e>no</e>
+            <e>incomplete</e>
+            <e>undefined</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Total number of results for current host on current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>yes</name>
+            <summary>Number of "yes" results (compliant)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>no</name>
+            <summary>Number of "no" results (not compliant)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>incomplete</name>
+            <summary>Number of "incomplete" results (incomplete compliance)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>undefined</name>
+            <summary>Number of "undefined" results (undefined compliance)</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>          
+        </ele>
+        <ele>
+          <name>host_compliance</name>
+          <summary>Only for audit reports. Host compliance</summary>
+          <pattern><t>compliance_status</t></pattern>
         </ele>
         <ele>
           <name>detail</name>
@@ -3963,12 +3987,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>copy</e></o>
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
+      <o><e>kdc</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>community</e></o>
       <o><e>privacy</e></o>
+      <o><e>realm</e></o>
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -4003,6 +4029,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>kdc</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos KDC (key distribution center(s))</summary>
     </ele>
     <ele>
       <name>key</name>
@@ -4091,10 +4122,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
     </ele>
     <ele>
+      <name>realm</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos realm</summary>
+    </ele>
+    <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
       <description>
         <p>cc: Client certificate</p>
+        <p>krb5: Kerberos 5</p>
         <p>pgp: PGP encryption key</p>
         <p>pw: Password only</p>
         <p>smime: S/MIME certificate</p>
@@ -4105,6 +4142,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         <alts>
           <alt>cc</alt>
+          <alt>krb5</alt>
           <alt>pgp</alt>
           <alt>pw</alt>
           <alt>smime</alt>
@@ -8115,6 +8153,7 @@ END:VCALENDAR
             <e>count</e>
             <e>c_count</e>
             <any><e>stats</e></any>
+            <any><e>text</e></any>
           </pattern>
           <ele>
             <name>count</name>
@@ -8168,6 +8207,18 @@ END:VCALENDAR
               <description>For overall this is always the same as sum.</description>
               <pattern><t>text</t></pattern>
             </ele>
+          </ele>
+          <ele>
+            <name>text</name>
+            <summary>The value of a simple text column</summary>
+            <pattern>
+              <attrib>
+                <name>name</name>
+                <summary>Name of the text column</summary>
+                <type>text</type>
+              </attrib>
+              text
+            </pattern>
           </ele>
         </ele>
         <ele>
@@ -10874,6 +10925,8 @@ END:VCALENDAR
               <e>certificate</e>
             </or>
           </o>
+          <o><e>kdc</e></o>
+          <o><e>realm</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -11000,6 +11053,7 @@ END:VCALENDAR
           <summary>The type of the credential</summary>
           <description>
             <p>cc: Client certificate</p>
+            <p>krb5: Kerberos 5</p>
             <p>pgp: PGP encryption key</p>
             <p>pw: Password only</p>
             <p>smime: S/MIME certificate</p>
@@ -11010,6 +11064,7 @@ END:VCALENDAR
           <pattern>
             <alts>
               <alt>cc</alt>
+              <alt>krb5</alt>
               <alt>pgp</alt>
               <alt>pw</alt>
               <alt>smime</alt>
@@ -11161,6 +11216,16 @@ END:VCALENDAR
         <ele>
           <name>certificate</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>kdc</name>
+          <pattern>text</pattern>
+          <summary>The Kerberos KDC (key distribution center(s))</summary>
+        </ele>
+        <ele>
+          <name>realm</name>
+          <pattern>text</pattern>
+          <summary>The Kerberos realm</summary>
         </ele>
       </ele>
       <ele>
@@ -11472,8 +11537,26 @@ END:VCALENDAR
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>feed_owner_set</e>
+        <e>feed_roles_set</e>
+        <e>feed_resources_access</e>
         <any><e>feed</e></any>
       </pattern>
+      <ele>
+        <name>feed_owner_set</name>
+        <summary>Whether the feed owner is set</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+      <ele>
+        <name>feed_roles_set</name>
+        <summary>Whether the feed roles are set</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
+      <ele>
+        <name>feed_resources_access</name>
+        <summary>Whether the user has access to feed resources</summary>
+        <pattern><t>boolean</t></pattern>
+      </ele>
       <ele>
         <name>feed</name>
         <pattern>
@@ -11537,6 +11620,9 @@ END:VCALENDAR
       </request>
       <response>
         <get_feeds_response status_text="OK" status="200">
+          <feed_owner_set>1</feed_owner_set>
+          <feed_roles_set>1</feed_roles_set>
+          <feed_resources_access>1</feed_resources_access>
           <feed>
             <type>NVT</type>
             <name>Greenbone Security Feed</name>
@@ -11759,7 +11845,7 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>in_use</name>
-          <summary>Whether any tasks are using the filter</summary>
+          <summary>Whether any alerts are using the filter</summary>
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
@@ -12711,9 +12797,9 @@ END:VCALENDAR
             <summary>Number of CVEs referencing this CPE</summary>
           </column>
           <column>
-            <name>nvd_id</name>
-            <type>integer</type>
-            <summary>NVD ID of the CVE</summary>
+            <name>cpe_name_id</name>
+            <type>uuid</type>
+            <summary>NVD assigned cpeNameId of the CPE</summary>
           </column>
         </filter_keywords>
         <filter_keywords>
@@ -12938,18 +13024,20 @@ END:VCALENDAR
         <ele>
           <name>cpe</name>
           <pattern>
-            <e>nvd_id</e>
+            <e>cpe_name_id</e>
             <o><e>title</e></o>
             <e>severity</e>
             <e>cve_refs</e>
-            <e>status</e>
+            <e>deprecated</e>
+            <any><e>deprecated_by</e></any>
             <o><e>cves</e></o>
+            <o><e>references</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CPE info element</summary>
           <ele>
-            <name>nvd_id</name>
-            <summary>The NVD ID of the CPE</summary>
+            <name>cpe_name_id</name>
+            <summary>NVD assigned cpeNameId of the CPE</summary>
             <pattern>
               text
             </pattern>
@@ -12976,10 +13064,22 @@ END:VCALENDAR
             </pattern>
           </ele>
           <ele>
-            <name>status</name>
-            <summary>The status of this CPE</summary>
+            <name>deprecated</name>
+            <summary>Whether the CPE is deprecated</summary>
             <pattern>
-              text
+              <t>boolean</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>deprecated_by</name>
+            <summary>Another CPE the current one is deprecated by</summary>
+            <pattern>
+              <attrib>
+                <name>cpe_id</name>
+                <type>uuid</type>
+                <summary>CPE id the current CPE is deprecated by</summary>
+                <required>1</required>
+              </attrib>
             </pattern>
           </ele>
           <ele>
@@ -12992,6 +13092,26 @@ END:VCALENDAR
               <name>cve</name>
               <summary>CVE referring to this CPE</summary>
               <pattern>
+                text
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>references</name>
+            <summary>References of this CPE. Only when details were requested</summary>
+            <pattern>
+              <any><e>reference</e></any>
+            </pattern>
+            <ele>
+              <name>reference</name>
+              <summary>Reference of the CPE. Text contains type</summary>
+              <pattern>
+                <attrib>
+                  <name>href</name>
+                  <type>text</type>
+                  <summary>Reference URL</summary>
+                  <required>1</required>
+                </attrib>
                 text
               </pattern>
             </ele>
@@ -13021,6 +13141,8 @@ END:VCALENDAR
             <o><e>epss</e></o>
             <o><e>nvts</e></o>
             <o><e>cert</e></o>
+            <o><e>configuration_nodes</e></o>
+            <o><e>references</e></o>
             <o><e>raw_data</e></o>
           </pattern>
           <summary>A CVE info element</summary>
@@ -13139,6 +13261,169 @@ END:VCALENDAR
               <pattern>
                 text
               </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>configuration_nodes</name>
+            <summary>List of configuration nodes. Only when details were requested</summary>
+            <pattern>
+              <any><e>node</e></any>
+            </pattern>
+            <ele>
+              <name>node</name>
+              <summary>A configuration node for the CVE</summary>
+              <pattern>
+                <e>operator</e>
+                <e>negate</e>
+                <o><e>match_string</e></o>
+                <o><any><e>node</e></any></o>
+              </pattern>
+              <ele>
+                <name>operator</name>
+                <summary>The operator for the match criteria</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>negate</name>
+                <summary>A true or false value, whether the operator is negated</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>match_string</name>
+                <summary>The match string for the node</summary>
+                <pattern>
+                  <e>criteria</e>
+                  <e>vulnerable</e>
+                  <e>version_start_including</e>
+                  <e>version_start_excluding</e>
+                  <e>version_end_including</e>
+                  <e>version_end_excluding</e>
+                  <e>matched_cpes</e>
+                </pattern>
+                <ele>
+                  <name>criteria</name>
+                  <summary>A CPE match criteria</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>vulnerable</name>
+                  <summary>A true or false value, whether matching CPEs are considered vulnerable</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_start_including</name>
+                  <summary>From version (including)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_start_excluding</name>
+                  <summary>From version (excluding)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_end_including</name>
+                  <summary>Up to version (including)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>version_end_excluding</name>
+                  <summary>Up to version (exluding)</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+                <ele>
+                  <name>matched_cpes</name>
+                  <summary>List of matching CPEs</summary>
+                  <pattern>
+                    <e>name</e>
+                    <e>deprecated</e>
+                    <o><e>deprecated_by</e></o>
+                  </pattern>
+                  <ele>
+                    <name>name</name>
+                    <summary>Name of the matching CPE</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>deprecated</name>
+                    <summary>A true or false value, whether the CPE is deprecated</summary>
+                    <pattern>
+                      text
+                    </pattern>
+                  </ele>
+                  <ele>
+                    <name>deprecated_by</name>
+                    <summary>CPE ID the current CPE is deprecated by. Only when the CPE is deprecated</summary>
+                    <pattern>
+                      <attrib>
+                        <name>cpe_id</name>
+                        <type>uuid</type>
+                        <summary>CPE ID the current CPE is deprecated by</summary>
+                      </attrib>
+                    </pattern>
+                  </ele>
+                </ele>
+              </ele>
+              <ele>
+                <name>node</name>
+                <summary>Nodes can contain other nested nodes</summary>
+                <pattern>
+                  node
+                </pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>references</name>
+            <summary>References of this CVE. Only when details were requested</summary>
+            <pattern>
+              <any><e>reference</e></any>
+            </pattern>
+            <ele>
+              <name>reference</name>
+              <summary>Reference of the CVE</summary>
+              <pattern>
+                <e>url</e>
+                <e>tags</e>
+              </pattern>
+              <ele>
+                <name>url</name>
+                <summary>The URL of the reference</summary>
+                <pattern>
+                  text
+                </pattern>
+              </ele>
+              <ele>
+                <name>tags</name>
+                <summary>List of tags for the reference</summary>
+                <pattern>
+                  <o><any><e>tag</e></any></o>
+                </pattern>
+                <ele>
+                  <name>tag</name>
+                  <summary>Tag for a reference</summary>
+                  <pattern>
+                    text
+                  </pattern>
+                </ele>
+              </ele>
             </ele>
           </ele>
           <ele>
@@ -14147,10 +14432,6 @@ END:VCALENDAR
         NVT information.  If the manager cannot access a list of available
         NVTs at that time, it will reply with the 503 response.
       </p>
-      <p>
-        NVT categories: 0 init, 1 scanner, 2 settings, 3 infos, 4 attack, 5 mixed,
-        6 destructive attack, 7 denial, 8 kill host, 9 flood, 10 end, and 11 unknown.
-      </p>
     </description>
     <pattern>
       <attrib>
@@ -14247,7 +14528,6 @@ END:VCALENDAR
               <e>creation_time</e>
               <e>modification_time</e>
               <e>category</e>
-              <e>summary</e>
               <e>family</e>
               <e>cvss_base</e>
               <e>severities</e>
@@ -14271,7 +14551,36 @@ END:VCALENDAR
         <ele>
           <name>category</name>
           <summary>The category of the NVT</summary>
-          <pattern><t>integer</t></pattern>
+          <description>
+            <p>0: init</p>
+            <p>1: scanner</p>
+            <p>2: settings</p>
+            <p>3: infos</p>
+            <p>4: attack</p>
+            <p>5: mixed</p>
+            <p>6: destructive attack</p>
+            <p>7: denial</p>
+            <p>8: kill host</p>
+            <p>9: flood</p>
+            <p>10: end</p>
+            <p>11: unknown</p>
+          </description>
+          <pattern>
+            <alts>
+              <alt>0</alt>
+              <alt>1</alt>
+              <alt>2</alt>
+              <alt>3</alt>
+              <alt>4</alt>
+              <alt>5</alt>
+              <alt>6</alt>
+              <alt>7</alt>
+              <alt>8</alt>
+              <alt>9</alt>
+              <alt>10</alt>
+              <alt>11</alt>
+            </alts>
+          </pattern>
         </ele>
         <ele>
           <name>creation_time</name>
@@ -14328,11 +14637,6 @@ END:VCALENDAR
               <pattern>text</pattern>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>summary</name>
-          <summary>Short description of the NVT</summary>
-          <pattern>text</pattern>
         </ele>
         <ele>
           <name>family</name>
@@ -14565,6 +14869,7 @@ END:VCALENDAR
             <pattern>
               <e>nvt</e>
               <e>name</e>
+              <e>hr_name</e>
               <e>id</e>
               <e>type</e>
               <e>value</e>
@@ -14592,6 +14897,11 @@ END:VCALENDAR
               <name>name</name>
               <summary>The name of the preference</summary>
               <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>hr_name</name>
+              <summary>The human readable name of the preference</summary>
+              <pattern><t>name</t></pattern>
             </ele>
             <ele>
               <name>id</name>
@@ -14635,7 +14945,6 @@ END:VCALENDAR
             <creation_time>2011-01-14T10:12:23+01:00</creation_time>
             <modification_time>2012-09-19T20:56:15+02:00</modification_time>
             <category>3</category>
-            <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <cvss_base></cvss_base>
             <severities score="0"/>
@@ -16442,7 +16751,6 @@ END:VCALENDAR
           <o><e>user_tags</e></o>
           <e>report_format</e>
           <o><e>orphan</e></o>
-          <o><e>alerts</e></o>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -16583,42 +16891,13 @@ END:VCALENDAR
           </pattern>
         </ele>
         <ele>
-          <name>alerts</name>
-          <summary>Alerts using the report config</summary>
-          <pattern>
-            <any><e>alert</e></any>
-          </pattern>
-          <ele>
-            <name>alert</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the alert</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <o><e>permissions</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the alert</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the alert</summary>
-              <pattern></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
           <name>param</name>
           <pattern>
             <e>name</e>
             <e>type</e>
             <e>value</e>
             <e>default</e>
+            <o><e>options</e></o>
           </pattern>
           <ele>
             <name>name</name>
@@ -16631,7 +16910,6 @@ END:VCALENDAR
             <pattern>
               <o><e>min</e></o>
               <o><e>max</e></o>
-              <o><e>options</e></o>
               <alts>
                 <alt>boolean</alt>
                 <alt>integer</alt>
@@ -16652,21 +16930,17 @@ END:VCALENDAR
               <summary>Maximum</summary>
               <pattern>text</pattern>
             </ele>
-            <ele>
-              <name>options</name>
-              <summary>Selection options</summary>
-              <pattern><any><e>option</e></any></pattern>
-              <ele>
-                <name>option</name>
-                <summary>Option value</summary>
-                <pattern>text</pattern>
-              </ele>
-            </ele>
           </ele>
           <ele>
             <name>value</name>
             <summary>The value of the param</summary>
             <pattern>
+              <attrib>
+                <name>using_default</name>
+                <summary>Whether this is the default value</summary>
+                <type>boolean</type>
+                <required>1</required>
+              </attrib>
               <any><e>report_format</e></any>
             </pattern>
             <ele>
@@ -16690,7 +16964,37 @@ END:VCALENDAR
           <ele>
             <name>default</name>
             <summary>The fallback value of the param</summary>
-            <pattern>text</pattern>
+            <pattern>
+              text
+              <any><e>report_format</e></any>
+            </pattern>
+            <ele>
+              <name>report_format</name>
+              <summary>Report format info if type is report_format_list</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Name of the report format if available</summary>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>options</name>
+            <summary>Selection options</summary>
+            <pattern><any><e>option</e></any></pattern>
+            <ele>
+              <name>option</name>
+              <summary>Option value</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
         </ele>
         <ele>
@@ -17221,17 +17525,11 @@ END:VCALENDAR
                 <required>1</required>
               </attrib>
               <e>name</e>
-              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>Name of the alert</summary>
               <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the permission</summary>
-              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -17256,17 +17554,11 @@ END:VCALENDAR
                 <required>1</required>
               </attrib>
               <e>name</e>
-              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>Name of the report config</summary>
               <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>permissions</name>
-              <summary>Permissions the user has on the report config</summary>
-              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -17914,6 +18206,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Minimum QoD of the results</summary>
           </option>
+          <option>
+            <name>report_compliance_levels</name>
+            <type>compliance_levels</type>
+            <summary>report compliance level to select</summary>
+          </option>
           <column>
             <name>tag</name>
             <type>text</type>
@@ -18059,6 +18356,26 @@ END:VCALENDAR
             <type>iso_time</type>
             <summary>Scan end time</summary>
           </column>
+          <column>
+            <name>compliance_yes</name>
+            <type>integer</type>
+            <summary>Number of compliance yes results</summary>
+          </column>
+          <column>
+            <name>compliance_no</name>
+            <type>integer</type>
+            <summary>Number of compliance no results</summary>
+          </column>
+          <column>
+            <name>compliance_incomplete</name>
+            <type>integer</type>
+            <summary>Number of compliance incomplete results</summary>
+          </column>
+          <column>
+            <name>compliant</name>
+            <type>compliance_status</type>
+            <summary>Compliance state of the report. Can be yes, no, incomplete or undefined</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -18080,7 +18397,7 @@ END:VCALENDAR
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>format_id</name>
+        <name>config_id</name>
         <summary>ID of requested report config</summary>
         <type>uuid</type>
       </attrib>
@@ -18128,6 +18445,17 @@ END:VCALENDAR
         </summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+          <name>usage_type</name>
+          <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
+          <type>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt></alt>
+            </alts>
+          </type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -18167,9 +18495,6 @@ END:VCALENDAR
           </attrib>
           <e>term</e>
           <o><e>name</e></o>
-          <any><e>filter</e></any>
-          <o><e>host</e></o>
-          <o><e>delta</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
@@ -18181,61 +18506,6 @@ END:VCALENDAR
           <name>name</name>
           <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>filter</name>
-          <summary>A severity level that is included in the report</summary>
-          <pattern>
-            <alts>
-              <alt>High</alt>
-              <alt>Medium</alt>
-              <alt>Low</alt>
-              <alt>Log</alt>
-            </alts>
-          </pattern>
-        </ele>
-        <ele>
-          <name>host</name>
-          <summary>Single host selected for delta report</summary>
-          <pattern>
-            <e>ip</e>
-          </pattern>
-          <ele>
-            <name>ip</name>
-            <summary>IP address of the host</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>delta</name>
-          <summary>Delta states</summary>
-          <pattern>
-            text
-            <e>changed</e>
-            <e>gone</e>
-            <e>new</e>
-            <e>same</e>
-          </pattern>
-          <ele>
-            <name>changed</name>
-            <summary>Whether changed results are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>gone</name>
-            <summary>Whether results that have vanished are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>new</name>
-            <summary>Whether new results are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
-          <ele>
-            <name>same</name>
-            <summary>Whether results that are equal are included</summary>
-            <pattern><t>boolean</t></pattern>
-          </ele>
         </ele>
         <ele>
           <name>keywords</name>
@@ -22906,8 +23176,11 @@ END:VCALENDAR
               </attrib>
               <e>timestamp</e>
               <e>scan_end</e>
+              <o>
               <e>result_count</e>
               <e>severity</e>
+              </o>
+              <o><e>compliance_count</e></o>
             </pattern>
             <ele>
               <name>timestamp</name>
@@ -22952,6 +23225,32 @@ END:VCALENDAR
               <name>severity</name>
               <pattern><t>severity</t></pattern>
               <summary>Maximum severity of the report</summary>
+            </ele>
+            <ele>
+              <name>compliance_count</name>
+              <summary>Complaince counts. Only for audit tasks</summary>
+              <pattern>
+                <e>yes</e>
+                <e>no</e>
+                <e>incomplete</e>
+                <e>undefined</e>
+              </pattern>
+              <ele>
+                <name>yes</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>no</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>incomplete</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>undefined</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
             </ele>
           </ele>
         </ele>
@@ -26473,12 +26772,14 @@ END:VCALENDAR
       <o><e>name</e></o>
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
+      <o><e>kdc</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>community</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>privacy</e></o>
+      <o><e>realm</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -26505,6 +26806,11 @@ END:VCALENDAR
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>kdc</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos KDC (key distribution center(s))</summary>
     </ele>
     <ele>
       <name>key</name>
@@ -26591,6 +26897,11 @@ END:VCALENDAR
           text
         </pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>realm</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos realm</summary>
     </ele>
     <response>
       <pattern>

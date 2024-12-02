@@ -3316,12 +3316,12 @@ config_in_use (config_t config)
  *
  * @param[in]  config  Config.
  *
- * @return 1.
+ * @return 1 if writable, else 0.
  */
 int
 config_writable (config_t config)
 {
-  return 1;
+  return config_predefined (config) ? 0 : 1;
 }
 
 /**
@@ -4532,11 +4532,16 @@ update_config (config_t config, const gchar *name,
 
 /**
  * @brief Check configs, for startup.
+ *
+ * @param[in] avoid_db_check_inserts  Whether to avoid inserts.
  */
 void
-check_db_configs ()
+check_db_configs (int avoid_db_check_inserts)
 {
   migrate_predefined_configs ();
+
+  if (avoid_db_check_inserts)
+    return;
 
   if (sync_configs_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync configs with feed", __func__);

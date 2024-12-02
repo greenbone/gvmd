@@ -101,6 +101,7 @@
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_tls_certificates.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
@@ -128,6 +129,7 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
+#include <gvm/util/cpeutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -447,6 +449,7 @@ typedef struct
   char *certificate;       ///< Certificate for client certificate auth.
   char *comment;           ///< Comment.
   char *copy;              ///< UUID of resource to copy.
+  char *kdc;               ///< Kerberos KDC (key distribution centers).
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
@@ -458,6 +461,7 @@ typedef struct
   char *auth_algorithm;    ///< SNMP Authentication algorithm.
   char *privacy_password;  ///< SNMP Privacy password.
   char *privacy_algorithm; ///< SNMP Privacy algorithm.
+  char *realm;             ///< Kerberos realm.
   char *type;              ///< Type of credential.
 } create_credential_data_t;
 
@@ -473,6 +477,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->certificate);
   free (data->comment);
   free (data->copy);
+  free (data->kdc);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -483,6 +488,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->auth_algorithm);
   free (data->privacy_password);
   free (data->privacy_algorithm);
+  free (data->realm);
   free (data->type);
 
   memset (data, 0, sizeof (create_credential_data_t));
@@ -1793,7 +1799,6 @@ get_info_data_reset (get_info_data_t *data)
 typedef struct
 {
   get_data_t get;        ///< Get args.
-  char *note_id;         ///< ID of single note to get.
   char *nvt_oid;         ///< OID of NVT to which to limit listing.
   char *task_id;         ///< ID of task to which to limit listing.
   int result;            ///< Boolean.  Whether to include associated results.
@@ -1807,7 +1812,6 @@ typedef struct
 static void
 get_notes_data_reset (get_notes_data_t *data)
 {
-  free (data->note_id);
   free (data->nvt_oid);
   free (data->task_id);
 
@@ -1876,7 +1880,6 @@ get_nvt_families_data_reset (get_nvt_families_data_t *data)
 typedef struct
 {
   get_data_t get;      ///< Get args.
-  char *override_id;   ///< ID of override to get.
   char *nvt_oid;       ///< OID of NVT to which to limit listing.
   char *task_id;       ///< ID of task to which to limit listing.
   int result;          ///< Boolean.  Whether to include associated results.
@@ -1890,7 +1893,6 @@ typedef struct
 static void
 get_overrides_data_reset (get_overrides_data_t *data)
 {
-  free (data->override_id);
   free (data->nvt_oid);
   free (data->task_id);
 
@@ -2514,6 +2516,7 @@ typedef struct
   char *comment;              ///< Comment.
   char *community;            ///< SNMP Community string.
   char *credential_id;        ///< ID of credential to modify.
+  char *kdc;                  ///< Kerberos KDC (key distribution centers).
   int key;                    ///< Whether the command included a key element.
   char *key_phrase;           ///< Passphrase for key.
   char *key_private;          ///< Private key from key.
@@ -2523,6 +2526,7 @@ typedef struct
   char *password;             ///< Password associated with login name.
   char *privacy_algorithm;    ///< SNMP Privacy algorithm.
   char *privacy_password;     ///< SNMP Privacy password.
+  char *realm;                ///< Kerberos realm.
 } modify_credential_data_t;
 
 /**
@@ -2539,6 +2543,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->comment);
   free (data->community);
   free (data->credential_id);
+  free (data->kdc);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -2547,6 +2552,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->password);
   free (data->privacy_algorithm);
   free (data->privacy_password);
+  free (data->realm);
 
   memset (data, 0, sizeof (modify_credential_data_t));
 }
@@ -4087,6 +4093,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_COMMENT,
   CLIENT_CREATE_CREDENTIAL_COMMUNITY,
   CLIENT_CREATE_CREDENTIAL_COPY,
+  CLIENT_CREATE_CREDENTIAL_KDC,
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
@@ -4097,6 +4104,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_PRIVACY,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
+  CLIENT_CREATE_CREDENTIAL_REALM,
   CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
@@ -4419,6 +4427,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
   CLIENT_MODIFY_CREDENTIAL_COMMENT,
   CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
+  CLIENT_MODIFY_CREDENTIAL_KDC,
   CLIENT_MODIFY_CREDENTIAL_KEY,
   CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
   CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
@@ -4429,6 +4438,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_PRIVACY,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
+  CLIENT_MODIFY_CREDENTIAL_REALM,
   CLIENT_MODIFY_FILTER,
   CLIENT_MODIFY_FILTER_COMMENT,
   CLIENT_MODIFY_FILTER_NAME,
@@ -5329,7 +5339,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                attribute_names,
                                attribute_values);
             set_client_state (CLIENT_GET_LICENSE);
-          }      
+          }
         else if (strcasecmp ("GET_NOTES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5337,9 +5347,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_notes_data->get, "note",
                                        attribute_names,
                                        attribute_values);
-
-            append_attribute (attribute_names, attribute_values, "note_id",
-                              &get_notes_data->note_id);
 
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_notes_data->nvt_oid);
@@ -5431,9 +5438,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
 
-            append_attribute (attribute_names, attribute_values, "override_id",
-                              &get_overrides_data->override_id);
-
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_overrides_data->nvt_oid);
 
@@ -5516,7 +5520,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_reports_data->config_id);
-            
+
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
 
@@ -5549,6 +5553,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_reports_data->ignore_pagination = atoi (attribute);
             else
               get_reports_data->ignore_pagination = 0;
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "usage_type", &attribute))
+              {
+                get_data_set_extra (&get_reports_data->report_get,
+                                    "usage_type",
+                                    attribute);
+              }
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -5599,7 +5611,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                 "type", &typebuf))
               get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_RESOURCE_NAMES);
-          }             
+          }
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -6278,6 +6290,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_credential_data->community, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMUNITY);
           }
+        else if (strcasecmp ("KDC", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
+          }
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             modify_credential_data->key = 1;
@@ -6296,6 +6312,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
             gvm_append_string (&modify_credential_data->privacy_algorithm,
                                    "");
+          }
+        else if (strcasecmp ("REALM", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
           }
         ELSE_READ_OVER;
 
@@ -6957,6 +6977,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
         else if (strcasecmp ("COMMUNITY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
+        else if (strcasecmp ("KDC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KDC);
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             create_credential_data->key = 1;
@@ -6975,6 +6997,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVACY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
+        else if (strcasecmp ("REALM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_REALM);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
         ELSE_READ_OVER;
@@ -8446,7 +8470,7 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
       buffer_xml_append_printf (buffer,
                                 "<creation_time>%s</creation_time>",
                                 iso_if_time (get_iterator_creation_time (overrides)));
-                                    
+
       buffer_xml_append_printf (buffer,
                                 "<modification_time>%s</modification_time>",
                                 iso_if_time (get_iterator_modification_time (overrides)));
@@ -9348,9 +9372,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  *
  */
 void
-buffer_diff(GString *buffer, const char *descr, const char *delta_descr) 
+buffer_diff(GString *buffer, const char *descr, const char *delta_descr)
 {
-  
+
   gchar *diff = strdiff (descr ? descr : "",
                   delta_descr ? delta_descr : "");
   if (diff)
@@ -9416,13 +9440,14 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *severity, *original_severity, *original_level;
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
+  const char *compliance;
   double severity_double;
   gchar *nl_descr, *nl_descr_escaped;
   result_t result;
   report_t report;
   task_t selected_task;
   time_t creation_time;
-  
+
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
   host = result_iterator_host (results);
@@ -9446,6 +9471,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_delta_hostname (results);
       if (host)
         asset_id = result_iterator_delta_host_asset_id (results);
+      compliance = result_iterator_delta_compliance (results);
     }
   else
     {
@@ -9464,6 +9490,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       hostname = result_iterator_hostname (results);
       if (host)
         asset_id = result_iterator_asset_host_id (results);
+      compliance = result_iterator_compliance (results);
     }
 
 
@@ -9495,7 +9522,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       const char *owner_name;
       time_t modification_time;
-     
+
       if (use_delta_fields)
         {
           owner_name = result_iterator_delta_owner_name (results);
@@ -9537,7 +9564,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_delta_task (results);
-          
+
           result_task_name = task_name(result_iterator_delta_task (results));
           result_report_id = report_uuid(result_iterator_delta_report (results));
         }
@@ -9545,7 +9572,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_task (results);
-          
+
           result_task_name = task_name (result_iterator_task (results));
           result_report_id = report_uuid (result_iterator_report (results));
         }
@@ -9666,14 +9693,14 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       const char *nvt_version, *level;
       if (use_delta_fields)
         {
-          nvt_version = result_iterator_delta_nvt_version (results); 
+          nvt_version = result_iterator_delta_nvt_version (results);
           level = result_iterator_delta_level (results);
-        } 
+        }
       else
         {
           nvt_version = result_iterator_scan_nvt_version (results);
           level = result_iterator_level (results);
-        }     
+        }
       buffer_xml_append_printf
       (buffer,
         "<scan_nvt_version>%s</scan_nvt_version>"
@@ -9704,7 +9731,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       /* Only send the original severity if it has changed. */
       if (strncmp (original_severity,
-                    severity,          
+                    severity,
                     /* Avoid rounding differences. */
                     3))
         buffer_xml_append_printf (buffer,
@@ -9718,17 +9745,19 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                               original_level,
                               original_severity);
 
+  buffer_xml_append_printf (buffer, "<compliance>%s</compliance>", compliance);
+
   if (include_notes
-      && use_delta_fields 
-         ? result_iterator_delta_may_have_notes (results)
-         : result_iterator_may_have_notes (results))
+      && (use_delta_fields
+          ? result_iterator_delta_may_have_notes (results)
+          : result_iterator_may_have_notes (results)))
     buffer_result_notes_xml (buffer, result,
                              selected_task, include_notes_details, lean);
 
   if (include_overrides
-      && use_delta_fields 
-         ? result_iterator_delta_may_have_overrides (results) 
-         : result_iterator_may_have_overrides (results))
+      && (use_delta_fields
+          ? result_iterator_delta_may_have_overrides (results)
+          : result_iterator_may_have_overrides (results)))
     buffer_result_overrides_xml (buffer, result,
                                  selected_task, include_overrides_details,
                                  lean);
@@ -9739,7 +9768,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (delta_state)
         g_string_append_printf (buffer, "%s", delta_state);
 
-      if(delta_results) { 
+      if(delta_results) {
         /* delta reports version 1 */
         if (changed)
           {
@@ -9758,8 +9787,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             g_free (delta_nl_descr);
           }
       } else {
-        /* delta reports version 2 */        
-        if (changed) 
+        /* delta reports version 2 */
+        if (changed)
           {
             gchar *delta_nl_descr;
             const char *delta_descr;
@@ -9802,8 +9831,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
-  if (use_delta_fields 
-      ? result_iterator_delta_may_have_tickets (results) 
+  if (use_delta_fields
+      ? result_iterator_delta_may_have_tickets (results)
       : result_iterator_may_have_tickets (results))
     buffer_result_tickets_xml (buffer, result);
 
@@ -10185,6 +10214,10 @@ buffer_aggregate_wc_xml (GString *xml, iterator_t* aggregate,
   g_string_append_printf (xml, "<aggregate>");
 
   g_string_append_printf (xml,
+                          "<data_type>%s</data_type>",
+                          type);
+
+  g_string_append_printf (xml,
                           "<group_column>%s</group_column>",
                           group_column);
 
@@ -10309,6 +10342,167 @@ buffer_aggregate_subgroup_value (gchar *key,
  * @brief Buffer XML for an aggregate.
  *
  * @param[in]  xml                    Buffer into which to buffer aggregate.
+ * @param[in]  type                   The aggregated type.
+ * @param[in]  group_column           Column the data are grouped by.
+ * @param[in]  group_column_type      Type of the group_column.
+ * @param[in]  subgroup_column        Column the data are further grouped by.
+ * @param[in]  subgroup_column_type
+ * @param[in]  data_columns           Columns statistics are calculated for.
+ * @param[in]  data_column_types      Types of the data_columns.
+ * @param[in]  text_columns           Columns used for labels.
+ * @param[in]  text_column_types      Types of the text_columns.
+ */
+static void
+buffer_aggregate_column_info (GString *xml, const gchar *type,
+                              const char *group_column, const char *group_column_type,
+                              const char *subgroup_column,
+                              const char *subgroup_column_type,
+                              GArray *data_columns, GArray *data_column_types,
+                              GArray *text_columns, GArray *text_column_types)
+{
+  int index;
+
+  g_string_append (xml, "<column_info>");
+
+  if (group_column)
+    g_string_append_printf (xml,
+                            "<aggregate_column>"
+                            "<name>value</name>"
+                            "<stat>value</stat>"
+                            "<type>%s</type>"
+                            "<column>%s</column>"
+                            "<data_type>%s</data_type>"
+                            "</aggregate_column>",
+                            type,
+                            group_column,
+                            group_column_type);
+
+  if (subgroup_column)
+    g_string_append_printf (xml,
+                            "<aggregate_column>"
+                            "<name>subgroup_value</name>"
+                            "<stat>value</stat>"
+                            "<type>%s</type>"
+                            "<column>%s</column>"
+                            "<data_type>%s</data_type>"
+                            "</aggregate_column>",
+                            type,
+                            subgroup_column,
+                            subgroup_column_type);
+
+  g_string_append_printf (xml,
+                          "<aggregate_column>"
+                          "<name>count</name>"
+                          "<stat>count</stat>"
+                          "<type>%s</type>"
+                          "<column></column>"
+                          "<data_type>integer</data_type>"
+                          "</aggregate_column>",
+                          type);
+
+  g_string_append_printf (xml,
+                          "<aggregate_column>"
+                          "<name>c_count</name>"
+                          "<stat>c_count</stat>"
+                          "<type>%s</type>"
+                          "<column></column>"
+                          "<data_type>integer</data_type>"
+                          "</aggregate_column>",
+                          type);
+
+  for (index = 0; index < data_columns->len; index++)
+    {
+      gchar *column_name, *column_type;
+      column_name = g_array_index (data_columns, gchar*, index);
+      column_type = g_array_index (data_column_types, gchar*, index);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s_min</name>"
+                              "<stat>min</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s_max</name>"
+                              "<stat>max</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s_mean</name>"
+                              "<stat>mean</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s_sum</name>"
+                              "<stat>sum</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s_c_sum</name>"
+                              "<stat>c_sum</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+    }
+
+  for (index = 0; index < text_columns->len; index++)
+    {
+      gchar *column_name, *column_type;
+      column_name = g_array_index (text_columns, gchar*, index);
+      column_type = g_array_index (text_column_types, gchar*, index);
+      g_string_append_printf (xml,
+                              "<aggregate_column>"
+                              "<name>%s</name>"
+                              "<stat>text</stat>"
+                              "<type>%s</type>"
+                              "<column>%s</column>"
+                              "<data_type>%s</data_type>"
+                              "</aggregate_column>",
+                              column_name,
+                              type,
+                              column_name,
+                              column_type);
+    }
+
+  g_string_append (xml, "</column_info>");
+}
+
+/**
+ * @brief Buffer XML for an aggregate.
+ *
+ * @param[in]  xml                    Buffer into which to buffer aggregate.
  * @param[in]  aggregate              The aggregate iterator.
  * @param[in]  type                   The aggregated type.
  * @param[in]  group_column           Column the data are grouped by.
@@ -10340,26 +10534,26 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
   g_string_append_printf (xml, "<aggregate>");
 
+  g_string_append_printf (xml,
+                          "<data_type>%s</data_type>",
+                          type);
+
   for (index = 0; index < data_columns->len ;index ++)
     {
       gchar *column_name = g_array_index (data_columns, gchar*, index);
       if (column_name && strcmp (column_name, ""))
-        {
-          g_string_append_printf (xml,
-                                  "<data_column>%s</data_column>",
-                                  column_name);
-        }
+        g_string_append_printf (xml,
+                                "<data_column>%s</data_column>",
+                                column_name);
     }
 
   for (index = 0; index < text_columns->len ;index ++)
     {
       gchar *column_name = g_array_index (text_columns, gchar*, index);
       if (column_name && strcmp (column_name, ""))
-        {
-          g_string_append_printf (xml,
-                                  "<text_column>%s</text_column>",
-                                  column_name);
-        }
+        g_string_append_printf (xml,
+                                "<text_column>%s</text_column>",
+                                column_name);
     }
 
   if (group_column)
@@ -10386,11 +10580,9 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
       group_c_sums = g_array_new (TRUE, TRUE, sizeof (GTree*));
       for (index = 0; index < data_columns->len; index++)
-        {
-          g_array_index (group_c_sums, GTree*, index)
-            = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
-                               g_free, g_free);
-        }
+        g_array_index (group_c_sums, GTree*, index)
+          = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
+                             g_free, g_free);
 
       subgroup_c_counts = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
                                            g_free, g_free);
@@ -10612,29 +10804,25 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       *subgroup_c_count);
             }
           else
-            {
-              // No subgrouping
-              g_string_append_printf (xml,
-                                      "<group>"
-                                      "<value>%s</value>"
-                                      "<count>%d</count>"
-                                      "<c_count>%ld</c_count>",
-                                      value_escaped ? value_escaped : "",
-                                      aggregate_iterator_count (aggregate),
-                                      c_count);
-            }
+            // No subgrouping
+            g_string_append_printf (xml,
+                                    "<group>"
+                                    "<value>%s</value>"
+                                    "<count>%d</count>"
+                                    "<c_count>%ld</c_count>",
+                                    value_escaped ? value_escaped : "",
+                                    aggregate_iterator_count (aggregate),
+                                    c_count);
 
           previous_c_count = c_count;
         }
       else
-        {
-          g_string_append_printf (xml,
-                                  "<overall>"
-                                  "<count>%d</count>"
-                                  "<c_count>%ld</c_count>",
-                                  aggregate_iterator_count (aggregate),
-                                  c_count);
-        }
+        g_string_append_printf (xml,
+                                "<overall>"
+                                "<count>%d</count>"
+                                "<c_count>%ld</c_count>",
+                                aggregate_iterator_count (aggregate),
+                                c_count);
 
       for (index = 0; index < data_columns->len; index++)
         {
@@ -10687,23 +10875,21 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                       iso_time (&mean));
             }
           else
-            {
-              g_string_append_printf (xml,
-                                      "<stats column=\"%s\">"
-                                      "<min>%g</min>"
-                                      "<max>%g</max>"
-                                      "<mean>%g</mean>"
-                                      "<sum>%g</sum>"
-                                      "<c_sum>%g</c_sum>"
-                                      "</stats>",
-                                      data_column,
-                                      aggregate_iterator_min (aggregate, index),
-                                      aggregate_iterator_max (aggregate, index),
-                                      aggregate_iterator_mean (aggregate, index),
-                                      aggregate_iterator_sum (aggregate, index),
-                                      subgroup_column && subgroup_c_sum
-                                        ? *subgroup_c_sum : c_sum);
-          }
+            g_string_append_printf (xml,
+                                    "<stats column=\"%s\">"
+                                    "<min>%g</min>"
+                                    "<max>%g</max>"
+                                    "<mean>%g</mean>"
+                                    "<sum>%g</sum>"
+                                    "<c_sum>%g</c_sum>"
+                                    "</stats>",
+                                    data_column,
+                                    aggregate_iterator_min (aggregate, index),
+                                    aggregate_iterator_max (aggregate, index),
+                                    aggregate_iterator_mean (aggregate, index),
+                                    aggregate_iterator_sum (aggregate, index),
+                                    subgroup_column && subgroup_c_sum
+                                    ? *subgroup_c_sum : c_sum);
         }
 
       for (index = 0; index < text_columns->len; index++)
@@ -10734,17 +10920,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
         }
 
       if (subgroup_column)
-        {
-          g_string_append_printf (xml, "</subgroup>");
-        }
+        g_string_append_printf (xml, "</subgroup>");
       else if (group_column)
-        {
-          g_string_append_printf (xml, "</group>");
-        }
+        g_string_append_printf (xml, "</group>");
       else
-        {
-          g_string_append_printf (xml, "</overall>");
-        }
+        g_string_append_printf (xml, "</overall>");
+
       g_free (value_escaped);
       g_free (subgroup_value_escaped);
     }
@@ -10753,14 +10934,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
     {
       // Add elements for last group in case subgroups are used
       if (has_groups)
-        {
-          g_string_append_printf (xml,
-                                  "<count>%ld</count>"
-                                  "<c_count>%ld</c_count>"
-                                  "</group>",
-                                  aggregate_group_count,
-                                  previous_c_count);
-        }
+        g_string_append_printf (xml,
+                                "<count>%ld</count>"
+                                "<c_count>%ld</c_count>"
+                                "</group>",
+                                aggregate_group_count,
+                                previous_c_count);
 
       // Also add overview of all subgroup values
       g_string_append_printf (xml,
@@ -10774,145 +10953,11 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                               "</subgroups>");
     }
 
-  g_string_append (xml, "<column_info>");
-
-  if (group_column)
-    {
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>value</name>"
-                              "<stat>value</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              type,
-                              group_column,
-                              group_column_type);
-    }
-
-  if (subgroup_column)
-    {
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>subgroup_value</name>"
-                              "<stat>value</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              type,
-                              subgroup_column,
-                              subgroup_column_type);
-    }
-
-  g_string_append_printf (xml,
-                          "<aggregate_column>"
-                          "<name>count</name>"
-                          "<stat>count</stat>"
-                          "<type>%s</type>"
-                          "<column></column>"
-                          "<data_type>integer</data_type>"
-                          "</aggregate_column>",
-                          type);
-
-  g_string_append_printf (xml,
-                          "<aggregate_column>"
-                          "<name>c_count</name>"
-                          "<stat>c_count</stat>"
-                          "<type>%s</type>"
-                          "<column></column>"
-                          "<data_type>integer</data_type>"
-                          "</aggregate_column>",
-                          type);
-
-  for (index = 0; index < data_columns->len; index++)
-    {
-      gchar *column_name, *column_type;
-      column_name = g_array_index (data_columns, gchar*, index);
-      column_type = g_array_index (data_column_types, gchar*, index);
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>%s_min</name>"
-                              "<stat>min</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              column_name,
-                              type,
-                              column_name,
-                              column_type);
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>%s_max</name>"
-                              "<stat>max</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              column_name,
-                              type,
-                              column_name,
-                              column_type);
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>%s_mean</name>"
-                              "<stat>mean</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              column_name,
-                              type,
-                              column_name,
-                              column_type);
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>%s_sum</name>"
-                              "<stat>sum</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              column_name,
-                              type,
-                              column_name,
-                              column_type);
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>%s_c_sum</name>"
-                              "<stat>c_sum</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              column_name,
-                              type,
-                              column_name,
-                              column_type);
-    }
-
-  for (index = 0; index < text_columns->len; index++)
-    {
-      gchar *column_name, *column_type;
-      column_name = g_array_index (text_columns, gchar*, index);
-      column_type = g_array_index (text_column_types, gchar*, index);
-      g_string_append_printf (xml,
-                              "<aggregate_column>"
-                              "<name>%s</name>"
-                              "<stat>text</stat>"
-                              "<type>%s</type>"
-                              "<column>%s</column>"
-                              "<data_type>%s</data_type>"
-                              "</aggregate_column>",
-                              column_name,
-                              type,
-                              column_name,
-                              column_type);
-    }
-
-  g_string_append (xml, "</column_info>");
+  buffer_aggregate_column_info (xml, type,
+                                group_column, group_column_type,
+                                subgroup_column, subgroup_column_type,
+                                data_columns, data_column_types,
+                                text_columns, text_column_types);
 
   g_string_append (xml, "</aggregate>");
 
@@ -10924,14 +10969,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
       g_array_free (group_sums, TRUE);
 
       for (index = 0; index < data_columns->len; index++)
-        {
-          g_tree_destroy (g_array_index (group_c_sums, GTree*, index));
-        }
+        g_tree_destroy (g_array_index (group_c_sums, GTree*, index));
 
       g_array_free (group_c_sums, TRUE);
 
       g_tree_destroy(subgroup_c_counts);
-    };
+    }
 }
 
 /**
@@ -11493,6 +11536,7 @@ handle_get_alerts (gmp_parser_t *gmp_parser, GError **error)
               if (certificate && strcmp (certificate, "")
                   && get_certificate_info ((gchar*)certificate,
                                            strlen (certificate),
+                                           TRUE,
                                            &activation_time,
                                            &expiration_time,
                                            &md5_fingerprint,
@@ -11886,7 +11930,7 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
                                       (&details));
           cleanup_iterator (&details);
 
-          if (get_assets_data->details || get_assets_data->get.id)
+          if (get_assets_data->get.id)
             {
               routes_xml = host_routes_xml (asset);
               g_string_append (result, routes_xml);
@@ -11903,9 +11947,6 @@ handle_get_assets (gmp_parser_t *gmp_parser, GError **error)
       g_string_free (result, TRUE);
     }
   cleanup_iterator (&assets);
-
-  if (get_assets_data->details == 1)
-    SEND_TO_CLIENT_OR_FAIL ("<details>1</details>");
 
   filtered = get_assets_data->get.id
               ? 1
@@ -12316,6 +12357,19 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL (formats_xml);
       g_free (formats_xml);
 
+      if (type && (strcmp (type, "krb5") == 0))
+        {
+          const char *kdc, *realm;
+          kdc = credential_iterator_kdc (&credentials);
+          realm = credential_iterator_realm (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<kdc>%s</kdc>"
+            "<realm>%s</realm>",
+            kdc ? kdc : "",
+            realm ? realm : "");
+        }
+
       if (type && (strcmp (type, "snmp") == 0))
         {
           const char *auth_algorithm, *privacy_algorithm;
@@ -12340,6 +12394,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 
           get_certificate_info (cert,
                                 -1,
+                                TRUE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
@@ -12958,6 +13013,7 @@ static void
 handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
 {
   assert (current_credentials.username);
+  assert (current_credentials.uuid);
 
   if (acl_user_may ("get_feeds") == 0)
     {
@@ -12968,9 +13024,52 @@ handle_get_feeds (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  char *feed_owner_uuid, *feed_roles;
+  gboolean feed_owner_set, feed_import_roles_set, feed_resources_access;
+
+  feed_owner_set = feed_import_roles_set = feed_resources_access = FALSE;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
+
+  if (feed_owner_uuid != NULL && strlen (feed_owner_uuid) > 0)
+    feed_owner_set = TRUE;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &feed_roles);
+
+  if (feed_roles != NULL && strlen (feed_roles) > 0)
+    feed_import_roles_set = TRUE;
+
+  if (feed_owner_uuid != NULL && strcmp (feed_owner_uuid, current_credentials.uuid) == 0)
+    feed_resources_access = TRUE;
+  else if (feed_roles != NULL)
+    {
+      gchar **roles = g_strsplit (feed_roles, ",", -1);
+      gchar **role = roles;
+      while (*role)
+      {
+        if (acl_user_has_role (current_credentials.uuid, *role))
+          {
+            feed_resources_access = TRUE;
+            break;
+          }
+        role++;
+      }
+      g_strfreev (roles);
+    }
+
+  free (feed_roles);
+  free (feed_owner_uuid);
+
   SEND_TO_CLIENT_OR_FAIL ("<get_feeds_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feed_owner_set>%s</feed_owner_set>"
+                           "<feed_roles_set>%s</feed_roles_set>"
+                           "<feed_resources_access>%s</feed_resources_access>",
+                           feed_owner_set ? "1" : "0",
+                           feed_import_roles_set ? "1" : "0",
+                           feed_resources_access ? "1" : "0");
 
   if ((get_feeds_data->type == NULL)
       || (strcasecmp (get_feeds_data->type, "nvt") == 0))
@@ -13182,6 +13281,209 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+/**
+ * @brief Print CPE match node with its matched CPEs.
+ *
+ * @param[in]  node     CPE match node to print.
+ * @param[in]  buffer   Buffer into which to print match node.
+ */
+static void
+print_cpe_match_nodes_xml (resource_t node, GString *buffer)
+{
+  iterator_t cpe_match_nodes, cpe_match_ranges;
+
+  init_iterator (&cpe_match_nodes,
+                 "SELECT operator, negate"
+                 " FROM scap.cpe_match_nodes WHERE id = %llu;",
+                 node);
+
+  const char *operator = NULL;
+  int negate = 0;
+  while (next (&cpe_match_nodes))
+    {
+      operator = iterator_string (&cpe_match_nodes, 0);
+      negate = iterator_int (&cpe_match_nodes, 1);
+    }
+  cleanup_iterator (&cpe_match_nodes);
+
+  xml_string_append (buffer, "<operator>%s</operator>", operator?: "");
+  xml_string_append (buffer, "<negate>%s</negate>", negate? "1" : "0");
+
+  init_cpe_match_string_iterator (&cpe_match_ranges, node);
+  while (next (&cpe_match_ranges))
+    {
+      const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *criteria, *status;
+
+      xml_string_append (buffer, "<match_string>");
+      match_criteria_id
+        = cpe_match_string_iterator_match_criteria_id (&cpe_match_ranges);
+      criteria = cpe_match_string_iterator_criteria (&cpe_match_ranges);
+      status = cpe_match_string_iterator_status (&cpe_match_ranges);
+
+      xml_string_append (buffer,
+                         "<criteria>%s</criteria>"
+                         "<vulnerable>%s</vulnerable>"
+                         "<status>%s</status>",
+                         criteria?: "",
+                         cpe_match_string_iterator_vulnerable (&cpe_match_ranges) != 0
+                         ? "1"
+                         : "0",
+                         status?: "");
+
+      vsi = cpe_match_string_iterator_version_start_incl (&cpe_match_ranges);
+      vse = cpe_match_string_iterator_version_start_excl (&cpe_match_ranges);
+      vei = cpe_match_string_iterator_version_end_incl (&cpe_match_ranges);
+      vee = cpe_match_string_iterator_version_end_excl (&cpe_match_ranges);
+
+      xml_string_append (buffer,
+                         "<version_start_including>%s</version_start_including>",
+                         vsi ?: "");
+      xml_string_append (buffer,
+                         "<version_start_excluding>%s</version_start_excluding>",
+                         vse ?: "");
+      xml_string_append (buffer,
+                         "<version_end_including>%s</version_end_including>",
+                         vei ?: "");
+      xml_string_append (buffer,
+                         "<version_end_excluding>%s</version_end_excluding>",
+                         vee ?: "");
+
+      iterator_t cpe_matches;
+      init_cpe_match_string_matches_iterator (&cpe_matches, match_criteria_id);
+      xml_string_append (buffer, "<matched_cpes>");
+
+      while (next (&cpe_matches))
+        {
+          iterator_t cpes;
+
+          init_iterator (&cpes,
+                         "SELECT deprecated FROM scap.cpes"
+                         " WHERE cpe_name_id = '%s';",
+                         cpe_matches_cpe_name_id(&cpe_matches));
+
+          const char* cpe = cpe_matches_cpe_name (&cpe_matches);
+
+          int deprecated = 0;
+          while (next (&cpes))
+          {
+            deprecated = iterator_int (&cpes, 0);
+          }
+          cleanup_iterator (&cpes);
+
+          xml_string_append (buffer, "<cpe id=\"%s\">", cpe?: "");
+          xml_string_append (buffer,
+                             "<deprecated>%s</deprecated>",
+                             deprecated ? "1" : "0");
+          if (deprecated)
+            {
+              iterator_t deprecated_by;
+              init_cpe_deprecated_by_iterator (&deprecated_by, cpe);
+              while (next (&deprecated_by))
+              {
+                xml_string_append (buffer,
+                                   "<deprecated_by cpe_id=\"%s\"/>",
+                                   cpe_deprecated_by_iterator_deprecated_by
+                                    (&deprecated_by));
+              }
+              cleanup_iterator (&deprecated_by);
+            }
+          xml_string_append (buffer, "</cpe>");
+        }
+      xml_string_append (buffer, "</matched_cpes>");
+      xml_string_append (buffer, "</match_string>");
+      cleanup_iterator (&cpe_matches);
+    }
+  cleanup_iterator (&cpe_match_ranges);
+}
+/**
+ * @brief Print CVE affected software configurations
+ *
+ * @param[in]   cve_uuid  uuid of the CVE.
+ * @param[out]  result    Buffer into which to print.
+ *
+ */
+static void
+print_cve_configurations_xml (const gchar *cve_uuid, GString *result)
+{
+  iterator_t cpe_match_root_nodes;
+  xml_string_append (result, "<configuration_nodes>");
+  init_cve_cpe_match_nodes_iterator (&cpe_match_root_nodes, cve_uuid);
+  while (next (&cpe_match_root_nodes))
+    {
+        result_t root_node;
+        iterator_t cpe_match_node_childs;
+        root_node = cpe_match_nodes_iterator_root_id (&cpe_match_root_nodes);
+        xml_string_append (result, "<node>");
+        print_cpe_match_nodes_xml (root_node, result);
+        init_cpe_match_node_childs_iterator (&cpe_match_node_childs, root_node);
+        while (next (&cpe_match_node_childs))
+          {
+            resource_t child_node;
+            child_node =
+              cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
+            xml_string_append (result, "<node>");
+            print_cpe_match_nodes_xml (child_node, result);
+            xml_string_append (result, "</node>");
+          }
+        xml_string_append (result, "</node>");
+        cleanup_iterator (&cpe_match_node_childs);
+    }
+    xml_string_append (result, "</configuration_nodes>");
+    cleanup_iterator (&cpe_match_root_nodes);
+}
+
+/**
+ * @brief Print CVE references
+ *
+ * @param[in]   cve_uuid  uuid of the CVE.
+ * @param[out]  result    Buffer into which to print.
+ *
+ */
+static void
+print_cve_references_xml (const gchar *cve_uuid, GString *result)
+{
+  iterator_t references;
+  init_cve_reference_iterator (&references, cve_uuid);
+  xml_string_append (result, "<references>");
+  while (next (&references))
+    {
+      xml_string_append (result, "<reference>");
+      xml_string_append (result,
+                         "<url>%s</url>",
+                         cve_reference_iterator_url (&references));
+      xml_string_append (result, "<tags>");
+      const char * tags_array = cve_reference_iterator_tags (&references);
+      if(tags_array && strlen (tags_array) > 2)
+        {
+          char *trimmed_array
+            = g_strndup (tags_array + 1, strlen (tags_array) - 2);
+          gchar **tags, **current_tag;
+          tags = g_strsplit (trimmed_array, ",", -1);
+          current_tag = tags;
+          while (*current_tag)
+            {
+              if (strlen (*current_tag) > 2
+                  && (*current_tag)[0] == '"'
+                  && (*current_tag)[strlen (*current_tag) - 1] == '"')
+                {
+                  char *trimmed_tag = g_strndup (*current_tag + 1,
+                                                 strlen (*current_tag) - 2);
+                  xml_string_append (result, "<tag>%s</tag>", trimmed_tag);
+                  g_free (trimmed_tag);
+                }
+              else
+                xml_string_append (result, "<tag>%s</tag>", *current_tag);
+              current_tag++;
+            }
+          g_strfreev (tags);
+          g_free (trimmed_array);
+        }
+      xml_string_append (result, "</tags>");
+      xml_string_append (result, "</reference>");
+    }
+  xml_string_append (result, "</references>");
+  cleanup_iterator (&references);
+}
 /**
  * @brief Handle end of GET_INFO element.
  *
@@ -13403,24 +13705,36 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                "<title>%s</title>",
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
-                             "<nvd_id>%s</nvd_id>"
+                             "<cpe_name_id>%s</cpe_name_id>"
                              "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
-                             "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info)
-                              ? cpe_info_iterator_nvd_id (&info)
+                             "<deprecated>%s</deprecated>",
+                             cpe_info_iterator_cpe_name_id (&info)
+                              ? cpe_info_iterator_cpe_name_id (&info)
                               : "",
                              cpe_info_iterator_severity (&info)
                               ? cpe_info_iterator_severity (&info)
                               : "",
                              cpe_info_iterator_cve_refs (&info),
-                             cpe_info_iterator_status (&info)
-                              ? cpe_info_iterator_status (&info)
-                              : "");
+                             cpe_info_iterator_deprecated (&info)
+                              ? cpe_info_iterator_deprecated (&info)
+                              : "0");
 
           if (get_info_data->details == 1)
             {
-              iterator_t cves;
+              iterator_t deprecated_by, cves, refs;
+
+              init_cpe_deprecated_by_iterator (&deprecated_by,
+                                               get_iterator_name (&info));
+              while (next (&deprecated_by))
+                {
+                  xml_string_append (result,
+                                     "<deprecated_by cpe_id=\"%s\"/>",
+                                     cpe_deprecated_by_iterator_deprecated_by
+                                      (&deprecated_by));
+                }
+              cleanup_iterator (&deprecated_by);
+
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
               while (next (&cves))
@@ -13448,6 +13762,16 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                     : "");
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
+
+              g_string_append (result, "<references>");
+              init_cpe_reference_iterator (&refs, get_iterator_name (&info));
+              while (next (&refs))
+                xml_string_append (result,
+                                   "<reference href=\"%s\">%s</reference>",
+                                   cpe_reference_iterator_href (&refs),
+                                   cpe_reference_iterator_type (&refs));
+              cleanup_iterator (&refs);
+              g_string_append (result, "</references>");
             }
         }
       else if (g_strcmp0 ("cve", get_info_data->type) == 0)
@@ -13508,7 +13832,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                          "</cert_ref>",
                          get_iterator_name (&cert_advs),
                          cert_bund_adv_info_iterator_title (&cert_advs));
-                  };
+                    }
                   cleanup_iterator (&cert_advs);
 
                   init_cve_dfn_cert_adv_iterator (&cert_advs,
@@ -13525,7 +13849,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                          get_iterator_name (&cert_advs),
                                          dfn_cert_adv_info_iterator_title
                                           (&cert_advs));
-                  };
+                    }
                   cleanup_iterator (&cert_advs);
                 }
               else
@@ -13535,6 +13859,10 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                           "</warning>");
                 }
               g_string_append (result, "</cert>");
+
+              const gchar *cve_uuid = get_iterator_uuid (&info);
+              print_cve_configurations_xml (cve_uuid, result);
+              print_cve_references_xml (cve_uuid, result);
             }
         }
       else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
@@ -13626,12 +13954,12 @@ handle_get_notes (gmp_parser_t *gmp_parser, GError **error)
   nvt_t nvt = 0;
   task_t task = 0;
 
-  if (get_notes_data->note_id && get_notes_data->nvt_oid)
+  if (get_notes_data->get.id && get_notes_data->nvt_oid)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_notes",
                         "Only one of NVT and the note_id attribute"
                         " may be given"));
-  else if (get_notes_data->note_id && get_notes_data->task_id)
+  else if (get_notes_data->get.id && get_notes_data->task_id)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_notes",
                         "Only one of the note_id and task_id"
@@ -13775,25 +14103,25 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("get_nvts",
                             "Too many parameters at once"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->preference_count)
+               && get_nvts_data->preference_count)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The preference_count attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->preferences)
+               && get_nvts_data->preferences)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The preferences attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->skip_cert_refs)
+               && get_nvts_data->skip_cert_refs)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The skip_cert_refs attribute"
                             " requires the details attribute"));
       else if ((get_nvts_data->details == 0)
-                && get_nvts_data->skip_tags)
+               && get_nvts_data->skip_tags)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The skip_tags attribute"
@@ -13807,14 +14135,14 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
       else if (((get_nvts_data->details == 0)
                 || ((get_nvts_data->config_id == NULL)
                     && (get_nvts_data->preferences_config_id == NULL)))
-                && get_nvts_data->timeout)
+               && get_nvts_data->timeout)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "The timeout attribute"
                             " requires the details and config_id"
                             " attributes"));
       else if (get_nvts_data->nvt_oid
-                && find_nvt (get_nvts_data->nvt_oid, &nvt))
+               && find_nvt (get_nvts_data->nvt_oid, &nvt))
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("get_nvts"));
       else if (get_nvts_data->nvt_oid && nvt == 0)
@@ -13828,15 +14156,15 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       else if (get_nvts_data->config_id
-                && get_nvts_data->preferences_config_id)
+               && get_nvts_data->preferences_config_id)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("get_nvts",
                             "config_id and"
                             " preferences_config_id both given"));
       else if (get_nvts_data->config_id
-                && find_config_with_permission (get_nvts_data->config_id,
-                                                &config,
-                                                NULL))
+               && find_config_with_permission (get_nvts_data->config_id,
+                                               &config,
+                                               NULL))
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("get_nvts"));
       else if (get_nvts_data->config_id && (config == 0))
@@ -13850,19 +14178,19 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       else if (get_nvts_data->preferences_config_id
-                && find_config_with_permission
+               && find_config_with_permission
                     (get_nvts_data->preferences_config_id,
-                    &preferences_config,
-                    NULL))
+                     &preferences_config,
+                     NULL))
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("get_nvts"));
       else if (get_nvts_data->preferences_config_id
-                && (preferences_config == 0))
+               && (preferences_config == 0))
         {
           if (send_find_error_to_client
                 ("get_nvts", "config",
-                get_nvts_data->preferences_config_id,
-                gmp_parser))
+                 get_nvts_data->preferences_config_id,
+                 gmp_parser))
             {
               error_send_to_client (error);
               return;
@@ -13878,16 +14206,16 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             " status_text=\"" STATUS_OK_TEXT "\">");
 
           init_nvt_iterator (&nvts,
-                              nvt,
-                              get_nvts_data->nvt_oid
-                              /* Presume the NVT is in the config (if
-                                * a config was given). */
-                              ? 0
-                              : config,
-                              get_nvts_data->family,
-                              NULL,
-                              get_nvts_data->sort_order,
-                              get_nvts_data->sort_field);
+                             nvt,
+                             get_nvts_data->nvt_oid
+                             /* Presume the NVT is in the config (if
+                              * a config was given). */
+                             ? 0
+                             : config,
+                             get_nvts_data->family,
+                             NULL,
+                             get_nvts_data->sort_order,
+                             get_nvts_data->sort_field);
           if (preferences_config)
             config = preferences_config;
           if (get_nvts_data->details)
@@ -13903,7 +14231,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 if (get_nvts_data->preferences && (timeout == NULL))
                   timeout = config_nvt_timeout
                               (config,
-                              nvt_iterator_oid (&nvts));
+                               nvt_iterator_oid (&nvts));
 
                 if (get_nvts_data->preference_count)
                   {
@@ -14031,12 +14359,12 @@ handle_get_overrides (gmp_parser_t *gmp_parser, GError **error)
   nvt_t nvt = 0;
   task_t task = 0;
 
-  if (get_overrides_data->override_id && get_overrides_data->nvt_oid)
+  if (get_overrides_data->get.id && get_overrides_data->nvt_oid)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_overrides",
                         "Only one of NVT and the override_id attribute"
                         " may be given"));
-  else if (get_overrides_data->override_id
+  else if (get_overrides_data->get.id
             && get_overrides_data->task_id)
     SEND_TO_CLIENT_OR_FAIL
      (XML_ERROR_SYNTAX ("get_overrides",
@@ -14833,12 +15161,24 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
       levels = filter_term_value (filter ? filter : get->filter, "levels");
-      g_free (filter);
+
+      gchar *compliance_levels;
+      compliance_levels = filter_term_value (filter
+                                                ? filter
+                                                : get->filter,
+                                            "compliance_levels");
 
       /* Setup result filter from overrides. */
       get_reports_data->get.filter
-        = g_strdup_printf ("apply_overrides=%i min_qod=%i levels=%s",
-                           overrides, min_qod, levels ? levels : "hmlgdf");
+        = g_strdup_printf
+            ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
+            overrides,
+            min_qod,
+            levels ? levels : "hmlgdf",
+            compliance_levels ? compliance_levels : "yniu");
+      g_free (compliance_levels);
+
+      g_free (filter);
       g_free (levels);
     }
 
@@ -15228,7 +15568,7 @@ print_report_config_params (gmp_parser_t *gmp_parser, GError **error,
 
           SENDF_TO_CLIENT_OR_FAIL
             ("</type><value using_default=\"%d\">%s",
-              report_config_param_iterator_using_default (&params), 
+              report_config_param_iterator_using_default (&params),
               value ? value : "");
           if (value)
             {
@@ -15403,27 +15743,27 @@ handle_get_report_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           SEND_TO_CLIENT_OR_FAIL ("<orphan>1</orphan>");
         }
-      
-      SENDF_TO_CLIENT_OR_FAIL 
+
+      SENDF_TO_CLIENT_OR_FAIL
         ("<report_format id=\"%s\">",
           report_config_iterator_report_format_id (&report_configs)
         );
-      
+
       if (!orphan)
         {
-          SENDF_TO_CLIENT_OR_FAIL 
+          SENDF_TO_CLIENT_OR_FAIL
             ("<name>%s</name>",
               report_config_iterator_report_format_name (&report_configs)
             );
-            
+
           if (report_config_iterator_report_format_readable (&report_configs) == 0)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
             }
         }
-      
+
       SENDF_TO_CLIENT_OR_FAIL ("</report_format>");
-      
+
       print_report_config_params (gmp_parser, error,
                                   report_config_param_iterator_rowid (
                                     &report_configs
@@ -15806,16 +16146,16 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
- * @brief Assign resource iterator with an init iterator based on the type 
+ * @brief Assign resource iterator with an init iterator based on the type
  * in the get command data.
  *
  * @param[in]  resource_names_data   data for get_resource_names command.
  * @param[out] iterator              address of iterator function pointer.
- * 
+ *
  * @return 1 if type is invalid, else 0.
  */
 int
-select_resource_iterator (get_resource_names_data_t *resource_names_data, 
+select_resource_iterator (get_resource_names_data_t *resource_names_data,
                           int (**iterator) (iterator_t*, get_data_t *))
 {
     if (g_strcmp0 ("cpe", resource_names_data->type) == 0)
@@ -15865,7 +16205,7 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("group", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_group_iterator;
-    }                
+    }
   else if (g_strcmp0 ("note", resource_names_data->type) == 0)
     {
       *iterator = init_note_iterator_all;
@@ -15873,59 +16213,89 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("override", resource_names_data->type) == 0)
     {
       *iterator = init_override_iterator_all;
-    }                
+    }
   else if (g_strcmp0 ("permission", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_permission_iterator;
-    }                
+    }
   else if (g_strcmp0 ("port_list", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_port_list_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-    }                
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("audit"));
+    }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_format_iterator;
-    }                
+    }
   else if (g_strcmp0 ("role", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_role_iterator;
-    }                
+    }
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
-    }                
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("policy", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                          "usage_type",
+                          g_strdup ("policy"));
+    }
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
-    }                
+    }
   else if (g_strcmp0 ("schedule", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_schedule_iterator;
-    }                
+    }
   else if (g_strcmp0 ("target", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_target_iterator;
-    }                
+    }
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
-    } 
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("scan"));
+    }
+  else if (g_strcmp0 ("audit", resource_names_data->type) == 0)
+    {
+      *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
+      get_data_set_extra (&resource_names_data->get,
+                    "usage_type",
+                    g_strdup ("audit"));
+    }
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
-    } 
+    }
   else if (g_strcmp0 ("user", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_user_iterator;
-    }         
+    }
   else
     {
       return 1;
@@ -15956,19 +16326,26 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0) 
+  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0)
           ||(g_strcmp0 ("os", get_resource_names_data->type) == 0))
        && (acl_user_may ("get_assets") == 0))
-      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
+      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0)
           && (acl_user_may ("get_results") == 0))
-      || ((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+      || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
+           || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
           && (acl_user_may ("get_reports") == 0))
       || (((g_strcmp0 ("cpe", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cve", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("nvt", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("cert_bund_adv", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("dfn_cert_adv", get_resource_names_data->type) == 0))
-          && (acl_user_may ("get_info") == 0)))
+          && (acl_user_may ("get_info") == 0))
+      || (((g_strcmp0 ("config", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("policy", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_configs") == 0))
+      || (((g_strcmp0 ("task", get_resource_names_data->type) == 0)
+          ||(g_strcmp0 ("audit", get_resource_names_data->type) == 0))
+       && (acl_user_may ("get_tasks") == 0)))
       {
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_resource_names",
@@ -16000,9 +16377,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
         get_resource_names_data_reset (get_resource_names_data);
         set_client_state (CLIENT_AUTHENTIC);
         return;
-    }    
+    }
 
-  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
+  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator))
     {
       if (send_find_error_to_client ("get_resource_names", "type",
                                      get_resource_names_data->type, gmp_parser))
@@ -16012,7 +16389,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       get_resource_names_data_reset (get_resource_names_data);
       set_client_state (CLIENT_AUTHENTIC);
       return;
-    };
+    }
 
   ret = init_resource_iterator (&resource, &get_resource_names_data->get);
   if (ret)
@@ -16027,7 +16404,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
               error_send_to_client (error);
               return;
             }
-          break;          
+          break;
         case 2:
           if (send_find_error_to_client
                ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
@@ -16046,24 +16423,16 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
-  
+
   SEND_GET_START ("resource_name");
   SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>", get_resource_names_data->type);
 
   while (next (&resource))
     {
-      if ((g_strcmp0 ("task", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("audit", task_iterator_usage_type(&resource)) == 0)
-          || (g_strcmp0 ("config", get_resource_names_data->type) == 0 
-           && g_strcmp0 ("policy", config_iterator_usage_type(&resource)) == 0))
-      {
-        continue;
-      }
-
       GString *result;
       result = g_string_new ("");
-      
-      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0) 
+
+      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
                                       "<resource id=\"%s\">"
@@ -16073,8 +16442,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                         : "",
                                       tls_certificate_iterator_subject_dn (&resource)
                                         ? tls_certificate_iterator_subject_dn (&resource)
-                                        : "");          
-        } 
+                                        : "");
+        }
       else if (g_strcmp0 ("override", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
@@ -16085,9 +16454,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                           : "",
                                         override_iterator_nvt_name (&resource)
                                           ? override_iterator_nvt_name (&resource)
-                                          : "");          
+                                          : "");
         }
-      else 
+      else
         {
             buffer_xml_append_printf (result,
                                         "<resource id=\"%s\">"
@@ -16245,6 +16614,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* result_hosts_only */
                                       NULL, /* min_qod */
                                       NULL, /* levels */
+                                      NULL, /* compliance_levels */
                                       NULL, /* delta_states */
                                       NULL, /* search_phrase */
                                       NULL, /* search_phrase_exact */
@@ -16500,6 +16870,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 
               get_certificate_info (scanner_iterator_ca_pub (&scanners),
                                     -1,
+                                    TRUE,
                                     &activation_time,
                                     &expiration_time,
                                     &md5_fingerprint,
@@ -16554,6 +16925,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
 
               get_certificate_info (scanner_iterator_key_pub (&scanners),
                                     -1,
+                                    TRUE,
                                     &activation_time,
                                     &expiration_time,
                                     &md5_fingerprint,
@@ -17138,6 +17510,7 @@ handle_get_settings (gmp_parser_t *gmp_parser, GError **error)
 
           get_certificate_info (setting_iterator_value (&settings),
                                 -1,
+                                TRUE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,
@@ -18256,7 +18629,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                   report_compliance_by_uuid (last_report_id,
                                              &compliance_yes,
                                              &compliance_no,
-                                             &compliance_incomplete);
+                                             &compliance_incomplete,
+                                             NULL);
 
                   last_report
                     = g_strdup_printf ("<last_report>"
@@ -19930,6 +20304,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                   get_certificate_info (ldap_cacert,
                                         -1,
+                                        TRUE,
                                         &activation_time,
                                         &expiration_time,
                                         &md5_fingerprint,
@@ -20100,7 +20475,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_RESOURCE_NAMES:
         handle_get_resource_names (gmp_parser, error);
-        break;        
+        break;
 
       case CLIENT_GET_RESULTS:
         handle_get_results (gmp_parser, error);
@@ -20990,6 +21365,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_credential_data->auth_algorithm,
                          create_credential_data->privacy_password,
                          create_credential_data->privacy_algorithm,
+                         create_credential_data->kdc,
+                         create_credential_data->realm,
                          create_credential_data->type,
                          create_credential_data->allow_insecure,
                          &new_credential))
@@ -21097,6 +21474,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Cannot determine type for new credential"));
                 break;
+              case 19:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a kdc"));
+                break;
+              case 20:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a realm"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21119,6 +21506,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, KDC);
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
@@ -21129,6 +21517,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, ALGORITHM);
       CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, PASSWORD);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, REALM);
       CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
 
       case CLIENT_CREATE_FILTER:
@@ -22475,8 +22864,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "RESOURCES requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (create_tag_data->resource_type)
-                     == 0)
+          else if (valid_db_resource_type (create_tag_data->resource_type) == 0
+                    && valid_subtype (create_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "TYPE in RESOURCES must be"
@@ -24184,6 +24573,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_credential_data->auth_algorithm,
                     modify_credential_data->privacy_password,
                     modify_credential_data->privacy_algorithm,
+                    modify_credential_data->kdc,
+                    modify_credential_data->realm,
                     modify_credential_data->allow_insecure))
             {
               case 0:
@@ -24306,6 +24697,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDC);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
@@ -24316,6 +24708,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, ALGORITHM);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, REALM);
 
       case CLIENT_MODIFY_FILTER:
         {
@@ -25228,7 +25621,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "name must be at least one"
                                 " character long or omitted completely"));
           else if (modify_tag_data->resource_type &&
-                   valid_db_resource_type (modify_tag_data->resource_type) == 0)
+                   valid_db_resource_type (modify_tag_data->resource_type) == 0
+                   && valid_subtype (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "TYPE in RESOURCES must be"
@@ -26965,6 +27359,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
               &modify_credential_data->community);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KDC,
+              &modify_credential_data->kdc);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
               &modify_credential_data->key_phrase);
 
@@ -26988,6 +27385,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
               &modify_credential_data->privacy_password);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_REALM,
+              &modify_credential_data->realm);
 
 
       case CLIENT_MODIFY_REPORT_CONFIG:
@@ -27096,6 +27496,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
               &create_credential_data->copy);
 
+      APPEND (CLIENT_CREATE_CREDENTIAL_KDC,
+              &create_credential_data->kdc);
+
       APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
               &create_credential_data->key_phrase);
 
@@ -27119,6 +27522,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
               &create_credential_data->privacy_password);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_REALM,
+              &create_credential_data->realm);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
               &create_credential_data->type);

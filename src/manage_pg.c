@@ -871,13 +871,13 @@ manage_create_sql_functions ()
        "       OR qod2 is null"
        "  THEN RETURN 'new';"
        "  WHEN description1 != description2"
-       "       OR severity1 != severity2" 
+       "       OR severity1 != severity2"
        "       OR qod1 != qod2"
        "       OR hostname1 != hostname2"
        "       OR path1 != path2"
        "  THEN RETURN 'changed';"
        "  ELSE RETURN 'same';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -890,12 +890,51 @@ manage_create_sql_functions ()
        "  WHEN port = 'package'"
        "  THEN RETURN 'general/tcp';"
        "  ELSE RETURN port;"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
-  /* Functions in SQL. */
+  sql ("CREATE OR REPLACE FUNCTION report_compliance_status ("
+       "  report_id integer)"
+       "RETURNS text AS $$ "
+       "BEGIN"
+       "  CASE"
+       "  WHEN (SELECT count(*) FROM results"
+       "        WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%NO%%') > 0"
+       "  THEN RETURN 'no';"
+       "  WHEN (SELECT count(*) FROM results"
+       "        WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%INCOMPLETE%%') > 0"
+       "  THEN RETURN 'incomplete';"
+       "  WHEN (SELECT count(*) FROM results"
+       "        WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%YES%%') > 0"
+       "  THEN RETURN 'yes';"
+       "  ELSE RETURN 'undefined';"
+       "  END CASE;"
+       "END;"
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
+  sql ("CREATE OR REPLACE FUNCTION report_compliance_count ("
+       "  report_id integer,"
+       "  compliance text)"
+       " RETURNS integer AS $$"
+       " DECLARE count integer := 0;"
+       " BEGIN"
+       "   WITH compliance_count AS"
+       "   (SELECT count(*) AS total FROM results WHERE report = report_id"
+       "        AND description LIKE 'Compliant:%%' || compliance || '%%')"
+       "   SELECT total FROM compliance_count"
+       "   INTO count;"
+       "   RETURN count;"
+       " END;"
+       " $$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+
+ /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "                WHERE table_catalog = '%s'"
@@ -1550,6 +1589,8 @@ manage_create_sql_functions ()
            "         THEN $1 = 0"
            "         WHEN 'false'"
            "         THEN $1 = -1"
+           "         WHEN 'error'"
+           "         THEN $1 = -3"
            "         ELSE 0::boolean"
            "         END);"
            "$$ LANGUAGE SQL"
@@ -1934,6 +1975,33 @@ create_tables_nvt (const gchar *suffix)
        "  max_epss_severity DOUBLE PRECISION"
        ");",
        suffix);
+}
+
+/**
+ * @brief Create NVT related indexes.
+ *
+ * @param[in]  suffix  String to append to table names.
+ */
+void
+create_indexes_nvt ()
+{
+  sql ("SELECT create_index ('nvts_by_creation_time',"
+       "                     'nvts',"
+       "                     'creation_time');");
+  sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
+  sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
+  sql ("SELECT create_index ('nvts_by_modification_time',"
+       "                     'nvts', 'modification_time');");
+  sql ("SELECT create_index ('nvts_by_cvss_base',"
+       "                     'nvts', 'cvss_base');");
+  sql ("SELECT create_index ('nvts_by_solution_type',"
+       "                     'nvts', 'solution_type');");
+
+  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
+       "                     'vt_refs', 'vt_oid');");
+
+  sql ("SELECT create_index ('vt_severities_by_vt_oid',"
+       "                     'vt_severities', 'vt_oid');");
 }
 
 /**
@@ -3078,17 +3146,8 @@ create_tables ()
   sql ("SELECT create_index ('nvt_selectors_by_name',"
        "                     'nvt_selectors',"
        "                     'name');");
-  sql ("SELECT create_index ('nvts_by_creation_time',"
-       "                     'nvts',"
-       "                     'creation_time');");
-  sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
-  sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
-  sql ("SELECT create_index ('nvts_by_modification_time',"
-       "                     'nvts', 'modification_time');");
-  sql ("SELECT create_index ('nvts_by_cvss_base',"
-       "                     'nvts', 'cvss_base');");
-  sql ("SELECT create_index ('nvts_by_solution_type',"
-       "                     'nvts', 'solution_type');");
+
+  create_indexes_nvt ();
 
   sql ("SELECT create_index ('permissions_by_name',"
        "                     'permissions', 'name');");
@@ -3119,12 +3178,6 @@ create_tables ()
   sql ("SELECT create_index ('tls_certificate_origins_by_origin_id_and_type',"
        "                     'tls_certificate_origins',"
        "                     'origin_id, origin_type')");
-
-  sql ("SELECT create_index ('vt_refs_by_vt_oid',"
-       "                     'vt_refs', 'vt_oid');");
-
-  sql ("SELECT create_index ('vt_severities_by_vt_oid',"
-       "                     'vt_severities', 'vt_oid');");
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen
@@ -3474,10 +3527,51 @@ manage_db_init (const gchar *name)
            "  modification_time integer,"
            "  title text,"
            "  status text,"
-           "  deprecated_by_id INTEGER,"
            "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
-           "  nvd_id text);");
+           "  nvd_id text,"
+           "  deprecated integer,"
+           "  cpe_name_id text);");
+
+      sql ("CREATE TABLE scap2.cpe_refs"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe INTEGER,"
+           "  ref TEXT,"
+           "  type TEXT);");
+
+      sql ("CREATE TABLE scap2.cpes_deprecated_by"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe TEXT,"
+           "  deprecated_by TEXT);");
+
+      sql ("CREATE TABLE scap2.cpe_match_nodes"
+           " (id SERIAL PRIMARY KEY,"
+           "  root_id integer DEFAULT 0,"
+           "  cve_id integer DEFAULT 0,"
+           "  operator text,"
+           "  negate integer DEFAULT 0);");
+
+      sql ("CREATE TABLE scap2.cpe_nodes_match_criteria"
+           " (id SERIAL PRIMARY KEY,"
+           "  node_id integer DEFAULT 0,"
+           "  vulnerable integer DEFAULT 0,"
+           "  match_criteria_id text);");
+
+      sql ("CREATE TABLE scap2.cpe_match_strings"
+           " (id SERIAL PRIMARY KEY,"
+           "  match_criteria_id text,"
+           "  criteria text DEFAULT NULL,"
+           "  version_start_incl text DEFAULT NULL,"
+           "  version_start_excl text DEFAULT NULL,"
+           "  version_end_incl text DEFAULT NULL,"
+           "  version_end_excl text DEFAULT NULL,"
+           "  status text);");
+
+      sql ("CREATE TABLE scap2.cpe_matches"
+           " (id SERIAL PRIMARY KEY,"
+           "  match_criteria_id text,"
+           "  cpe_name_id text,"
+           "  cpe_name text);");
 
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
@@ -3493,6 +3587,11 @@ manage_db_init (const gchar *name)
            "  epss DOUBLE PRECISION,"
            "  percentile DOUBLE PRECISION);");
 
+      sql ("CREATE TABLE scap2.cve_references"
+           " (id SERIAL PRIMARY KEY,"
+           "  cve_id INTEGER,"
+           "  url text,"
+           "  tags text[]);");
 
       /* Init tables. */
 
@@ -3542,6 +3641,19 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.epss_scores"
            " ALTER cve SET NOT NULL,"
            " ADD UNIQUE (cve);");
+
+      sql ("ALTER TABLE scap2.cve_references"
+           " ALTER cve_id SET NOT NULL,"
+           " ALTER url SET NOT NULL,"
+           " ADD UNIQUE (cve_id, url);");
+
+      sql ("ALTER TABLE scap2.cpe_match_strings"
+           " ADD UNIQUE (match_criteria_id);");
+
+      sql ("ALTER TABLE scap2.cpe_matches"
+           " ALTER match_criteria_id SET NOT NULL,"
+           " ALTER cpe_name_id SET NOT NULL,"
+           " ADD UNIQUE (match_criteria_id, cpe_name_id);");
     }
   else
     {

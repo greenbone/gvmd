@@ -780,6 +780,7 @@ migrate_212_to_213 ()
 
       get_certificate_info ((gchar*)certificate,
                             certificate_size,
+                            FALSE,
                             NULL,   /* activation_time */
                             NULL,   /* expiration_time */
                             NULL,   /* md5_fingerprint */
@@ -851,9 +852,9 @@ make_tls_certificate_214 (user_t owner,
   quoted_certificate_b64
     = certificate_b64 ? sql_quote (certificate_b64) : NULL;
   quoted_subject_dn
-    = subject_dn ? sql_ascii_escape_and_quote (subject_dn) : NULL;
+    = subject_dn ? sql_ascii_escape_and_quote (subject_dn, NULL) : NULL;
   quoted_issuer_dn
-    = issuer_dn ? sql_ascii_escape_and_quote (issuer_dn) : NULL;
+    = issuer_dn ? sql_ascii_escape_and_quote (issuer_dn, NULL) : NULL;
   quoted_md5_fingerprint
     = md5_fingerprint ? sql_quote (md5_fingerprint) : NULL;
   quoted_sha256_fingerprint
@@ -1086,6 +1087,7 @@ migrate_213_to_214 ()
           /* Try extracting the data directly from the certificate */
           get_certificate_info ((gchar*)certificate,
                                 certificate_size,
+                                FALSE,
                                 &activation_time,
                                 &expiration_time,
                                 &md5_fingerprint,

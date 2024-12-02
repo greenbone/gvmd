@@ -2409,10 +2409,10 @@ report_format_param_type_min (report_format_t report_format, const char *name)
 
 /**
  * @brief Checks if the value of a report format param is a valid option.
- * 
+ *
  * @param[in]  param  The report format param to check.
  * @param[in]  value  The value to check.
- * 
+ *
  * @return 1 if the value is one of the allowed options, 0 if not.
  */
 static int
@@ -2983,7 +2983,7 @@ report_format_iterator_trust_time (iterator_t* iterator)
  *
  * @return Time report format was verified.
  */
-int 
+int
 report_format_iterator_configurable (iterator_t* iterator)
 {
   int ret;
@@ -4895,16 +4895,21 @@ check_db_trash_report_formats ()
 /**
  * @brief Ensure the predefined report formats exist.
  *
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
+ *
  * @return 0 success, -1 error.
  */
 int
-check_db_report_formats ()
+check_db_report_formats (int avoid_db_check_inserts)
 {
   if (migrate_predefined_report_formats ())
     return -1;
 
-  if (sync_report_formats_with_feed (FALSE) <= -1)
-    g_warning ("%s: Failed to sync report formats with feed", __func__);
+  if (avoid_db_check_inserts == 0)
+    {
+      if (sync_report_formats_with_feed (FALSE) <= -1)
+        g_warning ("%s: Failed to sync report formats with feed", __func__);
+    }
 
   if (check_db_trash_report_formats ())
     return -1;
