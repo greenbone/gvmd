@@ -7,63 +7,63 @@
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [md manage]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [md    gmp]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [md  crypt]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [md  utils]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [libgvm base]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [libgvm gmp]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [libgvm osp]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [libgvm util]
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127
 
 [event syslog]
@@ -86,5 +86,5 @@ level=128
 prepend=%t %s %p
 separator=:
 prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
-file=${GVM_LOG_DIR}/gvmd.log
+file=${GVMD_LOG_FILE}
 level=127

@@ -343,7 +343,7 @@ should_sync_config_from_path (const char *path, gboolean rebuild,
   if (resource_id_deprecated ("config", uuid))
     {
       find_config_no_acl (uuid, config);
-      
+
       if (rebuild)
         {
           g_free (uuid);

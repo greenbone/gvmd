@@ -127,7 +127,7 @@ init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const db_conn_info_t *, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int, int);
 
 void
 init_manage_process (const db_conn_info_t*);
@@ -1416,7 +1416,7 @@ int
 init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
 int
-init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);                         
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1688,7 +1688,82 @@ void
 init_app_locations_iterator (iterator_t*, report_host_t, const gchar *);
 
 const char *
-app_locations_iterator_location (iterator_t *);
+app_locations_iterator_location (iterator_t*);
+
+void
+init_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_cve_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_cve_reference_iterator (iterator_t*, const char *);
+
+const char*
+cve_reference_iterator_url (iterator_t*);
+
+const char*
+cve_reference_iterator_tags (iterator_t*);
+
+const char*
+cve_reference_iterator_tags_count (iterator_t*);
+
+long long int
+cpe_match_nodes_iterator_root_id (iterator_t*);
+
+void
+init_host_details_cpe_iterator (iterator_t*, report_host_t);
+
+const char*
+host_details_cpe_iterator_cpe (iterator_t*);
+
+void
+init_cpe_match_node_childs_iterator (iterator_t*, long long int);
+
+long long int
+cpe_match_node_childs_iterator_id (iterator_t*);
+
+void
+init_cpe_match_string_iterator (iterator_t*, long long int);
+
+const char*
+cpe_match_string_iterator_criteria (iterator_t*);
+
+const char*
+cpe_match_string_iterator_match_criteria_id (iterator_t*);
+
+const char*
+cpe_match_string_iterator_status (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_start_incl (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_start_excl (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_end_incl (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_end_excl (iterator_t*);
+
+int
+cpe_match_string_iterator_vulnerable (iterator_t*);
+
+void
+init_cpe_match_string_matches_iterator (iterator_t*, const char *);
+
+const char*
+cpe_matches_cpe_name_id (iterator_t*);
+
+const char*
+cpe_matches_cpe_name (iterator_t*);
+
+void
+init_host_details_cpe_product_iterator (iterator_t*, const char *, report_host_t);
+
+const char*
+host_details_cpe_product_iterator_value (iterator_t*);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t);
@@ -1733,7 +1808,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **, 
+                               int *, gchar **, gchar **, gchar **, gchar **,
                                gchar **, int *, int *, int *, int *, gchar **);
 
 gchar *
@@ -2218,7 +2293,7 @@ int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*, credential_t*);
+                   const char*, const char*, const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,
@@ -2228,7 +2303,7 @@ int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*);
+                   const char*, const char*, const char*);
 
 int
 delete_credential (const char *, int);
@@ -2268,6 +2343,12 @@ credential_iterator_privacy_password (iterator_t*);
 
 const char*
 credential_iterator_public_key (iterator_t*);
+
+const char*
+credential_iterator_kdc (iterator_t*);
+
+const char*
+credential_iterator_realm (iterator_t*);
 
 const char*
 credential_iterator_private_key (iterator_t*);
@@ -2589,7 +2670,7 @@ init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
 
 int
-init_override_iterator_all (iterator_t* iterator, get_data_t *get);                        
+init_override_iterator_all (iterator_t* iterator, get_data_t *get);
 
 const char*
 override_iterator_nvt_oid (iterator_t*);

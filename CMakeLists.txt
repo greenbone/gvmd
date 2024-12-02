@@ -163,11 +163,13 @@ if (NOT GVMD_STATE_DIR)
   set (GVMD_STATE_DIR  "${GVM_STATE_DIR}/gvmd")
 endif (NOT GVMD_STATE_DIR)
 
-if (NOT GVM_LOG_DIR)
-  set (GVM_LOG_DIR    "${LOCALSTATEDIR}/log/gvm")
-else (NOT GVM_LOG_DIR)
-  set (GVM_LOG_DIR    "${GVM_LOG_DIR}")
-endif (NOT GVM_LOG_DIR)
+if (NOT GVMD_LOG_FILE)
+  if (GVM_LOG_DIR)
+    set (GVMD_LOG_FILE "${GVM_LOG_DIR}/gvmd.log")
+  else (GVM_LOG_DIR)
+    set (GVMD_LOG_FILE "-")
+  endif (GVM_LOG_DIR)
+endif (NOT GVMD_LOG_FILE)
 
 set (GVM_SCAP_RES_DIR "${GVM_DATA_DIR}/scap")
 set (GVM_CERT_RES_DIR "${GVM_DATA_DIR}/cert")
@@ -247,24 +249,12 @@ if (NOT CVSS3_RATINGS)
 endif (NOT CVSS3_RATINGS)
 add_definitions (-DCVSS3_RATINGS=${CVSS3_RATINGS})
 
-if (NOT COMPLIANCE_REPORTS)
-  set (COMPLIANCE_REPORTS 1)
-endif (NOT COMPLIANCE_REPORTS)
-add_definitions (-DCOMPLIANCE_REPORTS=${COMPLIANCE_REPORTS})
-
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message ("-- Log file: ${GVMD_LOG_FILE}")
 
 ## Version
 
 set (GVMD_VERSION "${PROJECT_VERSION_STRING}")
-
-if (COMPLIANCE_REPORTS EQUAL 1)
-  set(IF_COMPLIANCE_REPORTS "")
-  set(ENDIF_COMPLIANCE_REPORTS "")
-elseif (COMPLIANCE_REPORTS EQUAL 0)
-  set(IF_COMPLIANCE_REPORTS "<!--")
-  set(ENDIF_COMPLIANCE_REPORTS "-->")
-endif()
 
 # Configure Doxyfile with version number
 configure_file (doc/Doxyfile.in doc/Doxyfile)

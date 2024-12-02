@@ -645,7 +645,7 @@ should_sync_report_format_from_path (const char *path,
   if (resource_id_deprecated ("report_format", uuid))
     {
       find_report_format_no_acl (uuid, report_format);
-      
+
       if (rebuild)
         {
           g_free (uuid);
