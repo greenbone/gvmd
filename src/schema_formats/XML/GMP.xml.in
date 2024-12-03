@@ -13865,6 +13865,7 @@ END:VCALENDAR
             <pattern>
               <e>model</e>
               <e>model_type</e>
+              <e>sensor</e>
             </pattern>
             <ele>
               <name>model</name>
