@@ -22015,7 +22015,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22051,7 +22051,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22082,7 +22082,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22113,7 +22113,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22178,7 +22178,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22211,7 +22211,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the port_list</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -23053,7 +23053,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the scanner</summary>
             <pattern></pattern>
           </ele>
         </ele>
