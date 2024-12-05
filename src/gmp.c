@@ -23094,6 +23094,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 "Hosts must be at least one"
                                 " character long"));
+          else if (create_target_data->smb_credential_id
+                   && create_target_data->krb5_credential_id)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "Targets cannot have both an SMB and"
+                                " Kerberos 5 credential"));
           else if (create_target_data->ssh_credential_id
                    && find_credential_with_permission
                        (create_target_data->ssh_credential_id,
@@ -23213,19 +23219,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (send_find_error_to_client
                    ("create_target", "Credential",
-                    create_target_data->snmp_credential_id,
+                    create_target_data->krb5_credential_id,
                     gmp_parser))
                 {
                   error_send_to_client (error);
                   return;
                 }
             }
-          else if (create_target_data->smb_credential_id
-                   && create_target_data->krb5_credential_id)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_target",
-                                "Targets cannot have both an SMB and"
-                                " Kerberos 5 credential"));
 
           /* Create target from host string. */
           else switch (create_target

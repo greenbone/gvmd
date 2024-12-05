@@ -32946,6 +32946,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       if (strcmp (type, "krb5"))
         {
           sql_rollback ();
+          g_free (type);
           return 16;
         }
       g_free (type);
@@ -33600,6 +33601,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           if (strcmp (type, "krb5"))
             {
               sql_rollback ();
+              g_free (type);
               return 27;
             }
           g_free (type);
