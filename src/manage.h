@@ -902,7 +902,7 @@ int
 task_last_report (task_t, report_t*);
 
 const char *
-task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
+task_iterator_trend_counts (iterator_t *, int, int, int, int, double, int, int, int, int,
                             double);
 
 int
@@ -1067,7 +1067,7 @@ severity_data_add_count (severity_data_t*, double, int);
 
 void
 severity_data_level_counts (const severity_data_t*,
-                            int*, int*, int*, int*, int*, int*);
+                            int*, int*, int*, int*, int*, int*, int*);
 
 
 /* General task facilities. */
@@ -1338,11 +1338,11 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*, double*,
+report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
                int, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, double*,
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
                   const get_data_t*, const char*);
 
 int

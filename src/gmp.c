@@ -8506,7 +8506,8 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
                                 override_iterator_active (overrides),
                                 strlen (excerpt) < strlen (text),
                                 excerpt,
-                                override_iterator_threat (overrides)
+                                override_iterator_severity (overrides)
+                                && override_iterator_threat (overrides)
                                 ? override_iterator_threat (overrides)
                                 : "",
                                 override_iterator_severity (overrides)
@@ -15194,7 +15195,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
             overrides,
             min_qod,
-            levels ? levels : "hmlgdf",
+            levels ? levels : "chmlgdf",
             compliance_levels ? compliance_levels : "yniu");
       g_free (compliance_levels);
 
@@ -18490,8 +18491,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
-      int holes = 0, infos = 0, logs = 0, warnings = 0;
-      int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
+      int criticals = 0, holes = 0, infos = 0, logs = 0, warnings = 0;
+      int criticals_2 = 0, holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int false_positives = 0, task_scanner_type;
       int target_available, config_available;
       int scanner_available;
@@ -18598,7 +18599,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               // TODO Could skip this count for tasks page.
               if (report_counts (first_report_id,
-                                 &holes_2, &infos_2, &logs,
+                                 &criticals_2, &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
                                  &severity_2, apply_overrides, min_qod))
                 g_error ("%s: GET_TASKS: error getting counts for"
@@ -18614,7 +18615,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (((first_report_id == NULL)
                   || (strcmp (second_last_report_id, first_report_id)))
                   && report_counts (second_last_report_id,
-                                    &holes_2, &infos_2,
+                                    &criticals_2, &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
                                     apply_overrides, min_qod))
@@ -18668,7 +18669,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 {
                   if (report_counts
                       (last_report_id,
-                        &holes, &infos, &logs,
+                        &criticals, &holes, &infos, &logs,
                         &warnings, &false_positives, &severity,
                         apply_overrides, min_qod))
                     g_error ("%s: GET_TASKS: error getting counts for"
@@ -18677,6 +18678,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 }
               else
                 {
+                  criticals = criticals_2;
                   holes = holes_2;
                   infos = infos_2;
                   warnings = warnings_2;
@@ -18730,10 +18732,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        "<scan_start>%s</scan_start>"
                                        "<scan_end>%s</scan_end>"
                                        "<result_count>"
-                                       "<hole>%i</hole>"
-                                       "<info>%i</info>"
+                                       "<critical>%i</critical>"
+                                       "<hole deprecated='1'>%i</hole>"
+                                       "<high>%i</high>"
+                                       "<info deprecated='1'>%i</info>"
+                                       "<low>%i</low>"
                                        "<log>%i</log>"
-                                       "<warning>%i</warning>"
+                                       "<warning deprecated='1'>%i</warning>"
+                                       "<medium>%i</medium>"
                                        "<false_positive>"
                                        "%i"
                                        "</false_positive>"
@@ -18747,9 +18753,13 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        timestamp,
                                        scan_start,
                                        scan_end,
+                                       criticals,
+                                       holes,
                                        holes,
                                        infos,
+                                       infos,
                                        logs,
+                                       warnings,
                                        warnings,
                                        false_positives,
                                        severity);
@@ -18905,8 +18915,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        get_tasks_data->get.trash
                         ? ""
                         : task_iterator_trend_counts
-                           (&tasks, holes, warnings, infos, severity,
-                            holes_2, warnings_2, infos_2, severity_2),
+                           (&tasks, criticals, holes, warnings, infos, severity,
+                            criticals_2, holes_2, warnings_2, infos_2, severity_2),
                        task_schedule_xml,
                        current_report,
                        last_report);
@@ -19700,9 +19710,13 @@ gmp_xml_handle_result ()
         {
           create_report_data->result_severity = strdup ("");
         }
-      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
+      else if (strcasecmp (create_report_data->result_threat, "Critical") == 0)
         {
           create_report_data->result_severity = strdup ("10.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
+        {
+          create_report_data->result_severity = strdup ("8.9");
         }
       else if (strcasecmp (create_report_data->result_threat, "Medium") == 0)
         {

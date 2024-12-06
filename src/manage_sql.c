@@ -251,9 +251,9 @@ static void
 check_for_updated_cert ();
 
 static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *,
+report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, double *);
+                       int *, int *, int *, int *, int *, int *, double *);
 
 static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
@@ -2604,6 +2604,7 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("False Positive", keyword->string) == NULL)
       && (strstr ("Error", keyword->string) == NULL)
       && (strstr ("Alarm", keyword->string) == NULL)
+      && (strstr ("Critical", keyword->string) == NULL)
       && (strstr ("High", keyword->string) == NULL)
       && (strstr ("Medium", keyword->string) == NULL)
       && (strstr ("Low", keyword->string) == NULL)
@@ -3045,7 +3046,8 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "log_per_host") == 0
                        || strcmp (keyword->string, "low_per_host") == 0
                        || strcmp (keyword->string, "medium_per_host") == 0
-                       || strcmp (keyword->string, "high_per_host") == 0)
+                       || strcmp (keyword->string, "high_per_host") == 0
+                       || strcmp (keyword->string, "critical_per_host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3082,6 +3084,7 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "published") == 0)
                        || (strcmp (keyword->string, "qod") == 0)
                        || (strcmp (keyword->string, "cves") == 0)
+                       || (strcmp (keyword->string, "critical") == 0)
                        || (strcmp (keyword->string, "high") == 0)
                        || (strcmp (keyword->string, "medium") == 0)
                        || (strcmp (keyword->string, "low") == 0)
@@ -3238,7 +3241,8 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "log_per_host") == 0
                        || strcmp (keyword->string, "low_per_host") == 0
                        || strcmp (keyword->string, "medium_per_host") == 0
-                       || strcmp (keyword->string, "high_per_host") == 0)
+                       || strcmp (keyword->string, "high_per_host") == 0
+                       || strcmp (keyword->string, "critical_per_host") == 0)
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -3275,6 +3279,7 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "published") == 0)
                        || (strcmp (keyword->string, "qod") == 0)
                        || (strcmp (keyword->string, "cves") == 0)
+                       || (strcmp (keyword->string, "critical") == 0)
                        || (strcmp (keyword->string, "high") == 0)
                        || (strcmp (keyword->string, "medium") == 0)
                        || (strcmp (keyword->string, "low") == 0)
@@ -14535,7 +14540,7 @@ condition_met (task_t task, report_t report, alert_t alert,
         {
           char *filter_id, *count_string;
           report_t last_report;
-          int holes, infos, logs, warnings, false_positives;
+          int criticals, holes, infos, logs, warnings, false_positives;
           int count;
           double severity;
 
@@ -14582,11 +14587,11 @@ condition_met (task_t task, report_t report, alert_t alert,
               memset (&get, 0, sizeof (get_data_t));
               get.type = "result";
               get.filt_id = filter_id;
-              report_counts_id (last_report, &holes, &infos, &logs,
+              report_counts_id (last_report, &criticals, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
 
-              db_count = holes + infos + logs + warnings
+              db_count = criticals + holes + infos + logs + warnings
                          + false_positives;
 
               g_debug ("%s: count: %i vs %i", __func__, db_count, count);
@@ -14603,7 +14608,7 @@ condition_met (task_t task, report_t report, alert_t alert,
         {
           char *direction, *filter_id, *count_string;
           report_t last_report;
-          int holes, infos, logs, warnings, false_positives;
+          int criticals, holes, infos, logs, warnings, false_positives;
           int count;
           double severity;
 
@@ -14639,10 +14644,10 @@ condition_met (task_t task, report_t report, alert_t alert,
               get.type = "result";
               get.filt_id = filter_id;
 
-              report_counts_id (last_report, &holes, &infos, &logs,
+              report_counts_id (last_report, &criticals, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
-              last_count = holes + infos + logs + warnings
+              last_count = criticals + holes + infos + logs + warnings
                             + false_positives;
 
               second_last_report = 0;
@@ -14653,10 +14658,10 @@ condition_met (task_t task, report_t report, alert_t alert,
                 {
                   int cmp, second_last_count;
 
-                  report_counts_id (second_last_report, &holes, &infos,
+                  report_counts_id (second_last_report, &criticals, &holes, &infos,
                                     &logs, &warnings, &false_positives,
                                     &severity, &get, NULL);
-                  second_last_count = holes + infos + logs + warnings
+                  second_last_count = criticals + holes + infos + logs + warnings
                                       + false_positives;
 
                   cmp = last_count - second_last_count;
@@ -15032,9 +15037,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
    "first", "last", "false_positive", "log", "low", "medium", "high",         \
-   "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
-   "medium_per_host", "high_per_host", "target", "usage_type",                \
-   "first_report_created", "last_report_created", NULL }
+   "critical", "hosts", "result_hosts", "fp_per_host", "log_per_host",        \
+   "low_per_host", "medium_per_host", "high_per_host", "critical_per_host",   \
+   "target", "usage_type", "first_report_created", "last_report_created", NULL }
 
 /**
  * @brief Task iterator columns.
@@ -15171,6 +15176,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                                        \
    {                                                                         \
      "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod, 'Critical')"      \
+     " END",                                                                 \
+     "critical",                                                             \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
      " report_host_count (task_last_report (id))"                            \
      " END",                                                                 \
      "hosts",                                                                \
@@ -15241,6 +15254,18 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "          0)"                                                          \
      " END",                                                                 \
      "high_per_host",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     " coalesce (report_severity_count (task_last_report (id),"              \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'Critical') * 1.0"                    \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)"                                                          \
+     " END",                                                                 \
+     "critical_per_host",                                                    \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
@@ -21119,7 +21144,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                      const char* users_where)
 {
   iterator_t cache_iterator;
-  int holes, infos, logs, warnings, false_positives;
+  int criticals, holes, infos, logs, warnings, false_positives;
   double severity;
   get_data_t *get = NULL;
   gchar *old_user_id;
@@ -21151,7 +21176,7 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                report, user, override, min_qod);
         }
 
-      report_counts_id (report, &holes, &infos, &logs, &warnings,
+      report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                         &false_positives, &severity, get, NULL);
 
       get_data_reset (get);
@@ -22110,12 +22135,11 @@ report_add_results_array (report_t report, GArray *results)
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "creation_time",       \
    "date", "status", "task", "severity", "false_positive", "log", "low",       \
-   "medium", "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",   \
-   "low_per_host", "medium_per_host", "high_per_host", "duration",             \
-   "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
-   "compliance_yes", "compliance_no", "compliance_incomplete",                 \
-   "compliant", NULL }
-
+   "medium", "high", "critical", "hosts", "result_hosts", "fp_per_host",       \
+   "log_per_host", "low_per_host", "medium_per_host", "high_per_host",         \
+   "critical_per_host", "duration", "duration_per_host", "start_time",         \
+   "end_time", "scan_start", "scan_end", "compliance_yes", "compliance_no",    \
+   "compliance_incomplete", "compliant", NULL }
 /**
  * @brief Report iterator columns.
  */
@@ -22183,6 +22207,11 @@ report_add_results_array (report_t report, GArray *results)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Critical')",  \
+     "critical",                                                             \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner",                                                               \
      KEYWORD_TYPE_STRING                                                     \
@@ -22235,6 +22264,14 @@ report_add_results_array (report_t report, GArray *results)
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
      "high_per_host",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'Critical') * 1.0"                    \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
+     "critical_per_host",                                                    \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
@@ -22584,6 +22621,11 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append_printf (levels_sql, " AND severity_in_levels (%s", new_severity_sql);
 
+  if (strchr (levels, 'c'))
+    {
+      g_string_append (levels_sql, ", 'critical'");
+      count++;
+    }
   if (strchr (levels, 'h'))
     {
       g_string_append (levels_sql, ", 'high'");
@@ -22618,7 +22660,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append (levels_sql, ")");
 
-  if (count == 5)
+  if (count == 6)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -23312,7 +23354,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod = filter_term_min_qod (filter);
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
-    levels = g_strdup ("hmlgdf");
+    levels = g_strdup ("chmlgdf");
   compliance_levels = filter_term_value (filter, "compliance_levels");
 
   // Build clause fragments
@@ -23338,7 +23380,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   min_qod_clause = where_qod (min_qod);
 
-  levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
+  levels_clause = where_levels_auto (levels ? levels : "chmlgdf",
                                      given_new_severity_sql
                                       ? given_new_severity_sql
                                       : new_severity_sql);
@@ -25840,6 +25882,7 @@ report_severity_data (report_t report, const char *host,
  *       use report_counts_id instead.
  *
  * @param[in]   report_id    ID of report.
+ * @param[out]  criticals    Number of critical messages.
  * @param[out]  holes        Number of hole messages.
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
@@ -25852,7 +25895,7 @@ report_severity_data (report_t report, const char *host,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts (const char* report_id, int* holes, int* infos,
+report_counts (const char* report_id, int* criticals, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, double* severity,
                int override, int min_qod)
 {
@@ -25865,7 +25908,7 @@ report_counts (const char* report_id, int* holes, int* infos,
   // TODO Check if report was found.
 
   get = report_results_get_data (1, -1, override, min_qod);
-  ret = report_counts_id (report, holes, infos, logs, warnings,
+  ret = report_counts_id (report, criticals, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
   free (get);
@@ -26036,6 +26079,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
+ * @param[out]  criticals Number of critical messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -26044,6 +26088,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @param[out]  severity  Maximum severity of the report.
  * @param[in]   get       Get data.
  * @param[in]   host      Host to which to limit the count.
+ * @param[out]  filtered_criticals Number of critical messages after filtering.
  * @param[out]  filtered_holes     Number of hole messages after filtering.
  * @param[out]  filtered_infos     Number of info messages after filtering.
  * @param[out]  filtered_logs      Number of log messages after filtering.
@@ -26055,11 +26100,11 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @return 0 on success, -1 on error.
  */
 static int
-report_counts_id_full (report_t report, int* holes, int* infos,
+report_counts_id_full (report_t report, int* criticals, int* holes, int* infos,
                        int* logs, int* warnings, int* false_positives,
                        double* severity,
                        const get_data_t* get, const char* host,
-                       int* filtered_holes,
+                       int* filtered_criticals, int* filtered_holes,
                        int* filtered_infos, int* filtered_logs,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
@@ -26071,11 +26116,11 @@ report_counts_id_full (report_t report, int* holes, int* infos,
   int override, min_qod_int;
   severity_data_t severity_data, filtered_severity_data;
 
-  unfiltered_requested = (holes || warnings || infos || logs || false_positives
+  unfiltered_requested = (criticals || holes || warnings || infos || logs || false_positives
                           || severity);
-  filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
-                        || filtered_logs || filtered_false_positives
-                        || filtered_severity);
+  filtered_requested = (filtered_criticals || filtered_holes || filtered_warnings
+                        || filtered_infos  || filtered_logs
+                        || filtered_false_positives || filtered_severity);
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
@@ -26170,11 +26215,11 @@ report_counts_id_full (report_t report, int* holes, int* infos,
 
   severity_data_level_counts (&severity_data,
                               NULL, false_positives,
-                              logs, infos, warnings, holes);
+                              logs, infos, warnings, holes, criticals);
   severity_data_level_counts (&filtered_severity_data,
                               NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
-                              filtered_warnings, filtered_holes);
+                              filtered_warnings, filtered_holes, filtered_criticals);
 
   if (severity)
     *severity = severity_data.max;
@@ -26345,6 +26390,7 @@ report_compliance_counts (report_t report,
  * @brief Get only the filtered message counts for a report.
  *
  * @param[in]   report    Report.
+ * @param[out]  criticals Number of critical messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -26357,14 +26403,14 @@ report_compliance_counts (report_t report,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts_id (report_t report, int* holes, int* infos,
+report_counts_id (report_t report, int* criticals, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives,
                   double* severity, const get_data_t *get, const char *host)
 {
   int ret;
-  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL,
-                               get, host, holes, infos, logs, warnings,
-                               false_positives, severity);
+  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                               get, host, criticals, holes, infos, logs,
+                               warnings, false_positives, severity);
   return ret;
 }
 
@@ -26407,7 +26453,7 @@ report_severity (report_t report, int overrides, int min_qod)
       g_debug ("%s: could not get max from cache", __func__);
       get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
       report_counts_id (report, NULL, NULL, NULL, NULL,
-                        NULL, &severity, get, NULL);
+                        NULL, NULL, &severity, get, NULL);
       get_data_reset (get);
       free (get);
     }
@@ -28121,6 +28167,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  lean                     Whether to return lean report.
  * @param[in]  host_summary_buffer      Host sumary buffer.
  * @param[in]  f_host_ports             Hashtable for host ports.
+ * @param[in]  f_host_criticals         Hashtable for host criticals.
  * @param[in]  f_host_holes             Hashtable for host holes.
  * @param[in]  f_host_warnings          Hashtable for host host warnings.
  * @param[in]  f_host_infos             Hashtable for host infos.
@@ -28141,6 +28188,7 @@ print_report_host_xml (FILE *stream,
                        int lean,
                        GString *host_summary_buffer,
                        GHashTable *f_host_ports,
+                       GHashTable *f_host_criticals,
                        GHashTable *f_host_holes,
                        GHashTable *f_host_warnings,
                        GHashTable *f_host_infos,
@@ -28224,9 +28272,12 @@ print_report_host_xml (FILE *stream,
     }
   else
     {
-      int holes_count, warnings_count, infos_count;
+      int criticals_count, holes_count, warnings_count, infos_count;
       int logs_count, false_positives_count;
 
+      criticals_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_criticals, current_host));
       holes_count
         = GPOINTER_TO_INT
             (g_hash_table_lookup ( f_host_holes, current_host));
@@ -28250,9 +28301,13 @@ print_report_host_xml (FILE *stream,
             "<port_count><page>%d</page></port_count>"
             "<result_count>"
             "<page>%d</page>"
-            "<hole><page>%d</page></hole>"
-            "<warning><page>%d</page></warning>"
-            "<info><page>%d</page></info>"
+            "<critical><page>%d</page></critical>"
+            "<hole deprecated='1'><page>%d</page></hole>"
+            "<high><page>%d</page></high>"
+            "<warning deprecated='1'><page>%d</page></warning>"
+            "<medium><page>%d</page></medium>"
+            "<info deprecated='1'><page>%d</page></info>"
+            "<low><page>%d</page></low>"
             "<log><page>%d</page></log>"
             "<false_positive><page>%d</page></false_positive>"
             "</result_count>",
@@ -28261,10 +28316,14 @@ print_report_host_xml (FILE *stream,
               ? host_iterator_end_time (hosts)
               : "",
             ports_count,
-            (holes_count + warnings_count + infos_count
+            (criticals_count + holes_count + warnings_count + infos_count
               + logs_count + false_positives_count),
+            criticals_count,
+            holes_count,
             holes_count,
             warnings_count,
+            warnings_count,
+            infos_count,
             infos_count,
             logs_count,
             false_positives_count);
@@ -28505,14 +28564,16 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @param[in]  result_hosts_only  Whether to only include hosts with results.
  * @param[in]  orig_filtered_result_count  Result count.
  * @param[in]  filtered_result_count       Result count.
- * @param[in]  orig_f_holes   Result count.
- * @param[in]  f_holes        Result count.
- * @param[in]  orig_f_infos   Result count.
- * @param[in]  f_infos        Result count.
- * @param[in]  orig_f_logs    Result count.
- * @param[in]  f_logs         Result count.
- * @param[in]  orig_f_warnings  Result count.
- * @param[in]  f_warnings       Result count.
+ * @param[in]  orig_f_criticals   Result count.
+ * @param[in]  f_criticals        Result count.
+ * @param[in]  orig_f_infos       Result count.
+ * @param[in]  f_holes            Result count.
+ * @param[in]  orig_f_infos       Result count.
+ * @param[in]  f_infos            Result count.
+ * @param[in]  orig_f_logs        Result count.
+ * @param[in]  f_logs             Result count.
+ * @param[in]  orig_f_warnings    Result count.
+ * @param[in]  f_warnings         Result count.
  * @param[in]  orig_f_false_positives  Result count.
  * @param[in]  f_false_positives       Result count.
  * @param[in]  f_compliance_yes        filtered compliant count.
@@ -28533,6 +28594,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         const char *sort_field, int result_hosts_only,
                         int *orig_filtered_result_count,
                         int *filtered_result_count,
+                        int *orig_f_criticals, int *f_criticals,
                         int *orig_f_holes, int *f_holes,
                         int *orig_f_infos, int *f_infos,
                         int *orig_f_logs, int *f_logs,
@@ -28547,6 +28609,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
   GTree *ports;
 
   *orig_f_holes = *f_holes;
+  *orig_f_criticals = *f_criticals;
   *orig_f_infos = *f_infos;
   *orig_f_logs = *f_logs;
   *orig_f_warnings = *f_warnings;
@@ -28595,6 +28658,11 @@ print_report_delta_xml (FILE *out, iterator_t *results,
         level = result_iterator_level (results);
         (*orig_filtered_result_count)++;
         (*filtered_result_count)++;
+        if (strcmp (level, "Critical") == 0)
+          {
+            (*orig_f_criticals)++;
+            (*f_criticals)++;
+          }
         if (strcmp (level, "High") == 0)
           {
             (*orig_f_holes)++;
@@ -28736,9 +28804,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int holes, infos, logs, warnings, false_positives;
-  int f_holes, f_infos, f_logs, f_warnings, f_false_positives;
-  int orig_f_holes, orig_f_infos, orig_f_logs;
+  int criticals, holes, infos, logs, warnings, false_positives;
+  int f_criticals, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
+  int orig_f_criticals, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
   int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
@@ -28747,7 +28815,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   gchar *term_value;
   GHashTable *f_host_ports;
-  GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
+  GHashTable *f_host_criticals, *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
   GHashTable *f_host_compliant, *f_host_notcompliant;
   GHashTable  *f_host_incomplete, *f_host_undefined;
@@ -28769,8 +28837,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
-  orig_f_holes = 0;
+  orig_f_holes = orig_f_criticals = 0;
   f_host_ports = NULL;
+  f_host_criticals = NULL;
   f_host_holes = NULL;
   f_host_warnings = NULL;
   f_host_infos = NULL;
@@ -28850,7 +28919,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   max_results = manage_max_rows (max_results);
 
-  levels = levels ? levels : g_strdup ("hmlgdf");
+  levels = levels ? levels : g_strdup ("chmlgdf");
 
   if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
     {
@@ -28966,16 +29035,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           if (delta == 0)
             {
-              int total_holes, total_infos, total_logs;
+              int total_criticals, total_holes, total_infos, total_logs;
               int total_warnings, total_false_positives;
               get_data_t *all_results_get;
 
               all_results_get = report_results_get_data (1, -1, 0, 0);
-              report_counts_id (report, &total_holes, &total_infos,
-                                &total_logs, &total_warnings,
+              report_counts_id (report, &total_criticals, &total_holes,
+                                &total_infos, &total_logs, &total_warnings,
                                 &total_false_positives, NULL, all_results_get,
                                 NULL);
-              total_result_count = total_holes + total_infos
+              total_result_count = total_criticals + total_holes + total_infos
                                   + total_logs + total_warnings
                                   + total_false_positives;
               get_data_reset (all_results_get);
@@ -28995,10 +29064,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               /* Beware, we're using the full variables temporarily here, but
               * report_counts_id counts the filtered results. */
-              report_counts_id (report, &holes, &infos, &logs, &warnings,
+              report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                                 &false_positives, NULL, get, NULL);
 
-              filtered_result_count = holes + infos + logs + warnings
+              filtered_result_count = criticals + holes + infos + logs + warnings
                                       + false_positives;
 
             }
@@ -29065,6 +29134,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
+      if (strchr (levels, 'c'))
+        g_string_append (filters_extra_buffer, "<filter>Critical</filter>");
       if (strchr (levels, 'h'))
         g_string_append (filters_extra_buffer, "<filter>High</filter>");
       if (strchr (levels, 'm'))
@@ -29379,19 +29450,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         /* We're getting all the filtered results, so we can count them as we
         * print them, to save time. */
 
-        report_counts_id_full (report, &holes, &infos, &logs,
+        report_counts_id_full (report, &criticals, &holes, &infos, &logs,
                               &warnings, &false_positives, &severity,
-                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-        f_holes = f_infos = f_logs = f_warnings = 0;
+        f_criticals = f_holes = f_infos = f_logs = f_warnings = 0;
         f_false_positives = f_severity = 0;
       }
     else
-      report_counts_id_full (report, &holes, &infos, &logs,
+      report_counts_id_full (report, &criticals, &holes, &infos, &logs,
                             &warnings, &false_positives, &severity,
                             get, NULL,
-                            &f_holes, &f_infos, &f_logs, &f_warnings,
-                            &f_false_positives, &f_severity);
+                            &f_criticals, &f_holes, &f_infos, &f_logs,
+                            &f_warnings, &f_false_positives, &f_severity);
     }
 
   /* Results. */
@@ -29455,6 +29526,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
+      f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
       f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                             g_free, NULL);
       f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -29478,6 +29551,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
                                   &filtered_result_count,
+                                  &orig_f_criticals, &f_criticals,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
                                   &orig_f_logs, &f_logs,
@@ -29586,6 +29660,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                   f_host_result_counts = f_host_logs;
                   if (count_filtered)
                     f_logs++;
+                }
+              else if (strcasecmp (level, "critical") == 0)
+                {
+                  f_host_result_counts = f_host_criticals;
+                  if (count_filtered)
+                    f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
@@ -29701,24 +29781,32 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         PRINT (out,
               "<result_count>"
               "<filtered>%i</filtered>"
-              "<hole><filtered>%i</filtered></hole>"
-              "<info><filtered>%i</filtered></info>"
+              "<critical><filtered>%i</filtered></critical>"
+              "<hole deprecated='1'><filtered>%i</filtered></hole>"
+              "<high><filtered>%i</filtered></high>"
+              "<info deprecated='1'><filtered>%i</filtered></info>"
+              "<low><filtered>%i</filtered></low>"
               "<log><filtered>%i</filtered></log>"
-              "<warning><filtered>%i</filtered></warning>"
+              "<warning deprecated='1'><filtered>%i</filtered></warning>"
+              "<medium><filtered>%i</filtered></medium>"
               "<false_positive>"
               "<filtered>%i</filtered>"
               "</false_positive>"
               "</result_count>",
               orig_filtered_result_count,
+              (strchr (levels, 'c') ? orig_f_criticals : 0),
+              (strchr (levels, 'h') ? orig_f_holes : 0),
               (strchr (levels, 'h') ? orig_f_holes : 0),
               (strchr (levels, 'l') ? orig_f_infos : 0),
+              (strchr (levels, 'l') ? orig_f_infos : 0),
               (strchr (levels, 'g') ? orig_f_logs : 0),
+              (strchr (levels, 'm') ? orig_f_warnings : 0),
               (strchr (levels, 'm') ? orig_f_warnings : 0),
               (strchr (levels, 'f') ? orig_f_false_positives : 0));
       else
         {
           if (count_filtered)
-            filtered_result_count = f_holes + f_infos + f_logs
+            filtered_result_count = f_criticals + f_holes + f_infos + f_logs
                                     + f_warnings + false_positives;
 
           PRINT (out,
@@ -29726,10 +29814,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "%i"
                 "<full>%i</full>"
                 "<filtered>%i</filtered>"
-                "<hole><full>%i</full><filtered>%i</filtered></hole>"
-                "<info><full>%i</full><filtered>%i</filtered></info>"
+                "<critical>"
+                "<full>%i</full>"
+                "<filtered>%i</filtered>"
+                "</critical>"
+                "<hole deprecated='1'><full>%i</full><filtered>%i</filtered></hole>"
+                "<high><full>%i</full><filtered>%i</filtered></high>"
+                "<info deprecated='1'><full>%i</full><filtered>%i</filtered></info>"
+                "<low><full>%i</full><filtered>%i</filtered></low>"
                 "<log><full>%i</full><filtered>%i</filtered></log>"
-                "<warning><full>%i</full><filtered>%i</filtered></warning>"
+                "<warning deprecated='1'><full>%i</full><filtered>%i</filtered></warning>"
+                "<medium><full>%i</full><filtered>%i</filtered></medium>"
                 "<false_positive>"
                 "<full>%i</full>"
                 "<filtered>%i</filtered>"
@@ -29738,12 +29833,20 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 total_result_count,
                 total_result_count,
                 filtered_result_count,
+                criticals,
+                (strchr (levels, 'c') ? f_criticals : 0),
+                holes,
+                (strchr (levels, 'h') ? f_holes : 0),
                 holes,
                 (strchr (levels, 'h') ? f_holes : 0),
                 infos,
                 (strchr (levels, 'l') ? f_infos : 0),
+                infos,
+                (strchr (levels, 'l') ? f_infos : 0),
                 logs,
                 (strchr (levels, 'g') ? f_logs : 0),
+                warnings,
+                (strchr (levels, 'm') ? f_warnings : 0),
                 warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
                 false_positives,
@@ -29789,6 +29892,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                           lean,
                                           host_summary_buffer,
                                           f_host_ports,
+                                          f_host_criticals,
                                           f_host_holes,
                                           f_host_warnings,
                                           f_host_infos,
@@ -29819,6 +29923,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                     lean,
                                     host_summary_buffer,
                                     f_host_ports,
+                                    f_host_criticals,
                                     f_host_holes,
                                     f_host_warnings,
                                     f_host_infos,
@@ -29841,6 +29946,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
+      g_hash_table_destroy (f_host_criticals);
       g_hash_table_destroy (f_host_holes);
       g_hash_table_destroy (f_host_warnings);
       g_hash_table_destroy (f_host_infos);
@@ -29968,6 +30074,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       }
     else
       {
+        g_hash_table_destroy (f_host_criticals);
         g_hash_table_destroy (f_host_holes);
         g_hash_table_destroy (f_host_warnings);
         g_hash_table_destroy (f_host_infos);
@@ -30917,20 +31024,22 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 /**
  * @brief Return the trend of a task, given counts.
  *
- * @param[in]  holes_a   Number of holes on earlier report.
- * @param[in]  warns_a   Number of warnings on earlier report.
- * @param[in]  infos_a   Number of infos on earlier report.
- * @param[in]  severity_a Severity of earlier report.
- * @param[in]  holes_b   Number of holes on later report.
- * @param[in]  warns_b   Number of warnings on later report.
- * @param[in]  infos_b   Number of infos on later report.
- * @param[in]  severity_b Severity of later report.
+ * @param[in]  criticals_a  Number of criticals on earlier report.
+ * @param[in]  holes_a      Number of holes on earlier report.
+ * @param[in]  warns_a      Number of warnings on earlier report.
+ * @param[in]  infos_a      Number of infos on earlier report.
+ * @param[in]  severity_a   Severity of earlier report.
+ * @param[in]  criticals_b  Number of criticals on later report.
+ * @param[in]  holes_b      Number of holes on later report.
+ * @param[in]  warns_b      Number of warnings on later report.
+ * @param[in]  infos_b      Number of infos on later report.
+ * @param[in]  severity_b   Severity of later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
 static const char *
-task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
-                 int holes_b, int warns_b, int infos_b, double severity_b)
+task_trend_calc (int criticals_a, int holes_a, int warns_a, int infos_a, double severity_a,
+                 int criticals_b, int holes_b, int warns_b, int infos_b, double severity_b)
 {
   int threat_a, threat_b;
 
@@ -30944,7 +31053,9 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
 
   /* Calculate trend. */
 
-  if (holes_a > 0)
+  if (criticals_a > 0)
+    threat_a = 5;
+  else if (holes_a > 0)
     threat_a = 4;
   else if (warns_a > 0)
     threat_a = 3;
@@ -30953,7 +31064,9 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
   else
     threat_a = 1;
 
-  if (holes_b > 0)
+  if (criticals_b > 0)
+    threat_b = 5;
+  else if (holes_b > 0)
     threat_b = 4;
   else if (warns_b > 0)
     threat_b = 3;
@@ -30971,6 +31084,15 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
     return "down";
 
   /* Check if the threat count changed in the highest level. */
+
+  if (criticals_a)
+    {
+      if (criticals_a > criticals_b)
+        return "more";
+      if (criticals_a < criticals_b)
+        return "less";
+      return "same";
+    }
 
   if (holes_a)
     {
@@ -31005,21 +31127,23 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
 /**
  * @brief Return the trend of a task, given counts.
  *
- * @param[in]  iterator  Task iterator.
- * @param[in]  holes_a   Number of holes on earlier report.
- * @param[in]  warns_a   Number of warnings on earlier report.
- * @param[in]  infos_a   Number of infos on earlier report.
- * @param[in]  severity_a Severity score of earlier report.
- * @param[in]  holes_b   Number of holes on later report.
- * @param[in]  warns_b   Number of warnings on later report.
- * @param[in]  infos_b   Number of infos on later report.
+ * @param[in]  iterator     Task iterator.
+ * @param[in]  criticals_a  Number of criticals on earlier report.
+ * @param[in]  holes_a      Number of holes on earlier report.
+ * @param[in]  warns_a      Number of warnings on earlier report.
+ * @param[in]  infos_a      Number of infos on earlier report.
+ * @param[in]  severity_a   Severity score of earlier report.
+ * @param[in]  criticals_b  Number of criticals on later report.
+ * @param[in]  holes_b      Number of holes on later report.
+ * @param[in]  warns_b      Number of warnings on later report.
+ * @param[in]  infos_b      Number of infos on later report.
  * @param[in]  severity_b  Severity score of later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
 const char *
-task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
-                            int infos_a, double severity_a, int holes_b,
+task_iterator_trend_counts (iterator_t *iterator, int criticals_a, int holes_a, int warns_a,
+                            int infos_a, double severity_a, int criticals_b, int holes_b,
                             int warns_b, int infos_b, double severity_b)
 {
   /* Ensure there are enough reports. */
@@ -31031,8 +31155,8 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
   if (task_iterator_run_status (iterator) == TASK_STATUS_RUNNING)
     return "";
 
-  return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
-                          holes_b, warns_b, infos_b, severity_b);
+  return task_trend_calc (criticals_a, holes_a, warns_a, infos_a, severity_a,
+                          criticals_b, holes_b, warns_b, infos_b, severity_b);
 }
 
 /**
@@ -38205,9 +38329,9 @@ create_note (const char* active, const char* nvt, const char* text,
   if (text == NULL)
     return -1;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, ""))
+  if (threat && strcmp (threat, "Critical") && strcmp (threat, "High")
+      && strcmp (threat, "Medium") && strcmp (threat, "Low")
+      && strcmp (threat, "Log") && strcmp (threat, ""))
     return -1;
 
   quoted_text = sql_insert (text);
@@ -38226,6 +38350,8 @@ create_note (const char* active, const char* nvt, const char* text,
   else if (threat != NULL && strcmp (threat, ""))
     {
       if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
@@ -38461,9 +38587,10 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
   if (nvt && !nvt_exists (nvt))
     return 4;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Alarm") && strcmp (threat, ""))
+  if (threat && strcmp (threat, "Critical") && strcmp (threat, "High")
+      && strcmp (threat, "Medium") && strcmp (threat, "Low")
+      && strcmp (threat, "Log") && strcmp (threat, "Alarm")
+      && strcmp (threat, ""))
     return -1;
 
   if (port && validate_results_port (port))
@@ -38486,6 +38613,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
   else if (threat != NULL && strcmp (threat, ""))
     {
       if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
@@ -39193,14 +39322,15 @@ create_override (const char* active, const char* nvt, const char* text,
   if (port && validate_results_port (port))
     return 2;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Alarm") && strcmp (threat, ""))
+  if (threat && strcmp (threat, "Critical") && strcmp (threat, "High") 
+      && strcmp (threat, "Medium") && strcmp (threat, "Low") 
+      && strcmp (threat, "Log") && strcmp (threat, "Alarm") 
+      && strcmp (threat, ""))
     return -1;
 
-  if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
-      && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
-      && strcmp (new_threat, "False Positive")
+  if (new_threat && strcmp (threat, "Critical") && strcmp (new_threat, "High") 
+      && strcmp (new_threat, "Medium") && strcmp (new_threat, "Low")
+      && strcmp (new_threat, "Log") && strcmp (new_threat, "False Positive")
       && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
@@ -39216,6 +39346,8 @@ create_override (const char* active, const char* nvt, const char* text,
   else if (threat != NULL && strcmp (threat, ""))
     {
       if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
@@ -39248,6 +39380,8 @@ create_override (const char* active, const char* nvt, const char* text,
   else if (new_threat != NULL && strcmp (new_threat, ""))
     {
       if (strcmp (new_threat, "Alarm") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "Critical") == 0)
         new_severity_dbl = 10.0;
       else if (strcmp (new_threat, "High") == 0)
         new_severity_dbl = 10.0;
@@ -39567,6 +39701,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (strcmp (threat, "Alarm") == 0)
         severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
+        severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "Medium") == 0)
@@ -39598,6 +39734,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
   else if (new_threat != NULL && strcmp (new_threat, ""))
     {
       if (strcmp (new_threat, "Alarm") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "Critical") == 0)
         new_severity_dbl = 10.0;
       else if (strcmp (new_threat, "High") == 0)
         new_severity_dbl = 10.0;
