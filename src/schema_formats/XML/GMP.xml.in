@@ -5698,7 +5698,12 @@ END:VCALENDAR
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
       <o><e>ssh_elevate_credential</e></o>
-      <o><e>smb_credential</e></o>
+      <o>
+        <or>
+          <e>krb5_credential</e>
+          <e>smb_credential</e>
+        </or>
+      </o>
       <o><e>esxi_credential</e></o>
       <o><e>snmp_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
@@ -5780,6 +5785,17 @@ END:VCALENDAR
     <ele>
       <name>ssh_elevate_credential</name>
       <summary>SSH elevate credentials for target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>krb5_credential</name>
+      <summary>Kerberos 5 login credentials for target</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -21835,6 +21851,7 @@ END:VCALENDAR
           <e>ssh_credential</e>
           <e>smb_credential</e>
           <e>esxi_credential</e>
+          <e>krb5_credential</e>
           <e>snmp_credential</e>
           <e>ssh_elevate_credential</e>
           <e>permissions</e>
@@ -21998,7 +22015,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22034,7 +22051,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22065,7 +22082,38 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the LSC credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>krb5_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the Kerberos 5 LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22130,7 +22178,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22163,7 +22211,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the port_list</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -23005,7 +23053,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the scanner</summary>
             <pattern></pattern>
           </ele>
         </ele>
@@ -28148,7 +28196,12 @@ END:VCALENDAR
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
       <o><e>ssh_elevate_credential</e></o>
-      <o><e>smb_credential</e></o>
+      <o>
+        <or>
+          <e>krb5_credential</e>
+          <e>smb_credential</e>
+        </or>
+      </o>
       <o><e>esxi_credential</e></o>
       <o><e>snmp_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
@@ -28212,6 +28265,17 @@ END:VCALENDAR
     <ele>
       <name>smb_credential</name>
       <summary>SMB credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>krb5_credential</name>
+      <summary>Kerberos 5 login credentials for target</summary>
       <pattern>
         <attrib>
           <name>id</name>

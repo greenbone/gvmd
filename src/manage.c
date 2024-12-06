@@ -2397,6 +2397,61 @@ target_osp_snmp_credential (target_t target)
 }
 
 /**
+ * @brief Get the Kerberos 5 credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_krb5_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_credential (target, "krb5");
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: Kerberos 5 Credential not found.", __func__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "krb5"))
+        {
+          g_warning ("%s: Kerberos 5 Credential not of type 'krb5'.",
+                     __func__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("up", "krb5", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "kdc",
+                                    credential_iterator_kdc (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "realm",
+                                    credential_iterator_realm (&iter)
+                                      ?: "");
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
  * @brief Prepare a report for resuming an OSP scan
  *
  * @param[in]  task     The task of the scan.
@@ -2571,7 +2626,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
-  osp_credential_t *snmp_credential;
+  osp_credential_t *snmp_credential, *krb5_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
   int ret, empty;
@@ -2662,6 +2717,10 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   snmp_credential = target_osp_snmp_credential (target);
   if (snmp_credential)
     osp_target_add_credential (osp_target, snmp_credential);
+
+  krb5_credential = target_osp_krb5_credential (target);
+  if (krb5_credential)
+    osp_target_add_credential (osp_target, krb5_credential);
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;

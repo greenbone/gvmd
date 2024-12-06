@@ -950,6 +950,7 @@ typedef struct
   char *esxi_credential_id;         ///< ESXi credential for new target.
   char *esxi_lsc_credential_id;     ///< ESXi credential (deprecated).
   char *snmp_credential_id;         ///< SNMP credential for new target.
+  char *krb5_credential_id;         ///< Kerberos 5 credential for new target.
   char *name;                       ///< Name of new target.
 } create_target_data_t;
 
@@ -982,6 +983,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
+  free (data->krb5_credential_id);
   free (data->name);
 
   memset (data, 0, sizeof (create_target_data_t));
@@ -2880,6 +2882,7 @@ typedef struct
   char *esxi_credential_id;          ///< ESXi credential for target.
   char *esxi_lsc_credential_id;      ///< ESXi credential for target (deprecated).
   char *snmp_credential_id;          ///< SNMP credential for target.
+  char *krb5_credential_id;          ///< Kerberos 5 credential for target.
   char *target_id;                   ///< Target UUID.
 } modify_target_data_t;
 
@@ -2910,6 +2913,7 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
+  free (data->krb5_credential_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (modify_target_data_t));
@@ -4292,6 +4296,7 @@ typedef enum
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_PORT_RANGE,
+  CLIENT_CREATE_TARGET_KRB5_CREDENTIAL,
   CLIENT_CREATE_TARGET_SMB_CREDENTIAL,
   CLIENT_CREATE_TARGET_SNMP_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_CREDENTIAL,
@@ -4529,6 +4534,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_MODIFY_TARGET_NAME,
   CLIENT_MODIFY_TARGET_PORT_LIST,
+  CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SMB_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SNMP_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_CREDENTIAL,
@@ -6631,6 +6637,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_target_data->port_list_id);
             set_client_state (CLIENT_MODIFY_TARGET_PORT_LIST);
           }
+        else if (strcasecmp ("KRB5_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->krb5_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL);
+          }
         else if (strcasecmp ("SSH_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -7641,6 +7653,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             gvm_append_string (&create_target_data->port_range, "");
             set_client_state (CLIENT_CREATE_TARGET_PORT_RANGE);
+          }
+        else if (strcasecmp ("KRB5_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->krb5_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_KRB5_CREDENTIAL);
           }
         else if (strcasecmp ("SSH_CREDENTIAL", element_name) == 0)
           {
@@ -17857,18 +17875,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
           char *ssh_elevate_name, *ssh_elevate_uuid;
+          char *krb5_name, *krb5_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
           const char *reverse_lookup_unify, *allow_simultaneous_ips;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
-          credential_t ssh_elevate_credential;
+          credential_t ssh_elevate_credential, krb5_credential;
           int port_list_trash, max_hosts, port_list_available;
           int ssh_credential_available;
           int smb_credential_available;
           int esxi_credential_available;
           int snmp_credential_available;
           int ssh_elevate_credential_available;
+          int krb5_credential_available;
 
           ret = get_next (&targets, &get_targets_data->get, &first,
                           &count, init_target_iterator);
@@ -17886,6 +17906,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           snmp_credential = target_iterator_snmp_credential (&targets);
           ssh_elevate_credential
             = target_iterator_ssh_elevate_credential (&targets);
+          krb5_credential = target_iterator_krb5_credential (&targets);
 
           ssh_credential_available = 1;
           if (ssh_credential)
@@ -18043,6 +18064,38 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
               ssh_elevate_uuid = NULL;
             }
 
+          krb5_credential_available = 1;
+          if (krb5_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_krb5_trash (&targets))
+                {
+                  krb5_name
+                    = trash_credential_name (krb5_credential);
+                  krb5_uuid
+                    = trash_credential_uuid (krb5_credential);
+                  krb5_credential_available
+                    = trash_credential_readable (krb5_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  krb5_name = credential_name (krb5_credential);
+                  krb5_uuid = credential_uuid (krb5_credential);
+                  if (find_credential_with_permission (krb5_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  krb5_credential_available = (found > 0);
+                }
+            }
+          else
+            {
+              krb5_name = NULL;
+              krb5_uuid = NULL;
+            }
+
           port_list_uuid = target_iterator_port_list_uuid (&targets);
           port_list_name = target_iterator_port_list_name (&targets);
           port_list_trash = target_iterator_port_list_trash (&targets);
@@ -18153,6 +18206,18 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
             SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
 
           SENDF_TO_CLIENT_OR_FAIL ("</ssh_elevate_credential>"
+                                   "<krb5_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   krb5_uuid ? krb5_uuid : "",
+                                   krb5_name ? krb5_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_krb5_trash (&targets)));
+
+          if (krb5_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</krb5_credential>"
                                    "<reverse_lookup_only>"
                                    "%s"
                                    "</reverse_lookup_only>"
@@ -18210,6 +18275,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           free (esxi_uuid);
           free (ssh_elevate_name);
           free (ssh_elevate_uuid);
+          free (krb5_name);
+          free (krb5_uuid);
         }
       cleanup_iterator (&targets);
       filtered = get_targets_data->get.id
@@ -22958,6 +23025,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           credential_t ssh_credential = 0, ssh_elevate_credential = 0;
           credential_t smb_credential = 0;
           credential_t esxi_credential = 0, snmp_credential = 0;
+          credential_t krb5_credential = 0;
           target_t new_target;
 
           if (create_target_data->copy)
@@ -23026,6 +23094,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 "Hosts must be at least one"
                                 " character long"));
+          else if (create_target_data->smb_credential_id
+                   && create_target_data->krb5_credential_id)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "Targets cannot have both an SMB and"
+                                " Kerberos 5 credential"));
           else if (create_target_data->ssh_credential_id
                    && find_credential_with_permission
                        (create_target_data->ssh_credential_id,
@@ -23134,6 +23208,25 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if (create_target_data->krb5_credential_id
+                   && find_credential_with_permission
+                       (create_target_data->krb5_credential_id,
+                        &krb5_credential,
+                        "get_credentials"))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->krb5_credential_id
+                   && krb5_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("create_target", "Credential",
+                    create_target_data->krb5_credential_id,
+                    gmp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+
           /* Create target from host string. */
           else switch (create_target
                         (create_target_data->name,
@@ -23151,6 +23244,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          smb_credential,
                          esxi_credential,
                          snmp_credential,
+                         krb5_credential,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
@@ -23260,6 +23354,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " different from the SSH credential"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
+              case 16:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Kerberos 5 credential must be of type"
+                                    " 'krb5'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -23299,6 +23400,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, NAME);
       CLOSE (CLIENT_CREATE_TARGET, PORT_LIST);
       CLOSE (CLIENT_CREATE_TARGET, PORT_RANGE);
+      CLOSE (CLIENT_CREATE_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_ELEVATE_CREDENTIAL);
@@ -25758,6 +25860,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           ? modify_target_data->esxi_credential_id
                           : modify_target_data->esxi_lsc_credential_id,
                          modify_target_data->snmp_credential_id,
+                         modify_target_data->krb5_credential_id,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests,
@@ -26007,6 +26110,35 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id, "modified");
                 break;
+              case 26:
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                if (send_find_error_to_client
+                     ("modify_target", "Credential",
+                      modify_target_data->krb5_credential_id,
+                      gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 27:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Kerberos 5 credential must be of type"
+                                    " 'krb5'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 28:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Targets cannot have both an SMB and"
+                                    " Kerberos 5 credential"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
@@ -26046,6 +26178,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
       CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
+      CLOSE (CLIENT_MODIFY_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_ELEVATE_CREDENTIAL);
