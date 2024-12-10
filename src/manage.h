@@ -1751,7 +1751,7 @@ int
 cpe_match_string_iterator_vulnerable (iterator_t*);
 
 void
-init_cpe_match_string_matches_iterator (iterator_t*, const char *);
+init_cpe_match_string_matches_iterator (iterator_t*, const char *, const char*);
 
 const char*
 cpe_matches_cpe_name_id (iterator_t*);

@@ -1834,7 +1834,7 @@ create_view_vulns ()
          "       severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
-         " FROM cves"
+         " FROM scap.cves"
          " WHERE uuid in (SELECT * FROM used_nvts)");
   else
     sql ("CREATE OR REPLACE VIEW vulns AS"
