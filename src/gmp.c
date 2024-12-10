@@ -13367,7 +13367,9 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
                          vee ?: "");
 
       iterator_t cpe_matches;
-      init_cpe_match_string_matches_iterator (&cpe_matches, match_criteria_id);
+      init_cpe_match_string_matches_iterator (
+        &cpe_matches, match_criteria_id, NULL
+      );
       xml_string_append (buffer, "<matched_cpes>");
 
       while (next (&cpe_matches))

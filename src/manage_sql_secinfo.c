@@ -3500,7 +3500,11 @@ handle_cve_configurations (resource_t cve_db_id, char * cve_id,
               if (vulnerable)
                 {
                   iterator_t cpe_matches;
-                  init_cpe_match_string_matches_iterator (&cpe_matches, quoted_match_criteria_id);
+                  init_cpe_match_string_matches_iterator (
+                    &cpe_matches,
+                    quoted_match_criteria_id,
+                    "scap2"
+                  );
                   while (next (&cpe_matches))
                     g_string_append_printf (software, "%s ", cpe_matches_cpe_name (&cpe_matches));
                   cleanup_iterator (&cpe_matches);

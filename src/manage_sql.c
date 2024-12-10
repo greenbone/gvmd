@@ -20661,15 +20661,18 @@ DEF_ACCESS (cpe_match_string_iterator_version_end_excl, 7);
  *
  * @param[in]  iterator           Iterator.
  * @param[in]  match_criteria_id  The match criteria id to get the matches for.
+ * @param[in]  schema             Schema name, NULL for the default "scap".
  */
 void
 init_cpe_match_string_matches_iterator (iterator_t* iterator,
-                                       const char *match_criteria_id)
+                                        const char *match_criteria_id,
+                                        const char *schema)
 {
   init_iterator (iterator,
                  "SELECT cpe_name_id, cpe_name"
-                 " FROM scap.cpe_matches"
+                 " FROM %s.cpe_matches"
                  " WHERE match_criteria_id = '%s'",
+                 schema ? schema : "scap",
                  match_criteria_id);
 }
 
