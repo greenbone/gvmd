@@ -3577,7 +3577,8 @@ handle_json_cve_item (cJSON *item)
   modified_time = parse_iso_time (modified);
 
   cJSON *metrics_json;
-  cJSON *cvss_metric_array;
+  cJSON *best_cvss_metric_item = NULL;
+  gboolean cvss_metric_is_primary = FALSE;
 
   metrics_json = cJSON_GetObjectItemCaseSensitive (cve_json, "metrics");
   if (!cJSON_IsObject (metrics_json))
@@ -3587,72 +3588,76 @@ handle_json_cve_item (cJSON *item)
       return -1;
     }
 
-  gboolean cvss_metric_found = FALSE;
-
   const char *cvss_metric_keys[] = {
     "cvssMetricV40",
     "cvssMetricV31",
     "cvssMetricV30",
     "cvssMetricV2"};
 
+  score_dbl = SEVERITY_MISSING;
+  vector = NULL;
+
   for (int i = 0; i < 4; i++)
     {
-      cvss_metric_array
+      cJSON *cvss_metric_array
         = cJSON_GetObjectItemCaseSensitive (metrics_json, cvss_metric_keys[i]);
       if (cJSON_IsArray (cvss_metric_array)
           && cJSON_GetArraySize (cvss_metric_array) > 0)
         {
-          cvss_metric_found = TRUE;
-          break;
+          cJSON *cvss_metric_item;
+          cJSON_ArrayForEach (cvss_metric_item, cvss_metric_array)
+            {
+              char *source_type
+                = json_object_item_string (cvss_metric_item, "type");
+              if (source_type == NULL)
+                {
+                  g_warning ("%s: type missing in CVSS metric for %s.",
+                            __func__, cve_id);
+                  return -1;
+                }
+              if (strcmp (source_type, "Primary") == 0)
+                cvss_metric_is_primary = TRUE;
+
+              if (cvss_metric_is_primary)
+                {
+                  best_cvss_metric_item = cvss_metric_item;
+                  break;
+                }
+              else if (best_cvss_metric_item == NULL)
+                best_cvss_metric_item = cvss_metric_item;
+            }
+
+          if (cvss_metric_is_primary)
+            break;
         }
     }
 
-  if (cvss_metric_found)
+  if (best_cvss_metric_item)
     {
-      cJSON *cvss_json;
-      cJSON *cvss_metric_item;
-      char *source_type;
-
-      cJSON_ArrayForEach (cvss_metric_item, cvss_metric_array)
+      cJSON *cvss_json
+        = cJSON_GetObjectItemCaseSensitive (best_cvss_metric_item, "cvssData");
+      if (!cJSON_IsObject (cvss_json))
         {
-          source_type = json_object_item_string (cvss_metric_item, "type");
-          if (source_type == NULL)
-            {
-              g_warning ("%s: type missing in CVSS metric for %s.",
-                         __func__, cve_id);
-              return -1;
-            }
-          else if (strcmp (source_type, "Primary"))
-            continue;
-
-          cvss_json = cJSON_GetObjectItemCaseSensitive (cvss_metric_item,
-                                                        "cvssData");
-          if (!cJSON_IsObject (cvss_json))
-            {
-              g_warning ("%s: cvssData missing or not an object for %s.",
-                         __func__, cve_id);
-              return -1;
-            }
-          score_dbl = json_object_item_double (cvss_json,
-                                               "baseScore",
-                                               SEVERITY_MISSING);
-          if (score_dbl == SEVERITY_MISSING)
-            {
-              g_warning ("%s: baseScore missing for %s.", __func__, cve_id);
-              return -1;
-            }
-          vector = json_object_item_string (cvss_json, "vectorString");
-          if (vector == NULL)
-            {
-              g_warning ("%s: vectorString missing for %s.", __func__, cve_id);
-              return -1;
-            }
+          g_warning ("%s: cvssData missing or not an object for %s.",
+                      __func__, cve_id);
+          return -1;
         }
-    }
-  else
-    {
-      score_dbl = SEVERITY_MISSING;
-      vector = NULL;
+
+      score_dbl = json_object_item_double (cvss_json,
+                                           "baseScore",
+                                           SEVERITY_MISSING);
+      if (score_dbl == SEVERITY_MISSING)
+        {
+          g_warning ("%s: baseScore missing for %s.", __func__, cve_id);
+          return -1;
+        }
+
+      vector = json_object_item_string (cvss_json, "vectorString");
+      if (vector == NULL)
+        {
+          g_warning ("%s: vectorString missing for %s.", __func__, cve_id);
+          return -1;
+        }
     }
 
   cJSON *descriptions_json;
