@@ -249,6 +249,18 @@ if (NOT CVSS3_RATINGS)
 endif (NOT CVSS3_RATINGS)
 add_definitions (-DCVSS3_RATINGS=${CVSS3_RATINGS})
 
+if (CVSS3_RATINGS EQUAL 1)
+  set(IF_CVSS3_RATINGS "")
+  set(ENDIF_CVSS3_RATINGS "")
+  set(IF_NOT_CVSS3_RATINGS "<!--")
+  set(ENDIF_NOT_CVSS3_RATINGS "-->")
+elseif (CVSS3_RATINGS EQUAL 0)
+  set(IF_CVSS3_RATINGS "<!--")
+  set(ENDIF_CVSS3_RATINGS "-->")
+  set(IF_NOT_CVSS3_RATINGS "")
+  set(ENDIF_NOT_CVSS3_RATINGS "")
+endif()
+
 message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message ("-- Log file: ${GVMD_LOG_FILE}")
 
