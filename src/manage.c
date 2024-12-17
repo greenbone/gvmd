@@ -860,6 +860,10 @@ scanner_type_valid (scanner_type_t scanner_type)
 const char *
 threat_message_type (const char *threat)
 {
+#if CVSS3_RATINGS == 1
+  if (strcasecmp (threat, "Critical") == 0)
+    return "Alarm";
+#endif
   if (strcasecmp (threat, "High") == 0)
     return "Alarm";
   if (strcasecmp (threat, "Medium") == 0)
@@ -886,8 +890,15 @@ threat_message_type (const char *threat)
 int
 severity_in_level (double severity, const char *level)
 {
+#if CVSS3_RATINGS == 1
+  if (strcmp (level, "critical") == 0)
+    return severity >= 9 && severity <= 10;
+  else if (strcmp (level, "high") == 0)
+    return severity >= 7 && severity < 9;
+#else
   if (strcmp (level, "high") == 0)
     return severity >= 7 && severity <= 10;
+#endif
   else if (strcmp (level, "medium") == 0)
     return severity >= 4 && severity < 7;
   else if (strcmp (level, "low") == 0)
@@ -919,6 +930,10 @@ severity_to_level (double severity, int mode)
     {
       if (mode == 1)
         return "Alarm";
+#if CVSS3_RATINGS == 1
+      else if (severity_in_level (severity, "critical"))
+        return "Critical";
+#endif
       else if (severity_in_level (severity, "high"))
         return "High";
       else if (severity_in_level (severity, "medium"))
@@ -1300,11 +1315,21 @@ severity_data_range_count (const severity_data_t* severity_data,
  * @param[out] lows            The number of Low severity results.
  * @param[out] mediums         The number of Medium severity results.
  * @param[out] highs           The number of High severity results.
+ * @param[out] criticals       The number of Critical severity results.
+ *                             Only if CVSS3_RATINGS is enabled.
  */
 void
 severity_data_level_counts (const severity_data_t *severity_data,
-                            int *errors, int *false_positives,
-                            int *logs, int *lows, int *mediums, int *highs)
+                            int *errors,
+                            int *false_positives,
+                            int *logs,
+                            int *lows,
+                            int *mediums,
+                            int *highs
+#if CVSS3_RATINGS == 1
+                            ,int* criticals
+#endif
+                           )
 {
   if (errors)
     *errors
@@ -1341,6 +1366,14 @@ severity_data_level_counts (const severity_data_t *severity_data,
       = severity_data_range_count (severity_data,
                                    level_min_severity ("high"),
                                    level_max_severity ("high"));
+
+#if CVSS3_RATINGS == 1
+  if (criticals)
+    *criticals
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("critical"),
+                                   level_max_severity ("critical"));
+#endif
 }
 
 
