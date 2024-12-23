@@ -85,8 +85,7 @@ lockfile_unlock (lockfile_t *);
 int
 lockfile_locked (const gchar *);
 
-void
-set_skip_update_nvti_cache (gboolean);
+void set_skip_update_nvti_cache (gboolean);
 
 gboolean
 skip_update_nvti_cache ();
