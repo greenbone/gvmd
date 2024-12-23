@@ -144,6 +144,8 @@ manage_reset_currents ();
 
 /* Commands. */
 
+#define MAX_LOCK_RETRIES 16
+
 /**
  * @brief A command.
  */
