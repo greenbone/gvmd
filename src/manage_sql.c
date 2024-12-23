@@ -17275,11 +17275,14 @@ init_manage_internal (GSList *log_config,
 
   /* Load the NVT cache into memory. */
 
-  if (nvti_cache == NULL)
+  if (nvti_cache == NULL && !skip_update_nvti_cache ())
     update_nvti_cache ();
 
+  if (skip_update_nvti_cache ())
+    avoid_db_check_inserts = TRUE;
+
   if (skip_db_check == 0)
-    /* Requires NVT cache. */
+    /* Requires NVT cache if avoid_db_check_inserts == FALSE */
     check_db_configs (avoid_db_check_inserts);
 
   sql_close ();

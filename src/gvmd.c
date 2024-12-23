@@ -2561,7 +2561,19 @@ gvmd (int argc, char** argv, char *env[])
    * associated files are closed (i.e. when all processes exit). */
 
 
-  switch (lockfile_lock_nb (&lockfile_checking, "gvm-checking"))
+  int lock_ret;
+  int retries = 0;
+
+  lock_ret = lockfile_lock_nb (&lockfile_checking, "gvm-checking");
+
+  while (lock_ret == 1 && retries < MAX_LOCK_RETRIES)
+    {
+      gvm_sleep (4);
+      lock_ret = lockfile_lock_nb (&lockfile_checking, "gvm-checking");
+      retries++;
+    }
+
+  switch (lock_ret)
     {
       case 0:
         break;
@@ -2991,7 +3003,9 @@ gvmd (int argc, char** argv, char *env[])
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
+      set_skip_update_nvti_cache (TRUE);
       ret = manage_get_roles (log_config, &database, verbose);
+      set_skip_update_nvti_cache (FALSE);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -3007,7 +3021,9 @@ gvmd (int argc, char** argv, char *env[])
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
+      set_skip_update_nvti_cache (TRUE);
       ret = manage_get_users (log_config, &database, role, verbose);
+      set_skip_update_nvti_cache (FALSE);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
