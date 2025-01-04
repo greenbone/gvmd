@@ -101,6 +101,7 @@
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_tls_certificates.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
@@ -128,6 +129,7 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
+#include <gvm/util/cpeutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -447,6 +449,7 @@ typedef struct
   char *certificate;       ///< Certificate for client certificate auth.
   char *comment;           ///< Comment.
   char *copy;              ///< UUID of resource to copy.
+  char *kdc;               ///< Kerberos KDC (key distribution centers).
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
@@ -458,6 +461,7 @@ typedef struct
   char *auth_algorithm;    ///< SNMP Authentication algorithm.
   char *privacy_password;  ///< SNMP Privacy password.
   char *privacy_algorithm; ///< SNMP Privacy algorithm.
+  char *realm;             ///< Kerberos realm.
   char *type;              ///< Type of credential.
 } create_credential_data_t;
 
@@ -473,6 +477,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->certificate);
   free (data->comment);
   free (data->copy);
+  free (data->kdc);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -483,6 +488,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->auth_algorithm);
   free (data->privacy_password);
   free (data->privacy_algorithm);
+  free (data->realm);
   free (data->type);
 
   memset (data, 0, sizeof (create_credential_data_t));
@@ -944,6 +950,7 @@ typedef struct
   char *esxi_credential_id;         ///< ESXi credential for new target.
   char *esxi_lsc_credential_id;     ///< ESXi credential (deprecated).
   char *snmp_credential_id;         ///< SNMP credential for new target.
+  char *krb5_credential_id;         ///< Kerberos 5 credential for new target.
   char *name;                       ///< Name of new target.
 } create_target_data_t;
 
@@ -976,6 +983,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
+  free (data->krb5_credential_id);
   free (data->name);
 
   memset (data, 0, sizeof (create_target_data_t));
@@ -1899,7 +1907,6 @@ get_overrides_data_reset (get_overrides_data_t *data)
 typedef struct
 {
   get_data_t get;     ///< Get args.
-  char *resource_id;  ///< Resource whose permissions to get.
 } get_permissions_data_t;
 
 /**
@@ -1910,8 +1917,6 @@ typedef struct
 static void
 get_permissions_data_reset (get_permissions_data_t *data)
 {
-  free (data->resource_id);
-
   get_data_reset (&data->get);
   memset (data, 0, sizeof (get_permissions_data_t));
 }
@@ -2513,6 +2518,7 @@ typedef struct
   char *comment;              ///< Comment.
   char *community;            ///< SNMP Community string.
   char *credential_id;        ///< ID of credential to modify.
+  char *kdc;                  ///< Kerberos KDC (key distribution centers).
   int key;                    ///< Whether the command included a key element.
   char *key_phrase;           ///< Passphrase for key.
   char *key_private;          ///< Private key from key.
@@ -2522,6 +2528,7 @@ typedef struct
   char *password;             ///< Password associated with login name.
   char *privacy_algorithm;    ///< SNMP Privacy algorithm.
   char *privacy_password;     ///< SNMP Privacy password.
+  char *realm;                ///< Kerberos realm.
 } modify_credential_data_t;
 
 /**
@@ -2538,6 +2545,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->comment);
   free (data->community);
   free (data->credential_id);
+  free (data->kdc);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -2546,6 +2554,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->password);
   free (data->privacy_algorithm);
   free (data->privacy_password);
+  free (data->realm);
 
   memset (data, 0, sizeof (modify_credential_data_t));
 }
@@ -2873,6 +2882,7 @@ typedef struct
   char *esxi_credential_id;          ///< ESXi credential for target.
   char *esxi_lsc_credential_id;      ///< ESXi credential for target (deprecated).
   char *snmp_credential_id;          ///< SNMP credential for target.
+  char *krb5_credential_id;          ///< Kerberos 5 credential for target.
   char *target_id;                   ///< Target UUID.
 } modify_target_data_t;
 
@@ -2903,6 +2913,7 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
+  free (data->krb5_credential_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (modify_target_data_t));
@@ -4086,6 +4097,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_COMMENT,
   CLIENT_CREATE_CREDENTIAL_COMMUNITY,
   CLIENT_CREATE_CREDENTIAL_COPY,
+  CLIENT_CREATE_CREDENTIAL_KDC,
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
@@ -4096,6 +4108,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_PRIVACY,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
+  CLIENT_CREATE_CREDENTIAL_REALM,
   CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
@@ -4283,6 +4296,7 @@ typedef enum
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_PORT_RANGE,
+  CLIENT_CREATE_TARGET_KRB5_CREDENTIAL,
   CLIENT_CREATE_TARGET_SMB_CREDENTIAL,
   CLIENT_CREATE_TARGET_SNMP_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_CREDENTIAL,
@@ -4418,6 +4432,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
   CLIENT_MODIFY_CREDENTIAL_COMMENT,
   CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
+  CLIENT_MODIFY_CREDENTIAL_KDC,
   CLIENT_MODIFY_CREDENTIAL_KEY,
   CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
   CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
@@ -4428,6 +4443,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_PRIVACY,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
+  CLIENT_MODIFY_CREDENTIAL_REALM,
   CLIENT_MODIFY_FILTER,
   CLIENT_MODIFY_FILTER_COMMENT,
   CLIENT_MODIFY_FILTER_NAME,
@@ -4518,6 +4534,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_MODIFY_TARGET_NAME,
   CLIENT_MODIFY_TARGET_PORT_LIST,
+  CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SMB_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SNMP_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_CREDENTIAL,
@@ -5461,8 +5478,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_permissions_data->get, "permission",
                                        attribute_names,
                                        attribute_values);
-            append_attribute (attribute_names, attribute_values, "resource_id",
-                              &get_permissions_data->resource_id);
             set_client_state (CLIENT_GET_PERMISSIONS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
@@ -5511,7 +5526,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_reports_data->config_id);
-            
+
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
 
@@ -5602,7 +5617,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                 "type", &typebuf))
               get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_RESOURCE_NAMES);
-          }             
+          }
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -6281,6 +6296,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_credential_data->community, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMUNITY);
           }
+        else if (strcasecmp ("KDC", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
+          }
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             modify_credential_data->key = 1;
@@ -6299,6 +6318,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
             gvm_append_string (&modify_credential_data->privacy_algorithm,
                                    "");
+          }
+        else if (strcasecmp ("REALM", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
           }
         ELSE_READ_OVER;
 
@@ -6613,6 +6636,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &modify_target_data->port_list_id);
             set_client_state (CLIENT_MODIFY_TARGET_PORT_LIST);
+          }
+        else if (strcasecmp ("KRB5_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->krb5_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL);
           }
         else if (strcasecmp ("SSH_CREDENTIAL", element_name) == 0)
           {
@@ -6960,6 +6989,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
         else if (strcasecmp ("COMMUNITY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
+        else if (strcasecmp ("KDC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KDC);
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             create_credential_data->key = 1;
@@ -6978,6 +7009,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVACY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
+        else if (strcasecmp ("REALM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_REALM);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
         ELSE_READ_OVER;
@@ -7620,6 +7653,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             gvm_append_string (&create_target_data->port_range, "");
             set_client_state (CLIENT_CREATE_TARGET_PORT_RANGE);
+          }
+        else if (strcasecmp ("KRB5_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->krb5_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_KRB5_CREDENTIAL);
           }
         else if (strcasecmp ("SSH_CREDENTIAL", element_name) == 0)
           {
@@ -8449,7 +8488,7 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
       buffer_xml_append_printf (buffer,
                                 "<creation_time>%s</creation_time>",
                                 iso_if_time (get_iterator_creation_time (overrides)));
-                                    
+
       buffer_xml_append_printf (buffer,
                                 "<modification_time>%s</modification_time>",
                                 iso_if_time (get_iterator_modification_time (overrides)));
@@ -8467,7 +8506,8 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
                                 override_iterator_active (overrides),
                                 strlen (excerpt) < strlen (text),
                                 excerpt,
-                                override_iterator_threat (overrides)
+                                (override_iterator_severity (overrides)
+                                && override_iterator_threat (overrides))
                                 ? override_iterator_threat (overrides)
                                 : "",
                                 override_iterator_severity (overrides)
@@ -8561,7 +8601,8 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
          ? override_iterator_hosts (overrides) : "",
          override_iterator_port (overrides)
          ? override_iterator_port (overrides) : "",
-         override_iterator_threat (overrides)
+         (override_iterator_severity (overrides)
+         && override_iterator_threat (overrides))
          ? override_iterator_threat (overrides) : "",
          override_iterator_severity (overrides)
          ? override_iterator_severity (overrides) : "",
@@ -9351,9 +9392,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  *
  */
 void
-buffer_diff(GString *buffer, const char *descr, const char *delta_descr) 
+buffer_diff(GString *buffer, const char *descr, const char *delta_descr)
 {
-  
+
   gchar *diff = strdiff (descr ? descr : "",
                   delta_descr ? delta_descr : "");
   if (diff)
@@ -9426,7 +9467,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   report_t report;
   task_t selected_task;
   time_t creation_time;
-  
+
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
   host = result_iterator_host (results);
@@ -9501,7 +9542,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       const char *owner_name;
       time_t modification_time;
-     
+
       if (use_delta_fields)
         {
           owner_name = result_iterator_delta_owner_name (results);
@@ -9543,7 +9584,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_delta_task (results);
-          
+
           result_task_name = task_name(result_iterator_delta_task (results));
           result_report_id = report_uuid(result_iterator_delta_report (results));
         }
@@ -9551,7 +9592,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_task (results);
-          
+
           result_task_name = task_name (result_iterator_task (results));
           result_report_id = report_uuid (result_iterator_report (results));
         }
@@ -9672,14 +9713,14 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       const char *nvt_version, *level;
       if (use_delta_fields)
         {
-          nvt_version = result_iterator_delta_nvt_version (results); 
+          nvt_version = result_iterator_delta_nvt_version (results);
           level = result_iterator_delta_level (results);
-        } 
+        }
       else
         {
           nvt_version = result_iterator_scan_nvt_version (results);
           level = result_iterator_level (results);
-        }     
+        }
       buffer_xml_append_printf
       (buffer,
         "<scan_nvt_version>%s</scan_nvt_version>"
@@ -9710,7 +9751,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       /* Only send the original severity if it has changed. */
       if (strncmp (original_severity,
-                    severity,          
+                    severity,
                     /* Avoid rounding differences. */
                     3))
         buffer_xml_append_printf (buffer,
@@ -9747,7 +9788,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (delta_state)
         g_string_append_printf (buffer, "%s", delta_state);
 
-      if(delta_results) { 
+      if(delta_results) {
         /* delta reports version 1 */
         if (changed)
           {
@@ -9766,8 +9807,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             g_free (delta_nl_descr);
           }
       } else {
-        /* delta reports version 2 */        
-        if (changed) 
+        /* delta reports version 2 */
+        if (changed)
           {
             gchar *delta_nl_descr;
             const char *delta_descr;
@@ -9810,8 +9851,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
-  if (use_delta_fields 
-      ? result_iterator_delta_may_have_tickets (results) 
+  if (use_delta_fields
+      ? result_iterator_delta_may_have_tickets (results)
       : result_iterator_may_have_tickets (results))
     buffer_result_tickets_xml (buffer, result);
 
@@ -12336,6 +12377,19 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL (formats_xml);
       g_free (formats_xml);
 
+      if (type && (strcmp (type, "krb5") == 0))
+        {
+          const char *kdc, *realm;
+          kdc = credential_iterator_kdc (&credentials);
+          realm = credential_iterator_realm (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<kdc>%s</kdc>"
+            "<realm>%s</realm>",
+            kdc ? kdc : "",
+            realm ? realm : "");
+        }
+
       if (type && (strcmp (type, "snmp") == 0))
         {
           const char *auth_algorithm, *privacy_algorithm;
@@ -12957,11 +13011,6 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>COMPLIANCE_REPORTS</name>"
-                           "</feature>",
-                           COMPLIANCE_REPORTS ? 1 : 0);
-
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
                            "<name>CVSS3_RATINGS</name>"
                            "</feature>",
                            CVSS3_RATINGS ? 1 : 0);
@@ -13253,6 +13302,211 @@ handle_get_groups (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Print CPE match node with its matched CPEs.
+ *
+ * @param[in]  node     CPE match node to print.
+ * @param[in]  buffer   Buffer into which to print match node.
+ */
+static void
+print_cpe_match_nodes_xml (resource_t node, GString *buffer)
+{
+  iterator_t cpe_match_nodes, cpe_match_ranges;
+
+  init_iterator (&cpe_match_nodes,
+                 "SELECT operator, negate"
+                 " FROM scap.cpe_match_nodes WHERE id = %llu;",
+                 node);
+
+  const char *operator = NULL;
+  int negate = 0;
+  while (next (&cpe_match_nodes))
+    {
+      operator = iterator_string (&cpe_match_nodes, 0);
+      negate = iterator_int (&cpe_match_nodes, 1);
+    }
+  cleanup_iterator (&cpe_match_nodes);
+
+  xml_string_append (buffer, "<operator>%s</operator>", operator?: "");
+  xml_string_append (buffer, "<negate>%s</negate>", negate? "1" : "0");
+
+  init_cpe_match_string_iterator (&cpe_match_ranges, node);
+  while (next (&cpe_match_ranges))
+    {
+      const gchar *vsi, *vse, *vei, *vee, *match_criteria_id, *criteria, *status;
+
+      xml_string_append (buffer, "<match_string>");
+      match_criteria_id
+        = cpe_match_string_iterator_match_criteria_id (&cpe_match_ranges);
+      criteria = cpe_match_string_iterator_criteria (&cpe_match_ranges);
+      status = cpe_match_string_iterator_status (&cpe_match_ranges);
+
+      xml_string_append (buffer,
+                         "<criteria>%s</criteria>"
+                         "<vulnerable>%s</vulnerable>"
+                         "<status>%s</status>",
+                         criteria?: "",
+                         cpe_match_string_iterator_vulnerable (&cpe_match_ranges) != 0
+                         ? "1"
+                         : "0",
+                         status?: "");
+
+      vsi = cpe_match_string_iterator_version_start_incl (&cpe_match_ranges);
+      vse = cpe_match_string_iterator_version_start_excl (&cpe_match_ranges);
+      vei = cpe_match_string_iterator_version_end_incl (&cpe_match_ranges);
+      vee = cpe_match_string_iterator_version_end_excl (&cpe_match_ranges);
+
+      xml_string_append (buffer,
+                         "<version_start_including>%s</version_start_including>",
+                         vsi ?: "");
+      xml_string_append (buffer,
+                         "<version_start_excluding>%s</version_start_excluding>",
+                         vse ?: "");
+      xml_string_append (buffer,
+                         "<version_end_including>%s</version_end_including>",
+                         vei ?: "");
+      xml_string_append (buffer,
+                         "<version_end_excluding>%s</version_end_excluding>",
+                         vee ?: "");
+
+      iterator_t cpe_matches;
+      init_cpe_match_string_matches_iterator (
+        &cpe_matches, match_criteria_id, NULL
+      );
+      xml_string_append (buffer, "<matched_cpes>");
+
+      while (next (&cpe_matches))
+        {
+          iterator_t cpes;
+
+          init_iterator (&cpes,
+                         "SELECT deprecated FROM scap.cpes"
+                         " WHERE cpe_name_id = '%s';",
+                         cpe_matches_cpe_name_id(&cpe_matches));
+
+          const char* cpe = cpe_matches_cpe_name (&cpe_matches);
+
+          int deprecated = 0;
+          while (next (&cpes))
+          {
+            deprecated = iterator_int (&cpes, 0);
+          }
+          cleanup_iterator (&cpes);
+
+          xml_string_append (buffer, "<cpe id=\"%s\">", cpe?: "");
+          xml_string_append (buffer,
+                             "<deprecated>%s</deprecated>",
+                             deprecated ? "1" : "0");
+          if (deprecated)
+            {
+              iterator_t deprecated_by;
+              init_cpe_deprecated_by_iterator (&deprecated_by, cpe);
+              while (next (&deprecated_by))
+              {
+                xml_string_append (buffer,
+                                   "<deprecated_by cpe_id=\"%s\"/>",
+                                   cpe_deprecated_by_iterator_deprecated_by
+                                    (&deprecated_by));
+              }
+              cleanup_iterator (&deprecated_by);
+            }
+          xml_string_append (buffer, "</cpe>");
+        }
+      xml_string_append (buffer, "</matched_cpes>");
+      xml_string_append (buffer, "</match_string>");
+      cleanup_iterator (&cpe_matches);
+    }
+  cleanup_iterator (&cpe_match_ranges);
+}
+/**
+ * @brief Print CVE affected software configurations
+ *
+ * @param[in]   cve_uuid  uuid of the CVE.
+ * @param[out]  result    Buffer into which to print.
+ *
+ */
+static void
+print_cve_configurations_xml (const gchar *cve_uuid, GString *result)
+{
+  iterator_t cpe_match_root_nodes;
+  xml_string_append (result, "<configuration_nodes>");
+  init_cve_cpe_match_nodes_iterator (&cpe_match_root_nodes, cve_uuid);
+  while (next (&cpe_match_root_nodes))
+    {
+        result_t root_node;
+        iterator_t cpe_match_node_childs;
+        root_node = cpe_match_nodes_iterator_root_id (&cpe_match_root_nodes);
+        xml_string_append (result, "<node>");
+        print_cpe_match_nodes_xml (root_node, result);
+        init_cpe_match_node_childs_iterator (&cpe_match_node_childs, root_node);
+        while (next (&cpe_match_node_childs))
+          {
+            resource_t child_node;
+            child_node =
+              cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
+            xml_string_append (result, "<node>");
+            print_cpe_match_nodes_xml (child_node, result);
+            xml_string_append (result, "</node>");
+          }
+        xml_string_append (result, "</node>");
+        cleanup_iterator (&cpe_match_node_childs);
+    }
+    xml_string_append (result, "</configuration_nodes>");
+    cleanup_iterator (&cpe_match_root_nodes);
+}
+
+/**
+ * @brief Print CVE references
+ *
+ * @param[in]   cve_uuid  uuid of the CVE.
+ * @param[out]  result    Buffer into which to print.
+ *
+ */
+static void
+print_cve_references_xml (const gchar *cve_uuid, GString *result)
+{
+  iterator_t references;
+  init_cve_reference_iterator (&references, cve_uuid);
+  xml_string_append (result, "<references>");
+  while (next (&references))
+    {
+      xml_string_append (result, "<reference>");
+      xml_string_append (result,
+                         "<url>%s</url>",
+                         cve_reference_iterator_url (&references));
+      xml_string_append (result, "<tags>");
+      const char * tags_array = cve_reference_iterator_tags (&references);
+      if(tags_array && strlen (tags_array) > 2)
+        {
+          char *trimmed_array
+            = g_strndup (tags_array + 1, strlen (tags_array) - 2);
+          gchar **tags, **current_tag;
+          tags = g_strsplit (trimmed_array, ",", -1);
+          current_tag = tags;
+          while (*current_tag)
+            {
+              if (strlen (*current_tag) > 2
+                  && (*current_tag)[0] == '"'
+                  && (*current_tag)[strlen (*current_tag) - 1] == '"')
+                {
+                  char *trimmed_tag = g_strndup (*current_tag + 1,
+                                                 strlen (*current_tag) - 2);
+                  xml_string_append (result, "<tag>%s</tag>", trimmed_tag);
+                  g_free (trimmed_tag);
+                }
+              else
+                xml_string_append (result, "<tag>%s</tag>", *current_tag);
+              current_tag++;
+            }
+          g_strfreev (tags);
+          g_free (trimmed_array);
+        }
+      xml_string_append (result, "</tags>");
+      xml_string_append (result, "</reference>");
+    }
+  xml_string_append (result, "</references>");
+  cleanup_iterator (&references);
+}
+/**
  * @brief Handle end of GET_INFO element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -13473,24 +13727,36 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                "<title>%s</title>",
                                cpe_info_iterator_title (&info));
           xml_string_append (result,
-                             "<nvd_id>%s</nvd_id>"
+                             "<cpe_name_id>%s</cpe_name_id>"
                              "<severity>%s</severity>"
                              "<cve_refs>%s</cve_refs>"
-                             "<status>%s</status>",
-                             cpe_info_iterator_nvd_id (&info)
-                              ? cpe_info_iterator_nvd_id (&info)
+                             "<deprecated>%s</deprecated>",
+                             cpe_info_iterator_cpe_name_id (&info)
+                              ? cpe_info_iterator_cpe_name_id (&info)
                               : "",
                              cpe_info_iterator_severity (&info)
                               ? cpe_info_iterator_severity (&info)
                               : "",
                              cpe_info_iterator_cve_refs (&info),
-                             cpe_info_iterator_status (&info)
-                              ? cpe_info_iterator_status (&info)
-                              : "");
+                             cpe_info_iterator_deprecated (&info)
+                              ? cpe_info_iterator_deprecated (&info)
+                              : "0");
 
           if (get_info_data->details == 1)
             {
-              iterator_t cves;
+              iterator_t deprecated_by, cves, refs;
+
+              init_cpe_deprecated_by_iterator (&deprecated_by,
+                                               get_iterator_name (&info));
+              while (next (&deprecated_by))
+                {
+                  xml_string_append (result,
+                                     "<deprecated_by cpe_id=\"%s\"/>",
+                                     cpe_deprecated_by_iterator_deprecated_by
+                                      (&deprecated_by));
+                }
+              cleanup_iterator (&deprecated_by);
+
               g_string_append (result, "<cves>");
               init_cpe_cve_iterator (&cves, get_iterator_name (&info), 0, NULL);
               while (next (&cves))
@@ -13518,6 +13784,16 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                     : "");
               cleanup_iterator (&cves);
               g_string_append (result, "</cves>");
+
+              g_string_append (result, "<references>");
+              init_cpe_reference_iterator (&refs, get_iterator_name (&info));
+              while (next (&refs))
+                xml_string_append (result,
+                                   "<reference href=\"%s\">%s</reference>",
+                                   cpe_reference_iterator_href (&refs),
+                                   cpe_reference_iterator_type (&refs));
+              cleanup_iterator (&refs);
+              g_string_append (result, "</references>");
             }
         }
       else if (g_strcmp0 ("cve", get_info_data->type) == 0)
@@ -13605,6 +13881,10 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                                           "</warning>");
                 }
               g_string_append (result, "</cert>");
+
+              const gchar *cve_uuid = get_iterator_uuid (&info);
+              print_cve_configurations_xml (cve_uuid, result);
+              print_cve_references_xml (cve_uuid, result);
             }
         }
       else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
@@ -14903,31 +15183,27 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       overrides = filter_term_apply_overrides (filter ? filter : get->filter);
       min_qod = filter_term_min_qod (filter ? filter : get->filter);
       levels = filter_term_value (filter ? filter : get->filter, "levels");
-      #if COMPLIANCE_REPORTS == 1
-        gchar *compliance_levels;
-        compliance_levels = filter_term_value (filter
-                                                  ? filter
-                                                  : get->filter,
-                                              "compliance_levels");
 
-        /* Setup result filter from overrides. */
-        get_reports_data->get.filter
-          = g_strdup_printf
-              ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
-              overrides,
-              min_qod,
-              levels ? levels : "hmlgdf",
-              compliance_levels ? compliance_levels : "yniu");
-        g_free (compliance_levels);
-      #else
-        /* Setup result filter from overrides. */
-        get_reports_data->get.filter
-          = g_strdup_printf
-              ("apply_overrides=%i min_qod=%i levels=%s",
-              overrides,
-              min_qod,
-              levels ? levels : "hmlgdf");
-      #endif
+      gchar *compliance_levels;
+      compliance_levels = filter_term_value (filter
+                                                ? filter
+                                                : get->filter,
+                                            "compliance_levels");
+
+      /* Setup result filter from overrides. */
+      get_reports_data->get.filter
+        = g_strdup_printf
+            ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
+            overrides,
+            min_qod,
+#if CVSS3_RATINGS == 1
+            levels ? levels : "chmlgdf",
+#else
+            levels ? levels : "hmlgdf",
+#endif
+            compliance_levels ? compliance_levels : "yniu");
+      g_free (compliance_levels);
+
       g_free (filter);
       g_free (levels);
     }
@@ -15318,7 +15594,7 @@ print_report_config_params (gmp_parser_t *gmp_parser, GError **error,
 
           SENDF_TO_CLIENT_OR_FAIL
             ("</type><value using_default=\"%d\">%s",
-              report_config_param_iterator_using_default (&params), 
+              report_config_param_iterator_using_default (&params),
               value ? value : "");
           if (value)
             {
@@ -15493,27 +15769,27 @@ handle_get_report_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           SEND_TO_CLIENT_OR_FAIL ("<orphan>1</orphan>");
         }
-      
-      SENDF_TO_CLIENT_OR_FAIL 
+
+      SENDF_TO_CLIENT_OR_FAIL
         ("<report_format id=\"%s\">",
           report_config_iterator_report_format_id (&report_configs)
         );
-      
+
       if (!orphan)
         {
-          SENDF_TO_CLIENT_OR_FAIL 
+          SENDF_TO_CLIENT_OR_FAIL
             ("<name>%s</name>",
               report_config_iterator_report_format_name (&report_configs)
             );
-            
+
           if (report_config_iterator_report_format_readable (&report_configs) == 0)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
             }
         }
-      
+
       SENDF_TO_CLIENT_OR_FAIL ("</report_format>");
-      
+
       print_report_config_params (gmp_parser, error,
                                   report_config_param_iterator_rowid (
                                     &report_configs
@@ -15896,16 +16172,16 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
- * @brief Assign resource iterator with an init iterator based on the type 
+ * @brief Assign resource iterator with an init iterator based on the type
  * in the get command data.
  *
  * @param[in]  resource_names_data   data for get_resource_names command.
  * @param[out] iterator              address of iterator function pointer.
- * 
+ *
  * @return 1 if type is invalid, else 0.
  */
 int
-select_resource_iterator (get_resource_names_data_t *resource_names_data, 
+select_resource_iterator (get_resource_names_data_t *resource_names_data,
                           int (**iterator) (iterator_t*, get_data_t *))
 {
     if (g_strcmp0 ("cpe", resource_names_data->type) == 0)
@@ -15955,7 +16231,7 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("group", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_group_iterator;
-    }                
+    }
   else if (g_strcmp0 ("note", resource_names_data->type) == 0)
     {
       *iterator = init_note_iterator_all;
@@ -15963,43 +16239,41 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("override", resource_names_data->type) == 0)
     {
       *iterator = init_override_iterator_all;
-    }                
+    }
   else if (g_strcmp0 ("permission", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_permission_iterator;
-    }                
+    }
   else if (g_strcmp0 ("port_list", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_port_list_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-#if COMPLIANCE_REPORTS == 1
-      get_data_set_extra (&resource_names_data->get, 
+      get_data_set_extra (&resource_names_data->get,
                           "usage_type",
                           g_strdup ("scan"));
-    }                
+    }
   else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-      get_data_set_extra (&resource_names_data->get, 
+      get_data_set_extra (&resource_names_data->get,
                           "usage_type",
                           g_strdup ("audit"));
-#endif
     }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_format_iterator;
-    }                
+    }
   else if (g_strcmp0 ("role", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_role_iterator;
-    }                
+    }
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
@@ -16017,15 +16291,15 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
-    }                
+    }
   else if (g_strcmp0 ("schedule", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_schedule_iterator;
-    }                
+    }
   else if (g_strcmp0 ("target", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_target_iterator;
-    }                
+    }
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
@@ -16043,11 +16317,11 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
-    } 
+    }
   else if (g_strcmp0 ("user", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_user_iterator;
-    }         
+    }
   else
     {
       return 1;
@@ -16078,10 +16352,10 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0) 
+  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0)
           ||(g_strcmp0 ("os", get_resource_names_data->type) == 0))
        && (acl_user_may ("get_assets") == 0))
-      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
+      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0)
           && (acl_user_may ("get_results") == 0))
       || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
@@ -16129,9 +16403,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
         get_resource_names_data_reset (get_resource_names_data);
         set_client_state (CLIENT_AUTHENTIC);
         return;
-    }    
+    }
 
-  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
+  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator))
     {
       if (send_find_error_to_client ("get_resource_names", "type",
                                      get_resource_names_data->type, gmp_parser))
@@ -16156,7 +16430,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
               error_send_to_client (error);
               return;
             }
-          break;          
+          break;
         case 2:
           if (send_find_error_to_client
                ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
@@ -16175,7 +16449,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
-  
+
   SEND_GET_START ("resource_name");
   SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>", get_resource_names_data->type);
 
@@ -16183,8 +16457,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
     {
       GString *result;
       result = g_string_new ("");
-      
-      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0) 
+
+      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
                                       "<resource id=\"%s\">"
@@ -16194,8 +16468,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                         : "",
                                       tls_certificate_iterator_subject_dn (&resource)
                                         ? tls_certificate_iterator_subject_dn (&resource)
-                                        : "");          
-        } 
+                                        : "");
+        }
       else if (g_strcmp0 ("override", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
@@ -16206,9 +16480,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                           : "",
                                         override_iterator_nvt_name (&resource)
                                           ? override_iterator_nvt_name (&resource)
-                                          : "");          
+                                          : "");
         }
-      else 
+      else
         {
             buffer_xml_append_printf (result,
                                         "<resource id=\"%s\">"
@@ -17609,18 +17883,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
           char *ssh_elevate_name, *ssh_elevate_uuid;
+          char *krb5_name, *krb5_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
           const char *reverse_lookup_unify, *allow_simultaneous_ips;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
-          credential_t ssh_elevate_credential;
+          credential_t ssh_elevate_credential, krb5_credential;
           int port_list_trash, max_hosts, port_list_available;
           int ssh_credential_available;
           int smb_credential_available;
           int esxi_credential_available;
           int snmp_credential_available;
           int ssh_elevate_credential_available;
+          int krb5_credential_available;
 
           ret = get_next (&targets, &get_targets_data->get, &first,
                           &count, init_target_iterator);
@@ -17638,6 +17914,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           snmp_credential = target_iterator_snmp_credential (&targets);
           ssh_elevate_credential
             = target_iterator_ssh_elevate_credential (&targets);
+          krb5_credential = target_iterator_krb5_credential (&targets);
 
           ssh_credential_available = 1;
           if (ssh_credential)
@@ -17795,6 +18072,38 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
               ssh_elevate_uuid = NULL;
             }
 
+          krb5_credential_available = 1;
+          if (krb5_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_krb5_trash (&targets))
+                {
+                  krb5_name
+                    = trash_credential_name (krb5_credential);
+                  krb5_uuid
+                    = trash_credential_uuid (krb5_credential);
+                  krb5_credential_available
+                    = trash_credential_readable (krb5_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  krb5_name = credential_name (krb5_credential);
+                  krb5_uuid = credential_uuid (krb5_credential);
+                  if (find_credential_with_permission (krb5_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  krb5_credential_available = (found > 0);
+                }
+            }
+          else
+            {
+              krb5_name = NULL;
+              krb5_uuid = NULL;
+            }
+
           port_list_uuid = target_iterator_port_list_uuid (&targets);
           port_list_name = target_iterator_port_list_name (&targets);
           port_list_trash = target_iterator_port_list_trash (&targets);
@@ -17905,6 +18214,18 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
             SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
 
           SENDF_TO_CLIENT_OR_FAIL ("</ssh_elevate_credential>"
+                                   "<krb5_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   krb5_uuid ? krb5_uuid : "",
+                                   krb5_name ? krb5_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_krb5_trash (&targets)));
+
+          if (krb5_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</krb5_credential>"
                                    "<reverse_lookup_only>"
                                    "%s"
                                    "</reverse_lookup_only>"
@@ -17962,6 +18283,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           free (esxi_uuid);
           free (ssh_elevate_name);
           free (ssh_elevate_uuid);
+          free (krb5_name);
+          free (krb5_uuid);
         }
       cleanup_iterator (&targets);
       filtered = get_targets_data->get.id
@@ -18175,6 +18498,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       int target_in_trash, scanner_in_trash;
       int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
+#if CVSS3_RATINGS == 1
+      int criticals = 0, criticals_2 = 0;
+#endif
       int false_positives = 0, task_scanner_type;
       int target_available, config_available;
       int scanner_available;
@@ -18280,13 +18606,20 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           if (first_report_id && (get_tasks_data->get.trash == 0))
             {
               // TODO Could skip this count for tasks page.
+#if CVSS3_RATINGS == 1
+              if (report_counts (first_report_id,
+                                 &criticals_2, &holes_2, &infos_2, &logs,
+                                 &warnings_2, &false_positives,
+                                 &severity_2, apply_overrides, min_qod))
+#else
               if (report_counts (first_report_id,
                                  &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
                                  &severity_2, apply_overrides, min_qod))
-                g_error ("%s: GET_TASKS: error getting counts for"
-                         " first report, aborting",
-                         __func__);
+#endif
+                  g_error ("%s: GET_TASKS: error getting counts for"
+                          " first report, aborting",
+                          __func__);
             }
 
           second_last_report_id = task_second_last_report_id (index);
@@ -18296,11 +18629,20 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 * doing the count again. */
               if (((first_report_id == NULL)
                   || (strcmp (second_last_report_id, first_report_id)))
+#if CVSS3_RATINGS == 1
+                  && report_counts (second_last_report_id,
+                                    &criticals_2, &holes_2, &infos_2,
+                                    &logs, &warnings_2,
+                                    &false_positives, &severity_2,
+                                    apply_overrides, min_qod)
+#else
                   && report_counts (second_last_report_id,
                                     &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
-                                    apply_overrides, min_qod))
+                                    apply_overrides, min_qod)
+#endif
+                 )
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
                          __func__);
@@ -18349,6 +18691,16 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                       && strcmp (last_report_id,
                                 second_last_report_id)))
                 {
+#if CVSS3_RATINGS == 1
+                  if (report_counts
+                      (last_report_id,
+                        &criticals, &holes, &infos, &logs,
+                        &warnings, &false_positives, &severity,
+                        apply_overrides, min_qod))
+                    g_error ("%s: GET_TASKS: error getting counts for"
+                             " last report, aborting",
+                             __func__);
+#else
                   if (report_counts
                       (last_report_id,
                         &holes, &infos, &logs,
@@ -18357,9 +18709,13 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                     g_error ("%s: GET_TASKS: error getting counts for"
                              " last report, aborting",
                              __func__);
+#endif
                 }
               else
                 {
+#if CVSS3_RATINGS == 1
+                  criticals = criticals_2;
+#endif
                   holes = holes_2;
                   infos = infos_2;
                   warnings = warnings_2;
@@ -18413,10 +18769,16 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        "<scan_start>%s</scan_start>"
                                        "<scan_end>%s</scan_end>"
                                        "<result_count>"
-                                       "<hole>%i</hole>"
-                                       "<info>%i</info>"
+#if CVSS3_RATINGS == 1
+                                       "<critical>%i</critical>"
+#endif
+                                       "<hole deprecated='1'>%i</hole>"
+                                       "<high>%i</high>"
+                                       "<info deprecated='1'>%i</info>"
+                                       "<low>%i</low>"
                                        "<log>%i</log>"
-                                       "<warning>%i</warning>"
+                                       "<warning deprecated='1'>%i</warning>"
+                                       "<medium>%i</medium>"
                                        "<false_positive>"
                                        "%i"
                                        "</false_positive>"
@@ -18430,9 +18792,15 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        timestamp,
                                        scan_start,
                                        scan_end,
+#if CVSS3_RATINGS == 1
+                                       criticals,
+#endif
+                                       holes,
                                        holes,
                                        infos,
+                                       infos,
                                        logs,
+                                       warnings,
                                        warnings,
                                        false_positives,
                                        severity);
@@ -18585,11 +18953,19 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        progress_xml,
                        task_iterator_total_reports (&tasks),
                        task_iterator_finished_reports (&tasks),
+#if CVSS3_RATINGS == 1
                        get_tasks_data->get.trash
                         ? ""
                         : task_iterator_trend_counts
-                           (&tasks, holes, warnings, infos, severity,
-                            holes_2, warnings_2, infos_2, severity_2),
+                           (&tasks, criticals, holes, warnings, infos, severity,
+                            criticals_2, holes_2, warnings_2, infos_2, severity_2),
+#else
+                       get_tasks_data->get.trash
+                        ? ""
+                        : task_iterator_trend_counts
+                           (&tasks, 0, holes, warnings, infos, severity,
+                            0, holes_2, warnings_2, infos_2, severity_2),
+#endif
                        task_schedule_xml,
                        current_report,
                        last_report);
@@ -19383,10 +19759,21 @@ gmp_xml_handle_result ()
         {
           create_report_data->result_severity = strdup ("");
         }
+#if CVSS3_RATINGS == 1
+      else if (strcasecmp (create_report_data->result_threat, "Critical") == 0)
+        {
+          create_report_data->result_severity = strdup ("10.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
+        {
+          create_report_data->result_severity = strdup ("8.9");
+        }
+#else
       else if (strcasecmp (create_report_data->result_threat, "High") == 0)
         {
           create_report_data->result_severity = strdup ("10.0");
         }
+#endif
       else if (strcasecmp (create_report_data->result_threat, "Medium") == 0)
         {
           create_report_data->result_severity = strdup ("5.0");
@@ -20227,7 +20614,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_RESOURCE_NAMES:
         handle_get_resource_names (gmp_parser, error);
-        break;        
+        break;
 
       case CLIENT_GET_RESULTS:
         handle_get_results (gmp_parser, error);
@@ -21117,6 +21504,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_credential_data->auth_algorithm,
                          create_credential_data->privacy_password,
                          create_credential_data->privacy_algorithm,
+                         create_credential_data->kdc,
+                         create_credential_data->realm,
                          create_credential_data->type,
                          create_credential_data->allow_insecure,
                          &new_credential))
@@ -21224,6 +21613,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Cannot determine type for new credential"));
                 break;
+              case 19:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a kdc"));
+                break;
+              case 20:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a realm"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21246,6 +21645,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, KDC);
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
@@ -21256,6 +21656,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, ALGORITHM);
       CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, PASSWORD);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, REALM);
       CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
 
       case CLIENT_CREATE_FILTER:
@@ -22696,6 +23097,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           credential_t ssh_credential = 0, ssh_elevate_credential = 0;
           credential_t smb_credential = 0;
           credential_t esxi_credential = 0, snmp_credential = 0;
+          credential_t krb5_credential = 0;
           target_t new_target;
 
           if (create_target_data->copy)
@@ -22764,6 +23166,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 "Hosts must be at least one"
                                 " character long"));
+          else if (create_target_data->smb_credential_id
+                   && create_target_data->krb5_credential_id)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "Targets cannot have both an SMB and"
+                                " Kerberos 5 credential"));
           else if (create_target_data->ssh_credential_id
                    && find_credential_with_permission
                        (create_target_data->ssh_credential_id,
@@ -22872,6 +23280,25 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if (create_target_data->krb5_credential_id
+                   && find_credential_with_permission
+                       (create_target_data->krb5_credential_id,
+                        &krb5_credential,
+                        "get_credentials"))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->krb5_credential_id
+                   && krb5_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("create_target", "Credential",
+                    create_target_data->krb5_credential_id,
+                    gmp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+
           /* Create target from host string. */
           else switch (create_target
                         (create_target_data->name,
@@ -22889,6 +23316,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          smb_credential,
                          esxi_credential,
                          snmp_credential,
+                         krb5_credential,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
@@ -22998,6 +23426,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " different from the SSH credential"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
+              case 16:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Kerberos 5 credential must be of type"
+                                    " 'krb5'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -23037,6 +23472,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, NAME);
       CLOSE (CLIENT_CREATE_TARGET, PORT_LIST);
       CLOSE (CLIENT_CREATE_TARGET, PORT_RANGE);
+      CLOSE (CLIENT_CREATE_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_ELEVATE_CREDENTIAL);
@@ -24311,6 +24747,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_credential_data->auth_algorithm,
                     modify_credential_data->privacy_password,
                     modify_credential_data->privacy_algorithm,
+                    modify_credential_data->kdc,
+                    modify_credential_data->realm,
                     modify_credential_data->allow_insecure))
             {
               case 0:
@@ -24433,6 +24871,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDC);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
@@ -24443,6 +24882,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, ALGORITHM);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, REALM);
 
       case CLIENT_MODIFY_FILTER:
         {
@@ -25492,6 +25932,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           ? modify_target_data->esxi_credential_id
                           : modify_target_data->esxi_lsc_credential_id,
                          modify_target_data->snmp_credential_id,
+                         modify_target_data->krb5_credential_id,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests,
@@ -25741,6 +26182,35 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id, "modified");
                 break;
+              case 26:
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                if (send_find_error_to_client
+                     ("modify_target", "Credential",
+                      modify_target_data->krb5_credential_id,
+                      gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 27:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Kerberos 5 credential must be of type"
+                                    " 'krb5'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 28:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Targets cannot have both an SMB and"
+                                    " Kerberos 5 credential"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
@@ -25780,6 +26250,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
       CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
+      CLOSE (CLIENT_MODIFY_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_ELEVATE_CREDENTIAL);
@@ -27093,6 +27564,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
               &modify_credential_data->community);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KDC,
+              &modify_credential_data->kdc);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
               &modify_credential_data->key_phrase);
 
@@ -27116,6 +27590,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
               &modify_credential_data->privacy_password);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_REALM,
+              &modify_credential_data->realm);
 
 
       case CLIENT_MODIFY_REPORT_CONFIG:
@@ -27224,6 +27701,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
               &create_credential_data->copy);
 
+      APPEND (CLIENT_CREATE_CREDENTIAL_KDC,
+              &create_credential_data->kdc);
+
       APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
               &create_credential_data->key_phrase);
 
@@ -27247,6 +27727,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
               &create_credential_data->privacy_password);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_REALM,
+              &create_credential_data->realm);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
               &create_credential_data->type);

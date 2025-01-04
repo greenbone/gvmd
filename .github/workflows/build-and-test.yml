@@ -64,7 +64,7 @@ jobs:
       - name: Configure and run tests
         run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
       - name: Upload test coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: build/coverage/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}

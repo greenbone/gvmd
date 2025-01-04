@@ -72,9 +72,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 # s/mime email encryption
 # gpgsm
 
-# Loading scap and cert data
-# xml-twig-tools
-
 # Required for set up certificates for GVM
 # gnutls-bin
 

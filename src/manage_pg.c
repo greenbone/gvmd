@@ -230,8 +230,15 @@ manage_create_sql_functions ()
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    ELSE"
        "      CASE"
+#if CVSS3_RATINGS == 1
+       "        WHEN lower (lvl) = 'critical' THEN"
+       "          v := 10.0;"
+       "        WHEN lower (lvl) = 'high' THEN"
+       "          v := 8.9;"
+#else
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 10.0;"
+#endif
        "        WHEN lower (lvl) = 'medium' THEN"
        "          v := 6.9;"
        "        WHEN lower (lvl) = 'low' THEN"
@@ -262,6 +269,10 @@ manage_create_sql_functions ()
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    ELSE"
        "      CASE"
+#if CVSS3_RATINGS == 1
+       "        WHEN lower (lvl) = 'critical' THEN"
+       "          v := 9.0;"
+#endif
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 7.0;"
        "        WHEN lower (lvl) = 'medium' THEN"
@@ -494,6 +505,31 @@ manage_create_sql_functions ()
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
+#if CVSS3_RATINGS == 1
+  sql ("CREATE OR REPLACE FUNCTION order_threat (text)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   IF $1 = 'Critical' THEN"
+       "     RETURN 1;"
+       "   ELSIF $1 = 'High' THEN"
+       "     RETURN 2;"
+       "   ELSIF $1 = 'Medium' THEN"
+       "     RETURN 3;"
+       "   ELSIF $1 = 'Low' THEN"
+       "     RETURN 4;"
+       "   ELSIF $1 = 'Log' THEN"
+       "     RETURN 5;"
+       "   ELSIF $1 = 'False Positive' THEN"
+       "     RETURN 6;"
+       "   ELSIF $1 = 'None' THEN"
+       "     RETURN 7;"
+       "   ELSE"
+       "     RETURN 8;"
+       "   END IF;"
+       " END;"
+       "$$ LANGUAGE plpgsql"
+       " IMMUTABLE;");
+#else
   sql ("CREATE OR REPLACE FUNCTION order_threat (text)"
        " RETURNS integer AS $$"
        " BEGIN"
@@ -515,7 +551,7 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
-
+#endif
   sql ("CREATE OR REPLACE FUNCTION severity_to_type (double precision)"
        " RETURNS text AS $$"
        " BEGIN"
@@ -871,13 +907,13 @@ manage_create_sql_functions ()
        "       OR qod2 is null"
        "  THEN RETURN 'new';"
        "  WHEN description1 != description2"
-       "       OR severity1 != severity2" 
+       "       OR severity1 != severity2"
        "       OR qod1 != qod2"
        "       OR hostname1 != hostname2"
        "       OR path1 != path2"
        "  THEN RETURN 'changed';"
        "  ELSE RETURN 'same';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -890,7 +926,7 @@ manage_create_sql_functions ()
        "  WHEN port = 'package'"
        "  THEN RETURN 'general/tcp';"
        "  ELSE RETURN port;"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -913,7 +949,7 @@ manage_create_sql_functions ()
        "        AND description LIKE 'Compliant:%%YES%%') > 0"
        "  THEN RETURN 'yes';"
        "  ELSE RETURN 'undefined';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -925,7 +961,7 @@ manage_create_sql_functions ()
        " DECLARE count integer := 0;"
        " BEGIN"
        "   WITH compliance_count AS"
-       "   (SELECT count(*) AS total FROM results WHERE report = report_id"                        
+       "   (SELECT count(*) AS total FROM results WHERE report = report_id"
        "        AND description LIKE 'Compliant:%%' || compliance || '%%')"
        "   SELECT total FROM compliance_count"
        "   INTO count;"
@@ -934,7 +970,7 @@ manage_create_sql_functions ()
        " $$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
- /* Functions in SQL. */       
+ /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "                WHERE table_catalog = '%s'"
@@ -1364,6 +1400,10 @@ manage_create_sql_functions ()
            "   second_last_report integer;"
            "   severity_a double precision;"
            "   severity_b double precision;"
+#if CVSS3_RATINGS == 1
+           "   critical_a bigint;"
+           "   critical_b bigint;"
+#endif
            "   high_a bigint;"
            "   high_b bigint;"
            "   medium_a bigint;"
@@ -1399,6 +1439,12 @@ manage_create_sql_functions ()
            "     RETURN 'down'::text;"
            "   END IF;"
            /*  Calculate trend. */
+#if CVSS3_RATINGS == 1
+           "   critical_a := report_severity_count (last_report, $2, $3,"
+           "                                    'critical');"
+           "   critical_b := report_severity_count (second_last_report, $2, $3,"
+           "                                    'critical');"
+#endif
            "   high_a := report_severity_count (last_report, $2, $3,"
            "                                    'high');"
            "   high_b := report_severity_count (second_last_report, $2, $3,"
@@ -1411,7 +1457,13 @@ manage_create_sql_functions ()
            "                                   'low');"
            "   low_b := report_severity_count (second_last_report, $2, $3,"
            "                                   'low');"
+#if CVSS3_RATINGS == 1
+           "   IF critical_a > 0 THEN"
+           "     threat_a := 5;"
+           "   ELSEIF high_a > 0 THEN"
+#else
            "   IF high_a > 0 THEN"
+#endif
            "     threat_a := 4;"
            "   ELSIF medium_a > 0 THEN"
            "     threat_a := 3;"
@@ -1420,7 +1472,13 @@ manage_create_sql_functions ()
            "   ELSE"
            "     threat_a := 1;"
            "   END IF;"
+#if CVSS3_RATINGS == 1
+           "   IF critical_b > 0 THEN"
+           "     threat_b := 5;"
+           "   ELSEIF high_b > 0 THEN"
+#else
            "   IF high_b > 0 THEN"
+#endif
            "     threat_b := 4;"
            "   ELSIF medium_b > 0 THEN"
            "     threat_b := 3;"
@@ -1436,6 +1494,16 @@ manage_create_sql_functions ()
            "     RETURN 'down'::text;"
            "   END IF;"
            /*  Check if the threat count changed. */
+#if CVSS3_RATINGS == 1
+           "   IF critical_a > 0 THEN"
+           "     IF critical_a > critical_b THEN"
+           "       RETURN 'more'::text;"
+           "     ELSIF critical_a < critical_b THEN"
+           "       RETURN 'less'::text;"
+           "     END IF;"
+           "     RETURN 'same'::text;"
+           "   END IF;"
+#endif
            "   IF high_a > 0 THEN"
            "     IF high_a > high_b THEN"
            "       RETURN 'more'::text;"
@@ -1574,9 +1642,18 @@ manage_create_sql_functions ()
            "                                              text)"
            " RETURNS boolean AS $$"
            "  (SELECT CASE lower ($2)"
+#if CVSS3_RATINGS == 1
+           "         WHEN 'critical'"
+           "         THEN $1 >= 9"
+           "              AND $1 <= 10"
+           "         WHEN 'high'"
+           "         THEN $1 >= 7"
+           "              AND $1 < 9"
+#else
            "         WHEN 'high'"
            "         THEN $1 >= 7"
            "              AND $1 <= 10"
+#endif
            "         WHEN 'medium'"
            "         THEN $1 >= 4"
            "              AND $1 < 7"
@@ -1589,6 +1666,8 @@ manage_create_sql_functions ()
            "         THEN $1 = 0"
            "         WHEN 'false'"
            "         THEN $1 = -1"
+           "         WHEN 'error'"
+           "         THEN $1 = -3"
            "         ELSE 0::boolean"
            "         END);"
            "$$ LANGUAGE SQL"
@@ -1616,6 +1695,11 @@ manage_create_sql_functions ()
            "         THEN (SELECT CASE"
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
+#if CVSS3_RATINGS == 1
+           "                      WHEN severity_in_level ($1::double precision,"
+           "                                              'critical')"
+           "                      THEN 'Critical'"
+#endif
            "                      WHEN severity_in_level ($1::double precision,"
            "                                              'high')"
            "                      THEN 'High'"
@@ -1646,6 +1730,10 @@ manage_create_sql_functions ()
            "         THEN (SELECT CASE"
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
+#if CVSS3_RATINGS == 1
+           "                      WHEN severity_in_level ($1, 'critical')"
+           "                      THEN 'Critical'"
+#endif
            "                      WHEN severity_in_level ($1, 'high')"
            "                      THEN 'High'"
            "                      WHEN severity_in_level ($1, 'medium')"
@@ -1832,7 +1920,7 @@ create_view_vulns ()
          "       severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
-         " FROM cves"
+         " FROM scap.cves"
          " WHERE uuid in (SELECT * FROM used_nvts)");
   else
     sql ("CREATE OR REPLACE VIEW vulns AS"
@@ -1994,7 +2082,7 @@ create_indexes_nvt ()
        "                     'nvts', 'cvss_base');");
   sql ("SELECT create_index ('nvts_by_solution_type',"
        "                     'nvts', 'solution_type');");
-  
+
   sql ("SELECT create_index ('vt_refs_by_vt_oid',"
        "                     'vt_refs', 'vt_oid');");
 
@@ -3525,26 +3613,51 @@ manage_db_init (const gchar *name)
            "  modification_time integer,"
            "  title text,"
            "  status text,"
-           "  deprecated_by_id INTEGER,"
            "  severity DOUBLE PRECISION DEFAULT 0,"
            "  cve_refs INTEGER DEFAULT 0,"
-           "  nvd_id text);");
+           "  nvd_id text,"
+           "  deprecated integer,"
+           "  cpe_name_id text);");
+
+      sql ("CREATE TABLE scap2.cpe_refs"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe INTEGER,"
+           "  ref TEXT,"
+           "  type TEXT);");
+
+      sql ("CREATE TABLE scap2.cpes_deprecated_by"
+           " (id SERIAL PRIMARY KEY,"
+           "  cpe TEXT,"
+           "  deprecated_by TEXT);");
 
       sql ("CREATE TABLE scap2.cpe_match_nodes"
            " (id SERIAL PRIMARY KEY,"
-           "  parent_id INTEGER DEFAULT 0,"
-           "  cve_id INTEGER DEFAULT 0,"
-           "  operator text);");
+           "  root_id integer DEFAULT 0,"
+           "  cve_id integer DEFAULT 0,"
+           "  operator text,"
+           "  negate integer DEFAULT 0);");
 
-      sql ("CREATE TABLE scap2.cpe_match_range"
+      sql ("CREATE TABLE scap2.cpe_nodes_match_criteria"
            " (id SERIAL PRIMARY KEY,"
-           "  node_id INTEGER DEFAULT 0,"
-           "  vulnerable INTEGER DEFAULT 0,"
-           "  cpe text,"
-           "  version_start_incl text,"
-           "  version_start_excl text,"
-           "  version_end_incl text,"
-           "  version_end_excl text);");
+           "  node_id integer DEFAULT 0,"
+           "  vulnerable integer DEFAULT 0,"
+           "  match_criteria_id text);");
+
+      sql ("CREATE TABLE scap2.cpe_match_strings"
+           " (id SERIAL PRIMARY KEY,"
+           "  match_criteria_id text,"
+           "  criteria text DEFAULT NULL,"
+           "  version_start_incl text DEFAULT NULL,"
+           "  version_start_excl text DEFAULT NULL,"
+           "  version_end_incl text DEFAULT NULL,"
+           "  version_end_excl text DEFAULT NULL,"
+           "  status text);");
+
+      sql ("CREATE TABLE scap2.cpe_matches"
+           " (id SERIAL PRIMARY KEY,"
+           "  match_criteria_id text,"
+           "  cpe_name_id text,"
+           "  cpe_name text);");
 
       sql ("CREATE TABLE scap2.cpe_details"
            " (id SERIAL PRIMARY KEY,"
@@ -3560,6 +3673,11 @@ manage_db_init (const gchar *name)
            "  epss DOUBLE PRECISION,"
            "  percentile DOUBLE PRECISION);");
 
+      sql ("CREATE TABLE scap2.cve_references"
+           " (id SERIAL PRIMARY KEY,"
+           "  cve_id INTEGER,"
+           "  url text,"
+           "  tags text[]);");
 
       /* Init tables. */
 
@@ -3609,6 +3727,19 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.epss_scores"
            " ALTER cve SET NOT NULL,"
            " ADD UNIQUE (cve);");
+
+      sql ("ALTER TABLE scap2.cve_references"
+           " ALTER cve_id SET NOT NULL,"
+           " ALTER url SET NOT NULL,"
+           " ADD UNIQUE (cve_id, url);");
+
+      sql ("ALTER TABLE scap2.cpe_match_strings"
+           " ADD UNIQUE (match_criteria_id);");
+
+      sql ("ALTER TABLE scap2.cpe_matches"
+           " ALTER match_criteria_id SET NOT NULL,"
+           " ALTER cpe_name_id SET NOT NULL,"
+           " ADD UNIQUE (match_criteria_id, cpe_name_id);");
     }
   else
     {

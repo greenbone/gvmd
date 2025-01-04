@@ -60,6 +60,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <assert.h>
@@ -86,9 +87,11 @@
 #include <gvm/base/hosts.h>
 #include <bsd/unistd.h>
 #include <gvm/osp/osp.h>
+#include <gvm/util/cpeutils.h>
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
+#include <gvm/util/versionutils.h>
 #include <gvm/gmp/gmp.h>
 
 #undef G_LOG_DOMAIN
@@ -857,6 +860,10 @@ scanner_type_valid (scanner_type_t scanner_type)
 const char *
 threat_message_type (const char *threat)
 {
+#if CVSS3_RATINGS == 1
+  if (strcasecmp (threat, "Critical") == 0)
+    return "Alarm";
+#endif
   if (strcasecmp (threat, "High") == 0)
     return "Alarm";
   if (strcasecmp (threat, "Medium") == 0)
@@ -883,8 +890,15 @@ threat_message_type (const char *threat)
 int
 severity_in_level (double severity, const char *level)
 {
+#if CVSS3_RATINGS == 1
+  if (strcmp (level, "critical") == 0)
+    return severity >= 9 && severity <= 10;
+  else if (strcmp (level, "high") == 0)
+    return severity >= 7 && severity < 9;
+#else
   if (strcmp (level, "high") == 0)
     return severity >= 7 && severity <= 10;
+#endif
   else if (strcmp (level, "medium") == 0)
     return severity >= 4 && severity < 7;
   else if (strcmp (level, "low") == 0)
@@ -916,6 +930,10 @@ severity_to_level (double severity, int mode)
     {
       if (mode == 1)
         return "Alarm";
+#if CVSS3_RATINGS == 1
+      else if (severity_in_level (severity, "critical"))
+        return "Critical";
+#endif
       else if (severity_in_level (severity, "high"))
         return "High";
       else if (severity_in_level (severity, "medium"))
@@ -975,7 +993,8 @@ int
 manage_create_encryption_key (GSList *log_config,
                               const db_conn_info_t *database)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.");
@@ -1039,7 +1058,8 @@ manage_set_encryption_key (GSList *log_config,
                            const db_conn_info_t *database,
                            const char *uid)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.\n");
@@ -1295,11 +1315,21 @@ severity_data_range_count (const severity_data_t* severity_data,
  * @param[out] lows            The number of Low severity results.
  * @param[out] mediums         The number of Medium severity results.
  * @param[out] highs           The number of High severity results.
+ * @param[out] criticals       The number of Critical severity results.
+ *                             Only if CVSS3_RATINGS is enabled.
  */
 void
 severity_data_level_counts (const severity_data_t *severity_data,
-                            int *errors, int *false_positives,
-                            int *logs, int *lows, int *mediums, int *highs)
+                            int *errors,
+                            int *false_positives,
+                            int *logs,
+                            int *lows,
+                            int *mediums,
+                            int *highs
+#if CVSS3_RATINGS == 1
+                            ,int* criticals
+#endif
+                           )
 {
   if (errors)
     *errors
@@ -1336,6 +1366,14 @@ severity_data_level_counts (const severity_data_t *severity_data,
       = severity_data_range_count (severity_data,
                                    level_min_severity ("high"),
                                    level_max_severity ("high"));
+
+#if CVSS3_RATINGS == 1
+  if (criticals)
+    *criticals
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("critical"),
+                                   level_max_severity ("critical"));
+#endif
 }
 
 
@@ -2392,6 +2430,61 @@ target_osp_snmp_credential (target_t target)
 }
 
 /**
+ * @brief Get the Kerberos 5 credential of a target as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ *
+ * @return  Pointer to a newly allocated osp_credential_t
+ */
+static osp_credential_t *
+target_osp_krb5_credential (target_t target)
+{
+  credential_t credential;
+  credential = target_credential (target, "krb5");
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: Kerberos 5 Credential not found.", __func__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (strcmp (credential_iterator_type (&iter), "krb5"))
+        {
+          g_warning ("%s: Kerberos 5 Credential not of type 'krb5'.",
+                     __func__);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+
+      osp_credential = osp_credential_new ("up", "krb5", NULL);
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "kdc",
+                                    credential_iterator_kdc (&iter)
+                                      ?: "");
+      osp_credential_set_auth_data (osp_credential,
+                                    "realm",
+                                    credential_iterator_realm (&iter)
+                                      ?: "");
+      cleanup_iterator (&iter);
+      return osp_credential;
+    }
+  return NULL;
+}
+
+/**
  * @brief Prepare a report for resuming an OSP scan
  *
  * @param[in]  task     The task of the scan.
@@ -2566,7 +2659,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
-  osp_credential_t *snmp_credential;
+  osp_credential_t *snmp_credential, *krb5_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
   int ret, empty;
@@ -2657,6 +2750,10 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   snmp_credential = target_osp_snmp_credential (target);
   if (snmp_credential)
     osp_target_add_credential (osp_target, snmp_credential);
+
+  krb5_credential = target_osp_krb5_credential (target);
+  if (krb5_credential)
+    osp_target_add_credential (osp_target, krb5_credential);
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;
@@ -3106,6 +3203,280 @@ set_scanner_connection_retry (int new_retry)
 
 /* CVE tasks. */
 
+static int
+check_version (const gchar *target, const gchar *start_incl, const gchar *start_excl, const gchar *end_incl, const gchar *end_excl)
+{
+  int result;
+
+  if (start_incl != NULL)
+    {
+      result = cmp_versions (start_incl, target);
+      if (result == -5)
+        return -1;
+      if (result > 0)
+        {
+          return 0;
+        }
+    }
+  if (start_excl != NULL)
+    {
+      result = cmp_versions (start_excl, target);
+      if (result == -5)
+        return -1;
+      if (result >= 0)
+        {
+          return 0;
+        }
+    }
+
+  if (end_incl != NULL)
+    {
+      result = cmp_versions (end_incl, target);
+      if (result == -5)
+        return -1;
+      if (result < 0)
+        {
+          return 0;
+        }
+    }
+
+  if (end_excl != NULL)
+    {
+      result = cmp_versions (end_excl, target);
+      if (result == -5)
+        return -1;
+      if (result <= 0)
+        {
+          return 0;
+        }
+    }
+
+  return (1);
+}
+
+static void
+check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable, report_host_t report_host, const char *host_cpe)
+{
+  iterator_t cpe_match_node_childs;
+  gchar *operator;
+  iterator_t cpe_match_ranges;
+
+  operator = sql_string ("SELECT operator FROM scap.cpe_match_nodes WHERE id = %llu", node);
+  init_cpe_match_node_childs_iterator (&cpe_match_node_childs, node);
+  while (next (&cpe_match_node_childs))
+    {
+      long long int child_node;
+      child_node = cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
+      check_cpe_match_rule (child_node, match, vulnerable, report_host, host_cpe);
+      if (strcmp (operator, "AND") == 0 && !(*match))
+        return;
+      if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
+        return;
+    }
+
+  init_cpe_match_string_iterator (&cpe_match_ranges, node);
+  while (next (&cpe_match_ranges))
+    {
+      iterator_t cpe_host_details_products;
+      gchar *range_fs_cpe;
+      gchar *range_uri_product;
+      gchar *vsi, *vse, *vei, *vee;
+      range_fs_cpe = vsi = vse = vei = vee = NULL;
+      range_fs_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
+      vsi = g_strdup (cpe_match_string_iterator_version_start_incl (&cpe_match_ranges));
+      vse = g_strdup (cpe_match_string_iterator_version_start_excl (&cpe_match_ranges));
+      vei = g_strdup (cpe_match_string_iterator_version_end_incl (&cpe_match_ranges));
+      vee = g_strdup (cpe_match_string_iterator_version_end_excl (&cpe_match_ranges));
+      range_uri_product = fs_cpe_to_uri_product (range_fs_cpe);
+      init_host_details_cpe_product_iterator (&cpe_host_details_products, range_uri_product, report_host);
+      while (next (&cpe_host_details_products))
+        {
+          cpe_struct_t source, target;
+          const char *host_details_cpe;
+          gboolean matches;
+          host_details_cpe = host_details_cpe_product_iterator_value (&cpe_host_details_products);
+          cpe_struct_init (&source);
+          cpe_struct_init (&target);
+          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (host_details_cpe, &target);
+          matches = cpe_struct_match (&source, &target);
+          if (matches)
+            {
+              int result;
+              result = check_version (target.version, vsi, vse, vei, vee);
+              if (result == 1)
+                *match = TRUE;
+            }
+          cpe_struct_free (&source);
+          cpe_struct_free (&target);
+        }
+      if (*match && cpe_match_string_iterator_vulnerable (&cpe_match_ranges) == 1)
+        {
+          cpe_struct_t source, target;
+          cpe_struct_init (&source);
+          cpe_struct_init (&target);
+          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (host_cpe, &target);
+          if (cpe_struct_match (&source, &target))
+            *vulnerable = TRUE;
+          cpe_struct_free (&source);
+          cpe_struct_free (&target);
+        }
+      g_free (range_uri_product);
+      g_free (range_fs_cpe);
+      g_free (vsi);
+      g_free (vse);
+      g_free (vei);
+      g_free (vee);
+      if (strcmp (operator, "AND") == 0 && !(*match))
+        return;
+      if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
+        return;
+    }
+}
+
+/**
+ * @brief Perform the json CVE "scan" for the found report host.
+ *
+ * @param[in]  task        Task.
+ * @param[in]  report      The report to add the host, results and details to.
+ * @param[in]  report_host The report host.
+ * @param[in]  ip          The ip of the report host.
+ * @param[in]  start_time  The start time of the scan.
+ *
+ * @param[out] prognosis_report_host  The report_host with prognosis results
+ *                                    and host details.
+ * @param[out] results                The results of the scan.
+ */
+static void
+cve_scan_report_host_json (task_t task,
+                           report_t report,
+                           report_host_t report_host,
+                           gchar *ip,
+                           int start_time,
+                           int *prognosis_report_host,
+                           GArray *results)
+{
+  iterator_t host_details_cpe;
+  init_host_details_cpe_iterator (&host_details_cpe, report_host);
+  while (next (&host_details_cpe))
+    {
+      iterator_t cpe_match_root_node;
+      iterator_t locations_iter;
+      result_t result;
+      char *cpe_product;
+      const char *host_cpe;
+      double severity;
+
+      host_cpe = host_details_cpe_iterator_cpe (&host_details_cpe);
+      cpe_product = uri_cpe_to_fs_product (host_cpe);
+      init_cpe_match_nodes_iterator (&cpe_match_root_node, cpe_product);
+      while (next (&cpe_match_root_node))
+        {
+          result_t root_node;
+          gboolean match, vulnerable;
+          const char *app, *cve;
+
+          vulnerable = FALSE;
+          match = FALSE;
+          root_node = cpe_match_nodes_iterator_root_id (&cpe_match_root_node);
+          check_cpe_match_rule (root_node, &match, &vulnerable, report_host, host_cpe);
+          if (match && vulnerable)
+            {
+              GString *locations;
+              gchar *desc;
+
+              if (*prognosis_report_host == 0)
+                *prognosis_report_host = manage_report_host_add (report,
+                                                                 ip,
+                                                                 start_time,
+                                                                 0);
+
+              severity = sql_double ("SELECT severity FROM scap.cves, scap.cpe_match_nodes"
+                                     " WHERE scap.cves.id = scap.cpe_match_nodes.cve_id"
+                                     " AND scap.cpe_match_nodes.id = %llu;",
+                                     root_node);
+
+              app = host_cpe;
+              cve = sql_string ("SELECT name FROM scap.cves, scap.cpe_match_nodes"
+                                " WHERE scap.cves.id = cpe_match_nodes.cve_id"
+                                " AND scap.cpe_match_nodes.id = %llu;",
+                                root_node);
+              locations = g_string_new ("");
+
+              insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                         "CVE Scanner", "App", app, NULL);
+
+              init_app_locations_iterator (&locations_iter, report_host, app);
+
+              while (next (&locations_iter))
+                {
+                  const char *location;
+                  location = app_locations_iterator_location (&locations_iter);
+
+                  if (location == NULL)
+                    {
+                      g_warning ("%s: Location is null for ip %s, app %s",
+                                 __func__, ip, app);
+                      continue;
+                    }
+
+                  if (locations->len)
+                    {
+                      g_string_append (locations, ", ");
+                    }
+                  g_string_append (locations, location);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", app, location, NULL);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_at",
+                                             location, NULL);
+
+                  insert_report_host_detail (report, ip, "cve", cve,
+                                             "CVE Scanner", "detected_by",
+                                             /* Detected by itself. */
+                                             cve, NULL);
+                }
+
+              const char *description;
+              description = sql_string ("SELECT description FROM scap.cves, scap.cpe_match_nodes"
+                                        " WHERE scap.cves.id = scap.cpe_match_nodes.cve_id"
+                                        " AND scap.cpe_match_nodes.id = %llu;",
+                                        root_node);
+
+              desc = g_strdup_printf ("The host carries the product: %s\n"
+                                      "It is vulnerable according to: %s.\n"
+                                      "%s%s%s"
+                                      "\n"
+                                      "%s",
+                                      app,
+                                      cve,
+                                      locations->len
+                                       ? "The product was found at: "
+                                       : "",
+                                      locations->len ? locations->str : "",
+                                      locations->len ? ".\n" : "",
+                                      description);
+
+              g_debug ("%s: making result with severity %1.1f desc [%s]",
+                       __func__, severity, desc);
+
+              result = make_cve_result (task, ip, cve, severity, desc);
+              g_free (desc);
+
+              g_array_append_val (results, result);
+
+              g_string_free (locations, TRUE);
+
+            }
+        }
+      g_free (cpe_product);
+    }
+  cleanup_iterator (&host_details_cpe);
+}
+
 /**
  * @brief Perform a CVE "scan" on a host.
  *
@@ -3161,89 +3532,102 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
           results = g_array_new (TRUE, TRUE, sizeof (result_t));
           start_time = time (NULL);
           prognosis_report_host = 0;
-          init_host_prognosis_iterator (&prognosis, report_host);
-          while (next (&prognosis))
+
+          if (sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
+                           " WHERE table_schema = 'scap'"
+                           " AND table_name = 'cpe_match_nodes';") > 0)
             {
-              const char *app, *cve;
-              double severity;
-              gchar *desc;
-              iterator_t locations_iter;
-              GString *locations;
-              result_t result;
-
-              if (prognosis_report_host == 0)
-                prognosis_report_host = manage_report_host_add (report,
-                                                                ip,
-                                                                start_time,
-                                                                0);
-
-              severity = prognosis_iterator_cvss_double (&prognosis);
-
-              app = prognosis_iterator_cpe (&prognosis);
-              cve = prognosis_iterator_cve (&prognosis);
-              locations = g_string_new("");
-
-              insert_report_host_detail (global_current_report, ip, "cve", cve,
-                                         "CVE Scanner", "App", app, NULL);
-
-              init_app_locations_iterator (&locations_iter, report_host, app);
-
-              while (next (&locations_iter))
+              // Use new JSON CVE scan
+              cve_scan_report_host_json (task, report, report_host, ip,
+                                         start_time, &prognosis_report_host,
+                                         results);
+            }
+          else
+            {
+              // Use XML CVE scan
+              init_host_prognosis_iterator (&prognosis, report_host);
+              while (next (&prognosis))
                 {
-                  const char *location;
-                  location = app_locations_iterator_location (&locations_iter);
+                  const char *app, *cve;
+                  double severity;
+                  gchar *desc;
+                  iterator_t locations_iter;
+                  GString *locations;
+                  result_t result;
 
-                  if (location == NULL)
+                  if (prognosis_report_host == 0)
+                    prognosis_report_host = manage_report_host_add (report,
+                                                                    ip,
+                                                                    start_time,
+                                                                    0);
+
+                  severity = prognosis_iterator_cvss_double (&prognosis);
+
+                  app = prognosis_iterator_cpe (&prognosis);
+                  cve = prognosis_iterator_cve (&prognosis);
+                  locations = g_string_new("");
+
+                  insert_report_host_detail (global_current_report, ip, "cve", cve,
+                                             "CVE Scanner", "App", app, NULL);
+
+                  init_app_locations_iterator (&locations_iter, report_host, app);
+
+                  while (next (&locations_iter))
                     {
-                      g_warning ("%s: Location is null for ip %s, app %s",
-                                 __func__, ip, app);
-                      continue;
+                      const char *location;
+                      location = app_locations_iterator_location (&locations_iter);
+
+                      if (location == NULL)
+                        {
+                          g_warning ("%s: Location is null for ip %s, app %s",
+                                     __func__, ip, app);
+                          continue;
+                        }
+
+                      if (locations->len)
+                        g_string_append (locations, ", ");
+                      g_string_append (locations, location);
+
+                      insert_report_host_detail (report, ip, "cve", cve,
+                                                 "CVE Scanner", app, location, NULL);
+
+                      insert_report_host_detail (report, ip, "cve", cve,
+                                                 "CVE Scanner", "detected_at",
+                                                 location, NULL);
+
+                      insert_report_host_detail (report, ip, "cve", cve,
+                                                 "CVE Scanner", "detected_by",
+                                                 /* Detected by itself. */
+                                                 cve, NULL);
                     }
 
-                  if (locations->len)
-                    g_string_append (locations, ", ");
-                  g_string_append (locations, location);
+                  desc = g_strdup_printf ("The host carries the product: %s\n"
+                                          "It is vulnerable according to: %s.\n"
+                                          "%s%s%s"
+                                          "\n"
+                                          "%s",
+                                          app,
+                                          cve,
+                                          locations->len
+                                           ? "The product was found at: "
+                                           : "",
+                                          locations->len ? locations->str : "",
+                                          locations->len ? ".\n" : "",
+                                          prognosis_iterator_description
+                                           (&prognosis));
 
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", app, location, NULL);
+                  g_debug ("%s: making result with severity %1.1f desc [%s]",
+                           __func__, severity, desc);
 
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", "detected_at",
-                                             location, NULL);
+                  result = make_cve_result (task, ip, cve, severity, desc);
+                  g_free (desc);
 
-                  insert_report_host_detail (report, ip, "cve", cve,
-                                             "CVE Scanner", "detected_by",
-                                             /* Detected by itself. */
-                                             cve, NULL);
+                  g_array_append_val (results, result);
+
+                  g_string_free (locations, TRUE);
                 }
-
-              desc = g_strdup_printf ("The host carries the product: %s\n"
-                                      "It is vulnerable according to: %s.\n"
-                                      "%s%s%s"
-                                      "\n"
-                                      "%s",
-                                      app,
-                                      cve,
-                                      locations->len
-                                       ? "The product was found at: "
-                                       : "",
-                                      locations->len ? locations->str : "",
-                                      locations->len ? ".\n" : "",
-                                      prognosis_iterator_description
-                                       (&prognosis));
-
-              g_debug ("%s: making result with severity %1.1f desc [%s]",
-                       __func__, severity, desc);
-
-              result = make_cve_result (task, ip, cve, severity, desc);
-              g_free (desc);
-
-              g_array_append_val (results, result);
-
-              g_string_free (locations, TRUE);
+              cleanup_iterator (&prognosis);
             }
-          cleanup_iterator (&prognosis);
-
           report_add_results_array (report, results);
           g_array_free (results, TRUE);
 
@@ -3382,12 +3766,12 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
-  
+
   if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
     {
       set_task_interrupted (task,
                               "Failed to exclude hosts."
-                              "  Interrupting scan.");      
+                              "  Interrupting scan.");
       set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
       gvm_hosts_free (gvm_hosts);
       free (exclude_hosts);
@@ -4126,6 +4510,8 @@ credential_full_type (const char* abbreviation)
     return NULL;
   else if (strcasecmp (abbreviation, "cc") == 0)
     return "client certificate";
+  else if (strcasecmp (abbreviation, "krb5") == 0)
+    return "Kerberos 5";
   else if (strcasecmp (abbreviation, "pw") == 0)
     return "password only";
   else if (strcasecmp (abbreviation, "snmp") == 0)
@@ -5190,12 +5576,12 @@ feed_sync_required ()
 
 /**
  * @brief Wait for memory
- * 
+ *
  * @param[in]  check_func  Function to check memory, should return 1 if enough.
  * @param[in]  retries     Number of retries.
  * @param[in]  min_mem     Minimum memory in MiB, for logging only
  * @param[in]  action      Short descriptor of action waiting for memory.
- * 
+ *
  * @return 0 if enough memory is available, 1 gave up
  */
 static int
@@ -5417,7 +5803,8 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       if (error_msg)
@@ -6172,7 +6559,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       if (nvt_iterator_epss_cve (nvts))
         {
-          buffer_xml_append_printf 
+          buffer_xml_append_printf
              (buffer,
               "<epss>"
               "<max_severity>"
@@ -6185,7 +6572,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_epss_severity (nvts));
@@ -6205,7 +6592,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_max_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_max_epss_severity (nvts));
@@ -6570,7 +6957,7 @@ set_mem_wait_retries (int new_retries)
 
 /**
  * @brief Check if the minimum memory for feed updates is available
- * 
+ *
  * @return 1 if minimum memory amount is available, 0 if not
  */
 int

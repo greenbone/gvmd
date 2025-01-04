@@ -127,7 +127,7 @@ init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const db_conn_info_t *, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int, int);
 
 void
 init_manage_process (const db_conn_info_t*);
@@ -902,9 +902,8 @@ int
 task_last_report (task_t, report_t*);
 
 const char *
-task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
-                            double);
-
+task_iterator_trend_counts (iterator_t *, int, int, int, int, double, int, int,
+                            int, int, double);
 int
 task_schedule_periods (task_t);
 
@@ -1065,9 +1064,15 @@ severity_data_add (severity_data_t*, double);
 void
 severity_data_add_count (severity_data_t*, double, int);
 
+#if CVSS3_RATINGS == 1
+void
+severity_data_level_counts (const severity_data_t*,
+                            int*, int*, int*, int*, int*, int*, int*);
+#else
 void
 severity_data_level_counts (const severity_data_t*,
                             int*, int*, int*, int*, int*, int*);
+#endif
 
 
 /* General task facilities. */
@@ -1337,6 +1342,15 @@ int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
 
+#if CVSS3_RATINGS == 1
+int
+report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
+               int, int);
+
+int
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
+                  const get_data_t*, const char*);
+#else
 int
 report_counts (const char*, int*, int*, int*, int*, int*, double*,
                int, int);
@@ -1344,6 +1358,7 @@ report_counts (const char*, int*, int*, int*, int*, int*, double*,
 int
 report_counts_id (report_t, int*, int*, int*, int*, int*, double*,
                   const get_data_t*, const char*);
+#endif
 
 int
 report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,
@@ -1416,7 +1431,7 @@ int
 init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
 int
-init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);                         
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1688,7 +1703,82 @@ void
 init_app_locations_iterator (iterator_t*, report_host_t, const gchar *);
 
 const char *
-app_locations_iterator_location (iterator_t *);
+app_locations_iterator_location (iterator_t*);
+
+void
+init_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_cve_cpe_match_nodes_iterator (iterator_t*, const char *);
+
+void
+init_cve_reference_iterator (iterator_t*, const char *);
+
+const char*
+cve_reference_iterator_url (iterator_t*);
+
+const char*
+cve_reference_iterator_tags (iterator_t*);
+
+const char*
+cve_reference_iterator_tags_count (iterator_t*);
+
+long long int
+cpe_match_nodes_iterator_root_id (iterator_t*);
+
+void
+init_host_details_cpe_iterator (iterator_t*, report_host_t);
+
+const char*
+host_details_cpe_iterator_cpe (iterator_t*);
+
+void
+init_cpe_match_node_childs_iterator (iterator_t*, long long int);
+
+long long int
+cpe_match_node_childs_iterator_id (iterator_t*);
+
+void
+init_cpe_match_string_iterator (iterator_t*, long long int);
+
+const char*
+cpe_match_string_iterator_criteria (iterator_t*);
+
+const char*
+cpe_match_string_iterator_match_criteria_id (iterator_t*);
+
+const char*
+cpe_match_string_iterator_status (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_start_incl (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_start_excl (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_end_incl (iterator_t*);
+
+const char*
+cpe_match_string_iterator_version_end_excl (iterator_t*);
+
+int
+cpe_match_string_iterator_vulnerable (iterator_t*);
+
+void
+init_cpe_match_string_matches_iterator (iterator_t*, const char *, const char*);
+
+const char*
+cpe_matches_cpe_name_id (iterator_t*);
+
+const char*
+cpe_matches_cpe_name (iterator_t*);
+
+void
+init_host_details_cpe_product_iterator (iterator_t*, const char *, report_host_t);
+
+const char*
+host_details_cpe_product_iterator_value (iterator_t*);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t);
@@ -1733,7 +1823,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **, 
+                               int *, gchar **, gchar **, gchar **, gchar **,
                                gchar **, int *, int *, int *, int *, gchar **);
 
 gchar *
@@ -1751,7 +1841,8 @@ find_target_with_permission (const char *, target_t *, const char *);
 int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, credential_t,
-               const char *, credential_t, credential_t, credential_t,
+               const char *,
+               credential_t, credential_t, credential_t, credential_t,
                const char *, const char *, const char *, const char *,
                target_t*);
 
@@ -1762,7 +1853,7 @@ int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*);
+               const char*, const char*);
 
 int
 delete_target (const char*, int);
@@ -1813,6 +1904,9 @@ int
 target_iterator_ssh_elevate_credential (iterator_t*);
 
 int
+target_iterator_krb5_credential (iterator_t*);
+
+int
 target_iterator_ssh_trash (iterator_t*);
 
 int
@@ -1826,6 +1920,9 @@ target_iterator_snmp_trash (iterator_t*);
 
 int
 target_iterator_ssh_elevate_trash (iterator_t*);
+
+int
+target_iterator_krb5_trash (iterator_t*);
 
 const char*
 target_iterator_allow_simultaneous_ips (iterator_t*);
@@ -2218,7 +2315,7 @@ int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*, credential_t*);
+                   const char*, const char*, const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,
@@ -2228,7 +2325,7 @@ int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*);
+                   const char*, const char*, const char*);
 
 int
 delete_credential (const char *, int);
@@ -2268,6 +2365,12 @@ credential_iterator_privacy_password (iterator_t*);
 
 const char*
 credential_iterator_public_key (iterator_t*);
+
+const char*
+credential_iterator_kdc (iterator_t*);
+
+const char*
+credential_iterator_realm (iterator_t*);
 
 const char*
 credential_iterator_private_key (iterator_t*);
@@ -2589,7 +2692,7 @@ init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
 
 int
-init_override_iterator_all (iterator_t* iterator, get_data_t *get);                        
+init_override_iterator_all (iterator_t* iterator, get_data_t *get);
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
@@ -3340,6 +3443,12 @@ manage_scap_update_time ();
 /* CPE. */
 
 void
+init_cpe_deprecated_by_iterator (iterator_t *, const char *);
+
+const char *
+cpe_deprecated_by_iterator_deprecated_by (iterator_t *);
+
+void
 init_cpe_cve_iterator (iterator_t *, const char *, int, const char *);
 
 int
@@ -3355,22 +3464,29 @@ const char*
 cpe_info_iterator_title (iterator_t*);
 
 const char*
-cpe_info_iterator_status (iterator_t*);
+cpe_info_iterator_deprecated (iterator_t*);
 
 const char *
 cpe_info_iterator_severity (iterator_t*);
 
 const char*
-cpe_info_iterator_deprecated_by_id (iterator_t*);
-
-const char*
 cpe_info_iterator_cve_refs (iterator_t*);
 
 const char*
-cpe_info_iterator_nvd_id (iterator_t*);
+cpe_info_iterator_cpe_name_id (iterator_t*);
 
 gchar *
 cpe_details_xml (const char*);
+
+void
+init_cpe_reference_iterator (iterator_t *, const char *);
+
+const char*
+cpe_reference_iterator_href (iterator_t *);
+
+const char*
+cpe_reference_iterator_type (iterator_t *);
+
 
 /* CVE. */
 

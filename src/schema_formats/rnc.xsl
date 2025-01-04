@@ -182,6 +182,10 @@ response
     <xsl:param name="parent"/>
     <xsl:variable name="name" select="text()"/>
     <xsl:choose>
+      <xsl:when test="$parent/ele[id=$name]">
+        <xsl:value-of select="$parent-name"/>
+        <xsl:value-of select="$parent/ele[id=$name]/name"/>
+      </xsl:when>
       <xsl:when test="$parent/ele[name=$name]">
         <xsl:value-of select="$parent-name"/>
         <xsl:value-of select="$name"/>
