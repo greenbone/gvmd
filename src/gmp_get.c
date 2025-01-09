@@ -406,7 +406,17 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
       buffer_xml_append_printf (buffer, "</permissions>");
     }
 
-  tag_type = get->subtype ? get->subtype : get->type;
+  if (strcmp (type, "config") == 0)
+    tag_type = (strcmp (config_iterator_usage_type (iterator), "policy") == 0)
+                ? "policy"
+                : "config";
+  else if (strcmp (type, "task") == 0)
+    tag_type = (strcmp (task_iterator_usage_type (iterator), "audit") == 0)
+                ? "audit"
+                : "task";
+  else
+    tag_type = get->subtype ? get->subtype : get->type;
+
   tag_count = resource_tag_count (tag_type,
                                   get_iterator_resource (iterator),
                                   1);
