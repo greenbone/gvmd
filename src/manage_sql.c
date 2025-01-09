@@ -29673,7 +29673,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      int tag_count = resource_tag_count ("report", report, 1);
+      const char *report_type = (strcmp (tsk_usage_type, "audit") == 0)
+                                 ? "audit_report"
+                                 : "report";
+      int tag_count = resource_tag_count (report_type, report, 1);
 
       if (tag_count)
         {
@@ -29751,7 +29754,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       target_t target;
       gchar *progress_xml;
       iterator_t tags;
-      int task_tag_count = resource_tag_count ("task", task, 1);
+
+      const char *task_type = (strcmp (tsk_usage_type, "audit") == 0)
+                               ? "audit"
+                               : "task";
+      int task_tag_count = resource_tag_count (task_type, task, 1);
 
       tsk_name = task_name (task);
 
@@ -58183,24 +58190,35 @@ int
 resource_tag_count (const char* type, resource_t resource, int active_only)
 {
   int ret;
+  const char *parent_type;
 
   assert (type);
   assert (resource);
 
+  if (type_is_report_subtype (type))
+    parent_type = "report";
+  else if (type_is_task_subtype (type))
+    parent_type = "task";
+  else if (type_is_config_subtype (type))
+    parent_type = "config";
+  else
+    parent_type = type;
+
   ret = sql_int ("SELECT count (id)"
-                 " FROM tags"
-                 " WHERE resource_type = '%s'"
-                 "   AND EXISTS"
-                 "     (SELECT * FROM tag_resources"
-                 "      WHERE tag = tags.id"
-                 "        AND resource = %llu"
-                 "        AND resource_location = %d"
-                 "        AND tags.resource_type = tag_resources.resource_type)"
-                 "   %s;",
-                 type,
-                 resource,
-                 LOCATION_TABLE,
-                 active_only ? "AND active=1": "");
+                " FROM tags"
+                " WHERE resource_type = '%s'"
+                "   AND EXISTS"
+                "     (SELECT * FROM tag_resources"
+                "      WHERE tag = tags.id"
+                "        AND resource = %llu"
+                "        AND resource_location = %d"
+                "        AND tag_resources.resource_type = '%s')"
+                "   %s;",
+                type,
+                resource,
+                LOCATION_TABLE,
+                parent_type,
+                active_only ? "AND active=1": "");
 
   return ret;
 }
