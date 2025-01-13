@@ -22118,7 +22118,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_yes
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description ~ '^Compliant:[\\s]*YES[\\s]*';",
+                   " AND description ~ '^Compliant:\\s*YES\\s*';",
                    report);
     }
 
@@ -22127,7 +22127,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_no
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description ~ '^Compliant:[\\s]*NO[\\s]*';",
+                   " AND description ~ '^Compliant:\\s*NO\\s*';",
                    report);
     }
 
@@ -22136,7 +22136,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_incomplete
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description ~ '^Compliant:[\\s]*INCOMPLETE[\\s]*';",
+                   " AND description ~ '^Compliant:\\s*INCOMPLETE\\s*';",
                    report);
     }
   if (compliance_undefined)
@@ -22144,7 +22144,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_undefined
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description !~ '^Compliant:[\\s]*';",
+                   " AND description !~ '^Compliant:\\s*';",
                    report);
     }
 
