@@ -4245,7 +4245,7 @@ update_scap_cpe_match_strings ()
   inserts_t inserts, matches_inserts;
 
   current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                        "cpe_match_strings.json.gz",
+                                        "nvd_cpe_matches.json.gz",
                                         NULL);
   int fd = open(current_json_path, O_RDONLY);
 
@@ -4253,7 +4253,7 @@ update_scap_cpe_match_strings ()
   {
     g_free (current_json_path);
     current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                          "cpe_match_strings.json",
+                                          "nvd_cpe_matches.json",
                                           NULL);
     fd = open(current_json_path, O_RDONLY);
   }
