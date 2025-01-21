@@ -1604,6 +1604,7 @@ update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
   return 0;
 }
 
+#if OPENVASD
 /**
  * @brief Update NVT from an NVTI structure
  *
@@ -1688,6 +1689,7 @@ update_preferences_from_json_nvt (nvti_t *nvti, GList **preferences)
 
   return 0;
 }
+#endif
 
 /**
  * @brief Create NVTI structure from VT XML.
@@ -2160,6 +2162,7 @@ struct FILESTREAM {
   size_t last_write;
 };
 
+#if OPENVASD
 /**
  * @brief Hook function to read the stream file cookie
  */
@@ -2437,6 +2440,7 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
 
   return 0;
 }
+#endif
 
 /**
  * @brief Check that preference names are in the new format.
@@ -2783,6 +2787,7 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
   return 0;
 }
 
+#if OPENVASD
 /**
  * @brief Update VTs via Openvasd.
  *
@@ -2970,7 +2975,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   openvasd_connector_free (connector);
   return ret;
 }
-
+#endif
 
 /**
  * @brief Get the VTs feed version from an OSP scanner.
