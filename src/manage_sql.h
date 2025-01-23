@@ -153,6 +153,11 @@
 #define SETTING_UUID_USER_INTERFACE_DATE_FORMAT "d9857b7c-1159-4193-9bc0-18fae5473a69"
 
 /**
+ * @brief UUID of 'CVE-CPE Matching Version' setting.
+ */
+#define SETTING_UUID_CVE_CPE_MATCHING_VERSION "2e8a8ccc-219f-4a82-824a-3ad88b6d4029"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0

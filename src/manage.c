@@ -3483,11 +3483,18 @@ cve_scan_report_host_json (task_t task,
  * @param[in]  task      Task.
  * @param[in]  report    The report to add the host, results and details to.
  * @param[in]  gvm_host  Host.
+ * @param[in]  matching_version  The CPE-CVE matching version (0 or 1) to use.
+ *
+ * With version 0 matching, CPEs are only compared to the affected products
+ *  lists of CVEs.
+ * With version 1 matching, CPEs are matched by evaluating the match criteria
+ *  for the CVEs.
  *
  * @return 0 success, 1 failed to get nthlast report for a host.
  */
 static int
-cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
+cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host,
+               int matching_version)
 {
   report_host_t report_host;
   gchar *ip, *host;
@@ -3533,7 +3540,8 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
           start_time = time (NULL);
           prognosis_report_host = 0;
 
-          if (sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
+          if (matching_version == 1 &&
+              sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
                            " WHERE table_schema = 'scap'"
                            " AND table_name = 'cpe_match_nodes';") > 0)
             {
@@ -3780,8 +3788,11 @@ fork_cve_scan_handler (task_t task, target_t target)
     }
   free (exclude_hosts);
 
+  int matching_version;
+  setting_value_int(SETTING_UUID_CVE_CPE_MATCHING_VERSION, &matching_version);
+
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
-    if (cve_scan_host (task, global_current_report, gvm_host))
+    if (cve_scan_host (task, global_current_report, gvm_host, matching_version))
       {
         set_task_interrupted (task,
                               "Failed to get nthlast report."

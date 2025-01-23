@@ -16310,6 +16310,17 @@ check_db_settings ()
           "  'User Interface Date Format',"
           "  'Preferred date format to be used in client user interfaces.',"
           "  'system_default' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+              " WHERE uuid = '" SETTING_UUID_CVE_CPE_MATCHING_VERSION "'"
+              " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+          " VALUES"
+          " ('" SETTING_UUID_CVE_CPE_MATCHING_VERSION "', NULL,"
+          "  'CVE-CPE Matching Version',"
+          "  'Version of the CVE-CPE matching used in CVE scans.',"
+          "  '0' );");
 }
 
 /**
@@ -53565,6 +53576,8 @@ setting_name (const gchar *uuid)
     return "Feed Import Roles";
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "SecInfo SQL Buffer Threshold";
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    return "CVE-CPE Matching Version";
 
   return NULL;
 }
@@ -53605,6 +53618,8 @@ setting_description (const gchar *uuid)
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "Buffer size threshold in MiB for running buffered SQL statements"
            " in SecInfo updates before the end of the file being processed.";
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    return "Version of the CVE-CPE matching used in CVE scans.";
 
   return NULL;
 }
@@ -53697,6 +53712,12 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       int threshold;
       threshold = atoi (value);
       if (threshold < 0 || threshold > (INT_MAX / 1048576))
+        return 1;
+    }
+
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    {
+      if (strcmp (value, "0") && strcmp (value, "1"))
         return 1;
     }
 
@@ -53794,7 +53815,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
-      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD)
+      && strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
@@ -53822,7 +53844,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0))
+          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+          || (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
