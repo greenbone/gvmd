@@ -22,7 +22,7 @@ jobs:
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: ${{ vars.IMAGE_REGISTRY }}/greenbone/gvmd-build:stable
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
@@ -30,7 +30,8 @@ jobs:
         run: |
           apt update
           apt install --no-install-recommends -y clang clang-format clang-tools
-          rm -rf /var/lib/apt/lists/*
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
       - name: Configure scan build
         run: |
           scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug
@@ -52,7 +53,7 @@ jobs:
           - stable
           - oldstable
           - testing
-    container: registry.community.greenbone.net/community/gvm-libs:${{ matrix.container }}
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:${{ matrix.container }}
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
@@ -66,13 +67,14 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container: registry.community.greenbone.net/community/gvm-libs:stable
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
     steps:
       - name: Install git for Codecov uploader
         run: |
           apt update
           apt install --no-install-recommends -y ca-certificates git
-          rm -rf /var/lib/apt/lists/*
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
       - name: Check out gvmd
         uses: actions/checkout@v4
       - name: Set git safe.directory
