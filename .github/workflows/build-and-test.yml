@@ -43,6 +43,26 @@ jobs:
           path: ~/scan-build-report/
           retention-days: 7
 
+  build-gvmd:
+    name: Build gvmd
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container:
+          - stable
+          - oldstable
+          - testing
+    container: registry.community.greenbone.net/community/gvm-libs:${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: Configure and compile gvmd
+        run: |
+          rm -rf .git
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j $(nproc) -- install
+
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
