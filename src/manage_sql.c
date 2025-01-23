@@ -60224,7 +60224,12 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
   if (end_time)
     set_scan_end_time_epoch (report, end_time);
 
-  
+  if (results == NULL)
+    {
+      sql_commit ();
+      return;
+    }
+ 
   hashed_openvasd_results = g_hash_table_new_full (g_str_hash,
                                               g_str_equal,
                                               g_free,
@@ -60234,13 +60239,6 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
                                                g_str_equal,
                                                g_free,
                                                NULL);
-
-
-  if (results == NULL)
-    {
-      sql_commit ();
-      return;
-    }
 
   has_results = TRUE;
 
