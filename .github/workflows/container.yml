@@ -19,6 +19,8 @@ jobs:
     uses: greenbone/workflows/.github/workflows/container-build-push-2nd-gen.yml@main
     with:
       image-url: community/gvmd
+      base-image-label: stable
+      build-args: GVM_LIBS_VERSION=stable
       image-labels: |
         org.opencontainers.image.vendor=Greenbone
         org.opencontainers.image.base.name=greenbone/gvm-libs
