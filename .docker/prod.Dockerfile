@@ -1,4 +1,4 @@
-ARG GVM_LIBS_VERSION=oldstable
+ARG GVM_LIBS_VERSION=stable
 ARG DEBIAN_FRONTEND=noninteractive
 # when set it will added to the cmake command
 # As an example:
