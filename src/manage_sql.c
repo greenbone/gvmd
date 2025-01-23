@@ -60214,6 +60214,17 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
   assert (task);
   assert (report);
 
+  
+  sql_begin_immediate ();
+  /* Set the report's start and end times. */
+
+  if (start_time)
+    set_scan_start_time_epoch (report, start_time);
+
+  if (end_time)
+    set_scan_end_time_epoch (report, end_time);
+
+  
   hashed_openvasd_results = g_hash_table_new_full (g_str_hash,
                                               g_str_equal,
                                               g_free,
@@ -60224,17 +60235,14 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
                                                g_free,
                                                NULL);
 
-  sql_begin_immediate ();
-  /* Set the report's start and end times. */
 
-  if (start_time)
-    set_scan_start_time_epoch (report, start_time);
+  if (results == NULL)
+    {
+      sql_commit ();
+      return;
+    }
 
-  if (end_time)
-    set_scan_end_time_epoch (report, end_time);
-
-  if (g_slist_length (results))
-    has_results = TRUE;
+  has_results = TRUE;
 
   defs_file = task_definitions_file (task);
 

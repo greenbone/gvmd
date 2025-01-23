@@ -9020,14 +9020,18 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
               openvasd_scan_status = openvasd_parsed_scan_status (connector);
               start_time = openvasd_scan_status->start_time;
               end_time = openvasd_scan_status->end_time;
+
+              g_message ("start_time: %ld - end_time: %ld", start_time,
+                         end_time);
+              
               current_status = openvasd_scan_status->status;
               progress = openvasd_scan_status->progress;
               g_free (openvasd_scan_status);
 
-              if (g_slist_length(results))
-                {
-                  parse_openvasd_report (task, report, results, start_time,
-                                         end_time);
+              parse_openvasd_report (task, report, results, start_time,
+                                     end_time);
+              if (results != NULL)
+                {                  
                   g_slist_free_full (results,
                                      (GDestroyNotify) openvasd_result_free);
                 }
