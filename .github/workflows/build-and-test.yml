@@ -46,7 +46,7 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container: ${{ vars.IMAGE_REGISTRY }}/greenbone/gvmd-build:stable
+    container: registry.community.greenbone.net/community/gvm-libs:stable
     steps:
       - name: Install git for Codecov uploader
         run: |
