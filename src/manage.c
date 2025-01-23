@@ -527,9 +527,12 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           gchar *buffer;
           gnutls_x509_crt_get_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
-          gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size);
-
-          if (escape_dns)
+          if (gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size))
+            {
+              *subject = g_strdup ("");
+              g_free (buffer);
+            }
+          else if (escape_dns)
             {
               *subject = strescape_check_utf8 (buffer, NULL);
               g_free (buffer);
@@ -544,9 +547,12 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           gchar *buffer;
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
-          gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
-
-          if (escape_dns)
+          if (gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size))
+            {
+              *issuer = g_strdup ("");
+              g_free (buffer);
+            }
+          else if (escape_dns)
             {
               *issuer = strescape_check_utf8 (buffer, NULL);
               g_free (buffer);
