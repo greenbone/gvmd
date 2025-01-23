@@ -21,11 +21,15 @@
  * @brief The Greenbone Vulnerability Manager management library.
  */
 
+/* For strptime in time.h. */
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE
+
+#include "manage.h"
+#include <stdio.h>
 /**
  * @brief Enable extra GNU functions.
  */
-#include "manage.h"
-#include <stdio.h>
 #define _GNU_SOURCE
 
 #include "debug_utils.h"
@@ -67,6 +71,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 #include <grp.h>
 #include <gpgme.h>
 #include <stdlib.h>

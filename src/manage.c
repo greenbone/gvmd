@@ -7531,6 +7531,7 @@ nvts_feed_info_internal (const gchar *update_socket,
   return 0;
 }
 
+#if OPENVASD
 /**
  * @brief Get VTs feed information from a scanner.
  *
@@ -7574,6 +7575,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   openvasd_connector_free (connector);
   return ret;
 }
+#endif
 
 /**
  * @brief Get VTs feed information from the scanner using VT update socket.
