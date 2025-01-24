@@ -77,6 +77,8 @@ jobs:
           apt install --no-install-recommends -y ca-certificates git
       - name: Install build dependencies
         run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: "Instal cgreen"
+        uses: greenbone/actions/install-cgreen@v3
       - name: Set git safe.directory
         run: git config --global --add safe.directory '*'
       - name: Build gvmd
