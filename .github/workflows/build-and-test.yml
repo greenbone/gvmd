@@ -69,14 +69,14 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
     steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v4
       - name: Install git for Codecov uploader
         run: |
           apt update
           apt install --no-install-recommends -y ca-certificates git
       - name: Install build dependencies
         run: sh .github/install-dependencies.sh .github/build-dependencies.list
-      - name: Check out gvmd
-        uses: actions/checkout@v4
       - name: Set git safe.directory
         run: git config --global --add safe.directory '*'
       - name: Build gvmd
