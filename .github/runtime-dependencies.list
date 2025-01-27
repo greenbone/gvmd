@@ -64,6 +64,7 @@ libpq5
 msmtp
 msmtp-mta
 openssh-client
+postgresql-client
 postgresql-client-common
 python3
 rpm
