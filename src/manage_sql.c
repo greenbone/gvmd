@@ -56305,7 +56305,7 @@ vuln_iterator_extra_with (const gchar *task_id, const gchar *report_id,
   if (report_id && strcmp (report_id, ""))
     {
       report_t report = 0;
-      find_report_with_permission (task_id, &report, "get_reports");
+      find_report_with_permission (report_id, &report, "get_reports");
       g_string_append_printf (ret, " AND results.report = %llu", report);
     }
 
