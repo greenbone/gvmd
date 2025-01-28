@@ -72,6 +72,11 @@
 #define CPE_MAX_CHUNK_SIZE 10000
 
 /**
+ * @brief Query size for affected products updates.
+ */
+static int affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
+
+/**
  * @brief Commit size for updates.
  */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
@@ -4055,6 +4060,24 @@ update_scap_cves ()
   return 0;
 }
 
+static void
+exec_affected_products_sql (const char *cve_ids_str)
+{
+  sql ("INSERT INTO scap2.affected_products"
+        "  SELECT DISTINCT scap2.cpe_match_nodes.cve_id, scap2.cpes.id"
+        "    FROM scap2.cpe_match_nodes, scap2.cpe_nodes_match_criteria,"
+        "         scap2.cpe_matches, scap2.cpes"
+        "    WHERE scap2.cpe_match_nodes.cve_id IN (%s)"
+        "      AND scap2.cpe_match_nodes.id ="
+        "            scap2.cpe_nodes_match_criteria.node_id"
+        "      AND scap2.cpe_nodes_match_criteria.vulnerable = 1"
+        "      AND scap2.cpe_nodes_match_criteria.match_criteria_id ="
+        "            scap2.cpe_matches.match_criteria_id"
+        "      AND scap2.cpe_matches.cpe_name_id = scap2.cpes.cpe_name_id"
+        "  ON CONFLICT DO NOTHING;",
+        cve_ids_str);
+}
+
 /**
  * @brief Update SCAP affected products.
  *
@@ -4063,17 +4086,40 @@ update_scap_cves ()
 static void
 update_scap_affected_products ()
 {
+  iterator_t cves_iter;
+  GString *cve_ids_buffer;
   g_info ("Updating affected products");
 
-  sql ("INSERT INTO scap2.affected_products"
-       "  SELECT DISTINCT scap2.cpe_match_nodes.cve_id, scap2.cpes.id"
-       "    FROM scap2.cpe_match_nodes, scap2.cpe_nodes_match_criteria,"
-       "         scap2.cpe_matches, scap2.cpes"
-       "    WHERE scap2.cpe_match_nodes.id = scap2.cpe_nodes_match_criteria.node_id"
-       "      AND scap2.cpe_nodes_match_criteria.vulnerable = 1"
-       "      AND scap2.cpe_nodes_match_criteria.match_criteria_id ="
-       "            scap2.cpe_matches.match_criteria_id"
-       "      AND scap2.cpe_matches.cpe_name_id = scap2.cpes.cpe_name_id;");
+  init_iterator(&cves_iter,
+                "SELECT DISTINCT cve_id FROM scap2.cpe_match_nodes");
+
+  int count = 0;
+
+  cve_ids_buffer = g_string_new("");
+  while (next (&cves_iter))
+    {
+      resource_t cve_id;
+      cve_id = iterator_int64 (&cves_iter, 0);
+      g_string_append_printf (cve_ids_buffer, "%s%llu",
+                              cve_ids_buffer->len ? ", " : "",
+                              cve_id);
+      count ++;
+
+      if (count % affected_products_query_size == 0)
+        {
+          exec_affected_products_sql (cve_ids_buffer->str);
+          g_string_truncate (cve_ids_buffer, 0);
+          g_message("%s: Products of %d CVEs processed", __func__, count);
+        }
+    }
+
+  if (cve_ids_buffer->len)
+    {
+      exec_affected_products_sql (cve_ids_buffer->str);
+      g_string_truncate (cve_ids_buffer, 0);
+      g_message("%s: Products of %d CVEs processed", __func__, count);
+    }
+
 }
 
 /**
@@ -5783,6 +5829,20 @@ manage_rebuild_scap (GSList *log_config, const db_conn_info_t *database)
 fail:
   manage_option_cleanup ();
   return -1;
+}
+
+/**
+ * @brief Set the affected products query size.
+ *
+ * @param new_size The new affected products query size.
+ */
+void
+set_affected_products_query_size (int new_size)
+{
+  if (new_size <= 0)
+    affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
+  else
+    secinfo_commit_size = new_size;
 }
 
 /**

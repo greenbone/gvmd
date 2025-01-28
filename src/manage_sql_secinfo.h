@@ -166,6 +166,11 @@
  }
 
 /**
+ * @brief Default for affected_products_query_size.
+ */
+#define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 1000
+
+/**
  * @brief Default for secinfo_commit_size.
  */
 #define SECINFO_COMMIT_SIZE_DEFAULT 0
@@ -190,6 +195,9 @@ check_cert_db_version ();
 
 int
 get_secinfo_commit_size ();
+
+void
+set_affected_products_query_size (int);
 
 void
 set_secinfo_commit_size (int);

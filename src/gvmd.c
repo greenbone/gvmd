@@ -1865,6 +1865,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_key_priv = NULL;
   static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
+  static int affected_products_query_size
+    = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
@@ -1911,6 +1913,12 @@ gvmd (int argc, char** argv, char *env[])
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "affected-products-query-size", '\0', 0, G_OPTION_ARG_INT,
+          &affected_products_query_size,
+          "Sets the number of CVEs to process per query when updating"
+          " the affected products. Defaults to "
+          G_STRINGIFY (AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT) ".",
+          "<number>" },
         { "auth-timeout", '\0', 0, G_OPTION_ARG_INT,
           &auth_timeout,
           "Sets the authentication timeout time for the cached authentication."
@@ -2363,6 +2371,8 @@ gvmd (int argc, char** argv, char *env[])
   set_scanner_connection_retry (scanner_connection_retry);
 
   /* Set SQL sizes */
+
+  set_affected_products_query_size (affected_products_query_size);
 
   set_secinfo_commit_size (secinfo_commit_size);
 
