@@ -18,6 +18,7 @@ XML-based Greenbone Management Protocol (GMP). Controlling scanners like
 Protocol (OSP).
 
 ## Releases
+
 All [release files](https://github.com/greenbone/gvmd/releases) are signed with
 the [Greenbone Community Feed integrity key](https://community.greenbone.net/t/gcf-managing-the-digital-signatures/101).
 This gpg key can be downloaded at https://www.greenbone.net/GBCommunitySigningKey.asc
@@ -76,6 +77,6 @@ GitHub](https://github.com/greenbone/gvmd/issues) first.
 
 ## License
 
-Copyright (C) 2009-2022 [Greenbone AG](https://www.greenbone.net/)
+Copyright (C) 2009-2025 [Greenbone AG](https://www.greenbone.net/)
 
 Licensed under the [GNU Affero General Public License v3.0 or later](COPYING).
