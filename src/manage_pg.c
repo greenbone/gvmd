@@ -3781,6 +3781,8 @@ manage_db_init_indexes (const gchar *name)
            " ON scap2.cpes (severity);");
       sql ("CREATE INDEX cpes_by_uuid"
            " ON scap2.cpes (uuid);");
+      sql ("CREATE INDEX cpes_by_cpe_name_id"
+           " ON scap2.cpes(cpe_name_id);");
 
       sql ("CREATE INDEX afp_cpe_idx"
            " ON scap2.affected_products (cpe);");

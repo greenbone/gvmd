@@ -53,6 +53,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--affected-products-query-size=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>
+          Sets the number of CVEs to process per query when updating
+          the affected products. Defaults to 1000.
+        </p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--auth-timeout=<arg>TIMEOUT</arg></opt></p>
+      <optdesc>
+        <p>
+          Sets the authentication timeout time for the cached authentication.
+          Defaults to 15 minutes.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--broker-address=<arg>ADDRESS</arg></opt></p>
       <optdesc>
         <p>

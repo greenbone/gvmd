@@ -13,6 +13,12 @@ It manages the storage of any vulnerability management configurations and of the
 \fB-h, --help\f1
 Show help options.
 .TP
+\fB--affected-products-query-size=\fINUMBER\fB\f1
+Sets the number of CVEs to process per query when updating the affected products. Defaults to 1000. 
+.TP
+\fB--auth-timeout=\fITIMEOUT\fB\f1
+Sets the authentication timeout time for the cached authentication. Defaults to 15 minutes. 
+.TP
 \fB--broker-address=\fIADDRESS\fB\f1
 Sets the address for the publish-subscribe message (MQTT) broker. Defaults to localhost:9138. Set to empty to disable. 
 .TP
