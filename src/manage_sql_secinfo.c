@@ -4109,7 +4109,7 @@ update_scap_affected_products ()
         {
           exec_affected_products_sql (cve_ids_buffer->str);
           g_string_truncate (cve_ids_buffer, 0);
-          g_message("%s: Products of %d CVEs processed", __func__, count);
+          g_debug ("%s: Products of %d CVEs processed", __func__, count);
         }
     }
 
@@ -4117,7 +4117,7 @@ update_scap_affected_products ()
     {
       exec_affected_products_sql (cve_ids_buffer->str);
       g_string_truncate (cve_ids_buffer, 0);
-      g_message("%s: Products of %d CVEs processed", __func__, count);
+      g_debug ("%s: Products of %d CVEs processed", __func__, count);
     }
 
 }
