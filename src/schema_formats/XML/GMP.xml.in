@@ -29784,7 +29784,94 @@ END:VCALENDAR
   </command>
 
   <!-- Compatibility changes between versions. -->
-
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Attribute &quot;usage_type&quot; is added</summary>
+    <description>
+      <p>
+        Attribute &quot;usage_type&quot; is added to differentiate between
+        scan and audit reports. If omitted the default value is "scan".
+      </p>
+      <p>
+        For audit reports, the elements &quot;result_count&quot;
+        and &quot;severity&quot; are replaced by &quot;compliance_count&quot;
+        and &quot;compliance&quot;.
+      </p>
+      <p>
+        New options/columns for the attribute &quot;report_filter&quot;
+        term are added for audit reports.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_RESULTS</command>
+    <summary>New element &quot;compliance&quot; in &quot;get_results&quot; response</summary>
+    <description>
+      <p>
+        New element &quot;compliance&quot; is added to specify the compliance state
+        for a result.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>CREATE_TAG,MODIFY_TAG,CREATE_FILTER,MODIFY_FILTER</command>
+    <summary>&quot;type&quot; can take new values</summary>
+    <description>
+      <p>
+        &quot;type&quot; can be an &quot;audit_report&quot;, &quot;audit&quot; or &quot;policy&quot;
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>CREATE_REPORT_CONFIG, DELETE_REPORT_CONFIG, GET_REPORT_CONFIGS AND MODIFY_REPORT_CONFIG</command>
+    <summary>New commands for handling report configs</summary>
+    <description>
+      <p>
+        Added new commands for handling report configs.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_FEEDS</command>
+    <summary>Extend &quot;get_feeds&quot; command</summary>
+    <description>
+      <p>
+        &quot;get_feeds&quot; command is extended with &quot;feed_owner_set&quot;,
+        &quot;feed_roles_set&quot; and &quot;feed_resources_access&quot;.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_INFO</command>
+    <summary>Changes for &quot;CVE&quot; and &quot;CPE&quot; info elements</summary>
+    <description>
+      <p>
+        For CVE info elements, &quot;configuration_nodes&quot; and &quot;references&quot;
+        are added.
+      </p>
+      <p>
+        For CPE info elements, &quot;nvd_id&quot; is replaced by &quot;cpe_name_id&quot;
+        and &quot;status&quot; is replaced by &quot;deprecated&quot;.
+        &quot;references&quot; and &quot;deprecated_by&quot; are added.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_RESOURCE_NAMES</command>
+    <summary>The new command GET_RESOURCE_NAMES has been added</summary>
+    <description>
+      <p>
+        A new command to get one or many names and IDs for items of given type.
+      </p>
+    </description>
+    <version>22.5</version>
+  </change>
   <change>
     <command>CREATE_TASK, CREATE_USER, GET_TASKS, GET_USERS, MODIFY_TASK, MODIFY_USER</command>
     <summary>Removed network interface (iface) options</summary>
