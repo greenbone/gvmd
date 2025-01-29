@@ -4003,6 +4003,13 @@ apply_report_format (gchar *report_format_id,
                   report_format,
                   REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST);
 
+  if (!rf_dependencies_string || !strcmp (rf_dependencies_string, ""))
+    rf_dependencies_string
+      = sql_string ("SELECT value"
+                   "  FROM report_config_params"
+                   "  WHERE report_config = %llu AND name = 'Attached report formats'",
+                   report_config);
+
   if (rf_dependencies_string)
     {
       gchar **rf_dependencies, **current_rf_dependency;
