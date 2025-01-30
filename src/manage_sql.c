@@ -57003,14 +57003,18 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
  * @brief Find a resource by UUID and add it as a tag resource.
  *
  * @param[in]  tag         Tag to attach to the resource.
- * @param[in]  type        The resource Type.
+ * @param[in]  type        The resource type.
+ * @param[in]  tag_type    The tag type. Could be a sub-type.
  * @param[in]  uuid        The resource UUID.
  * @param[in]  permission  The permission required to get the resource.
  *
  * @return 0 success, -1 error, 1 resource not found.
  */
 static int
-tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
+tag_add_resource_uuid (tag_t tag,
+                       const char *type,
+                       const char *tag_type,
+                       const char *uuid,
                        const char *permission)
 {
   int resource_location = LOCATION_TABLE;
@@ -57041,6 +57045,43 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
   if (resource == 0)
     return 1;
 
+  if ((strcmp (type, "task") == 0)
+      || (strcmp (type, "config") == 0)
+      || (strcmp (type, "report") == 0))
+    {
+      gchar *usage_type;
+      if (strcmp (type, "report"))
+        usage_type = sql_string("SELECT usage_type FROM %ss WHERE id = %llu",
+                                 type, resource);
+      else
+        {
+          task_t task;
+          if (report_task (resource, &task))
+            return -1;
+
+          usage_type = sql_string("SELECT usage_type FROM tasks WHERE id = %llu",
+                                   task);
+        }
+
+      if (usage_type == NULL)
+        return -1;
+
+      int same_type = (strcmp (tag_type, type) == 0);
+
+      if (same_type && ((strcmp (usage_type, "audit") == 0)
+                        || (strcmp (usage_type, "policy") == 0)))
+        {
+          g_free (usage_type);
+          return 1;
+        }
+      if (!same_type && (strcmp (usage_type, "scan") == 0))
+        {
+          g_free (usage_type);
+          return 1;
+        }
+      g_free (usage_type);
+    }
+
   return tag_add_resource (tag, type, uuid, resource, resource_location);
 }
 
@@ -57061,6 +57102,8 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
   gchar *resource_permission, *current_uuid;
   int index;
 
+  gchar *resource_type = g_strdup (type);
+
   if (type_is_info_subtype (type))
     resource_permission = g_strdup ("get_info");
   else if (type_is_asset_subtype (type))
@@ -57068,17 +57111,20 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
   else if (type_is_report_subtype (type))
     {
       resource_permission = g_strdup ("get_reports");
-      type = g_strdup("report");
+      g_free (resource_type);
+      resource_type = g_strdup("report");
     }
   else if (type_is_task_subtype (type))
     {
       resource_permission = g_strdup ("get_tasks");
-      type = g_strdup("task");
+      g_free (resource_type);
+      resource_type = g_strdup("task");
     }
   else if (type_is_config_subtype (type))
     {
       resource_permission = g_strdup ("get_configs");
-      type = g_strdup("config");
+      g_free (resource_type);
+      resource_type = g_strdup("config");
     }
   else
     resource_permission = g_strdup_printf ("get_%ss", type);
@@ -57088,16 +57134,19 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     {
       int ret;
 
-      ret = tag_add_resource_uuid (tag, type, current_uuid,
+      ret = tag_add_resource_uuid (tag, resource_type, type, current_uuid,
                                    resource_permission);
       if (ret)
         {
           g_free (resource_permission);
+          g_free (resource_type);
           if (error_extra)
             *error_extra = g_strdup (current_uuid);
           return ret;
         }
     }
+  g_free (resource_permission);
+  g_free (resource_type);
 
   return 0;
 }
