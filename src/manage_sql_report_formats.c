@@ -3997,18 +3997,18 @@ apply_report_format (gchar *report_format_id,
 
   rf_dependencies_string
     = sql_string ("SELECT value"
-                  "  FROM report_format_params"
-                  " WHERE report_format = %llu"
-                  "   AND type = %i",
-                  report_format,
-                  REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST);
+                  "  FROM report_config_params"
+                  "  WHERE report_config = %llu AND name = 'Attached report formats'",
+                  report_config);
 
   if (!rf_dependencies_string || !strcmp (rf_dependencies_string, ""))
     rf_dependencies_string
       = sql_string ("SELECT value"
-                   "  FROM report_config_params"
-                   "  WHERE report_config = %llu AND name = 'Attached report formats'",
-                   report_config);
+                    "  FROM report_format_params"
+                    "  WHERE report_format = %llu"
+                    "    AND type = %i",
+                    report_format,
+                    REPORT_FORMAT_PARAM_TYPE_REPORT_FORMAT_LIST);
 
   if (rf_dependencies_string)
     {
