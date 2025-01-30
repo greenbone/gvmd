@@ -4088,14 +4088,14 @@ update_scap_affected_products ()
 {
   iterator_t cves_iter;
   GString *cve_ids_buffer;
-  g_info ("Updating affected products");
-
-  init_iterator(&cves_iter,
-                "SELECT DISTINCT cve_id FROM scap2.cpe_match_nodes");
-
   int count = 0;
 
-  cve_ids_buffer = g_string_new("");
+  g_info ("Updating affected products");
+
+  init_iterator (&cves_iter,
+                 "SELECT DISTINCT cve_id FROM scap2.cpe_match_nodes");
+
+  cve_ids_buffer = g_string_new ("");
   while (next (&cves_iter))
     {
       resource_t cve_id;
@@ -4112,13 +4112,14 @@ update_scap_affected_products ()
           g_debug ("%s: Products of %d CVEs processed", __func__, count);
         }
     }
+  cleanup_iterator (&cves_iter);
 
   if (cve_ids_buffer->len)
     {
       exec_affected_products_sql (cve_ids_buffer->str);
-      g_string_truncate (cve_ids_buffer, 0);
       g_debug ("%s: Products of %d CVEs processed", __func__, count);
     }
+  g_free (cve_ids_buffer);
 
 }
 
@@ -5842,7 +5843,7 @@ set_affected_products_query_size (int new_size)
   if (new_size <= 0)
     affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
   else
-    secinfo_commit_size = new_size;
+    affected_products_query_size = new_size;
 }
 
 /**
