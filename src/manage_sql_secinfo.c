@@ -4090,7 +4090,7 @@ update_scap_affected_products ()
   GString *cve_ids_buffer;
   int count = 0;
 
-  g_info ("Updating affected products");
+  g_info ("Updating affected products ...");
 
   init_iterator (&cves_iter,
                  "SELECT DISTINCT cve_id FROM scap2.cpe_match_nodes");
@@ -4121,6 +4121,7 @@ update_scap_affected_products ()
     }
   g_free (cve_ids_buffer);
 
+  g_info ("Updating affected products ... done");
 }
 
 /**
