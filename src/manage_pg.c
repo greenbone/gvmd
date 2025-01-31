@@ -3784,6 +3784,12 @@ manage_db_init_indexes (const gchar *name)
       sql ("CREATE INDEX cpes_by_cpe_name_id"
            " ON scap2.cpes(cpe_name_id);");
 
+      sql ("CREATE INDEX cpe_match_nodes_by_root_id"
+           " ON scap2.cpe_match_nodes(root_id);");
+
+      sql ("CREATE INDEX cpe_nodes_match_criteria_by_node_id"
+           " ON scap2.cpe_nodes_match_criteria(node_id);");
+
       sql ("CREATE INDEX afp_cpe_idx"
            " ON scap2.affected_products (cpe);");
       sql ("CREATE INDEX afp_cve_idx"

@@ -3284,16 +3284,16 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
   while (next (&cpe_match_ranges))
     {
       iterator_t cpe_host_details_products;
-      gchar *range_fs_cpe;
+      gchar *range_uri_cpe;
       gchar *range_uri_product;
       gchar *vsi, *vse, *vei, *vee;
-      range_fs_cpe = vsi = vse = vei = vee = NULL;
-      range_fs_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
+      range_uri_cpe = vsi = vse = vei = vee = NULL;
+      range_uri_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
       vsi = g_strdup (cpe_match_string_iterator_version_start_incl (&cpe_match_ranges));
       vse = g_strdup (cpe_match_string_iterator_version_start_excl (&cpe_match_ranges));
       vei = g_strdup (cpe_match_string_iterator_version_end_incl (&cpe_match_ranges));
       vee = g_strdup (cpe_match_string_iterator_version_end_excl (&cpe_match_ranges));
-      range_uri_product = fs_cpe_to_uri_product (range_fs_cpe);
+      range_uri_product = uri_cpe_to_uri_product (range_uri_cpe);
       init_host_details_cpe_product_iterator (&cpe_host_details_products, range_uri_product, report_host);
       while (next (&cpe_host_details_products))
         {
@@ -3303,7 +3303,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           host_details_cpe = host_details_cpe_product_iterator_value (&cpe_host_details_products);
           cpe_struct_init (&source);
           cpe_struct_init (&target);
-          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (range_uri_cpe, &source);
           uri_cpe_to_cpe_struct (host_details_cpe, &target);
           matches = cpe_struct_match (&source, &target);
           if (matches)
@@ -3321,7 +3321,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           cpe_struct_t source, target;
           cpe_struct_init (&source);
           cpe_struct_init (&target);
-          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (range_uri_cpe, &source);
           uri_cpe_to_cpe_struct (host_cpe, &target);
           if (cpe_struct_match (&source, &target))
             *vulnerable = TRUE;
@@ -3329,7 +3329,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           cpe_struct_free (&target);
         }
       g_free (range_uri_product);
-      g_free (range_fs_cpe);
+      g_free (range_uri_cpe);
       g_free (vsi);
       g_free (vse);
       g_free (vei);
@@ -3375,7 +3375,7 @@ cve_scan_report_host_json (task_t task,
       double severity;
 
       host_cpe = host_details_cpe_iterator_cpe (&host_details_cpe);
-      cpe_product = uri_cpe_to_fs_product (host_cpe);
+      cpe_product = uri_cpe_to_uri_product (host_cpe);
       init_cpe_match_nodes_iterator (&cpe_match_root_node, cpe_product);
       while (next (&cpe_match_root_node))
         {
