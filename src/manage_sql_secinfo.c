@@ -4119,7 +4119,7 @@ update_scap_affected_products ()
       exec_affected_products_sql (cve_ids_buffer->str);
       g_debug ("%s: Products of %d CVEs processed", __func__, count);
     }
-  g_free (cve_ids_buffer);
+  g_string_free (cve_ids_buffer, TRUE);
 
   g_info ("Updating affected products ... done");
 }
