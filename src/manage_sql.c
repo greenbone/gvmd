@@ -29703,7 +29703,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               iterator_t tags;
 
-              init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
+              init_resource_tag_iterator (&tags, report_type, report, 1, NULL, 1);
 
               while (next (&tags))
                 {
@@ -57956,9 +57956,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources"                                   \
-     " WHERE tag = tags.id"                                                  \
-     " AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ")",           \
+   { "tag_resources_count (id, resource_type)",                              \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -58144,6 +58142,7 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
 {
   get_data_t get;
   gchar *owned_clause, *with_clause;
+  const char *parent_type;
 
   assert (type);
   assert (resource);
@@ -58153,11 +58152,21 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
   owned_clause = acl_where_owned ("tag", &get, 1, "any", 0, NULL, 0,
                                   &with_clause);
 
+  if (type_is_report_subtype (type))
+    parent_type = "report";
+  else if (type_is_task_subtype (type))
+    parent_type = "task";
+  else if (type_is_config_subtype (type))
+    parent_type = "config";
+  else
+    parent_type = type;
+
   init_iterator (iterator,
                  "%s"
                  " SELECT id, uuid, name, value, comment"
                  " FROM tags"
-                 " WHERE EXISTS"
+                 " WHERE resource_type = '%s'"
+                 " AND EXISTS"
                  "  (SELECT * FROM tag_resources"
                  "   WHERE resource_type = '%s'"
                  "   AND resource = %llu"
@@ -58168,6 +58177,7 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  " ORDER BY %s %s;",
                  with_clause ? with_clause : "",
                  type,
+                 parent_type,
                  resource,
                  LOCATION_TABLE,
                  active_only ? " AND active=1" : "",
