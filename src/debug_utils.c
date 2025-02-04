@@ -40,7 +40,7 @@ init_sentry (void)
   char *sentry_dsn_gvmd = NULL;
   char version[96];
 
-  snprintf (version, sizeof (version) + 1, "gvmd@%s", GVMD_VERSION);
+  snprintf (version, sizeof (version), "gvmd@%s", GVMD_VERSION);
 
   sentry_dsn_gvmd = getenv ("SENTRY_DSN_GVMD");
   if (gvm_has_sentry_support () && sentry_dsn_gvmd && *sentry_dsn_gvmd)
