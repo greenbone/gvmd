@@ -3995,11 +3995,12 @@ apply_report_format (gchar *report_format_id,
   temp_files = NULL;
   subreports = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
-  rf_dependencies_string
-    = sql_string ("SELECT value"
-                  "  FROM report_config_params"
-                  "  WHERE report_config = %llu AND name = 'Attached report formats'",
-                  report_config);
+  if (report_config)
+    rf_dependencies_string
+      = sql_string ("SELECT value"
+                    "  FROM report_config_params"
+                    "  WHERE report_config = %llu AND name = 'Attached report formats'",
+                    report_config);
 
   if (!rf_dependencies_string || !strcmp (rf_dependencies_string, ""))
     rf_dependencies_string
