@@ -57112,7 +57112,7 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     {
       resource_permission = g_strdup ("get_reports");
       g_free (resource_type);
-      resource_type = g_strdup("report");
+      resource_type = g_strdup ("report");
     }
   else if (type_is_task_subtype (type))
     {
