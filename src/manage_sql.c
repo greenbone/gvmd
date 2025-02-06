@@ -57051,7 +57051,7 @@ tag_add_resource_uuid (tag_t tag,
     {
       gchar *usage_type;
       if (strcmp (type, "report"))
-        usage_type = sql_string("SELECT usage_type FROM %ss WHERE id = %llu",
+        usage_type = sql_string ("SELECT usage_type FROM %ss WHERE id = %llu",
                                  type, resource);
       else
         {
@@ -57059,7 +57059,7 @@ tag_add_resource_uuid (tag_t tag,
           if (report_task (resource, &task))
             return -1;
 
-          usage_type = sql_string("SELECT usage_type FROM tasks WHERE id = %llu",
+          usage_type = sql_string ("SELECT usage_type FROM tasks WHERE id = %llu",
                                    task);
         }
 
@@ -57118,13 +57118,13 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     {
       resource_permission = g_strdup ("get_tasks");
       g_free (resource_type);
-      resource_type = g_strdup("task");
+      resource_type = g_strdup ("task");
     }
   else if (type_is_config_subtype (type))
     {
       resource_permission = g_strdup ("get_configs");
       g_free (resource_type);
-      resource_type = g_strdup("config");
+      resource_type = g_strdup ("config");
     }
   else
     resource_permission = g_strdup_printf ("get_%ss", type);
@@ -57956,7 +57956,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "tag_resources_count (id, resource_type)",                              \
+   { "tag_resources_count (tags.id, tags.resource_type)",                    \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -57970,8 +57970,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources_trash"                             \
-     " WHERE tag = tags_trash.id)",                                          \
+   { "tag_resources_trash_count (tags_trash.id, tags_trash.resource_type)",  \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
