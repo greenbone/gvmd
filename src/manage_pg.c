@@ -3849,6 +3849,40 @@ manage_db_add_constraints (const gchar *name)
 }
 
 /**
+ * @brief Create the indexes for the CPEs table in the scap2 schema.
+ */
+void
+create_cpe_indexes ()
+{
+  sql ("CREATE UNIQUE INDEX cpe_idx"
+       " ON scap2.cpes (name);");
+  sql ("CREATE INDEX cpes_by_creation_time_idx"
+       " ON scap2.cpes (creation_time);");
+  sql ("CREATE INDEX cpes_by_modification_time_idx"
+       " ON scap2.cpes (modification_time);");
+  sql ("CREATE INDEX cpes_by_severity"
+       " ON scap2.cpes (severity);");
+  sql ("CREATE INDEX cpes_by_uuid"
+       " ON scap2.cpes (uuid);");
+  sql ("CREATE INDEX cpes_by_cpe_name_id"
+       " ON scap2.cpes(cpe_name_id);");
+}
+
+/**
+ * @brief Remove the indexes for the CPEs table in the scap2 schema.
+ */
+void
+drop_cpe_indexes ()
+{
+  sql ("DROP INDEX IF EXISTS scap2.cpe_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_creation_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_modification_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_severity");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_uuid");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_cpe_name_id");
+}
+
+/**
  * @brief Init external database.
  *
  * @param[in]  name  Name.  Currently only "scap".
@@ -3869,18 +3903,7 @@ manage_db_init_indexes (const gchar *name)
       sql ("CREATE INDEX cves_by_severity"
            " ON scap2.cves (severity);");
 
-      sql ("CREATE UNIQUE INDEX cpe_idx"
-           " ON scap2.cpes (name);");
-      sql ("CREATE INDEX cpes_by_creation_time_idx"
-           " ON scap2.cpes (creation_time);");
-      sql ("CREATE INDEX cpes_by_modification_time_idx"
-           " ON scap2.cpes (modification_time);");
-      sql ("CREATE INDEX cpes_by_severity"
-           " ON scap2.cpes (severity);");
-      sql ("CREATE INDEX cpes_by_uuid"
-           " ON scap2.cpes (uuid);");
-      sql ("CREATE INDEX cpes_by_cpe_name_id"
-           " ON scap2.cpes(cpe_name_id);");
+      create_cpe_indexes ();
 
       sql ("CREATE INDEX cpe_match_nodes_by_root_id"
            " ON scap2.cpe_match_nodes(root_id);");

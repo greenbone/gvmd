@@ -236,6 +236,16 @@ static void
 inserts_run (inserts_t *, gboolean);
 
 /**
+ * @brief Buffer for COPY statements.
+ */
+typedef struct
+{
+  GString *data;      ///< The table contents to send to the database
+  gchar *copy_sql;    ///< SQL COPY statement run on buffer commit
+  int max_data_size;  ///< Data size above which buffer is auto-committed
+} db_copy_buffer_t;
+
+/**
  * @brief Check size of current statement.
  *
  * @param[in]  inserts         Insert buffer.
@@ -382,6 +392,109 @@ inserts_run (inserts_t *inserts, gboolean finalize)
     inserts_free (inserts);
   else
     inserts_free_statements (inserts);
+}
+
+/**
+ * @brief Initialize a database COPY statement buffer.
+ *
+ * The SQL "COPY" statement must use "FROM STDIN".
+ *
+ * @param[in]  copy_buffer    The buffer data structure to initialize
+ * @param[in]  max_data_size  Data size above which buffer is auto-committed
+ * @param[in]  max_data_size  SQL COPY statement run on buffer commit
+ */
+static void
+db_copy_buffer_init (db_copy_buffer_t *copy_buffer,
+                     int max_data_size,
+                     const char *copy_sql)
+{
+  copy_buffer->data = g_string_new ("");
+  copy_buffer->max_data_size = max_data_size;
+  copy_buffer->copy_sql = g_strdup (copy_sql);
+}
+
+/**
+ * @brief Frees all allocated fields in a COPY statement buffer
+ *
+ * @param[in]  copy_buffer  The COPY buffer to clean up.
+ */
+static void
+db_copy_buffer_cleanup (db_copy_buffer_t *copy_buffer)
+{
+  if (copy_buffer->data)
+    g_string_free (copy_buffer->data, TRUE);
+  copy_buffer->data = NULL;
+
+  g_free (copy_buffer->copy_sql);
+  copy_buffer->copy_sql = NULL;      
+}
+
+/**
+ * @brief Sends the data from a COPY buffer to the DB and clears the buffer.
+ * 
+ * @param[in]  copy_buffer  The COPY buffer to commit the data from
+ * @param[in]  finalize     Whether to free all allocated fields of the buffer
+ * 
+ * @return 0 success, -1 error.
+ */
+static int
+db_copy_buffer_commit (db_copy_buffer_t *copy_buffer, gboolean finalize)
+{
+  if (copy_buffer->data->len)
+    {
+      sql ("%s", copy_buffer->copy_sql);
+
+      if (sql_copy_write_str (copy_buffer->data->str,
+                              copy_buffer->data->len))
+        {
+          g_warning ("%s: failed to write to database copy buffer",
+                     __func__);
+          if (sql_copy_end ())
+            {
+              g_warning ("%s: failed to close to database copy buffer",
+                         __func__);
+            }
+          return -1;
+        }
+  
+      if (sql_copy_end ())
+        {
+          g_warning ("%s: failed to commit database copy buffer", __func__);
+          return -1;
+        }
+    }
+
+  if (finalize)
+    db_copy_buffer_cleanup( (copy_buffer));
+  else
+    g_string_truncate (copy_buffer->data, 0);
+
+  return 0;
+}
+
+/**
+ * @brief Adds data to a COPY buffer with a printf-like format string.
+ * 
+ * @param[in]  copy_buffer  The COPY buffer to commit the data from
+ * @param[in]  format       The format string for the data to add
+ * @param[in]  ...          Extra arguments to insert into the format string
+ * 
+ * @return 0 success, -1 error.
+ */
+static int
+db_copy_buffer_append_printf (db_copy_buffer_t *copy_buffer,
+                              const char *format,
+                              ...)
+{
+  va_list args;
+  va_start (args, format);
+  g_string_append_vprintf (copy_buffer->data, format, args);
+  va_end (args);
+
+  if (copy_buffer->data->len >= copy_buffer->max_data_size)
+    return db_copy_buffer_commit (copy_buffer, FALSE);
+
+  return 0;
 }
 
 /**
@@ -2031,12 +2144,14 @@ update_cert_bund_advisories (int last_cert_update)
 /**
  * @brief Convert a CPE name from formatted string to URI and SQL quote it.
  *
- * @param[in]  name  Name.
+ * @param[in]  name        Name.
+ * @param[in]  quote_func  Function for quoting.
  *
  * @return URI converted uoted name.
  */
 static gchar *
-fs_to_uri_convert_and_quote_cpe_name (const char *name)
+fs_to_uri_convert_and_quote_cpe_name (const char *name,
+                                      gchar* (*quote_func)(const char*))
 {
   gchar *name_converted, *name_decoded, *name_tilde, *quoted_name;
 
@@ -2046,7 +2161,7 @@ fs_to_uri_convert_and_quote_cpe_name (const char *name)
                                "~", "%7E", "%7e", NULL);
   g_free (name_decoded);
   g_free (name_converted);
-  quoted_name = sql_quote (name_tilde);
+  quoted_name = quote_func (name_tilde);
   g_free (name_tilde);
   return quoted_name;
 }
@@ -2272,14 +2387,21 @@ scap_cpes_json_skip_to_products (gvm_json_pull_parser_t *parser,
 /**
  * @brief Insert a SCAP CPE from JSON.
  *
- * @param[in]  inserts            Pointer to SQL buffer for main CPE entries.
+ * @param[in]  inserts      Pointer to SQL INSERT buffer for main CPE entries.
  * @param[in]  deprecated_by_inserts  Pointer to SQL buffer for deprecated_by.
- * @param[in]  product_item       JSON object from the products list.
+ * @param[in]  copy_buffer  Pointer to SQL COPY buffer for main CPE entries.
+ * @param[in]  cpe_rowid    Pointer to CPE rowid for COPY.
+ * @param[in]  use_copy     Whether to insert CPEs with COPY statements.
+ * @param[in]  product_item JSON object from the products list.
  *
  * @return 0 success, -1 error.
  */
 static int
-handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
+handle_json_cpe_item (inserts_t *inserts,
+                      inserts_t *deprecated_by_inserts,
+                      db_copy_buffer_t *copy_buffer,
+                      resource_t *cpe_rowid,
+                      gboolean use_copy,
                       cJSON *product_item)
 {
   cJSON *cpe_item;
@@ -2291,6 +2413,9 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
   int first;
 
   assert (inserts);
+  assert (copy_buffer);
+
+  (*cpe_rowid)++;
 
   cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
   if (! cJSON_IsObject (cpe_item))
@@ -2347,7 +2472,7 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
       return -1;
     }
 
-  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
+  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name, sql_quote);
   if (deprecated)
     {
       cJSON *deprecated_by_array, *deprecated_by_item;
@@ -2384,7 +2509,8 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
             }
 
           quoted_deprecated_by_id
-            = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id);
+            = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id,
+                                                    sql_quote);
 
           first = inserts_check_size (deprecated_by_inserts);
 
@@ -2399,27 +2525,61 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
         }
     }
 
-  quoted_cpe_name_id = sql_quote (cpe_name_id);
-  quoted_title = sql_quote (title_text ? title_text : "");
+  if (use_copy)
+    {
+      int ret;
+      gchar *copy_escaped_name, *copy_escaped_cpe_name_id, *copy_escaped_title;
 
-  first = inserts_check_size (inserts);
+      copy_escaped_name 
+        = fs_to_uri_convert_and_quote_cpe_name (name, sql_copy_escape);
+      copy_escaped_cpe_name_id = sql_copy_escape (cpe_name_id);
+      copy_escaped_title = sql_copy_escape (title_text ? title_text : "");
 
-  g_string_append_printf (inserts->statement,
-                          "%s ('%s', '%s', '%s', %li, %li, %d, '%s')",
-                          first ? "" : ",",
-                          quoted_name,
-                          quoted_name,
-                          quoted_title,
-                          modification_time,
-                          modification_time,
-                          deprecated,
-                          quoted_cpe_name_id);
+      ret = db_copy_buffer_append_printf
+              (copy_buffer,
+               "%llu\t%s\t%s\t%s\t%li\t%li\t%d\t%s\n",
+               *cpe_rowid,
+               copy_escaped_name,
+               copy_escaped_name,
+               copy_escaped_title,
+               modification_time,
+               modification_time,
+               deprecated,
+               copy_escaped_cpe_name_id);
 
-  inserts->current_chunk_size++;
+      g_free (copy_escaped_name);
+      g_free (copy_escaped_cpe_name_id);
+      g_free (copy_escaped_title);
 
-  g_free (quoted_title);
+      if (ret)
+        {
+          g_free (quoted_name);
+          return -1;
+        }
+    }
+  else
+    {
+      quoted_cpe_name_id = sql_quote (cpe_name_id);
+      quoted_title = sql_quote (title_text ? title_text : "");
+
+      first = inserts_check_size (inserts);
+      g_string_append_printf (inserts->statement,
+                              "%s ('%s', '%s', '%s', %li, %li, %d, '%s')",
+                              first ? "" : ",",
+                              quoted_name,
+                              quoted_name,
+                              quoted_title,
+                              modification_time,
+                              modification_time,
+                              deprecated,
+                              quoted_cpe_name_id);
+
+      inserts->current_chunk_size++;
+      g_free (quoted_title);
+      g_free (quoted_cpe_name_id);
+    }
+
   g_free (quoted_name);
-  g_free (quoted_cpe_name_id);
 
   return 0;
 }
@@ -2427,18 +2587,28 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
 /**
  * @brief Insert a SCAP CPE from JSON.
  *
- * @param[in]  inserts            Pointer to SQL buffer.
- * @param[in]  product_item       JSON object from the products list.
+ * @param[in]  inserts      Pointer to SQL INSERT buffer.
+ * @param[in]  copy_buffer  Pointer to SQL COPY buffer for main CPE entries.
+ * @param[in]  cpe_rowid    Pointer to CPE rowid for COPY.
+ * @param[in]  use_copy     Whether to insert CPEs with COPY statements.
+ * @param[in]  product_item JSON object from the products list.
  *
  * @return 0 success, -1 error.
  */
 static int
-handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
+handle_json_cpe_refs (inserts_t *inserts,
+                      db_copy_buffer_t *copy_buffer,
+                      gboolean use_copy,
+                      resource_t *cpe_rowid,
+                      cJSON *product_item)
 {
   cJSON *cpe_item, *refs, *refs_item;
   gchar *name, *quoted_name;
+  gchar* (*quote_func)(const char*);
 
   assert (inserts);
+
+  (*cpe_rowid)++;
 
   cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
   if (! cJSON_IsObject (cpe_item))
@@ -2462,7 +2632,12 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
       return 0;
     }
 
-  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
+  quote_func = use_copy ? sql_copy_escape : sql_quote;
+  if (use_copy)
+    quoted_name = NULL;
+  else
+    quoted_name = fs_to_uri_convert_and_quote_cpe_name (name, quote_func);
+
   cJSON_ArrayForEach (refs_item, refs)
     {
       int first;
@@ -2476,19 +2651,37 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
           return -1;
         }
       type = json_object_item_string (refs_item, "type");
-      quoted_ref = sql_quote (ref ? ref : "");
-      quoted_type = sql_quote (type ? type : "");
+      quoted_ref = quote_func (ref ? ref : "");
+      quoted_type = quote_func (type ? type : "");
 
-      first = inserts_check_size (inserts);
+      if (use_copy)
+        {
+          if (db_copy_buffer_append_printf (copy_buffer,
+                                            "%llu\t%s\t%s\n",
+                                            *cpe_rowid,
+                                            quoted_ref,
+                                            quoted_type))
+            {
+              g_free (quoted_ref);
+              g_free (quoted_type);
+              g_free (quoted_name);
+              return -1;
+            }
+        }
+      else
+        {
+          first = inserts_check_size (inserts);
 
-      g_string_append_printf (inserts->statement,
-                              "%s ('%s', '%s', '%s')",
-                              first ? "" : ",",
-                              quoted_name,
-                              quoted_ref,
-                              quoted_type);
+          g_string_append_printf (inserts->statement,
+                                  "%s ('%s', '%s', '%s')",
+                                  first ? "" : ",",
+                                  quoted_name,
+                                  quoted_ref,
+                                  quoted_type);
 
-      inserts->current_chunk_size++;
+          inserts->current_chunk_size++;
+        }
+
       g_free (quoted_ref);
       g_free (quoted_type);
     }
@@ -2501,13 +2694,16 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
  * @brief Update SCAP CPEs from a JSON file.
  *
  * @param[in]  path             Path to file.
+ * @param[in]  use_copy         Whether to use COPY statements to load data.
  *
  * @return 0 success, -1 error.
  */
 static int
-update_scap_cpes_from_json_file (const gchar *path)
+update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
 {
   inserts_t inserts, deprecated_by_inserts;
+  db_copy_buffer_t copy_buffer;
+  resource_t cpe_rowid;
   gvm_json_pull_parser_t parser;
   gvm_json_pull_event_t event;
   FILE *cpe_file;
@@ -2542,22 +2738,39 @@ update_scap_cpes_from_json_file (const gchar *path)
       return -1;
     }
 
+  drop_cpe_indexes ();
+
+  cpe_rowid = 0;
   sql_begin_immediate ();
-  inserts_init (&inserts,
-                CPE_MAX_CHUNK_SIZE,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpes"
-                " (uuid, name, title, creation_time,"
-                "  modification_time, deprecated,"
-                "  cpe_name_id)"
-                " VALUES",
-                " ON CONFLICT (uuid) DO UPDATE"
-                " SET name = EXCLUDED.name,"
-                "     title = EXCLUDED.title,"
-                "     creation_time = EXCLUDED.creation_time,"
-                "     modification_time = EXCLUDED.modification_time,"
-                "     deprecated = EXCLUDED.deprecated,"
-                "     cpe_name_id = EXCLUDED.cpe_name_id");
+
+  if (use_copy)
+    {
+      db_copy_buffer_init (&copy_buffer,
+                           setting_secinfo_sql_buffer_threshold_bytes (),
+                           "COPY scap2.cpes"
+                           " (id, uuid, name, title, creation_time,"
+                           "  modification_time, deprecated,"
+                           "  cpe_name_id)"
+                           " FROM STDIN;");
+    }
+  else
+    {
+      inserts_init (&inserts,
+                    CPE_MAX_CHUNK_SIZE,
+                    setting_secinfo_sql_buffer_threshold_bytes (),
+                    "INSERT INTO scap2.cpes"
+                    " (uuid, name, title, creation_time,"
+                    "  modification_time, deprecated,"
+                    "  cpe_name_id)"
+                    " VALUES",
+                    " ON CONFLICT (uuid) DO UPDATE"
+                    " SET name = EXCLUDED.name,"
+                    "     title = EXCLUDED.title,"
+                    "     creation_time = EXCLUDED.creation_time,"
+                    "     modification_time = EXCLUDED.modification_time,"
+                    "     deprecated = EXCLUDED.deprecated,"
+                    "     cpe_name_id = EXCLUDED.cpe_name_id");
+    }
 
   inserts_init (&deprecated_by_inserts, 10,
                 setting_secinfo_sql_buffer_threshold_bytes (),
@@ -2579,7 +2792,12 @@ update_scap_cpes_from_json_file (const gchar *path)
           sql_commit ();
           return -1;
         }
-      if (handle_json_cpe_item (&inserts, &deprecated_by_inserts, entry))
+      if (handle_json_cpe_item (&inserts,
+                                &deprecated_by_inserts,
+                                &copy_buffer,
+                                &cpe_rowid,
+                                use_copy,
+                                entry))
         {
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
@@ -2591,12 +2809,29 @@ update_scap_cpes_from_json_file (const gchar *path)
       cJSON_Delete (entry);
       gvm_json_pull_parser_next (&parser, &event);
     }
-  inserts_run (&inserts, TRUE);
+  if (use_copy)
+    {
+      sql ("SELECT setval('scap2.cpes_id_seq', %llu)", cpe_rowid);
+      if (db_copy_buffer_commit (&copy_buffer, TRUE))
+        {
+          sql_commit ();
+          gvm_json_pull_parser_cleanup (&parser);
+          fclose (cpe_file);
+          return -1;
+        }
+    }
+  else
+    inserts_run (&inserts, TRUE);
+
   inserts_run (&deprecated_by_inserts, TRUE);
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
+  create_cpe_indexes ();
+
   // Reset and insert refs
+  g_info ("Updating CPE refs...");
+
   fclose (cpe_file);
   fd = open (path, O_RDONLY);
 
@@ -2626,13 +2861,25 @@ update_scap_cpes_from_json_file (const gchar *path)
     }
 
   sql_begin_immediate ();
-  inserts_init (&inserts, 10,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpe_refs (cpe, ref, type)"
-                " SELECT scap2.cpes.id, new_refs.ref, new_refs.type"
-                " FROM scap2.cpes JOIN (VALUES ",
-                ") AS new_refs (cpe_name, ref, type)"
-                " ON scap2.cpes.name = cpe_name;");
+  cpe_rowid = 0;
+
+  if (use_copy)
+    {
+      db_copy_buffer_init (&copy_buffer,
+                           setting_secinfo_sql_buffer_threshold_bytes (),
+                           "COPY scap2.cpe_refs (cpe, ref, type)"
+                           " FROM STDIN");
+    }
+  else
+    {
+      inserts_init (&inserts, 10,
+                    setting_secinfo_sql_buffer_threshold_bytes (),
+                    "INSERT INTO scap2.cpe_refs (cpe, ref, type)"
+                    " SELECT scap2.cpes.id, new_refs.ref, new_refs.type"
+                    " FROM scap2.cpes JOIN (VALUES ",
+                    ") AS new_refs (cpe_name, ref, type)"
+                    " ON scap2.cpes.name = cpe_name;");
+    }
 
   while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
     {
@@ -2648,7 +2895,8 @@ update_scap_cpes_from_json_file (const gchar *path)
           sql_commit ();
           return -1;
         }
-      if (handle_json_cpe_refs (&inserts, entry))
+      if (handle_json_cpe_refs (&inserts, &copy_buffer, use_copy,
+                                &cpe_rowid, entry))
         {
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
@@ -2660,7 +2908,18 @@ update_scap_cpes_from_json_file (const gchar *path)
       cJSON_Delete (entry);
       gvm_json_pull_parser_next (&parser, &event);
     }
-  inserts_run (&inserts, TRUE);
+  if (use_copy)
+    {
+      if (db_copy_buffer_commit (&copy_buffer, TRUE))
+        {
+          sql_commit ();
+          gvm_json_pull_parser_cleanup (&parser);
+          fclose (cpe_file);
+          return -1;
+        }
+    }
+  else
+    inserts_run (&inserts, TRUE);
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
@@ -2913,7 +3172,7 @@ update_scap_cpes ()
 
   g_info ("Updating CPEs");
 
-  ret = update_scap_cpes_from_json_file (full_path);
+  ret = update_scap_cpes_from_json_file (full_path, TRUE);
 
   g_free (full_path);
 
@@ -4204,7 +4463,7 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
     quoted_version_end_excl = g_strdup_printf ("'%s'", ver_se);
 
   quoted_match_criteria_id = sql_quote (match_criteria_id);
-  quoted_criteria = fs_to_uri_convert_and_quote_cpe_name (criteria);
+  quoted_criteria = fs_to_uri_convert_and_quote_cpe_name (criteria, sql_quote);
 
   first = inserts_check_size (inserts);
 
@@ -4256,7 +4515,8 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
             }
 
           quoted_cpe_name_id = sql_quote (cpe_name_id);
-          quoted_cpe_name = fs_to_uri_convert_and_quote_cpe_name (cpe_name);
+          quoted_cpe_name = fs_to_uri_convert_and_quote_cpe_name (cpe_name,
+                                                                  sql_quote);
 
           first = inserts_check_size (matches_inserts);
 

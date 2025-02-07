@@ -167,4 +167,13 @@ iterator_column_name (iterator_t *, int);
 int
 iterator_column_count (iterator_t *);
 
+int
+sql_copy_write_str (const char *, int);
+
+int
+sql_copy_end ();
+
+gchar *
+sql_copy_escape (const char *);
+
 #endif /* not _GVMD_SQL_H */

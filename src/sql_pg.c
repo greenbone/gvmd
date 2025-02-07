@@ -493,8 +493,11 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                              (const int*) stmt->param_lengths->data,
                              (const int*) stmt->param_formats->data,
                              0);                   /* Results as text. */
-      if (PQresultStatus (result) != PGRES_TUPLES_OK
-          && PQresultStatus (result) != PGRES_COMMAND_OK)
+      ExecStatusType status = PQresultStatus (result);
+
+      if (status != PGRES_TUPLES_OK
+          && status != PGRES_COMMAND_OK
+          && status != PGRES_COPY_IN)
         {
           char *sqlstate;
 
@@ -537,7 +540,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
               g_warning ("%s: PQexec failed: %s (%i)",
                          __func__,
                          PQresultErrorMessage (result),
-                         PQresultStatus (result));
+                         status);
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
           return -1;
@@ -866,4 +869,116 @@ sql_cancel_internal ()
     }
 
   return 0;
+}
+
+/**
+ * @brief Tries to transfer data for a COPY ... FROM STDIN statement.
+ *
+ * To finalize the data transfer for the statement, call sql_copy_end
+ *  afterwards.
+ *
+ * @param[in]  str  The string to transfer.
+ * @param[in]  len  Length of the string to write, -1 to use strlen.
+ * 
+ * @return 0 success, -1 error.
+ */
+int
+sql_copy_write_str (const char *str, int len)
+{
+  int put_copy_data_ret = PQputCopyData(conn,
+                                        str,
+                                        len >= 0 ? len : strlen(str));
+  if (put_copy_data_ret == 0)
+    {
+      g_warning ("%s: could not send data: queue blocked", __func__);
+      return -1;
+    }
+  else if (put_copy_data_ret != 1)
+    {
+      g_warning ("%s: could not send data: %s",
+                 __func__, PQerrorMessage(conn));
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Tries to finalize the current COPY ... FROM STDIN data transfer.
+ *
+ * The data is only validated and written after calling this.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_copy_end ()
+{
+  int put_copy_end_ret = PQputCopyEnd (conn, NULL);
+  PGresult *result;
+  if (put_copy_end_ret == 0)
+    {
+      g_warning ("%s: could not send end of data: queue blocked", __func__);
+      return -1;
+    }
+  else if (put_copy_end_ret != 1)
+    {
+      g_warning ("%s: could not send end of data: %s",
+                 __func__, PQerrorMessage(conn));
+      return -1;
+    }
+
+  result = PQgetResult (conn);
+  if (PQresultStatus (result) != PGRES_COMMAND_OK)
+    {
+      g_warning ("%s: PQexec failed: %s (%i)",
+                  __func__,
+                  PQresultErrorMessage (result),
+                  PQresultStatus (result));
+      PQclear (result);
+      return -1;
+    }
+
+  PQclear (result);
+  return 0;
+}
+
+/**
+ * @brief Escapes a string for tab-delimited data of TEXT type COPY statements.
+ *
+ * @param[in]  str  The string to escape.
+ * 
+ * @return The newly allocated, escaped copy of the string.
+ */
+gchar *
+sql_copy_escape (const char *str)
+{
+  gssize i;
+  gssize len = strlen (str);
+  GString *escaped = g_string_sized_new (len);
+
+  for (i = 0; i < len; i++) {
+    switch (str[i])
+      {
+        case '\b':
+          g_string_append (escaped, "\\b");
+          break;
+        case '\f':
+          g_string_append (escaped, "\\f");
+          break;
+        case '\n':
+          g_string_append (escaped, "\\n");
+          break;
+        case '\r':
+          g_string_append (escaped, "\\r");
+          break;
+        case '\t':
+          g_string_append (escaped, "\\t");
+          break;
+        case '\v':
+          g_string_append (escaped, "\\r");
+          break;
+        default:
+          g_string_append_c (escaped, str[i]);
+      }
+  }
+  return g_string_free (escaped, FALSE);
 }

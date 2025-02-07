@@ -543,4 +543,10 @@ cleanup_nvt_sequences ();
 int
 cleanup_ids_for_table (const char *);
 
+void
+create_cpe_indexes ();
+
+void
+drop_cpe_indexes ();
+
 #endif /* not _GVMD_MANAGE_SQL_H */
