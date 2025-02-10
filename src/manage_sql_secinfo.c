@@ -2789,6 +2789,11 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else 
+            inserts_free (&inserts);
+          inserts_free (&deprecated_by_inserts);
           sql_commit ();
           return -1;
         }
@@ -2803,6 +2808,11 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else 
+            inserts_free (&inserts);
+          inserts_free (&deprecated_by_inserts);
           sql_commit ();
           return -1;
         }
@@ -2817,6 +2827,11 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           sql_commit ();
           gvm_json_pull_parser_cleanup (&parser);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else 
+            inserts_free (&inserts);
+          inserts_free (&deprecated_by_inserts);
           return -1;
         }
     }
@@ -2892,6 +2907,10 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
           sql_commit ();
           return -1;
         }
@@ -2902,6 +2921,10 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
           sql_commit ();
           return -1;
         }
@@ -2915,6 +2938,10 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           sql_commit ();
           gvm_json_pull_parser_cleanup (&parser);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
           return -1;
         }
     }
