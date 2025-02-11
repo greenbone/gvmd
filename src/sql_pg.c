@@ -951,6 +951,9 @@ sql_copy_end ()
 gchar *
 sql_copy_escape (const char *str)
 {
+  if (str == NULL)
+    return NULL;
+
   gssize i;
   gssize len = strlen (str);
   GString *escaped = g_string_sized_new (len);
@@ -958,6 +961,9 @@ sql_copy_escape (const char *str)
   for (i = 0; i < len; i++) {
     switch (str[i])
       {
+        case '\\':
+          g_string_append (escaped, "\\\\");
+          break;
         case '\b':
           g_string_append (escaped, "\\b");
           break;
