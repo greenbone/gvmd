@@ -171,6 +171,11 @@
 #define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 1000
 
 /**
+ * @brief Default for secinfo_copy.
+ */
+#define SECINFO_FAST_INIT_DEFAULT 1
+
+/**
  * @brief Default for secinfo_commit_size.
  */
 #define SECINFO_COMMIT_SIZE_DEFAULT 0
@@ -201,6 +206,9 @@ set_affected_products_query_size (int);
 
 void
 set_secinfo_commit_size (int);
+
+void
+set_secinfo_fast_init (int);
 
 void
 update_scap_extra ();

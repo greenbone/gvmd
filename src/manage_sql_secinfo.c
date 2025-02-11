@@ -82,6 +82,12 @@ static int affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
 
 /**
+ * @brief Whether to prefer faster SQL with less checks for non-incremental
+ *        SecInfo updates.
+ */
+static int secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
+
+/**
  * @brief Maximum number of rows in a EPSS INSERT.
  */
 #define EPSS_MAX_CHUNK_SIZE 10000
@@ -3199,7 +3205,7 @@ update_scap_cpes ()
 
   g_info ("Updating CPEs");
 
-  ret = update_scap_cpes_from_json_file (full_path, TRUE);
+  ret = update_scap_cpes_from_json_file (full_path, secinfo_fast_init);
 
   g_free (full_path);
 
@@ -4638,7 +4644,7 @@ update_scap_cpe_match_strings ()
   gvm_json_pull_parser_t parser;
   inserts_t inserts, matches_inserts;
   db_copy_buffer_t copy_buffer, matches_copy_buffer;
-  gboolean use_copy = TRUE;
+  gboolean use_copy = secinfo_fast_init;
 
   current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
                                         "nvd-cpe-matches.json.gz",
@@ -6269,4 +6275,18 @@ set_secinfo_commit_size (int new_commit_size)
     secinfo_commit_size = 0;
   else
     secinfo_commit_size = new_commit_size;
+}
+
+/**
+ * @brief Set the SecInfo fast initialization option.
+ *
+ * @param new_fast_init The new SecInfo fast initialization option.
+ */
+void
+set_secinfo_fast_init (int new_fast_init)
+{
+  if (new_fast_init < 0)
+    secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
+  else
+    secinfo_fast_init = new_fast_init;
 }
