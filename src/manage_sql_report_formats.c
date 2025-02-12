@@ -843,6 +843,7 @@ add_report_format_params (report_format_t report_format, array_t *params,
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
  * @param[in]   predefined     Whether report format is from the feed.
+ * @param[in]   report_type    Type of the report.
  * @param[in]   signature      Signature.
  * @param[out]  report_format  Created report format.
  *
@@ -859,12 +860,12 @@ create_report_format_internal (int check_access, int may_exist, int active,
                                const char *summary, const char *description,
                                array_t *files, array_t *params,
                                array_t *params_options, const char *signature,
-                               int predefined,
+                               int predefined, const char * report_type,
                                report_format_t *report_format)
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
-  gchar *candidate_name, *new_uuid, *uuid_actual;
+  gchar *candidate_name, *new_uuid, *uuid_actual, *quoted_report_type;
   report_format_t report_format_rowid;
   int index, num, ret;
   gchar *format_signature = NULL;
@@ -1126,15 +1127,17 @@ create_report_format_internal (int check_access, int may_exist, int active,
   quoted_extension = extension ? sql_quote (extension) : NULL;
   quoted_content_type = content_type ? sql_quote (content_type) : NULL;
   quoted_signature = signature ? sql_quote (signature) : NULL;
+  quoted_report_type = report_type ? sql_quote (report_type) : NULL;
   g_free (format_signature);
 
   sql ("INSERT INTO report_formats"
        " (uuid, name, owner, summary, description, extension, content_type,"
-       "  signature, trust, trust_time, flags, predefined, creation_time,"
+       "  signature, trust, trust_time, flags, predefined,"
+       "  report_type, creation_time,"
        "  modification_time)"
        " VALUES ('%s', '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, %i, m_now (), m_now ());",
+       " '%s', '%s', '%s', '%s', '%s', %i, %i, %i, %i, '%s', m_now (), m_now ());",
        new_uuid ? new_uuid : uuid,
        quoted_name,
        current_credentials.uuid,
@@ -1146,7 +1149,8 @@ create_report_format_internal (int check_access, int may_exist, int active,
        format_trust,
        time (NULL),
        active ? REPORT_FORMAT_FLAG_ACTIVE : 0,
-       predefined ? 1 : 0);
+       predefined ? 1 : 0,
+       quoted_report_type ? quoted_report_type : "");
 
   g_free (new_uuid);
   g_free (quoted_summary);
@@ -1155,6 +1159,7 @@ create_report_format_internal (int check_access, int may_exist, int active,
   g_free (quoted_content_type);
   g_free (quoted_signature);
   g_free (quoted_name);
+  g_free (quoted_report_type);
 
   /* Add params to database. */
 
@@ -1195,6 +1200,7 @@ create_report_format_internal (int check_access, int may_exist, int active,
  *                             params.  Each item of an inner array is a string,
  *                             the text of an option in a selection.
  * @param[in]   signature      Signature.
+ * @param[in]   report_type    Type of the report.
  * @param[out]  report_format  Created report format.
  *
  * @return 0 success, 2 empty file name, 3 param value
@@ -1208,7 +1214,8 @@ create_report_format (const char *uuid, const char *name,
                       const char *content_type, const char *extension,
                       const char *summary, const char *description,
                       array_t *files, array_t *params, array_t *params_options,
-                      const char *signature, report_format_t *report_format)
+                      const char *signature, const char* report_type,
+                      report_format_t *report_format)
 {
   return create_report_format_internal (1, /* Check permission. */
                                         1, /* Allow existing report format. */
@@ -1218,6 +1225,7 @@ create_report_format (const char *uuid, const char *name,
                                         summary, description, files, params,
                                         params_options, signature,
                                         0, /* Predefined. */
+                                        report_type,
                                         report_format);
 }
 
@@ -1239,6 +1247,7 @@ create_report_format (const char *uuid, const char *name,
  *                             the text of an option in a selection.
  * @param[in]   signature      Signature.
  * @param[in]   predefined     Whether report format is from the feed.
+ * @param[in]   report_type    Type of the report.
  * @param[out]  report_format  Created report format.
  *
  * @return 0 success, 1 report format exists, 2 empty file name, 3 param value
@@ -1253,7 +1262,8 @@ create_report_format_no_acl (const char *uuid, const char *name,
                              const char *summary, const char *description,
                              array_t *files, array_t *params,
                              array_t *params_options, const char *signature,
-                             int predefined, report_format_t *report_format)
+                             int predefined, const char *report_type,
+                             report_format_t *report_format)
 {
   return create_report_format_internal (0, /* Check permission. */
                                         0, /* Allow existing report format. */
@@ -1262,7 +1272,8 @@ create_report_format_no_acl (const char *uuid, const char *name,
                                         uuid, name, content_type, extension,
                                         summary, description, files, params,
                                         params_options, signature,
-                                        predefined, report_format);
+                                        predefined, report_type,
+                                        report_format);
 }
 
 /**
@@ -1407,7 +1418,7 @@ copy_report_format (const char* name, const char* source_uuid,
 
   ret = copy_resource_lock ("report_format", name, NULL, source_uuid,
                             "extension, content_type, summary, description,"
-                            " signature, trust, trust_time, flags",
+                            " signature, trust, trust_time, flags, report_type",
                             1, &new, &old);
   if (ret)
     {
@@ -1881,11 +1892,13 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql ("INSERT INTO report_formats_trash"
            " (uuid, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, original_uuid,"
-           "  predefined, creation_time, modification_time)"
+           "  predefined, report_type, creation_time,"
+           "  modification_time)"
            " SELECT"
            "  %s, owner, name, extension, content_type, summary,"
            "  description, signature, trust, trust_time, flags, uuid,"
-           "  predefined, creation_time, modification_time"
+           "  predefined, report_type, creation_time,"
+           "  modification_time"
            " FROM report_formats"
            " WHERE id = %llu;",
            report_format_predefined (report_format) ? "uuid" : "make_uuid ()",
@@ -2007,11 +2020,11 @@ restore_report_format (const char *report_format_id)
   sql ("INSERT INTO report_formats"
        " (uuid, owner, name, extension, content_type, summary,"
        "  description, signature, trust, trust_time, flags,"
-       "  predefined, creation_time, modification_time)"
+       "  predefined, report_type, creation_time, modification_time)"
        " SELECT"
        "  original_uuid, owner, name, extension, content_type, summary,"
        "  description, signature, trust, trust_time, flags,"
-       "  predefined, creation_time, modification_time"
+       "  predefined, report_type, creation_time, modification_time"
        " FROM report_formats_trash"
        " WHERE id = %llu;",
        resource);
@@ -2271,6 +2284,21 @@ char *
 report_format_extension (report_format_t report_format)
 {
   return sql_string ("SELECT extension FROM report_formats WHERE id = %llu;",
+                     report_format);
+}
+
+/**
+ * @brief Return the report type of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Newly allocated report type.
+ */
+char *
+report_format_report_type (report_format_t report_format)
+{
+  return sql_string ("SELECT report_type FROM report_formats"
+                     " WHERE id = %llu;",
                      report_format);
 }
 
@@ -2743,7 +2771,7 @@ report_format_trust (report_format_t report_format)
 #define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
    "summary", "description", "trust", "trust_time", "active", "predefined",   \
-   "configurable", NULL }
+   "configurable", "report_type", NULL }
 
 /**
  * @brief Report Format iterator columns.
@@ -2779,6 +2807,7 @@ report_format_trust (report_format_t report_format)
    },                                                                   \
    { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "report_type", NULL, KEYWORD_TYPE_STRING },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
@@ -2817,6 +2846,7 @@ report_format_trust (report_format_t report_format)
    },                                                                   \
    { "flags & 1", "active", KEYWORD_TYPE_INTEGER },                     \
    { "predefined", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "report_type", NULL, KEYWORD_TYPE_STRING },                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
@@ -3006,6 +3036,16 @@ report_format_iterator_active (iterator_t* iterator)
   return (iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8)
           & REPORT_FORMAT_FLAG_ACTIVE) ? 1 : 0;
 }
+
+/**
+ * @brief Get the report type from a report format iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Report type, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (report_format_iterator_report_type, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
  * @brief Initialise a Report Format alert iterator.
@@ -4428,6 +4468,7 @@ delete_report_format_dirs_user (const gchar *user_id, iterator_t *rows)
  * @param[in]  params           New params.
  * @param[in]  params_options   Options for new params.
  * @param[in]  deprecated       New deprecation status.
+ * @param[in]  report_type      New report type.
  */
 void
 update_report_format (report_format_t report_format, const gchar *report_id,
@@ -4435,11 +4476,12 @@ update_report_format (report_format_t report_format, const gchar *report_id,
                       const gchar *content_type, const gchar *extension,
                       const gchar *summary, const gchar *description,
                       const gchar *signature, array_t *files, array_t *params,
-                      array_t *params_options, const char *deprecated)
+                      array_t *params_options, const char *deprecated,
+                      const char *report_type)
 {
   int ret;
   gchar *quoted_name, *quoted_content_type, *quoted_extension, *quoted_summary;
-  gchar *quoted_description, *quoted_signature;
+  gchar *quoted_description, *quoted_signature, *quoted_report_type;
 
   sql_begin_immediate ();
 
@@ -4449,10 +4491,12 @@ update_report_format (report_format_t report_format, const gchar *report_id,
   quoted_summary = sql_quote (summary ? summary : "");
   quoted_description = sql_quote (description ? description : "");
   quoted_signature = sql_quote (signature ? signature : "");
+  quoted_report_type = sql_quote (report_type ? report_type : "");
   sql ("UPDATE report_formats"
        " SET name = '%s', content_type = '%s', extension = '%s',"
        "     summary = '%s', description = '%s', signature = '%s',"
-       "     predefined = 1, modification_time = m_now ()"
+       "     predefined = 1, report_type = '%s',"
+       "     modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_content_type,
@@ -4460,6 +4504,7 @@ update_report_format (report_format_t report_format, const gchar *report_id,
        quoted_summary,
        quoted_description,
        quoted_signature,
+       quoted_report_type,
        report_format);
   g_free (quoted_name);
   g_free (quoted_content_type);
@@ -4467,6 +4512,7 @@ update_report_format (report_format_t report_format, const gchar *report_id,
   g_free (quoted_summary);
   g_free (quoted_description);
   g_free (quoted_signature);
+  g_free (quoted_report_type);
 
   /* Replace the params. */
 

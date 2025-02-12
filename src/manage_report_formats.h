@@ -43,7 +43,8 @@ typedef struct
 int
 create_report_format (const char *, const char *, const char *, const char *,
                       const char *, const char *, array_t *, array_t *,
-                      array_t *, const char *, report_format_t *);
+                      array_t *, const char *, const char *,
+                      report_format_t *);
 
 int
 copy_report_format (const char *, const char *, report_format_t*);
@@ -72,6 +73,9 @@ report_format_content_type (report_format_t);
 
 char *
 report_format_extension (report_format_t);
+
+char *
+report_format_report_type (report_format_t);
 
 int
 report_format_global (report_format_t);
@@ -118,6 +122,9 @@ report_format_iterator_extension (iterator_t *);
 
 const char*
 report_format_iterator_content_type (iterator_t *);
+
+const char*
+report_format_iterator_report_type (iterator_t *);
 
 const char*
 report_format_iterator_description (iterator_t *);

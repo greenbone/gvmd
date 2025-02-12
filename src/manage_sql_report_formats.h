@@ -37,7 +37,7 @@ int
 create_report_format_no_acl (const char *, const char *, const char *,
                              const char *, const char *, const char *,
                              array_t *, array_t *, array_t *, const char *,
-                             int, report_format_t *);
+                             int, const char *, report_format_t *);
 
 const char**
 report_format_filter_columns ();
@@ -71,7 +71,7 @@ void
 update_report_format (report_format_t, const gchar *, const gchar *,
                       const gchar *, const gchar *, const gchar *,
                       const gchar *, const gchar *, array_t *, array_t *,
-                      array_t *, const gchar *);
+                      array_t *, const gchar *, const gchar *);
 
 int
 report_format_updated_in_feed (report_format_t, const gchar *);

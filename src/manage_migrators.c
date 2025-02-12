@@ -3218,6 +3218,43 @@ migrate_255_to_256 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 256 to version 257.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_256_to_257 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 256. */
+
+  if (manage_db_version () != 256)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add new columns
+
+  sql ("ALTER TABLE report_formats ADD COLUMN"
+       " report_type text DEFAULT 'scan';");
+
+  sql ("ALTER TABLE report_formats_trash ADD COLUMN"
+       " report_type text DEFAULT 'scan';");
+
+  /* Set the database version to 257. */
+
+  set_db_version (257);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3280,6 +3317,7 @@ static migrator_t database_migrators[] = {
   {254, migrate_253_to_254},
   {255, migrate_254_to_255},
   {256, migrate_255_to_256},
+  {257, migrate_256_to_257},
   /* End marker. */
   {-1, NULL}};
 
