@@ -509,6 +509,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--secinfo-fast_init=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>Whether to prefer faster SQL with less checks for non-incremental
+           SecInfo updates. 0 to use statements with more checks, 1 to use
+           faster statements, default: 1</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>-c, --unix-socket=<arg>FILENAME</arg></opt></p>
       <optdesc>
         <p>Listen on UNIX socket at FILENAME.</p>

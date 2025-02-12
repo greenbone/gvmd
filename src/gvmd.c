@@ -1867,6 +1867,7 @@ gvmd (int argc, char** argv, char *env[])
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int affected_products_query_size
     = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
+  static int secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
@@ -2242,6 +2243,13 @@ gvmd (int argc, char** argv, char *env[])
           "During CERT and SCAP sync, commit updates to the database every"
           " <number> items, 0 for unlimited, default: "
           G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
+        { "secinfo-fast-init", '\0', 0, G_OPTION_ARG_INT,
+          &secinfo_fast_init,
+          "Whether to prefer faster SQL with less checks for non-incremental"
+          " SecInfo updates."
+          " 0 to use statements with more checks, 1 to use faster statements,"
+          " default: "
+          G_STRINGIFY (SECINFO_FAST_INIT_DEFAULT), "<number>" },
         { "set-encryption-key", '\0', 0, G_OPTION_ARG_STRING,
           &set_encryption_key,
           "Set the encryption key with the given UID as the new default"
@@ -2370,7 +2378,9 @@ gvmd (int argc, char** argv, char *env[])
   /* Set the connection auto retry */
   set_scanner_connection_retry (scanner_connection_retry);
 
-  /* Set SQL sizes */
+  /* Set SQL sizes and related options */
+
+  set_secinfo_fast_init (secinfo_fast_init);
 
   set_affected_products_query_size (affected_products_query_size);
 
