@@ -395,7 +395,7 @@ update_report_format_from_file (report_format_t report_format,
   entity_t entity;
   array_t *files, *params, *params_options;
   char *name, *content_type, *extension, *summary, *description, *signature;
-  char *deprecated;
+  char *deprecated, *report_type;
   const char *report_format_id;
 
   g_debug ("%s: updating %s", __func__, path);
@@ -410,13 +410,13 @@ update_report_format_from_file (report_format_t report_format,
   parse_report_format_entity (entity, &report_format_id, &name,
                               &content_type, &extension, &summary,
                               &description, &signature, &files, &params,
-                              &params_options, &deprecated);
+                              &params_options, &deprecated, &report_type);
 
   /* Update the report format. */
 
   update_report_format (report_format, report_format_id, name, content_type,
                         extension, summary, description, signature, files,
-                        params, params_options, deprecated);
+                        params, params_options, deprecated, report_type);
 
   /* Cleanup. */
 
@@ -487,7 +487,7 @@ create_report_format_from_file (const gchar *path)
   entity_t report_format;
   array_t *files, *params, *params_options;
   char *name, *content_type, *extension, *summary, *description, *signature;
-  char *deprecated;
+  char *deprecated, *report_type;
   const char *report_format_id;
   report_format_t new_report_format;
 
@@ -503,7 +503,7 @@ create_report_format_from_file (const gchar *path)
   parse_report_format_entity (report_format, &report_format_id, &name,
                               &content_type, &extension, &summary,
                               &description, &signature, &files, &params,
-                              &params_options, &deprecated);
+                              &params_options, &deprecated, &report_type);
 
   /* Handle deprecation status */
 
@@ -528,6 +528,7 @@ create_report_format_from_file (const gchar *path)
                                        params_options,
                                        signature,
                                        1,
+                                       report_type,
                                        &new_report_format))
     {
       case 0:

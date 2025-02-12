@@ -2979,6 +2979,7 @@ create_tables ()
        "  trust_time integer,"
        "  flags integer,"
        "  predefined integer,"
+       "  report_type text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -3005,6 +3006,7 @@ create_tables ()
         * Feed ("predefined") report formats are not given a new UUID because
         * they are not created if they already exist in the trash. */
        "  original_uuid text,"
+       "  report_type text,"
        "  creation_time integer,"
        "  modification_time integer);");
 

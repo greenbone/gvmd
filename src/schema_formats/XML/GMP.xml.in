@@ -17537,6 +17537,17 @@ END:VCALENDAR
             <type>boolean</type>
             <summary>Whether the report format was created from the feed</summary>
           </column>
+          <column>
+            <name>report_type</name>
+            <type>
+              <alts>
+                <alt>scan</alt>
+                <alt>audit</alt>
+                <alt>all</alt>
+              </alts>
+            </type>
+            <summary>The type of the report compatible with the report format</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -17622,6 +17633,7 @@ END:VCALENDAR
           <e>active</e>
           <e>predefined</e>
           <e>configurable</e>
+          <e>report_type</e>
           <o><e>deprecated</e></o>
           <any><e>param</e></any>
         </pattern>
@@ -17934,6 +17946,17 @@ END:VCALENDAR
           <name>configurable</name>
           <summary>Whether the report format can be used with a report config</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>report_type</name>
+          <summary>The type of the report compatible with the report format</summary>
+          <pattern>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt>all</alt>
+            </alts>
+          </pattern>
         </ele>
         <ele>
           <name>deprecated</name>

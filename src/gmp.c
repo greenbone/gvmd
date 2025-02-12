@@ -14978,29 +14978,66 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   no_report_format = (get_reports_data->format_id == NULL)
                       || (strcmp(get_reports_data->format_id, "") == 0);
 
-  if ((!no_report_format)
-      && find_report_format_with_permission (get_reports_data->format_id,
-                                             &report_format,
+  if (!no_report_format)
+    {
+      if (find_report_format_with_permission (get_reports_data->format_id,
+                                              &report_format,
                                              "get_report_formats"))
-    {
-      get_reports_data_reset (get_reports_data);
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if ((!no_report_format) && (report_format == 0))
-    {
-      if (send_find_error_to_client ("get_reports", "report format",
-                                     get_reports_data->format_id,
-                                     gmp_parser))
         {
-          error_send_to_client (error);
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+          set_client_state (CLIENT_AUTHENTIC);
           return;
         }
-      get_reports_data_reset (get_reports_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
+
+      if (report_format == 0)
+        {
+          if (send_find_error_to_client ("get_reports", "report format",
+                                        get_reports_data->format_id,
+                                        gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      task_t task;
+      gchar *usage_type, *report_type;
+      if(report_task (request_report, &task) || (task == 0))
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("get_reports",
+                               "Failed to get report task"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+      if (task_usage_type(task, &usage_type))
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("get_reports",
+                               "Failed to get usage type"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+      report_type = report_format_report_type (report_format);
+      if (report_type)
+        {
+          if (strcmp(report_type, usage_type) && strcmp(report_type, "all"))
+            {
+              get_reports_data_reset (get_reports_data);
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("get_reports",
+                                   "Report format is not compatible with"
+                                   " the report type"));
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+        }
     }
 
   if (!no_report_config)
@@ -15896,7 +15933,8 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
             "<summary>%s</summary>"
             "<description>%s</description>"
             "<predefined>%i</predefined>"
-            "<configurable>%i</configurable>",
+            "<configurable>%i</configurable>"
+            "<report_type>%s</report_type>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
@@ -15906,7 +15944,8 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
                  (get_iterator_resource (&report_formats))
               : report_format_predefined
                  (get_iterator_resource (&report_formats)),
-            report_format_iterator_configurable (&report_formats));
+            report_format_iterator_configurable (&report_formats),
+            report_format_iterator_report_type (&report_formats) ?: "");
 
           if (resource_id_deprecated ("report_format",
                                       get_iterator_uuid (&report_formats)))
