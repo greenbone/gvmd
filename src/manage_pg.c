@@ -3852,7 +3852,7 @@ manage_db_add_constraints (const gchar *name)
  * @brief Create the indexes for the CPEs table in the scap2 schema.
  */
 void
-create_cpe_indexes ()
+create_indexes_cpe ()
 {
   sql ("CREATE UNIQUE INDEX cpe_idx"
        " ON scap2.cpes (name);");
@@ -3872,7 +3872,7 @@ create_cpe_indexes ()
  * @brief Remove the indexes for the CPEs table in the scap2 schema.
  */
 void
-drop_cpe_indexes ()
+drop_indexes_cpe ()
 {
   sql ("DROP INDEX IF EXISTS scap2.cpe_idx");
   sql ("DROP INDEX IF EXISTS scap2.cpes_by_creation_time_idx");
@@ -3903,7 +3903,7 @@ manage_db_init_indexes (const gchar *name)
       sql ("CREATE INDEX cves_by_severity"
            " ON scap2.cves (severity);");
 
-      create_cpe_indexes ();
+      create_indexes_cpe ();
 
       sql ("CREATE INDEX cpe_match_nodes_by_root_id"
            " ON scap2.cpe_match_nodes(root_id);");

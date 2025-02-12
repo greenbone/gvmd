@@ -407,12 +407,12 @@ inserts_run (inserts_t *inserts, gboolean finalize)
  *
  * @param[in]  copy_buffer    The buffer data structure to initialize
  * @param[in]  max_data_size  Data size above which buffer is auto-committed
- * @param[in]  max_data_size  SQL COPY statement run on buffer commit
+ * @param[in]  copy_sql       SQL COPY statement run on buffer commit
  */
 static void
 db_copy_buffer_init (db_copy_buffer_t *copy_buffer,
                      int max_data_size,
-                     const char *copy_sql)
+                     const gchar *copy_sql)
 {
   copy_buffer->data = g_string_new ("");
   copy_buffer->max_data_size = max_data_size;
@@ -432,15 +432,15 @@ db_copy_buffer_cleanup (db_copy_buffer_t *copy_buffer)
   copy_buffer->data = NULL;
 
   g_free (copy_buffer->copy_sql);
-  copy_buffer->copy_sql = NULL;      
+  copy_buffer->copy_sql = NULL;
 }
 
 /**
  * @brief Sends the data from a COPY buffer to the DB and clears the buffer.
- * 
+ *
  * @param[in]  copy_buffer  The COPY buffer to commit the data from
  * @param[in]  finalize     Whether to free all allocated fields of the buffer
- * 
+ *
  * @return 0 success, -1 error.
  */
 static int
@@ -462,7 +462,7 @@ db_copy_buffer_commit (db_copy_buffer_t *copy_buffer, gboolean finalize)
             }
           return -1;
         }
-  
+
       if (sql_copy_end ())
         {
           g_warning ("%s: failed to commit database copy buffer", __func__);
@@ -471,7 +471,7 @@ db_copy_buffer_commit (db_copy_buffer_t *copy_buffer, gboolean finalize)
     }
 
   if (finalize)
-    db_copy_buffer_cleanup( (copy_buffer));
+    db_copy_buffer_cleanup (copy_buffer);
   else
     g_string_truncate (copy_buffer->data, 0);
 
@@ -480,11 +480,11 @@ db_copy_buffer_commit (db_copy_buffer_t *copy_buffer, gboolean finalize)
 
 /**
  * @brief Adds data to a COPY buffer with a printf-like format string.
- * 
+ *
  * @param[in]  copy_buffer  The COPY buffer to commit the data from
  * @param[in]  format       The format string for the data to add
  * @param[in]  ...          Extra arguments to insert into the format string
- * 
+ *
  * @return 0 success, -1 error.
  */
 static int
@@ -2412,7 +2412,7 @@ handle_json_cpe_item (inserts_t *inserts,
 {
   cJSON *cpe_item;
   char *name, *cpe_name_id, *last_modified, *title_text;
-  gchar *quoted_name, *quoted_title, *quoted_cpe_name_id;
+  gchar *quoted_name;
   cJSON *titles, *title;
   time_t modification_time;
   int deprecated;
@@ -2536,7 +2536,7 @@ handle_json_cpe_item (inserts_t *inserts,
       int ret;
       gchar *copy_escaped_name, *copy_escaped_cpe_name_id, *copy_escaped_title;
 
-      copy_escaped_name 
+      copy_escaped_name
         = fs_to_uri_convert_and_quote_cpe_name (name, sql_copy_escape);
       copy_escaped_cpe_name_id = sql_copy_escape (cpe_name_id);
       copy_escaped_title = sql_copy_escape (title_text ? title_text : "");
@@ -2565,6 +2565,8 @@ handle_json_cpe_item (inserts_t *inserts,
     }
   else
     {
+      gchar *quoted_title, *quoted_cpe_name_id;
+
       quoted_cpe_name_id = sql_quote (cpe_name_id);
       quoted_title = sql_quote (title_text ? title_text : "");
 
@@ -2670,7 +2672,6 @@ handle_json_cpe_refs (inserts_t *inserts,
             {
               g_free (quoted_ref);
               g_free (quoted_type);
-              g_free (quoted_name);
               return -1;
             }
         }
@@ -2744,7 +2745,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
       return -1;
     }
 
-  drop_cpe_indexes ();
+  drop_indexes_cpe ();
 
   cpe_rowid = 0;
   sql_begin_immediate ();
@@ -2797,7 +2798,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           fclose (cpe_file);
           if (use_copy)
             db_copy_buffer_cleanup (&copy_buffer);
-          else 
+          else
             inserts_free (&inserts);
           inserts_free (&deprecated_by_inserts);
           sql_commit ();
@@ -2816,7 +2817,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           fclose (cpe_file);
           if (use_copy)
             db_copy_buffer_cleanup (&copy_buffer);
-          else 
+          else
             inserts_free (&inserts);
           inserts_free (&deprecated_by_inserts);
           sql_commit ();
@@ -2833,10 +2834,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
           sql_commit ();
           gvm_json_pull_parser_cleanup (&parser);
           fclose (cpe_file);
-          if (use_copy)
-            db_copy_buffer_cleanup (&copy_buffer);
-          else 
-            inserts_free (&inserts);
+          db_copy_buffer_cleanup (&copy_buffer);
           inserts_free (&deprecated_by_inserts);
           return -1;
         }
@@ -2848,7 +2846,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
-  create_cpe_indexes ();
+  create_indexes_cpe ();
 
   // Reset and insert refs
   g_info ("Updating CPE refs...");
@@ -4605,7 +4603,6 @@ handle_json_cpe_match_string (inserts_t *inserts,
                   g_free (quoted_cpe_name);
                   return -1;
                 }
-                                              
             }
           else
             {

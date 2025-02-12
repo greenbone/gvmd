@@ -544,9 +544,9 @@ int
 cleanup_ids_for_table (const char *);
 
 void
-create_cpe_indexes ();
+create_indexes_cpe ();
 
 void
-drop_cpe_indexes ();
+drop_indexes_cpe ();
 
 #endif /* not _GVMD_MANAGE_SQL_H */
