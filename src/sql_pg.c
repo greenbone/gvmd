@@ -980,7 +980,7 @@ sql_copy_escape (const char *str)
           g_string_append (escaped, "\\t");
           break;
         case '\v':
-          g_string_append (escaped, "\\r");
+          g_string_append (escaped, "\\v");
           break;
         default:
           g_string_append_c (escaped, str[i]);
