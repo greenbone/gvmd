@@ -3241,10 +3241,10 @@ migrate_256_to_257 ()
   // Add new columns
 
   sql ("ALTER TABLE report_formats ADD COLUMN"
-       " report_type text DEFAULT 'scan';");
+       " report_type text DEFAULT 'all';");
 
   sql ("ALTER TABLE report_formats_trash ADD COLUMN"
-       " report_type text DEFAULT 'scan';");
+       " report_type text DEFAULT 'all';");
 
   /* Set the database version to 257. */
 
