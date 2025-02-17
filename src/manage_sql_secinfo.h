@@ -168,7 +168,7 @@
 /**
  * @brief Default for affected_products_query_size.
  */
-#define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 1000
+#define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 20000
 
 /**
  * @brief Default for secinfo_copy.

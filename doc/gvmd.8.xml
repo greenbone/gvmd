@@ -57,7 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <optdesc>
         <p>
           Sets the number of CVEs to process per query when updating
-          the affected products. Defaults to 1000.
+          the affected products. Defaults to 20000.
         </p>
       </optdesc>
     </option>
