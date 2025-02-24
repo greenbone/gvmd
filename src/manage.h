@@ -1133,6 +1133,8 @@ user_has_super (const char *, user_t);
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
+  " 'openEuler Local Security Checks',"            \
+  " 'openSUSE Local Security Checks',"             \
   " 'Oracle Linux Local Security Checks',"         \
   " 'Palo Alto PAN-OS Local Security Checks',"     \
   " 'Red Hat Local Security Checks',"              \
@@ -1160,6 +1162,8 @@ user_has_super (const char *, user_t);
     "Huawei EulerOS Local Security Checks",        \
     "Mageia Linux Local Security Checks",          \
     "Mandrake Local Security Checks",              \
+    "openEuler Local Security Checks",             \
+    "openSUSE Local Security Checks",              \
     "Oracle Linux Local Security Checks",          \
     "Red Hat Local Security Checks",               \
     "Rocky Linux Local Security Checks",           \
