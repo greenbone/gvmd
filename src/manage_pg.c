@@ -3820,9 +3820,7 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.affected_products"
            " ALTER cve SET NOT NULL,"
            " ALTER cpe SET NOT NULL,"
-           " ADD UNIQUE (cve, cpe),"
-           " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
-           " ADD FOREIGN KEY(cpe) REFERENCES cpes(id);");
+           " ADD UNIQUE (cve, cpe);");
 
       sql ("ALTER TABLE scap2.epss_scores"
            " ALTER cve SET NOT NULL,"
@@ -3885,6 +3883,44 @@ drop_indexes_cpe ()
 }
 
 /**
+ * @brief Create the indexes for the CVEs tables in the scap2 schema.
+ */
+void
+create_indexes_cve ()
+{
+  sql ("CREATE UNIQUE INDEX cve_idx"
+       " ON scap2.cves (name);");
+  sql ("CREATE INDEX cves_by_creation_time_idx"
+       " ON scap2.cves (creation_time);");
+  sql ("CREATE INDEX cves_by_modification_time_idx"
+       " ON scap2.cves (modification_time);");
+  sql ("CREATE INDEX cves_by_severity"
+       " ON scap2.cves (severity);");
+
+  sql ("CREATE INDEX cpe_match_nodes_by_root_id"
+       " ON scap2.cpe_match_nodes(root_id);");
+
+  sql ("CREATE INDEX cpe_nodes_match_criteria_by_node_id"
+       " ON scap2.cpe_nodes_match_criteria(node_id);");
+}
+
+/**
+ * @brief Remove the indexes for the CVEs tables in the scap2 schema.
+ */
+void
+drop_indexes_cve ()
+{
+  sql ("DROP INDEX IF EXISTS scap2.cve_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cves_by_creation_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cves_by_modification_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cves_by_severity");
+  
+  sql ("DROP INDEX IF EXISTS scap2.cpe_match_nodes_by_root_id");
+
+  sql ("DROP INDEX IF EXISTS scap2.cpe_nodes_match_criteria_by_node_id");
+}
+
+/**
  * @brief Init external database.
  *
  * @param[in]  name  Name.  Currently only "scap".
@@ -3896,22 +3932,9 @@ manage_db_init_indexes (const gchar *name)
 {
   if (strcasecmp (name, "scap") == 0)
     {
-      sql ("CREATE UNIQUE INDEX cve_idx"
-           " ON scap2.cves (name);");
-      sql ("CREATE INDEX cves_by_creation_time_idx"
-           " ON scap2.cves (creation_time);");
-      sql ("CREATE INDEX cves_by_modification_time_idx"
-           " ON scap2.cves (modification_time);");
-      sql ("CREATE INDEX cves_by_severity"
-           " ON scap2.cves (severity);");
-
       create_indexes_cpe ();
 
-      sql ("CREATE INDEX cpe_match_nodes_by_root_id"
-           " ON scap2.cpe_match_nodes(root_id);");
-
-      sql ("CREATE INDEX cpe_nodes_match_criteria_by_node_id"
-           " ON scap2.cpe_nodes_match_criteria(node_id);");
+      create_indexes_cve ();
 
       sql ("CREATE INDEX afp_cpe_idx"
            " ON scap2.affected_products (cpe);");
