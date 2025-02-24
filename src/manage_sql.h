@@ -549,4 +549,10 @@ create_indexes_cpe ();
 void
 drop_indexes_cpe ();
 
+void
+create_indexes_cve ();
+
+void
+drop_indexes_cve ();
+
 #endif /* not _GVMD_MANAGE_SQL_H */
