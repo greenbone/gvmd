@@ -3762,7 +3762,7 @@ handle_cve_references (resource_t cve_db_id, char *cve_id,
   int ret = 0;
   cJSON *reference_item;
   static GHashTable *urls = NULL;
-  
+
   if (secinfo_fast_init && urls == NULL)
     urls = g_hash_table_new (g_str_hash, g_str_equal);
 
@@ -3816,7 +3816,7 @@ get_cve_configuration_fields (cJSON* configuration_item,
                               int *negate)
 {
   *nodes_array = cJSON_GetObjectItemCaseSensitive (configuration_item,
-                                                  "nodes");
+                                                   "nodes");
   if (!cJSON_IsArray (*nodes_array))
     {
       g_warning ("%s: 'nodes' field missing or not an array for %s.",
@@ -4169,7 +4169,7 @@ handle_cve_cpe_nodes_match_criteria (resource_t cve_db_id,
   if (vulnerable)
     {
       iterator_t cpe_matches;
-      gchar *quoted_match_criteria_id 
+      gchar *quoted_match_criteria_id
         = sql_quote (match_criteria_id);
 
       init_cpe_match_string_matches_iterator (
@@ -4402,7 +4402,7 @@ get_cve_json_fields (cJSON *vuln_item,
   cJSON *descriptions_json = NULL;
   cJSON *description_item_json = NULL;
   gboolean cvss_metric_is_primary = FALSE;
-  
+
   *cve_id = *vector = NULL;
   *published_time = *modified_time = 0;
   *score_dbl = SEVERITY_MISSING;
@@ -4907,7 +4907,7 @@ update_cve_json (const gchar *cve_path,
       sql_begin_immediate ();
       drop_indexes_cve ();
       if (secinfo_fast_init)
-        { 
+        {
           init_cve_copy_buffers (&cves_copy_buffer,
                                  &cve_refs_copy_buffer,
                                  &cpe_match_nodes_copy_buffer,
