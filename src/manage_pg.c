@@ -3914,7 +3914,7 @@ drop_indexes_cve ()
   sql ("DROP INDEX IF EXISTS scap2.cves_by_creation_time_idx");
   sql ("DROP INDEX IF EXISTS scap2.cves_by_modification_time_idx");
   sql ("DROP INDEX IF EXISTS scap2.cves_by_severity");
-  
+
   sql ("DROP INDEX IF EXISTS scap2.cpe_match_nodes_by_root_id");
 
   sql ("DROP INDEX IF EXISTS scap2.cpe_nodes_match_criteria_by_node_id");
