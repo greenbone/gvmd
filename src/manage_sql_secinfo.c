@@ -4068,8 +4068,8 @@ handle_cve_affected_product (resource_t cve_db_id,
       escaped_cpe_name_id = sql_copy_escape (match_cpe_name_id);
 
       g_hash_table_insert (hashed_cpes,
-                            g_strdup (match_cpe_name),
-                            GINT_TO_POINTER (*cpe_db_id_ptr));
+                           g_strdup (match_cpe_name),
+                           GINT_TO_POINTER (*cpe_db_id_ptr));
       if (db_copy_buffer_append_printf (cve_cpes_copy_buffer,
                                         "%s\t%s\t%lld\t%lld\t0\t%s\n",
                                         escaped_cpe_name,
@@ -4748,41 +4748,41 @@ init_cve_copy_buffers (db_copy_buffer_t *cves_buffer,
   int buffer_size = setting_secinfo_sql_buffer_threshold_bytes() / 6;
   db_copy_buffer_init
     (cves_buffer,
-      buffer_size,
-      "COPY scap2.cves ("
-      "  id, uuid, name, creation_time, modification_time,"
-      "  severity, description, cvss_vector, products"
-      ") FROM STDIN;");
+     buffer_size,
+     "COPY scap2.cves ("
+     "  id, uuid, name, creation_time, modification_time,"
+     "  severity, description, cvss_vector, products"
+     ") FROM STDIN;");
   db_copy_buffer_init
     (cve_refs_buffer,
-      buffer_size,
-      "COPY scap2.cve_references ("
-      "  cve_id, url, tags"
-      ") FROM STDIN;");
+     buffer_size,
+     "COPY scap2.cve_references ("
+     "  cve_id, url, tags"
+     ") FROM STDIN;");
   db_copy_buffer_init
     (cpe_match_nodes_buffer,
-      buffer_size,
-      "COPY scap2.cpe_match_nodes ("
-      "  id, root_id, cve_id, operator, negate"
-      ") FROM STDIN;");
+     buffer_size,
+     "COPY scap2.cpe_match_nodes ("
+     "  id, root_id, cve_id, operator, negate"
+     ") FROM STDIN;");
   db_copy_buffer_init
     (cpe_nodes_match_criteria_buffer,
-      buffer_size,
-      "COPY scap2.cpe_nodes_match_criteria ("
-      "  node_id, vulnerable, match_criteria_id"
-      ") FROM STDIN");
+     buffer_size,
+     "COPY scap2.cpe_nodes_match_criteria ("
+     "  node_id, vulnerable, match_criteria_id"
+     ") FROM STDIN");
   db_copy_buffer_init
     (cve_cpes_copy_buffer,
-      buffer_size,
-      "COPY scap2.cpes ("
-      "  uuid, name, creation_time, modification_time, deprecated, cpe_name_id"
-      ") FROM STDIN");
+     buffer_size,
+     "COPY scap2.cpes ("
+     "  uuid, name, creation_time, modification_time, deprecated, cpe_name_id"
+     ") FROM STDIN");
   db_copy_buffer_init
     (affected_products_copy_buffer,
-      buffer_size,
-      "COPY scap2.affected_products ("
-      "  cve, cpe"
-      ") FROM STDIN");
+     buffer_size,
+     "COPY scap2.affected_products ("
+     "  cve, cpe"
+     ") FROM STDIN");
 }
 
 /**
