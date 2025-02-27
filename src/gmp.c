@@ -8731,6 +8731,11 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
   oid = nvt_preference_iterator_oid (prefs);
   type = nvt_preference_iterator_type (prefs);
   real_name = nvt_preference_iterator_real_name (prefs);
+  if (strcmp (real_name, "timeout") == 0)
+    {
+      g_free (real_name);
+      real_name = g_strdup ("Timeout");
+    }
   default_value = nvt_preference_iterator_value (prefs);
   value = nvt_preference_iterator_config_value (prefs, config);
   id = nvt_preference_iterator_id (prefs);
@@ -12147,33 +12152,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
-          /* Send NVT timeout preferences where a timeout has been
-           * specified. */
-          init_config_timeout_iterator (&prefs, config);
-          while (next (&prefs))
-            {
-              const char *timeout;
-
-              timeout = config_timeout_iterator_value (&prefs);
-
-              if (timeout && strlen (timeout))
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<preference>"
-                  "<nvt oid=\"%s\">"
-                  "<name>%s</name>"
-                  "</nvt>"
-                  "<id>0</id>"
-                  "<name>Timeout</name>"
-                  "<type>entry</type>"
-                  "<value>%s</value>"
-                  "</preference>",
-                  config_timeout_iterator_oid (&prefs),
-                  config_timeout_iterator_nvt_name (&prefs),
-                  timeout);
-            }
-          cleanup_iterator (&prefs);
-
-          init_nvt_preference_iterator (&prefs, NULL);
+          init_nvt_preference_iterator (&prefs, NULL, TRUE);
           while (next (&prefs))
             {
               GString *buffer = g_string_new ("");
@@ -14246,14 +14225,9 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 int pref_count = -1;
                 char *timeout = NULL;
 
-                if (get_nvts_data->timeout)
+                if (get_nvts_data->timeout || get_nvts_data->preferences)
                   timeout = config_nvt_timeout (config,
                                                 nvt_iterator_oid (&nvts));
-
-                if (get_nvts_data->preferences && (timeout == NULL))
-                  timeout = config_nvt_timeout
-                              (config,
-                               nvt_iterator_oid (&nvts));
 
                 if (get_nvts_data->preference_count)
                   {
@@ -14268,6 +14242,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                     else
                       pref_count = nvt_preference_count (nvt_oid);
                   }
+
                 if (send_nvt (&nvts, 1, get_nvts_data->preferences,
                               pref_count, timeout, config,
                               get_nvts_data->skip_cert_refs,
@@ -14829,7 +14804,7 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">");
-      init_nvt_preference_iterator (&prefs, nvt_oid);
+      init_nvt_preference_iterator (&prefs, nvt_oid, FALSE);
       if (get_preferences_data->preference)
         while (next (&prefs))
           {
