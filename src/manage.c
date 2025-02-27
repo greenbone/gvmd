@@ -2828,19 +2828,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
                                 g_strdup (name),
                                 g_strdup (osp_value));
         }
-      /* Timeouts are stored as SERVER_PREFS, but are actually
-         script preferences. This prefs is converted into a
-         script preference to be sent to the scanner. */
       else if (name && value && g_str_has_prefix (name, "timeout."))
         {
-          char **oid = NULL;
-          osp_vt_single_t *osp_vt = NULL;
-
-          oid = g_strsplit (name, ".", 2);
-          osp_vt = g_hash_table_lookup (vts_hash_table, oid[1]);
-          if (osp_vt)
-            osp_vt_single_add_value (osp_vt, "0", value);
-          g_strfreev (oid);
+          /* Timeouts used to be stored as SERVER_PREFS, but were
+           * converted into a script preference to be sent to the scanner. */
+          g_warning ("%s: Timeout preference using obsolete format: %s",
+                     __func__, name);
         }
 
     }
@@ -6586,7 +6579,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                              timeout ? timeout : "",
                              default_timeout ? default_timeout : "");
 
-          init_nvt_preference_iterator (&prefs, nvt_oid);
+          init_nvt_preference_iterator (&prefs, nvt_oid, FALSE);
           while (next (&prefs))
             buffer_config_preference_xml (buffer, &prefs, config, 1);
           cleanup_iterator (&prefs);
