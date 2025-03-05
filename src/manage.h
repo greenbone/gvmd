@@ -1127,6 +1127,7 @@ user_has_super (const char *, user_t);
   " 'FortiOS Local Security Checks',"              \
   " 'FreeBSD Local Security Checks',"              \
   " 'Gentoo Local Security Checks',"               \
+  " 'HCE Local Security Checks',"                  \
   " 'HP-UX Local Security Checks',"                \
   " 'Huawei EulerOS Local Security Checks',"       \
   " 'JunOS Local Security Checks',"                \
@@ -1158,6 +1159,7 @@ user_has_super (const char *, user_t);
     "Fedora Local Security Checks",                \
     "FreeBSD Local Security Checks",               \
     "Gentoo Local Security Checks",                \
+    "HCE Local Security Checks",                   \
     "HP-UX Local Security Checks",                 \
     "Huawei EulerOS Local Security Checks",        \
     "Mageia Linux Local Security Checks",          \
