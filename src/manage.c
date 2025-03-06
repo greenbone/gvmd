@@ -9021,9 +9021,6 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
               start_time = openvasd_scan_status->start_time;
               end_time = openvasd_scan_status->end_time;
 
-              g_message ("start_time: %ld - end_time: %ld", start_time,
-                         end_time);
-              
               current_status = openvasd_scan_status->status;
               progress = openvasd_scan_status->progress;
               g_free (openvasd_scan_status);
