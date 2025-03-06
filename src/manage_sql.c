@@ -25,13 +25,13 @@
 #undef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
 
-#include "manage.h"
-#include <stdio.h>
 /**
  * @brief Enable extra GNU functions.
  */
 #define _GNU_SOURCE
 
+#include <stdio.h>
+#include "manage.h"
 #include "debug_utils.h"
 #include "manage_sql.h"
 #include "manage_port_lists.h"
