@@ -43181,7 +43181,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
 
 #if OPENVASD
 /**
- * @brief Get an Openvasd Scanner's get_scanner_preferences info.
+ * @brief Get an openvasd Scanner's get_scanner_preferences info.
  *
  * @param[in]   iterator    Scanner object iterator.
  * @param[out]  desc        Scanner description.
@@ -60195,11 +60195,11 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
 }
 
 /**
- * @brief Parse Openvasd results.
+ * @brief Parse openvasd results.
  *
  * @param[in]  task        Task.
  * @param[in]  report      Report.
- * @param[in]  results     Openvasd results.
+ * @param[in]  results     openvasd results.
  */
 void
 parse_openvasd_report (task_t task, report_t report, GSList *results,

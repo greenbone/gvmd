@@ -8410,10 +8410,10 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
 }
 
 #if OPENVASD
-/* Openvasd */
+/* openvasd */
 
 /**
- * @brief Stop an Openvasd task.
+ * @brief Stop an openvasd task.
  *
  * @param[in]   task  The task.
  *
@@ -8597,7 +8597,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
 }
 
 /**
- * @brief Launch an OpenVAS via Openvasd task.
+ * @brief Launch an OpenVAS via openvasd task.
  *
  * @param[in]   task        The task.
  * @param[in]   target      The target.
@@ -8912,7 +8912,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
 }
 
 /**
- * @brief Handle an ongoing Openvasd scan, until success or failure.
+ * @brief Handle an ongoing openvasd scan, until success or failure.
  *
  * @param[in]   task      The task.
  * @param[in]   report    The report.
@@ -9111,7 +9111,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
 
 
 /**
- * @brief Fork a child to handle an Openvasd scan's fetching and inserting.
+ * @brief Fork a child to handle an openvasd scan's fetching and inserting.
  *
  * @param[in]   task       The task.
  * @param[in]   target     The target.
@@ -9239,7 +9239,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
 
 
 /**
- * @brief Start a task on an Openvasd scanner.
+ * @brief Start a task on an openvasd scanner.
  *
  * @param[in]   task       The task.
  * @param[in]   from       0 start from beginning, 1 continue from stopped,

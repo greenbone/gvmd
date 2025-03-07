@@ -2247,7 +2247,7 @@ static int move_buffer_data(struct FILESTREAM *filestream){
 /**
  * @brief Update NVTs from Json response chunk by chunk
  *
- * @param[in]  conn                  Openvasd connector
+ * @param[in]  conn                  openvasd connector
  * @param[in]  scanner_feed_version  Version of feed from scanner.
  * @param[in]  rebuild               Whether we're rebuilding the tables.
  *
@@ -2788,9 +2788,9 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
 
 #if OPENVASD
 /**
- * @brief Update VTs via Openvasd.
+ * @brief Update VTs via openvasd.
  *
- * @param[in]  openvasd_uuid         UUID of Openvasd to connect to.
+ * @param[in]  openvasd_uuid         UUID of openvasd to connect to.
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
  * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.
