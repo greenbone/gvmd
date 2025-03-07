@@ -9019,18 +9019,19 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
 
               set_report_slave_progress (report, progress);
 
-              openvasd_parsed_results (connector, result_start,
-                                       result_end, &results);
-              result_start += g_slist_length (results);
-
-              gvm_sleep(1);
               openvasd_scan_status = openvasd_parsed_scan_status (connector);
               start_time = openvasd_scan_status->start_time;
               end_time = openvasd_scan_status->end_time;
-
               current_status = openvasd_scan_status->status;
               progress = openvasd_scan_status->progress;
               g_free (openvasd_scan_status);
+
+              gvm_sleep (1);
+
+              openvasd_parsed_results (connector, result_start,
+                                       result_end, &results);
+
+              result_start += g_slist_length (results);
 
               parse_openvasd_report (task, report, results, start_time,
                                      end_time);
