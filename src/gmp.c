@@ -17119,10 +17119,10 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           if (!openvasd_get_details_from_iterator (&scanners, &desc, &params))
             {
               SENDF_TO_CLIENT_OR_FAIL
-               ("<info><scanner><name>Openvasd</name><version>0.1</version>"
+               ("<info><scanner><name>openvasd</name><version>0.1</version>"
                 "</scanner><daemon><name>OpenVAS</name><version>23.4.1</version>"
                 "</daemon><protocol><name>SCANNER API</name><version>0.1"
-                "</version></protocol><description>Openvasd Sensor</description>");
+                "</version></protocol><description>openvasd Sensor</description>");
 
               SENDF_TO_CLIENT_OR_FAIL ("<params>");
               nodes = params;

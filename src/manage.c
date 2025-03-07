@@ -8504,7 +8504,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   connection = openvasd_scanner_connect (task_scanner (task), scan_id);
   if (!connection)
     {
-      *error = g_strdup ("Could not connect to Openvasd Scanner");
+      *error = g_strdup ("Could not connect to openvasd Scanner");
       return -1;
     }
   status = openvasd_parsed_scan_status (connection);
@@ -9185,7 +9185,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
     {
       result_t result;
 
-      g_warning ("Openvasd start_scan %s: %s", report_id, error);
+      g_warning ("openvasd start_scan %s: %s", report_id, error);
       result = make_osp_result (task, "", "", "",
                                 threat_message_type ("Error"),
                                 error, "", "", QOD_DEFAULT, NULL, NULL);
@@ -9201,7 +9201,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
       exit (-1);
     }
 
-  setproctitle ("Openvasd: Handling scan %s", report_id);
+  setproctitle ("openvasd: Handling scan %s", report_id);
 
   rc = handle_openvasd_scan (task, global_current_report, report_id);
   g_free (report_id);
@@ -9272,7 +9272,7 @@ run_openvasd_task (task_t task, int from, char **report_id)
 
   if (fork_openvasd_scan_handler (task, target, from, report_id))
     {
-      g_warning ("Couldn't fork Openvasd scan handler");
+      g_warning ("Couldn't fork openvasd scan handler");
       return -1;
     }
   return 0;

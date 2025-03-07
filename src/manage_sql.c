@@ -43215,7 +43215,7 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
   if (!connection)
     return 1;
 
-  *desc = g_strdup_printf("Openvasd Sensor on htt://%s:%d", server, port);
+  *desc = g_strdup_printf("openvasd Sensor on htt://%s:%d", server, port);
   if (openvasd_parsed_scans_preferences (connection, params) < 0)
     return 1;
   openvasd_connector_free (connection);
@@ -43322,7 +43322,7 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             scanner_type_str = "OSP-Sensor";
             break;
           case SCANNER_TYPE_OPENVASD:
-            scanner_type_str = "Openvasd";
+            scanner_type_str = "openvasd";
             break;
           default:
             scanner_type_str = NULL;
@@ -60122,12 +60122,12 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
     {
       gchar *hash_value = NULL;
       if (!check_host_detail_exists (rep_aux->report, host, "openvasd", "",
-                                     "Openvasd Host Detail", res->detail_name,
+                                     "openvasd Host Detail", res->detail_name,
                                      res->detail_value, &hash_value,
                                      rep_aux->hash_hostdetails))
         {
           insert_report_host_detail (rep_aux->report, host, "openvasd", "",
-                                     "Openvasd Host Detail", res->detail_name,
+                                     "openvasd Host Detail", res->detail_name,
                                      res->detail_value, hash_value);
         }
       desc = res->message;
