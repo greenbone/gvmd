@@ -41,6 +41,10 @@
 #include <gvm/util/authutils.h>
 #include <gvm/osp/osp.h>
 
+#if OPENVASD
+#include <gvm/openvasd/openvasd.h>
+#endif
+
 /**
  * @brief Data structure for info used to connect to the database
  */
@@ -330,7 +334,8 @@ typedef enum scanner_type
   SCANNER_TYPE_CVE = 3,
   /* 4 was removed (SCANNER_TYPE_GMP). */
   SCANNER_TYPE_OSP_SENSOR = 5,
-  SCANNER_TYPE_MAX = 6,
+  SCANNER_TYPE_OPENVASD = 6,
+  SCANNER_TYPE_MAX = 7,
 } scanner_type_t;
 
 int
@@ -4114,5 +4119,12 @@ get_vt_verification_collation ();
 
 void
 set_vt_verification_collation (const char *);
+
+#if OPENVASD
+
+/* openvasd Connection */
+openvasd_connector_t
+openvasd_scanner_connect (scanner_t, const char *);
+#endif
 
 #endif /* not _GVMD_MANAGE_H */

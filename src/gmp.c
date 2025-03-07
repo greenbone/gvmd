@@ -17107,6 +17107,63 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           g_free (desc);
           g_slist_free (params);
         }
+#if OPENVASD
+      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVASD)
+          && get_scanners_data->get.details)
+        {
+          char *s_name = NULL, *s_ver = NULL;
+          char *d_name = NULL, *d_ver = NULL;
+          char *p_name = NULL, *p_ver = NULL, *desc = NULL;
+          GSList *params = NULL, *nodes;
+
+          if (!openvasd_get_details_from_iterator (&scanners, &desc, &params))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<info><scanner><name>openvasd</name><version>0.1</version>"
+                "</scanner><daemon><name>OpenVAS</name><version>23.4.1</version>"
+                "</daemon><protocol><name>SCANNER API</name><version>0.1"
+                "</version></protocol><description>openvasd Sensor</description>");
+
+              SENDF_TO_CLIENT_OR_FAIL ("<params>");
+              nodes = params;
+              while (nodes)
+                {
+                  openvasd_param_t *param = nodes->data;
+                  g_warning("<param><id>%s</id><name>%s</name>"
+                    "<default>%s</default><description>%s</description>"
+                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
+                    openvasd_param_id (param), openvasd_param_name(param),
+                    openvasd_param_default (param), openvasd_param_desc (param),
+                    openvasd_param_type (param), openvasd_param_mandatory (param));
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<param><id>%s</id><name>%s</name>"
+                    "<default>%s</default><description>%s</description>"
+                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
+                    openvasd_param_id (param), openvasd_param_name(param),
+                    openvasd_param_default (param), openvasd_param_desc (param),
+                    openvasd_param_type (param), 1);
+
+                  osp_param_free (nodes->data);
+                  nodes = nodes->next;
+                }
+              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
+            }
+          else
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<info><scanner><name/><version/></scanner>"
+              "<daemon><name/><version/></daemon>"
+              "<protocol><name/><version/><59923/protocol><description/><params/>"
+              "</info>");
+          g_free (s_name);
+          g_free (s_ver);
+          g_free (d_name);
+          g_free (d_ver);
+          g_free (p_name);
+          g_free (p_ver);
+          g_free (desc);
+          g_slist_free (params);
+        }
+#endif
       else if (get_scanners_data->get.details)
         {
           SENDF_TO_CLIENT_OR_FAIL

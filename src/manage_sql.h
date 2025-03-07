@@ -25,6 +25,7 @@
 #define _GVMD_MANAGE_SQL_H
 
 #include <gvm/util/xmlutils.h>
+#include <time.h>
 
 #include "manage.h"
 #include "manage_utils.h"
@@ -96,6 +97,11 @@
  * @brief UUID of 'OpenVAS Default' scanner.
  */
 #define SCANNER_UUID_DEFAULT "08b69003-5fc2-4037-a479-93b440211c73"
+
+/**
+ * @brief UUID of 'openvasd Default' scanner.
+ */
+#define SCANNER_UUID_OPENVASD_DEFAULT "8154d8e3-30ee-4959-9151-1863c89a8e62"
 
 /**
  * @brief UUID of 'CVE' scanner.
@@ -443,6 +449,8 @@ init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
                    column_t *, const char **, int, const char *, const char *,
                    int);
 
+int openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
+
 gchar *
 columns_build_select (column_t *);
 
@@ -544,6 +552,7 @@ int
 cleanup_ids_for_table (const char *);
 
 void
+
 create_indexes_cpe ();
 
 void
@@ -554,5 +563,10 @@ create_indexes_cve ();
 
 void
 drop_indexes_cve ();
+
+#if OPENVASD
+void
+parse_openvasd_report (task_t, report_t, GSList *, time_t, time_t);
+#endif
 
 #endif /* not _GVMD_MANAGE_SQL_H */

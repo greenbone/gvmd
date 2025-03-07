@@ -1106,10 +1106,14 @@ handle_sigabrt_simple (int signal)
 static int
 update_nvt_cache_osp (const gchar *update_socket)
 {
+#ifdef OPENVASD
+  setproctitle ("openvasd: Updating NVT cache");
+#else
   setproctitle ("OSP: Updating NVT cache");
-
+#endif
   return manage_update_nvts_osp (update_socket);
 }
+
 
 /**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
@@ -2865,6 +2869,8 @@ gvmd (int argc, char** argv, char *env[])
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP-Sensor"))
         type = SCANNER_TYPE_OSP_SENSOR;
+      else if (!strcasecmp (scanner_type, "openvasd"))
+        type = SCANNER_TYPE_OPENVASD;
       else
         {
           type = atoi (scanner_type);
@@ -2907,6 +2913,8 @@ gvmd (int argc, char** argv, char *env[])
             type = SCANNER_TYPE_OPENVAS;
           else if (!strcasecmp (scanner_type, "OSP-Sensor"))
             type = SCANNER_TYPE_OSP_SENSOR;
+          else if (!strcasecmp (scanner_type, "openvasd"))
+            type = SCANNER_TYPE_OPENVASD;
           else
             {
               type = atoi (scanner_type);
