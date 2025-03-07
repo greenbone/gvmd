@@ -1150,8 +1150,8 @@ user_has_super (const char *, user_t);
   " 'SuSE Local Security Checks',"                 \
   " 'VMware Local Security Checks',"               \
   " 'Ubuntu Local Security Checks',"               \
-  " 'Windows : Microsoft Bulletins'"               \
-  " 'Windows Local Security Checks',"
+  " 'Windows : Microsoft Bulletins',"              \
+  " 'Windows Local Security Checks'"
 
 /**
  * @brief Whole only families.
