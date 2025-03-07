@@ -1419,6 +1419,7 @@ serve_and_schedule ()
       exit (EXIT_FAILURE);
     }
   sigmask_normal = &sigmask_current;
+  g_info ("gvmd is ready to accept GMP connections");
   while (1)
     {
       int ret, nfds;
