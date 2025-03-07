@@ -91,7 +91,6 @@
 #include <gvm/util/authutils.h>
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
-#include <gvm/openvasd/openvasd.h>
 #include "manage_report_configs.h"
 
 #undef G_LOG_DOMAIN
@@ -43180,6 +43179,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
   return 0;
 }
 
+#if OPENVASD
 /**
  * @brief Get an Openvasd Scanner's get_scanner_preferences info.
  *
@@ -43221,6 +43221,7 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
   openvasd_connector_free (connection);
   return 0;
 }
+#endif
 
 /**
  * @brief Verify a scanner.
@@ -59911,7 +59912,7 @@ cleanup_ids_for_table (const char *table)
   return 0;
 }
 
-
+#if OPENVASD
 /**
  * @brief Create a new connection to an OSP scanner.
  *
@@ -60270,3 +60271,4 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
   g_free (defs_file);
   g_free (rep_aux);
 }
+#endif

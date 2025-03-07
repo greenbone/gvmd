@@ -43,7 +43,6 @@
 #include <unistd.h>
 
 #include <gvm/util/jsonpull.h>
-#include <gvm/openvasd/openvasd.h>
 #include <gvm/base/cvss.h>
 
 #include "manage_sql_nvts.h"

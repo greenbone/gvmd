@@ -564,7 +564,9 @@ create_indexes_cve ();
 void
 drop_indexes_cve ();
 
+#if OPENVASD
 void
 parse_openvasd_report (task_t, report_t, GSList *, time_t, time_t);
+#endif
 
 #endif /* not _GVMD_MANAGE_SQL_H */

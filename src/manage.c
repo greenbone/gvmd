@@ -86,7 +86,6 @@
 #include <gvm/base/gvm_sentry.h>
 #include <gvm/base/hosts.h>
 #include <bsd/unistd.h>
-#include <gvm/openvasd/openvasd.h>
 #include <gvm/osp/osp.h>
 #include <gvm/util/cpeutils.h>
 #include <gvm/util/fileutils.h>
@@ -4128,10 +4127,11 @@ slave_get_relay (const char *original_host,
   return ret;
 }
 
-
+#if OPENVASD
 /* Prototype */
 static int
 run_openvasd_task (task_t task, int from, char **report_id);
+#endif
 
 /**
  * @brief Start or resume a task.
@@ -4195,8 +4195,10 @@ run_task (const char *task_id, char **report_id, int from)
       || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
     return run_osp_task (task, from, report_id);
 
+#if OPENVASD
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD)
     return run_openvasd_task (task, from, report_id);
+#endif
 
   return -1; // Unknown scanner type
 }
@@ -4324,8 +4326,10 @@ stop_task_internal (task_t task)
   return 0;
 }
 
+#if OPENVASD
 static int
 stop_openvasd_task (task_t task);
+#endif
 
 /**
  * @brief Initiate stopping a task.
@@ -4353,8 +4357,10 @@ stop_task (const char *task_id)
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
 
+#if OPENVASD
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD)
     return stop_openvasd_task (task);
+#endif
 
   return stop_task_internal (task);
 }
@@ -8403,6 +8409,7 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
   return -1;
 }
 
+#if OPENVASD
 /* Openvasd */
 
 /**
@@ -9270,3 +9277,5 @@ run_openvasd_task (task_t task, int from, char **report_id)
     }
   return 0;
 }
+#endif
+

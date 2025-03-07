@@ -17107,6 +17107,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           g_free (desc);
           g_slist_free (params);
         }
+#if OPENVASD
       if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVASD)
           && get_scanners_data->get.details)
         {
@@ -17151,7 +17152,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
             SENDF_TO_CLIENT_OR_FAIL
              ("<info><scanner><name/><version/></scanner>"
               "<daemon><name/><version/></daemon>"
-              "<protocol><name/><version/></protocol><description/><params/>"
+              "<protocol><name/><version/><59923/protocol><description/><params/>"
               "</info>");
           g_free (s_name);
           g_free (s_ver);
@@ -17162,6 +17163,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           g_free (desc);
           g_slist_free (params);
         }
+#endif
       else if (get_scanners_data->get.details)
         {
           SENDF_TO_CLIENT_OR_FAIL

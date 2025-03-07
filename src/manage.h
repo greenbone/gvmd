@@ -39,8 +39,11 @@
 #include <gvm/base/networking.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/authutils.h>
-#include <gvm/openvasd/openvasd.h>
 #include <gvm/osp/osp.h>
+
+#if OPENVASD
+#include <gvm/openvasd/openvasd.h>
+#endif
 
 /**
  * @brief Data structure for info used to connect to the database
@@ -4117,9 +4120,11 @@ get_vt_verification_collation ();
 void
 set_vt_verification_collation (const char *);
 
-/* Openvasd*/
+#if OPENVASD
+
+/* Openvasd Connection */
 openvasd_connector_t
 openvasd_scanner_connect (scanner_t, const char *);
-
+#endif
 
 #endif /* not _GVMD_MANAGE_H */
