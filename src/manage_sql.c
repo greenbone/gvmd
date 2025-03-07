@@ -60110,25 +60110,31 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
       res->detail_value && *res->detail_value)
     port = g_strdup ("general/Host_Details");
   else if (res->port > 0)
-    {
-      char buf[6];
-      snprintf(buf, sizeof(buf) , "%d", res->port);
-      port = g_strdup (buf);
-    }
+    port = g_strdup_printf ("%d/%s", res->port, res->protocol);
+  else
+    port = g_strdup_printf ("general/%s", res->protocol);
 
   /* Add report host if it doesn't exist. */
   manage_report_host_add (rep_aux->report, host, 0, 0);
   if (!strcmp (type, "host_detail"))
     {
       gchar *hash_value = NULL;
-      if (!check_host_detail_exists (rep_aux->report, host, "openvasd", "",
-                                     "openvasd Host Detail", res->detail_name,
-                                     res->detail_value, &hash_value,
+      if (!check_host_detail_exists (rep_aux->report, host,
+                                     res->detail_source_type,
+                                     res->detail_source_name,
+                                     res->detail_source_description,
+                                     res->detail_name,
+                                     res->detail_value,
+                                     &hash_value,
                                      rep_aux->hash_hostdetails))
         {
-          insert_report_host_detail (rep_aux->report, host, "openvasd", "",
-                                     "openvasd Host Detail", res->detail_name,
-                                     res->detail_value, hash_value);
+          insert_report_host_detail (rep_aux->report, host,
+                                     res->detail_source_type,
+                                     res->detail_source_name,
+                                     res->detail_source_description,
+                                     res->detail_name,
+                                     res->detail_value,
+                                     hash_value);
         }
       desc = res->message;
       g_free (hash_value);
