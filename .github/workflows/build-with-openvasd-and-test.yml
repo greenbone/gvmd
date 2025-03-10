@@ -1,0 +1,83 @@
+name: 'Build and Test'
+
+on:
+  push:
+    branches: [ main, stable ]
+  pull_request:
+    branches: [ main, stable ]
+
+jobs:
+
+  scan-build-with-openvasd:
+    name: scan-build with openvasd (clang static analyzer)
+    runs-on: ubuntu-latest
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v4
+      - name: Install clang tools
+        run: |
+          apt update
+          apt install --no-install-recommends -y clang clang-format clang-tools
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: Configure scan build
+        run: |
+          scan-build cmake -B build -DCMAKE_BUILD_TYPE=Debug -DOPENVASD=1
+          scan-build -o ~/scan-build-report cmake --build build
+      - name: Upload scan-build report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-build-with-openvasd-report
+          path: ~/scan-build-report/
+          retention-days: 7
+
+  build-gvmd-with-openvasd:
+    name: Build gvmd with openvasd
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container:
+          - stable
+          - testing
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: Configure and compile gvmd
+        run: |
+          rm -rf .git
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENVASD=1
+          cmake --build build -j $(nproc) -- install
+
+  test-units-with-openvasd:
+    name: Unit Tests with openvasd
+    runs-on: ubuntu-latest
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
+    steps:
+      - name: Check out gvmd
+        uses: actions/checkout@v4
+      - name: Install git for Codecov uploader
+        run: |
+          apt update
+          apt install --no-install-recommends -y ca-certificates git
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: "Instal cgreen"
+        uses: greenbone/actions/install-cgreen@v3
+      - name: Set git safe.directory
+        run: git config --global --add safe.directory '*'
+      - name: Build gvmd with openvasd
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=1 -DOPENVASD=1
+          cmake --build build
+      - name: Configure and run tests with openvasd
+        run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
+      - name: Upload test coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: build/coverage/coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests
