@@ -2228,7 +2228,7 @@ void
 manage_nvt_preferences_enable ();
 
 void
-init_nvt_preference_iterator (iterator_t*, const char*);
+init_nvt_preference_iterator (iterator_t*, const char*, gboolean);
 
 const char*
 nvt_preference_iterator_name (iterator_t*);
