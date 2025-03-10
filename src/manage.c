@@ -7499,6 +7499,7 @@ gvm_get_sync_script_feed_version (const gchar * sync_script,
   return TRUE;
 }
 
+#if OPENVASD == 0
 /**
  * @brief Get VTs feed information from a scanner.
  *
@@ -7553,6 +7554,7 @@ nvts_feed_info_internal (const gchar *update_socket,
 
   return 0;
 }
+#endif
 
 #if OPENVASD
 /**
@@ -7628,6 +7630,7 @@ nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
 #endif
 }
 
+#if OPENVASD == 0
 /**
  * @brief Check the VTs feed sync for information using a OSP socket.
  *
@@ -7670,6 +7673,7 @@ nvts_check_feed_internal (const char *update_socket,
 
   return 0;
 }
+#endif
 
 /**
  * @brief Check the VTs feed sync for information using the default OSP socket.
