@@ -1774,7 +1774,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid,
                      quoted_oid,
                      include_timeout ? "" : "AND name != '",
                      include_timeout ? "" : quoted_oid,
-                     include_timeout ? "" : "'",
+                     include_timeout ? "" : ":0:entry:timeout'",
                      sql_ilike_op ());
       g_free (quoted_oid);
     }
