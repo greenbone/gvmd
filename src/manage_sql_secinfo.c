@@ -3862,10 +3862,15 @@ get_cve_configuration_node_fields (cJSON* node_item,
 
   *cpe_matches_array = cJSON_GetObjectItemCaseSensitive (node_item,
                                                          "cpeMatch");
-  if (!cJSON_IsArray (*cpe_matches_array))
+  if (*cpe_matches_array == NULL)
     {
-      g_warning ("%s: cpeMatch missing or not an array for %s.",
-                  __func__, cve_id);
+      g_debug ("%s: cpeMatch missing for %s.",
+               __func__, cve_id);
+    }
+  else if (!cJSON_IsArray (*cpe_matches_array))
+    {
+      g_warning ("%s: cpeMatch not an array for %s.",
+                 __func__, cve_id);
       return -1;
     }
 
