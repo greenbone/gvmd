@@ -136,7 +136,10 @@ add_executable (manage-utils-test
                 gmp_port_lists.c
                 gmp_report_configs.c
                 gmp_report_formats.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp_tls_certificates.c
+                manage_sql_nvts_osp.c
+                manage_sql_nvts_openvasd.c
+                manage_sql_nvts_common.c)
 
 add_test (manage-utils-test manage-utils-test)
 
@@ -168,7 +171,10 @@ add_executable (manage-test
                 gmp_port_lists.c
                 gmp_report_configs.c
                 gmp_report_formats.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp_tls_certificates.c
+                manage_sql_nvts_osp.c
+                manage_sql_nvts_openvasd.c
+                manage_sql_nvts_common.c)
 
 add_test (manage-test manage-test)
 
@@ -200,7 +206,10 @@ add_executable (manage-sql-test
                 gmp_port_lists.c
                 gmp_report_configs.c
                 gmp_report_formats.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp_tls_certificates.c
+                manage_sql_nvts_osp.c
+                manage_sql_nvts_openvasd.c
+                manage_sql_nvts_common.c)
 
 add_test (manage-sql-test manage-sql-test)
 
@@ -232,7 +241,10 @@ add_executable (gmp-tickets-test
                 gmp_port_lists.c
                 gmp_report_configs.c
                 gmp_report_formats.c
-                gmp_tls_certificates.c)
+                gmp_tls_certificates.c
+                manage_sql_nvts_osp.c
+                manage_sql_nvts_openvasd.c
+                manage_sql_nvts_common.c)
 
 add_test (gmp-tickets-test gmp-tickets-test)
 
@@ -264,7 +276,10 @@ add_executable (utils-test
                 gmp_port_lists.c
                 gmp_report_configs.c
                 gmp_report_formats.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp_tls_certificates.c
+                manage_sql_nvts_osp.c
+                manage_sql_nvts_openvasd.c
+                manage_sql_nvts_common.c)
 
 add_test (utils-test utils-test)
 
@@ -313,7 +328,10 @@ add_executable (gvmd
                 gmp_port_lists.c
                 gmp_report_configs.c
                 gmp_report_formats.c gmp_tickets.c
-                gmp_tls_certificates.c)
+                gmp_tls_certificates.c
+                manage_sql_nvts_osp.c
+                manage_sql_nvts_openvasd.c
+                manage_sql_nvts_common.c)
 
 target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}

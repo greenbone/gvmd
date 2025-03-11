@@ -102,4 +102,7 @@ check_db_configs (int);
 void
 check_whole_only_in_configs ();
 
+int
+check_config_families ();
+
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */

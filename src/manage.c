@@ -7549,52 +7549,6 @@ nvts_feed_info_internal (const gchar *update_socket,
 }
 #endif
 
-#if OPENVASD
-/**
- * @brief Get VTs feed information from a scanner.
- *
- * @param[in]  scanner_uuid  The uuid of the scanner to be used.
- * @param[out] vts_version   Output of scanner feed version.
- *
- * @return 0 success, 1 connection to scanner failed, 2 scanner still starting,
- *         -1 other error.
- */
-static int
-nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
-                                       gchar **vts_version)
-{
-  scanner_t scan;
-  openvasd_connector_t connector = NULL;
-  openvasd_resp_t resp = NULL;
-  int ret;
-  if (find_resource_no_acl ("scanner", scanner_uuid, &scan))
-    return -1;
-
-  connector = openvasd_scanner_connect (scan, NULL);
-  if (!connector)
-    return 1;
-
-  resp = openvasd_get_health_ready (connector);
-  if (resp->code == -1)
-    {
-      g_warning ("%s: failed to connect to %s:%d", __func__,
-                 scanner_host (scan), scanner_port (scan));
-      ret = 1;
-    }
-  else if (resp->code  == 503)
-    ret = 2;
-  else
-    {
-      *vts_version = g_strdup (resp->header);
-      ret = 0;
-    }
-
-  openvasd_response_cleanup (resp);
-  openvasd_connector_free (connector);
-  return ret;
-}
-#endif
-
 /**
  * @brief Get VTs feed information from the scanner using VT update socket.
  *
@@ -7753,9 +7707,9 @@ gvm_migrate_secinfo (int feed_type)
  * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 int
-manage_update_nvts_osp (const gchar *update_socket)
+manage_update_nvts (const gchar *update_socket)
 {
-  return manage_update_nvt_cache_osp (update_socket);
+  return manage_update_nvt_cache (update_socket);
 }
 
 
