@@ -24,6 +24,12 @@
 #ifndef _GVMD_MANAGE_SQL_NVTS_H
 #define _GVMD_MANAGE_SQL_NVTS_H
 
+#if OPENVASD
+#include "manage_sql_nvts_openvasd.h"
+#else
+#include "manage_sql_nvts_osp.h"
+#endif
+
 /**
  * @brief Filter columns for NVT info iterator.
  */
@@ -123,38 +129,14 @@
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
-/**
- * @brief Default for vt_ref_insert_size.
- */
-#define VT_REF_INSERT_SIZE_DEFAULT 50000
-
 void
 set_vt_ref_insert_size (int);
-
-/**
- * @brief Default for vt_sev_insert_size.
- *
- * There are about 80k vt_severities.
- */
-#define VT_SEV_INSERT_SIZE_DEFAULT 100000
 
 void
 set_vt_sev_insert_size (int);
 
-const char *
-get_osp_vt_update_socket ();
-
-void
-set_osp_vt_update_socket (const char *new_socket);
-
-int
-check_osp_vt_update_socket ();
-
 void
 check_db_nvts ();
-
-int
-check_config_families ();
 
 pid_t
 manage_sync_nvts (int (*) (pid_t*));
@@ -166,7 +148,7 @@ int
 nvts_feed_version_status ();
 
 int
-manage_update_nvt_cache_osp (const gchar *);
+manage_update_nvt_cache (const gchar *);
 
 char *
 nvt_family (const char *);
