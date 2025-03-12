@@ -29,7 +29,11 @@
 #include "manage_sql_nvts_common.h"
 #include "sql.h"
 
-#include <gvm/base/cvss.h>
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 
 /* Headers from backend specific manage_xxx.c file. */
@@ -41,15 +45,12 @@ create_tables_nvt (const gchar *);
 /* NVT related global options */
 
 /**
- * @brief Max number of rows inserted per statement.
+ * @brief Inserts an NVT preference into the database.
+ *
+ * @param[in] nvt_preference  Pointer to the preference structure.
+ * @param[in] rebuild         Boolean (as gpointer) indicating whether
+ *                            the database is being rebuilt.
  */
-static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
-
-/**
- * @brief Max number of rows inserted per statement.
- */
-static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
-
 static void
 insert_nvt_preference (gpointer nvt_preference, gpointer rebuild)
 {
@@ -75,7 +76,9 @@ insert_nvt_preference (gpointer nvt_preference, gpointer rebuild)
 void
 insert_nvt_preferences_list (GList *nvt_preferences_list, int rebuild)
 {
-  g_list_foreach (nvt_preferences_list, insert_nvt_preference, GINT_TO_POINTER (rebuild));
+  g_list_foreach (nvt_preferences_list,
+                  insert_nvt_preference,
+                  GINT_TO_POINTER (rebuild));
 }
 
 /**
@@ -203,383 +206,6 @@ batch_end (batch_t *b)
   }
   g_string_free (b->sql, TRUE);
   g_free (b);
-}
-
-/**
- * @brief Update NVT from VT XML.
- *
- * @param[in]  vt           OSP GET_VTS VT element.
- * @param[in]  oid          OID of NVT.
- * @param[in]  preferences  All NVT preferences.
- *
- * @return 0 success, -1 error.
- */
-static int
-update_preferences_from_vt (element_t vt, const gchar *oid, GList **preferences)
-{
-  element_t params, param;
-
-  assert (preferences);
-
-  params = element_child (vt, "params");
-  if (params == NULL)
-    return 0;
-
-  param = element_first_child (params);
-  while (param)
-    {
-      if (strcasecmp (element_name (param), "param") == 0)
-        {
-          gchar *type, *id;
-          element_t name, def;
-
-          type = element_attribute (param, "type");
-          id = element_attribute (param, "id");
-          name = element_child (param, "name");
-          def = element_child (param, "default");
-
-          if (type == NULL)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing type attribute", __func__);
-              print_element_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __func__, debug->str);
-              g_string_free (debug, TRUE);
-            }
-          else if (id == NULL)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing id attribute", __func__);
-              print_element_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __func__, debug->str);
-              g_string_free (debug, TRUE);
-            }
-          else if (name == NULL)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: PARAM missing NAME", __func__);
-              print_element_to_string (param, debug);
-              g_warning ("%s: PARAM: %s", __func__, debug->str);
-              g_string_free (debug, TRUE);
-            }
-          else
-            {
-              gchar *full_name, *text;
-              preference_t *preference;
-
-              text = element_text (name);
-              full_name = g_strdup_printf ("%s:%s:%s:%s",
-                                           oid,
-                                           id,
-                                           type,
-                                           text);
-
-              blank_control_chars (full_name);
-              preference = g_malloc0 (sizeof (preference_t));
-              preference->free_strings = 1;
-              preference->name = full_name;
-              if (def)
-                preference->value = element_text (def);
-              else
-                preference->value = g_strdup ("");
-              preference->nvt_oid = g_strdup (oid);
-              preference->id = g_strdup (id);
-              preference->type = g_strdup (type);
-              preference->pref_name = text;
-              *preferences = g_list_prepend (*preferences, preference);
-            }
-
-          g_free (type);
-          g_free (id);
-        }
-
-      param = element_next (param);
-    }
-
-  return 0;
-}
-
-/**
- * @brief Create NVTI structure from VT XML.
- *
- * @param[in]  vt           OSP GET_VTS VT element.
- *
- * @return The NVTI object on success (needs to be free'd), NULL on error.
- */
-static nvti_t *
-nvti_from_vt (element_t vt)
-{
-  nvti_t *nvti = nvti_new ();
-  gchar *id, *category_text;
-  element_t name, summary, insight, affected, impact, detection, solution;
-  element_t creation_time, modification_time;
-  element_t refs, ref, custom, family, category, deprecated;
-  element_t severities, severity;
-
-  id = element_attribute (vt, "id");
-  if (id == NULL)
-    {
-      g_warning ("%s: VT missing id attribute", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-
-  nvti_set_oid (nvti, id);
-  g_free (id);
-
-  name = element_child (vt, "name");
-  if (name == NULL)
-    {
-      g_warning ("%s: VT missing NAME", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-  nvti_put_name (nvti, element_text (name));
-
-  summary = element_child (vt, "summary");
-  if (summary)
-    nvti_put_summary (nvti, element_text (summary));
-
-  insight = element_child (vt, "insight");
-  if (insight)
-    nvti_put_insight (nvti, element_text (insight));
-
-  affected = element_child (vt, "affected");
-  if (affected)
-    nvti_put_affected (nvti, element_text (affected));
-
-  impact = element_child (vt, "impact");
-  if (impact)
-    nvti_put_impact (nvti, element_text (impact));
-
-  creation_time = element_child (vt, "creation_time");
-  if (creation_time) {
-    gchar *text;
-
-    text = element_text (creation_time);
-    nvti_set_creation_time (nvti, strtol (text, NULL, 10));
-    g_free (text);
-  }
-
-  modification_time = element_child (vt, "modification_time");
-  if (modification_time) {
-    gchar *text;
-
-    text = element_text (modification_time);
-    nvti_set_modification_time (nvti, strtol(text, NULL, 10));
-    g_free (text);
-  }
-
-  detection = element_child (vt, "detection");
-  if (detection)
-    {
-      gchar *qod;
-
-      nvti_put_detection (nvti, element_text (detection));
-
-      qod = element_attribute (detection, "qod");
-      if (qod == NULL) {
-        gchar *qod_type;
-
-        qod_type = element_attribute (detection, "qod_type");
-        nvti_set_qod_type (nvti, qod_type);
-        g_free (qod_type);
-      }
-      else
-        nvti_set_qod (nvti, qod);
-      g_free (qod);
-    }
-
-  solution = element_child (vt, "solution");
-  if (solution)
-    {
-      gchar *type, *method;
-
-      nvti_put_solution (nvti, element_text (solution));
-
-      type = element_attribute (solution, "type");
-      if (type == NULL)
-        g_debug ("%s: SOLUTION missing type", __func__);
-      else
-        nvti_set_solution_type (nvti, type);
-      g_free (type);
-
-      method = element_attribute (solution, "method");
-      if (method)
-        nvti_set_solution_method (nvti, method);
-      g_free (method);
-    }
-
-  severities = element_child (vt, "severities");
-  if (severities == NULL)
-    {
-      g_warning ("%s: VT missing SEVERITIES", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-
-  severity = element_first_child (severities);
-  while (severity)
-    {
-      gchar *severity_type;
-
-      severity_type = element_attribute (severity, "type");
-
-      if (severity_type == NULL)
-        {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: SEVERITY missing type attribute", __func__);
-          print_element_to_string (severity, debug);
-          g_warning ("%s: severity: %s", __func__, debug->str);
-          g_string_free (debug, TRUE);
-        }
-      else
-        {
-          element_t value;
-
-          value = element_child (severity, "value");
-
-          if (!value)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: SEVERITY missing value element", __func__);
-              print_element_to_string (severity, debug);
-              g_warning ("%s: severity: %s", __func__, debug->str);
-              g_string_free (debug, TRUE);
-            }
-          else
-            {
-              element_t origin, severity_date;
-              double cvss_base_dbl;
-              gchar *cvss_base, *value_text, *origin_text;
-              time_t parsed_severity_date;
-
-              value_text = element_text (value);
-
-              cvss_base_dbl
-                = get_cvss_score_from_base_metrics (value_text);
-
-              origin
-                = element_child (severity, "origin");
-              severity_date
-                = element_child (severity, "date");
-
-              if (severity_date) {
-                gchar *text;
-
-                text = element_text (severity_date);
-                parsed_severity_date = strtol (text, NULL, 10);
-                g_free (text);
-              }
-              else
-                parsed_severity_date = nvti_creation_time (nvti);
-
-              origin_text = origin ? element_text (origin) : NULL,
-              nvti_add_vtseverity (nvti,
-                vtseverity_new (severity_type,
-                                origin_text,
-                                parsed_severity_date,
-                                cvss_base_dbl,
-                                value_text));
-              g_free (origin_text);
-
-              nvti_add_tag (nvti, "cvss_base_vector", value_text);
-
-              cvss_base = g_strdup_printf ("%.1f",
-                get_cvss_score_from_base_metrics (value_text));
-              nvti_set_cvss_base (nvti, cvss_base);
-              g_free (cvss_base);
-              g_free (value_text);
-            }
-
-          g_free (severity_type);
-        }
-
-      severity = element_next (severity);
-    }
-
-  refs = element_child (vt, "refs");
-  if (refs)
-    {
-      ref = element_first_child (refs);
-      while (ref)
-        {
-          gchar *ref_type;
-
-          ref_type = element_attribute (ref, "type");
-          if (ref_type == NULL)
-            {
-              GString *debug = g_string_new ("");
-              g_warning ("%s: REF missing type attribute", __func__);
-              print_element_to_string (ref, debug);
-              g_warning ("%s: ref: %s", __func__, debug->str);
-              g_string_free (debug, TRUE);
-            }
-          else
-            {
-              gchar *ref_id;
-
-              ref_id = element_attribute (ref, "id");
-              if (ref_id == NULL)
-                {
-                  GString *debug = g_string_new ("");
-                  g_warning ("%s: REF missing id attribute", __func__);
-                  print_element_to_string (ref, debug);
-                  g_warning ("%s: ref: %s", __func__, debug->str);
-                  g_string_free (debug, TRUE);
-                }
-              else
-                {
-                  nvti_add_vtref (nvti, vtref_new (ref_type, ref_id, NULL));
-                  g_free (ref_id);
-                }
-
-              g_free (ref_type);
-            }
-
-          ref = element_next (ref);
-        }
-    }
-
-  custom = element_child (vt, "custom");
-  if (custom == NULL)
-    {
-      g_warning ("%s: VT missing CUSTOM", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-
-  family = element_child (custom, "family");
-  if (family == NULL)
-    {
-      g_warning ("%s: VT/CUSTOM missing FAMILY", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-  nvti_put_family (nvti, element_text (family));
-
-  category = element_child (custom, "category");
-  if (category == NULL)
-    {
-      g_warning ("%s: VT/CUSTOM missing CATEGORY", __func__);
-      nvti_free (nvti);
-      return NULL;
-    }
-  category_text = element_text (category);
-  nvti_set_category (nvti, atoi (category_text));
-  g_free (category_text);
-
-  deprecated = element_child (custom, "deprecated");
-  if (deprecated)
-    {
-      gchar *text;
-
-      text = element_text (deprecated);
-      nvti_add_tag (nvti, "deprecated", text);
-      g_free (text);
-    }
-
-  return nvti;
 }
 
 /**
@@ -814,183 +440,6 @@ check_old_preference_names (const gchar *table)
 }
 
 /**
- * @brief Update NVTs from VTs XML.
- *
- * @param[in]  get_vts_response      OSP GET_VTS response.
- * @param[in]  scanner_feed_version  Version of feed from scanner.
- * @param[in]  rebuild               Whether we're rebuilding the tables.
- *
- * @return 0 success, 1 VT integrity check failed, -1 error
- */
-int
-update_nvts_from_vts (element_t *get_vts_response,
-                      const gchar *scanner_feed_version,
-                      int rebuild)
-{
-  element_t vts, vt;
-  GList *preferences;
-  int count_modified_vts, count_new_vts;
-  time_t feed_version_epoch;
-  char *osp_vt_hash;
-  batch_t *vt_refs_batch, *vt_sevs_batch;
-
-  count_modified_vts = 0;
-  count_new_vts = 0;
-
-  feed_version_epoch = nvts_feed_version_epoch();
-
-  vts = element_child (*get_vts_response, "vts");
-  if (vts == NULL)
-    {
-      g_warning ("%s: VTS missing", __func__);
-      return -1;
-    }
-
-  osp_vt_hash = element_attribute (vts, "sha256_hash");
-
-  sql_begin_immediate ();
-
-  if (rebuild) {
-    sql ("DROP TABLE IF EXISTS vt_refs_rebuild;");
-    sql ("DROP TABLE IF EXISTS vt_severities_rebuild;");
-    sql ("DROP TABLE IF EXISTS nvt_preferences_rebuild;");
-    sql ("DROP TABLE IF EXISTS nvts_rebuild;");
-
-    create_tables_nvt ("_rebuild");
-  }
-  else if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
-                    "                  FROM meta"
-                    "                  WHERE name = 'checked_preferences'),"
-                    "                 0);")
-           == 0)
-    /* We're in the first NVT sync after migrating preference names.
-     *
-     * If a preference was removed from an NVT then the preference will be in
-     * nvt_preferences in the old format, but we will not get a new version
-     * of the preference name from the sync.  For example "Alle Dateien
-     * Auflisten" was removed from 1.3.6.1.4.1.25623.1.0.94023.
-     *
-     * If a preference was not in the migrator then the new version of the
-     * preference would be inserted alongside the old version, resulting in a
-     * duplicate when the name of the old version was corrected.
-     *
-     * To solve both cases, we remove all nvt_preferences. */
-    sql ("TRUNCATE nvt_preferences;");
-
-  vt_refs_batch = batch_start (vt_ref_insert_size);
-  vt_sevs_batch = batch_start (vt_sev_insert_size);
-  vt = element_first_child (vts);
-  while (vt)
-    {
-      nvti_t *nvti = nvti_from_vt (vt);
-
-      if (nvti == NULL)
-        continue;
-
-      if (nvti_creation_time (nvti) > feed_version_epoch)
-        count_new_vts += 1;
-      else
-        count_modified_vts += 1;
-
-      insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
-
-      preferences = NULL;
-      if (update_preferences_from_vt (vt, nvti_oid (nvti), &preferences))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (rebuild == 0)
-        sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",
-             rebuild ? "_rebuild" : "",
-             nvti_oid (nvti));
-      insert_nvt_preferences_list (preferences, rebuild);
-      g_list_free_full (preferences, (GDestroyNotify) preference_free);
-
-      nvti_free (nvti);
-      vt = element_next (vt);
-    }
-  batch_end (vt_refs_batch);
-  batch_end (vt_sevs_batch);
-
-  if (rebuild) {
-    sql ("DROP VIEW IF EXISTS results_autofp;");
-    sql ("DROP VIEW vulns;");
-    sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
-    sql ("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
-
-    sql ("ALTER TABLE vt_refs_rebuild RENAME TO vt_refs;");
-    sql ("ALTER TABLE vt_severities_rebuild RENAME TO vt_severities;");
-    sql ("ALTER TABLE nvt_preferences_rebuild RENAME TO nvt_preferences;");
-    sql ("ALTER TABLE nvts_rebuild RENAME TO nvts;");
-
-    create_view_vulns ();
-
-    create_indexes_nvt ();
-
-    create_view_result_vt_epss ();
-  }
-
-  set_nvts_check_time (count_new_vts, count_modified_vts);
-
-  set_nvts_feed_version (scanner_feed_version);
-
-  if (check_config_families ())
-    g_warning ("%s: Error updating config families."
-               "  One or more configs refer to an outdated family of an NVT.",
-               __func__);
-  update_all_config_caches ();
-
-  g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
-          count_new_vts, count_modified_vts);
-
-  sql_commit ();
-
-  if (osp_vt_hash && strcmp (osp_vt_hash, ""))
-    {
-      char *db_vts_hash;
-
-      /*
-       * The hashed string used for verifying the NVTs generated as follows:
-       *
-       * For each NVT, sorted by OID, concatenate:
-       *   - the OID
-       *   - the modification time as seconds since epoch
-       *   - the preferences sorted as strings(!) and concatenated including:
-       *     - the id
-       *     - the name
-       *     - the default value (including choices for the "radio" type)
-       *
-       * All values are concatenated without a separator.
-       */
-      db_vts_hash
-        = sql_string ("SELECT encode ("
-                      "  digest (vts_verification_str (), 'SHA256'),"
-                      "  'hex'"
-                      " );");
-
-      if (strcmp (osp_vt_hash, db_vts_hash ? db_vts_hash : ""))
-        {
-          g_warning ("%s: SHA-256 hash of the VTs in the database (%s)"
-                     " does not match the one from the scanner (%s).",
-                     __func__, db_vts_hash, osp_vt_hash);
-
-          g_free (osp_vt_hash);
-          g_free (db_vts_hash);
-          return 1;
-        }
-
-      g_free (db_vts_hash);
-    }
-  else
-    g_warning ("%s: No SHA-256 hash received from scanner, skipping check.",
-               __func__);
-
-  g_free (osp_vt_hash);
-  return 0;
-}
-
-/**
  * @brief Update config preferences where the name has changed in the NVTs.
  *
  * @param[in]  trash              Whether to update the trash table.
@@ -1100,3 +549,81 @@ set_nvts_check_time (int count_new, int count_modified)
            " WHERE name = 'nvts_check_time';");
     }
 }
+
+/**
+ * @brief Handles database state initialization before processing NVTs.
+ *
+ * @param[in] rebuild  Whether we're rebuilding the tables.
+ */
+void
+prepare_nvts_insert (int rebuild) {
+  if (rebuild) {
+      sql("DROP TABLE IF EXISTS vt_refs_rebuild;");
+      sql("DROP TABLE IF EXISTS vt_severities_rebuild;");
+      sql("DROP TABLE IF EXISTS nvt_preferences_rebuild;");
+      sql("DROP TABLE IF EXISTS nvts_rebuild;");
+
+      create_tables_nvt("_rebuild");
+  }
+  else if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+                    "                  FROM meta"
+                    "                  WHERE name = 'checked_preferences'),"
+                    "                 0);")
+           == 0)
+    {
+      /* We're in the first NVT sync after migrating preference names.
+     *
+     * If a preference was removed from an NVT then the preference will be in
+     * nvt_preferences in the old format, but we will not get a new version
+     * of the preference name from the sync.  For example "Alle Dateien
+     * Auflisten" was removed from 1.3.6.1.4.1.25623.1.0.94023.
+     *
+     * If a preference was not in the migrator then the new version of the
+     * preference would be inserted alongside the old version, resulting in a
+     * duplicate when the name of the old version was corrected.
+     *
+     * To solve both cases, we remove all nvt_preferences. */
+      sql("TRUNCATE nvt_preferences;");
+  }
+}
+
+/**
+ * @brief Finalizes the database update after processing NVTs.
+ *
+ * @param[in] count_new_vts         Number of newly added VTs.
+ * @param[in] count_modified_vts    Number of modified VTs.
+ * @param[in] scanner_feed_version  Scanner feed version.
+ * @param[in] rebuild               Whether we are rebuilding tables.
+ */
+void
+finalize_nvts_insert (int count_new_vts, int count_modified_vts,
+                               const gchar *scanner_feed_version, int rebuild) {
+  if (rebuild) {
+      sql("DROP VIEW IF EXISTS results_autofp;");
+      sql("DROP VIEW vulns;");
+      sql("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
+      sql("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
+      sql("ALTER TABLE vt_refs_rebuild RENAME TO vt_refs;");
+      sql("ALTER TABLE vt_severities_rebuild RENAME TO vt_severities;");
+      sql("ALTER TABLE nvt_preferences_rebuild RENAME TO nvt_preferences;");
+      sql("ALTER TABLE nvts_rebuild RENAME TO nvts;");
+
+      create_view_vulns();
+      create_indexes_nvt();
+      create_view_result_vt_epss();
+  }
+
+  set_nvts_check_time(count_new_vts, count_modified_vts);
+  set_nvts_feed_version(scanner_feed_version);
+
+  if (check_config_families())
+    g_warning ("%s: Error updating config families."
+               "  One or more configs refer to an outdated family of an NVT.",
+               __func__);
+
+  update_all_config_caches();
+
+  g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
+    count_new_vts, count_modified_vts);
+}
+

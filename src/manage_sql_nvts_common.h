@@ -26,7 +26,6 @@
 
 #include <glib.h>
 #include <gvm/base/nvti.h>
-#include <gvm/util/xmlutils.h>
 
 /**
  * @brief Default for vt_ref_insert_size.
@@ -71,22 +70,23 @@ batch_end (batch_t *b);
 void
 insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
             batch_t *vt_sevs_batch);
-
 void
 insert_nvt_preferences_list (GList *nvt_preferences_list, int rebuild);
 
 void
 set_nvts_check_time (int count_new, int count_modified);
 
-int
-update_nvts_from_vts (element_t *get_vts_response,
-                      const gchar *scanner_feed_version,
-                      int rebuild);
-
 void
 check_old_preference_names (const gchar *table);
 
 void
 check_preference_names (int trash, time_t modification_time);
+
+void
+prepare_nvts_insert (int rebuild);
+
+void
+finalize_nvts_insert (int count_new_vts, int count_modified_vts,
+                               const gchar *scanner_feed_version, int rebuild);
 
 #endif //MANAGE_SQL_NVTS_COMMON_H

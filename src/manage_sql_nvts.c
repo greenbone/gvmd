@@ -33,7 +33,6 @@
 #include <gvm/base/nvti.h>
 #include "glibconfig.h"
 #include "manage.h"
-#define _GNU_SOURCE
 
 #include <assert.h>
 #include <errno.h>
@@ -1182,12 +1181,12 @@ nvts_feed_version_status ()
 {
 #if OPENVASD
   return nvts_feed_version_status_internal_openvasd (get_osp_vt_update_socket (),
-                                            NULL,
-                                            NULL);
+                                                     NULL,
+                                                     NULL);
 #else
-  return nvts_feed_version_status_internal_osp( get_osp_vt_update_socket (),
-                                            NULL,
-                                            NULL);
+  return nvts_feed_version_status_internal_osp (get_osp_vt_update_socket (),
+                                                NULL,
+                                                NULL);
 #endif
 }
 

@@ -24,6 +24,13 @@
  */
 
 #if OPENVASD
+/**
+ * @brief Enable extra GNU functions.
+ */
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#define _FILE_OFFSET_BITS 64
+#include <stdio.h>
+
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_nvts_openvasd.h"
@@ -31,14 +38,11 @@
 
 #include <gvm/util/jsonpull.h>
 
-
-/* Headers from backend specific manage_xxx.c file. */
-
-void
-create_tables_nvt (const gchar *);
-
-
-/* NVT related global options */
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 /**
  * @brief Max number of rows inserted per statement.
@@ -60,7 +64,7 @@ static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
  * @return 0 success, -1 error.
  */
 static int
-update_preferences_from_json_nvt (nvti_t *nvti, GList **preferences)
+update_preferences_from_openvasd_nvt (nvti_t *nvti, GList **preferences)
 {
   assert (preferences);
 
@@ -168,7 +172,7 @@ readcookie (void *stream_cookie, char *buf, size_t size)
  * @brief Hook function to close the stream file cookie
  */
 static int
-closecookie(void *filestream)
+closecookie (void *filestream)
 {
   struct FILESTREAM *stream = filestream;
   g_free(stream->stream_buffer);
@@ -206,7 +210,8 @@ writecookie (void *stream_cookie, const char *buf, size_t size)
 /**
  * @brief Move non read data to beggining of the buffer
  */
-static int move_buffer_data(struct FILESTREAM *filestream){
+static int
+move_buffer_data (struct FILESTREAM *filestream){
   char *auxbuf;
   size_t non_read_chars_count = filestream->last_write - filestream->last_read;
 
@@ -237,9 +242,9 @@ static int move_buffer_data(struct FILESTREAM *filestream){
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 int
-update_nvts_from_json_vts (openvasd_connector_t connector,
-                           const gchar *scanner_feed_version,
-                           int rebuild)
+update_nvts_from_openvasd_vts (openvasd_connector_t connector,
+                               const gchar *scanner_feed_version,
+                               int rebuild)
 {
   GList *preferences;
   int count_modified_vts, count_new_vts;
@@ -254,33 +259,7 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
   //osp_vt_hash = element_attribute (vts, "sha256_hash");
 
   sql_begin_immediate ();
-
-  if (rebuild) {
-    sql ("DROP TABLE IF EXISTS vt_refs_rebuild;");
-    sql ("DROP TABLE IF EXISTS vt_severities_rebuild;");
-    sql ("DROP TABLE IF EXISTS nvt_preferences_rebuild;");
-    sql ("DROP TABLE IF EXISTS nvts_rebuild;");
-
-    create_tables_nvt ("_rebuild");
-  }
-  else if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
-                    "                  FROM meta"
-                    "                  WHERE name = 'checked_preferences'),"
-                    "                 0);")
-           == 0)
-    /* We're in the first NVT sync after migrating preference names.
-     *
-     * If a preference was removed from an NVT then the preference will be in
-     * nvt_preferences in the old format, but we will not get a new version
-     * of the preference name from the sync.  For example "Alle Dateien
-     * Auflisten" was removed from 1.3.6.1.4.1.25623.1.0.94023.
-     *
-     * If a preference was not in the migrator then the new version of the
-     * preference would be inserted alongside the old version, resulting in a
-     * duplicate when the name of the old version was corrected.
-     *
-     * To solve both cases, we remove all nvt_preferences. */
-    sql ("TRUNCATE nvt_preferences;");
+  prepare_nvts_insert (rebuild);
 
   vt_refs_batch = batch_start (vt_ref_insert_size);
   vt_sevs_batch = batch_start (vt_sev_insert_size);
@@ -360,7 +339,7 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
           insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
 
           preferences = NULL;
-          if (update_preferences_from_json_nvt (nvti, &preferences))
+          if (update_preferences_from_openvasd_nvt (nvti, &preferences))
             {
               sql_rollback ();
               return -1;
@@ -388,33 +367,8 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
   batch_end (vt_refs_batch);
   batch_end (vt_sevs_batch);
 
-  if (rebuild) {
-    sql ("DROP VIEW IF EXISTS results_autofp;");
-    sql ("DROP VIEW vulns;");
-    sql ("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
-
-    sql ("ALTER TABLE vt_refs_rebuild RENAME TO vt_refs;");
-    sql ("ALTER TABLE vt_severities_rebuild RENAME TO vt_severities;");
-    sql ("ALTER TABLE nvt_preferences_rebuild RENAME TO nvt_preferences;");
-    sql ("ALTER TABLE nvts_rebuild RENAME TO nvts;");
-
-    create_view_vulns ();
-    create_view_result_vt_epss ();
-  }
-
-  set_nvts_check_time (count_new_vts, count_modified_vts);
-
-  set_nvts_feed_version (scanner_feed_version);
-
-  if (check_config_families ())
-    g_warning ("%s: Error updating config families."
-               "  One or more configs refer to an outdated family of an NVT.",
-               __func__);
-  update_all_config_caches ();
-
-  g_info ("Updating VTs in database ... %i new VTs, %i changed VTs",
-          count_new_vts, count_modified_vts);
-
+  finalize_nvts_insert (count_new_vts, count_modified_vts,scanner_feed_version,
+                        rebuild);
   sql_commit ();
 
   g_warning ("%s: No SHA-256 hash received from scanner, skipping check.",
@@ -435,7 +389,7 @@ update_nvts_from_json_vts (openvasd_connector_t connector,
  */
 int
 update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
-                      gchar *scanner_feed_version, int rebuild)
+                           gchar *scanner_feed_version, int rebuild)
 {
   openvasd_connector_t connector = NULL;
   openvasd_resp_t resp;
@@ -466,7 +420,7 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
       return -1;
     }
 
-  ret = update_nvts_from_json_vts (connector, scanner_feed_version, rebuild);
+  ret = update_nvts_from_openvasd_vts (connector, scanner_feed_version, rebuild);
 
   if (ret)
     {
@@ -578,7 +532,7 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
  */
 int
 nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
-                         gchar **vts_version)
+                                       gchar **vts_version)
 {
   scanner_t scan;
   openvasd_connector_t connector = NULL;
@@ -622,8 +576,8 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
  */
 int
 nvts_feed_version_status_internal_openvasd (const gchar *update_socket,
-                                   gchar **db_feed_version_out,
-                                   gchar **scanner_feed_version_out)
+                                            gchar **db_feed_version_out,
+                                            gchar **scanner_feed_version_out)
 {
   gchar *db_feed_version = NULL;
   gchar *scanner_feed_version = NULL;
@@ -686,8 +640,8 @@ manage_update_nvt_cache_openvasd (const gchar *update_socket)
   /* Try update VTs. */
 
   ret = nvts_feed_version_status_internal_openvasd (update_socket,
-                                           &db_feed_version,
-                                           &scanner_feed_version);
+                                                    &db_feed_version,
+                                                    &scanner_feed_version);
   if (ret == 1)
     {
       g_info ("openvasd service has different VT status (version %s)"
@@ -726,8 +680,8 @@ update_or_rebuild_nvts_openvasd (int update)
   const char *update_socket = NULL;
 
   ret = nvts_feed_version_status_internal_openvasd (update_socket,
-                                           &db_feed_version,
-                                           &scanner_feed_version);
+                                                    &db_feed_version,
+                                                    &scanner_feed_version);
   if (ret == -1)
     {
       g_warning ("Failed to get scanner feed version.");
