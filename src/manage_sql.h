@@ -109,6 +109,11 @@
 #define SCANNER_UUID_CVE "6acd0832-df90-11e4-b9d5-28d24461215b"
 
 /**
+ * @brief UUID of setting.
+ */
+#define SETTING_UUID_PREFERRED_LANG "6765549a-934e-11e3-b358-406186ea4fc5"
+
+/**
  * @brief UUID of 'Rows Per Page' setting.
  */
 #define SETTING_UUID_ROWS_PER_PAGE "5f5a8712-8017-11e1-8556-406186ea4fc5"
