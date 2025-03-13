@@ -16240,12 +16240,12 @@ check_db_settings ()
          "  '10.0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+               " WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('a09285b0-2d47-49b6-a4ef-946ee71f1d5c', NULL,"
+         " ('" SETTING_UUID_AUTO_CACHE_REBUILD "', NULL,"
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
@@ -52732,7 +52732,7 @@ setting_auto_cache_rebuild_int ()
 {
   return sql_int ("SELECT coalesce"
                   "        ((SELECT value FROM settings"
-                  "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+                  "          WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
                   "          AND " ACL_USER_OWNS () ""
                   "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
                   "         '1');",
@@ -53047,7 +53047,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
                || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
-               || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0
+               || strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
                || strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0
                || strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0))
     {
@@ -53175,7 +53175,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             current_credentials.default_severity = severity_dbl;
         }
 
-      if (strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0)
+      if (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0)
         {
           int value_int;
           /* Auto Cache Rebuild */

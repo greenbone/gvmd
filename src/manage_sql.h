@@ -111,6 +111,11 @@
 /**
  * @brief UUID of setting.
  */
+#define SETTING_UUID_AUTO_CACHE_REBUILD "a09285b0-2d47-49b6-a4ef-946ee71f1d5c"
+
+/**
+ * @brief UUID of setting.
+ */
 #define SETTING_UUID_AUTO_REFRESH "578a1c14-e2dc-45ef-a591-89d31391d007"
 
 /**
