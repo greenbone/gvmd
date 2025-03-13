@@ -53049,7 +53049,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
                || strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
                || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0
-               || strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0))
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
@@ -53198,7 +53198,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0)
+      if (strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0)
         {
           /* User Interface Date Format */
           if (strcmp (value, "wmdy") && strcmp (value, "wdmy")
