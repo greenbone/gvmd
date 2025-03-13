@@ -111,6 +111,11 @@
 /**
  * @brief UUID of setting.
  */
+#define SETTING_UUID_DYNAMIC_SEVERITY "77ec2444-e7f2-4a80-a59b-f4237782d93f"
+
+/**
+ * @brief UUID of setting.
+ */
 #define SETTING_UUID_PREFERRED_LANG "6765549a-934e-11e3-b358-406186ea4fc5"
 
 /**

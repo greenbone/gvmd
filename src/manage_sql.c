@@ -16176,12 +16176,12 @@ check_db_settings ()
          "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
+               " WHERE uuid = '" SETTING_UUID_DYNAMIC_SEVERITY "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
+         " ('" SETTING_UUID_DYNAMIC_SEVERITY "', NULL, 'Dynamic Severity',"
          "  'Whether to use dynamic severity scores by default.',"
          "  '0');");
 
@@ -53042,7 +53042,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
                || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
                || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
-               || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
+               || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
                || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
@@ -53148,7 +53148,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0)
+      if (strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0)
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
