@@ -53048,7 +53048,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
                || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
                || strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
-               || strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0
                || strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0))
     {
       gsize value_size;
@@ -53187,7 +53187,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0)
+      if (strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0)
         {
           /* User Interface Time Format */
           if (strcmp (value, "12") && strcmp (value, "24")
