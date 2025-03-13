@@ -111,6 +111,11 @@
 /**
  * @brief UUID of setting.
  */
+#define SETTING_UUID_AUTO_REFRESH "578a1c14-e2dc-45ef-a591-89d31391d007"
+
+/**
+ * @brief UUID of setting.
+ */
 #define SETTING_UUID_DEFAULT_SEVERITY "7eda49c5-096c-4bef-b1ab-d080d87300df"
 
 /**
