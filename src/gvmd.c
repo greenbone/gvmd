@@ -1104,14 +1104,14 @@ handle_sigabrt_simple (int signal)
  * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 static int
-update_nvt_cache_osp (const gchar *update_socket)
+update_nvt_cache (const gchar *update_socket)
 {
 #ifdef OPENVASD
   setproctitle ("openvasd: Updating NVT cache");
 #else
   setproctitle ("OSP: Updating NVT cache");
 #endif
-  return manage_update_nvts_osp (update_socket);
+  return manage_update_nvts (update_socket);
 }
 
 
@@ -1157,7 +1157,7 @@ update_nvt_cache_retry ()
             {
               int ret;
 
-              ret = update_nvt_cache_osp (osp_update_socket);
+              ret = update_nvt_cache (osp_update_socket);
               if (ret == 1)
                 {
                   g_message ("Rebuilding all NVTs because of a hash value mismatch");

@@ -2228,7 +2228,7 @@ void
 manage_nvt_preferences_enable ();
 
 void
-init_nvt_preference_iterator (iterator_t*, const char*);
+init_nvt_preference_iterator (iterator_t*, const char*, gboolean);
 
 const char*
 nvt_preference_iterator_name (iterator_t*);
@@ -4066,7 +4066,7 @@ int
 nvts_check_feed (int *, int *, gchar **);
 
 int
-manage_update_nvts_osp (const gchar *);
+manage_update_nvts (const gchar *);
 
 int
 manage_rebuild (GSList *, const db_conn_info_t *);

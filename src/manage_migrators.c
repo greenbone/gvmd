@@ -3255,6 +3255,56 @@ migrate_256_to_257 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 256 to version 257.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_257_to_258 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 257. */
+
+  if (manage_db_version () != 257)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Change timeout config preferences to normal VT preferences
+
+  sql ("UPDATE config_preferences SET"
+       " type = 'PLUGINS_PREFS',"
+       " name = substring(name, 9) || ':0:entry:timeout',"
+       " pref_nvt = substring(name, 9),"
+       " pref_id = 0,"
+       " pref_type = 'entry',"
+       " pref_name = 'timeout'"
+       " WHERE name LIKE 'timeout.%%' AND type = 'SERVER_PREFS';");
+
+
+  sql ("UPDATE config_preferences_trash SET"
+       " type = 'PLUGINS_PREFS',"
+       " name = substring(name, 9) || ':0:entry:timeout',"
+       " pref_nvt = substring(name, 9),"
+       " pref_id = 0,"
+       " pref_type = 'entry',"
+       " pref_name = 'timeout'"
+       " WHERE name LIKE 'timeout.%%' AND type = 'SERVER_PREFS';");
+
+  /* Set the database version to 258. */
+
+  set_db_version (258);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3318,6 +3368,7 @@ static migrator_t database_migrators[] = {
   {255, migrate_254_to_255},
   {256, migrate_255_to_256},
   {257, migrate_256_to_257},
+  {258, migrate_257_to_258},
   /* End marker. */
   {-1, NULL}};
 
