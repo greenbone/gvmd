@@ -16186,12 +16186,12 @@ check_db_settings ()
          "  '0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '578a1c14-e2dc-45ef-a591-89d31391d007'"
+               " WHERE uuid = '" SETTING_UUID_AUTO_REFRESH "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('578a1c14-e2dc-45ef-a591-89d31391d007', NULL, 'Auto-Refresh',"
+         " ('" SETTING_UUID_AUTO_REFRESH "', NULL, 'Auto-Refresh',"
          "  'The delay between automatic page refreshs in seconds.',"
          "  '0');");
 
@@ -53044,7 +53044,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
                || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
-               || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
+               || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
                || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
                || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0
