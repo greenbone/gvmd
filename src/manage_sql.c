@@ -16145,12 +16145,12 @@ static void
 check_db_settings ()
 {
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
+               " WHERE uuid = '" SETTING_UUID_PREFERRED_LANG "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('6765549a-934e-11e3-b358-406186ea4fc5', NULL,"
+         " ('" SETTING_UUID_PREFERRED_LANG "', NULL,"
          "  'User Interface Language',"
          "  'Preferred language to be used in client user interfaces.',"
          "  'Browser Language');");
@@ -53041,7 +53041,7 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
                || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
-               || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
+               || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
                || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
                || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
                || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
@@ -53100,7 +53100,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)
+      if (strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0)
         {
           GRegex *languages_regex;
           gboolean match;
