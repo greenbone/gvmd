@@ -16229,12 +16229,12 @@ check_db_settings ()
          "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+               " WHERE uuid = '" SETTING_UUID_DEFAULT_SEVERITY "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('7eda49c5-096c-4bef-b1ab-d080d87300df', NULL,"
+         " ('" SETTING_UUID_DEFAULT_SEVERITY "', NULL,"
          "  'Default Severity',"
          "  'Severity to use if none is specified or available from SecInfo.',"
          "  '10.0');");
@@ -53043,7 +53043,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
                || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
                || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
-               || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
+               || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
                || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
                || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
@@ -53161,7 +53161,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           current_credentials.excerpt_size = atoi (value);
         }
 
-      if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
+      if (strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0)
         {
           double severity_dbl;
           /* Default Severity */
@@ -59642,7 +59642,7 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       sql ("UPDATE results"
           " SET severity"
           "       = (SELECT CAST (value AS real) FROM settings"
-          "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+          "           WHERE uuid = '" SETTING_UUID_DEFAULT_SEVERITY "'"
           "             AND (settings.owner = results.owner"
           "                  OR settings.owner IS NULL)"
           "          ORDER BY settings.owner DESC LIMIT 1)"
