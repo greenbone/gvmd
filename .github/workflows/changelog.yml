@@ -1,0 +1,29 @@
+name: Show changelog since last release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  changelog:
+    name: Show changelog since last release
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for conventional commits and getting all git tags
+          persist-credentials: false
+      - name: Install git-cliff
+        uses: greenbone/actions/uv@v3
+        with:
+          install: git-cliff
+      - name: Determine changelog
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git-cliff -v --strip header --unreleased -o /tmp/changelog.md
+      - name: Show changelog
+        run: |
+          cat /tmp/changelog.md
+          cat /tmp/changelog.md >> $GITHUB_STEP_SUMMARY
