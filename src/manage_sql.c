@@ -53039,17 +53039,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       return ret;
     }
 
-  if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+  if (uuid && (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
+               || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
+               || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
+               || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
                || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
-               || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
-               || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
-               || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
-               || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
-               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
-               || strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
+               || strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0
                || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0
-               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0))
+               || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
+               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
