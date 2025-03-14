@@ -16,7 +16,4 @@ if [ -n "$MTA_HOST" ]; then
     [ -n "$MTA_LOGFILE" ] && echo "logfile $MTA_LOGFILE" >> $CONFIG
     chown gvmd:mail $CONFIG
     chmod 750 $CONFIG
-    echo "installing ca-certificates for tls verification"
-    apt-get update && apt-get install -y ca-certificates
-    update-ca-certificates
 fi
