@@ -164,6 +164,11 @@
 #define SETTING_UUID_FILE_LIST "0872a6ed-4f85-48c5-ac3f-a5ef5e006745"
 
 /**
+ * @brief UUID of setting.
+ */
+#define SETTING_UUID_FILE_REPORT "e1a2ae0b-736e-4484-b029-330c9e15b900"
+
+/**
  * @brief UUID of 'Debian LSC Package Maintainer' setting.
  */
 #define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"
