@@ -16207,12 +16207,12 @@ check_db_settings ()
          "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '0872a6ed-4f85-48c5-ac3f-a5ef5e006745'"
+               " WHERE uuid = '" SETTING_UUID_FILE_LIST "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('0872a6ed-4f85-48c5-ac3f-a5ef5e006745', NULL,"
+         " ('" SETTING_UUID_FILE_LIST "', NULL,"
          "  'List Export File Name',"
          "  'File name format string for the export of resource lists.',"
          "  '%%T-%%D');");
@@ -53250,7 +53250,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   /* Export file name format */
   if (uuid
       && (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0
-          || strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0
+          || strcmp (uuid, SETTING_UUID_FILE_LIST) == 0
           || strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0))
     {
       gsize value_size;
@@ -53259,7 +53259,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       assert (current_credentials.uuid);
       if (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0)
         setting_name = "Details Export File Name";
-      else if (strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0)
+      else if (strcmp (uuid, SETTING_UUID_FILE_LIST) == 0)
         setting_name = "List Export File Name";
       else if (strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0)
         setting_name = "Report Export File Name";
