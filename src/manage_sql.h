@@ -154,6 +154,11 @@
 #define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
 
 /**
+ * @brief UUID of setting.
+ */
+#define SETTING_UUID_FILE_DETAILS "a6ac88c5-729c-41ba-ac0a-deea4a3441f2"
+
+/**
  * @brief UUID of 'Debian LSC Package Maintainer' setting.
  */
 #define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"
