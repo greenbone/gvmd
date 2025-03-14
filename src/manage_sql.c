@@ -16218,12 +16218,12 @@ check_db_settings ()
          "  '%%T-%%D');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'e1a2ae0b-736e-4484-b029-330c9e15b900'"
+               " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('e1a2ae0b-736e-4484-b029-330c9e15b900', NULL,"
+         " ('" SETTING_UUID_FILE_REPORT "', NULL,"
          "  'Report Export File Name',"
          "  'File name format string for the export of reports.',"
          "  '%%T-%%U');");
@@ -53251,7 +53251,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid
       && (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0
           || strcmp (uuid, SETTING_UUID_FILE_LIST) == 0
-          || strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0))
+          || strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0))
     {
       gsize value_size;
       gchar *value, *quoted_value;
@@ -53261,7 +53261,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = "Details Export File Name";
       else if (strcmp (uuid, SETTING_UUID_FILE_LIST) == 0)
         setting_name = "List Export File Name";
-      else if (strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0)
+      else if (strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0)
         setting_name = "Report Export File Name";
       else
         return -1;
