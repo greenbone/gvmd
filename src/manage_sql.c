@@ -16145,12 +16145,12 @@ static void
 check_db_settings ()
 {
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
+               " WHERE uuid = '" SETTING_UUID_PREFERRED_LANG "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('6765549a-934e-11e3-b358-406186ea4fc5', NULL,"
+         " ('" SETTING_UUID_PREFERRED_LANG "', NULL,"
          "  'User Interface Language',"
          "  'Preferred language to be used in client user interfaces.',"
          "  'Browser Language');");
@@ -16176,76 +16176,76 @@ check_db_settings ()
          "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
+               " WHERE uuid = '" SETTING_UUID_DYNAMIC_SEVERITY "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
+         " ('" SETTING_UUID_DYNAMIC_SEVERITY "', NULL, 'Dynamic Severity',"
          "  'Whether to use dynamic severity scores by default.',"
          "  '0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '578a1c14-e2dc-45ef-a591-89d31391d007'"
+               " WHERE uuid = '" SETTING_UUID_AUTO_REFRESH "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('578a1c14-e2dc-45ef-a591-89d31391d007', NULL, 'Auto-Refresh',"
+         " ('" SETTING_UUID_AUTO_REFRESH "', NULL, 'Auto-Refresh',"
          "  'The delay between automatic page refreshs in seconds.',"
          "  '0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'a6ac88c5-729c-41ba-ac0a-deea4a3441f2'"
+               " WHERE uuid = '" SETTING_UUID_FILE_DETAILS "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('a6ac88c5-729c-41ba-ac0a-deea4a3441f2', NULL,"
+         " ('" SETTING_UUID_FILE_DETAILS "', NULL,"
          "  'Details Export File Name',"
          "  'File name format string for the export of resource details.',"
          "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '0872a6ed-4f85-48c5-ac3f-a5ef5e006745'"
+               " WHERE uuid = '" SETTING_UUID_FILE_LIST "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('0872a6ed-4f85-48c5-ac3f-a5ef5e006745', NULL,"
+         " ('" SETTING_UUID_FILE_LIST "', NULL,"
          "  'List Export File Name',"
          "  'File name format string for the export of resource lists.',"
          "  '%%T-%%D');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'e1a2ae0b-736e-4484-b029-330c9e15b900'"
+               " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('e1a2ae0b-736e-4484-b029-330c9e15b900', NULL,"
+         " ('" SETTING_UUID_FILE_REPORT "', NULL,"
          "  'Report Export File Name',"
          "  'File name format string for the export of reports.',"
          "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+               " WHERE uuid = '" SETTING_UUID_DEFAULT_SEVERITY "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('7eda49c5-096c-4bef-b1ab-d080d87300df', NULL,"
+         " ('" SETTING_UUID_DEFAULT_SEVERITY "', NULL,"
          "  'Default Severity',"
          "  'Severity to use if none is specified or available from SecInfo.',"
          "  '10.0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+               " WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('a09285b0-2d47-49b6-a4ef-946ee71f1d5c', NULL,"
+         " ('" SETTING_UUID_AUTO_CACHE_REBUILD "', NULL,"
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
@@ -52732,7 +52732,7 @@ setting_auto_cache_rebuild_int ()
 {
   return sql_int ("SELECT coalesce"
                   "        ((SELECT value FROM settings"
-                  "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+                  "          WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
                   "          AND " ACL_USER_OWNS () ""
                   "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
                   "         '1');",
@@ -53039,17 +53039,17 @@ modify_setting (const gchar *uuid, const gchar *name,
       return ret;
     }
 
-  if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+  if (uuid && (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
+               || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
+               || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
+               || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
-               || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
-               || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
-               || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
-               || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
+               || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
+               || strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0
                || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
-               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
-               || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0
-               || strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0
-               || strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0))
+               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
@@ -53100,7 +53100,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)
+      if (strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0)
         {
           GRegex *languages_regex;
           gboolean match;
@@ -53148,7 +53148,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0)
+      if (strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0)
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
@@ -53161,7 +53161,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           current_credentials.excerpt_size = atoi (value);
         }
 
-      if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
+      if (strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0)
         {
           double severity_dbl;
           /* Default Severity */
@@ -53175,7 +53175,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             current_credentials.default_severity = severity_dbl;
         }
 
-      if (strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0)
+      if (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0)
         {
           int value_int;
           /* Auto Cache Rebuild */
@@ -53187,7 +53187,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0)
+      if (strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0)
         {
           /* User Interface Time Format */
           if (strcmp (value, "12") && strcmp (value, "24")
@@ -53198,7 +53198,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0)
+      if (strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0)
         {
           /* User Interface Date Format */
           if (strcmp (value, "wmdy") && strcmp (value, "wdmy")
@@ -53249,19 +53249,19 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   /* Export file name format */
   if (uuid
-      && (strcmp (uuid, "a6ac88c5-729c-41ba-ac0a-deea4a3441f2") == 0
-          || strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0
-          || strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0))
+      && (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0
+          || strcmp (uuid, SETTING_UUID_FILE_LIST) == 0
+          || strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0))
     {
       gsize value_size;
       gchar *value, *quoted_value;
 
       assert (current_credentials.uuid);
-      if (strcmp (uuid, "a6ac88c5-729c-41ba-ac0a-deea4a3441f2") == 0)
+      if (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0)
         setting_name = "Details Export File Name";
-      else if (strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0)
+      else if (strcmp (uuid, SETTING_UUID_FILE_LIST) == 0)
         setting_name = "List Export File Name";
-      else if (strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0)
+      else if (strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0)
         setting_name = "Report Export File Name";
       else
         return -1;
@@ -59642,7 +59642,7 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       sql ("UPDATE results"
           " SET severity"
           "       = (SELECT CAST (value AS real) FROM settings"
-          "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+          "           WHERE uuid = '" SETTING_UUID_DEFAULT_SEVERITY "'"
           "             AND (settings.owner = results.owner"
           "                  OR settings.owner IS NULL)"
           "          ORDER BY settings.owner DESC LIMIT 1)"
