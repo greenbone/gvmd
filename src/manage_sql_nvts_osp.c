@@ -979,4 +979,3 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
   return ret;
 }
-

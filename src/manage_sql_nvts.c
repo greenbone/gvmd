@@ -1189,29 +1189,6 @@ nvts_feed_version_status ()
 }
 
 /**
- * @brief Update VTs via OSP or openvasd.
- *
- * Expect to be called in the child after a fork.
- *
- * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-int
-manage_update_nvt_cache (const gchar *update_socket)
-{
-  int ret;
-
-#if OPENVASD
-      ret = manage_update_nvt_cache_openvasd ();
-#else
-      ret = manage_update_nvt_cache_osp (update_socket);
-#endif
-
-  return ret;
-}
-
-/**
  * @brief Sync NVTs if newer NVTs are available.
  *
  * @param[in]  fork_update_nvt_cache  Function to do the update.

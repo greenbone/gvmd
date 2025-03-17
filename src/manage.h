@@ -2882,9 +2882,6 @@ char *
 openvas_default_scanner_host ();
 
 int
-openvasd_scanner_exists ();
-
-int
 init_scanner_iterator (iterator_t*, get_data_t *);
 
 const char*
@@ -4067,9 +4064,6 @@ nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
 
 int
 nvts_check_feed (int *, int *, gchar **);
-
-int
-manage_update_nvts (const gchar *);
 
 int
 manage_rebuild (GSList *, const db_conn_info_t *);

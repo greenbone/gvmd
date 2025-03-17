@@ -43181,22 +43181,6 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
 
 #if OPENVASD
 /**
- * @brief Checks if the default openvasd scanner exists.
- *
- * @return 0 if the scanner exists, 1 otherwise.
- */
-int
-openvasd_scanner_exists ()
-{
-  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
-               SCANNER_UUID_OPENVASD_DEFAULT) == 0)
-    {
-      return 1;
-    }
-  return 0;
-}
-
-/**
  * @brief Get an openvasd Scanner's get_scanner_preferences info.
  *
  * @param[in]   iterator    Scanner object iterator.

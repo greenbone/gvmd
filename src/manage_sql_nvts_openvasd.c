@@ -584,12 +584,6 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
   if (scanner_feed_version_out)
     *scanner_feed_version_out = NULL;
 
-  if (openvasd_scanner_exists ())
-    {
-      g_warning ("No openvasd VT update client found.");
-      return -1;
-    }
-
   db_feed_version = nvts_feed_version ();
   g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
   if (db_feed_version_out && db_feed_version)

@@ -1097,25 +1097,6 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Update the NVT Cache using OSP.
- *
- * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-static int
-update_nvt_cache (const gchar *update_socket)
-{
-#ifdef OPENVASD
-  setproctitle ("openvasd: Updating NVT cache");
-#else
-  setproctitle ("OSP: Updating NVT cache");
-#endif
-  return manage_update_nvts (update_socket);
-}
-
-
-/**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1153,7 +1134,8 @@ update_nvt_cache_retry ()
 #if OPENVASD
           int ret;
 
-          ret = update_nvt_cache (NULL);
+          setproctitle ("openvasd: Updating NVT cache");
+          ret = manage_update_nvt_cache_openvasd ();
           if (ret == 1)
             {
               g_message (
@@ -1175,7 +1157,8 @@ update_nvt_cache_retry ()
             {
               int ret;
 
-              ret = update_nvt_cache (osp_update_socket);
+              setproctitle ("OSP: Updating NVT cache");
+              ret = manage_update_nvt_cache_osp (osp_update_socket);
               if (ret == 1)
                 {
                   g_message ("Rebuilding all NVTs because of a hash value mismatch");
@@ -2737,7 +2720,7 @@ gvmd (int argc, char** argv, char *env[])
 
   if (osp_vt_update)
 #if OPENVASD
-    g_critical ("%s: Default openvasd VT update client set."
+    g_critical ("%s: openvasd scanner is enabled."
                  " The --osp-vt-update command was not executed.",
                  __func__);
 #else
@@ -3436,22 +3419,17 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
-#if OPENVASD
-  if (openvasd_scanner_exists ())
-    {
-      g_critical ("%s: No openvasd VT update client found.",
-                  __func__);
-#else
+#if OPENVASD == 0
   if (check_osp_vt_update_socket ())
     {
       g_critical ("%s: No OSP VT update socket found."
                   " Use --osp-vt-update or change the 'OpenVAS Default'"
                   " scanner to use the main ospd-openvas socket.",
                   __func__);
-#endif
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+#endif
 
   /* Enter the main forever-loop. */
 
