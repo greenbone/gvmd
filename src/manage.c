@@ -2824,8 +2824,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
             osp_value = "0";
           else
             osp_value = value;
-          g_hash_table_replace (scanner_options,
-                                g_strdup (name),
+          g_hash_table_replace (scanner_options, g_strdup (name),
                                 g_strdup (osp_value));
         }
       else if (name && value && g_str_has_prefix (name, "timeout."))
@@ -2835,7 +2834,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
           g_warning ("%s: Timeout preference using obsolete format: %s",
                      __func__, name);
         }
-
     }
   cleanup_iterator (&scanner_prefs_iter);
 
@@ -8726,14 +8724,13 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
           const char *openvasd_value;
 
           // Workaround for boolean scanner preferences
-          if (strcmp (value, "0") == 0)
-            openvasd_value = "no";
-          else if (strcmp (value, "1") == 0)
-            openvasd_value = "yes";
+          if (strcmp (value, "no") == 0)
+            openvasd_value = "0";
+          else if (strcmp (value, "yes") == 0)
+            openvasd_value = "1";
           else
             openvasd_value = value;
-          g_hash_table_replace (scanner_options,
-                                g_strdup (name),
+          g_hash_table_replace (scanner_options, g_strdup (name),
                                 g_strdup (openvasd_value));
         }
       /* Timeouts are stored as SERVER_PREFS, but are actually
@@ -8750,7 +8747,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
             openvasd_vt_single_add_value (openvasd_vt, "0", value);
           g_strfreev (oid);
         }
-
     }
   cleanup_iterator (&scanner_prefs_iter);
 
