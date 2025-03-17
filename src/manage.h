@@ -2882,6 +2882,9 @@ char *
 openvas_default_scanner_host ();
 
 int
+openvasd_scanner_exists ();
+
+int
 init_scanner_iterator (iterator_t*, get_data_t *);
 
 const char*

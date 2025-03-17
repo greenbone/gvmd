@@ -549,6 +549,66 @@ update_nvts_from_osp_vts (element_t *get_vts_response,
 }
 
 /**
+ * @brief File socket for OSP NVT update.
+ */
+static gchar *openvas_vt_update_socket = NULL;
+
+/**
+ * @brief Get the current file socket for OSP NVT update.
+ *
+ * @return The path of the file socket for OSP NVT update.
+ */
+const gchar *
+get_osp_vt_update_socket ()
+{
+  return openvas_vt_update_socket;
+}
+
+/**
+ * @brief Set the file socket for OSP NVT update.
+ *
+ * @param new_socket The new path of the file socket for OSP NVT update.
+ */
+void
+set_osp_vt_update_socket (const char *new_socket)
+{
+  if (new_socket)
+    {
+      g_free (openvas_vt_update_socket);
+      openvas_vt_update_socket = g_strdup (new_socket);
+    }
+}
+
+/**
+ * @brief Check the files socket used for OSP NVT update.
+ *
+ * @return 0 success, 1 no socket found.
+ */
+int
+check_osp_vt_update_socket ()
+{
+  if (get_osp_vt_update_socket () == NULL)
+    {
+      char *default_socket;
+
+      /* Try to get OSP VT update socket from default scanner. */
+
+      default_socket = openvas_default_scanner_host ();
+      if (default_socket == NULL)
+        return 1;
+
+      g_debug ("%s: Using OSP VT update socket from default OpenVAS"
+               " scanner: %s",
+               __func__,
+               default_socket);
+      set_osp_vt_update_socket (default_socket);
+      free (default_socket);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Get the VTs feed version from an OSP scanner.
  *
  * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
@@ -919,3 +979,4 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
   return ret;
 }
+
