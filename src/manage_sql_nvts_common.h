@@ -39,15 +39,6 @@
  */
 #define VT_SEV_INSERT_SIZE_DEFAULT 100000
 
-const char *
-get_osp_vt_update_socket ();
-
-void
-set_osp_vt_update_socket (const char *new_socket);
-
-int
-check_osp_vt_update_socket ();
-
 /**
  * @brief SQL batch.
  */

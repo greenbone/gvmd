@@ -241,7 +241,7 @@ move_buffer_data (struct FILESTREAM *filestream){
  *
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
-int
+static int
 update_nvts_from_openvasd_vts (openvasd_connector_t connector,
                                const gchar *scanner_feed_version,
                                int rebuild)
@@ -380,7 +380,6 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
 /**
  * @brief Update VTs via openvasd.
  *
- * @param[in]  openvasd_uuid         UUID of openvasd to connect to.
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
  * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.
@@ -388,7 +387,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
  * @return 0 success, 1 VT integrity check failed, -1 error.
  */
 int
-update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
+update_nvt_cache_openvasd (gchar *db_feed_version,
                            gchar *scanner_feed_version, int rebuild)
 {
   openvasd_connector_t connector = NULL;
@@ -416,7 +415,7 @@ update_nvt_cache_openvasd (gchar* openvasd_uuid, gchar *db_feed_version,
   if (!connector)
     {
       g_warning ("%s: failed to connect to scanner (%s)", __func__,
-                 openvasd_uuid);
+                 SCANNER_UUID_OPENVASD_DEFAULT);
       return -1;
     }
 
@@ -568,15 +567,13 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
 /**
  * @brief Check VTs feed version status via openvasd, optionally get versions.
  *
- * @param[in]  update_socket  Socket to use to contact openvasd scanner.
  * @param[out] db_feed_version_out       Output of database feed version.
  * @param[out] scanner_feed_version_out  Output of scanner feed version.
  *
  * @return 0 VTs feed current, -1 error, 1 VT update needed.
  */
 int
-nvts_feed_version_status_internal_openvasd (const gchar *update_socket,
-                                            gchar **db_feed_version_out,
+nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
                                             gchar **scanner_feed_version_out)
 {
   gchar *db_feed_version = NULL;
@@ -622,12 +619,10 @@ nvts_feed_version_status_internal_openvasd (const gchar *update_socket,
  *
  * Expect to be called in the child after a fork.
  *
- * @param[in]  update_socket  Socket to use to contact openvasd scanner.
- *
  * @return 0 success, -1 error, 1 VT integrity check failed.
  */
 int
-manage_update_nvt_cache_openvasd (const gchar *update_socket)
+manage_update_nvt_cache_openvasd ()
 {
   gchar *db_feed_version, *scanner_feed_version;
   int ret;
@@ -639,8 +634,7 @@ manage_update_nvt_cache_openvasd (const gchar *update_socket)
 
   /* Try update VTs. */
 
-  ret = nvts_feed_version_status_internal_openvasd (update_socket,
-                                                    &db_feed_version,
+  ret = nvts_feed_version_status_internal_openvasd (&db_feed_version,
                                                     &scanner_feed_version);
   if (ret == 1)
     {
@@ -649,8 +643,7 @@ manage_update_nvt_cache_openvasd (const gchar *update_socket)
               scanner_feed_version, db_feed_version,
               sql_int ("SELECT count (*) FROM nvts;"));
 
-      ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                       db_feed_version,
+      ret = update_nvt_cache_openvasd (db_feed_version,
                                        scanner_feed_version, 0);
 
       g_free (db_feed_version);
@@ -677,10 +670,8 @@ update_or_rebuild_nvts_openvasd (int update)
   gchar *db_feed_version = NULL;
   gchar *scanner_feed_version = NULL;
   int ret = 0;
-  const char *update_socket = NULL;
 
-  ret = nvts_feed_version_status_internal_openvasd (update_socket,
-                                                    &db_feed_version,
+  ret = nvts_feed_version_status_internal_openvasd (&db_feed_version,
                                                     &scanner_feed_version);
   if (ret == -1)
     {
@@ -692,8 +683,7 @@ update_or_rebuild_nvts_openvasd (int update)
 
   if (update == 0)
     set_nvts_feed_version ("0");
-  ret = update_nvt_cache_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                   db_feed_version,
+  ret = update_nvt_cache_openvasd (db_feed_version,
                                    scanner_feed_version, 0);
   if (ret != 0)
     ret = -1;

@@ -28,24 +28,18 @@
 #include "manage_sql_nvts_common.h"
 
 int
-manage_update_nvt_cache_openvasd (const gchar *update_socket);
+manage_update_nvt_cache_openvasd ();
 
 int
-update_nvt_cache_openvasd(gchar *openvasd_uuid,
-                              gchar *db_feed_version,
-                              gchar *scanner_feed_version,
-                              int rebuild);
-int
 nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
-gchar **vts_version);
+                                       gchar **vts_version);
 
 int
 update_or_rebuild_nvts_openvasd (int update);
 
 int
-nvts_feed_version_status_internal_openvasd (const gchar *update_socket,
-                                   gchar **db_feed_version_out,
-                                   gchar **scanner_feed_version_out);
+nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
+                                            gchar **scanner_feed_version_out);
 
 #endif //MANAGE_NVTS_OPENVASD_H
 #endif

@@ -26,6 +26,15 @@
 
 #include "manage_sql_nvts_common.h"
 
+const char *
+get_osp_vt_update_socket ();
+
+void
+set_osp_vt_update_socket (const char *new_socket);
+
+int
+check_osp_vt_update_socket ();
+
 int
 update_or_rebuild_nvts_osp (int update);
 
