@@ -58,9 +58,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/* Flag if to skip the update of the nvti cache or not. */
-static gboolean skip_upd_nvti_cache = FALSE;
-
 
 /* Sleep. */
 
@@ -754,30 +751,6 @@ lockfile_locked (const gchar *lockfile_basename)
   if ((ret == 0) && lockfile_unlock (&lockfile))
     return -1;
   return ret;
-}
-
-/**
- * @brief Set Flag if to run update_nvti_cache () or not.
- *            The default value of the flag is FALSE.
- *
- * @param[in]  skip_upd_nvti_c  Value for the flag if to
- *                              skip the cache update or not.
- */
-void
-set_skip_update_nvti_cache (gboolean skip_upd_nvti_c)
-{
-  skip_upd_nvti_cache = skip_upd_nvti_c;
-}
-
-/**
- * @brief Check if to run update_nvti_cache () or not.
- *
- * @return TRUE skip update, FALSE don't skip update
- */
-gboolean
-skip_update_nvti_cache ()
-{
-  return skip_upd_nvti_cache;
 }
 
 
