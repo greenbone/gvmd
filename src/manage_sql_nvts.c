@@ -68,6 +68,11 @@ create_tables_nvt (const gchar *);
 /* NVT related global options */
 
 /**
+ * @brief Whether to skip the update of the nvti cache.
+ */
+static gboolean skip_upd_nvti_cache = FALSE;
+
+/**
  * @brief Max number of rows inserted per statement.
  */
 static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
@@ -79,6 +84,31 @@ static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
 
 
 /* NVT's. */
+
+/**
+ * @brief Set flag if to run update_nvti_cache () or not.
+ *
+ * The default value of the flag is FALSE.
+ *
+ * @param[in]  skip_upd_nvti_c  Value for the flag if to
+ *                              skip the cache update or not.
+ */
+void
+set_skip_update_nvti_cache (gboolean skip_upd_nvti_c)
+{
+  skip_upd_nvti_cache = skip_upd_nvti_c;
+}
+
+/**
+ * @brief Check if to run update_nvti_cache () or not.
+ *
+ * @return TRUE skip update, FALSE don't skip update
+ */
+gboolean
+skip_update_nvti_cache ()
+{
+  return skip_upd_nvti_cache;
+}
 
 /**
  * @brief Set the VT ref insert size.

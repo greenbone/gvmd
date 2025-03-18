@@ -130,6 +130,12 @@
  }
 
 void
+set_skip_update_nvti_cache (gboolean);
+
+gboolean
+skip_update_nvti_cache ();
+
+void
 set_vt_ref_insert_size (int);
 
 void
