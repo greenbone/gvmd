@@ -25637,9 +25637,9 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
                    " results.nvt_version, results.severity,"
                    " results.id"
                    " FROM results"
-                   " WHERE results.type = 'Error Message'"
+                   " WHERE results.severity = %0.1f"
                    "  AND results.report = %llu",
-                   report);
+                   SEVERITY_ERROR, report);
 }
 
 /**
@@ -60079,6 +60079,26 @@ check_openvasd_result_exists (report_t report, task_t task,
   return return_value;
 }
 
+/**
+ * @brief Convert openvasd result types to OSP result types.
+ *
+ * @param openvasd_type The openvasd type as a string.
+ *
+ * @return A new string with the corresponding OSP type.
+ */
+static char *
+convert_openvasd_type_to_osp_type (const char *openvasd_type)
+{
+  if (g_strcmp0 (openvasd_type, "alarm") == 0)
+    return g_strdup ("Alarm");
+  else if (g_strcmp0 (openvasd_type, "error") == 0)
+    return g_strdup ("Error Message");
+  else if (g_strcmp0 (openvasd_type, "log") == 0)
+    return g_strdup ("Log Message");
+
+  return g_strdup (openvasd_type);
+}
+
 /* Struct to be sent as user data to the GFunc for adding results */
 struct report_aux {
   GArray *results_array;
@@ -60099,7 +60119,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
   char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
   int qod_int;
 
-  type = res->type;
+  type = convert_openvasd_type_to_osp_type (res->type);
   name = NULL;
   severity = NULL;
   test_id = res->oid;
@@ -60139,6 +60159,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
       desc = res->message;
       g_free (hash_value);
       g_free (port);
+      g_free (type);
       return;
     }
   else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
@@ -60196,6 +60217,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
 
   g_free (port);
   g_free (nvt_id);
+  g_free (type);
 
   return;
 }
