@@ -53047,9 +53047,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
                || strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
                || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0
-               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0
-               || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
-               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0))
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
