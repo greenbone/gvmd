@@ -4066,9 +4066,6 @@ int
 nvts_check_feed (int *, int *, gchar **);
 
 int
-manage_update_nvts (const gchar *);
-
-int
 manage_rebuild (GSList *, const db_conn_info_t *);
 
 int

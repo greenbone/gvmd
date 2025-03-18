@@ -1097,25 +1097,6 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Update the NVT Cache using OSP.
- *
- * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-static int
-update_nvt_cache (const gchar *update_socket)
-{
-#ifdef OPENVASD
-  setproctitle ("openvasd: Updating NVT cache");
-#else
-  setproctitle ("OSP: Updating NVT cache");
-#endif
-  return manage_update_nvts (update_socket);
-}
-
-
-/**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1149,15 +1130,35 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
+          init_sentry ();
+#if OPENVASD
+          int ret;
+
+          setproctitle ("openvasd: Updating NVT cache");
+          ret = manage_update_nvt_cache_openvasd ();
+          if (ret == 1)
+            {
+              g_message (
+                "Rebuilding all NVTs because of a hash value mismatch");
+              ret = update_or_rebuild_nvts (0);
+              if (ret)
+                g_warning ("%s: rebuild failed", __func__);
+              else
+                g_message ("%s: rebuild successful", __func__);
+            }
+
+          gvm_close_sentry ();
+          exit (ret);
+#else
           const char *osp_update_socket;
 
-          init_sentry ();
           osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
             {
               int ret;
 
-              ret = update_nvt_cache (osp_update_socket);
+              setproctitle ("OSP: Updating NVT cache");
+              ret = manage_update_nvt_cache_osp (osp_update_socket);
               if (ret == 1)
                 {
                   g_message ("Rebuilding all NVTs because of a hash value mismatch");
@@ -1177,6 +1178,7 @@ update_nvt_cache_retry ()
               gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
+#endif
         }
     }
 }
@@ -2717,7 +2719,13 @@ gvmd (int argc, char** argv, char *env[])
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
+#if OPENVASD
+    g_critical ("%s: openvasd scanner is enabled."
+                 " The --osp-vt-update command was not executed.",
+                 __func__);
+#else
     set_osp_vt_update_socket (osp_vt_update);
+#endif
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -3411,7 +3419,7 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
-
+#if OPENVASD == 0
   if (check_osp_vt_update_socket ())
     {
       g_critical ("%s: No OSP VT update socket found."
@@ -3421,6 +3429,7 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+#endif
 
   /* Enter the main forever-loop. */
 

@@ -1180,37 +1180,12 @@ int
 nvts_feed_version_status ()
 {
 #if OPENVASD
-  return nvts_feed_version_status_internal_openvasd (get_osp_vt_update_socket (),
-                                                     NULL,
-                                                     NULL);
+  return nvts_feed_version_status_internal_openvasd (NULL, NULL);
 #else
   return nvts_feed_version_status_internal_osp (get_osp_vt_update_socket (),
                                                 NULL,
                                                 NULL);
 #endif
-}
-
-/**
- * @brief Update VTs via OSP or openvasd.
- *
- * Expect to be called in the child after a fork.
- *
- * @param[in]  update_socket  Socket to use to contact ospd-openvas or openvasd scanner.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-int
-manage_update_nvt_cache (const gchar *update_socket)
-{
-  int ret;
-
-#if OPENVASD == 1
-      ret = manage_update_nvt_cache_openvasd (update_socket);
-#else
-      ret = manage_update_nvt_cache_osp (update_socket);
-#endif
-
-  return ret;
 }
 
 /**
