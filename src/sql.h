@@ -25,9 +25,19 @@
 #define _GVMD_SQL_H
 
 #include "iterator.h"
-#include "manage.h"
 
 #include <glib.h>
+
+/**
+ * @brief Data structure for info used to connect to the database
+ */
+typedef struct
+{
+  gchar *name; ///< The database name
+  gchar *host; ///< The database host or socket directory
+  gchar *port; ///< The database port or socket file extension
+  gchar *user; ///< The database user name
+} db_conn_info_t;
 
 /* Helpers. */
 
