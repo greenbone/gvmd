@@ -27,6 +27,7 @@
 #include "iterator.h"
 #include "manage_configs.h"
 #include "manage_get.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -44,16 +45,6 @@
 #if OPENVASD
 #include <gvm/openvasd/openvasd.h>
 #endif
-
-/**
- * @brief Data structure for info used to connect to the database
- */
-typedef struct {
-  gchar *name; ///< The database name
-  gchar *host; ///< The database host or socket directory
-  gchar *port; ///< The database port or socket file extension
-  gchar *user; ///< The database user name
-} db_conn_info_t;
 
 /**
  * @brief OID of ping_host.nasl
