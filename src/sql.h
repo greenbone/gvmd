@@ -31,7 +31,8 @@
 /**
  * @brief Data structure for info used to connect to the database
  */
-typedef struct {
+typedef struct
+{
   gchar *name; ///< The database name
   gchar *host; ///< The database host or socket directory
   gchar *port; ///< The database port or socket file extension
