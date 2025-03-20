@@ -418,22 +418,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
 /* Events and Alerts. */
 
 /**
- * @brief Data about a report sent by an alert.
- */
-typedef struct {
-  gchar *local_filename;          ///< Path to the local report file.
-  gchar *remote_filename;         ///< Path or filename to send to / as.
-  gchar *content_type;            ///< The MIME content type of the report.
-  gchar *report_format_name;      ///< Name of the report format used.
-} alert_report_data_t;
-
-void
-alert_report_data_free (alert_report_data_t *);
-
-void
-alert_report_data_reset (alert_report_data_t *);
-
-/**
  * @brief Default format string for alert email, when including report.
  */
 #define ALERT_MESSAGE_INCLUDE                                                 \
