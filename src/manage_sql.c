@@ -42964,31 +42964,52 @@ scanner_uuid_default ()
 }
 
 /**
+ * @brief Return whether the scanner has a relay host defined.
+ *
+ * @param[in]  scanner    Scanner.
+ * 
+ * @return TRUE if a relay host is defined, FALSE otherwise.
+ */
+gboolean
+scanner_has_relay (scanner_t scanner)
+{
+  return sql_int ("SELECT coalesce (relay_host, '') != ''"
+                  " FROM scanners WHERE id = %llu;",
+                  scanner);
+}
+
+/**
  * @brief Return the host of a scanner.
  *
- * @param[in]  scanner  Scanner.
+ * @param[in]  scanner    Scanner.
+ * @param[in]  get_relay  Whether to get the relay host.
  *
  * @return Newly allocated host.
  */
 char *
-scanner_host (scanner_t scanner)
+scanner_host (scanner_t scanner, gboolean get_relay)
 {
-  return sql_string ("SELECT host FROM scanners WHERE id = %llu;", scanner);
+  return sql_string ("SELECT %s FROM scanners WHERE id = %llu;",
+                     get_relay ? "relay_host" : "host",
+                     scanner);
 }
 
 /**
  * @brief Return the port of a scanner.
  *
- * @param[in]  scanner  Scanner.
+ * @param[in]  scanner    Scanner.
+ * @param[in]  get_relay  Whether to get the relay host.
  *
  * @return Scanner port, -1 if not found;
  */
 int
-scanner_port (scanner_t scanner)
+scanner_port (scanner_t scanner, gboolean get_relay)
 {
   int port;
   char *str;
-  str = sql_string ("SELECT port FROM scanners WHERE id = %llu;", scanner);
+  str = sql_string ("SELECT %s FROM scanners WHERE id = %llu;",
+                    get_relay ? "relay_port" : "port",
+                    scanner);
   if (!str)
     return -1;
   port = atoi (str);
@@ -43211,7 +43232,7 @@ openvas_default_scanner_host ()
 }
 
 /**
- * @brief Create a new connection to an OSP scanner relay.
+ * @brief Create a new connection to an OSP scanner using the relay mapper.
  *
  * @param[in]   host     Original host name or IP address.
  * @param[in]   port     Original port.
@@ -43222,8 +43243,9 @@ openvas_default_scanner_host ()
  * @return New connection if success, NULL otherwise.
  */
 static osp_connection_t *
-osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
-                           const char *key_pub, const char *key_priv)
+osp_scanner_mapped_relay_connect (const char *host, int port,
+                                  const char *ca_pub,
+                                  const char *key_pub, const char *key_priv)
 {
   int ret, new_port;
   gchar *new_host, *new_ca_pub;
@@ -43283,6 +43305,7 @@ osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
  * @param[in]   ca_pub   CA certificate.
  * @param[in]   key_pub  Public key.
  * @param[in]   key_priv Private key.
+ * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
  *
  * @return New connection if success, NULL otherwise.
  */
@@ -43291,16 +43314,19 @@ osp_connect_with_data (const char *host,
                        int port,
                        const char *ca_pub,
                        const char *key_pub,
-                       const char *key_priv)
+                       const char *key_priv,
+                       gboolean use_relay_mapper)
 {
   osp_connection_t *connection;
   int is_unix_socket = (host && *host == '/') ? 1 : 0;
 
   if (is_unix_socket == 0
+      && use_relay_mapper
       && get_relay_mapper_path ())
     {
       connection
-        = osp_scanner_relay_connect (host, port, ca_pub, key_pub, key_priv);
+        = osp_scanner_mapped_relay_connect (host, port, ca_pub, key_pub,
+                                            key_priv);
     }
   else
     {
@@ -43330,9 +43356,13 @@ osp_scanner_connect (scanner_t scanner)
   int port;
   osp_connection_t *connection;
   char *host, *ca_pub, *key_pub, *key_priv;
+  gboolean has_relay;
 
   assert (scanner);
-  host = scanner_host (scanner);
+
+  has_relay = scanner_has_relay (scanner);
+  host = scanner_host (scanner, has_relay);
+
   if (host && *host == '/')
     {
       port = 0;
@@ -43342,13 +43372,14 @@ osp_scanner_connect (scanner_t scanner)
     }
   else
     {
-      port = scanner_port (scanner);
+      port = scanner_port (scanner, has_relay);
       ca_pub = scanner_ca_pub (scanner);
       key_pub = scanner_key_pub (scanner);
       key_priv = scanner_key_priv (scanner);
     }
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      has_relay == FALSE);
 
   g_free (host);
   g_free (ca_pub);
@@ -43377,13 +43408,28 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
                                char **p_name, char **p_ver)
 {
   osp_connection_t *connection;
+  gboolean has_relay;
+  const char *host;
+  int port;
 
+  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
+  if (has_relay)
+    {
+      host = scanner_iterator_relay_host (iterator);
+      port = scanner_iterator_relay_port (iterator);
+    }
+  else
+    {
+      host = scanner_iterator_host (iterator);
+      port = scanner_iterator_port (iterator);
+    }
   assert (iterator);
-  connection = osp_connect_with_data (scanner_iterator_host (iterator),
-                                      scanner_iterator_port (iterator),
+  connection = osp_connect_with_data (host,
+                                      port,
                                       scanner_iterator_ca_pub (iterator),
                                       scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator));
+                                      scanner_iterator_key_priv (iterator),
+                                      has_relay);
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -43406,13 +43452,28 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
                                GSList **params)
 {
   osp_connection_t *connection;
+  gboolean has_relay;
+  const char *host;
+  int port;
 
+  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
+  if (has_relay)
+    {
+      host = scanner_iterator_relay_host (iterator);
+      port = scanner_iterator_relay_port (iterator);
+    }
+  else
+    {
+      host = scanner_iterator_host (iterator);
+      port = scanner_iterator_port (iterator);
+    }
   assert (iterator);
-  connection = osp_connect_with_data (scanner_iterator_host (iterator),
-                                      scanner_iterator_port (iterator),
+  connection = osp_connect_with_data (host,
+                                      port,
                                       scanner_iterator_ca_pub (iterator),
                                       scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator));
+                                      scanner_iterator_key_priv (iterator),
+                                      has_relay);
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))
@@ -60165,13 +60226,15 @@ cleanup_ids_for_table (const char *table)
 openvasd_connector_t
 openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
 {
+  gboolean has_relay;
   int port;
   openvasd_connector_t connection;
   char *server, *ca_pub, *key_pub, *key_priv;
 
   assert (scanner);
-  server = scanner_host (scanner);
-  port = scanner_port (scanner);
+  has_relay = scanner_has_relay (scanner);
+  server = scanner_host (scanner, has_relay);
+  port = scanner_port (scanner, has_relay);
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);

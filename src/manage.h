@@ -2893,11 +2893,14 @@ scanner_writable (scanner_t);
 const char *
 scanner_uuid_default ();
 
+gboolean
+scanner_has_relay (scanner_t);
+
 char *
-scanner_host (scanner_t);
+scanner_host (scanner_t, gboolean);
 
 int
-scanner_port (scanner_t);
+scanner_port (scanner_t, gboolean);
 
 int
 scanner_type (scanner_t);
@@ -2998,7 +3001,8 @@ osp_connect_with_data (const char *,
                        int,
                        const char *,
                        const char *,
-                       const char *);
+                       const char *,
+                       gboolean);
 
 osp_connection_t *
 osp_scanner_connect (scanner_t);
