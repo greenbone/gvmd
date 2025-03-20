@@ -60046,7 +60046,7 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
         {
           fprintf (stderr,
                    "No relay mapper found."
-                   " Please check your $PATH or the --relay-mapper option.\n");
+                   " Please check your --relay-mapper option.\n");
           success_text = NULL;
           ret = -1;
         }

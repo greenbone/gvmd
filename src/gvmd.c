@@ -2188,10 +2188,10 @@ gvmd (int argc, char** argv, char *env[])
           NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
-          "Executable for mapping scanner hosts to relays."
-          " Use an empty string to explicitly disable."
-          " If the option is not given, $PATH is checked for"
-          " gvm-relay-mapper.",
+          "Executable for automatically mapping scanner hosts to relays."
+          " If the option is empty or not given, automatic mapping"
+          " is disabled. This option is deprecated and relays should be"
+          " set explictly in the relay_... fields of scanners.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
@@ -2517,36 +2517,22 @@ gvmd (int argc, char** argv, char *env[])
   set_min_mem_feed_update (min_mem_feed_update);
 
   /* Set relay mapper */
-  if (relay_mapper)
+  if (relay_mapper && strcmp (relay_mapper, ""))
     {
-      if (strcmp (relay_mapper, ""))
-        {
-          if (gvm_file_exists (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' not found.", relay_mapper);
-          else if (gvm_file_is_readable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
-          else if (gvm_file_is_executable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
-          else
-            {
-              g_debug ("Using relay mapper '%s'.", relay_mapper);
-              set_relay_mapper_path (relay_mapper);
-            }
-        }
+      if (gvm_file_exists (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' not found.", relay_mapper);
+      else if (gvm_file_is_readable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
+      else if (gvm_file_is_executable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
       else
-        g_debug ("Relay mapper disabled.");
+        {
+          g_debug ("Using relay mapper '%s'.", relay_mapper);
+          set_relay_mapper_path (relay_mapper);
+        }
     }
   else
-    {
-      gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
-      if (default_mapper)
-        {
-          g_debug ("Using default relay mapper '%s'.", default_mapper);
-          set_relay_mapper_path (default_mapper);
-        }
-      else
-        g_debug ("No default relay mapper found.");
-    }
+    g_debug ("Relay mapper disabled.");
 
   /*
    * Parameters for new credential encryption keys

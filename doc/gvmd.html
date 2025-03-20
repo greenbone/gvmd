@@ -370,9 +370,10 @@
     
       <p><b>--relay-mapper=<em>FILE</em></b></p>
       
-        <p>Executable for mapping scanner hosts to relays.
-          Use an empty string to explicitly disable.
-          If the option is not given, $PATH is checked for gvm-relay-mapper.
+        <p>Executable for automatically mapping scanner hosts to relays.
+           If the option is empty or not given, automatic mapping
+           is disabled. This option is deprecated and relays should be
+           set explictly in the relay_... fields of scanners.
         </p>
       
     
