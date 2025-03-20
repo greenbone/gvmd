@@ -116,7 +116,7 @@ add_executable (manage-utils-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
@@ -151,7 +151,7 @@ add_executable (manage-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
@@ -186,7 +186,7 @@ add_executable (manage-sql-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
@@ -221,7 +221,7 @@ add_executable (gmp-tickets-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
@@ -256,7 +256,7 @@ add_executable (utils-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
