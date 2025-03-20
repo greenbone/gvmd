@@ -34,6 +34,7 @@
 #include "manage.h"
 #include "debug_utils.h"
 #include "manage_sql.h"
+#include "manage_alerts.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
 #include "manage_sql_secinfo.h"

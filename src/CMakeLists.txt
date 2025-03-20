@@ -308,7 +308,7 @@ add_executable (gvmd
                 gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_get.c
                 manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
