@@ -1870,6 +1870,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_credential = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
+  static gchar *scanner_relay_host = NULL;
+  static gchar *scanner_relay_port = NULL;
   static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int affected_products_query_size
@@ -2233,6 +2235,15 @@ gvmd (int argc, char** argv, char *env[])
           "Scanner port for --create-scanner and --modify-scanner."
           " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
+        { "scanner-relay-host", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_host,
+          "Scanner relay host or socket for --create-scanner and"
+          " --modify-scanner.",
+          "<scanner-relay-host>" },
+        { "scanner-relay-port", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_port,
+          "Scanner relay port for --create-scanner and --modify-scanner.",
+          "<scanner-relay-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
@@ -2894,7 +2905,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_create_scanner (log_config, &database, create_scanner,
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2943,7 +2955,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_modify_scanner (log_config, &database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
                                    stype, scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)

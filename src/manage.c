@@ -853,6 +853,22 @@ scanner_type_valid (scanner_type_t scanner_type)
   return 0;
 }
 
+/**
+ * @brief Check if a scanner type supports UNIX sockets.
+ *
+ * @param[in]  scanner_type  Scanner type.
+ *
+ * @return 1 if unix sockets are supported, else 0.
+ */
+int
+scanner_type_supports_unix_sockets (scanner_type_t scanner_type)
+{
+  if (scanner_type == SCANNER_TYPE_OPENVAS
+      || scanner_type == SCANNER_TYPE_OSP_SENSOR)
+    return 1;
+  return 0;
+}
+
 
 /* Severity related functions. */
 

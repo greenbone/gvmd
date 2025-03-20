@@ -480,6 +480,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
+      <p><opt>--scanner-relay-host=<arg>SCANNER-HOST</arg></opt></p>
+      <optdesc>
+        <p>
+          Scanner relay host or socket for --create-scanner and
+          --modify-scanner.
+        </p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-relay-port=<arg>SCANNER-PORT</arg></opt></p>
+      <optdesc>
+        <p>Scanner relay port for --create-scanner and --modify-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--scanner-type=<arg>SCANNER-TYPE</arg></opt></p>
       <optdesc>
         <p>Scanner type for --create-scanner and --modify-scanner.</p>
