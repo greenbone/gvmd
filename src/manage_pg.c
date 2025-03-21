@@ -2692,7 +2692,9 @@ create_tables ()
        "  ca_pub text,"
        "  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  relay_host text,"
+       "  relay_port integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id SERIAL PRIMARY KEY,"
@@ -2796,7 +2798,9 @@ create_tables ()
        "  credential integer,"
        "  credential_location integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  relay_host text,"
+       "  relay_port integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS tasks"
        " (id SERIAL PRIMARY KEY,"

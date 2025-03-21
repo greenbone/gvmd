@@ -5594,6 +5594,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>type</e>
       <e>ca_pub</e>
       <e>credential</e>
+      <o><e>relay_host</e></o>
+      <o><e>relay_port</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -5644,6 +5646,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>relay_host</name>
+      <summary>Optional relay host of the scanner</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>relay_port</name>
+      <summary>Optional relay port of the scanner</summary>
+      <pattern>text</pattern>
     </ele>
     <response>
       <pattern>
@@ -20268,7 +20280,7 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Port of the scanner</summary>
           </column>
-         <column>
+          <column>
             <name>type</name>
             <type>
               <alts>
@@ -20277,6 +20289,16 @@ END:VCALENDAR
               </alts>
             </type>
             <summary>Scanner type: '1' for OSP, '2' for OpenVAS (classic)</summary>
+          </column>
+          <column>
+            <name>relay_host</name>
+            <type>text</type>
+            <summary>Relay host of the scanner</summary>
+          </column>
+          <column>
+            <name>relay_port</name>
+            <type>integer</type>
+            <summary>Relay port of the scanner</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -20339,6 +20361,8 @@ END:VCALENDAR
           <e>type</e>
           <e>ca_pub</e>
           <e>credential</e>
+          <e>relay_host</e>
+          <e>relay_port</e>
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
         </pattern>
@@ -20522,6 +20546,16 @@ END:VCALENDAR
               <t>boolean</t>
             </pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>relay_host</name>
+          <summary>Optional relay host of the scanner</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>relay_port</name>
+          <summary>Optional relay port of the scanner</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>configs</name>
@@ -28269,6 +28303,8 @@ END:VCALENDAR
       <e>type</e>
       <o><e>ca_pub</e></o>
       <o><e>credential</e></o>
+      <o><e>relay_host</e></o>
+      <o><e>relay_port</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -28311,6 +28347,16 @@ END:VCALENDAR
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>relay_host</name>
+      <summary>Optional relay host of the scanner</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>relay_port</name>
+      <summary>Optional relay port of the scanner</summary>
+      <pattern>text</pattern>
     </ele>
     <response>
       <pattern>
