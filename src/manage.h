@@ -25,6 +25,7 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_alerts.h"
 #include "manage_configs.h"
 #include "manage_get.h"
 #include "sql.h"
@@ -333,7 +334,6 @@ int
 scanner_type_valid (scanner_type_t);
 
 typedef resource_t credential_t;
-typedef resource_t alert_t;
 typedef resource_t filter_t;
 typedef resource_t group_t;
 typedef resource_t host_t;
@@ -553,19 +553,6 @@ typedef enum
   ALERT_METHOD_VFIRE,
 } alert_method_t;
 
-/**
- * @brief Types of alert conditions.
- */
-typedef enum
-{
-  ALERT_CONDITION_ERROR,
-  ALERT_CONDITION_ALWAYS,
-  ALERT_CONDITION_SEVERITY_AT_LEAST,
-  ALERT_CONDITION_SEVERITY_CHANGED,
-  ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-  ALERT_CONDITION_FILTER_COUNT_CHANGED
-} alert_condition_t;
-
 int
 manage_check_alerts (GSList *, const db_conn_info_t *);
 
@@ -640,12 +627,6 @@ int
 alert_iterator_active (iterator_t*);
 
 const char*
-alert_condition_name (alert_condition_t);
-
-gchar*
-alert_condition_description (alert_condition_t, alert_t);
-
-const char*
 event_name (event_t);
 
 gchar*
@@ -656,9 +637,6 @@ alert_method (alert_t alert);
 
 const char*
 alert_method_name (alert_method_t);
-
-alert_condition_t
-alert_condition_from_name (const char*);
 
 event_t
 event_from_name (const char*);
