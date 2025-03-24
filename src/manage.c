@@ -1396,7 +1396,7 @@ task_t current_scanner_task = (task_t) 0;
 report_t global_current_report = (report_t) 0;
 
 
-/* Alerts. */
+/* Events. */
 
 /**
  * @brief Get the name of an alert event.
@@ -1464,34 +1464,6 @@ event_description (event_t event, const void *event_data, const char *task_name)
 }
 
 /**
- * @brief Get the name of an alert method.
- *
- * @param[in]  method  Method.
- *
- * @return The name of the method (for example, "Email" or "SNMP").
- */
-const char*
-alert_method_name (alert_method_t method)
-{
-  switch (method)
-    {
-      case ALERT_METHOD_EMAIL:       return "Email";
-      case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
-      case ALERT_METHOD_SCP:         return "SCP";
-      case ALERT_METHOD_SEND:        return "Send";
-      case ALERT_METHOD_SMB:         return "SMB";
-      case ALERT_METHOD_SNMP:        return "SNMP";
-      case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
-      case ALERT_METHOD_START_TASK:  return "Start Task";
-      case ALERT_METHOD_SYSLOG:      return "Syslog";
-      case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
-      case ALERT_METHOD_VERINICE:    return "verinice Connector";
-      case ALERT_METHOD_VFIRE:       return "Alemba vFire";
-      default:                       return "Internal Error";
-    }
-}
-
-/**
  * @brief Get an event from a name.
  *
  * @param[in]  name  Event name.
@@ -1514,43 +1486,6 @@ event_from_name (const char* name)
   if (strcasecmp (name, "Owned ticket changed") == 0)
     return EVENT_OWNED_TICKET_CHANGED;
   return EVENT_ERROR;
-}
-
-/**
- * @brief Get an alert method from a name.
- *
- * @param[in]  name  Method name.
- *
- * @return The method.
- */
-alert_method_t
-alert_method_from_name (const char* name)
-{
-  if (strcasecmp (name, "Email") == 0)
-    return ALERT_METHOD_EMAIL;
-  if (strcasecmp (name, "HTTP Get") == 0)
-    return ALERT_METHOD_HTTP_GET;
-  if (strcasecmp (name, "SCP") == 0)
-    return ALERT_METHOD_SCP;
-  if (strcasecmp (name, "Send") == 0)
-    return ALERT_METHOD_SEND;
-  if (strcasecmp (name, "SMB") == 0)
-    return ALERT_METHOD_SMB;
-  if (strcasecmp (name, "SNMP") == 0)
-    return ALERT_METHOD_SNMP;
-  if (strcasecmp (name, "Sourcefire Connector") == 0)
-    return ALERT_METHOD_SOURCEFIRE;
-  if (strcasecmp (name, "Start Task") == 0)
-    return ALERT_METHOD_START_TASK;
-  if (strcasecmp (name, "Syslog") == 0)
-    return ALERT_METHOD_SYSLOG;
-  if (strcasecmp (name, "TippingPoint SMS") == 0)
-    return ALERT_METHOD_TIPPINGPOINT;
-  if (strcasecmp (name, "verinice Connector") == 0)
-    return ALERT_METHOD_VERINICE;
-  if (strcasecmp (name, "Alemba vFire") == 0)
-    return ALERT_METHOD_VFIRE;
-  return ALERT_METHOD_ERROR;
 }
 
 

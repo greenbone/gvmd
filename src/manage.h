@@ -533,26 +533,6 @@ typedef enum
   EVENT_OWNED_TICKET_CHANGED
 } event_t;
 
-/**
- * @brief Types of alerts.
- */
-typedef enum
-{
-  ALERT_METHOD_ERROR,
-  ALERT_METHOD_EMAIL,
-  ALERT_METHOD_HTTP_GET,
-  ALERT_METHOD_SOURCEFIRE,
-  ALERT_METHOD_START_TASK,
-  ALERT_METHOD_SYSLOG,
-  ALERT_METHOD_VERINICE,
-  ALERT_METHOD_SEND,
-  ALERT_METHOD_SCP,
-  ALERT_METHOD_SNMP,
-  ALERT_METHOD_SMB,
-  ALERT_METHOD_TIPPINGPOINT,
-  ALERT_METHOD_VFIRE,
-} alert_method_t;
-
 int
 manage_check_alerts (GSList *, const db_conn_info_t *);
 
@@ -635,14 +615,8 @@ event_description (event_t, const void *, const char *);
 alert_method_t
 alert_method (alert_t alert);
 
-const char*
-alert_method_name (alert_method_t);
-
 event_t
 event_from_name (const char*);
-
-alert_method_t
-alert_method_from_name (const char*);
 
 void
 init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
