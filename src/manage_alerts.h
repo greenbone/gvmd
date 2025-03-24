@@ -19,7 +19,33 @@
 #ifndef _GVMD_MANAGE_ALERTS_H
 #define _GVMD_MANAGE_ALERTS_H
 
+#include "iterator.h"
+
 #include <glib.h>
+
+typedef resource_t alert_t;
+
+/**
+ * @brief Types of alert conditions.
+ */
+typedef enum
+{
+  ALERT_CONDITION_ERROR,
+  ALERT_CONDITION_ALWAYS,
+  ALERT_CONDITION_SEVERITY_AT_LEAST,
+  ALERT_CONDITION_SEVERITY_CHANGED,
+  ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+  ALERT_CONDITION_FILTER_COUNT_CHANGED
+} alert_condition_t;
+
+const char*
+alert_condition_name (alert_condition_t);
+
+gchar*
+alert_condition_description (alert_condition_t, alert_t);
+
+alert_condition_t
+alert_condition_from_name (const char*);
 
 /**
  * @brief Data about a report sent by an alert.
