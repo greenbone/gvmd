@@ -17,10 +17,10 @@
  */
 
 /**
- * @file manage_sql_alerts.c
- * @brief GVM management layer: Alert SQL
+ * @file manage_alerts.c
+ * @brief GVM management layer: Alerts.
  *
- * Alert SQL for the GVM management layer.
+ * General functions for managing alerts.
  */
 
 #include "manage_alerts.h"
