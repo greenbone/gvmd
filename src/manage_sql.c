@@ -41255,16 +41255,18 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
  * @param[in]  credential_id    UUID of credential to use or NULL to create.
  * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
+ * @param[in]  relay_host       Relay host of scanner.
+ * @param[in]  relay_port       Relay port of scanner.
  *
- * @return 0 success, -1 error, -2 database is too old, -3 database needs
- *         to be initialised from server, -5 database is too new.
+ * @return 0 success, -1 failure.
  */
 int
 manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *name, const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
                        const char *credential_id,
-                       const char *key_pub_path, const char *key_priv_path)
+                       const char *key_pub_path, const char *key_priv_path,
+                       const char *relay_host, const char *relay_port)
 {
   int ret;
   char *ca_pub, *key_pub, *key_priv;
@@ -41279,7 +41281,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
   ret = manage_option_setup (log_config, database,
                              0 /* avoid_db_check_inserts */);
   if (ret)
-    return ret;
+    return -1;
 
   current_credentials.uuid = "";
 
@@ -41379,14 +41381,15 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
       used_credential_id = credential_uuid (new_credential);
     }
   ret = create_scanner (name, NULL, host, port, type, &scanner, ca_pub,
-                        used_credential_id);
+                        used_credential_id, relay_host, relay_port);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
   g_free (used_credential_id);
+
   switch (ret)
     {
-      case 0:
+      case CREATE_SCANNER_SUCCESS:
         {
           gchar *uuid;
 
@@ -41405,23 +41408,49 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
 
         printf ("Scanner created.\n");
         break;
-      case 1:
+      case CREATE_SCANNER_ALREADY_EXISTS:
         fprintf (stderr, "Scanner exists already.\n");
         break;
-      case 2:
-        fprintf (stderr, "Invalid value provided.\n");
+      case CREATE_SCANNER_MISSING_TYPE:
+        fprintf (stderr, "Scanner type is required.\n");
         break;
-      case 3:
+      case CREATE_SCANNER_MISSING_HOST:
+        fprintf (stderr, "Scanner host is required.\n");
+        break;
+      case CREATE_SCANNER_CREDENTIAL_NOT_FOUND:
         fprintf (stderr, "Credential not found.\n");
         break;
-      case 4:
-        fprintf (stderr, "Credential should be 'up'.\n");
-        break;
-      case 5:
+      case CREATE_SCANNER_CREDENTIAL_NOT_CC:
         fprintf (stderr, "Credential should be 'cc'.\n");
         break;
-      case 6:
-        fprintf (stderr, "Credential required.\n");
+      case CREATE_SCANNER_INVALID_TYPE:
+        fprintf (stderr, "Invalid scanner type.\n");
+        break;
+      case CREATE_SCANNER_INVALID_PORT:
+        fprintf (stderr, 
+                 "Scanner port must be a valid port number (1 - 65535)"
+                 " if host is not a UNIX socket path.\n");
+        break;
+      case CREATE_SCANNER_INVALID_HOST:
+        fprintf (stderr,
+                 "Scanner host must be a valid hostname,"
+                 " IP address or UNIX socket path.\n");
+        break;
+      case CREATE_SCANNER_INVALID_RELAY_PORT:
+        fprintf (stderr, 
+                 "Scanner relay port must be a valid port number (1 - 65535)"
+                 " if relay host is not a UNIX socket path.\n");
+        break;
+      case CREATE_SCANNER_INVALID_RELAY_HOST:
+        fprintf (stderr,
+                 "Scanner relay host must be a valid hostname,"
+                 " IP address, UNIX socket path or empty.\n");
+        break;
+      case CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED:
+        fprintf (stderr, "Scanner type does not support UNIX sockets.\n");
+        break;
+      case CREATE_SCANNER_PERMISSION_DENIED:
+        fprintf (stderr, "Permission denied.\n");
         break;
       default:
         fprintf (stderr, "Failed to create scanner.\n");
@@ -41430,7 +41459,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
 
   manage_option_cleanup ();
 
-  return ret;
+  return ret ? -1 : 0;
 }
 
 /**
@@ -41511,11 +41540,10 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  credential_id    UUID of credential to use or NULL to create.
  * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
+ * @param[in]  relay_host       Relay host of scanner.
+ * @param[in]  relay_port       Relay port of scanner.
  *
- * @return 0 success, , 1 failed to find scanner, 2 scanner with new name
- *         exists, 3 scanner_id required, 4 invalid value, 99 permission
- *         denied, -1 error, -2 database is too old, -3 database needs
- *         to be initialised from server, -5 database is too new.
+ * @return 0 success, -1 failed.
  */
 int
 manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -41523,7 +41551,8 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
                        const char *credential_id,
-                       const char *key_pub_path, const char *key_priv_path)
+                       const char *key_pub_path, const char *key_priv_path,
+                       const char *relay_host, const char *relay_port)
 {
   int ret;
   char *ca_pub, *key_pub, *key_priv;
@@ -41538,7 +41567,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
   ret = manage_option_setup (log_config, database,
                              0 /* avoid_db_check_inserts */);
   if (ret)
-    return ret;
+    return -1;
 
   current_credentials.uuid = "";
 
@@ -41556,14 +41585,14 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         {
           fprintf (stderr, "Failed to find scanner %s.\n", scanner_id);
           manage_option_cleanup ();
-          return 1;
+          return -1;
         }
     }
   else
     {
       fprintf (stderr, "Scanner UUID required.\n");
       manage_option_cleanup ();
-      return 3;
+      return -1;
     }
 
   if (name)
@@ -41689,38 +41718,59 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         used_credential_id = NULL;
     }
   ret = modify_scanner (scanner_id, name, NULL, host, port, type, ca_pub,
-                        used_credential_id);
+                        used_credential_id, relay_host, relay_port);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
   g_free (used_credential_id);
   switch (ret)
     {
-      case 0:
+      case MODIFY_SCANNER_SUCCESS:
         printf ("Scanner modified.\n");
         break;
-      case 2:
+      case MODIFY_SCANNER_ALREADY_EXISTS:
         fprintf (stderr, "Scanner with new name exists already.\n");
         break;
-      case 3:
+      case MODIFY_SCANNER_MISSING_ID:
         fprintf (stderr, "Scanner ID required.\n");
         break;
-      case 4:
-        fprintf (stderr, "Invalid value.\n");
+      case MODIFY_SCANNER_NOT_FOUND:
+        fprintf (stderr, "Scanner not found.\n");
         break;
-      case 5:
+      case MODIFY_SCANNER_CREDENTIAL_NOT_FOUND:
         fprintf (stderr, "Credential not found.\n");
         break;
-      case 6:
+      case MODIFY_SCANNER_CREDENTIAL_NOT_CC:
         fprintf (stderr, "Credential should be 'cc'.\n");
         break;
-      case 7:
-        fprintf (stderr, "Credential should be 'up'.\n");
+      case CREATE_SCANNER_INVALID_TYPE:
+        fprintf (stderr, "Invalid scanner type.\n");
         break;
-      case 8:
-        fprintf (stderr, "Credential missing.\n");
+      case MODIFY_SCANNER_INVALID_PORT:
+        fprintf (stderr, 
+                 "Scanner port must be a valid port number (1 - 65535)"
+                 " if host is not a UNIX socket path.\n");
         break;
-      case 99:
+      case MODIFY_SCANNER_INVALID_HOST:
+        fprintf (stderr,
+                 "Scanner host must be a valid hostname,"
+                 " IP address or UNIX socket path.\n");
+        break;
+      case MODIFY_SCANNER_INVALID_RELAY_PORT:
+        fprintf (stderr, 
+                 "Scanner relay port must be a valid port number (1 - 65535)"
+                 " if relay host is not a UNIX socket path.\n");
+        break;
+      case MODIFY_SCANNER_INVALID_RELAY_HOST:
+        fprintf (stderr,
+                 "Scanner relay host must be a valid hostname,"
+                 " IP address, UNIX socket path or empty.\n");
+        break;
+      case MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED:
+        fprintf (stderr,
+                 "Scanner type does not support UNIX sockets.\n");
+        break;
+      case MODIFY_SCANNER_PERMISSION_DENIED:
         fprintf (stderr, "Permission denied.\n");
         break;
       default:
@@ -41730,7 +41780,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   manage_option_cleanup ();
 
-  return ret;
+  return ret ? -1 : 0;
 }
 
 /**
@@ -41740,9 +41790,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  database    Location of manage database.
  * @param[in]  uuid        UUID of scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
- *         -1 error, -2 database is too old, -3 database needs to be
- *         initialised from server, -5 database is too new.
+ * @return 0 success, -1 failure.
  */
 int
 manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -41758,7 +41806,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   ret = manage_option_setup (log_config, database,
                              0 /* avoid_db_check_inserts */);
   if (ret)
-    return ret;
+    return -1;
 
   current_credentials.uuid = "";
   switch ((ret = verify_scanner (uuid, &version)))
@@ -41784,7 +41832,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   current_credentials.uuid = NULL;
 
   manage_option_cleanup ();
-  return ret;
+  return ret ? -1 : 0;
 }
 
 /**
@@ -41815,14 +41863,18 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   ca_pub       CA Certificate for scanner.
  * @param[in]   iport        Port of scanner.
  * @param[in]   itype        Type of scanner.
+ * @param[in]   relay_host   Relay host of scanner.
+ * @param[in]   irelay_port  Relay port of scanner.
  * @param[out]  new_scanner  The created scanner.
  */
 static void
 insert_scanner (const char* name, const char *comment, const char *host,
                 const char *ca_pub, int iport, int itype,
+                const char *relay_host, int irelay_port,
                 scanner_t *new_scanner)
 {
   char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
+  char *quoted_relay_host;
 
   assert (current_credentials.uuid);
 
@@ -41830,22 +41882,28 @@ insert_scanner (const char* name, const char *comment, const char *host,
   quoted_comment = sql_quote (comment ?: "");
   quoted_host = sql_quote (host ?: "");
   quoted_ca_pub = sql_quote (ca_pub ?: "");
+  quoted_relay_host = sql_quote (relay_host ?: "");
 
   sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
-       "                      ca_pub,creation_time, modification_time)"
+       "                      ca_pub, creation_time, modification_time,"
+       "                      relay_host, relay_port)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
+       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now (),"
+       "  '%s', %d);",
        quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
        iport, itype,
        ca_pub ? "'" : "",
        ca_pub ? quoted_ca_pub : "NULL",
-       ca_pub ? "'" : "");
+       ca_pub ? "'" : "",
+       quoted_relay_host,
+       irelay_port);
 
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_ca_pub);
+  g_free (quoted_relay_host);
 
   if (new_scanner)
     *new_scanner = sql_last_insert_id ();
@@ -41862,18 +41920,18 @@ insert_scanner (const char* name, const char *comment, const char *host,
  * @param[out]  new_scanner    The created scanner.
  * @param[in]   ca_pub         CA Certificate for scanner.
  * @param[in]   credential_id  ID of credential for scanner.
+ * @param[in]   relay_host  Relay host of scanner.
+ * @param[in]   relay_port  Relay port of scanner.
  *
- * @return 0 success, 1 scanner exists already, 2 Invalid value,
- *         3 credential not found, 4 credential should be 'up',
- *         5 credential should be 'cc', 6 credential required,
- *         99 permission denied.
+ * @return 0 success, error otherwise (see create_scanner_return_t)
  */
-int
+create_scanner_return_t
 create_scanner (const char* name, const char *comment, const char *host,
                 const char *port, const char *type, scanner_t *new_scanner,
-                const char *ca_pub, const char *credential_id)
+                const char *ca_pub, const char *credential_id,
+                const char *relay_host, const char *relay_port)
 {
-  int iport, itype, unix_socket = 0;
+  int iport, itype, irelay_port, unix_socket, relay_unix_socket = 0;
   credential_t credential;
 
   assert (name);
@@ -41883,33 +41941,91 @@ create_scanner (const char* name, const char *comment, const char *host,
   if (acl_user_may ("create_scanner") == 0)
     {
       sql_rollback ();
-      return 99;
+      return CREATE_SCANNER_PERMISSION_DENIED;
     }
 
-  if (!host || !port || !type)
-    return 2;
-  if (*host == '/' || *host == 'h')
-    {
-      unix_socket = 1;
-      ca_pub = NULL;
-    }
-  iport = atoi (port);
-  itype = atoi (type);
-  if (iport <= 0 || iport > 65535)
-    return 2;
-  if (scanner_type_valid (itype) == 0)
-    return 2;
-  /* XXX: Workaround for unix socket case. */
-  if (gvm_get_host_type (host) == -1 && !unix_socket)
-    return 2;
   if (resource_with_name_exists (name, "scanner", 0))
     {
       sql_rollback ();
-      return 1;
+      return CREATE_SCANNER_ALREADY_EXISTS;
+    }
+
+  if (!type)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_MISSING_TYPE;
+    }
+
+  if (!host)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_MISSING_HOST;
+    }
+
+  unix_socket = host && (*host == '/');
+  relay_unix_socket = relay_host && (*relay_host == '/');
+  itype = atoi (type);
+
+  if (scanner_type_valid (itype) == 0)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_INVALID_TYPE;
     }
 
   if (unix_socket)
-    insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+    {
+      ca_pub = NULL;
+      iport = 0;
+      
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+    }
+  else
+    {
+      iport = atoi (port ?: "0");
+      if (iport <= 0 || iport > 65535)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_PORT;
+        }
+      if (gvm_get_host_type (host) == -1)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_HOST;
+        }
+    }
+
+  if (relay_unix_socket)
+    {
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+      irelay_port = 0;
+    }
+  else
+    {
+      irelay_port = atoi (relay_port ?: "0");
+      if (irelay_port <= 0 || irelay_port > 65535)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_RELAY_PORT;
+        }
+    }
+
+  if (gvm_get_host_type (host) == -1)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_INVALID_RELAY_HOST;
+    }
+
+  if (unix_socket)
+    insert_scanner (name, comment, host, ca_pub, iport, itype,
+                    relay_host, irelay_port, new_scanner);
   else
     {
       credential = 0;
@@ -41921,23 +42037,24 @@ create_scanner (const char* name, const char *comment, const char *host,
               (credential_id, &credential, "get_credentials"))
             {
               sql_rollback ();
-              return -1;
+              return CREATE_SCANNER_INTERNAL_ERROR;
             }
           if (credential == 0)
             {
               sql_rollback ();
-              return 3;
+              return CREATE_SCANNER_CREDENTIAL_NOT_FOUND;
             }
           if (sql_int ("SELECT type != 'cc' FROM credentials"
                        " WHERE id = %llu;",
                        credential))
             {
               sql_rollback ();
-              return 5;
+              return CREATE_SCANNER_CREDENTIAL_NOT_CC;
             }
         }
 
-      insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+      insert_scanner (name, comment, host, ca_pub, iport, itype,
+                      relay_host, irelay_port, new_scanner);
 
       if (credential)
         {
@@ -41947,7 +42064,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   sql_commit ();
-  return 0;
+  return CREATE_SCANNER_SUCCESS;
 }
 
 /**
@@ -41976,7 +42093,7 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
 }
 
 /**
- * @brief Modify an scanner.
+ * @brief Modify a scanner.
  *
  * @param[in]   scanner_id  UUID of scanner.
  * @param[in]   name        Name of scanner.
@@ -41987,80 +42104,165 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @param[in]   ca_pub      CA Certificate of scanner, or "" for default, or
  *                          to keep existing value.
  * @param[in]   credential_id  UUID of credential or NULL.
+ * @param[in]   relay_host  Relay host of scanner.
+ * @param[in]   relay_port  Relay port of scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
- *         3 scanner_id required, 4 invalid value, 5 credential not found,
- *         6 credential should be 'cc', 7 credential should be 'up',
- *         8 credential missing, 99 permission denied, -1 internal error.
+ * @return 0 success, -1 internal error, other non-zero for other errors.
+ *         (See modify_scanner_return_t)
  */
-int
+modify_scanner_return_t
 modify_scanner (const char *scanner_id, const char *name, const char *comment,
                 const char *host, const char *port, const char *type,
-                const char *ca_pub, const char *credential_id)
+                const char *ca_pub, const char *credential_id,
+                const char *relay_host, const char *relay_port)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_host, *new_port, *new_type;
+  gchar *used_host, *used_relay_host;
+  gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_relay_host;
   scanner_t scanner = 0;
   credential_t credential = 0;
-  int iport, itype, unix_socket, credential_given;
+  int itype, iport, irelay_port;
+  int unix_socket, relay_unix_socket, credential_given;
 
   assert (current_credentials.uuid);
 
   if (scanner_id == NULL)
-    return 3;
-
-  if (port)
-    {
-      iport = atoi (port);
-      if (iport <= 0 || iport > 65535)
-        return 4;
-    }
-  else
-    /* Keep compiler quiet. */
-    iport = 0;
-
-  if (type)
-    {
-      itype = atoi (type);
-      if (scanner_type_valid (itype) == 0)
-        return 4;
-    }
-  else
-    itype = 0;
+    return MODIFY_SCANNER_MISSING_ID;
 
   sql_begin_immediate ();
 
   if (acl_user_may ("modify_scanner") == 0)
     {
       sql_rollback ();
-      return 99;
+      return MODIFY_SCANNER_PERMISSION_DENIED;
     }
 
   if (find_scanner_with_permission (scanner_id, &scanner, "modify_scanner"))
     {
       sql_rollback ();
-      return -1;
+      return MODIFY_SCANNER_INTERNAL_ERROR;
     }
   if (scanner == 0)
     {
       sql_rollback ();
-      return 1;
+      return MODIFY_SCANNER_NOT_FOUND;
     }
 
-  if (host)
+  if (type)
     {
-      unix_socket = (*host == '/');
-      if ((unix_socket == 0) && (gvm_get_host_type (host) == -1))
-        return 4;
+      itype = atoi (type);
+      if (scanner_type_valid (itype) == 0)
+        {
+          sql_rollback ();
+          return MODIFY_SCANNER_INVALID_TYPE;
+        }
+    }
+  else
+    itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+
+  if (port)
+    iport = atoi (port);
+  else
+    iport = sql_int ("SELECT port FROM scanners WHERE id = %llu;",
+                     scanner);
+
+  if (relay_port)
+    irelay_port = atoi (relay_port);
+  else
+    irelay_port = sql_int ("SELECT relay_port FROM scanners WHERE id = %llu;",
+                           scanner);
+
+  if (host)
+    used_host = g_strdup (host);
+  else
+    used_host = sql_string ("SELECT host FROM scanners"
+                            " WHERE id = %llu;",
+                            scanner);
+
+  if (relay_host)
+    used_relay_host = g_strdup (relay_host);
+  else
+    used_relay_host = sql_string ("SELECT relay_host FROM scanners"
+                                  " WHERE id = %llu;",
+                                  scanner);
+
+  unix_socket = used_host && (*used_host == '/');
+  relay_unix_socket = used_relay_host && (*used_relay_host == '/');
+
+  if (unix_socket)
+    {
+      iport = 0;
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
     }
   else
     {
-      char *old_host = scanner_host (scanner);
-      unix_socket = (*old_host == '/');
-      g_free (old_host);
+      if (port)
+        iport = atoi (port);
+      else
+        iport = sql_int ("SELECT port FROM scanners"
+                         " WHERE id = %llu;",
+                         scanner);
+
+      if (iport <= 0 || iport > 65535)
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INVALID_PORT;
+        }
     }
 
-  if (itype == 0)
-    itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+  if (unix_socket == 0 
+      && (gvm_get_host_type (used_host) == -1))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      g_free (used_relay_host);
+      return MODIFY_SCANNER_INVALID_HOST;
+    }
+
+  if (relay_unix_socket)
+    {
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+      irelay_port = 0;
+    }
+  else
+    {
+      if (relay_port)
+        irelay_port = atoi (relay_port);
+      else
+        irelay_port = sql_int ("SELECT relay_port FROM scanners"
+                               " WHERE id = %llu;",
+                               scanner);
+
+      if (irelay_port <= 0 || irelay_port > 65535)
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INVALID_RELAY_PORT;
+        }
+    }
+
+  if (relay_unix_socket == 0
+      && (gvm_get_host_type (used_relay_host) == -1))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      g_free (used_relay_host);
+      return MODIFY_SCANNER_INVALID_RELAY_HOST;
+    }
 
   if (credential_id
       && (strcmp (credential_id, "") == 0 || strcmp (credential_id, "0") == 0))
@@ -42074,13 +42276,17 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                                            "get_credentials"))
         {
           sql_rollback ();
-          return -1;
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INTERNAL_ERROR;
         }
 
       if (credential == 0)
         {
           sql_rollback ();
-          return 5;
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_CREDENTIAL_NOT_FOUND;
         }
 
       credential_given = 1;
@@ -42100,7 +42306,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                    credential))
         {
           sql_rollback ();
-          return 6;
+          return MODIFY_SCANNER_CREDENTIAL_NOT_CC;
         }
     }
 
@@ -42110,34 +42316,30 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       if (resource_with_name_exists (name, "scanner", scanner))
         {
           sql_rollback ();
-          return 2;
+          return MODIFY_SCANNER_ALREADY_EXISTS;
         }
     }
 
-  quoted_name = name ? sql_quote (name) : NULL;
-  quoted_comment = sql_quote (comment ?: "");
-  quoted_host = host ? sql_quote (host) : NULL;
-  new_port = port ? g_strdup_printf ("%d", iport) : g_strdup ("port");
-  new_type = type ? g_strdup_printf ("%d", itype) : g_strdup ("type");
-  sql ("UPDATE scanners SET name = %s%s%s, comment = %s%s%s, host = %s%s%s,"
-       " port = %s, type = %s, modification_time = m_now () WHERE id = %llu;",
-       quoted_name ? "'" : "",
-       quoted_name ? quoted_name : "name",
-       quoted_name ? "'" : "",
-       quoted_comment ? "'" : "",
-       quoted_comment ? quoted_comment : "comment",
-       quoted_comment ? "'" : "",
-       quoted_host ? "'" : "",
-       quoted_host ? quoted_host : "host",
-       quoted_host ? "'" : "",
-       new_port,
-       new_type,
+  quoted_name = name ? sql_insert (name) : g_strdup ("name");
+  quoted_comment = comment ? sql_insert (comment) : g_strdup ("comment");
+  quoted_host = sql_insert (used_host);
+  quoted_relay_host = sql_insert (used_relay_host);
+
+  sql ("UPDATE scanners SET name = %s, comment = %s, type = %d,"
+       " host = %s, port = %d, relay_host = %s, relay_port = %d,"
+       " modification_time = m_now () WHERE id = %llu;",
+       quoted_name,
+       quoted_comment,
+       itype,
+       quoted_host,
+       iport,
+       quoted_relay_host,
+       irelay_port,
        scanner);
-  g_free (new_type);
-  g_free (new_port);
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
+  g_free (quoted_relay_host);
 
   if (ca_pub && !unix_socket)
     {
@@ -42288,7 +42490,8 @@ delete_scanner (const char *scanner_id, int ultimate)
  * @brief Filter columns for scanner iterator.
  */
 #define SCANNER_ITERATOR_FILTER_COLUMNS                              \
- { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "type", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "type",              \
+   "relay_host", "relay_port", NULL }
 
 /**
  * @brief Scanner iterator columns.
@@ -42321,6 +42524,8 @@ delete_scanner (const char *scanner_id, int ultimate)
      "credential_type",                                                \
      KEYWORD_TYPE_STRING                                               \
    },                                                                  \
+   { "relay_host" , NULL, KEYWORD_TYPE_STRING },                       \
+   { "relay_port" , NULL, KEYWORD_TYPE_INTEGER },                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                \
  }
 
@@ -42354,6 +42559,17 @@ delete_scanner (const char *scanner_id, int ultimate)
    { "credential_value (credential, 1, CAST ('secret' AS TEXT))",       \
      NULL,                                                              \
      KEYWORD_TYPE_STRING },                                             \
+   {                                                                    \
+     "(SELECT CASE"                                                     \
+     " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
+     " THEN (SELECT type FROM credentials WHERE id = credential)"       \
+     " ELSE (SELECT type FROM credentials_trash WHERE id = credential)" \
+     " END",                                                            \
+     "credential_type",                                                 \
+     KEYWORD_TYPE_STRING                                                \
+   },                                                                   \
+   { "relay_host" , NULL, KEYWORD_TYPE_STRING },                        \
+   { "relay_port" , NULL, KEYWORD_TYPE_INTEGER },                       \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
@@ -42520,6 +42736,32 @@ scanner_iterator_key_priv (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (scanner_iterator_credential_type, GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
+ * @brief Get the relay host from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Relay host, or NULL if iteration is complete.  Freed
+ *         by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_relay_host, GET_ITERATOR_COLUMN_COUNT + 11);
+
+/**
+ * @brief Get the relay port from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Relay port, or -1 if iteration is complete.
+ */
+int
+scanner_iterator_relay_port (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  return ret;
+}
 
 /**
  * @brief Get the read permission status from a GET iterator.
@@ -42723,31 +42965,52 @@ scanner_uuid_default ()
 }
 
 /**
+ * @brief Return whether the scanner has a relay host defined.
+ *
+ * @param[in]  scanner    Scanner.
+ * 
+ * @return TRUE if a relay host is defined, FALSE otherwise.
+ */
+gboolean
+scanner_has_relay (scanner_t scanner)
+{
+  return sql_int ("SELECT coalesce (relay_host, '') != ''"
+                  " FROM scanners WHERE id = %llu;",
+                  scanner);
+}
+
+/**
  * @brief Return the host of a scanner.
  *
- * @param[in]  scanner  Scanner.
+ * @param[in]  scanner    Scanner.
+ * @param[in]  get_relay  Whether to get the relay host.
  *
  * @return Newly allocated host.
  */
 char *
-scanner_host (scanner_t scanner)
+scanner_host (scanner_t scanner, gboolean get_relay)
 {
-  return sql_string ("SELECT host FROM scanners WHERE id = %llu;", scanner);
+  return sql_string ("SELECT %s FROM scanners WHERE id = %llu;",
+                     get_relay ? "relay_host" : "host",
+                     scanner);
 }
 
 /**
  * @brief Return the port of a scanner.
  *
- * @param[in]  scanner  Scanner.
+ * @param[in]  scanner    Scanner.
+ * @param[in]  get_relay  Whether to get the relay host.
  *
  * @return Scanner port, -1 if not found;
  */
 int
-scanner_port (scanner_t scanner)
+scanner_port (scanner_t scanner, gboolean get_relay)
 {
   int port;
   char *str;
-  str = sql_string ("SELECT port FROM scanners WHERE id = %llu;", scanner);
+  str = sql_string ("SELECT %s FROM scanners WHERE id = %llu;",
+                    get_relay ? "relay_port" : "port",
+                    scanner);
   if (!str)
     return -1;
   port = atoi (str);
@@ -42970,7 +43233,7 @@ openvas_default_scanner_host ()
 }
 
 /**
- * @brief Create a new connection to an OSP scanner relay.
+ * @brief Create a new connection to an OSP scanner using the relay mapper.
  *
  * @param[in]   host     Original host name or IP address.
  * @param[in]   port     Original port.
@@ -42981,8 +43244,9 @@ openvas_default_scanner_host ()
  * @return New connection if success, NULL otherwise.
  */
 static osp_connection_t *
-osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
-                           const char *key_pub, const char *key_priv)
+osp_scanner_mapped_relay_connect (const char *host, int port,
+                                  const char *ca_pub,
+                                  const char *key_pub, const char *key_priv)
 {
   int ret, new_port;
   gchar *new_host, *new_ca_pub;
@@ -43042,6 +43306,7 @@ osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
  * @param[in]   ca_pub   CA certificate.
  * @param[in]   key_pub  Public key.
  * @param[in]   key_priv Private key.
+ * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
  *
  * @return New connection if success, NULL otherwise.
  */
@@ -43050,16 +43315,19 @@ osp_connect_with_data (const char *host,
                        int port,
                        const char *ca_pub,
                        const char *key_pub,
-                       const char *key_priv)
+                       const char *key_priv,
+                       gboolean use_relay_mapper)
 {
   osp_connection_t *connection;
   int is_unix_socket = (host && *host == '/') ? 1 : 0;
 
   if (is_unix_socket == 0
+      && use_relay_mapper
       && get_relay_mapper_path ())
     {
       connection
-        = osp_scanner_relay_connect (host, port, ca_pub, key_pub, key_priv);
+        = osp_scanner_mapped_relay_connect (host, port, ca_pub, key_pub,
+                                            key_priv);
     }
   else
     {
@@ -43089,9 +43357,13 @@ osp_scanner_connect (scanner_t scanner)
   int port;
   osp_connection_t *connection;
   char *host, *ca_pub, *key_pub, *key_priv;
+  gboolean has_relay;
 
   assert (scanner);
-  host = scanner_host (scanner);
+
+  has_relay = scanner_has_relay (scanner);
+  host = scanner_host (scanner, has_relay);
+
   if (host && *host == '/')
     {
       port = 0;
@@ -43101,13 +43373,14 @@ osp_scanner_connect (scanner_t scanner)
     }
   else
     {
-      port = scanner_port (scanner);
+      port = scanner_port (scanner, has_relay);
       ca_pub = scanner_ca_pub (scanner);
       key_pub = scanner_key_pub (scanner);
       key_priv = scanner_key_priv (scanner);
     }
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      has_relay == FALSE);
 
   g_free (host);
   g_free (ca_pub);
@@ -43136,13 +43409,28 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
                                char **p_name, char **p_ver)
 {
   osp_connection_t *connection;
+  gboolean has_relay;
+  const char *host;
+  int port;
 
+  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
+  if (has_relay)
+    {
+      host = scanner_iterator_relay_host (iterator);
+      port = scanner_iterator_relay_port (iterator);
+    }
+  else
+    {
+      host = scanner_iterator_host (iterator);
+      port = scanner_iterator_port (iterator);
+    }
   assert (iterator);
-  connection = osp_connect_with_data (scanner_iterator_host (iterator),
-                                      scanner_iterator_port (iterator),
+  connection = osp_connect_with_data (host,
+                                      port,
                                       scanner_iterator_ca_pub (iterator),
                                       scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator));
+                                      scanner_iterator_key_priv (iterator),
+                                      has_relay);
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -43165,13 +43453,28 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
                                GSList **params)
 {
   osp_connection_t *connection;
+  gboolean has_relay;
+  const char *host;
+  int port;
 
+  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
+  if (has_relay)
+    {
+      host = scanner_iterator_relay_host (iterator);
+      port = scanner_iterator_relay_port (iterator);
+    }
+  else
+    {
+      host = scanner_iterator_host (iterator);
+      port = scanner_iterator_port (iterator);
+    }
   assert (iterator);
-  connection = osp_connect_with_data (scanner_iterator_host (iterator),
-                                      scanner_iterator_port (iterator),
+  connection = osp_connect_with_data (host,
+                                      port,
                                       scanner_iterator_ca_pub (iterator),
                                       scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator));
+                                      scanner_iterator_key_priv (iterator),
+                                      has_relay);
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))
@@ -59742,7 +60045,7 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
         {
           fprintf (stderr,
                    "No relay mapper found."
-                   " Please check your $PATH or the --relay-mapper option.\n");
+                   " Please check your --relay-mapper option.\n");
           success_text = NULL;
           ret = -1;
         }
@@ -59922,13 +60225,15 @@ cleanup_ids_for_table (const char *table)
 openvasd_connector_t
 openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
 {
+  gboolean has_relay;
   int port;
   openvasd_connector_t connection;
   char *server, *ca_pub, *key_pub, *key_priv;
 
   assert (scanner);
-  server = scanner_host (scanner);
-  port = scanner_port (scanner);
+  has_relay = scanner_has_relay (scanner);
+  server = scanner_host (scanner, has_relay);
+  port = scanner_port (scanner, has_relay);
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);

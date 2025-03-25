@@ -3256,7 +3256,7 @@ migrate_256_to_257 ()
 }
 
 /**
- * @brief Migrate the database from version 256 to version 257.
+ * @brief Migrate the database from version 257 to version 258.
  *
  * @return 0 success, -1 error.
  */
@@ -3299,6 +3299,48 @@ migrate_257_to_258 ()
   /* Set the database version to 258. */
 
   set_db_version (258);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 258 to version 259.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_258_to_259 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 258. */
+
+  if (manage_db_version () != 258)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add relay_host and relay_port fields to scanners
+
+  sql ("ALTER TABLE scanners ADD COLUMN relay_host text;"); 
+  sql ("ALTER TABLE scanners ADD COLUMN relay_port integer;"); 
+
+  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_host text;"); 
+  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_port integer;");
+ 
+  // Set base values for new relay fields
+
+  sql ("UPDATE scanners SET relay_host = '', relay_port = 0;");
+  sql ("UPDATE scanners_trash SET relay_host = '', relay_port = 0;");
+
+  /* Set the database version to 259. */
+
+  set_db_version (259);
 
   sql_commit ();
 
@@ -3369,6 +3411,7 @@ static migrator_t database_migrators[] = {
   {256, migrate_255_to_256},
   {257, migrate_256_to_257},
   {258, migrate_257_to_258},
+  {259, migrate_258_to_259},
   /* End marker. */
   {-1, NULL}};
 

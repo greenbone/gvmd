@@ -547,8 +547,10 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   resp = openvasd_get_health_ready (connector);
   if (resp->code == -1)
     {
+      gboolean has_relay = scanner_has_relay (scan);
       g_warning ("%s: failed to connect to %s:%d", __func__,
-                 scanner_host (scan), scanner_port (scan));
+                 scanner_host (scan, has_relay),
+                 scanner_port (scan, has_relay));
       ret = 1;
     }
   else if (resp->code  == 503)

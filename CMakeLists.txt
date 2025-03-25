@@ -96,7 +96,7 @@ include (CPack)
 
 ## Variables
 
-set (GVMD_DATABASE_VERSION 258)
+set (GVMD_DATABASE_VERSION 259)
 
 set (GVMD_SCAP_DATABASE_VERSION 22)
 
