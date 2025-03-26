@@ -1396,68 +1396,7 @@ task_t current_scanner_task = (task_t) 0;
 report_t global_current_report = (report_t) 0;
 
 
-/* Alerts. */
-
-/**
- * @brief Frees a alert_report_data_t struct, including contained data.
- *
- * @param[in]  data   The struct to free.
- */
-void
-alert_report_data_free (alert_report_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  alert_report_data_reset (data);
-  g_free (data);
-}
-
-/**
- * @brief Frees content of an alert_report_data_t, but not the struct itself.
- *
- * @param[in]  data   The struct to free.
- */
-void
-alert_report_data_reset (alert_report_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  g_free (data->content_type);
-  g_free (data->local_filename);
-  g_free (data->remote_filename);
-  g_free (data->report_format_name);
-
-  memset (data, 0, sizeof (alert_report_data_t));
-}
-
-/**
- * @brief Get the name of an alert condition.
- *
- * @param[in]  condition  Condition.
- *
- * @return The name of the condition (for example, "Always").
- */
-const char*
-alert_condition_name (alert_condition_t condition)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return "Always";
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        return "Filter count at least";
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        return "Filter count changed";
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        return "Severity at least";
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        return "Severity changed";
-      default:
-        return "Internal Error";
-    }
-}
+/* Events. */
 
 /**
  * @brief Get the name of an alert event.
@@ -1478,56 +1417,6 @@ event_name (event_t event)
       case EVENT_ASSIGNED_TICKET_CHANGED: return "Assigned ticket changed";
       case EVENT_OWNED_TICKET_CHANGED:    return "Owned ticket changed";
       default:                            return "Internal Error";
-    }
-}
-
-/**
- * @brief Get a description of an alert condition.
- *
- * @param[in]  condition  Condition.
- * @param[in]  alert  Alert.
- *
- * @return Freshly allocated description of condition.
- */
-gchar*
-alert_condition_description (alert_condition_t condition,
-                             alert_t alert)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return g_strdup ("Always");
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        {
-          char *count;
-          gchar *ret;
-
-          count = alert_data (alert, "condition", "count");
-          ret = g_strdup_printf ("Filter count at least %s",
-                                 count ? count : "0");
-          free (count);
-          return ret;
-        }
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        return g_strdup ("Filter count changed");
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        {
-          char *level = alert_data (alert, "condition", "severity");
-          gchar *ret = g_strdup_printf ("Task severity is at least '%s'",
-                                        level);
-          free (level);
-          return ret;
-        }
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        {
-          char *direction;
-          direction = alert_data (alert, "condition", "direction");
-          gchar *ret = g_strdup_printf ("Task severity %s", direction);
-          free (direction);
-          return ret;
-        }
-      default:
-        return g_strdup ("Internal Error");
     }
 }
 
@@ -1575,57 +1464,6 @@ event_description (event_t event, const void *event_data, const char *task_name)
 }
 
 /**
- * @brief Get the name of an alert method.
- *
- * @param[in]  method  Method.
- *
- * @return The name of the method (for example, "Email" or "SNMP").
- */
-const char*
-alert_method_name (alert_method_t method)
-{
-  switch (method)
-    {
-      case ALERT_METHOD_EMAIL:       return "Email";
-      case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
-      case ALERT_METHOD_SCP:         return "SCP";
-      case ALERT_METHOD_SEND:        return "Send";
-      case ALERT_METHOD_SMB:         return "SMB";
-      case ALERT_METHOD_SNMP:        return "SNMP";
-      case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
-      case ALERT_METHOD_START_TASK:  return "Start Task";
-      case ALERT_METHOD_SYSLOG:      return "Syslog";
-      case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
-      case ALERT_METHOD_VERINICE:    return "verinice Connector";
-      case ALERT_METHOD_VFIRE:       return "Alemba vFire";
-      default:                       return "Internal Error";
-    }
-}
-
-/**
- * @brief Get an alert condition from a name.
- *
- * @param[in]  name  Condition name.
- *
- * @return The condition.
- */
-alert_condition_t
-alert_condition_from_name (const char* name)
-{
-  if (strcasecmp (name, "Always") == 0)
-    return ALERT_CONDITION_ALWAYS;
-  if (strcasecmp (name, "Filter count at least") == 0)
-    return ALERT_CONDITION_FILTER_COUNT_AT_LEAST;
-  if (strcasecmp (name, "Filter count changed") == 0)
-    return ALERT_CONDITION_FILTER_COUNT_CHANGED;
-  if (strcasecmp (name, "Severity at least") == 0)
-    return ALERT_CONDITION_SEVERITY_AT_LEAST;
-  if (strcasecmp (name, "Severity changed") == 0)
-    return ALERT_CONDITION_SEVERITY_CHANGED;
-  return ALERT_CONDITION_ERROR;
-}
-
-/**
  * @brief Get an event from a name.
  *
  * @param[in]  name  Event name.
@@ -1648,43 +1486,6 @@ event_from_name (const char* name)
   if (strcasecmp (name, "Owned ticket changed") == 0)
     return EVENT_OWNED_TICKET_CHANGED;
   return EVENT_ERROR;
-}
-
-/**
- * @brief Get an alert method from a name.
- *
- * @param[in]  name  Method name.
- *
- * @return The method.
- */
-alert_method_t
-alert_method_from_name (const char* name)
-{
-  if (strcasecmp (name, "Email") == 0)
-    return ALERT_METHOD_EMAIL;
-  if (strcasecmp (name, "HTTP Get") == 0)
-    return ALERT_METHOD_HTTP_GET;
-  if (strcasecmp (name, "SCP") == 0)
-    return ALERT_METHOD_SCP;
-  if (strcasecmp (name, "Send") == 0)
-    return ALERT_METHOD_SEND;
-  if (strcasecmp (name, "SMB") == 0)
-    return ALERT_METHOD_SMB;
-  if (strcasecmp (name, "SNMP") == 0)
-    return ALERT_METHOD_SNMP;
-  if (strcasecmp (name, "Sourcefire Connector") == 0)
-    return ALERT_METHOD_SOURCEFIRE;
-  if (strcasecmp (name, "Start Task") == 0)
-    return ALERT_METHOD_START_TASK;
-  if (strcasecmp (name, "Syslog") == 0)
-    return ALERT_METHOD_SYSLOG;
-  if (strcasecmp (name, "TippingPoint SMS") == 0)
-    return ALERT_METHOD_TIPPINGPOINT;
-  if (strcasecmp (name, "verinice Connector") == 0)
-    return ALERT_METHOD_VERINICE;
-  if (strcasecmp (name, "Alemba vFire") == 0)
-    return ALERT_METHOD_VFIRE;
-  return ALERT_METHOD_ERROR;
 }
 
 
