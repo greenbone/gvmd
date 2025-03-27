@@ -27,6 +27,7 @@
 #include "iterator.h"
 #include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_events.h"
 #include "manage_get.h"
 #include "sql.h"
 #include "utils.h"
@@ -519,20 +520,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
  "Please contact your local system administrator if you think it\n"           \
  "was created or assigned erroneously.\n"
 
-/**
- * @brief Types of task events.
- */
-typedef enum
-{
-  EVENT_ERROR,
-  EVENT_TASK_RUN_STATUS_CHANGED,
-  EVENT_NEW_SECINFO,
-  EVENT_UPDATED_SECINFO,
-  EVENT_TICKET_RECEIVED,
-  EVENT_ASSIGNED_TICKET_CHANGED,
-  EVENT_OWNED_TICKET_CHANGED
-} event_t;
-
 int
 manage_check_alerts (GSList *, const db_conn_info_t *);
 
@@ -606,17 +593,8 @@ alert_iterator_filter_readable (iterator_t*);
 int
 alert_iterator_active (iterator_t*);
 
-const char*
-event_name (event_t);
-
-gchar*
-event_description (event_t, const void *, const char *);
-
 alert_method_t
 alert_method (alert_t alert);
-
-event_t
-event_from_name (const char*);
 
 void
 init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
