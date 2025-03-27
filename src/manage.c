@@ -4282,11 +4282,39 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             const char *titles, gchar **performance_str,
                             gchar **error)
 {
+  int return_value;
+
+#if OPENVASD
+  openvasd_connector_t connector;
+  int err;
+  openvasd_get_performance_opts_t opts;
+
+  connector = openvasd_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      *error = g_strdup ("Could not connect to scanner");
+      return 6;
+    }
+
+  opts.start = start;
+  opts.end = end;
+  opts.titles = titles;
+
+  err = openvasd_parsed_performance (connector, opts, performance_str, error);
+  if (err)
+    {
+      g_warning ("Error getting OSP performance report: %s", *error);
+      openvasd_connector_free (connector);
+      return 6;
+    }
+
+  openvasd_connector_free (connector);
+#else
   char *host, *ca_pub, *key_pub, *key_priv;
   int port;
   osp_connection_t *connection = NULL;
+  int connection_retry;
   osp_get_performance_opts_t opts;
-  int connection_retry, return_value;
 
   host = scanner_host (scanner);
   port = scanner_port (scanner);
@@ -4332,6 +4360,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 
   osp_connection_close (connection);
   g_free (opts.titles);
+#endif
 
   return 0;
 }
