@@ -1870,6 +1870,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_credential = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
+  static gchar *scanner_relay_host = NULL;
+  static gchar *scanner_relay_port = NULL;
   static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int affected_products_query_size
@@ -2186,10 +2188,10 @@ gvmd (int argc, char** argv, char *env[])
           NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
-          "Executable for mapping scanner hosts to relays."
-          " Use an empty string to explicitly disable."
-          " If the option is not given, $PATH is checked for"
-          " gvm-relay-mapper.",
+          "Executable for automatically mapping scanner hosts to relays."
+          " If the option is empty or not given, automatic mapping"
+          " is disabled. This option is deprecated and relays should be"
+          " set explictly in the relay_... fields of scanners.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
@@ -2233,6 +2235,15 @@ gvmd (int argc, char** argv, char *env[])
           "Scanner port for --create-scanner and --modify-scanner."
           " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
+        { "scanner-relay-host", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_host,
+          "Scanner relay host or socket for --create-scanner and"
+          " --modify-scanner.",
+          "<scanner-relay-host>" },
+        { "scanner-relay-port", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_port,
+          "Scanner relay port for --create-scanner and --modify-scanner.",
+          "<scanner-relay-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
@@ -2506,36 +2517,22 @@ gvmd (int argc, char** argv, char *env[])
   set_min_mem_feed_update (min_mem_feed_update);
 
   /* Set relay mapper */
-  if (relay_mapper)
+  if (relay_mapper && strcmp (relay_mapper, ""))
     {
-      if (strcmp (relay_mapper, ""))
-        {
-          if (gvm_file_exists (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' not found.", relay_mapper);
-          else if (gvm_file_is_readable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
-          else if (gvm_file_is_executable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
-          else
-            {
-              g_debug ("Using relay mapper '%s'.", relay_mapper);
-              set_relay_mapper_path (relay_mapper);
-            }
-        }
+      if (gvm_file_exists (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' not found.", relay_mapper);
+      else if (gvm_file_is_readable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
+      else if (gvm_file_is_executable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
       else
-        g_debug ("Relay mapper disabled.");
+        {
+          g_debug ("Using relay mapper '%s'.", relay_mapper);
+          set_relay_mapper_path (relay_mapper);
+        }
     }
   else
-    {
-      gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
-      if (default_mapper)
-        {
-          g_debug ("Using default relay mapper '%s'.", default_mapper);
-          set_relay_mapper_path (default_mapper);
-        }
-      else
-        g_debug ("No default relay mapper found.");
-    }
+    g_debug ("Relay mapper disabled.");
 
   /*
    * Parameters for new credential encryption keys
@@ -2894,7 +2891,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_create_scanner (log_config, &database, create_scanner,
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2943,7 +2941,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_modify_scanner (log_config, &database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
                                    stype, scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)

@@ -421,9 +421,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <option>
       <p><opt>--relay-mapper=<arg>FILE</arg></opt></p>
       <optdesc>
-        <p>Executable for mapping scanner hosts to relays.
-          Use an empty string to explicitly disable.
-          If the option is not given, $PATH is checked for gvm-relay-mapper.
+        <p>
+          Executable for automatically mapping scanner hosts to relays.
+          If the option is empty or not given, automatic mapping
+          is disabled. This option is deprecated and relays should be
+           set explictly in the relay_... fields of scanners.
         </p>
       </optdesc>
     </option>
@@ -477,6 +479,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><opt>--scanner-port=<arg>SCANNER-PORT</arg></opt></p>
       <optdesc>
         <p>Scanner port for --create-scanner and --modify-scanner.</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-relay-host=<arg>SCANNER-HOST</arg></opt></p>
+      <optdesc>
+        <p>
+          Scanner relay host or socket for --create-scanner and
+          --modify-scanner.
+        </p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--scanner-relay-port=<arg>SCANNER-PORT</arg></opt></p>
+      <optdesc>
+        <p>Scanner relay port for --create-scanner and --modify-scanner.</p>
       </optdesc>
     </option>
     <option>

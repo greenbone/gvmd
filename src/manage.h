@@ -334,6 +334,9 @@ typedef enum scanner_type
 int
 scanner_type_valid (scanner_type_t);
 
+int
+scanner_type_supports_unix_sockets (scanner_type_t);
+
 typedef resource_t credential_t;
 typedef resource_t filter_t;
 typedef resource_t group_t;
@@ -2705,12 +2708,14 @@ manage_system_report (const char *, const char *, const char *, const char *,
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
-                       const char *, const char *, const char *);
+                       const char *, const char *, const char *,
+                       const char *, const char *);
 
 int
 manage_modify_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
-                       const char *, const char *, const char *, const char *);
+                       const char *, const char *, const char *, const char *,
+                       const char *, const char *);
 
 int
 manage_delete_scanner (GSList *, const db_conn_info_t *, const gchar *);
@@ -2721,16 +2726,53 @@ manage_verify_scanner (GSList *, const db_conn_info_t *, const gchar *);
 int
 manage_get_scanners (GSList *, const db_conn_info_t *);
 
-int
+
+typedef enum {
+  CREATE_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
+  CREATE_SCANNER_SUCCESS = 0,             ///< Success
+  CREATE_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
+  CREATE_SCANNER_MISSING_TYPE,            ///< Missing type
+  CREATE_SCANNER_MISSING_HOST,            ///< Missing host
+  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
+  CREATE_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
+  CREATE_SCANNER_INVALID_TYPE,            ///< Invalid type
+  CREATE_SCANNER_INVALID_PORT,            ///< Invalid port
+  CREATE_SCANNER_INVALID_HOST,            ///< Invalid host
+  CREATE_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
+  CREATE_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
+  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
+  CREATE_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+} create_scanner_return_t;
+
+create_scanner_return_t
 create_scanner (const char*, const char *, const char *, const char *,
-                const char *, scanner_t *, const char *, const char *);
+                const char *, scanner_t *, const char *, const char *,
+                const char *, const char *);
 
 int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
-int
+typedef enum {
+  MODIFY_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
+  MODIFY_SCANNER_SUCCESS = 0,             ///< Success
+  MODIFY_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
+  MODIFY_SCANNER_MISSING_ID,              ///< Missing scanner id
+  MODIFY_SCANNER_NOT_FOUND,               ///< Scanner not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
+  MODIFY_SCANNER_INVALID_TYPE,            ///< Invalid type
+  MODIFY_SCANNER_INVALID_PORT,            ///< Invalid port
+  MODIFY_SCANNER_INVALID_HOST,            ///< Invalid host
+  MODIFY_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
+  MODIFY_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
+  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
+  MODIFY_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+} modify_scanner_return_t;
+
+modify_scanner_return_t
 modify_scanner (const char*, const char*, const char*, const char *,
-                const char *, const char *, const char *, const char *);
+                const char *, const char *, const char *, const char *,
+                const char *, const char *);
 
 int
 delete_scanner (const char *, int);
@@ -2756,11 +2798,14 @@ scanner_writable (scanner_t);
 const char *
 scanner_uuid_default ();
 
+gboolean
+scanner_has_relay (scanner_t);
+
 char *
-scanner_host (scanner_t);
+scanner_host (scanner_t, gboolean);
 
 int
-scanner_port (scanner_t);
+scanner_port (scanner_t, gboolean);
 
 int
 scanner_type (scanner_t);
@@ -2816,6 +2861,12 @@ scanner_iterator_key_pub (iterator_t *);
 const char*
 scanner_iterator_credential_type (iterator_t *);
 
+const char*
+scanner_iterator_relay_host (iterator_t *);
+
+int
+scanner_iterator_relay_port (iterator_t *);
+
 int
 scanner_config_iterator_readable (iterator_t *);
 
@@ -2855,7 +2906,8 @@ osp_connect_with_data (const char *,
                        int,
                        const char *,
                        const char *,
-                       const char *);
+                       const char *,
+                       gboolean);
 
 osp_connection_t *
 osp_scanner_connect (scanner_t);
