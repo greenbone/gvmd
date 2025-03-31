@@ -32,7 +32,8 @@ pkg_check_modules (LIBGVM_UTIL REQUIRED libgvm_util>=22.17)
 pkg_check_modules (LIBGVM_OSP REQUIRED libgvm_osp>=22.17)
 pkg_check_modules (LIBGVM_GMP REQUIRED libgvm_gmp>=22.17)
 if (OPENVASD)
-    pkg_check_modules (LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.17)
+    pkg_check_modules (LIBGVM_HTTP REQUIRED libgvm_http>=22.19)
+    pkg_check_modules (LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.19)
 else (OPENVASD)
     message (STATUS "OPENVASD flag is not enabled")
 endif (OPENVASD)
@@ -116,8 +117,8 @@ add_executable (manage-utils-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
-                manage_license.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_events.c
+                manage_get.c manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
                 manage_report_formats.c
@@ -151,8 +152,8 @@ add_executable (manage-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
-                manage_license.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_events.c
+                manage_get.c manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
                 manage_report_formats.c
@@ -186,8 +187,8 @@ add_executable (manage-sql-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
-                manage_license.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_events.c
+                manage_get.c manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
                 manage_report_formats.c
@@ -221,8 +222,8 @@ add_executable (gmp-tickets-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
-                manage_license.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_events.c
+                manage_get.c manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
                 manage_report_formats.c
@@ -256,8 +257,8 @@ add_executable (utils-test
                 gvmd.c gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
-                manage_license.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_events.c
+                manage_get.c manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
                 manage_report_formats.c
@@ -308,8 +309,8 @@ add_executable (gvmd
                 gmpd.c
                 ipc.c
                 manage_utils.c manage.c sql.c
-                manage_acl.c manage_configs.c manage_get.c
-                manage_license.c
+                manage_acl.c manage_alerts.c manage_configs.c manage_events.c
+                manage_get.c manage_license.c
                 manage_port_lists.c manage_preferences.c
                 manage_report_configs.c
                 manage_report_formats.c
@@ -337,32 +338,32 @@ target_link_libraries (gvmd m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS}
-                       ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
+                       ${LIBGVM_GMP_LDFLAGS} ${LIBGVM_HTTP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS}
-                       ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
+                       ${LIBGVM_GMP_LDFLAGS} ${LIBGVM_HTTP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-sql-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS}
-                       ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
+                       ${LIBGVM_GMP_LDFLAGS} ${LIBGVM_HTTP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (manage-utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS}
-                       ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
+                       ${LIBGVM_GMP_LDFLAGS} ${LIBGVM_HTTP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gmp-tickets-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS}
-                       ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
+                       ${LIBGVM_GMP_LDFLAGS} ${LIBGVM_HTTP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (utils-test cgreen m
                        ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT} ${LINKER_HARDENING_FLAGS} ${LINKER_DEBUG_FLAGS}
                        ${PostgreSQL_LIBRARIES} ${LIBBSD_LDFLAGS} ${CJSON_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS}
                        ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBGVM_OSP_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS}
-                       ${LIBGVM_GMP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
+                       ${LIBGVM_GMP_LDFLAGS} ${LIBGVM_HTTP_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS} ${OPT_THEIA_TGT})
 target_link_libraries (gvm-pg-server ${LIBBSD_LDFLAGS} ${GLIB_LDFLAGS} ${GTHREAD_LDFLAGS} ${LIBGVM_BASE_LDFLAGS} ${LIBGVM_OPENVASD_LDFLAGS} ${LIBGVM_UTIL_LDFLAGS} ${LIBICAL_LDFLAGS} ${LINKER_HARDENING_FLAGS})
 
 set_target_properties (gvmd PROPERTIES LINKER_LANGUAGE C)
@@ -527,6 +528,8 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"

@@ -97,6 +97,7 @@
 #include "gmp_tls_certificates.h"
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_alerts.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"

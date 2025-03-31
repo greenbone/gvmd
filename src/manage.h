@@ -25,8 +25,11 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_events.h"
 #include "manage_get.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -44,16 +47,6 @@
 #if OPENVASD
 #include <gvm/openvasd/openvasd.h>
 #endif
-
-/**
- * @brief Data structure for info used to connect to the database
- */
-typedef struct {
-  gchar *name; ///< The database name
-  gchar *host; ///< The database host or socket directory
-  gchar *port; ///< The database port or socket file extension
-  gchar *user; ///< The database user name
-} db_conn_info_t;
 
 /**
  * @brief OID of ping_host.nasl
@@ -345,7 +338,6 @@ int
 scanner_type_supports_unix_sockets (scanner_type_t);
 
 typedef resource_t credential_t;
-typedef resource_t alert_t;
 typedef resource_t filter_t;
 typedef resource_t group_t;
 typedef resource_t host_t;
@@ -428,22 +420,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
 
 
 /* Events and Alerts. */
-
-/**
- * @brief Data about a report sent by an alert.
- */
-typedef struct {
-  gchar *local_filename;          ///< Path to the local report file.
-  gchar *remote_filename;         ///< Path or filename to send to / as.
-  gchar *content_type;            ///< The MIME content type of the report.
-  gchar *report_format_name;      ///< Name of the report format used.
-} alert_report_data_t;
-
-void
-alert_report_data_free (alert_report_data_t *);
-
-void
-alert_report_data_reset (alert_report_data_t *);
 
 /**
  * @brief Default format string for alert email, when including report.
@@ -547,53 +523,6 @@ alert_report_data_reset (alert_report_data_t *);
  "Please contact your local system administrator if you think it\n"           \
  "was created or assigned erroneously.\n"
 
-/**
- * @brief Types of task events.
- */
-typedef enum
-{
-  EVENT_ERROR,
-  EVENT_TASK_RUN_STATUS_CHANGED,
-  EVENT_NEW_SECINFO,
-  EVENT_UPDATED_SECINFO,
-  EVENT_TICKET_RECEIVED,
-  EVENT_ASSIGNED_TICKET_CHANGED,
-  EVENT_OWNED_TICKET_CHANGED
-} event_t;
-
-/**
- * @brief Types of alerts.
- */
-typedef enum
-{
-  ALERT_METHOD_ERROR,
-  ALERT_METHOD_EMAIL,
-  ALERT_METHOD_HTTP_GET,
-  ALERT_METHOD_SOURCEFIRE,
-  ALERT_METHOD_START_TASK,
-  ALERT_METHOD_SYSLOG,
-  ALERT_METHOD_VERINICE,
-  ALERT_METHOD_SEND,
-  ALERT_METHOD_SCP,
-  ALERT_METHOD_SNMP,
-  ALERT_METHOD_SMB,
-  ALERT_METHOD_TIPPINGPOINT,
-  ALERT_METHOD_VFIRE,
-} alert_method_t;
-
-/**
- * @brief Types of alert conditions.
- */
-typedef enum
-{
-  ALERT_CONDITION_ERROR,
-  ALERT_CONDITION_ALWAYS,
-  ALERT_CONDITION_SEVERITY_AT_LEAST,
-  ALERT_CONDITION_SEVERITY_CHANGED,
-  ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-  ALERT_CONDITION_FILTER_COUNT_CHANGED
-} alert_condition_t;
-
 int
 manage_check_alerts (GSList *, const db_conn_info_t *);
 
@@ -667,32 +596,8 @@ alert_iterator_filter_readable (iterator_t*);
 int
 alert_iterator_active (iterator_t*);
 
-const char*
-alert_condition_name (alert_condition_t);
-
-gchar*
-alert_condition_description (alert_condition_t, alert_t);
-
-const char*
-event_name (event_t);
-
-gchar*
-event_description (event_t, const void *, const char *);
-
 alert_method_t
 alert_method (alert_t alert);
-
-const char*
-alert_method_name (alert_method_t);
-
-alert_condition_t
-alert_condition_from_name (const char*);
-
-event_t
-event_from_name (const char*);
-
-alert_method_t
-alert_method_from_name (const char*);
 
 void
 init_alert_data_iterator (iterator_t *, alert_t, int, const char *);

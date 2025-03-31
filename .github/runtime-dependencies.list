@@ -49,6 +49,10 @@
 # Required for set up certificates for GVM
 # gnutls-bin
 
+# SSL/TLS verification
+# ca-certificates
+
+ca-certificates
 dpkg
 fakeroot
 nsis
