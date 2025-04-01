@@ -42564,7 +42564,7 @@ delete_scanner (const char *scanner_id, int ultimate)
      " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
      " THEN (SELECT type FROM credentials WHERE id = credential)"       \
      " ELSE (SELECT type FROM credentials_trash WHERE id = credential)" \
-     " END",                                                            \
+     " END)",                                                            \
      "credential_type",                                                 \
      KEYWORD_TYPE_STRING                                                \
    },                                                                   \
