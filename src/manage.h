@@ -549,9 +549,6 @@ gboolean
 find_alert_with_permission (const char *, alert_t *, const char *);
 
 int
-manage_alert (const char *, const char *, event_t, const void*, gchar **);
-
-int
 manage_test_alert (const char *, gchar **);
 
 int

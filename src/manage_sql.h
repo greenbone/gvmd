@@ -510,8 +510,39 @@ manage_option_cleanup ();
 void
 update_all_config_caches ();
 
+int
+escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
+            const void* event_data, alert_method_t method,
+            alert_condition_t condition,
+            const get_data_t *get, int notes_details, int overrides_details,
+            gchar **script_message);
+
 void
-event (event_t, void *, resource_t, resource_t);
+init_event_alert_iterator (iterator_t *, event_t);
+
+alert_t
+event_alert_iterator_alert (iterator_t *);
+
+int
+event_alert_iterator_active (iterator_t *);
+
+user_t
+alert_owner (alert_t);
+
+alert_condition_t
+alert_condition (alert_t);
+
+int
+alert_applies_to_task (alert_t, task_t);
+
+time_t
+alert_secinfo_count (alert_t, char *);
+
+int
+task_second_last_report (task_t, report_t *);
+
+double
+task_severity_double (task_t, int, int, int);
 
 gboolean
 find_trash (const char *, const char *, resource_t *);

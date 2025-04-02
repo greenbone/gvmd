@@ -44,4 +44,10 @@ event_description (event_t, const void *, const char *);
 event_t
 event_from_name (const char*);
 
+void
+event (event_t, void *, resource_t, resource_t);
+
+int
+manage_alert (const char *, const char *, event_t, const void *, gchar **);
+
 #endif /* not _GVMD_MANAGE_EVENTS_H */
