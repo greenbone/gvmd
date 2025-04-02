@@ -4311,8 +4311,6 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             const char *titles, gchar **performance_str,
                             gchar **error)
 {
-  int return_value;
-
 #if OPENVASD
   openvasd_connector_t connector;
   int err;
@@ -4341,7 +4339,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 #else
   gboolean has_relay;
   char *host, *ca_pub, *key_pub, *key_priv;
-  int port;
+  int return_value, port;
   osp_connection_t *connection = NULL;
   int connection_retry;
   osp_get_performance_opts_t opts;
