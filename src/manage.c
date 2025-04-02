@@ -7332,7 +7332,7 @@ nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
 {
 #if OPENVASD == 1
   return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                  vts_version);
+                                                vts_version);
 #else
   return nvts_feed_info_internal (get_osp_vt_update_socket (),
                                   vts_version,
@@ -7407,7 +7407,7 @@ nvts_check_feed (int *lockfile_in_use,
   char *vts_version = NULL;
 
   ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                  &vts_version);
+                                               &vts_version);
   self_test_exit_error = 0;
   *self_test_error_msg = NULL;
   if (ret == 0 && vts_version)
