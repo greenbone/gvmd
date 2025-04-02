@@ -410,6 +410,8 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
   /* Update NVTs. */
   if (find_resource_no_acl ("scanner", SCANNER_UUID_OPENVASD_DEFAULT, &scan))
     return -1;
+  if (scan == 0)
+    return -1;
 
   connector = openvasd_scanner_connect (scan, NULL);
   if (!connector)
@@ -537,7 +539,11 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   openvasd_connector_t connector = NULL;
   openvasd_resp_t resp = NULL;
   int ret;
+
   if (find_resource_no_acl ("scanner", scanner_uuid, &scan))
+    return -1;
+
+  if (scan == 0)
     return -1;
 
   connector = openvasd_scanner_connect (scan, NULL);
