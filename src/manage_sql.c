@@ -59723,6 +59723,36 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
 }
 
 /**
+ * @brief Get the QoD value for a given nvti OID.
+ *
+ * @param nvti_oid The unique identifier for the vulnerability test.
+ *
+ * @return The QoD value as an integer (1–100), or
+ *         QOD_DEFAULT if unavailable or invalid.
+ */
+static int
+get_openvasd_nvti_qod (const char *nvti_oid)
+{
+  int qod = QOD_DEFAULT;
+
+  nvti_t *nvti = lookup_nvti (nvti_oid);
+  if (nvti != NULL)
+    {
+      const char *qod_str = nvti_qod (nvti);
+      if (qod_str != NULL)
+        {
+          int parsed_qod = atoi (qod_str);
+          if (parsed_qod > 0 && parsed_qod <= 100)
+            {
+              qod = parsed_qod;
+            }
+        }
+    }
+
+  return qod;
+}
+
+/**
  * @brief Generate the hash value for the fields of the result and
  * check if openvasd result for report already exists
  *
@@ -59780,13 +59810,12 @@ check_openvasd_result_exists (report_t report, task_t task,
           gchar *quoted_desc, *quoted_type, *quoted_host;
           gchar *quoted_hostname, *quoted_port, *quoted_path;
           double severity_double = 0.0;
-          int qod_int = QOD_DEFAULT;
+          int qod_int = get_openvasd_nvti_qod (res->oid);
 
           host = res->ip_address;
           hostname = res->hostname;
           type = res->type;
           desc = res->message;
-          qod_int = QOD_DEFAULT;
 
           if (!severity || !strcmp (severity, ""))
             {
@@ -59942,7 +59971,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
       nvt_id = g_strdup (name);
       desc = res->message;
     }
-  qod_int = QOD_DEFAULT;
+  qod_int = get_openvasd_nvti_qod (test_id);
   if (port && strcmp (port, "general/Host_Details") == 0)
     {
       /* TODO: This should probably be handled by the "Host Detail"
