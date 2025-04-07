@@ -41463,7 +41463,11 @@ create_scanner (const char* name, const char *comment, const char *host,
         }
     }
 
-  if (relay_unix_socket)
+  if (relay_host == NULL || strcmp (relay_host, "") == 0)
+    {
+      irelay_port = 0;
+    }
+  else if (relay_unix_socket)
     {
       if (! scanner_type_supports_unix_sockets (itype))
         {
@@ -41480,12 +41484,11 @@ create_scanner (const char* name, const char *comment, const char *host,
           sql_rollback ();
           return CREATE_SCANNER_INVALID_RELAY_PORT;
         }
-    }
-
-  if (gvm_get_host_type (host) == -1)
-    {
-      sql_rollback ();
-      return CREATE_SCANNER_INVALID_RELAY_HOST;
+      if (gvm_get_host_type (host) == -1)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_RELAY_HOST;
+        }
     }
 
   if (unix_socket)
@@ -41691,7 +41694,11 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       return MODIFY_SCANNER_INVALID_HOST;
     }
 
-  if (relay_unix_socket)
+  if (used_relay_host == NULL || strcmp (used_relay_host, "") == 0)
+    {
+      irelay_port = 0;
+    }
+  else if (relay_unix_socket)
     {
       if (! scanner_type_supports_unix_sockets (itype))
         {
@@ -41718,15 +41725,14 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
           g_free (used_relay_host);
           return MODIFY_SCANNER_INVALID_RELAY_PORT;
         }
-    }
 
-  if (relay_unix_socket == 0
-      && (gvm_get_host_type (used_relay_host) == -1))
-    {
-      sql_rollback ();
-      g_free (used_host);
-      g_free (used_relay_host);
-      return MODIFY_SCANNER_INVALID_RELAY_HOST;
+      if (gvm_get_host_type (used_relay_host) == -1)
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INVALID_RELAY_HOST;
+        }
     }
 
   if (credential_id
