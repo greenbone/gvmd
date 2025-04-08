@@ -151,12 +151,21 @@ int
 update_or_rebuild_nvts (int);
 
 int
-nvts_feed_version_status ();
+nvts_feed_version_status_from_scanner ();
 
 char *
 nvt_family (const char *);
 
 int
 family_count ();
+
+
+#if FEED_VT_METADATA == 1
+int
+manage_update_nvts_from_feed ();
+
+int
+nvts_feed_version_status_from_timestamp ();
+#endif
 
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */

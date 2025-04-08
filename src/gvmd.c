@@ -1096,6 +1096,7 @@ handle_sigabrt_simple (int signal)
   exit (EXIT_FAILURE);
 }
 
+#if FEED_VT_METADATA == 0
 /**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
@@ -1182,6 +1183,7 @@ update_nvt_cache_retry ()
         }
     }
 }
+#endif
 
 /**
  * @brief Update the NVT cache in a child process.
@@ -1248,10 +1250,18 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             manager_socket_2 = -1;
           }
 
+#if FEED_VT_METADATA == 1
+        if (manage_update_nvts_from_feed (0))
+          {
+            g_warning ("%s: NVTs update from feed failed", __func__);
+            cleanup_manage_process (FALSE);
+            gvm_close_sentry ();
+            exit (EXIT_FAILURE);
+          }
+#else
         /* Update the cache. */
-
         update_nvt_cache_retry ();
-
+#endif
         /* Exit. */
 
         cleanup_manage_process (FALSE);
@@ -2369,6 +2379,9 @@ gvmd (int argc, char** argv, char *env[])
 #endif
 #if CVSS3_RATINGS == 1
       printf ("CVSS3 severity ratings enabled\n");
+#endif
+#if FEED_VT_METADATA == 1
+      printf ("Feed VT metadata enabled\n");
 #endif
       printf ("Copyright (C) 2009-2025 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
