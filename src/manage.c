@@ -5292,11 +5292,27 @@ feed_sync_required ()
         break;
     }
 
-  if (nvts_feed_version_status () == 1)
+#if FEED_VT_METADATA == 0
+  if (nvts_feed_version_status_from_scanner () == 1)
     {
       g_debug ("%s: NVTs need to be updated", __func__);
       return TRUE;
     }
+#else
+  feed_status_ret = nvts_feed_version_status_from_timestamp ();
+  switch (feed_status_ret)
+    {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        g_debug ("%s: NVTs need to be updated (status %d)",
+                __func__, feed_status_ret);
+        return TRUE;
+      default:
+        break;
+    }
+#endif
 
   return FALSE;
 }
