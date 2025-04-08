@@ -36,13 +36,17 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <glib/gstdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/stat.h>
 
 #include <gvm/util/jsonpull.h>
+#include <gvm/util/compressutils.h>
 #include <gvm/base/cvss.h>
+#include <bsd/unistd.h>
 
 #include "manage_sql_nvts.h"
 #include "manage_preferences.h"
@@ -51,6 +55,10 @@
 #include "manage_sql_secinfo.h"
 #include "sql.h"
 #include "utils.h"
+
+#if FEED_VT_METADATA == 1
+#include <gvm/openvasd/openvasd.h>
+#endif
 
 #undef G_LOG_DOMAIN
 /**
@@ -190,14 +198,28 @@ nvt_name (const char *oid)
  * @brief Return feed version of the plugins in the plugin cache.
  *
  * @return Feed version of plugins if the plugins are cached, else NULL.
+ *         If FEED_VT_METADATA is enabled, it returns the nvts last update 
+ *         time in ISO format.
  */
 char*
 nvts_feed_version ()
 {
+#if FEED_VT_METADATA == 0
   return sql_string ("SELECT value FROM %s.meta"
                      " WHERE name = 'nvts_feed_version';",
                      sql_schema ());
+#else
+  time_t last_update;
+  last_update = (time_t) sql_int64_0 ("SELECT value FROM %s.meta"
+                                      " WHERE name = 'nvts_last_update';",
+                                      sql_schema ());
+  if (last_update == 0 || iso_time (&last_update) == NULL)
+    return NULL;
+
+  return g_strdup(iso_time (&last_update));
+#endif
 }
+
 
 /**
  * @brief Return feed version of the plugins as seconds since epoch.
@@ -207,6 +229,7 @@ nvts_feed_version ()
 time_t
 nvts_feed_version_epoch ()
 {
+#if FEED_VT_METADATA == 0
   gchar *feed_version;
   struct tm tm;
 
@@ -221,6 +244,11 @@ nvts_feed_version_epoch ()
   g_free (feed_version);
 
   return mktime (&tm);
+#else
+  return (time_t) sql_int64_0 ("SELECT value FROM %s.meta"
+                               " WHERE name = 'nvts_last_update';",
+                               sql_schema ());
+#endif
 }
 
 /**
@@ -1207,7 +1235,7 @@ DEF_ACCESS (nvt_severity_iterator_value, 4);
  * @return 0 VTs feed current, 1 VT update needed, -1 error.
  */
 int
-nvts_feed_version_status ()
+nvts_feed_version_status_from_scanner ()
 {
 #if OPENVASD
   return nvts_feed_version_status_internal_openvasd (NULL, NULL);
@@ -1291,32 +1319,43 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     }
 
   sql_begin_immediate ();
-  ret = update_or_rebuild_nvts (0);
-
-  switch (ret)
-    {
-      case 0:
-        sql_commit ();
-        break;
-      case -1:
-        printf ("No OSP VT update socket found."
-                " Use --osp-vt-update or change the 'OpenVAS Default'"
-                " scanner to use the main ospd-openvas socket.\n");
+#if FEED_VT_METADATA == 1
+    ret = manage_update_nvts_from_feed (1);
+    if (ret == 0)
+      sql_commit ();
+    else
+      {
+        printf ("Failed to rebuild nvts from feed.\n");
         sql_rollback ();
-        break;
-      case -2:
-        printf ("Failed to connect to OSP VT update socket.\n");
-        sql_rollback ();
-        break;
-      case -3:
-        printf ("Failed to get scanner_version.\n");
-        sql_rollback ();
-        break;
-      default:
-        printf ("Failed to update or rebuild nvts.\n");
-        sql_rollback ();
-        break;
-    }
+      }
+#else
+    ret = update_or_rebuild_nvts (0);
+    switch (ret)
+      {
+        case 0:
+          sql_commit ();
+          break;
+        case -1:
+          printf ("No OSP VT update socket found."
+                  " Use --osp-vt-update or change the 'OpenVAS Default'"
+                  " scanner to use the main ospd-openvas socket.\n");
+          sql_rollback ();
+          break;
+        case -2:
+          printf ("Failed to connect to OSP VT update socket.\n");
+          sql_rollback ();
+          break;
+        case -3:
+          printf ("Failed to get scanner_version.\n");
+          sql_rollback ();
+          break;
+        default:
+          printf ("Failed to update or rebuild nvts.\n");
+          sql_rollback ();
+          break;
+      }
+    
+#endif
 
   if (ret == 0)
     update_scap_extra ();
@@ -1405,3 +1444,409 @@ cleanup_nvt_sequences () {
   sql_commit ();
   return 0;
 }
+
+#if FEED_VT_METADATA == 1
+/**
+ * @brief Gets the NVTS feed version status.
+ *
+ * @return 0 feed current, 1 update needed, 2 database missing,
+ *         3 missing "last_update", 4 inconsistent data, -1 error.
+ */
+int
+nvts_feed_version_status_from_timestamp ()
+{
+  int last_feed_update, last_db_update;
+
+  if (manage_nvts_loaded () == 0)
+    return 2;
+
+  last_feed_update = manage_feed_timestamp ("nvts");
+  if (last_feed_update == -1)
+    return -1;
+
+  last_db_update = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
+                            "                  WHERE name = 'nvts_last_update'),"
+                            "                 '-3');", sql_schema ());
+  if (last_db_update == -3)
+    return 3;
+  else if (last_db_update < 0)
+    return 4;
+  else
+    {
+      if (last_db_update == last_feed_update)
+        {
+          return 0;
+        }
+
+      if (last_db_update > last_feed_update)
+        {
+          g_warning ("%s: last nvts database update later than last feed update",
+                     __func__);
+          return -1;
+        }
+    }
+  return 1;
+}
+
+/**
+ * @brief Update NVTS timestamp from feed timestamp.
+ * 
+ */
+static void
+update_nvts_timestamp ()
+{
+
+  time_t stamp = manage_feed_timestamp ("nvts");
+  
+  if (stamp == -1)
+    stamp = time(NULL);
+  
+  int last_db_update = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
+                                "                  WHERE name = 'nvts_last_update'),"
+                                "                 '-3');", sql_schema ());
+  if (last_db_update == -3)
+    sql ("INSERT INTO %s.meta (name, value)"
+         " VALUES ('nvts_last_update', '%ld');",
+         sql_schema (), (long) stamp);
+  else
+    sql ("UPDATE %s.meta SET value = '%ld'"
+         "WHERE name = 'nvts_last_update';",
+         sql_schema (), (long) stamp);
+}
+
+/**
+ * @brief Aborts NVTS update.
+ */
+static void
+abort_nvts_update ()
+{
+  g_info ("Aborting NVTS update.");
+
+  update_nvts_timestamp ();
+  sql("DROP TABLE IF EXISTS vt_refs_rebuild;");
+  sql("DROP TABLE IF EXISTS vt_severities_rebuild;");
+  sql("DROP TABLE IF EXISTS nvt_preferences_rebuild;");
+  sql("DROP TABLE IF EXISTS nvts_rebuild;");
+}
+
+/**
+ * @brief Update NVTs from a JSON file.
+ *
+ * @param[in]  full_path               Full path to JSON VT metadata file.
+ * @param[in]  old_nvts_last_modified  Time NVTs considered modified after.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_nvts_from_json_file (const gchar *full_path)
+{
+
+  int count_modified_vts, count_new_vts;
+  batch_t *vt_refs_batch, *vt_sevs_batch;
+
+  count_modified_vts = 0;
+  count_new_vts = 0;
+
+  gvm_json_pull_parser_t parser;
+  gvm_json_pull_event_t event;
+  FILE *nvts_file;
+  time_t feed_version_epoch;
+  GList *preferences;
+  int ret;
+
+  int fd = open (full_path, O_RDONLY);
+
+  if (fd < 0)
+  {
+    g_warning ("%s: Failed to open NVT meta data file '%s': %s",
+               __func__, full_path, strerror(errno));
+    return -1;
+  }
+
+  g_info ("Updating %s", full_path);
+
+  nvts_file = gvm_gzip_open_file_reader_fd (fd);
+  if (nvts_file == NULL)
+    {
+      g_warning ("%s: Failed to open NVT file: %s",
+                __func__,
+                strerror (errno));
+      return -1;
+    }
+  
+  gvm_json_pull_parser_init_full (&parser, nvts_file,
+                                  GVM_JSON_PULL_PARSE_BUFFER_LIMIT,
+                                  GVM_JSON_PULL_READ_BUFFER_SIZE * 8);
+  gvm_json_pull_event_init (&event);
+  gvm_json_pull_parser_next (&parser, &event);
+
+  prepare_nvts_insert (1);
+  vt_refs_batch = batch_start (vt_ref_insert_size);
+  vt_sevs_batch = batch_start (vt_sev_insert_size);
+
+  feed_version_epoch = nvts_feed_version_epoch();
+
+  if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START)
+    {
+      g_info ("%s: Start parsing feed", __func__);
+      nvti_t *nvti = NULL;
+      sql_begin_immediate ();
+
+      while ((ret = openvasd_parse_vt (&parser, &event, &nvti)) != 1)
+        {
+          if (ret == -1)
+            {
+              g_warning ("%s: Error parsing VT item: %s", __func__, event.error_message);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (nvts_file);
+              sql_rollback ();
+              return -1;
+            }
+            
+          if (nvti_creation_time (nvti) > feed_version_epoch)
+            count_new_vts += 1;
+          else
+            count_modified_vts += 1;
+          
+          insert_nvt (nvti, 1, vt_refs_batch, vt_sevs_batch);
+          
+          preferences = NULL;
+          if (update_preferences_from_nvt (nvti, &preferences))
+            {
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (nvts_file);
+              sql_rollback ();
+              return -1;
+            }
+          insert_nvt_preferences_list (preferences, 1);
+          g_list_free_full (preferences, (GDestroyNotify) preference_free);
+          g_free(nvti);
+       }
+
+      batch_end (vt_refs_batch);
+      batch_end (vt_sevs_batch);
+
+      g_info ("%s: Finalizing nvts insert", __func__);
+    
+      finalize_nvts_insert (count_new_vts, count_modified_vts, NULL, 1);
+      sql_commit ();
+    }
+  else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
+    {
+      g_warning ("%s: Parser error: %s", __func__, event.error_message);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (nvts_file);
+      return -1;
+    }
+  else
+    {
+      g_warning ("%s: File must contain a JSON array", __func__);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (nvts_file);
+      return -1;
+    }
+
+  gvm_json_pull_event_cleanup (&event);
+  gvm_json_pull_parser_cleanup (&parser);
+  fclose (nvts_file);
+  return 0;
+}
+
+/**
+ * @brief update scanner preferences.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_scanner_preferences ()
+{
+  int ret;
+
+  g_info ("%s: Updating scanner preferences", __func__);
+
+#if OPENVASD
+  scanner_t scanner;
+
+  if (find_resource_no_acl ("scanner", SCANNER_UUID_OPENVASD_DEFAULT, &scanner))
+    return -1;
+  
+  ret = update_scanner_preferences_openvasd (scanner);
+#else
+  if (check_osp_vt_update_socket ())
+    {
+      g_warning ("No OSP VT update socket found."
+                 " Use --osp-vt-update or change the 'OpenVAS Default'"
+                 " scanner to use the main ospd-openvas socket.");
+      return -1;
+    }
+
+  const char *osp_update_socket = get_osp_vt_update_socket ();
+  if (osp_update_socket == NULL)
+    {
+      g_warning ("No OSP VT update socket set.");
+      return -1;
+    }
+
+  ret = update_scanner_preferences_osp (osp_update_socket);
+#endif
+
+  if (ret)
+    {
+      g_warning ("%s: Failed to update scanner preferences", __func__);
+      return -1;
+    }
+
+  g_info ("%s: Updating scanner preferences done", __func__);
+  return 0;
+}
+
+/**
+ * @brief update NVTs from feed.
+ * 
+ * @param[in]  reset_old_nvts_last_modified  Whether to reset the time NVTs
+ *                                           considered modified after.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_nvts_from_feed (int reset_old_nvts_last_modified)
+{
+  gchar *full_path;
+  GStatBuf state;
+  time_t old_nvts_last_modified;
+  int ret;
+
+  full_path = g_build_filename (GVM_NVT_DATA_DIR,
+                                "vt-metadata.json.gz",
+                                NULL);
+
+  if (g_stat (full_path, &state))
+    {
+      g_free (full_path);
+      full_path = g_build_filename (GVM_NVT_DATA_DIR,
+                                    "vt-metadata.json",
+                                    NULL);
+    }
+
+  if (g_stat (full_path, &state))
+    {
+      g_warning ("%s: No JSON VT metadata file found at %s",
+                 __func__,
+                 full_path);
+      g_free (full_path);
+      return -1;
+    }
+
+  if (reset_old_nvts_last_modified)
+    old_nvts_last_modified = 0;
+  else
+    old_nvts_last_modified
+      = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
+
+  ret = update_nvts_from_json_file (full_path);
+
+  g_free (full_path);
+
+  if (ret)
+    {
+      g_warning ("%s: Failed to update NVTs from feed", __func__);
+      return -1;
+    }
+
+  ret = update_scanner_preferences ();
+  
+  if (ret)
+    {
+      g_warning ("%s: Failed to update scanner preferences", __func__);
+      return -1;
+    }
+
+  update_nvt_end (old_nvts_last_modified);
+
+  return 0;
+}
+
+/**
+ * @brief Update NVT db from feed.
+ *
+ * @param[in] reset_nvts_db  Whether to rebuild regardless of last nvts update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_update_nvts_from_feed (gboolean reset_nvts_db)
+{
+
+  int reset_nvts_last_modified = 1;
+
+  if (reset_nvts_db)
+      g_warning ("%s: Full rebuild requested, rebuilding NVTs from feed",
+                 __func__);
+    else
+      {
+        /* Re-open DB after fork. */
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+
+        if (manage_nvts_loaded () == 0)
+          g_warning ("%s: No NVTs loaded in db, rebuilding NVTs from scratch",
+            __func__);
+        else
+          {
+            int last_nvts_db_update;
+
+            last_nvts_db_update 
+              = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
+                        "                  WHERE name = 'nvts_last_update'),"
+                        "                 '-3');", sql_schema ());
+            if (last_nvts_db_update == -3)
+                g_warning ("%s: Missing nvts_last_update record, "
+                          "rebuilding NVTs from feed", __func__);
+            else if (last_nvts_db_update < 0)
+              g_warning ("%s: Inconsistent data, rebuilding NVTs from feed",
+                        __func__);
+            else
+              {
+                int last_feed_update;
+      
+                last_feed_update = manage_feed_timestamp ("nvts");
+      
+                if (last_feed_update == -1)
+                  return -1;
+      
+                if (last_nvts_db_update == last_feed_update)
+                  {
+                    setproctitle ("Rebulding NVTs from feed: done");
+                    return 0;
+                  }
+      
+                if (last_nvts_db_update > last_feed_update)
+                  {
+                    g_warning ("%s: last NVTs update later than last feed update",
+                              __func__);
+                    return -1;
+                  }
+                reset_nvts_last_modified = 0;
+              }
+          }
+      }
+
+    setproctitle ("Updating NVTs from feed");
+    g_info ("%s: Updating NVTs from feed", __func__);
+
+    if (update_nvts_from_feed (reset_nvts_last_modified) == -1)
+      {
+        g_warning ("%s: Failed to update NVTs from feed", __func__);
+        abort_nvts_update ();
+        return -1;
+      }
+
+    update_nvts_timestamp ();
+    g_info ("%s: Updating NVTs from feed done", __func__);
+    return 0;
+}
+#endif
