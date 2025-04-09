@@ -89,4 +89,7 @@ alert_method_name (alert_method_t);
 alert_method_t
 alert_method_from_name (const char*);
 
+gboolean
+find_alert_with_permission (const char *, alert_t *, const char *);
+
 #endif /* not _GVMD_MANAGE_ALERTS_H */

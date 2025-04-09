@@ -545,9 +545,6 @@ delete_alert (const char *, int);
 char *
 alert_uuid (alert_t);
 
-gboolean
-find_alert_with_permission (const char *, alert_t *, const char *);
-
 int
 manage_test_alert (const char *, gchar **);
 
