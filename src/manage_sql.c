@@ -42970,18 +42970,20 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
 {
   int port;
   openvasd_connector_t connection;
-  const char *server, *ca_pub, *key_pub, *key_priv;
+  const char *host, *ca_pub, *key_pub, *key_priv, *protocol;
 
   assert (iterator);
-  server = scanner_iterator_host (iterator);
+  host = scanner_iterator_host (iterator);
   port = scanner_iterator_port (iterator);
   ca_pub = scanner_iterator_ca_pub (iterator);
   key_pub = scanner_iterator_key_pub (iterator);
   key_priv = scanner_iterator_key_priv (iterator);
+  protocol = "https";
 
   connection = openvasd_connector_new();
 
-  openvasd_connector_builder (connection, OPENVASD_SERVER, server);
+  openvasd_connector_builder (connection, OPENVASD_HOST, host);
+  openvasd_connector_builder (connection, OPENVASD_PROTOCOL, protocol);
   openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
   openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
   openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
@@ -42990,7 +42992,7 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
   if (!connection)
     return 1;
 
-  *desc = g_strdup_printf("openvasd Sensor on htt://%s:%d", server, port);
+  *desc = g_strdup_printf("openvasd Sensor on %s://%s:%d", protocol, host, port);
   if (openvasd_parsed_scans_preferences (connection, params) < 0)
     return 1;
   openvasd_connector_free (connection);
@@ -59699,11 +59701,11 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
   gboolean has_relay;
   int port;
   openvasd_connector_t connection;
-  char *server, *ca_pub, *key_pub, *key_priv;
+  char *host, *ca_pub, *key_pub, *key_priv;
 
   assert (scanner);
   has_relay = scanner_has_relay (scanner);
-  server = scanner_host (scanner, has_relay);
+  host = scanner_host (scanner, has_relay);
   port = scanner_port (scanner, has_relay);
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
@@ -59711,16 +59713,17 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
 
   connection = openvasd_connector_new();
 
-  openvasd_connector_builder (connection, OPENVASD_SERVER, server);
+  openvasd_connector_builder (connection, OPENVASD_HOST, host);
   openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
   openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
   openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
+  openvasd_connector_builder (connection, OPENVASD_PROTOCOL, "https");
   openvasd_connector_builder (connection, OPENVASD_PORT, (void *) &port);
 
   if (scan_id && scan_id[0] != '\0')
     openvasd_connector_builder (connection, OPENVASD_SCAN_ID, scan_id);
 
-  g_free (server);
+  g_free (host);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
