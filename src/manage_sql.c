@@ -6762,22 +6762,6 @@ manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
 }
 
 /**
- * @brief Find a alert for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of alert.
- * @param[out]  alert       Alert return, 0 if successfully failed to find alert.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find alert), TRUE on error.
- */
-gboolean
-find_alert_with_permission (const char* uuid, alert_t* alert,
-                            const char *permission)
-{
-  return find_resource_with_permission ("alert", uuid, alert, permission, 0);
-}
-
-/**
  * @brief Validate an email address.
  *
  * @param[in]  address  Email address.
