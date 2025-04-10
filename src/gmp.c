@@ -12632,7 +12632,7 @@ get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
   else
     {
       umask (old_umask);
-      if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
+      if (flock (lockfile, LOCK_SH | LOCK_NB))  /* Shared, Non blocking. */
         {
           if (errno == EWOULDBLOCK)
             {
