@@ -15574,6 +15574,20 @@ check_db_scanners ()
            SCANNER_TYPE_OPENVAS);
     }
 
+#if OPENVASD
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+               SCANNER_UUID_OPENVASD_DEFAULT) == 0)
+    {
+      sql ("INSERT INTO scanners"
+           " (uuid, owner, name, host, port, type, ca_pub, credential,"
+           "  creation_time, modification_time)"
+           " VALUES ('" SCANNER_UUID_OPENVASD_DEFAULT "', NULL, 'OpenVASD',"
+           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
+           " m_now ());",
+           SCANNER_TYPE_OPENVASD);
+    }
+#endif
+
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_CVE) == 0)
     sql ("INSERT INTO scanners"
