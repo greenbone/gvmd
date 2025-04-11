@@ -1,6 +1,6 @@
 ![Greenbone Logo](https://www.greenbone.net/wp-content/uploads/gb_new-logo_horizontal_rgb_small.png)
 
-# Greenbone Vulnerability Manager
+# Greenbone Vulnerability Manager <!-- omit in toc -->
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
 [![Build and Test](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml)
@@ -16,6 +16,15 @@ scan results. Access to data, control commands and workflows is offered via the
 XML-based Greenbone Management Protocol (GMP). Controlling scanners like
 *[OpenVAS](https://github.com/greenbone/openvas)* is done via the Open Scanner
 Protocol (OSP).
+
+- [Releases](#releases)
+- [Installation and Usage](#installation-and-usage)
+- [Support](#support)
+- [Maintainer](#maintainer)
+- [Contributing](#contributing)
+  - [Code style and formatting](#code-style-and-formatting)
+  - [CMake formatting](#cmake-formatting)
+- [License](#license)
 
 ## Releases
 
@@ -74,6 +83,33 @@ Your contributions are highly appreciated. Please [create a pull
 request](https://github.com/greenbone/gvmd/pulls) on GitHub. Bigger changes need
 to be discussed with the development team via the [issues section at
 GitHub](https://github.com/greenbone/gvmd/issues) first.
+
+### Code style and formatting
+
+Before creating a pull request, it is recommended to run the following command:
+
+```sh
+make format
+```
+
+This reformats the new code to ensure that it follows the code style and
+formatting guidelines.
+
+### CMake formatting
+
+All CMake files are formatted using [gersemi](https://github.com/BlankSpruce/gersemi).
+To install gersemi on a Debian based system the following commands can be used:
+
+```sh
+sudo apt install pipx
+pipx install gersemi
+```
+
+To format all CMake files run the command:
+
+```sh
+gersemi -i cmake .
+```
 
 ## License
 

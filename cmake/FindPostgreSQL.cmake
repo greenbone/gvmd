@@ -79,53 +79,105 @@ This module will set the following variables in your project:
 #
 # ----------------------------------------------------------------------------
 
-set(PostgreSQL_INCLUDE_PATH_DESCRIPTION "top-level directory containing the PostgreSQL include directories. E.g /usr/local/include/PostgreSQL/8.4 or C:/Program Files/PostgreSQL/8.4/include")
-set(PostgreSQL_INCLUDE_DIR_MESSAGE "Set the PostgreSQL_INCLUDE_DIR cmake cache entry to the ${PostgreSQL_INCLUDE_PATH_DESCRIPTION}")
-set(PostgreSQL_LIBRARY_PATH_DESCRIPTION "top-level directory containing the PostgreSQL libraries.")
-set(PostgreSQL_LIBRARY_DIR_MESSAGE "Set the PostgreSQL_LIBRARY_DIR cmake cache entry to the ${PostgreSQL_LIBRARY_PATH_DESCRIPTION}")
-set(PostgreSQL_ROOT_DIR_MESSAGE "Set the PostgreSQL_ROOT system variable to where PostgreSQL is found on the machine E.g C:/Program Files/PostgreSQL/8.4")
+set(
+  PostgreSQL_INCLUDE_PATH_DESCRIPTION
+  "top-level directory containing the PostgreSQL include directories. E.g /usr/local/include/PostgreSQL/8.4 or C:/Program Files/PostgreSQL/8.4/include"
+)
+set(
+  PostgreSQL_INCLUDE_DIR_MESSAGE
+  "Set the PostgreSQL_INCLUDE_DIR cmake cache entry to the ${PostgreSQL_INCLUDE_PATH_DESCRIPTION}"
+)
+set(
+  PostgreSQL_LIBRARY_PATH_DESCRIPTION
+  "top-level directory containing the PostgreSQL libraries."
+)
+set(
+  PostgreSQL_LIBRARY_DIR_MESSAGE
+  "Set the PostgreSQL_LIBRARY_DIR cmake cache entry to the ${PostgreSQL_LIBRARY_PATH_DESCRIPTION}"
+)
+set(
+  PostgreSQL_ROOT_DIR_MESSAGE
+  "Set the PostgreSQL_ROOT system variable to where PostgreSQL is found on the machine E.g C:/Program Files/PostgreSQL/8.4"
+)
 
-
-set(PostgreSQL_KNOWN_VERSIONS ${PostgreSQL_ADDITIONAL_VERSIONS}
-    "17" "16" "15" "14" "13" "12" "11" "10" "9.6" "9.5" "9.4" "9.3" "9.2" "9.1" "9.0" "8.4" "8.3" "8.2" "8.1" "8.0")
+set(
+  PostgreSQL_KNOWN_VERSIONS
+  ${PostgreSQL_ADDITIONAL_VERSIONS}
+  "17"
+  "16"
+  "15"
+  "14"
+  "13"
+  "12"
+  "11"
+  "10"
+  "9.6"
+  "9.5"
+  "9.4"
+  "9.3"
+  "9.2"
+  "9.1"
+  "9.0"
+  "8.4"
+  "8.3"
+  "8.2"
+  "8.1"
+  "8.0"
+)
 
 # Define additional search paths for root directories.
-set( PostgreSQL_ROOT_DIRECTORIES
-   ENV PostgreSQL_ROOT
-   ${PostgreSQL_ROOT}
-)
+set(PostgreSQL_ROOT_DIRECTORIES ENV PostgreSQL_ROOT ${PostgreSQL_ROOT})
 foreach(suffix ${PostgreSQL_KNOWN_VERSIONS})
   if(WIN32)
-    list(APPEND PostgreSQL_LIBRARY_ADDITIONAL_SEARCH_SUFFIXES
-        "PostgreSQL/${suffix}/lib")
-    list(APPEND PostgreSQL_INCLUDE_ADDITIONAL_SEARCH_SUFFIXES
-        "PostgreSQL/${suffix}/include")
-    list(APPEND PostgreSQL_TYPE_ADDITIONAL_SEARCH_SUFFIXES
-        "PostgreSQL/${suffix}/include/server")
+    list(
+      APPEND
+      PostgreSQL_LIBRARY_ADDITIONAL_SEARCH_SUFFIXES
+      "PostgreSQL/${suffix}/lib"
+    )
+    list(
+      APPEND
+      PostgreSQL_INCLUDE_ADDITIONAL_SEARCH_SUFFIXES
+      "PostgreSQL/${suffix}/include"
+    )
+    list(
+      APPEND
+      PostgreSQL_TYPE_ADDITIONAL_SEARCH_SUFFIXES
+      "PostgreSQL/${suffix}/include/server"
+    )
   endif()
   if(UNIX)
-    list(APPEND PostgreSQL_LIBRARY_ADDITIONAL_SEARCH_SUFFIXES
-        "postgresql${suffix}"
-        "pgsql-${suffix}/lib")
-    list(APPEND PostgreSQL_INCLUDE_ADDITIONAL_SEARCH_SUFFIXES
-        "postgresql${suffix}"
-        "postgresql/${suffix}"
-        "pgsql-${suffix}/include")
-    list(APPEND PostgreSQL_TYPE_ADDITIONAL_SEARCH_SUFFIXES
-        "postgresql${suffix}/server"
-        "postgresql/${suffix}/server"
-        "pgsql-${suffix}/include/server")
+    list(
+      APPEND
+      PostgreSQL_LIBRARY_ADDITIONAL_SEARCH_SUFFIXES
+      "postgresql${suffix}"
+      "pgsql-${suffix}/lib"
+    )
+    list(
+      APPEND
+      PostgreSQL_INCLUDE_ADDITIONAL_SEARCH_SUFFIXES
+      "postgresql${suffix}"
+      "postgresql/${suffix}"
+      "pgsql-${suffix}/include"
+    )
+    list(
+      APPEND
+      PostgreSQL_TYPE_ADDITIONAL_SEARCH_SUFFIXES
+      "postgresql${suffix}/server"
+      "postgresql/${suffix}/server"
+      "pgsql-${suffix}/include/server"
+    )
   endif()
 endforeach()
 
 #
 # Look for an installation.
 #
-find_path(PostgreSQL_INCLUDE_DIR
+find_path(
+  PostgreSQL_INCLUDE_DIR
   NAMES libpq-fe.h
   PATHS
-   # Look in other places.
-   ${PostgreSQL_ROOT_DIRECTORIES}
+    # Look in other places.
+    ${PostgreSQL_ROOT_DIRECTORIES}
   PATH_SUFFIXES
     pgsql
     postgresql
@@ -135,11 +187,12 @@ find_path(PostgreSQL_INCLUDE_DIR
   DOC "The ${PostgreSQL_INCLUDE_DIR_MESSAGE}"
 )
 
-find_path(PostgreSQL_TYPE_INCLUDE_DIR
+find_path(
+  PostgreSQL_TYPE_INCLUDE_DIR
   NAMES catalog/pg_type.h
   PATHS
-   # Look in other places.
-   ${PostgreSQL_ROOT_DIRECTORIES}
+    # Look in other places.
+    ${PostgreSQL_ROOT_DIRECTORIES}
   PATH_SUFFIXES
     postgresql
     pgsql/server
@@ -151,24 +204,25 @@ find_path(PostgreSQL_TYPE_INCLUDE_DIR
 )
 
 # The PostgreSQL library.
-set (PostgreSQL_LIBRARY_TO_FIND pq)
+set(PostgreSQL_LIBRARY_TO_FIND pq)
 # Setting some more prefixes for the library
-set (PostgreSQL_LIB_PREFIX "")
-if ( WIN32 )
-  set (PostgreSQL_LIB_PREFIX ${PostgreSQL_LIB_PREFIX} "lib")
-  set (PostgreSQL_LIBRARY_TO_FIND ${PostgreSQL_LIB_PREFIX}${PostgreSQL_LIBRARY_TO_FIND})
+set(PostgreSQL_LIB_PREFIX "")
+if(WIN32)
+  set(PostgreSQL_LIB_PREFIX ${PostgreSQL_LIB_PREFIX} "lib")
+  set(
+    PostgreSQL_LIBRARY_TO_FIND
+    ${PostgreSQL_LIB_PREFIX}${PostgreSQL_LIBRARY_TO_FIND}
+  )
 endif()
 
 function(__postgresql_find_library _name)
-  find_library(${_name}
-   NAMES ${ARGN}
-   PATHS
-     ${PostgreSQL_ROOT_DIRECTORIES}
-   PATH_SUFFIXES
-     lib
-     ${PostgreSQL_LIBRARY_ADDITIONAL_SEARCH_SUFFIXES}
-   # Help the user find it if we cannot.
-   DOC "The ${PostgreSQL_LIBRARY_DIR_MESSAGE}"
+  find_library(
+    ${_name}
+    NAMES ${ARGN}
+    PATHS ${PostgreSQL_ROOT_DIRECTORIES}
+    PATH_SUFFIXES lib ${PostgreSQL_LIBRARY_ADDITIONAL_SEARCH_SUFFIXES}
+    # Help the user find it if we cannot.
+    DOC "The ${PostgreSQL_LIBRARY_DIR_MESSAGE}"
   )
 endfunction()
 
@@ -178,76 +232,124 @@ if(PostgreSQL_LIBRARY)
   set(PostgreSQL_LIBRARIES "${PostgreSQL_LIBRARY}")
   get_filename_component(PostgreSQL_LIBRARY_DIR "${PostgreSQL_LIBRARY}" PATH)
 else()
-  __postgresql_find_library(PostgreSQL_LIBRARY_RELEASE ${PostgreSQL_LIBRARY_TO_FIND})
-  __postgresql_find_library(PostgreSQL_LIBRARY_DEBUG ${PostgreSQL_LIBRARY_TO_FIND}d)
+  __postgresql_find_library(
+    PostgreSQL_LIBRARY_RELEASE
+    ${PostgreSQL_LIBRARY_TO_FIND}
+  )
+  __postgresql_find_library(
+    PostgreSQL_LIBRARY_DEBUG
+    ${PostgreSQL_LIBRARY_TO_FIND}d
+  )
   include(${CMAKE_CURRENT_LIST_DIR}/SelectLibraryConfigurations.cmake)
   select_library_configurations(PostgreSQL)
   mark_as_advanced(PostgreSQL_LIBRARY_RELEASE PostgreSQL_LIBRARY_DEBUG)
   if(PostgreSQL_LIBRARY_RELEASE)
-    get_filename_component(PostgreSQL_LIBRARY_DIR "${PostgreSQL_LIBRARY_RELEASE}" PATH)
+    get_filename_component(
+      PostgreSQL_LIBRARY_DIR
+      "${PostgreSQL_LIBRARY_RELEASE}"
+      PATH
+    )
   elseif(PostgreSQL_LIBRARY_DEBUG)
-    get_filename_component(PostgreSQL_LIBRARY_DIR "${PostgreSQL_LIBRARY_DEBUG}" PATH)
+    get_filename_component(
+      PostgreSQL_LIBRARY_DIR
+      "${PostgreSQL_LIBRARY_DEBUG}"
+      PATH
+    )
   else()
     set(PostgreSQL_LIBRARY_DIR "")
   endif()
 endif()
 
-if (PostgreSQL_INCLUDE_DIR)
+if(PostgreSQL_INCLUDE_DIR)
   # Some platforms include multiple pg_config.hs for multi-lib configurations
   # This is a temporary workaround.  A better solution would be to compile
   # a dummy c file and extract the value of the symbol.
   file(GLOB _PG_CONFIG_HEADERS "${PostgreSQL_INCLUDE_DIR}/pg_config*.h")
   foreach(_PG_CONFIG_HEADER ${_PG_CONFIG_HEADERS})
     if(EXISTS "${_PG_CONFIG_HEADER}")
-      file(STRINGS "${_PG_CONFIG_HEADER}" pgsql_version_str
-           REGEX "^#define[\t ]+PG_VERSION_NUM[\t ]+.*")
+      file(
+        STRINGS
+        "${_PG_CONFIG_HEADER}"
+        pgsql_version_str
+        REGEX "^#define[\t ]+PG_VERSION_NUM[\t ]+.*"
+      )
       if(pgsql_version_str)
-        string(REGEX REPLACE "^#define[\t ]+PG_VERSION_NUM[\t ]+([0-9]*).*"
-               "\\1" _PostgreSQL_VERSION_NUM "${pgsql_version_str}")
+        string(
+          REGEX REPLACE
+          "^#define[\t ]+PG_VERSION_NUM[\t ]+([0-9]*).*"
+          "\\1"
+          _PostgreSQL_VERSION_NUM
+          "${pgsql_version_str}"
+        )
         break()
       endif()
     endif()
   endforeach()
-  if (_PostgreSQL_VERSION_NUM)
+  if(_PostgreSQL_VERSION_NUM)
     # 9.x and older encoding
-    if (_PostgreSQL_VERSION_NUM LESS 100000)
+    if(_PostgreSQL_VERSION_NUM LESS 100000)
       math(EXPR _PostgreSQL_major_version "${_PostgreSQL_VERSION_NUM} / 10000")
-      math(EXPR _PostgreSQL_minor_version "${_PostgreSQL_VERSION_NUM} % 10000 / 100")
+      math(
+        EXPR
+        _PostgreSQL_minor_version
+        "${_PostgreSQL_VERSION_NUM} % 10000 / 100"
+      )
       math(EXPR _PostgreSQL_patch_version "${_PostgreSQL_VERSION_NUM} % 100")
-      set(PostgreSQL_VERSION_STRING "${_PostgreSQL_major_version}.${_PostgreSQL_minor_version}.${_PostgreSQL_patch_version}")
+      set(
+        PostgreSQL_VERSION_STRING
+        "${_PostgreSQL_major_version}.${_PostgreSQL_minor_version}.${_PostgreSQL_patch_version}"
+      )
       unset(_PostgreSQL_major_version)
       unset(_PostgreSQL_minor_version)
       unset(_PostgreSQL_patch_version)
-    else ()
+    else()
       math(EXPR _PostgreSQL_major_version "${_PostgreSQL_VERSION_NUM} / 10000")
       math(EXPR _PostgreSQL_minor_version "${_PostgreSQL_VERSION_NUM} % 10000")
-      set(PostgreSQL_VERSION_STRING "${_PostgreSQL_major_version}.${_PostgreSQL_minor_version}")
+      set(
+        PostgreSQL_VERSION_STRING
+        "${_PostgreSQL_major_version}.${_PostgreSQL_minor_version}"
+      )
       unset(_PostgreSQL_major_version)
       unset(_PostgreSQL_minor_version)
-    endif ()
-  else ()
+    endif()
+  else()
     foreach(_PG_CONFIG_HEADER ${_PG_CONFIG_HEADERS})
       if(EXISTS "${_PG_CONFIG_HEADER}")
-        file(STRINGS "${_PG_CONFIG_HEADER}" pgsql_version_str
-             REGEX "^#define[\t ]+PG_VERSION[\t ]+\".*\"")
+        file(
+          STRINGS
+          "${_PG_CONFIG_HEADER}"
+          pgsql_version_str
+          REGEX "^#define[\t ]+PG_VERSION[\t ]+\".*\""
+        )
         if(pgsql_version_str)
-          string(REGEX REPLACE "^#define[\t ]+PG_VERSION[\t ]+\"([^\"]*)\".*"
-                 "\\1" PostgreSQL_VERSION_STRING "${pgsql_version_str}")
+          string(
+            REGEX REPLACE
+            "^#define[\t ]+PG_VERSION[\t ]+\"([^\"]*)\".*"
+            "\\1"
+            PostgreSQL_VERSION_STRING
+            "${pgsql_version_str}"
+          )
           break()
         endif()
       endif()
     endforeach()
-  endif ()
+  endif()
   unset(_PostgreSQL_VERSION_NUM)
   unset(pgsql_version_str)
 endif()
 
 # Did we find anything?
 include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
-find_package_handle_standard_args(PostgreSQL
-                                  REQUIRED_VARS PostgreSQL_LIBRARY PostgreSQL_INCLUDE_DIR PostgreSQL_TYPE_INCLUDE_DIR
-                                  VERSION_VAR PostgreSQL_VERSION_STRING)
-set(PostgreSQL_FOUND  ${POSTGRESQL_FOUND})
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(
+  PostgreSQL
+  REQUIRED_VARS
+  PostgreSQL_LIBRARY
+  PostgreSQL_INCLUDE_DIR
+  PostgreSQL_TYPE_INCLUDE_DIR
+  VERSION_VAR
+  PostgreSQL_VERSION_STRING
+)
+set(PostgreSQL_FOUND ${POSTGRESQL_FOUND})
 
 function(__postgresql_import_library _target _var _config)
   if(_config)
@@ -259,26 +361,47 @@ function(__postgresql_import_library _target _var _config)
   set(_lib "${${_var}${_config_suffix}}")
   if(EXISTS "${_lib}")
     if(_config)
-      set_property(TARGET ${_target} APPEND PROPERTY
-        IMPORTED_CONFIGURATIONS ${_config})
+      set_property(
+        TARGET ${_target}
+        APPEND
+        PROPERTY IMPORTED_CONFIGURATIONS ${_config}
+      )
     endif()
-    set_target_properties(${_target} PROPERTIES
-      IMPORTED_LOCATION${_config_suffix} "${_lib}")
+    set_target_properties(
+      ${_target}
+      PROPERTIES IMPORTED_LOCATION${_config_suffix} "${_lib}"
+    )
   endif()
 endfunction()
 
 # Now try to get the include and library path.
 if(PostgreSQL_FOUND)
-  if (NOT TARGET PostgreSQL::PostgreSQL)
+  if(NOT TARGET PostgreSQL::PostgreSQL)
     add_library(PostgreSQL::PostgreSQL UNKNOWN IMPORTED)
-    set_target_properties(PostgreSQL::PostgreSQL PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${PostgreSQL_INCLUDE_DIR};${PostgreSQL_TYPE_INCLUDE_DIR}")
+    set_target_properties(
+      PostgreSQL::PostgreSQL
+      PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES
+          "${PostgreSQL_INCLUDE_DIR};${PostgreSQL_TYPE_INCLUDE_DIR}"
+    )
     __postgresql_import_library(PostgreSQL::PostgreSQL PostgreSQL_LIBRARY "")
-    __postgresql_import_library(PostgreSQL::PostgreSQL PostgreSQL_LIBRARY "RELEASE")
-    __postgresql_import_library(PostgreSQL::PostgreSQL PostgreSQL_LIBRARY "DEBUG")
-  endif ()
-  set(PostgreSQL_INCLUDE_DIRS ${PostgreSQL_INCLUDE_DIR} ${PostgreSQL_TYPE_INCLUDE_DIR} )
-  set(PostgreSQL_LIBRARY_DIRS ${PostgreSQL_LIBRARY_DIR} )
+    __postgresql_import_library(
+      PostgreSQL::PostgreSQL
+      PostgreSQL_LIBRARY
+      "RELEASE"
+    )
+    __postgresql_import_library(
+      PostgreSQL::PostgreSQL
+      PostgreSQL_LIBRARY
+      "DEBUG"
+    )
+  endif()
+  set(
+    PostgreSQL_INCLUDE_DIRS
+    ${PostgreSQL_INCLUDE_DIR}
+    ${PostgreSQL_TYPE_INCLUDE_DIR}
+  )
+  set(PostgreSQL_LIBRARY_DIRS ${PostgreSQL_LIBRARY_DIR})
 endif()
 
 mark_as_advanced(PostgreSQL_INCLUDE_DIR PostgreSQL_TYPE_INCLUDE_DIR)

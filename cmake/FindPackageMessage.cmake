@@ -41,8 +41,12 @@ function(find_package_message pkg msg details)
 
       # Save the find details in the cache to avoid printing the same
       # message again.
-      set("${DETAILS_VAR}" "${details}"
-        CACHE INTERNAL "Details about finding ${pkg}")
+      set(
+        "${DETAILS_VAR}"
+        "${details}"
+        CACHE INTERNAL
+        "Details about finding ${pkg}"
+      )
     endif()
   endif()
 endfunction()
