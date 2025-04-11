@@ -67,6 +67,21 @@ endif (PROJECT_DEV_VERSION)
 set (PROJECT_VERSION_STRING
 "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${PROJECT_VERSION_SUFFIX}${GIT_REVISION}")
 
+## make format
+message(STATUS "Looking for clang-format...")
+find_program(CLANG_FORMAT clang-format)
+
+if(CLANG_FORMAT)
+  message(STATUS "Looking for clang-format... ${CLANG_FORMAT}")
+  add_custom_target(
+    format
+    COMMAND ${CLANG_FORMAT} "-style=file" "src/gmp_{base,delete,get,tickets}.h" "src/{gmp,gmpd,iterator,sql,types,utils,manage_utils}.h"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+else(CLANG_FORMAT)
+  message(STATUS "clang-format not found.")
+endif(CLANG_FORMAT)
+
 ## CPack configuration
 
 set (CPACK_CMAKE_GENERATOR "Unix Makefiles")
