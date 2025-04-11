@@ -1,6 +1,6 @@
 ![Greenbone Logo](https://www.greenbone.net/wp-content/uploads/gb_new-logo_horizontal_rgb_small.png)
 
-# Greenbone Vulnerability Manager
+# Greenbone Vulnerability Manager <!-- omit in toc -->
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
 [![Build and Test](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml)
@@ -16,6 +16,13 @@ scan results. Access to data, control commands and workflows is offered via the
 XML-based Greenbone Management Protocol (GMP). Controlling scanners like
 *[OpenVAS](https://github.com/greenbone/openvas)* is done via the Open Scanner
 Protocol (OSP).
+
+- [Releases](#releases)
+- [Installation and Usage](#installation-and-usage)
+- [Support](#support)
+- [Maintainer](#maintainer)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Releases
 
