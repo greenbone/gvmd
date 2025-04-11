@@ -532,9 +532,6 @@ create_alert (const char*, const char*, const char*, const char*, event_t,
               GPtrArray*, alert_t*);
 
 int
-copy_alert (const char*, const char*, const char*, alert_t*);
-
-int
 modify_alert (const char*, const char*, const char*, const char*,
               const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
               alert_method_t, GPtrArray*);
