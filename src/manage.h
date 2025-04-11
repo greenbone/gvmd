@@ -536,9 +536,6 @@ modify_alert (const char*, const char*, const char*, const char*,
               const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
               alert_method_t, GPtrArray*);
 
-char *
-alert_uuid (alert_t);
-
 int
 manage_test_alert (const char *, gchar **);
 
@@ -583,9 +580,6 @@ alert_iterator_filter_readable (iterator_t*);
 
 int
 alert_iterator_active (iterator_t*);
-
-alert_method_t
-alert_method (alert_t alert);
 
 void
 init_alert_data_iterator (iterator_t *, alert_t, int, const char *);

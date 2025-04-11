@@ -526,12 +526,6 @@ event_alert_iterator_alert (iterator_t *);
 int
 event_alert_iterator_active (iterator_t *);
 
-user_t
-alert_owner (alert_t);
-
-alert_condition_t
-alert_condition (alert_t);
-
 int
 alert_applies_to_task (alert_t, task_t);
 

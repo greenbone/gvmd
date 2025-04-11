@@ -98,4 +98,13 @@ copy_alert (const char*, const char*, const char*, alert_t*);
 int
 delete_alert (const char *, int);
 
+char *
+alert_uuid (alert_t);
+
+alert_condition_t
+alert_condition (alert_t);
+
+alert_method_t
+alert_method (alert_t alert);
+
 #endif /* not _GVMD_MANAGE_ALERTS_H */
