@@ -22,6 +22,8 @@ Protocol (OSP).
 - [Support](#support)
 - [Maintainer](#maintainer)
 - [Contributing](#contributing)
+  - [Code style and formatting](#code-style-and-formatting)
+  - [CMake formatting](#cmake-formatting)
 - [License](#license)
 
 ## Releases
@@ -81,6 +83,33 @@ Your contributions are highly appreciated. Please [create a pull
 request](https://github.com/greenbone/gvmd/pulls) on GitHub. Bigger changes need
 to be discussed with the development team via the [issues section at
 GitHub](https://github.com/greenbone/gvmd/issues) first.
+
+### Code style and formatting
+
+Before creating a pull request, it is recommended to run the following command:
+
+```sh
+make format
+```
+
+This reformats the new code to ensure that it follows the code style and
+formatting guidelines.
+
+### CMake formatting
+
+All CMake files are formatted using [gersemi](https://github.com/BlankSpruce/gersemi).
+To install gersemi on a Debian based system the following commands can be used:
+
+```sh
+sudo apt install pipx
+pipx install gersemi
+```
+
+To format all CMake files run the command:
+
+```sh
+gersemi -i cmake .
+```
 
 ## License
 
