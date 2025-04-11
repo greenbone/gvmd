@@ -8063,20 +8063,6 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 }
 
 /**
- * @brief Return the UUID of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return UUID of alert.
- */
-char *
-alert_uuid (alert_t alert)
-{
-  return sql_string ("SELECT uuid FROM alerts WHERE id = %llu;",
-                     alert);
-}
-
-/**
  * @brief Return the name of an alert.
  *
  * @param[in]  alert  Alert.
@@ -8087,20 +8073,6 @@ static char *
 alert_name (alert_t alert)
 {
   return sql_string ("SELECT name FROM alerts WHERE id = %llu;", alert);
-}
-
-/**
- * @brief Return the owner of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Owner.
- */
-user_t
-alert_owner (alert_t alert)
-{
-  return sql_int64_0 ("SELECT owner FROM alerts WHERE id = %llu;",
-                      alert);
 }
 
 /**
@@ -8138,34 +8110,6 @@ alert_filter_id (alert_t alert)
                      "  END);",
                      alert,
                      alert);
-}
-
-/**
- * @brief Return the condition associated with an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Condition.
- */
-alert_condition_t
-alert_condition (alert_t alert)
-{
-  return sql_int ("SELECT condition FROM alerts WHERE id = %llu;",
-                  alert);
-}
-
-/**
- * @brief Return the method associated with an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Method.
- */
-alert_method_t
-alert_method (alert_t alert)
-{
-  return sql_int ("SELECT method FROM alerts WHERE id = %llu;",
-                  alert);
 }
 
 /**
