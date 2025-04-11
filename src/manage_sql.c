@@ -42899,7 +42899,7 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
                                       scanner_iterator_ca_pub (iterator),
                                       scanner_iterator_key_pub (iterator),
                                       scanner_iterator_key_priv (iterator),
-                                      has_relay);
+                                      has_relay == FALSE);
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -42943,7 +42943,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
                                       scanner_iterator_ca_pub (iterator),
                                       scanner_iterator_key_pub (iterator),
                                       scanner_iterator_key_priv (iterator),
-                                      has_relay);
+                                      has_relay == FALSE);
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))
