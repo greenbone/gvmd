@@ -20,6 +20,7 @@
 #define _GVMD_MANAGE_ALERTS_H
 
 #include "iterator.h"
+#include "manage_get.h"
 
 #include <glib.h>
 
@@ -106,5 +107,35 @@ alert_condition (alert_t);
 
 alert_method_t
 alert_method (alert_t alert);
+
+int
+init_alert_iterator (iterator_t*, get_data_t*);
+
+int
+alert_iterator_event (iterator_t*);
+
+int
+alert_iterator_condition (iterator_t*);
+
+int
+alert_iterator_method (iterator_t*);
+
+char *
+alert_iterator_filter_uuid (iterator_t*);
+
+char *
+alert_iterator_filter_name (iterator_t*);
+
+int
+alert_iterator_filter_trash (iterator_t*);
+
+int
+alert_iterator_filter_readable (iterator_t*);
+
+int
+alert_iterator_active (iterator_t*);
+
+int
+alert_count (const get_data_t *);
 
 #endif /* not _GVMD_MANAGE_ALERTS_H */
