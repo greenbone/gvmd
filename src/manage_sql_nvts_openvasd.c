@@ -37,6 +37,7 @@
 #include "sql.h"
 
 #include <gvm/util/jsonpull.h>
+#include <gvm/util/vtparser.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -240,7 +241,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
       // If the stream is not running anymore, parse the remaining VTs.
       while ((running && non_read_count > GVM_JSON_PULL_READ_BUFFER_SIZE * 8) || !running)
         {
-          int ret = openvasd_parse_vt (&parser, &event, &nvti);
+          int ret = parse_vt_json (&parser, &event, &nvti);
           if (ret == -1)
             {
               g_warning ("%s: Parser error: %s", __func__, event.error_message);
