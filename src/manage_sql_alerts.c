@@ -19,6 +19,7 @@
 #include "manage_alerts.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_alerts.h"
 
 /**
  * @file manage_sql_alerts.c
@@ -313,4 +314,228 @@ alert_method (alert_t alert)
 {
   return sql_int ("SELECT method FROM alerts WHERE id = %llu;",
                   alert);
+}
+
+/**
+ * @brief Count the number of alerts.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of alerts filtered set.
+ */
+int
+alert_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = ALERT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
+  return count ("alert", get, columns, trash_columns, filter_columns, 0, 0, 0,
+                  TRUE);
+}
+
+/**
+ * @brief Initialise an alert iterator, including observed alerts.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find alert, 2 failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_alert_iterator (iterator_t* iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = ALERT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "alert",
+                            get,
+                            columns,
+                            trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Return the event from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Event of the alert or NULL if iteration is complete.
+ */
+int
+alert_iterator_event (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
+  return ret;
+}
+
+/**
+ * @brief Return the condition from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Condition of the alert or NULL if iteration is complete.
+ */
+int
+alert_iterator_condition (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  return ret;
+}
+
+/**
+ * @brief Return the method from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Method of the alert or NULL if iteration is complete.
+ */
+int
+alert_iterator_method (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
+  return ret;
+}
+
+/**
+ * @brief Return the filter from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Filter of the alert or NULL if iteration is complete.
+ */
+static filter_t
+alert_iterator_filter (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return (filter_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
+ * @brief Return the filter UUID from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of filter of the alert or NULL if iteration is complete.
+ */
+char *
+alert_iterator_filter_uuid (iterator_t* iterator)
+{
+  filter_t filter;
+
+  if (iterator->done) return NULL;
+
+  filter = alert_iterator_filter (iterator);
+  if (filter)
+    {
+      if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
+          == LOCATION_TABLE)
+        return filter_uuid (filter);
+      return trash_filter_uuid (filter);
+    }
+  return NULL;
+}
+
+/**
+ * @brief Return the filter name from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of filter of the alert or NULL if iteration is complete.
+ */
+char *
+alert_iterator_filter_name (iterator_t* iterator)
+{
+  filter_t filter;
+
+  if (iterator->done) return NULL;
+
+  filter = alert_iterator_filter (iterator);
+  if (filter)
+    {
+      if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
+          == LOCATION_TABLE)
+        return filter_name (filter);
+      return trash_filter_name (filter);
+    }
+  return NULL;
+}
+
+/**
+ * @brief Return the location of an alert iterator filter.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash.
+ */
+int
+alert_iterator_filter_trash (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  if (alert_iterator_filter (iterator)
+      && (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
+          == LOCATION_TRASH))
+    return 1;
+  return 0;
+}
+
+/**
+ * @brief Return the filter readable state from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether filter is readable.
+ */
+int
+alert_iterator_filter_readable (iterator_t* iterator)
+{
+  filter_t filter;
+
+  if (iterator->done) return 0;
+
+  filter = alert_iterator_filter (iterator);
+  if (filter)
+    {
+      char *uuid;
+      uuid = alert_iterator_filter_uuid (iterator);
+      if (uuid)
+        {
+          int readable;
+          readable = acl_user_has_access_uuid
+                      ("filter", uuid, "get_filters",
+                       iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
+                       == LOCATION_TRASH);
+          free (uuid);
+          return readable;
+        }
+    }
+  return 0;
+}
+
+/**
+ * @brief Return the active state from an alert.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Method of the alert or NULL if iteration is complete.
+ */
+int
+alert_iterator_active (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return ret;
 }

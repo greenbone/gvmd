@@ -21,6 +21,43 @@
 
 #include "manage.h"
 
+/**
+ * @brief Filter columns for alert iterator.
+ */
+#define ALERT_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, "event", "condition", "method",               \
+   "filter",  NULL }
+
+/**
+ * @brief Alert iterator columns.
+ */
+#define ALERT_ITERATOR_COLUMNS                                                \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (alerts),                                             \
+   { "event", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "condition", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { "filter", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { G_STRINGIFY (LOCATION_TABLE), NULL, KEYWORD_TYPE_INTEGER },              \
+   { "active", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
+ }
+
+/**
+ * @brief Alert iterator columns for trash case.
+ */
+#define ALERT_ITERATOR_TRASH_COLUMNS                                          \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (alerts_trash),                                       \
+   { "event", NULL, KEYWORD_TYPE_INTEGER },                                   \
+   { "condition", NULL, KEYWORD_TYPE_INTEGER },                               \
+   { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { "filter", NULL, KEYWORD_TYPE_STRING },                                   \
+   { "filter_location", NULL, KEYWORD_TYPE_INTEGER},                          \
+   { "active", NULL, KEYWORD_TYPE_INTEGER },                                  \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
+ }
+
 user_t
 alert_owner (alert_t);
 

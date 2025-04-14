@@ -551,36 +551,6 @@ alert_writable (alert_t);
 int
 trash_alert_writable (alert_t);
 
-int
-alert_count (const get_data_t *);
-
-int
-init_alert_iterator (iterator_t*, get_data_t*);
-
-int
-alert_iterator_event (iterator_t*);
-
-int
-alert_iterator_condition (iterator_t*);
-
-int
-alert_iterator_method (iterator_t*);
-
-char *
-alert_iterator_filter_uuid (iterator_t*);
-
-char *
-alert_iterator_filter_name (iterator_t*);
-
-int
-alert_iterator_filter_trash (iterator_t*);
-
-int
-alert_iterator_filter_readable (iterator_t*);
-
-int
-alert_iterator_active (iterator_t*);
-
 void
 init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
 
@@ -3300,7 +3270,13 @@ char*
 filter_uuid (filter_t);
 
 char*
+trash_filter_uuid (filter_t);
+
+char*
 filter_name (filter_t);
+
+char*
+trash_filter_name (filter_t);
 
 gchar*
 filter_term (const char *);
