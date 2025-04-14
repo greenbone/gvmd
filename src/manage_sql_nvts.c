@@ -45,6 +45,9 @@
 
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/compressutils.h>
+#if FEED_VT_METADATA == 1
+#include <gvm/util/vtparser.h>
+#endif
 #include <gvm/base/cvss.h>
 #include <bsd/unistd.h>
 
@@ -55,10 +58,6 @@
 #include "manage_sql_secinfo.h"
 #include "sql.h"
 #include "utils.h"
-
-#if FEED_VT_METADATA == 1
-#include <gvm/openvasd/openvasd.h>
-#endif
 
 #undef G_LOG_DOMAIN
 /**
@@ -1592,7 +1591,7 @@ update_nvts_from_json_file (const gchar *full_path)
       nvti_t *nvti = NULL;
       sql_begin_immediate ();
 
-      while ((ret = openvasd_parse_vt (&parser, &event, &nvti)) != 1)
+      while ((ret = parse_vt_json (&parser, &event, &nvti)) != 1)
         {
           if (ret == -1)
             {
