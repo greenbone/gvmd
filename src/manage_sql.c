@@ -8178,61 +8178,6 @@ trash_alert_writable (alert_t alert)
 }
 
 /**
- * @brief Initialise an alert data iterator.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  alert  Alert.
- * @param[in]  trash      Whether to iterate over trashcan alert data.
- * @param[in]  table      Type of data: "condition", "event" or "method",
- *                        corresponds to substring of the table to select
- *                        from.
- */
-void
-init_alert_data_iterator (iterator_t *iterator, alert_t alert,
-                          int trash, const char *table)
-{
-  init_iterator (iterator,
-                 "SELECT name, data FROM alert_%s_data%s"
-                 " WHERE alert = %llu;",
-                 table,
-                 trash ? "_trash" : "",
-                 alert);
-}
-
-/**
- * @brief Return the name from an alert data iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the alert data or NULL if iteration is complete.
- */
-const char*
-alert_data_iterator_name (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, 0);
-  return ret;
-}
-
-/**
- * @brief Return the data from an alert data iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- *
- * @return Data of the alert data or NULL if iteration is complete.
- */
-const char*
-alert_data_iterator_data (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, 1);
-  return ret;
-}
-
-/**
  * @brief Return data associated with an alert.
  *
  * @param[in]  alert  Alert.

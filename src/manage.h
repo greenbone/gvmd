@@ -552,15 +552,6 @@ int
 trash_alert_writable (alert_t);
 
 void
-init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
-
-const char*
-alert_data_iterator_name (iterator_t*);
-
-const char*
-alert_data_iterator_data (iterator_t*);
-
-void
 init_alert_task_iterator (iterator_t*, alert_t, int);
 
 const char*
