@@ -29,6 +29,7 @@
 #include "manage_configs.h"
 #include "manage_events.h"
 #include "manage_get.h"
+#include "manage_tasks.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -343,7 +344,6 @@ typedef resource_t group_t;
 typedef resource_t host_t;
 typedef resource_t tag_t;
 typedef resource_t target_t;
-typedef resource_t task_t;
 typedef resource_t ticket_t;
 typedef resource_t tls_certificate_t;
 typedef resource_t result_t;
@@ -562,15 +562,6 @@ alert_task_iterator_uuid (iterator_t*);
 
 int
 alert_task_iterator_readable (iterator_t*);
-
-void
-init_task_alert_iterator (iterator_t*, task_t);
-
-const char*
-task_alert_iterator_uuid (iterator_t*);
-
-const char*
-task_alert_iterator_name (iterator_t*);
 
 
 /* Task global variables and preprocessor variables. */

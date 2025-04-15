@@ -21,6 +21,7 @@
 
 #include "iterator.h"
 #include "manage_get.h"
+#include "manage_tasks.h"
 
 #include <glib.h>
 
@@ -146,5 +147,14 @@ alert_data_iterator_name (iterator_t*);
 
 const char*
 alert_data_iterator_data (iterator_t*);
+
+void
+init_task_alert_iterator (iterator_t*, task_t);
+
+const char*
+task_alert_iterator_uuid (iterator_t*);
+
+const char*
+task_alert_iterator_name (iterator_t*);
 
 #endif /* not _GVMD_MANAGE_ALERTS_H */
