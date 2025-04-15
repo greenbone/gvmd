@@ -594,3 +594,60 @@ alert_data_iterator_data (iterator_t* iterator)
   ret = iterator_string (iterator, 1);
   return ret;
 }
+
+/**
+ * @brief Initialise a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  task      Task.
+ */
+void
+init_task_alert_iterator (iterator_t* iterator, task_t task)
+{
+  gchar *owned_clause, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (task);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_alerts"));
+  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions, 0,
+                                  &with_clause);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT alerts.id, alerts.uuid, alerts.name"
+                 " FROM alerts, task_alerts"
+                 " WHERE task_alerts.task = %llu"
+                 " AND task_alerts.alert = alerts.id"
+                 " AND %s;",
+                 with_clause ? with_clause : "",
+                 task,
+                 owned_clause);
+
+  g_free (with_clause);
+  g_free (owned_clause);
+}
+
+/**
+ * @brief Get the UUID from a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_alert_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a task alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (task_alert_iterator_name, 2);
