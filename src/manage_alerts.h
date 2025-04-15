@@ -157,4 +157,16 @@ task_alert_iterator_uuid (iterator_t*);
 const char*
 task_alert_iterator_name (iterator_t*);
 
+void
+init_alert_task_iterator (iterator_t*, alert_t, int);
+
+const char*
+alert_task_iterator_name (iterator_t*);
+
+const char*
+alert_task_iterator_uuid (iterator_t*);
+
+int
+alert_task_iterator_readable (iterator_t*);
+
 #endif /* not _GVMD_MANAGE_ALERTS_H */
