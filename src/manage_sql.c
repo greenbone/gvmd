@@ -13459,54 +13459,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
   return -1;
 }
 
-/**
- * @brief Header for "New NVTs" alert message.
- */
-#define NEW_NVTS_HEADER                                                       \
-/* Open-Xchange (OX) AppSuite XHTML File HTML Injection Vuln...  NoneAvailable       0.0 100% */ \
-  "Name                                                          Solution Type  Severity  QOD\n" \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New NVTs" alert message, when there's an OID.
- */
-#define NEW_NVTS_HEADER_OID                                                   \
-/* Open-Xchange (OX) AppSuite XHTML File HTML Injection Vuln...  NoneAvailable       0.0 100%  1.3... */ \
-  "Name                                                          Solution Type  Severity  QOD  OID\n" \
-  "------------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New CVEs" alert message.
- */
-#define NEW_CVES_HEADER                                                         \
-/* CVE-2014-100001       6.8  Cross-site request forgery (CSRF) vulnerability in... */ \
-  "Name             Severity  Description\n"                                    \
-  "--------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New CPEs" alert message.
- */
-#define NEW_CPES_HEADER                                                        \
-/* cpe:/a:.joomclan:com_joomclip                                 1024cms... */ \
-  "Name                                                          Title\n"      \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New CERT-Bund Advisories" alert message.
- */
-#define NEW_CERT_BUNDS_HEADER                                                       \
-/* CB-K13/0849  Novell SUSE Linux Enterprise Server: Mehrere Schwachstellen... */   \
-  "Name         Title\n"                                                            \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New DFN-CERT Advisories" alert message.
- */
-#define NEW_DFN_CERTS_HEADER                                                   \
-/* DFN-CERT-2008-1100  Denial of Service Schwachstelle in der... */            \
-  "Name                Title\n"                                                \
-  "------------------------------------------------------------------------------------------\n"
-
 
 /* Task functions. */
 
@@ -34098,6 +34050,54 @@ target_task_iterator_readable (iterator_t* iterator)
 
 
 /* SecInfo Alerts. */
+
+/**
+ * @brief Header for "New NVTs" alert message.
+ */
+#define NEW_NVTS_HEADER                                                       \
+/* Open-Xchange (OX) AppSuite XHTML File HTML Injection Vuln...  NoneAvailable       0.0 100% */ \
+  "Name                                                          Solution Type  Severity  QOD\n" \
+  "------------------------------------------------------------------------------------------\n"
+
+/**
+ * @brief Header for "New NVTs" alert message, when there's an OID.
+ */
+#define NEW_NVTS_HEADER_OID                                                   \
+/* Open-Xchange (OX) AppSuite XHTML File HTML Injection Vuln...  NoneAvailable       0.0 100%  1.3... */ \
+  "Name                                                          Solution Type  Severity  QOD  OID\n" \
+  "------------------------------------------------------------------------------------------------\n"
+
+/**
+ * @brief Header for "New CVEs" alert message.
+ */
+#define NEW_CVES_HEADER                                                         \
+/* CVE-2014-100001       6.8  Cross-site request forgery (CSRF) vulnerability in... */ \
+  "Name             Severity  Description\n"                                    \
+  "--------------------------------------------------------------------------------\n"
+
+/**
+ * @brief Header for "New CPEs" alert message.
+ */
+#define NEW_CPES_HEADER                                                        \
+/* cpe:/a:.joomclan:com_joomclip                                 1024cms... */ \
+  "Name                                                          Title\n"      \
+  "------------------------------------------------------------------------------------------\n"
+
+/**
+ * @brief Header for "New CERT-Bund Advisories" alert message.
+ */
+#define NEW_CERT_BUNDS_HEADER                                                       \
+/* CB-K13/0849  Novell SUSE Linux Enterprise Server: Mehrere Schwachstellen... */   \
+  "Name         Title\n"                                                            \
+  "------------------------------------------------------------------------------------------\n"
+
+/**
+ * @brief Header for "New DFN-CERT Advisories" alert message.
+ */
+#define NEW_DFN_CERTS_HEADER                                                   \
+/* DFN-CERT-2008-1100  Denial of Service Schwachstelle in der... */            \
+  "Name                Title\n"                                                \
+  "------------------------------------------------------------------------------------------\n"
 
 /**
  * @brief Check for new SCAP SecInfo after an update.
