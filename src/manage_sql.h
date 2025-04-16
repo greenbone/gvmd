@@ -483,6 +483,12 @@ int manage_cert_db_exists ();
 int manage_scap_db_exists ();
 
 int
+cert_check_time ();
+
+int
+scap_check_time ();
+
+int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
 
@@ -530,9 +536,6 @@ event_alert_iterator_active (iterator_t *);
 
 int
 alert_applies_to_task (alert_t, task_t);
-
-time_t
-alert_secinfo_count (alert_t, char *);
 
 int
 task_second_last_report (task_t, report_t *);
