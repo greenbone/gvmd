@@ -61,4 +61,7 @@
 user_t
 alert_owner (alert_t);
 
+char *
+alert_owner_uuid (alert_t);
+
 #endif /* not _GVMD_MANAGE_SQL_ALERTS_H */

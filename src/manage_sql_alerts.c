@@ -289,6 +289,21 @@ alert_owner (alert_t alert)
 }
 
 /**
+ * @brief Return the UUID of the owner of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return UUID of owner.
+ */
+char *
+alert_owner_uuid (alert_t alert)
+{
+  return sql_string ("SELECT uuid FROM users"
+                     " WHERE id = (SELECT owner FROM alerts WHERE id = %llu);",
+                     alert);
+}
+
+/**
  * @brief Return the condition associated with an alert.
  *
  * @param[in]  alert  Alert.
