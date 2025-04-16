@@ -8114,7 +8114,7 @@ alert_filter_id (alert_t alert)
  *
  * @return Event.
  */
-static event_t
+event_t
 alert_event (alert_t alert)
 {
   return sql_int ("SELECT event FROM alerts WHERE id = %llu;",
@@ -13521,136 +13521,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 /* DFN-CERT-2008-1100  Denial of Service Schwachstelle in der... */            \
   "Name                Title\n"                                                \
   "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Test an alert.
- *
- * @param[in]  alert_id    Alert UUID.
- * @param[out] script_message  Custom message from the alert script.
- *
- * @return 0 success, 1 failed to find alert, 2 failed to find task,
- *         99 permission denied, -1 error, -2 failed to find report format
- *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert, -5 alert script failed.
- */
-int
-manage_test_alert (const char *alert_id, gchar **script_message)
-{
-  int ret;
-  alert_t alert;
-  task_t task;
-  report_t report;
-  result_t result;
-  char *task_id, *report_id;
-  time_t now;
-  char now_string[26];
-  gchar *clean;
-
-  if (acl_user_may ("test_alert") == 0)
-    return 99;
-
-  if (find_alert_with_permission (alert_id, &alert, "test_alert"))
-    return -1;
-  if (alert == 0)
-    return 1;
-
-  if (alert_event (alert) == EVENT_NEW_SECINFO
-      || alert_event (alert) == EVENT_UPDATED_SECINFO)
-    {
-      char *alert_event_data;
-      gchar *type;
-
-      alert_event_data = alert_data (alert, "event", "secinfo_type");
-      type = g_strdup_printf ("%s_example", alert_event_data ?: "NVT");
-      free (alert_event_data);
-
-      if (alert_event (alert) == EVENT_NEW_SECINFO)
-        ret = manage_alert (alert_id, "0", EVENT_NEW_SECINFO, (void*) type,
-                            script_message);
-      else
-        ret = manage_alert (alert_id, "0", EVENT_UPDATED_SECINFO, (void*) type,
-                            script_message);
-
-      g_free (type);
-
-      return ret;
-    }
-
-  task = make_task (g_strdup ("Temporary Task for Alert"),
-                    g_strdup (""),
-                    0,  /* Exclude from assets. */
-                    0); /* Skip event and log. */
-
-  report_id = gvm_uuid_make ();
-  if (report_id == NULL)
-    return -1;
-  task_uuid (task, &task_id);
-  report = make_report (task, report_id, TASK_STATUS_DONE);
-
-  result = make_result (task, "127.0.0.1", "localhost", "23/tcp",
-                        "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
-                        "A telnet server seems to be running on this port.",
-                        NULL);
-  if (result)
-    report_add_result (report, result);
-
-
-  result = make_result (
-              task, "127.0.0.1", "localhost", "general/tcp",
-              "1.3.6.1.4.1.25623.1.0.103823", "Alarm",
-              "IP,Host,Port,SSL/TLS-Version,Ciphers,Application-CPE\n"
-              "127.0.0.1,localhost,443,TLSv1.1;TLSv1.2",
-              NULL);
-  if (result)
-    report_add_result (report, result);
-
-  now = time (NULL);
-  if (strlen (ctime_r (&now, now_string)) == 0)
-    {
-      ret = -1;
-      goto exit;
-    }
-  clean = g_strdup (now_string);
-  if (clean[strlen (clean) - 1] == '\n')
-    clean[strlen (clean) - 1] = '\0';
-  set_task_start_time_ctime (task, g_strdup (clean));
-  set_scan_start_time_ctime (report, g_strdup (clean));
-  set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
-
-  insert_report_host_detail (report,
-                             "127.0.0.1",
-                             "nvt",
-                             "1.3.6.1.4.1.25623.1.0.108577",
-                             "",
-                             "App",
-                             "cpe:/a:openbsd:openssh:8.9p1",
-                             "0123456789ABCDEF0123456789ABCDEF");
-
-  insert_report_host_detail (report,
-                             "127.0.0.1",
-                             "nvt",
-                             "1.3.6.1.4.1.25623.1.0.10330",
-                             "Host Details",
-                             "best_os_cpe",
-                             "cpe:/o:canonical:ubuntu_linux:22.04",
-                             "123456789ABCDEF0123456789ABCDEF0");
-
-  set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
-  set_scan_end_time_ctime (report, clean);
-  g_free (clean);
-  ret = manage_alert (alert_id,
-                      task_id,
-                      EVENT_TASK_RUN_STATUS_CHANGED,
-                      (void*) TASK_STATUS_DONE,
-                      script_message);
- exit:
-  /* No one should be running this task, so we don't worry about the lock.  We
-   * could guarantee that no one runs the task, but this is a very rare case. */
-  delete_task (task, 1);
-  free (task_id);
-  free (report_id);
-  return ret;
-}
 
 /**
  * @brief Return the SecInfo count.
