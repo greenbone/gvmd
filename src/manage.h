@@ -537,9 +537,6 @@ modify_alert (const char*, const char*, const char*, const char*,
               alert_method_t, GPtrArray*);
 
 int
-manage_test_alert (const char *, gchar **);
-
-int
 alert_in_use (alert_t);
 
 int

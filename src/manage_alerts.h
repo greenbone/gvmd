@@ -110,6 +110,9 @@ alert_method_t
 alert_method (alert_t alert);
 
 int
+manage_test_alert (const char *, gchar **);
+
+int
 init_alert_iterator (iterator_t*, get_data_t*);
 
 int
