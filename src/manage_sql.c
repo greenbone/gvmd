@@ -246,18 +246,6 @@ new_secinfo_message (event_t, const void*, alert_t);
 static gchar *
 new_secinfo_list (event_t, const void*, alert_t, int*);
 
-static void
-check_for_new_scap ();
-
-static void
-check_for_new_cert ();
-
-static void
-check_for_updated_scap ();
-
-static void
-check_for_updated_cert ();
-
 #if CVSS3_RATINGS == 1
 static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
@@ -6649,78 +6637,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 
 
 /* Events and Alerts. */
-
-/**
- * @brief Check if any SecInfo alerts are due.
- */
-void
-check_alerts ()
-{
-  if (manage_scap_loaded ())
-    {
-      int max_time;
-
-      max_time
-       = sql_int ("SELECT %s"
-                  "        ((SELECT max (modification_time) FROM scap.cves),"
-                  "         (SELECT max (modification_time) FROM scap.cpes),"
-                  "         (SELECT max (creation_time) FROM scap.cves),"
-                  "         (SELECT max (creation_time) FROM scap.cpes));",
-                  sql_greatest ());
-
-      if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-                   "                   WHERE name = 'scap_check_time')"))
-        sql ("INSERT INTO meta (name, value)"
-             " VALUES ('scap_check_time', %i);",
-             max_time);
-      else if (sql_int ("SELECT value = '0' FROM meta"
-                        " WHERE name = 'scap_check_time';"))
-        sql ("UPDATE meta SET value = %i"
-             " WHERE name = 'scap_check_time';",
-             max_time);
-      else
-        {
-          check_for_new_scap ();
-          check_for_updated_scap ();
-          sql ("UPDATE meta SET value = %i"
-               " WHERE name = 'scap_check_time';",
-               max_time);
-        }
-    }
-
-  if (manage_cert_loaded ())
-    {
-      int max_time;
-
-      max_time
-       = sql_int ("SELECT"
-                  " %s"
-                  "  ((SELECT max (modification_time) FROM cert.cert_bund_advs),"
-                  "   (SELECT max (modification_time) FROM cert.dfn_cert_advs),"
-                  "   (SELECT max (creation_time) FROM cert.cert_bund_advs),"
-                  "   (SELECT max (creation_time) FROM cert.dfn_cert_advs));",
-                  sql_greatest ());
-
-      if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-                   "                   WHERE name = 'cert_check_time')"))
-        sql ("INSERT INTO meta (name, value)"
-             " VALUES ('cert_check_time', %i);",
-             max_time);
-      else if (sql_int ("SELECT value = '0' FROM meta"
-                        " WHERE name = 'cert_check_time';"))
-        sql ("UPDATE meta SET value = %i"
-             " WHERE name = 'cert_check_time';",
-             max_time);
-      else
-        {
-          check_for_new_cert ();
-          check_for_updated_cert ();
-          sql ("UPDATE meta SET value = %i"
-               " WHERE name = 'cert_check_time';",
-               max_time);
-        }
-    }
-}
 
 /**
  * @brief Check if any SecInfo alerts are due.
@@ -34100,66 +34016,6 @@ target_task_iterator_readable (iterator_t* iterator)
   "------------------------------------------------------------------------------------------\n"
 
 /**
- * @brief Check for new SCAP SecInfo after an update.
- */
-static void
-check_for_new_scap ()
-{
-  if (manage_scap_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cves"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "cve", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cpes"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "cpe", 0, 0);
-    }
-}
-
-/**
- * @brief Check for new CERT SecInfo after an update.
- */
-static void
-check_for_new_cert ()
-{
-  if (manage_cert_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.cert_bund_advs"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "cert_bund_adv", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.dfn_cert_advs"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "dfn_cert_adv", 0, 0);
-    }
-}
-
-/**
  * @brief Print an URL for a New NVTs alert.
  *
  * @param[in]  url      Format string for url.
@@ -34755,90 +34611,6 @@ new_secinfo_message (event_t event, const void* event_data, alert_t alert)
   free (name);
   g_free (list);
   return message;
-}
-
-/**
- * @brief Check for updated SCAP SecInfo after an update.
- */
-static void
-check_for_updated_scap ()
-{
-  if (manage_scap_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cves"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "cve", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cpes"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "cpe", 0, 0);
-    }
-}
-
-/**
- * @brief Check for updated CERT SecInfo after an update.
- */
-static void
-check_for_updated_cert ()
-{
-  if (manage_cert_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.cert_bund_advs"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "cert_bund_adv", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.dfn_cert_advs"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "dfn_cert_adv", 0, 0);
-    }
 }
 
 
