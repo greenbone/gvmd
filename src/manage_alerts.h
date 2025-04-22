@@ -22,6 +22,7 @@
 #include "iterator.h"
 #include "manage_get.h"
 #include "manage_tasks.h"
+#include "sql.h"
 
 #include <glib.h>
 
@@ -171,5 +172,8 @@ alert_task_iterator_uuid (iterator_t*);
 
 int
 alert_task_iterator_readable (iterator_t*);
+
+int
+manage_check_alerts (GSList *, const db_conn_info_t *);
 
 #endif /* not _GVMD_MANAGE_ALERTS_H */

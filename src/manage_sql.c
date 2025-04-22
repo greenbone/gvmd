@@ -6639,40 +6639,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 /* Events and Alerts. */
 
 /**
- * @brief Check if any SecInfo alerts are due.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- *
- * @return 0 success, -1 error,
- *         -2 database is too old, -3 database needs to be initialised
- *         from server, -5 database is too new.
- */
-int
-manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
-{
-  int ret;
-
-  g_info ("   Checking alerts.");
-
-  ret = manage_option_setup (log_config, database,
-                             0 /* avoid_db_check_inserts */);
-  if (ret)
-    return ret;
-
-  /* Setup a dummy user, so that create_user will work. */
-  current_credentials.uuid = "";
-
-  check_alerts ();
-
-  current_credentials.uuid = NULL;
-
-  manage_option_cleanup ();
-
-  return ret;
-}
-
-/**
  * @brief Validate an email address.
  *
  * @param[in]  address  Email address.
