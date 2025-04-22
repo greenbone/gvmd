@@ -524,9 +524,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
  "was created or assigned erroneously.\n"
 
 int
-manage_check_alerts (GSList *, const db_conn_info_t *);
-
-int
 create_alert (const char*, const char*, const char*, const char*, event_t,
               GPtrArray*, alert_condition_t, GPtrArray*, alert_method_t,
               GPtrArray*, alert_t*);
