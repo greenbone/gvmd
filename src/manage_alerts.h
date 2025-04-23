@@ -29,6 +29,12 @@
 typedef resource_t alert_t;
 
 int
+get_max_email_attachment_size ();
+
+void
+set_max_email_attachment_size (int);
+
+int
 get_max_email_include_size ();
 
 void

@@ -382,18 +382,6 @@ static manage_connection_forker_t manage_fork_connection;
 static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
- * @brief Default max number of bytes of reports attached to email alerts.
- */
-#define MAX_ATTACH_LENGTH 1048576
-
-/**
- * @brief Maximum number of bytes of reports attached to email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_attach_length = MAX_ATTACH_LENGTH;
-
-/**
  * @brief Memory cache of NVT information from the database.
  */
 static nvtis_t* nvti_cache = NULL;
@@ -11189,8 +11177,8 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   if (list && notice && strcmp (notice, "2") == 0)
     {
       /* Add list as text attachment. */
-      if (max_attach_length <= 0
-          || strlen (list) <= max_attach_length)
+      if (get_max_email_attachment_size () <= 0
+          || strlen (list) <= get_max_email_attachment_size ())
         base64 = g_base64_encode ((guchar*) list,
                                   strlen (list));
     }
@@ -11987,7 +11975,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
                                      0,
                                      0,
                                      0,
-                                     max_attach_length);
+                                     get_max_email_attachment_size ());
 
   g_tree_replace (call_input,
                   g_strdup ("description"),
@@ -12267,8 +12255,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                      alert, task, 0);
                     }
                   g_free (alert_subject);
-                  if (max_attach_length <= 0
-                      || content_length <= max_attach_length)
+                  if (get_max_email_attachment_size () <= 0
+                      || content_length <= get_max_email_attachment_size ())
                     base64 = g_base64_encode ((guchar*) report_content,
                                               content_length);
                   g_free (report_content);
@@ -12285,7 +12273,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                               host_summary, NULL, 0,
                                               base64 == NULL,
                                               0,
-                                              max_attach_length);
+                                              get_max_email_attachment_size ());
                   g_free (message);
                   g_free (condition_desc);
                   g_free (term);
@@ -15549,7 +15537,7 @@ init_manage_internal (GSList *log_config,
 
   max_hosts = max_ips_per_target;
   if (max_email_attachment_size)
-    max_attach_length = max_email_attachment_size;
+    set_max_email_attachment_size (max_email_attachment_size);
   if (max_email_include_size)
     set_max_email_include_size (max_email_include_size);
   if (max_email_message_size)
