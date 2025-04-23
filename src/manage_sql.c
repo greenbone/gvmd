@@ -382,18 +382,6 @@ static manage_connection_forker_t manage_fork_connection;
 static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
- * @brief Default max number of bytes of reports included in email alerts.
- */
-#define MAX_CONTENT_LENGTH 20000
-
-/**
- * @brief Maximum number of bytes of reports included in email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_content_length = MAX_CONTENT_LENGTH;
-
-/**
  * @brief Default max number of bytes of reports attached to email alerts.
  */
 #define MAX_ATTACH_LENGTH 1048576
@@ -10838,17 +10826,19 @@ alert_message_print (const gchar *message, event_t event,
               {
                 if (content)
                   {
+                    int max;
+
+                    max = get_max_email_include_size ();
                     g_string_append_printf (new_message,
                                             "%.*s",
                                             /* Cast for 64 bit. */
-                                            (int) MIN (content_length,
-                                                       max_content_length),
+                                            (int) MIN (content_length, max),
                                             content);
-                    if (content_length > max_content_length)
+                    if (content_length > max)
                       g_string_append_printf (new_message,
                                               "\n... (report truncated after"
                                               " %i characters)\n",
-                                              max_content_length);
+                                              max);
                   }
 
                 break;
@@ -12211,9 +12201,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                               host_summary, report_content,
                                               content_length,
                                               content_length
-                                              > max_content_length,
+                                              > get_max_email_include_size (),
                                               0,
-                                              max_content_length);
+                                              get_max_email_include_size ());
                   g_free (message);
                   g_free (report_content);
                   g_free (condition_desc);
@@ -15561,7 +15551,7 @@ init_manage_internal (GSList *log_config,
   if (max_email_attachment_size)
     max_attach_length = max_email_attachment_size;
   if (max_email_include_size)
-    max_content_length = max_email_include_size;
+    set_max_email_include_size (max_email_include_size);
   if (max_email_message_size)
     set_max_email_message_size (max_email_message_size);
 

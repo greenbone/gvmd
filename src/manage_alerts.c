@@ -39,6 +39,40 @@
 /* Variables. */
 
 /**
+ * @brief Default max number of bytes of reports included in email alerts.
+ */
+#define MAX_EMAIL_INCLUDE_SIZE 20000
+
+/**
+ * @brief Maximum number of bytes of reports included in email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_email_include_size = MAX_EMAIL_INCLUDE_SIZE;
+
+/**
+ * @brief Get the max number of bytes of reports included in email alerts.
+ *
+ * @return The size in bytes.
+ */
+int
+get_max_email_include_size ()
+{
+  return max_email_include_size;
+}
+
+/**
+ * @brief Set the max email include size.
+ *
+ * @param size The new size in bytes.
+ */
+void
+set_max_email_include_size (int size)
+{
+  max_email_include_size = size;
+}
+
+/**
  * @brief Default max number of bytes of user-defined message in email alerts.
  */
 #define MAX_EMAIL_MESSAGE_SIZE 2000
@@ -53,7 +87,7 @@ static int max_email_message_size = MAX_EMAIL_MESSAGE_SIZE;
 /**
  * @brief Get the max email message size.
  *
- * @return The current timeout in minutes.
+ * @return The size in bytes.
  */
 int
 get_max_email_message_size ()
@@ -62,9 +96,9 @@ get_max_email_message_size ()
 }
 
 /**
- * @brief Set the authentication cache timeout.
+ * @brief Set the max email message size.
  *
- * @param new_timeout The new timeout in minutes.
+ * @param size The new size in bytes.
  */
 void
 set_max_email_message_size (int size)
