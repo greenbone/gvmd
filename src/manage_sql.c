@@ -406,18 +406,6 @@ static int max_content_length = MAX_CONTENT_LENGTH;
 static int max_attach_length = MAX_ATTACH_LENGTH;
 
 /**
- * @brief Default max number of bytes of user-defined message in email alerts.
- */
-#define MAX_EMAIL_MESSAGE_LENGTH 2000
-
-/**
- * @brief Maximum number of bytes of user-defined message text in email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_email_message_length = MAX_EMAIL_MESSAGE_LENGTH;
-
-/**
  * @brief Memory cache of NVT information from the database.
  */
 static nvtis_t* nvti_cache = NULL;
@@ -6893,7 +6881,7 @@ validate_email_data (alert_method_t method, const gchar *name, gchar **data,
 
   if (method == ALERT_METHOD_EMAIL
       && strcmp (name, "message") == 0
-      && strlen (*data) > max_email_message_length)
+      && strlen (*data) > get_max_email_message_size ())
     return for_modify ? 10 : 8;
 
   if (method == ALERT_METHOD_EMAIL
@@ -15575,7 +15563,7 @@ init_manage_internal (GSList *log_config,
   if (max_email_include_size)
     max_content_length = max_email_include_size;
   if (max_email_message_size)
-    max_email_message_length = max_email_message_size;
+    set_max_email_message_size (max_email_message_size);
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,

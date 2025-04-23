@@ -28,6 +28,12 @@
 
 typedef resource_t alert_t;
 
+int
+get_max_email_message_size ();
+
+void
+set_max_email_message_size (int);
+
 /**
  * @brief Types of alert conditions.
  */

@@ -36,6 +36,43 @@
 #define G_LOG_DOMAIN "md manage"
 
 
+/* Variables. */
+
+/**
+ * @brief Default max number of bytes of user-defined message in email alerts.
+ */
+#define MAX_EMAIL_MESSAGE_SIZE 2000
+
+/**
+ * @brief Maximum number of bytes of user-defined message text in email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_email_message_size = MAX_EMAIL_MESSAGE_SIZE;
+
+/**
+ * @brief Get the max email message size.
+ *
+ * @return The current timeout in minutes.
+ */
+int
+get_max_email_message_size ()
+{
+  return max_email_message_size;
+}
+
+/**
+ * @brief Set the authentication cache timeout.
+ *
+ * @param new_timeout The new timeout in minutes.
+ */
+void
+set_max_email_message_size (int size)
+{
+  max_email_message_size = size;
+}
+
+
 /* Alert report data. */
 
 /**
