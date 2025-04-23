@@ -39,6 +39,40 @@
 /* Variables. */
 
 /**
+ * @brief Default max number of bytes of reports attached to email alerts.
+ */
+#define MAX_EMAIL_ATTACHMENT_SIZE 1048576
+
+/**
+ * @brief Maximum number of bytes of reports attached to email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_email_attachment_size = MAX_EMAIL_ATTACHMENT_SIZE;
+
+/**
+ * @brief Get the max number of bytes of reports attached to email alerts.
+ *
+ * @return The size in bytes.
+ */
+int
+get_max_email_attachment_size ()
+{
+  return max_email_attachment_size;
+}
+
+/**
+ * @brief Set the max email attachment size.
+ *
+ * @param size The new size in bytes.
+ */
+void
+set_max_email_attachment_size (int size)
+{
+  max_email_attachment_size = size;
+}
+
+/**
  * @brief Default max number of bytes of reports included in email alerts.
  */
 #define MAX_EMAIL_INCLUDE_SIZE 20000
