@@ -6625,35 +6625,6 @@ alert_filter_id (alert_t alert)
 }
 
 /**
- * @brief Return data associated with an alert.
- *
- * @param[in]  alert  Alert.
- * @param[in]  type       Type of data: "condition", "event" or "method".
- * @param[in]  name       Name of the data.
- *
- * @return Freshly allocated data if it exists, else NULL.
- */
-char *
-alert_data (alert_t alert, const char *type, const char *name)
-{
-  gchar *quoted_name;
-  char *data;
-
-  assert (strcmp (type, "condition") == 0
-          || strcmp (type, "event") == 0
-          || strcmp (type, "method") == 0);
-
-  quoted_name = sql_quote (name);
-  data = sql_string ("SELECT data FROM alert_%s_data"
-                     " WHERE alert = %llu AND name = '%s';",
-                     type,
-                     alert,
-                     quoted_name);
-  g_free (quoted_name);
-  return data;
-}
-
-/**
  * @brief Check whether an alert applies to a task.
  *
  * @param[in]  alert  Alert.
