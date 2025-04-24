@@ -531,9 +531,6 @@ int
 event_alert_iterator_active (iterator_t *);
 
 int
-alert_applies_to_task (alert_t, task_t);
-
-int
 task_second_last_report (task_t, report_t *);
 
 double
