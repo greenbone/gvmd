@@ -70,4 +70,7 @@ alert_name (alert_t);
 event_t
 alert_event (alert_t);
 
+char *
+alert_data (alert_t, const char *, const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_ALERTS_H */
