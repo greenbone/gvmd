@@ -524,16 +524,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
  "was created or assigned erroneously.\n"
 
 int
-create_alert (const char*, const char*, const char*, const char*, event_t,
-              GPtrArray*, alert_condition_t, GPtrArray*, alert_method_t,
-              GPtrArray*, alert_t*);
-
-int
-modify_alert (const char*, const char*, const char*, const char*,
-              const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
-              alert_method_t, GPtrArray*);
-
-int
 alert_in_use (alert_t);
 
 int
