@@ -162,6 +162,7 @@ add_executable(
   manage_authentication.c
   manage_sql.c
   manage_sql_alerts.c
+  manage_sql_events.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -219,6 +220,7 @@ add_executable(
   manage_authentication.c
   manage_sql.c
   manage_sql_alerts.c
+  manage_sql_events.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -277,6 +279,7 @@ add_executable(
   manage_authentication.c
   manage_sql_alerts.c
   manage_sql_nvts.c
+  manage_sql_events.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
   manage_sql_configs.c
@@ -334,6 +337,7 @@ add_executable(
   manage_authentication.c
   manage_sql.c
   manage_sql_alerts.c
+  manage_sql_events.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -391,6 +395,7 @@ add_executable(
   manage_authentication.c
   manage_sql.c
   manage_sql_alerts.c
+  manage_sql_events.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -479,6 +484,7 @@ add_executable(
   manage_authentication.c
   manage_sql.c
   manage_sql_alerts.c
+  manage_sql_events.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -849,6 +855,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"

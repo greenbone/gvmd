@@ -521,15 +521,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const get_data_t *get, int notes_details, int overrides_details,
             gchar **script_message);
 
-void
-init_event_alert_iterator (iterator_t *, event_t);
-
-alert_t
-event_alert_iterator_alert (iterator_t *);
-
-int
-event_alert_iterator_active (iterator_t *);
-
 int
 task_second_last_report (task_t, report_t *);
 
