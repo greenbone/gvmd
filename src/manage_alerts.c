@@ -25,6 +25,7 @@
 
 #include "manage_alerts.h"
 #include "manage_sql.h"
+#include "manage_sql_alerts.h"
 #include "manage_acl.h"
 
 #include <gvm/util/uuidutils.h>

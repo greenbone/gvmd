@@ -6603,19 +6603,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 /* Events and Alerts. */
 
 /**
- * @brief Return the name of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Name of alert.
- */
-static char *
-alert_name (alert_t alert)
-{
-  return sql_string ("SELECT name FROM alerts WHERE id = %llu;", alert);
-}
-
-/**
  * @brief Return the UUID of the filter of an alert.
  *
  * @param[in]  alert  Alert.
@@ -6635,76 +6622,6 @@ alert_filter_id (alert_t alert)
                      "  END);",
                      alert,
                      alert);
-}
-
-/**
- * @brief Return the event associated with an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Event.
- */
-event_t
-alert_event (alert_t alert)
-{
-  return sql_int ("SELECT event FROM alerts WHERE id = %llu;",
-                  alert);
-}
-
-/**
- * @brief Return whether a alert is in use by a task.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if in use, else 0.
- */
-int
-alert_in_use (alert_t alert)
-{
-  return !!sql_int ("SELECT count (*) FROM task_alerts WHERE alert = %llu;",
-                    alert);
-}
-
-/**
- * @brief Return whether a trashcan alert is in use by a task.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_alert_in_use (alert_t alert)
-{
-  return !!sql_int ("SELECT count(*) FROM task_alerts"
-                    " WHERE alert = %llu"
-                    " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
-                    alert);
-}
-
-/**
- * @brief Return whether a alert is writable.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if writable, else 0.
- */
-int
-alert_writable (alert_t alert)
-{
-    return 1;
-}
-
-/**
- * @brief Return whether a trashcan alert is writable.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_alert_writable (alert_t alert)
-{
-    return 1;
 }
 
 /**

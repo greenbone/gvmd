@@ -523,18 +523,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
  "Please contact your local system administrator if you think it\n"           \
  "was created or assigned erroneously.\n"
 
-int
-alert_in_use (alert_t);
-
-int
-trash_alert_in_use (alert_t);
-
-int
-alert_writable (alert_t);
-
-int
-trash_alert_writable (alert_t);
-
 
 /* Task global variables and preprocessor variables. */
 
