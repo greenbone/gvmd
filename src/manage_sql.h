@@ -410,8 +410,6 @@ int create_current_report (task_t, char **, task_status_t);
 
 char *alert_data (alert_t, const char *, const char *);
 
-event_t alert_event (alert_t);
-
 int init_task_schedule_iterator (iterator_t *);
 
 void cleanup_task_schedule_iterator (iterator_t *);

@@ -133,6 +133,18 @@ delete_alert (const char *, int);
 char *
 alert_uuid (alert_t);
 
+int
+alert_in_use (alert_t);
+
+int
+trash_alert_in_use (alert_t);
+
+int
+alert_writable (alert_t);
+
+int
+trash_alert_writable (alert_t);
+
 alert_condition_t
 alert_condition (alert_t);
 
