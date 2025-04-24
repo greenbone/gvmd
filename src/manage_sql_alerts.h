@@ -73,4 +73,7 @@ alert_event (alert_t);
 char *
 alert_data (alert_t, const char *, const char *);
 
+int
+alert_applies_to_task (alert_t, task_t);
+
 #endif /* not _GVMD_MANAGE_SQL_ALERTS_H */

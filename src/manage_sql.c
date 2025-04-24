@@ -6625,24 +6625,6 @@ alert_filter_id (alert_t alert)
 }
 
 /**
- * @brief Check whether an alert applies to a task.
- *
- * @param[in]  alert  Alert.
- * @param[in]  task   Task.
- *
- * @return 1 if applies, else 0.
- */
-int
-alert_applies_to_task (alert_t alert, task_t task)
-{
-  return sql_int ("SELECT EXISTS (SELECT * FROM task_alerts"
-                  "               WHERE task = %llu"
-                  "               AND alert = %llu);",
-                  task,
-                  alert);
-}
-
-/**
  * @brief Initialise an event alert iterator.
  *
  * @param[in]  iterator  Iterator.
