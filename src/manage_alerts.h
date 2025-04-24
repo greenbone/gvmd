@@ -20,6 +20,7 @@
 #define _GVMD_MANAGE_ALERTS_H
 
 #include "iterator.h"
+#include "manage_events.h"
 #include "manage_get.h"
 #include "manage_tasks.h"
 #include "sql.h"
@@ -115,6 +116,16 @@ find_alert_with_permission (const char *, alert_t *, const char *);
 
 int
 copy_alert (const char*, const char*, const char*, alert_t*);
+
+int
+create_alert (const char*, const char*, const char*, const char*, event_t,
+              GPtrArray*, alert_condition_t, GPtrArray*, alert_method_t,
+              GPtrArray*, alert_t*);
+
+int
+modify_alert (const char*, const char*, const char*, const char*,
+              const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
+              alert_method_t, GPtrArray*);
 
 int
 delete_alert (const char *, int);
