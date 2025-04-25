@@ -433,9 +433,10 @@ condition_met (task_t task, report_t report, alert_t alert,
  *         -5 alert script failed.
  */
 static int
-trigger_1 (alert_t alert, task_t task, report_t report, event_t event,
-           const void* event_data, alert_method_t method,
-           alert_condition_t condition, gchar **script_message)
+trigger_with_presets (alert_t alert, task_t task, report_t report,
+                      event_t event, const void* event_data,
+                      alert_method_t method, alert_condition_t condition,
+                      gchar **script_message)
 {
   int ret;
   get_data_t get;
@@ -664,14 +665,14 @@ event (event_t event, void* event_data, resource_t resource_1,
 
       alert = g_array_index (alerts_triggered, alert_t, index);
       condition = alert_condition (alert);
-      trigger_1 (alert,
-                 resource_1,
-                 resource_2,
-                 event,
-                 event_data,
-                 alert_method (alert),
-                 condition,
-                 NULL);
+      trigger_with_presets (alert,
+                            resource_1,
+                            resource_2,
+                            event,
+                            event_data,
+                            alert_method (alert),
+                            condition,
+                            NULL);
     }
 
   g_array_free (alerts_triggered, TRUE);
@@ -720,6 +721,6 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
 
   condition = alert_condition (alert);
   method = alert_method (alert);
-  return trigger_1 (alert, task, 0, event, event_data, method, condition,
-                    script_message);
+  return trigger_with_presets (alert, task, 0, event, event_data, method,
+                               condition, script_message);
 }
