@@ -515,11 +515,11 @@ void
 update_all_config_caches ();
 
 int
-trigger_2 (alert_t alert, task_t task, report_t report, event_t event,
-           const void* event_data, alert_method_t method,
-           alert_condition_t condition,
-           const get_data_t *get, int notes_details, int overrides_details,
-           gchar **script_message);
+trigger (alert_t alert, task_t task, report_t report, event_t event,
+         const void* event_data, alert_method_t method,
+         alert_condition_t condition,
+         const get_data_t *get, int notes_details, int overrides_details,
+         gchar **script_message);
 
 int
 task_second_last_report (task_t, report_t *);

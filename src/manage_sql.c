@@ -10528,11 +10528,11 @@ trigger_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
  *         find filter, -4 failed to find credential, -5 alert script failed.
  */
 int
-trigger_2 (alert_t alert, task_t task, report_t report, event_t event,
-           const void* event_data, alert_method_t method,
-           alert_condition_t condition,
-           const get_data_t *get, int notes_details, int overrides_details,
-           gchar **script_message)
+trigger (alert_t alert, task_t task, report_t report, event_t event,
+         const void* event_data, alert_method_t method,
+         alert_condition_t condition,
+          const get_data_t *get, int notes_details, int overrides_details,
+          gchar **script_message)
 {
   if (script_message)
     *script_message = NULL;
@@ -27761,9 +27761,9 @@ manage_send_report (report_t report, report_t delta_report,
       condition = alert_condition (alert);
       method = alert_method (alert);
 
-      ret = trigger_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
-                       (void*) TASK_STATUS_DONE, method, condition,
-                       get, notes_details, overrides_details, NULL);
+      ret = trigger (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+                     (void*) TASK_STATUS_DONE, method, condition,
+                     get, notes_details, overrides_details, NULL);
       if (ret == -3)
         return -4;
       if (ret == -1)

@@ -459,8 +459,8 @@ trigger_with_presets (alert_t alert, task_t task, report_t report,
                                     method == ALERT_METHOD_EMAIL ? 1000 : -1);
     }
 
-  ret = trigger_2 (alert, task, report, event, event_data, method, condition,
-                   &get, 1, 1, script_message);
+  ret = trigger (alert, task, report, event, event_data, method, condition,
+                 &get, 1, 1, script_message);
   free (results_filter);
   g_free (get.filter);
   return ret;
