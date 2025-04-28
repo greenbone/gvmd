@@ -13813,7 +13813,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              cve_info_iterator_severity (&info)
                               ? cve_info_iterator_severity (&info)
                               : "",
-                              cve_info_iterator_vector (&info)
+                             cve_info_iterator_vector (&info)
                               ? cve_info_iterator_vector (&info)
                               : "",
                              cve_info_iterator_description (&info),
