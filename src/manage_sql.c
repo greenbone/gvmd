@@ -8064,7 +8064,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
   gchar *script, *script_dir;
   gchar *report_file, *pkcs12_file, *pkcs12, *clean_password;
   gchar *clean_ip, *clean_port;
-  char report_dir[] = "/tmp/gvmd_escalate_XXXXXX";
+  char report_dir[] = "/tmp/gvmd_event_XXXXXX";
   GError *error;
   gsize pkcs12_len;
 
@@ -10211,7 +10211,7 @@ generate_report_filename (report_t report, report_format_t report_format,
 }
 
 /**
- * @brief Escalate an event.
+ * @brief Trigger an event.
  *
  * @param[in]  alert       Alert.
  * @param[in]  task        Task.
@@ -10229,11 +10229,11 @@ generate_report_filename (report_t report, report_format_t report_format,
  *         find filter, -4 failed to find credential, -5 alert script failed.
  */
 static int
-escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
-                   const void* event_data, alert_method_t method,
-                   alert_condition_t condition, const get_data_t *get,
-                   int notes_details, int overrides_details,
-                   gchar **script_message)
+trigger_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
+                  const void* event_data, alert_method_t method,
+                  alert_condition_t condition, const get_data_t *get,
+                  int notes_details, int overrides_details,
+                  gchar **script_message)
 {
   int ret;
   char *credential_id;
@@ -10510,7 +10510,7 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
 }
 
 /**
- * @brief Escalate an event.
+ * @brief Trigger an event.
  *
  * @param[in]  alert   Alert.
  * @param[in]  task        Task.
@@ -10528,11 +10528,11 @@ escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
  *         find filter, -4 failed to find credential, -5 alert script failed.
  */
 int
-escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
-            const void* event_data, alert_method_t method,
-            alert_condition_t condition,
-            const get_data_t *get, int notes_details, int overrides_details,
-            gchar **script_message)
+trigger (alert_t alert, task_t task, report_t report, event_t event,
+         const void* event_data, alert_method_t method,
+         alert_condition_t condition,
+          const get_data_t *get, int notes_details, int overrides_details,
+          gchar **script_message)
 {
   if (script_message)
     *script_message = NULL;
@@ -11704,10 +11704,10 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_VFIRE:
         {
           int ret;
-          ret = escalate_to_vfire (alert, task, report, event,
-                                   event_data, method, condition,
-                                   get, notes_details, overrides_details,
-                                   script_message);
+          ret = trigger_to_vfire (alert, task, report, event,
+                                  event_data, method, condition,
+                                  get, notes_details, overrides_details,
+                                  script_message);
           return ret;
         }
       case ALERT_METHOD_START_TASK:
@@ -27707,10 +27707,10 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
  * @param[in]  send_data_2        Third argument to \p send.
- * @param[in]  alert_id       ID of alert to escalate report with,
+ * @param[in]  alert_id           ID of alert to trigger with the report,
  *                                instead of getting report.  NULL to get
  *                                report.
- * @param[in]  prefix              Text to send to client before the report.
+ * @param[in]  prefix             Text to send to client before the report.
  *
  * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
  *         during alert, -4 failed to find alert filter, 1 failed to find alert,
@@ -27744,7 +27744,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (report_task (report, &task))
     return -1;
 
-  /* Escalate instead, if requested. */
+  /* Trigger alert instead, if requested. */
 
   if (alert_id)
     {
@@ -27761,9 +27761,9 @@ manage_send_report (report_t report, report_t delta_report,
       condition = alert_condition (alert);
       method = alert_method (alert);
 
-      ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
-                        (void*) TASK_STATUS_DONE, method, condition,
-                        get, notes_details, overrides_details, NULL);
+      ret = trigger (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+                     (void*) TASK_STATUS_DONE, method, condition,
+                     get, notes_details, overrides_details, NULL);
       if (ret == -3)
         return -4;
       if (ret == -1)
