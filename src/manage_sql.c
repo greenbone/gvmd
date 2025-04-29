@@ -8722,33 +8722,17 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get last report from task if no report is given
 
-  if (report == 0)
-    switch (sql_int64 (&report,
-                        "SELECT max (id) FROM reports"
-                        " WHERE task = %llu",
-                        task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-      }
+  if ((report == 0)
+      && (task_last_report_any_status (task, &report)
+          || (report == 0)))
+    {
+      if (alert_filter_get)
+        {
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
+        }
+      return -1;
+    }
 
   // Get report format or use fallback.
 
