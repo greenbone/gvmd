@@ -4190,7 +4190,8 @@ manage_sync (sigset_t *sigmask_current,
     }
 
   if (try_gvmd_data_sync
-      && (should_sync_configs ()
+      && (should_sync_agent_installers ()
+          || should_sync_configs ()
           || should_sync_port_lists ()
           || should_sync_report_formats ()))
     {
@@ -4200,6 +4201,7 @@ manage_sync (sigset_t *sigmask_current,
                         "data objects feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
+          manage_sync_agent_installers ();
           manage_sync_configs ();
           manage_sync_port_lists ();
           manage_sync_report_formats ();
@@ -5478,6 +5480,7 @@ gboolean
 manage_gvmd_data_feed_dirs_exist ()
 {
   return gvm_file_is_readable (GVMD_FEED_DIR)
+         && agent_installers_feed_metadata_file_exists ()
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();

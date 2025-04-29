@@ -156,6 +156,7 @@ set(
   manage.c
   manage_acl.c
   manage_agents.c
+  manage_agent_installers.c
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -185,6 +186,7 @@ set(
   manage_sql.c
   manage_sql_copy.c
   manage_sql_agents.c
+  manage_sql_agent_installers.c
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -205,6 +207,7 @@ set(
   ALL_GMP_SRC
   gmp.c
   gmp_agents.c
+  gmp_agent_installers.c
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -691,6 +694,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
@@ -702,6 +706,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
@@ -711,6 +716,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"

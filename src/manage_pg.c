@@ -2247,7 +2247,61 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
        "  ip_address TEXT NOT NULL);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installers"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  description text,"
+       "  content_type text,"
+       "  file_extension text,"
+       "  installer_path text,"
+       "  version text,"
+       "  checksum text,"
+       "  file_size integer,"
+       "  last_update integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_installer integer"
+       "    REFERENCES agent_installers (id) ON DELETE RESTRICT,"
+       "  criteria text,"
+       "  version_start_incl text,"
+       "  version_start_excl text,"
+       "  version_end_incl text,"
+       "  version_end_excl text);");
 #endif /* ENABLE_AGENTS */
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installers_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  description text,"
+       "  content_type text,"
+       "  file_extension text,"
+       "  installer_path text,"
+       "  version text,"
+       "  checksum text,"
+       "  file_size integer,"
+       "  last_update integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_installer integer"
+       "    REFERENCES agent_installers_trash (id) ON DELETE RESTRICT,"
+       "  criteria text,"
+       "  version_start_incl text,"
+       "  version_start_excl text,"
+       "  version_end_incl text,"
+       "  version_end_excl text);");
 
   sql ("CREATE TABLE IF NOT EXISTS alerts"
        " (id SERIAL PRIMARY KEY,"
