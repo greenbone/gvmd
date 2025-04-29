@@ -8447,13 +8447,8 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   condition_filter_id = alert_data (alert, "condition", "filter_id");
   if (condition_filter_id)
     {
-      gchar *quoted_filter_id;
-      quoted_filter_id = sql_quote (condition_filter_id);
-      sql_int64 (&condition_filter,
-                 "SELECT id FROM filters WHERE uuid = '%s'",
-                 quoted_filter_id);
+      find_resource_no_acl ("filter", condition_filter_id, &condition_filter);
       term = filter_term (condition_filter_id);
-      g_free (quoted_filter_id);
     }
   free (condition_filter_id);
 
