@@ -307,7 +307,8 @@ valid_db_resource_type (const char* type)
   if (type == NULL)
     return 0;
 
-  return (strcasecmp (type, "alert") == 0)
+  return (strcasecmp (type, "agent_installer") == 0)
+         || (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "cpe") == 0)
          || (strcasecmp (type, "credential") == 0)
