@@ -197,6 +197,12 @@ set_task_interrupted (task_t, const gchar *);
 
 /* Static headers. */
 
+gchar *
+report_creation_time (report_t);
+
+gchar *
+report_modification_time (report_t);
+
 static int
 report_counts_cache_exists (report_t, int, int);
 
@@ -8899,17 +8905,9 @@ generate_report_filename (report_t report, report_format_t report_format,
 
   report_id = report_uuid (report);
 
-  creation_time
-    = sql_string ("SELECT iso_time (creation_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
+  creation_time = report_creation_time (report);
 
-  modification_time
-    = sql_string ("SELECT iso_time (modification_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
+  modification_time = report_modification_time (report);
 
   report_task (report, &task);
   report_task_name = task_name (task);
@@ -21699,6 +21697,40 @@ report_timestamp (const char* report_id, gchar** timestamp)
   *timestamp = g_strdup (stamp);
   return 0;
 }
+
+/**
+ * @brief Get the creation time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_creation_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (creation_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+
+/**
+ * @brief Get the modification time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_modification_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (modification_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
 
 /**
  * @brief Return the run status of the scan associated with a report.
