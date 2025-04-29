@@ -88,6 +88,7 @@
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
+#include "gmp_agent_installers.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
@@ -4384,6 +4385,7 @@ typedef enum
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
+  CLIENT_GET_AGENT_INSTALLERS,
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -5166,6 +5168,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_EMPTY_TRASHCAN);
 
         ELSE_GET_START (agents, AGENTS)
+
+        ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
 
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
@@ -20828,6 +20832,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+      CASE_GET_END (AGENT_INSTALLERS, agent_installers);
 
       CASE_GET_END (AGENTS, agents);
 
