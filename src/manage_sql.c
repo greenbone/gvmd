@@ -14450,8 +14450,9 @@ static int
 task_last_report_any_status (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
-                     "SELECT id FROM reports WHERE task = %llu"
-                     " ORDER BY creation_time DESC LIMIT 1;",
+                     "SELECT max (id) FROM reports"
+                     " WHERE task = %llu"
+                     " LIMIT 1;",
                      task))
     {
       case 0:
