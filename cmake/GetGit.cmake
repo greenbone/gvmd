@@ -36,7 +36,7 @@ macro(git_get_revision dir variable)
   )
   string(REPLACE "/" "_" GIT_BRANCH ${GIT_BRANCH})
   set(${variable} "${GIT_COMMIT_HASH}-${GIT_BRANCH}")
-endmacro(Git_GET_REVISION)
+endmacro()
 
 if(EXISTS "${SOURCE_DIR}/.git/")
   if(GIT_EXECUTABLE)
