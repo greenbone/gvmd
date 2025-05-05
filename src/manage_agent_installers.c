@@ -78,7 +78,58 @@ agent_installer_file_is_valid (const char *installer_path,
                                int expected_size,
                                gchar **message)
 {
-  return 1;
+  gchar *canonical_feed_path, *full_installer_path, *canonical_installer_path;
+  FILE *file;
+
+  canonical_feed_path = g_canonicalize_filename (feed_dir_agent_installers (),
+                                                 "/");
+  full_installer_path = g_build_filename (feed_dir_agent_installers (),
+                                          installer_path,
+                                          NULL);
+  canonical_installer_path = g_canonicalize_filename (full_installer_path,
+                                                      "/");
+  
+  if (! g_str_has_prefix (canonical_installer_path, canonical_feed_path))
+    {
+      if (message)
+        *message = g_strdup_printf ("invalid installer path:"
+                                    " '%s' is outside feed directory",
+                                    installer_path);
+
+      g_debug ("%s: canonical_feed_path = %s",
+               __func__, canonical_feed_path);
+      g_debug ("%s: full_installer_path = %s",
+               __func__, full_installer_path);
+      g_debug ("%s: canonical_installer_path = %s",
+               __func__, canonical_installer_path);
+
+      g_free (canonical_feed_path);
+      g_free (full_installer_path);
+      g_free (canonical_installer_path);
+
+      return FALSE;
+    }
+
+  g_free (canonical_feed_path);
+  g_free (full_installer_path);
+
+  file = fopen (canonical_installer_path, "rb");
+  if (file == NULL)
+    {
+      if (message)
+        *message = g_strdup_printf ("error opening installer file: %s",
+                                    strerror (errno));
+      g_free (canonical_installer_path);
+      return FALSE;
+    }
+
+  // TODO: Add file size and checksum verification
+
+  fclose (file);
+
+  if (message)
+    *message = g_strdup ("valid");
+  return TRUE;
 }
 
 
