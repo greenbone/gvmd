@@ -57153,7 +57153,8 @@ convert_openvasd_type_to_osp_type (const char *openvasd_type)
     return g_strdup ("Alarm");
   else if (g_strcmp0 (openvasd_type, "error") == 0)
     return g_strdup ("Error Message");
-  else if (g_strcmp0 (openvasd_type, "log") == 0)
+  else if (g_strcmp0 (openvasd_type, "log") == 0
+           || g_strcmp0 (openvasd_type, "host_detail") == 0)
     return g_strdup ("Log Message");
 
   return g_strdup (openvasd_type);
@@ -57185,18 +57186,11 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
   test_id = res->oid;
   host = res->ip_address;
   hostname = res->hostname;
-
-  if (res && res->port == 0 && !strcmp (type, "host_detail") &&
-      res->detail_value && *res->detail_value)
-    port = g_strdup ("general/Host_Details");
-  else if (res->port > 0)
-    port = g_strdup_printf ("%d/%s", res->port, res->protocol);
-  else
-    port = g_strdup_printf ("general/%s", res->protocol);
+  port = g_strdup (res->port);
 
   /* Add report host if it doesn't exist. */
   manage_report_host_add (rep_aux->report, host, 0, 0);
-  if (!strcmp (type, "host_detail"))
+  if (!strcmp (port, "general/Host_Details"))
     {
       gchar *hash_value = NULL;
       if (!check_host_detail_exists (rep_aux->report, host,
