@@ -716,6 +716,82 @@ agent_installer_iterator_last_update (iterator_t *iterator)
 }
 
 /**
+ * @brief Initialise a Agent Installer CPE iterator.
+ *
+ * @param[in]  iterator         Iterator.
+ * @param[in]  agent_installer  Agent installer to get CPEs of.
+ * @param[in]  trash            Whether to get CPEs from an installer in trash.
+ */
+void
+init_agent_installer_cpe_iterator (iterator_t* iterator,
+                                  agent_installer_t agent_installer,
+                                  int trash)
+{
+  init_iterator (iterator,
+                 "SELECT criteria,"
+                 " version_start_incl, version_start_excl,"
+                 " version_end_incl, version_end_excl"
+                 " FROM agent_installer_cpes%s"
+                 " WHERE agent_installer = %llu",
+                 trash ? "_trash" : "",
+                 agent_installer);
+}
+
+/**
+ * @brief Get the criteria from an agent installer CPE iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The criteria of the agent installer CPE.
+ *         Caller must only use before calling cleanup_iterator.
+ */
+DEF_ACCESS (agent_installer_cpe_iterator_criteria, 0);
+
+/**
+ * @brief Get the inclusive version range start from an agent installer CPE
+ * iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The inclusive version range start of the agent installer CPE.
+ *         Caller must only use before calling cleanup_iterator.
+ */
+DEF_ACCESS (agent_installer_cpe_iterator_version_start_incl, 1);
+
+/**
+ * @brief Get the exclusive version range start from an agent installer CPE
+ * iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The exclusive version range start of the agent installer CPE.
+ *         Caller must only use before calling cleanup_iterator.
+ */
+DEF_ACCESS (agent_installer_cpe_iterator_version_start_excl, 2);
+
+/**
+ * @brief Get the inclusive version range end from an agent installer CPE
+ * iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The exclusive version range end of the agent installer CPE.
+ *         Caller must only use before calling cleanup_iterator.
+ */
+DEF_ACCESS (agent_installer_cpe_iterator_version_end_incl, 3);
+
+/**
+ * @brief Get the inclusive version range end from an agent installer CPE
+ * iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The exclusive version range end of the agent installer CPE.
+ *         Caller must only use before calling cleanup_iterator.
+ */
+DEF_ACCESS (agent_installer_cpe_iterator_version_end_excl, 4);
+
+/**
  * @brief Return whether an agent installer is in use.
  *
  * @param[in]  agent_installer  Agent Installer.
