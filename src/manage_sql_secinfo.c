@@ -5779,11 +5779,12 @@ insert_epss_score_entry (inserts_t *inserts, const char *cve,
 
   quoted_cve = sql_quote (cve);
   g_string_append_printf (inserts->statement,
-                          "%s ('%s', %lf, %lf)",
+                          "%s ('%s', %lf, %.*lf)",
                           first ? "" : ",",
                           quoted_cve,
                           epss,
-                          percentile);
+                          3,
+                          percentile * 100.0);
   g_free (quoted_cve);
 
   inserts->current_chunk_size++;
