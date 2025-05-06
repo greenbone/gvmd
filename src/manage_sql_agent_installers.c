@@ -15,7 +15,7 @@
 #include "manage_acl.h"
 #include <glib/gstdio.h>
 #include <cjson/cJSON.h>
-#include <../../../gvm-libs/util/json.h>
+#include <gvm/util/json.h>
 
 #undef G_LOG_DOMAIN
 /**
