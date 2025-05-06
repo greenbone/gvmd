@@ -436,6 +436,7 @@ command_t gmp_commands[]
     {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
+    {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
@@ -461,6 +462,7 @@ command_t gmp_commands[]
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
+    {"GET_AGENT_INSTALLERS", "Get all agent installers."},
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
@@ -46169,6 +46171,63 @@ manage_restore (const char *id)
       sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
            resource);
       sql ("DELETE FROM configs_trash WHERE id = %llu;", resource);
+      sql_commit ();
+      return 0;
+    }
+
+  /* Agent Installer. */
+
+  if (find_trash ("agent_installer", id, &resource))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (resource)
+    {
+      agent_installer_t agent_installer;
+
+      agent_installer
+        = sql_int64_0 ("INSERT INTO agent_installers"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update)"
+                       " SELECT uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update"
+                       " FROM agent_installers_trash WHERE id = %llu"
+                       " RETURNING id;",
+                       resource);
+
+      sql ("INSERT INTO agent_installer_cpes"
+           " (agent_installer, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl)"
+           " SELECT %llu, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl"
+           " FROM agent_installer_cpes_trash WHERE agent_installer = %llu;",
+           agent_installer,
+           resource);
+
+      permissions_set_locations ("agent_installer",
+                                 resource,
+                                 agent_installer,
+                                 LOCATION_TABLE);
+      tags_set_locations ("agent_installer",
+                          resource,
+                          agent_installer,
+                          LOCATION_TABLE);
+
+      sql ("DELETE FROM agent_installer_cpes_trash"
+           " WHERE agent_installer = %llu;",
+          resource);
+      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;", resource);
+
       sql_commit ();
       return 0;
     }

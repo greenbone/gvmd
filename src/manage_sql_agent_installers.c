@@ -12,6 +12,7 @@
 
 #include "gmp_base.h"
 #include "manage_sql.h"
+#include "manage_acl.h"
 #include <glib/gstdio.h>
 #include <cjson/cJSON.h>
 #include <../../../gvm-libs/util/json.h>
@@ -22,6 +23,121 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+
+/**
+ * @brief Delete an agent installer.
+ *
+ * @param[in]  agent_installer_id  UUID of agent installer.
+ * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+int
+delete_agent_installer (const char *agent_installer_id, int ultimate)
+{
+  agent_installer_t agent_installer = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_agent_installer") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (find_resource_with_permission ("agent_installer", agent_installer_id,
+                                     &agent_installer,
+                                     "delete_agent_installer", 0))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (agent_installer == 0)
+    {
+      if (find_trash ("agent_installer", agent_installer_id, &agent_installer))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (agent_installer == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      permissions_set_orphans ("agent_installer", agent_installer, LOCATION_TRASH);
+      tags_remove_resource ("agent_installer", agent_installer, LOCATION_TRASH);
+
+      sql ("DELETE FROM agent_installer_cpes_trash"
+           " WHERE agent_installer = %llu;",
+           agent_installer);
+      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;",
+           agent_installer);
+      sql_commit ();
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      agent_installer_t trash_agent_installer;
+
+      trash_agent_installer
+        = sql_int64_0 ("INSERT INTO agent_installers_trash"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update)"
+                       " SELECT uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update"
+                       " FROM agent_installers WHERE id = %llu"
+                       " RETURNING id;",
+                       agent_installer);
+
+      sql ("INSERT INTO agent_installer_cpes_trash"
+           " (agent_installer, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl)"
+           " SELECT %llu, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl"
+           " FROM agent_installer_cpes WHERE agent_installer = %llu;",
+           trash_agent_installer,
+           agent_installer);
+
+      permissions_set_locations ("agent_installer",
+                                 agent_installer,
+                                 trash_agent_installer,
+                                 LOCATION_TRASH);
+      tags_set_locations ("agent_installer",
+                          agent_installer,
+                          trash_agent_installer,
+                          LOCATION_TRASH);
+    }
+  else
+    {
+      permissions_set_orphans ("agent_installer", agent_installer,
+                               LOCATION_TABLE);
+      tags_remove_resource ("agent_installer", agent_installer,
+                            LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM agent_installer_cpes WHERE agent_installer = %llu;",
+       agent_installer);
+  sql ("DELETE FROM agent_installers WHERE id = %llu;", agent_installer);
+  sql_commit ();
+  return 0;
+}
 
 /**
  * @brief Get the time agent installers were last updated from the meta table
