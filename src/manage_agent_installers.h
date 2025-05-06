@@ -49,6 +49,9 @@ typedef struct {
 void
 agent_installer_cpe_data_free (agent_installer_cpe_data_t *);
 
+int
+delete_agent_installer (const char*, int);
+
 gboolean
 agent_installer_file_is_valid (const char *, const char *, int, gchar**);
 
