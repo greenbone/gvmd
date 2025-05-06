@@ -39359,6 +39359,63 @@ manage_restore (const char *id)
       return 0;
     }
 
+  /* Agent Installer. */
+
+  if (find_trash ("agent_installer", id, &resource))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (resource)
+    {
+      agent_installer_t agent_installer;
+
+      agent_installer
+        = sql_int64_0 ("INSERT INTO agent_installers"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update)"
+                       " SELECT uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update"
+                       " FROM agent_installers_trash WHERE id = %llu"
+                       " RETURNING id;",
+                       resource);
+
+      sql ("INSERT INTO agent_installer_cpes"
+           " (agent_installer, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl)"
+           " SELECT %llu, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl"
+           " FROM agent_installer_cpes_trash WHERE agent_installer = %llu;",
+           agent_installer,
+           resource);
+
+      permissions_set_locations ("agent_installer",
+                                 resource,
+                                 agent_installer,
+                                 LOCATION_TABLE);
+      tags_set_locations ("agent_installer",
+                          resource,
+                          agent_installer,
+                          LOCATION_TABLE);
+
+      sql ("DELETE FROM agent_installer_cpes_trash"
+           " WHERE agent_installer = %llu;",
+          resource);
+      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;", resource);
+
+      sql_commit ();
+      return 0;
+    }
+
   /* Alert. */
 
   if (find_trash ("alert", id, &resource))
