@@ -262,10 +262,10 @@ get_agent_installer_cpe_data_from_json (cJSON *json,
       return -1;
     }
 
-  data->version_start_incl = gvm_json_obj_str (json, "versionStartIncl");
-  data->version_start_excl = gvm_json_obj_str (json, "versionStartExcl");
-  data->version_end_incl = gvm_json_obj_str (json, "versionEndIncl");
-  data->version_end_excl = gvm_json_obj_str (json, "versionEndExcl");
+  data->version_start_incl = gvm_json_obj_str (json, "versionStartIncluding");
+  data->version_start_excl = gvm_json_obj_str (json, "versionStartExcluding");
+  data->version_end_incl = gvm_json_obj_str (json, "versionEndIncluding");
+  data->version_end_excl = gvm_json_obj_str (json, "versionEndExcluding");
 
   return 0;
 }
