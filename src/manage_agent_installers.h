@@ -115,6 +115,27 @@ agent_installer_iterator_checksum (iterator_t*);
 int
 agent_installer_iterator_file_size (iterator_t*);
 
+time_t
+agent_installer_iterator_last_update (iterator_t*);
+
+void
+init_agent_installer_cpe_iterator (iterator_t*, agent_installer_t, int);
+
+const char *
+agent_installer_cpe_iterator_criteria (iterator_t*);
+
+const char *
+agent_installer_cpe_iterator_version_start_incl (iterator_t*);
+
+const char *
+agent_installer_cpe_iterator_version_start_excl (iterator_t*);
+
+const char *
+agent_installer_cpe_iterator_version_end_incl (iterator_t*);
+
+const char *
+agent_installer_cpe_iterator_version_end_excl (iterator_t*);
+
 int
 agent_installer_in_use (agent_installer_t);
 
