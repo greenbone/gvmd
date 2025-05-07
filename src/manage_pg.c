@@ -2224,6 +2224,7 @@ create_tables ()
        "  method integer,"
        "  creation_time integer);");
 
+#if ENABLE_AGENTS
   sql ("CREATE TABLE IF NOT EXISTS agent_installers"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2277,6 +2278,7 @@ create_tables ()
        "  version_start_excl text,"
        "  version_end_incl text,"
        "  version_end_excl text);");
+#endif /* ENABLE_AGENTS */
 
   sql ("CREATE TABLE IF NOT EXISTS alerts"
        " (id SERIAL PRIMARY KEY,"

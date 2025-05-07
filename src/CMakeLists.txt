@@ -139,6 +139,12 @@ include_directories(
 
 ## Program
 
+if(ENABLE_AGENTS)
+  set(GMP_AGENT_INSTALLERS_C gmp_agent_installers.c)
+  set(MANAGE_AGENT_INSTALLERS_C manage_agent_installers.c)
+  set(MANAGE_SQL_AGENT_INSTALLERS_C manage_sql_agent_installers.c)
+endif(ENABLE_AGENTS)
+
 add_executable(
   manage-utils-test
   EXCLUDE_FROM_ALL
@@ -150,7 +156,7 @@ add_executable(
   manage.c
   sql.c
   manage_acl.c
-  manage_agent_installers.c
+  ${MANAGE_AGENT_INSTALLERS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -162,7 +168,7 @@ add_executable(
   manage_report_formats.c
   manage_authentication.c
   manage_sql.c
-  manage_sql_agent_installers.c
+  ${MANAGE_SQL_AGENT_INSTALLERS_C}
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -181,7 +187,7 @@ add_executable(
   lsc_crypt.c
   utils.c
   gmp.c
-  gmp_agent_installers.c
+  ${GMP_AGENT_INSTALLERS_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -211,7 +217,7 @@ add_executable(
   manage_utils.c
   sql.c
   manage_acl.c
-  manage_agent_installers.c
+  ${MANAGE_AGENT_INSTALLERS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -223,7 +229,7 @@ add_executable(
   manage_report_formats.c
   manage_authentication.c
   manage_sql.c
-  manage_sql_agent_installers.c
+  ${MANAGE_SQL_AGENT_INSTALLERS_C}
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -242,7 +248,7 @@ add_executable(
   lsc_crypt.c
   utils.c
   gmp.c
-  gmp_agent_installers.c
+  ${GMP_AGENT_INSTALLERS_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -273,7 +279,7 @@ add_executable(
   manage.c
   sql.c
   manage_acl.c
-  manage_agent_installers.c
+  ${MANAGE_AGENT_INSTALLERS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -284,7 +290,7 @@ add_executable(
   manage_report_configs.c
   manage_report_formats.c
   manage_authentication.c
-  manage_sql_agent_installers.c
+  ${MANAGE_SQL_AGENT_INSTALLERS_C}
   manage_sql_alerts.c
   manage_sql_nvts.c
   manage_sql_events.c
@@ -303,7 +309,7 @@ add_executable(
   lsc_crypt.c
   utils.c
   gmp.c
-  gmp_agent_installers.c
+  ${GMP_AGENT_INSTALLERS_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -334,7 +340,7 @@ add_executable(
   manage.c
   sql.c
   manage_acl.c
-  manage_agent_installers.c
+  ${MANAGE_AGENT_INSTALLERS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -346,7 +352,7 @@ add_executable(
   manage_report_formats.c
   manage_authentication.c
   manage_sql.c
-  manage_sql_agent_installers.c
+  ${MANAGE_SQL_AGENT_INSTALLERS_C}
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -365,7 +371,7 @@ add_executable(
   lsc_crypt.c
   utils.c
   gmp.c
-  gmp_agent_installers.c
+  ${GMP_AGENT_INSTALLERS_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -395,7 +401,7 @@ add_executable(
   manage.c
   sql.c
   manage_acl.c
-  manage_agent_installers.c
+  ${MANAGE_AGENT_INSTALLERS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -407,7 +413,7 @@ add_executable(
   manage_report_formats.c
   manage_authentication.c
   manage_sql.c
-  manage_sql_agent_installers.c
+  ${MANAGE_SQL_AGENT_INSTALLERS_C}
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -425,7 +431,7 @@ add_executable(
   lsc_user.c
   lsc_crypt.c
   gmp.c
-  gmp_agent_installers.c
+  ${GMP_AGENT_INSTALLERS_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -487,7 +493,7 @@ add_executable(
   manage.c
   sql.c
   manage_acl.c
-  manage_agent_installers.c
+  ${MANAGE_AGENT_INSTALLERS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -499,7 +505,7 @@ add_executable(
   manage_report_formats.c
   manage_authentication.c
   manage_sql.c
-  manage_sql_agent_installers.c
+  ${MANAGE_SQL_AGENT_INSTALLERS_C}
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -518,7 +524,7 @@ add_executable(
   lsc_crypt.c
   utils.c
   gmp.c
-  gmp_agent_installers.c
+  ${GMP_AGENT_INSTALLERS_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -847,12 +853,28 @@ add_dependencies(check cppcheck)
 
 ## Tag files
 
+if(ENABLE_AGENTS)
+  set(
+    TAGS_GMP_AGENT_INSTALLERS_C
+    "${CMAKE_CURRENT_SOURCE_DIR}/gmp_agent_installers.c"
+  )
+  set(
+    TAGS_MANAGE_AGENT_INSTALLERS_C
+    "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
+  )
+  set(
+    TAGS
+    MANAGE_SQL_AGENT_INSTALLERS_C
+    "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
+  )
+endif(ENABLE_AGENTS)
+
 set(
   C_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_agent_installers.c"
+  ${TAGS_GMP_AGENT_INSTALLERS_C}
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
@@ -864,7 +886,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
+  ${TAGS_MANAGE_AGENT_INSTALLERS_C}
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
@@ -874,7 +896,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
+  ${TAGS_MANAGE_SQL_AGENT_INSTALLERS_C}
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"

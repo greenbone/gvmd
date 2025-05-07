@@ -436,7 +436,9 @@ command_t gmp_commands[]
     {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
+#if ENABLE_AGENTS
     {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
+#endif
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
@@ -462,7 +464,9 @@ command_t gmp_commands[]
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
+#if ENABLE_AGENTS
     {"GET_AGENT_INSTALLERS", "Get all agent installers."},
+#endif
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
@@ -3918,8 +3922,12 @@ filter_clause (const char* type, const char* filter,
 int
 valid_type (const char* type)
 {
+#if ENABLE_AGENTS
   return ((strcasecmp (type, "agent_installer") == 0)
          || (strcasecmp (type, "alert") == 0)
+#else
+  return ((strcasecmp (type, "alert") == 0)
+#endif /* ENABLE_AGENTS */
          || (strcasecmp (type, "asset") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
@@ -3979,8 +3987,10 @@ type_db_name (const char* type)
   if (valid_type (type))
     return type;
 
+#if ENABLE_AGENTS
   if (strcasecmp (type, "Agent Installer") == 0)
     return "agent_installer";
+#endif
   if (strcasecmp (type, "Alert") == 0)
     return "alert";
   if (strcasecmp (type, "Asset") == 0)
@@ -46178,6 +46188,7 @@ manage_restore (const char *id)
       return 0;
     }
 
+#if ENABLE_AGENTS
   /* Agent Installer. */
 
   if (find_trash ("agent_installer", id, &resource))
@@ -46234,6 +46245,7 @@ manage_restore (const char *id)
       sql_commit ();
       return 0;
     }
+#endif /* ENABLE_AGENTS */
 
   /* Alert. */
 

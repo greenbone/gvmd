@@ -6756,6 +6756,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
   <command>
     <name>delete_agent_installer</name>
     <summary>Delete an agent installer</summary>
@@ -6861,6 +6862,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>delete_asset</name>
     <summary>Delete an asset</summary>
@@ -8078,6 +8080,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
   <command>
     <name>get_agent_installers</name>
     <summary>Get one or many agent installers</summary>
@@ -8607,6 +8610,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>get_aggregates</name>
     <summary>Get aggregates of various resources</summary>

@@ -2359,6 +2359,9 @@ gvmd (int argc, char** argv, char *env[])
 #if CVSS3_RATINGS == 1
       printf ("CVSS3 severity ratings enabled\n");
 #endif
+#if ENABLE_AGENTS == 1
+      printf ("Agent scanning and management enabled\n");
+#endif
       printf ("Copyright (C) 2009-2025 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
