@@ -40294,6 +40294,14 @@ manage_empty_trashcan ()
        "                                    WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM groups_trash" WHERE_OWNER);
+#if ENABLE_AGENTS
+  sql ("DELETE FROM agent_installer_cpes_trash"
+       " WHERE agent_installer IN (SELECT id from agent_installers_trash"
+       "                           WHERE owner = (SELECT id FROM users"
+       "                                          WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM agent_installers_trash" WHERE_OWNER);
+#endif /* ENABLE_AGENTS */
   sql ("DELETE FROM alert_condition_data_trash"
        " WHERE alert IN (SELECT id from alerts_trash"
        "                 WHERE owner = (SELECT id FROM users"
