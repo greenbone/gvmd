@@ -165,7 +165,7 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
         "<file_extension>%s</file_extension>"
         "<version>%s</version>"
         "<checksum>%s</checksum>"
-        "<size>%d</size>",
+        "<file_size>%d</file_size>",
         agent_installer_iterator_description (&agent_installers),
         agent_installer_iterator_content_type (&agent_installers),
         agent_installer_iterator_file_extension (&agent_installers),

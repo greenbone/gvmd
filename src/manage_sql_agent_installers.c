@@ -472,7 +472,7 @@ find_trash_agent_installer_no_acl (const char *uuid,
  */
 #define AGENT_INSTALLER_ITERATOR_FILTER_COLUMNS                             \
  { GET_ITERATOR_FILTER_COLUMNS, "description", "content_type",              \
-   "file_extension", "version", "size",                                     \
+   "file_extension", "version", "file_size", "last_update",                 \
    NULL }
 
 /**
