@@ -1,5 +1,8 @@
 build-essential
+ca-certificates
 cmake
+curl
+git
 lcov
 libbsd-dev
 libcjson-dev
