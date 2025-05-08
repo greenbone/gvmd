@@ -57175,7 +57175,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
   test_id = res->oid;
   host = res->ip_address;
   hostname = res->hostname;
-  port = g_strdup (res->port);
+  port = res->port;
 
   /* Add report host if it doesn't exist. */
   manage_report_host_add (rep_aux->report, host, 0, 0);
@@ -57201,7 +57201,6 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
         }
       desc = res->message;
       g_free (hash_value);
-      g_free (port);
       g_free (type);
       return;
     }
@@ -57258,7 +57257,6 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
       g_free (hash_value);
     }
 
-  g_free (port);
   g_free (nvt_id);
   g_free (type);
 
