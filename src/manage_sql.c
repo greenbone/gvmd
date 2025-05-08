@@ -57186,7 +57186,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
   test_id = res->oid;
   host = res->ip_address;
   hostname = res->hostname;
-  port = g_strdup (res->port);
+  port = g_strdup_printf ("%d", res->port);
 
   /* Add report host if it doesn't exist. */
   manage_report_host_add (rep_aux->report, host, 0, 0);
