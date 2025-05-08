@@ -57038,7 +57038,7 @@ check_openvasd_result_exists (report_t report, task_t task,
   else if (res->port > 0)
     {
       char buf[6];
-      snprintf (buf, sizeof(buf) , "%d", res->port);
+      snprintf (buf, sizeof(buf) , "%s", res->port);
       port_str = g_strdup (buf);
     }
   else
@@ -57186,7 +57186,7 @@ add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
   test_id = res->oid;
   host = res->ip_address;
   hostname = res->hostname;
-  port = g_strdup_printf ("%d", res->port);
+  port = g_strdup (res->port);
 
   /* Add report host if it doesn't exist. */
   manage_report_host_add (rep_aux->report, host, 0, 0);
