@@ -57032,25 +57032,13 @@ check_openvasd_result_exists (report_t report, task_t task,
 {
   GString *result_string;
   int return_value = 0;
-  char *port_str = NULL;
-  if (res->port == 0 && res->detail_value && *res->detail_value)
-    port_str = g_strdup ("general/Host_Details");
-  else if (res->port > 0)
-    {
-      char buf[6];
-      snprintf (buf, sizeof(buf) , "%s", res->port);
-      port_str = g_strdup (buf);
-    }
-  else
-    port_str = "";
-
   result_string = g_string_new ("");
   g_string_append_printf (result_string, "host:%s\n"
                           "hostname:%s\n"
                           "type:%s\n"
                           "description:%s\n"
                           "port:%s",res->ip_address, res->hostname,
-                          res->type, res->message, port_str);
+                          res->type, res->message, res->port);
 
  *entity_hash_value = get_md5_hash_from_string (result_string->str);
   if (g_hash_table_contains (hashed_openvasd_results, *entity_hash_value))
@@ -57086,6 +57074,7 @@ check_openvasd_result_exists (report_t report, task_t task,
               else
                 {
                   g_debug ("%s: Result without severity", __func__);
+                  g_string_free (result_string, TRUE);
                   return 0;
                 }
             }
