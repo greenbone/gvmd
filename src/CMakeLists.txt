@@ -137,294 +137,159 @@ include_directories(
   ${PostgreSQL_SERVER_INCLUDE_DIRS}
 )
 
+# Source lists
+set(
+  ALL_MANAGE_SRC
+  manage.c
+  manage_acl.c
+  manage_alerts.c
+  manage_configs.c
+  manage_events.c
+  manage_get.c
+  manage_license.c
+  manage_port_lists.c
+  manage_preferences.c
+  manage_report_configs.c
+  manage_report_formats.c
+  manage_authentication.c
+  manage_tls_certificates.c
+  manage_utils.c
+  manage_migrators.c
+  manage_pg.c
+)
+
+set(
+  ALL_MANAGE_SQL_SRC
+  manage_sql.c
+  manage_sql_alerts.c
+  manage_sql_events.c
+  manage_sql_nvts.c
+  manage_sql_secinfo.c
+  manage_sql_port_lists.c
+  manage_sql_configs.c
+  manage_sql_report_configs.c
+  manage_sql_report_formats.c
+  manage_sql_tickets.c
+  manage_sql_tls_certificates.c
+  manage_sql_nvts_osp.c
+  manage_sql_nvts_openvasd.c
+  manage_sql_nvts_common.c
+)
+
+set(
+  ALL_GMP_SRC
+  gmp.c
+  gmp_base.c
+  gmp_configs.c
+  gmp_delete.c
+  gmp_get.c
+  gmp_license.c
+  gmp_logout.c
+  gmp_port_lists.c
+  gmp_report_configs.c
+  gmp_report_formats.c
+  gmp_tickets.c
+  gmp_tls_certificates.c
+)
+
+set(ALL_SQL_SRC sql.c sql_pg.c)
+
+set(
+  ALL_MISC_SRC
+  debug_utils.c
+  gvmd.c
+  gmpd.c
+  ipc.c
+  lsc_user.c
+  lsc_crypt.c
+  utils.c
+)
+
+## Object libraries
+
+add_library(all-manage-obj OBJECT ${ALL_MANAGE_SRC})
+
+add_library(all-manage-sql-obj OBJECT ${ALL_MANAGE_SQL_SRC})
+
+add_library(all-gmp-obj OBJECT ${ALL_GMP_SRC})
+
+add_library(all-sql-obj OBJECT ${ALL_SQL_SRC})
+
+add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
+
 ## Program
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_utils.c)
 add_executable(
   manage-utils-test
   EXCLUDE_FROM_ALL
   manage_utils_tests.c
-  debug_utils.c
-  gvmd.c
-  gmpd.c
-  ipc.c
-  manage.c
-  sql.c
-  manage_acl.c
-  manage_alerts.c
-  manage_configs.c
-  manage_events.c
-  manage_get.c
-  manage_license.c
-  manage_port_lists.c
-  manage_preferences.c
-  manage_report_configs.c
-  manage_report_formats.c
-  manage_authentication.c
-  manage_sql.c
-  manage_sql_alerts.c
-  manage_sql_events.c
-  manage_sql_nvts.c
-  manage_sql_secinfo.c
-  manage_sql_port_lists.c
-  manage_sql_configs.c
-  manage_sql_report_configs.c
-  manage_sql_report_formats.c
-  manage_sql_tickets.c
-  manage_sql_tls_certificates.c
-  manage_tls_certificates.c
-  manage_migrators.c
-  sql_pg.c
-  manage_pg.c
-  lsc_user.c
-  lsc_crypt.c
-  utils.c
-  gmp.c
-  gmp_base.c
-  gmp_configs.c
-  gmp_delete.c
-  gmp_get.c
-  gmp_license.c
-  gmp_logout.c
-  gmp_port_lists.c
-  gmp_report_configs.c
-  gmp_report_formats.c
-  gmp_tickets.c
-  gmp_tls_certificates.c
-  manage_sql_nvts_osp.c
-  manage_sql_nvts_openvasd.c
-  manage_sql_nvts_common.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
 )
 
 add_test(manage-utils-test manage-utils-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage.c)
 add_executable(
   manage-test
   EXCLUDE_FROM_ALL
   manage_tests.c
-  debug_utils.c
-  gvmd.c
-  gmpd.c
-  ipc.c
-  manage_utils.c
-  sql.c
-  manage_acl.c
-  manage_alerts.c
-  manage_configs.c
-  manage_events.c
-  manage_get.c
-  manage_license.c
-  manage_port_lists.c
-  manage_preferences.c
-  manage_report_configs.c
-  manage_report_formats.c
-  manage_authentication.c
-  manage_sql.c
-  manage_sql_alerts.c
-  manage_sql_events.c
-  manage_sql_nvts.c
-  manage_sql_secinfo.c
-  manage_sql_port_lists.c
-  manage_sql_configs.c
-  manage_sql_report_configs.c
-  manage_sql_report_formats.c
-  manage_sql_tickets.c
-  manage_sql_tls_certificates.c
-  manage_tls_certificates.c
-  manage_migrators.c
-  sql_pg.c
-  manage_pg.c
-  lsc_user.c
-  lsc_crypt.c
-  utils.c
-  gmp.c
-  gmp_base.c
-  gmp_configs.c
-  gmp_delete.c
-  gmp_get.c
-  gmp_license.c
-  gmp_logout.c
-  gmp_port_lists.c
-  gmp_report_configs.c
-  gmp_report_formats.c
-  gmp_tickets.c
-  gmp_tls_certificates.c
-  manage_sql_nvts_osp.c
-  manage_sql_nvts_openvasd.c
-  manage_sql_nvts_common.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
 )
 
 add_test(manage-test manage-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SQL_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql.c)
 add_executable(
   manage-sql-test
   EXCLUDE_FROM_ALL
   manage_sql_tests.c
-  debug_utils.c
-  gvmd.c
-  gmpd.c
-  ipc.c
-  manage_utils.c
-  manage.c
-  sql.c
-  manage_acl.c
-  manage_alerts.c
-  manage_configs.c
-  manage_events.c
-  manage_get.c
-  manage_license.c
-  manage_port_lists.c
-  manage_preferences.c
-  manage_report_configs.c
-  manage_report_formats.c
-  manage_authentication.c
-  manage_sql_alerts.c
-  manage_sql_nvts.c
-  manage_sql_events.c
-  manage_sql_secinfo.c
-  manage_sql_port_lists.c
-  manage_sql_configs.c
-  manage_sql_report_configs.c
-  manage_sql_report_formats.c
-  manage_sql_tickets.c
-  manage_sql_tls_certificates.c
-  manage_tls_certificates.c
-  manage_migrators.c
-  sql_pg.c
-  manage_pg.c
-  lsc_user.c
-  lsc_crypt.c
-  utils.c
-  gmp.c
-  gmp_base.c
-  gmp_configs.c
-  gmp_delete.c
-  gmp_get.c
-  gmp_license.c
-  gmp_logout.c
-  gmp_port_lists.c
-  gmp_report_configs.c
-  gmp_report_formats.c
-  gmp_tickets.c
-  gmp_tls_certificates.c
-  manage_sql_nvts_osp.c
-  manage_sql_nvts_openvasd.c
-  manage_sql_nvts_common.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
 )
 
 add_test(manage-sql-test manage-sql-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_GMP_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC gmp_tickets.c)
 add_executable(
   gmp-tickets-test
   EXCLUDE_FROM_ALL
   gmp_tickets_tests.c
-  debug_utils.c
-  gvmd.c
-  gmpd.c
-  ipc.c
-  manage_utils.c
-  manage.c
-  sql.c
-  manage_acl.c
-  manage_alerts.c
-  manage_configs.c
-  manage_events.c
-  manage_get.c
-  manage_license.c
-  manage_port_lists.c
-  manage_preferences.c
-  manage_report_configs.c
-  manage_report_formats.c
-  manage_authentication.c
-  manage_sql.c
-  manage_sql_alerts.c
-  manage_sql_events.c
-  manage_sql_nvts.c
-  manage_sql_secinfo.c
-  manage_sql_port_lists.c
-  manage_sql_configs.c
-  manage_sql_report_configs.c
-  manage_sql_report_formats.c
-  manage_sql_tickets.c
-  manage_sql_tls_certificates.c
-  manage_tls_certificates.c
-  manage_migrators.c
-  sql_pg.c
-  manage_pg.c
-  lsc_user.c
-  lsc_crypt.c
-  utils.c
-  gmp.c
-  gmp_base.c
-  gmp_configs.c
-  gmp_delete.c
-  gmp_get.c
-  gmp_license.c
-  gmp_logout.c
-  gmp_port_lists.c
-  gmp_report_configs.c
-  gmp_report_formats.c
-  gmp_tls_certificates.c
-  manage_sql_nvts_osp.c
-  manage_sql_nvts_openvasd.c
-  manage_sql_nvts_common.c
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
 )
 
 add_test(gmp-tickets-test gmp-tickets-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MISC_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC utils.c)
 add_executable(
   utils-test
   EXCLUDE_FROM_ALL
   utils_tests.c
-  debug_utils.c
-  gvmd.c
-  gmpd.c
-  ipc.c
-  manage_utils.c
-  manage.c
-  sql.c
-  manage_acl.c
-  manage_alerts.c
-  manage_configs.c
-  manage_events.c
-  manage_get.c
-  manage_license.c
-  manage_port_lists.c
-  manage_preferences.c
-  manage_report_configs.c
-  manage_report_formats.c
-  manage_authentication.c
-  manage_sql.c
-  manage_sql_alerts.c
-  manage_sql_events.c
-  manage_sql_nvts.c
-  manage_sql_secinfo.c
-  manage_sql_port_lists.c
-  manage_sql_configs.c
-  manage_sql_report_configs.c
-  manage_sql_report_formats.c
-  manage_sql_tickets.c
-  manage_sql_tls_certificates.c
-  manage_tls_certificates.c
-  manage_migrators.c
-  sql_pg.c
-  manage_pg.c
-  lsc_user.c
-  lsc_crypt.c
-  gmp.c
-  gmp_base.c
-  gmp_configs.c
-  gmp_delete.c
-  gmp_get.c
-  gmp_license.c
-  gmp_logout.c
-  gmp_port_lists.c
-  gmp_report_configs.c
-  gmp_report_formats.c
-  gmp_tickets.c
-  gmp_tls_certificates.c
-  manage_sql_nvts_osp.c
-  manage_sql_nvts_openvasd.c
-  manage_sql_nvts_common.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
 )
 
 add_test(utils-test utils-test)
@@ -464,57 +329,11 @@ add_custom_target(
 add_executable(
   gvmd
   main.c
-  gvmd.c
-  debug_utils.c
-  gmpd.c
-  ipc.c
-  manage_utils.c
-  manage.c
-  sql.c
-  manage_acl.c
-  manage_alerts.c
-  manage_configs.c
-  manage_events.c
-  manage_get.c
-  manage_license.c
-  manage_port_lists.c
-  manage_preferences.c
-  manage_report_configs.c
-  manage_report_formats.c
-  manage_authentication.c
-  manage_sql.c
-  manage_sql_alerts.c
-  manage_sql_events.c
-  manage_sql_nvts.c
-  manage_sql_secinfo.c
-  manage_sql_port_lists.c
-  manage_sql_configs.c
-  manage_sql_report_configs.c
-  manage_sql_report_formats.c
-  manage_sql_tickets.c
-  manage_sql_tls_certificates.c
-  manage_tls_certificates.c
-  manage_migrators.c
-  sql_pg.c
-  manage_pg.c
-  lsc_user.c
-  lsc_crypt.c
-  utils.c
-  gmp.c
-  gmp_base.c
-  gmp_configs.c
-  gmp_delete.c
-  gmp_get.c
-  gmp_license.c
-  gmp_logout.c
-  gmp_port_lists.c
-  gmp_report_configs.c
-  gmp_report_formats.c
-  gmp_tickets.c
-  gmp_tls_certificates.c
-  manage_sql_nvts_osp.c
-  manage_sql_nvts_openvasd.c
-  manage_sql_nvts_common.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
 )
 
 target_link_libraries(
