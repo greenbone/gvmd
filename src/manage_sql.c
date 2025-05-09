@@ -196,6 +196,12 @@ set_task_interrupted (task_t, const gchar *);
 
 /* Static headers. */
 
+gchar *
+report_creation_time (report_t);
+
+gchar *
+report_modification_time (report_t);
+
 static int
 report_counts_cache_exists (report_t, int, int);
 
@@ -9691,13 +9697,8 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   condition_filter_id = alert_data (alert, "condition", "filter_id");
   if (condition_filter_id)
     {
-      gchar *quoted_filter_id;
-      quoted_filter_id = sql_quote (condition_filter_id);
-      sql_int64 (&condition_filter,
-                 "SELECT id FROM filters WHERE uuid = '%s'",
-                 quoted_filter_id);
+      find_resource_no_acl ("filter", condition_filter_id, &condition_filter);
       term = filter_term (condition_filter_id);
-      g_free (quoted_filter_id);
     }
   free (condition_filter_id);
 
@@ -9971,33 +9972,17 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get last report from task if no report is given
 
-  if (report == 0)
-    switch (sql_int64 (&report,
-                        "SELECT max (id) FROM reports"
-                        " WHERE task = %llu",
-                        task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-      }
+  if ((report == 0)
+      && (task_last_report_any_status (task, &report)
+          || (report == 0)))
+    {
+      if (alert_filter_get)
+        {
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
+        }
+      return -1;
+    }
 
   // Get report format or use fallback.
 
@@ -10164,17 +10149,9 @@ generate_report_filename (report_t report, report_format_t report_format,
 
   report_id = report_uuid (report);
 
-  creation_time
-    = sql_string ("SELECT iso_time (creation_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
+  creation_time = report_creation_time (report);
 
-  modification_time
-    = sql_string ("SELECT iso_time (modification_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
+  modification_time = report_modification_time (report);
 
   report_task (report, &task);
   report_task_name = task_name (task);
@@ -15715,8 +15692,9 @@ static int
 task_last_report_any_status (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
-                     "SELECT id FROM reports WHERE task = %llu"
-                     " ORDER BY creation_time DESC LIMIT 1;",
+                     "SELECT max (id) FROM reports"
+                     " WHERE task = %llu"
+                     " LIMIT 1;",
                      task))
     {
       case 0:
@@ -22968,6 +22946,40 @@ report_timestamp (const char* report_id, gchar** timestamp)
   *timestamp = g_strdup (stamp);
   return 0;
 }
+
+/**
+ * @brief Get the creation time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_creation_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (creation_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+
+/**
+ * @brief Get the modification time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_modification_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (modification_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
 
 /**
  * @brief Return the run status of the scan associated with a report.
