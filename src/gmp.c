@@ -87,6 +87,9 @@
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
+#if ENABLE_AGENTS
+#include "gmp_agent_installers.h"
+#endif
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
@@ -4348,6 +4351,9 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
+#if ENABLE_AGENTS
+  CLIENT_DELETE_AGENT_INSTALLER,
+#endif
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4373,6 +4379,9 @@ typedef enum
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
+#if ENABLE_AGENTS
+  CLIENT_GET_AGENT_INSTALLERS,
+#endif
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4892,6 +4901,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
+          {
+            delete_start ("agent_installer", "Agent Installer",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_REPORT_CONFIG);
+          }
+#endif
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
@@ -5145,6 +5162,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
+#if ENABLE_AGENTS
+        ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
+#endif
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
             gchar *data_column = g_strdup ("");
@@ -13022,6 +13042,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                            CVSS3_RATINGS ? 1 : 0);
 
   SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>ENABLE_AGENTS</name>"
+                           "</feature>",
+                           ENABLE_AGENTS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
                            "<name>OPENVASD</name>"
                            "</feature>",
                            OPENVASD ? 1 : 0);
@@ -20189,6 +20214,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT_INSTALLER:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
+
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
@@ -20686,6 +20718,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+#if ENABLE_AGENTS
+      CASE_GET_END (AGENT_INSTALLERS, agent_installers);
+#endif
 
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);

@@ -25,6 +25,9 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#if ENABLE_AGENTS
+#include "manage_agent_installers.h"
+#endif
 #include "manage_alerts.h"
 #include "manage_configs.h"
 #include "manage_events.h"

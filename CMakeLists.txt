@@ -245,6 +245,11 @@ if(NOT GVM_DEFAULT_DROP_USER)
 endif(NOT GVM_DEFAULT_DROP_USER)
 
 # Feature toggles
+if(NOT ENABLE_AGENTS)
+  set(ENABLE_AGENTS 0)
+endif(NOT ENABLE_AGENTS)
+add_definitions(-DENABLE_AGENTS=${ENABLE_AGENTS})
+
 if(NOT OPENVASD)
   set(OPENVASD 0)
 endif(NOT OPENVASD)
@@ -265,6 +270,14 @@ elseif(CVSS3_RATINGS EQUAL 0)
   set(ENDIF_CVSS3_RATINGS "-->")
   set(IF_NOT_CVSS3_RATINGS "")
   set(ENDIF_NOT_CVSS3_RATINGS "")
+endif()
+
+if(ENABLE_AGENTS EQUAL 1)
+  set(IF_ENABLE_AGENTS "")
+  set(ENDIF_ENABLE_AGENTS "")
+elseif(ENABLE_AGENTS EQUAL 0)
+  set(IF_ENABLE_AGENTS "<!--")
+  set(ENDIF_ENABLE_AGENTS "-->")
 endif()
 
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
