@@ -6663,6 +6663,8 @@ update_vt_scap_extra_data ()
        " FROM epss_candidates"
        " WHERE epss_candidates.vt_oid = nvts.oid"
        "   AND epss_candidates.rank = 1;");
+
+  create_view_result_vt_epss ();
 }
 
 /**
