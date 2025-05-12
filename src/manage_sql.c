@@ -3906,285 +3906,6 @@ filter_clause (const char* type, const char* filter,
 
 /* Resources. */
 
-/**
- * @brief Check whether a resource type name is valid.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_type (const char* type)
-{
-  return (strcasecmp (type, "alert") == 0)
-         || (strcasecmp (type, "asset") == 0)
-         || (strcasecmp (type, "config") == 0)
-         || (strcasecmp (type, "credential") == 0)
-         || (strcasecmp (type, "filter") == 0)
-         || (strcasecmp (type, "group") == 0)
-         || (strcasecmp (type, "host") == 0)
-         || (strcasecmp (type, "info") == 0)
-         || (strcasecmp (type, "note") == 0)
-         || (strcasecmp (type, "os") == 0)
-         || (strcasecmp (type, "override") == 0)
-         || (strcasecmp (type, "permission") == 0)
-         || (strcasecmp (type, "port_list") == 0)
-         || (strcasecmp (type, "report") == 0)
-         || (strcasecmp (type, "report_config") == 0)
-         || (strcasecmp (type, "report_format") == 0)
-         || (strcasecmp (type, "result") == 0)
-         || (strcasecmp (type, "role") == 0)
-         || (strcasecmp (type, "scanner") == 0)
-         || (strcasecmp (type, "schedule") == 0)
-         || (strcasecmp (type, "tag") == 0)
-         || (strcasecmp (type, "target") == 0)
-         || (strcasecmp (type, "task") == 0)
-         || (strcasecmp (type, "ticket") == 0)
-         || (strcasecmp (type, "tls_certificate") == 0)
-         || (strcasecmp (type, "user") == 0)
-         || (strcasecmp (type, "vuln") == 0);
-}
-
-/**
- * @brief Check whether a resource subtype name is valid.
- *
- * @param[in]  subtype  Subtype of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_subtype (const char* type)
-{
-    return (strcasecmp (type, "audit_report") == 0)
-          || (strcasecmp (type, "audit") == 0)
-          || (strcasecmp (type, "policy") == 0);
-}
-
-/**
- * @brief Return DB name of type.
- *
- * @param[in]  type  Database or pretty name.
- *
- * @return Database name of type if possible, else NULL.
- */
-static const char *
-type_db_name (const char* type)
-{
-  if (type == NULL)
-    return NULL;
-
-  if (valid_type (type))
-    return type;
-
-  if (strcasecmp (type, "Alert") == 0)
-    return "alert";
-  if (strcasecmp (type, "Asset") == 0)
-    return "asset";
-  if (strcasecmp (type, "Config") == 0)
-    return "config";
-  if (strcasecmp (type, "Credential") == 0)
-    return "credential";
-  if (strcasecmp (type, "Filter") == 0)
-    return "filter";
-  if (strcasecmp (type, "Note") == 0)
-    return "note";
-  if (strcasecmp (type, "Override") == 0)
-    return "override";
-  if (strcasecmp (type, "Permission") == 0)
-    return "permission";
-  if (strcasecmp (type, "Port List") == 0)
-    return "port_list";
-  if (strcasecmp (type, "Report") == 0)
-    return "report";
-  if (strcasecmp (type, "Report Config") == 0)
-    return "report_config";
-  if (strcasecmp (type, "Report Format") == 0)
-    return "report_format";
-  if (strcasecmp (type, "Result") == 0)
-    return "result";
-  if (strcasecmp (type, "Role") == 0)
-    return "role";
-  if (strcasecmp (type, "Scanner") == 0)
-    return "scanner";
-  if (strcasecmp (type, "Schedule") == 0)
-    return "schedule";
-  if (strcasecmp (type, "Tag") == 0)
-    return "tag";
-  if (strcasecmp (type, "Target") == 0)
-    return "target";
-  if (strcasecmp (type, "Task") == 0)
-    return "task";
-  if (strcasecmp (type, "Ticket") == 0)
-    return "ticket";
-  if (strcasecmp (type, "TLS Certificate") == 0)
-    return "tls_certificate";
-  if (strcasecmp (type, "SecInfo") == 0)
-    return "info";
-  return NULL;
-}
-
-/**
- * @brief Check whether a resource type is an asset subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_asset_subtype (const char *type)
-{
-  return (strcasecmp (type, "host")
-          && strcasecmp (type, "os"))
-         == 0;
-}
-
-/**
- * @brief Check whether a resource type is an info subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_info_subtype (const char *type)
-{
-  return (strcasecmp (type, "nvt")
-          && strcasecmp (type, "cve")
-          && strcasecmp (type, "cpe")
-          && strcasecmp (type, "cert_bund_adv")
-          && strcasecmp (type, "dfn_cert_adv"))
-         == 0;
-}
-
-/**
- * @brief Check whether a resource type is a report subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_report_subtype (const char *type)
-{
-  return (strcasecmp (type, "audit_report") == 0);
-}
-
-/**
- * @brief Check whether a resource type is a task subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_task_subtype (const char *type)
-{
-  return (strcasecmp (type, "audit") == 0);
-}
-
-/**
- * @brief Check whether a resource type is a config subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_config_subtype (const char *type)
-{
-  return (strcasecmp (type, "policy") == 0);
-}
-
-/**
- * @brief Check whether a type has a name and comment.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_named (const char *type)
-{
-  return strcasecmp (type, "note")
-         && strcasecmp (type, "override");
-}
-
-/**
- * @brief Check whether a type must have globally unique names.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_globally_unique (const char *type)
-{
-  if (strcasecmp (type, "user") == 0)
-    return 1;
-  else
-    return 0;
-}
-
-/**
- * @brief Check whether a type has a comment.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_has_comment (const char *type)
-{
-  return strcasecmp (type, "report_format");
-}
-
-/**
- * @brief Check whether a resource type uses the trashcan.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_has_trash (const char *type)
-{
-  return strcasecmp (type, "report")
-         && strcasecmp (type, "result")
-         && strcasecmp (type, "info")
-         && type_is_info_subtype (type) == 0
-         && strcasecmp (type, "vuln")
-         && strcasecmp (type, "user")
-         && strcasecmp (type, "tls_certificate");
-}
-
-/**
- * @brief Check whether a resource type has an owner.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_owned (const char* type)
-{
-  return strcasecmp (type, "info")
-         && type_is_info_subtype (type) == 0
-         && strcasecmp (type, "vuln");
-}
-
-/**
- * @brief Check whether the trash is in the real table.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_trash_in_table (const char *type)
-{
-  return strcasecmp (type, "task") == 0;
-}
-
 /* TODO Only used by find_scanner, find_permission and check_permission_args. */
 /**
  * @brief Find a resource given a UUID.
@@ -9109,7 +8830,7 @@ alert_subject_print (const gchar *subject, event_t event,
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
-                  else if (type_is_scap (event_data))
+                  else if (secinfo_type_is_scap (event_data))
                     date = scap_check_time ();
                   else
                     date = cert_check_time ();
@@ -9161,12 +8882,14 @@ alert_subject_print (const gchar *subject, event_t event,
             case 's':
               /* Type. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, type_name (event_data));
+                g_string_append (new_subject,
+                                 secinfo_type_name (event_data));
               break;
             case 'S':
               /* Type, plural. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, type_name_plural (event_data));
+                g_string_append (new_subject,
+                                 secinfo_type_name_plural (event_data));
               break;
             case 'T':
               g_string_append_printf (new_subject, "%i", total);
@@ -9280,7 +9003,7 @@ alert_message_print (const gchar *message, event_t event,
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
-                  else if (type_is_scap (event_data))
+                  else if (secinfo_type_is_scap (event_data))
                     date = scap_check_time ();
                   else
                     date = cert_check_time ();
@@ -9390,12 +9113,14 @@ alert_message_print (const gchar *message, event_t event,
             case 's':
               /* Type. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_message, type_name (event_data));
+                g_string_append (new_message,
+                                 secinfo_type_name (event_data));
               break;
             case 'S':
               /* Type, plural. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_message, type_name_plural (event_data));
+                g_string_append (new_message,
+                                 secinfo_type_name_plural (event_data));
               break;
             case 't':
               {
@@ -9647,7 +9372,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   subject = g_strdup_printf
              ("[GVM] %s %s arrived",
               event == EVENT_NEW_SECINFO ? "New" : "Updated",
-              type_name_plural (type ? type : "nvt"));
+              secinfo_type_name_plural (type ? type : "nvt"));
   alert_subject = alert_data (alert, "method", "subject");
   if (alert_subject && strlen (alert_subject))
     {
@@ -33033,8 +32758,8 @@ new_secinfo_message (event_t event, const void* event_data, alert_t alert)
                               ? " new "
                               : " ",
                              count == 1
-                              ? type_name (type)
-                              : type_name_plural (type),
+                              ? secinfo_type_name (type)
+                              : secinfo_type_name_plural (type),
                              event == EVENT_NEW_SECINFO
                               ? ""
                               : (count == 1 ? " was" : " were"),

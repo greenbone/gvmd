@@ -25,6 +25,7 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_resources.h"
 #include "manage_alerts.h"
 #include "manage_configs.h"
 #include "manage_events.h"
@@ -338,33 +339,6 @@ scanner_type_valid (scanner_type_t);
 int
 scanner_type_supports_unix_sockets (scanner_type_t);
 
-typedef resource_t credential_t;
-typedef resource_t filter_t;
-typedef resource_t group_t;
-typedef resource_t host_t;
-typedef resource_t tag_t;
-typedef resource_t target_t;
-typedef resource_t ticket_t;
-typedef resource_t tls_certificate_t;
-typedef resource_t result_t;
-typedef resource_t report_t;
-typedef resource_t report_host_t;
-typedef resource_t report_config_t;
-typedef resource_t report_config_param_t;
-typedef resource_t report_format_t;
-typedef resource_t report_format_param_t;
-typedef resource_t role_t;
-typedef resource_t note_t;
-typedef resource_t nvt_t;
-typedef resource_t override_t;
-typedef resource_t permission_t;
-typedef resource_t port_list_t;
-typedef resource_t port_range_t;
-typedef resource_t schedule_t;
-typedef resource_t scanner_t;
-typedef resource_t setting_t;
-typedef resource_t user_t;
-
 
 /* GMP GET support.
  *
@@ -399,15 +373,6 @@ find_resource (const char*, const char*, resource_t*);
 
 gboolean
 find_resource_no_acl (const char*, const char*, resource_t*);
-
-const char *
-type_name_plural (const char*);
-
-const char *
-type_name (const char*);
-
-int
-type_is_scap (const char*);
 
 int
 delete_resource (const char *, const char *, int);

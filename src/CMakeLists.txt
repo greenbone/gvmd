@@ -149,6 +149,7 @@ set(
   manage_license.c
   manage_port_lists.c
   manage_preferences.c
+  manage_resources.c
   manage_report_configs.c
   manage_report_formats.c
   manage_authentication.c

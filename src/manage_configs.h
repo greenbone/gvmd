@@ -19,11 +19,9 @@
 #ifndef _GVMD_MANAGE_CONFIGS_H
 #define _GVMD_MANAGE_CONFIGS_H
 
-#include "iterator.h"
+#include "manage_resources.h"
 #include "manage_get.h"
 #include "manage_preferences.h"
-
-typedef resource_t config_t;
 
 preference_t *
 get_nvt_preference_by_id (const char *,
