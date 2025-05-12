@@ -48837,7 +48837,7 @@ DEF_ACCESS (setting_iterator_value, 4);
  * @return 0 success, -1 error.
  */
 int
-setting_value (const char *uuid, char **value)
+setting_value_sql (const char *uuid, char **value)
 {
   gchar *quoted_uuid;
 
@@ -48883,7 +48883,7 @@ setting_value (const char *uuid, char **value)
  * @return 0 success, -1 error.
  */
 int
-setting_value_int (const char *uuid, int *value)
+setting_value_int_sql (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
 

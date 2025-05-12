@@ -27,6 +27,7 @@
 #include "iterator.h"
 #include "manage_filter_utils.h"
 #include "manage_resources.h"
+#include "manage_settings.h"
 
 #include "manage_alerts.h"
 #include "manage_configs.h"
@@ -3412,9 +3413,6 @@ setting_iterator_comment (iterator_t*);
 
 const char*
 setting_iterator_value (iterator_t*);
-
-int
-setting_value_int (const char *, int *);
 
 int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);

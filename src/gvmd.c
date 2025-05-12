@@ -103,7 +103,7 @@
 
 #include "debug_utils.h"
 #include "ipc.h"
-#include "manage.h"
+#include "manage_sql.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
@@ -2319,6 +2319,16 @@ gvmd (int argc, char** argv, char *env[])
   /* Set locale based on environment variables. */
 
   setlocale (LC_ALL, "C.UTF-8");
+
+  /* Initialize variable functions.
+   *
+   * Using variable function pointers allows them to be decoupled from
+   * other parts of the code like the database access or type-specific
+   * functions for testing or gvmd sub-services.
+   */
+
+  init_manage_settings_funcs (setting_value_sql,
+                              setting_value_int_sql);
 
   /* Process options. */
 

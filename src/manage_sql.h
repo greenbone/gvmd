@@ -566,7 +566,10 @@ nvti_t *
 lookup_nvti (const gchar *);
 
 int
-setting_value (const char *, char **);
+setting_value_sql (const char *, char **);
+
+int
+setting_value_int_sql (const char *, int *);
 
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,

@@ -154,6 +154,7 @@ set(
   manage_report_configs.c
   manage_report_formats.c
   manage_authentication.c
+  manage_settings.c
   manage_tls_certificates.c
   manage_utils.c
   manage_migrators.c
