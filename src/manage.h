@@ -25,7 +25,9 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_filter_utils.h"
 #include "manage_resources.h"
+
 #include "manage_alerts.h"
 #include "manage_configs.h"
 #include "manage_events.h"
@@ -3093,66 +3095,6 @@ role_count (const get_data_t*);
 
 int
 modify_role (const char *, const char *, const char *, const char *);
-
-
-/* Filter Utilities. */
-
-/**
- * @brief Keyword type.
- */
-typedef enum
-{
-  KEYWORD_TYPE_UNKNOWN,
-  KEYWORD_TYPE_INTEGER,
-  KEYWORD_TYPE_DOUBLE,
-  KEYWORD_TYPE_STRING
-} keyword_type_t;
-
-/**
- * @brief Comparison returns.
- */
-typedef enum
-{
-  KEYWORD_RELATION_APPROX,
-  KEYWORD_RELATION_COLUMN_ABOVE,
-  KEYWORD_RELATION_COLUMN_APPROX,
-  KEYWORD_RELATION_COLUMN_EQUAL,
-  KEYWORD_RELATION_COLUMN_BELOW,
-  KEYWORD_RELATION_COLUMN_REGEXP
-} keyword_relation_t;
-
-/**
- * @brief Keyword.
- */
-struct keyword
-{
-  gchar *column;                 ///< The column prefix, or NULL.
-  int approx;                    ///< Whether the keyword is like "~example".
-  int equal;                     ///< Whether the keyword is like "=example".
-  int integer_value;             ///< Integer value of the keyword.
-  double double_value;           ///< Floating point value of the keyword.
-  int quoted;                    ///< Whether the keyword was quoted.
-  gchar *string;                 ///< The keyword string, outer quotes removed.
-  keyword_type_t type;           ///< Type of keyword.
-  keyword_relation_t relation;   ///< The relation.
-};
-
-/**
- * @brief Keyword type.
- */
-typedef struct keyword keyword_t;
-
-int
-keyword_special (keyword_t *);
-
-const char *
-keyword_relation_symbol (keyword_relation_t);
-
-void
-filter_free (array_t*);
-
-array_t *
-split_filter (const gchar*);
 
 
 /* Filters. */
