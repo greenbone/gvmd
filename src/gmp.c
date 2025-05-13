@@ -24815,9 +24815,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       setting = g_slist_next (setting);
                     }
 
-                  manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
-                                        ldap_plaintext, ldap_cacert,
-                                        ldap_ldaps_only);
+                  if (manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
+                                            ldap_plaintext, ldap_cacert,
+                                            ldap_ldaps_only))
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                             ("modify_auth",
+                                              "Invalid certificate"));
                 }
               if (strcmp (group, "method:radius_connect") == 0)
                 {
