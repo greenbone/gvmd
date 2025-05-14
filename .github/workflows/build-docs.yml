@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main, stable, oldstable ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   generate-doc-and-upload-coverage:
     name: Build XML documentation and upload coverage

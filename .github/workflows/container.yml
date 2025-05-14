@@ -13,6 +13,10 @@ on:
         description: "The ref to build a container image from. For example a tag v23.0.0."
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Push to Greenbone Registry
