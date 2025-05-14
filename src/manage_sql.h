@@ -401,6 +401,9 @@ int openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
 gchar *
 columns_build_select (column_t *);
 
+gchar*
+filter_term_sql (const char *);
+
 gchar *
 filter_clause (const char*, const char*, const char **, column_t *,
                column_t *, int, gchar **, int *, int *, array_t **, gchar **);

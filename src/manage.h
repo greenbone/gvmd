@@ -952,19 +952,9 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 /* Reports. */
 
 /**
- * @brief Default apply_overrides setting
- */
-#define APPLY_OVERRIDES_DEFAULT 0
-
-/**
  * @brief Default quality of detection percentage.
  */
 #define QOD_DEFAULT 75
-
-/**
- * @brief Default min quality of detection percentage for filters.
- */
-#define MIN_QOD_DEFAULT 70
 
 /**
  * @brief Default size to limit note and override text to in reports.
@@ -3113,18 +3103,6 @@ filter_name (filter_t);
 
 char*
 trash_filter_name (filter_t);
-
-gchar*
-filter_term (const char *);
-
-gchar*
-filter_term_value (const char *, const char *);
-
-int
-filter_term_apply_overrides (const char *);
-
-int
-filter_term_min_qod (const char *);
 
 int
 create_filter (const char*, const char*, const char*, const char*, filter_t*);

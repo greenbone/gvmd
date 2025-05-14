@@ -17,6 +17,11 @@
 #include <gvm/base/array.h>
 
 /**
+ * @brief Function type for getting a filter term by filter UUID.
+ */
+typedef char* (*filter_term_func)(const char*);
+
+/**
  * @brief Keyword type.
  */
 typedef enum
@@ -65,6 +70,17 @@ typedef struct keyword keyword_t;
 extern int table_order_if_sort_not_specified;
 
 
+/**
+ * @brief Default apply_overrides setting for filters.
+ */
+#define APPLY_OVERRIDES_DEFAULT 0
+
+/**
+ * @brief Default min quality of detection percentage for filters.
+ */
+#define MIN_QOD_DEFAULT 70
+
+
 int
 keyword_special (keyword_t *);
 
@@ -76,6 +92,21 @@ filter_free (array_t*);
 
 array_t *
 split_filter (const gchar*);
+
+gchar*
+filter_term (const char *);
+
+gchar*
+filter_term_value (const char *, const char *);
+
+int
+filter_term_apply_overrides (const char *term);
+
+int
+filter_term_min_qod (const char *term);
+
+void
+init_manage_filter_utils_funcs (filter_term_func filter_term_f);
 
 
 #endif /* GVMD_MANAGE_FILTER_UTILS_H */

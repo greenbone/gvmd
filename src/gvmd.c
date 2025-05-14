@@ -2327,6 +2327,7 @@ gvmd (int argc, char** argv, char *env[])
    * functions for testing or gvmd sub-services.
    */
 
+  init_manage_filter_utils_funcs (filter_term_sql);
   init_manage_settings_funcs (setting_value_sql,
                               setting_value_int_sql);
 

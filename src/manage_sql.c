@@ -43766,7 +43766,7 @@ trash_filter_name (filter_t filter)
  * @return Newly allocated term if available, else NULL.
  */
 gchar*
-filter_term (const char *uuid)
+filter_term_sql (const char *uuid)
 {
   gchar *quoted_uuid, *ret;
   quoted_uuid = sql_quote (uuid);
@@ -43775,99 +43775,6 @@ filter_term (const char *uuid)
   g_free (quoted_uuid);
   return ret;
 }
-
-/**
- * @brief Return the value of a column keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- * @param[in]  column  Column name.
- *
- * @return Value of column keyword if one exists, else NULL.
- */
-gchar*
-filter_term_value (const char *term, const char *column)
-{
-  keyword_t **point;
-  array_t *split;
-
-  if (term == NULL)
-    return NULL;
-
-  split = split_filter (term);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-
-      keyword = *point;
-      if (keyword->column
-          && ((strcasecmp (keyword->column, column) == 0)
-              || (keyword->column[0] == '_'
-                  && (strcasecmp (keyword->column + 1, column) == 0))))
-        {
-          gchar *ret = g_strdup (keyword->string);
-          filter_free (split);
-          return ret;
-        }
-      point++;
-    }
-  filter_free (split);
-  return NULL;
-}
-
-/**
- * @brief Return the value of the apply_overrides keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of apply_overrides if it exists, else APPLY_OVERRIDES_DEFAULT.
- */
-int
-filter_term_apply_overrides (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *apply_overrides_str;
-
-      apply_overrides_str = filter_term_value (term, "apply_overrides");
-      ret = apply_overrides_str
-              ? (strcmp (apply_overrides_str, "0") ? 1 : 0)
-              : APPLY_OVERRIDES_DEFAULT;
-
-      g_free (apply_overrides_str);
-      return ret;
-    }
-  else
-    return APPLY_OVERRIDES_DEFAULT;
-}
-
-/**
- * @brief Return the value of the min_qod keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of min_qod if it exists, else MIN_QOD_DEFAULT.
- */
-int
-filter_term_min_qod (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *min_qod_str;
-
-      min_qod_str = filter_term_value (term, "min_qod");
-      ret = (min_qod_str && strcmp (min_qod_str, ""))
-              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
-
-      g_free (min_qod_str);
-      return ret;
-    }
-  else
-    return MIN_QOD_DEFAULT;
-}
-
 
 /**
  * @brief Create a filter.
