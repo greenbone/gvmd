@@ -108,10 +108,16 @@
  */
 #define SETTING_UUID_USER_INTERFACE_TIME_FORMAT "11deb7ff-550b-4950-aacf-06faeb7c61b9"
 
-
+/**
+ * @brief Type for a function getting a setting value as a string.
+ */
 typedef int (*setting_value_func)(const char*, char **);
 
+/**
+ * @brief Type for a function getting a setting value as an integer.
+ */
 typedef int (*setting_value_int_func)(const char*, int *);
+
 
 int
 setting_value (const char *, char **);

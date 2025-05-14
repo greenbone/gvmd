@@ -13,8 +13,18 @@
 #include <assert.h>
 #include "manage_settings.h"
 
+/**
+ * @brief Internal function for getting a setting value as a string.
+ *
+ * Should be set by init_manage_settings_funcs.
+ */
 static setting_value_func setting_value_internal;
 
+/**
+ * @brief Internal function for getting a setting value as an integer.
+ *
+ * Should be set by init_manage_settings_funcs.
+ */
 static setting_value_int_func setting_value_int_internal;
 
 /**
