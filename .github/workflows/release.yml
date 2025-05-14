@@ -16,6 +16,10 @@ on:
         type: string
         description: Set an explicit version, that will overwrite release-type. Fails if version is not compliant.
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-release:
     name: Create a new release
