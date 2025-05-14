@@ -355,8 +355,6 @@ alive_test_t target_alive_tests (target_t);
 
 void manage_session_init (const char *);
 
-int valid_gmp_command (const char *);
-
 void check_generate_scripts ();
 
 void auto_delete_reports ();

@@ -146,6 +146,7 @@ set(
   manage_configs.c
   manage_events.c
   manage_filter_utils.c
+  manage_commands.c
   manage_get.c
   manage_license.c
   manage_port_lists.c

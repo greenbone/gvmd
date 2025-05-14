@@ -148,20 +148,6 @@ manage_reset_currents ();
 
 #define MAX_LOCK_RETRIES 16
 
-/**
- * @brief A command.
- */
-typedef struct
-{
-  gchar *name;     ///< Command name.
-  gchar *summary;  ///< Summary of command.
-} command_t;
-
-/**
- * @brief The GMP command list.
- */
-extern command_t gmp_commands[];
-
 
 /* Certificate and key management. */
 
