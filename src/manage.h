@@ -329,17 +329,6 @@ int
 scanner_type_supports_unix_sockets (scanner_type_t);
 
 
-/* GMP GET support.
- *
- * The standalone parts of the GET support are in manage_get.h. */
-
-resource_t
-get_iterator_resource (iterator_t*);
-
-user_t
-get_iterator_owner (iterator_t*);
-
-
 /* Resources. */
 
 int

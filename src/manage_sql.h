@@ -143,25 +143,6 @@
 /* Macros. */
 
 /**
- * @brief Generate accessor for an SQL iterator.
- *
- * This convenience macro is used to generate an accessor returning a
- * const string pointer.
- *
- * @param[in]  name  Name of accessor.
- * @param[in]  col   Column number to access.
- */
-#define DEF_ACCESS(name, col)                                     \
-const char*                                                       \
-name (iterator_t* iterator)                                       \
-{                                                                 \
-  const char *ret;                                                \
-  if (iterator->done) return NULL;                                \
-  ret = iterator_string (iterator, col);                          \
-  return ret;                                                     \
-}
-
-/**
  * @brief Write to a file or close stream and exit.
  *
  * @param[in]   stream    Stream to write to.
@@ -185,73 +166,6 @@ name (iterator_t* iterator)                                       \
 
 
 /* Iterator definitions. */
-
-/**
- * @brief Iterator column.
- */
-typedef struct
-{
-  gchar *select;       ///< Column for SELECT.
-  gchar *filter;       ///< Filter column name.  NULL to use select_column.
-  keyword_type_t type; ///< Type of column.
-} column_t;
-
-/**
- * @brief Filter columns for GET iterator.
- */
-#define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", \
- "created", "modified", "_owner"
-
-/**
- * @brief Filter columns for GET iterator.
- */
-#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
- "created", "modified", "_owner"
-
-/**
- * @brief Columns for GET iterator, as a single string.
- *
- * @param[in]  prefix  Column prefix.
- */
-#define GET_ITERATOR_COLUMNS_STRING                     \
-  "id, uuid, name, comment, creation_time,"             \
-  " modification_time, creation_time AS created,"       \
-  " modification_time AS modified"
-
-/**
- * @brief Columns for GET iterator.
- *
- * @param[in]  prefix  Column prefix.
- */
-#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                                 \
-  { prefix "id", NULL, KEYWORD_TYPE_INTEGER },                              \
-  { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
-  { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
-  { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
-  { prefix "creation_time", NULL, KEYWORD_TYPE_INTEGER },                   \
-  { prefix "modification_time", NULL, KEYWORD_TYPE_INTEGER },               \
-  { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
-  { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
-
-/**
- * @brief Columns for GET iterator.
- *
- * @param[in]  table  Table.
- */
-#define GET_ITERATOR_COLUMNS(table)                                             \
-  GET_ITERATOR_COLUMNS_PREFIX(""),                                              \
-  {                                                                             \
-    "(SELECT name FROM users AS inner_users"                                    \
-    " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
-    "_owner",                                                                   \
-    KEYWORD_TYPE_STRING                                                         \
-  },                                                                            \
-  { "owner", NULL, KEYWORD_TYPE_INTEGER }
-
-/**
- * @brief Number of columns for GET iterator.
- */
-#define GET_ITERATOR_COLUMN_COUNT 10
 
 /**
  * @brief Delta results columns offset for result iterator.
