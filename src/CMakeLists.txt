@@ -145,13 +145,17 @@ set(
   manage_alerts.c
   manage_configs.c
   manage_events.c
+  manage_filter_utils.c
+  manage_commands.c
   manage_get.c
   manage_license.c
   manage_port_lists.c
   manage_preferences.c
+  manage_resources.c
   manage_report_configs.c
   manage_report_formats.c
   manage_authentication.c
+  manage_settings.c
   manage_tls_certificates.c
   manage_utils.c
   manage_migrators.c
