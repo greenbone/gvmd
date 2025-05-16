@@ -24755,6 +24755,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_AUTH:
         {
           GSList *item;
+          int err = 0;
 
           if (acl_user_may ("modify_auth") == 0)
             {
@@ -24779,8 +24780,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                            ("modify_auth",
                                             "GROUP requires a name attribute"));
-                  set_client_state (CLIENT_AUTHENTIC);
-                  modify_auth_data_reset (modify_auth_data);
+                  err = 1;
                   break;
                 }
               if (strcmp (group, "method:ldap_connect") == 0)
@@ -24815,9 +24815,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       setting = g_slist_next (setting);
                     }
 
-                  manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
-                                        ldap_plaintext, ldap_cacert,
-                                        ldap_ldaps_only);
+                  if (manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
+                                            ldap_plaintext, ldap_cacert,
+                                            ldap_ldaps_only))
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                               ("modify_auth",
+                                                "Invalid certificate"));
+                      err = 1;
+                      break;
+                    }
                 }
               if (strcmp (group, "method:radius_connect") == 0)
                 {
@@ -24850,8 +24857,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               item = g_slist_next (item);
             }
-
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_auth"));
+          if (!err)
+            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_auth"));
           modify_auth_data_reset (modify_auth_data);
           set_client_state (CLIENT_AUTHENTIC);
 

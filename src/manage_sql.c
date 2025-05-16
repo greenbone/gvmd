@@ -52478,10 +52478,11 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
  *                              keep current value.
  */
-void
+int
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
                       int allow_plaintext, gchar *cacert, int ldaps_only)
 {
+  int err = 0;
   gchar *quoted;
 
   sql_begin_immediate ();
@@ -52519,11 +52520,27 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 
   if (cacert)
     {
-      sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
-      quoted = sql_quote (cacert);
-      sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
-           quoted);
-      g_free (quoted);
+      /* check if the certificate is valid */
+      err = get_certificate_info (cacert,
+                                  -1,
+                                  TRUE,
+                                  NULL,   /* activation_time */
+                                  NULL,   /* expiration_time */
+                                  NULL,   /* md5_fingerprint */
+                                  NULL,   /* sha256_fingerprint */
+                                  NULL,   /* subject */
+                                  NULL,   /* issuer */
+                                  NULL,   /* serial */
+                                  NULL);  /* certificate_format */
+
+      if (!err)
+        {
+          sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
+          quoted = sql_quote (cacert);
+          sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
+               quoted);
+          g_free (quoted);
+        }
     }
 
   if (ldaps_only >= 0)
@@ -52534,6 +52551,7 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
     }
 
   sql_commit ();
+  return err;
 }
 
 /**
