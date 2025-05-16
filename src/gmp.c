@@ -11332,7 +11332,8 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   if (filter || get->filter)
     {
       gchar *new_filter;
-      new_filter = manage_clean_filter (filter ? filter : get->filter);
+      new_filter = manage_clean_filter (filter ? filter : get->filter,
+                                        get->ignore_max_rows_per_page);
       g_free (filter);
       if ((strcmp (type, "task") == 0)
           && (filter_term_value (new_filter, "apply_overrides")
@@ -11347,7 +11348,7 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
       filter = new_filter;
     }
   else
-    filter = manage_clean_filter ("");
+    filter = manage_clean_filter ("", get->ignore_max_rows_per_page);
 
   type_many = g_string_new (type);
 
@@ -18572,7 +18573,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   else
     filter = NULL;
 
-  clean_filter = manage_clean_filter (filter ? filter : get->filter);
+  clean_filter = manage_clean_filter (filter ? filter : get->filter,
+                                      get->ignore_max_rows_per_page);
   apply_overrides = filter_term_apply_overrides (clean_filter);
   min_qod = filter_term_min_qod (clean_filter);
   g_free (clean_filter);
