@@ -172,7 +172,8 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
         {
           gchar *new_filter, *clean;
 
-          clean = manage_clean_filter_remove (term, get->filter_replace);
+          clean = manage_clean_filter_remove (term, get->filter_replace,
+                                              get->ignore_max_rows_per_page);
           new_filter = g_strdup_printf
                         ("%s=%s %s",
                          get->filter_replace,
@@ -598,12 +599,13 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
       max = -1;
     }
 
-  max = manage_max_rows (max);
+  max = manage_max_rows (max, get->ignore_max_rows_per_page);
 
   if (filter || get->filter)
     {
       gchar *new_filter;
-      new_filter = manage_clean_filter (filter ? filter : get->filter);
+      new_filter = manage_clean_filter (filter ? filter : get->filter,
+                                        get->ignore_max_rows_per_page);
       g_free (filter);
       if ((strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
@@ -649,12 +651,14 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
         filter = manage_clean_filter("apply_overrides="
                                      G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)
                                      " min_qod="
-                                     G_STRINGIFY (MIN_QOD_DEFAULT));
+                                     G_STRINGIFY (MIN_QOD_DEFAULT),
+                                     get->ignore_max_rows_per_page);
       else if (strcmp (type, "vuln") == 0)
         filter = manage_clean_filter(" min_qod="
-                                     G_STRINGIFY (MIN_QOD_DEFAULT));
+                                     G_STRINGIFY (MIN_QOD_DEFAULT),
+                                     get->ignore_max_rows_per_page);
       else
-        filter = manage_clean_filter ("");
+        filter = manage_clean_filter ("", get->ignore_max_rows_per_page);
     }
 
   type_many = g_string_new (type);
