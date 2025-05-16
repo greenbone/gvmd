@@ -7,7 +7,7 @@ on:
     inputs:
       release-type:
         type: choice
-        description: What kind of release do you want to do (pontos --release-type argument)?
+        description: What kind of release do you want to do?
         options:
           - patch
           - minor
@@ -32,14 +32,38 @@ jobs:
           contains(github.event.pull_request.labels.*.name, 'minor release') ||
           contains(github.event.pull_request.labels.*.name, 'major release')) &&
           github.event.pull_request.merged == true )
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     steps:
       - name: Selecting the Release type
         id: release-type
         uses: greenbone/actions/release-type@v3
         with:
           release-type-input: ${{ inputs.release-type }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for conventional commits and getting all git tags
+          persist-credentials: false
+          ref: ${{ steps.release-type.outputs.release-ref }}
+      - name: Determine release version
+        id: release-version
+        uses: greenbone/actions/release-version@v3
+        with:
+          release-type: ${{ steps.release-type.outputs.release-type }}
+          release-version: ${{ inputs.release-version }}
+          versioning-scheme: "semver"
+      - name: Install git-cliff
+        uses: greenbone/actions/uv@v3
+        with:
+          install: git-cliff
+      - name: Determine changelog
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git-cliff -v --strip header -o /tmp/changelog.md --unreleased --tag ${{ steps.release-version.outputs.release-version }} ${{ steps.release-version.outputs.last-release-version }}..HEAD
       - name: Release with release action
+        id: release
         uses: greenbone/actions/release@v3
         with:
           github-user: ${{ secrets.GREENBONE_BOT }}
@@ -48,7 +72,7 @@ jobs:
           gpg-key: ${{ secrets.GPG_KEY }}
           gpg-fingerprint: ${{ secrets.GPG_FINGERPRINT }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          release-type: ${{ steps.release-type.outputs.release-type }}
-          release-version: ${{ inputs.release-version }}
+          release-version: ${{ steps.release-version.outputs.release-version }}
+          changelog: /tmp/changelog.md
           ref: ${{ steps.release-type.outputs.release-ref }}
           versioning-scheme: "semver"

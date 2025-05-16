@@ -103,7 +103,7 @@
 
 #include "debug_utils.h"
 #include "ipc.h"
-#include "manage.h"
+#include "manage_sql.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
@@ -1097,25 +1097,6 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Update the NVT Cache using OSP.
- *
- * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-static int
-update_nvt_cache (const gchar *update_socket)
-{
-#ifdef OPENVASD
-  setproctitle ("openvasd: Updating NVT cache");
-#else
-  setproctitle ("OSP: Updating NVT cache");
-#endif
-  return manage_update_nvts (update_socket);
-}
-
-
-/**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1149,15 +1130,35 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
+          init_sentry ();
+#if OPENVASD
+          int ret;
+
+          setproctitle ("openvasd: Updating NVT cache");
+          ret = manage_update_nvt_cache_openvasd ();
+          if (ret == 1)
+            {
+              g_message (
+                "Rebuilding all NVTs because of a hash value mismatch");
+              ret = update_or_rebuild_nvts (0);
+              if (ret)
+                g_warning ("%s: rebuild failed", __func__);
+              else
+                g_message ("%s: rebuild successful", __func__);
+            }
+
+          gvm_close_sentry ();
+          exit (ret);
+#else
           const char *osp_update_socket;
 
-          init_sentry ();
           osp_update_socket = get_osp_vt_update_socket ();
           if (osp_update_socket)
             {
               int ret;
 
-              ret = update_nvt_cache (osp_update_socket);
+              setproctitle ("OSP: Updating NVT cache");
+              ret = manage_update_nvt_cache_osp (osp_update_socket);
               if (ret == 1)
                 {
                   g_message ("Rebuilding all NVTs because of a hash value mismatch");
@@ -1177,6 +1178,7 @@ update_nvt_cache_retry ()
               gvm_close_sentry ();
               exit (EXIT_FAILURE);
             }
+#endif
         }
     }
 }
@@ -1868,6 +1870,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_credential = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
+  static gchar *scanner_relay_host = NULL;
+  static gchar *scanner_relay_port = NULL;
   static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int affected_products_query_size
@@ -2184,10 +2188,10 @@ gvmd (int argc, char** argv, char *env[])
           NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
-          "Executable for mapping scanner hosts to relays."
-          " Use an empty string to explicitly disable."
-          " If the option is not given, $PATH is checked for"
-          " gvm-relay-mapper.",
+          "Executable for automatically mapping scanner hosts to relays."
+          " If the option is empty or not given, automatic mapping"
+          " is disabled. This option is deprecated and relays should be"
+          " set explictly in the relay_... fields of scanners.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
@@ -2231,6 +2235,15 @@ gvmd (int argc, char** argv, char *env[])
           "Scanner port for --create-scanner and --modify-scanner."
           " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
+        { "scanner-relay-host", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_host,
+          "Scanner relay host or socket for --create-scanner and"
+          " --modify-scanner.",
+          "<scanner-relay-host>" },
+        { "scanner-relay-port", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_port,
+          "Scanner relay port for --create-scanner and --modify-scanner.",
+          "<scanner-relay-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
@@ -2306,6 +2319,17 @@ gvmd (int argc, char** argv, char *env[])
   /* Set locale based on environment variables. */
 
   setlocale (LC_ALL, "C.UTF-8");
+
+  /* Initialize variable functions.
+   *
+   * Using variable function pointers allows them to be decoupled from
+   * other parts of the code like the database access or type-specific
+   * functions for testing or gvmd sub-services.
+   */
+
+  init_manage_filter_utils_funcs (filter_term_sql);
+  init_manage_settings_funcs (setting_value_sql,
+                              setting_value_int_sql);
 
   /* Process options. */
 
@@ -2504,36 +2528,22 @@ gvmd (int argc, char** argv, char *env[])
   set_min_mem_feed_update (min_mem_feed_update);
 
   /* Set relay mapper */
-  if (relay_mapper)
+  if (relay_mapper && strcmp (relay_mapper, ""))
     {
-      if (strcmp (relay_mapper, ""))
-        {
-          if (gvm_file_exists (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' not found.", relay_mapper);
-          else if (gvm_file_is_readable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
-          else if (gvm_file_is_executable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
-          else
-            {
-              g_debug ("Using relay mapper '%s'.", relay_mapper);
-              set_relay_mapper_path (relay_mapper);
-            }
-        }
+      if (gvm_file_exists (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' not found.", relay_mapper);
+      else if (gvm_file_is_readable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
+      else if (gvm_file_is_executable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
       else
-        g_debug ("Relay mapper disabled.");
+        {
+          g_debug ("Using relay mapper '%s'.", relay_mapper);
+          set_relay_mapper_path (relay_mapper);
+        }
     }
   else
-    {
-      gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
-      if (default_mapper)
-        {
-          g_debug ("Using default relay mapper '%s'.", default_mapper);
-          set_relay_mapper_path (default_mapper);
-        }
-      else
-        g_debug ("No default relay mapper found.");
-    }
+    g_debug ("Relay mapper disabled.");
 
   /*
    * Parameters for new credential encryption keys
@@ -2717,7 +2727,13 @@ gvmd (int argc, char** argv, char *env[])
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
+#if OPENVASD
+    g_critical ("%s: openvasd scanner is enabled."
+                 " The --osp-vt-update command was not executed.",
+                 __func__);
+#else
     set_osp_vt_update_socket (osp_vt_update);
+#endif
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -2886,7 +2902,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_create_scanner (log_config, &database, create_scanner,
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2935,7 +2952,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_modify_scanner (log_config, &database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
                                    stype, scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -3411,7 +3429,7 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
-
+#if OPENVASD == 0
   if (check_osp_vt_update_socket ())
     {
       g_critical ("%s: No OSP VT update socket found."
@@ -3421,6 +3439,7 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+#endif
 
   /* Enter the main forever-loop. */
 

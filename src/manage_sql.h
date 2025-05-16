@@ -109,61 +109,6 @@
 #define SCANNER_UUID_CVE "6acd0832-df90-11e4-b9d5-28d24461215b"
 
 /**
- * @brief UUID of 'Rows Per Page' setting.
- */
-#define SETTING_UUID_ROWS_PER_PAGE "5f5a8712-8017-11e1-8556-406186ea4fc5"
-
-/**
- * @brief UUID of 'Max Rows Per Page' setting.
- */
-#define SETTING_UUID_MAX_ROWS_PER_PAGE "76374a7a-0569-11e6-b6da-28d24461215b"
-
-/**
- * @brief UUID of 'Note/Override Excerpt Size' setting.
- */
-#define SETTING_UUID_EXCERPT_SIZE "9246a0f6-c6ad-44bc-86c2-557a527c8fb3"
-
-/**
- * @brief UUID of 'Default CA Cert' setting.
- */
-#define SETTING_UUID_DEFAULT_CA_CERT "9ac801ea-39f8-11e6-bbaa-28d24461215b"
-
-/**
- * @brief UUID of 'Debian LSC Package Maintainer' setting.
- */
-#define SETTING_UUID_LSC_DEB_MAINTAINER "2fcbeac8-4237-438f-b52a-540a23e7af97"
-
-/**
- * @brief UUID of 'Feed Import Owner' setting.
- */
-#define SETTING_UUID_FEED_IMPORT_OWNER "78eceaec-3385-11ea-b237-28d24461215b"
-
-/**
- * @brief UUID of 'Feed Import Roles' setting.
- */
-#define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"
-
-/**
- * @brief UUID of 'SecInfo SQL Buffer Threshold' setting.
- */
-#define SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD "316275a9-3629-49ad-9cea-5b3ab155b93f"
-
-/**
- * @brief UUID of 'User Interface Time Format' setting.
- */
-#define SETTING_UUID_USER_INTERFACE_TIME_FORMAT "11deb7ff-550b-4950-aacf-06faeb7c61b9"
-
-/**
- * @brief UUID of 'User Interface Date Format' setting.
- */
-#define SETTING_UUID_USER_INTERFACE_DATE_FORMAT "d9857b7c-1159-4193-9bc0-18fae5473a69"
-
-/**
- * @brief UUID of 'CVE-CPE Matching Version' setting.
- */
-#define SETTING_UUID_CVE_CPE_MATCHING_VERSION "2e8a8ccc-219f-4a82-824a-3ad88b6d4029"
-
-/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
@@ -198,25 +143,6 @@
 /* Macros. */
 
 /**
- * @brief Generate accessor for an SQL iterator.
- *
- * This convenience macro is used to generate an accessor returning a
- * const string pointer.
- *
- * @param[in]  name  Name of accessor.
- * @param[in]  col   Column number to access.
- */
-#define DEF_ACCESS(name, col)                                     \
-const char*                                                       \
-name (iterator_t* iterator)                                       \
-{                                                                 \
-  const char *ret;                                                \
-  if (iterator->done) return NULL;                                \
-  ret = iterator_string (iterator, col);                          \
-  return ret;                                                     \
-}
-
-/**
  * @brief Write to a file or close stream and exit.
  *
  * @param[in]   stream    Stream to write to.
@@ -240,73 +166,6 @@ name (iterator_t* iterator)                                       \
 
 
 /* Iterator definitions. */
-
-/**
- * @brief Iterator column.
- */
-typedef struct
-{
-  gchar *select;       ///< Column for SELECT.
-  gchar *filter;       ///< Filter column name.  NULL to use select_column.
-  keyword_type_t type; ///< Type of column.
-} column_t;
-
-/**
- * @brief Filter columns for GET iterator.
- */
-#define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", \
- "created", "modified", "_owner"
-
-/**
- * @brief Filter columns for GET iterator.
- */
-#define GET_ITERATOR_FILTER_COLUMNS "uuid", "name", "comment", \
- "created", "modified", "_owner"
-
-/**
- * @brief Columns for GET iterator, as a single string.
- *
- * @param[in]  prefix  Column prefix.
- */
-#define GET_ITERATOR_COLUMNS_STRING                     \
-  "id, uuid, name, comment, creation_time,"             \
-  " modification_time, creation_time AS created,"       \
-  " modification_time AS modified"
-
-/**
- * @brief Columns for GET iterator.
- *
- * @param[in]  prefix  Column prefix.
- */
-#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                                 \
-  { prefix "id", NULL, KEYWORD_TYPE_INTEGER },                              \
-  { prefix "uuid", NULL, KEYWORD_TYPE_STRING },                             \
-  { prefix "name", NULL, KEYWORD_TYPE_STRING },                             \
-  { prefix "comment", NULL, KEYWORD_TYPE_STRING },                          \
-  { prefix "creation_time", NULL, KEYWORD_TYPE_INTEGER },                   \
-  { prefix "modification_time", NULL, KEYWORD_TYPE_INTEGER },               \
-  { prefix "creation_time", "created", KEYWORD_TYPE_INTEGER },              \
-  { prefix "modification_time", "modified", KEYWORD_TYPE_INTEGER }
-
-/**
- * @brief Columns for GET iterator.
- *
- * @param[in]  table  Table.
- */
-#define GET_ITERATOR_COLUMNS(table)                                             \
-  GET_ITERATOR_COLUMNS_PREFIX(""),                                              \
-  {                                                                             \
-    "(SELECT name FROM users AS inner_users"                                    \
-    " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
-    "_owner",                                                                   \
-    KEYWORD_TYPE_STRING                                                         \
-  },                                                                            \
-  { "owner", NULL, KEYWORD_TYPE_INTEGER }
-
-/**
- * @brief Number of columns for GET iterator.
- */
-#define GET_ITERATOR_COLUMN_COUNT 10
 
 /**
  * @brief Delta results columns offset for result iterator.
@@ -368,8 +227,6 @@ credential_t target_krb5_credential (target_t);
 
 int create_current_report (task_t, char **, task_status_t);
 
-char *alert_data (alert_t, const char *, const char *);
-
 int init_task_schedule_iterator (iterator_t *);
 
 void cleanup_task_schedule_iterator (iterator_t *);
@@ -412,8 +269,6 @@ alive_test_t target_alive_tests (target_t);
 
 void manage_session_init (const char *);
 
-int valid_gmp_command (const char *);
-
 void check_generate_scripts ();
 
 void auto_delete_reports ();
@@ -441,6 +296,12 @@ int manage_cert_db_exists ();
 int manage_scap_db_exists ();
 
 int
+cert_check_time ();
+
+int
+scap_check_time ();
+
+int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
 
@@ -453,6 +314,9 @@ int openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
 
 gchar *
 columns_build_select (column_t *);
+
+gchar*
+filter_term_sql (const char *);
 
 gchar *
 filter_clause (const char*, const char*, const char **, column_t *,
@@ -470,8 +334,18 @@ manage_option_cleanup ();
 void
 update_all_config_caches ();
 
-void
-event (event_t, void *, resource_t, resource_t);
+int
+trigger (alert_t alert, task_t task, report_t report, event_t event,
+         const void* event_data, alert_method_t method,
+         alert_condition_t condition,
+         const get_data_t *get, int notes_details, int overrides_details,
+         gchar **script_message);
+
+int
+task_second_last_report (task_t, report_t *);
+
+double
+task_severity_double (task_t, int, int, int);
 
 gboolean
 find_trash (const char *, const char *, resource_t *);
@@ -512,13 +386,10 @@ nvti_t *
 lookup_nvti (const gchar *);
 
 int
-setting_value (const char *, char **);
+setting_value_sql (const char *, char **);
 
 int
-valid_type (const char *);
-
-int
-valid_subtype (const char *);
+setting_value_int_sql (const char *, int *);
 
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,

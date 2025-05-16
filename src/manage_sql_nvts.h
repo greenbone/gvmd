@@ -130,6 +130,12 @@
  }
 
 void
+set_skip_update_nvti_cache (gboolean);
+
+gboolean
+skip_update_nvti_cache ();
+
+void
 set_vt_ref_insert_size (int);
 
 void
@@ -146,9 +152,6 @@ update_or_rebuild_nvts (int);
 
 int
 nvts_feed_version_status ();
-
-int
-manage_update_nvt_cache (const gchar *);
 
 char *
 nvt_family (const char *);

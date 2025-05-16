@@ -68,6 +68,11 @@ create_tables_nvt (const gchar *);
 /* NVT related global options */
 
 /**
+ * @brief Whether to skip the update of the nvti cache.
+ */
+static gboolean skip_upd_nvti_cache = FALSE;
+
+/**
  * @brief Max number of rows inserted per statement.
  */
 static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
@@ -79,6 +84,31 @@ static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
 
 
 /* NVT's. */
+
+/**
+ * @brief Set flag if to run update_nvti_cache () or not.
+ *
+ * The default value of the flag is FALSE.
+ *
+ * @param[in]  skip_upd_nvti_c  Value for the flag if to
+ *                              skip the cache update or not.
+ */
+void
+set_skip_update_nvti_cache (gboolean skip_upd_nvti_c)
+{
+  skip_upd_nvti_cache = skip_upd_nvti_c;
+}
+
+/**
+ * @brief Check if to run update_nvti_cache () or not.
+ *
+ * @return TRUE skip update, FALSE don't skip update
+ */
+gboolean
+skip_update_nvti_cache ()
+{
+  return skip_upd_nvti_cache;
+}
 
 /**
  * @brief Set the VT ref insert size.
@@ -1180,37 +1210,12 @@ int
 nvts_feed_version_status ()
 {
 #if OPENVASD
-  return nvts_feed_version_status_internal_openvasd (get_osp_vt_update_socket (),
-                                                     NULL,
-                                                     NULL);
+  return nvts_feed_version_status_internal_openvasd (NULL, NULL);
 #else
   return nvts_feed_version_status_internal_osp (get_osp_vt_update_socket (),
                                                 NULL,
                                                 NULL);
 #endif
-}
-
-/**
- * @brief Update VTs via OSP or openvasd.
- *
- * Expect to be called in the child after a fork.
- *
- * @param[in]  update_socket  Socket to use to contact ospd-openvas or openvasd scanner.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-int
-manage_update_nvt_cache (const gchar *update_socket)
-{
-  int ret;
-
-#if OPENVASD == 1
-      ret = manage_update_nvt_cache_openvasd (update_socket);
-#else
-      ret = manage_update_nvt_cache_osp (update_socket);
-#endif
-
-  return ret;
 }
 
 /**

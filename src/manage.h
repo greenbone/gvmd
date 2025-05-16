@@ -25,8 +25,16 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_filter_utils.h"
+#include "manage_resources.h"
+#include "manage_settings.h"
+
+#include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_events.h"
 #include "manage_get.h"
+#include "manage_tasks.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -44,16 +52,6 @@
 #if OPENVASD
 #include <gvm/openvasd/openvasd.h>
 #endif
-
-/**
- * @brief Data structure for info used to connect to the database
- */
-typedef struct {
-  gchar *name; ///< The database name
-  gchar *host; ///< The database host or socket directory
-  gchar *port; ///< The database port or socket file extension
-  gchar *user; ///< The database user name
-} db_conn_info_t;
 
 /**
  * @brief OID of ping_host.nasl
@@ -149,20 +147,6 @@ manage_reset_currents ();
 /* Commands. */
 
 #define MAX_LOCK_RETRIES 16
-
-/**
- * @brief A command.
- */
-typedef struct
-{
-  gchar *name;     ///< Command name.
-  gchar *summary;  ///< Summary of command.
-} command_t;
-
-/**
- * @brief The GMP command list.
- */
-extern command_t gmp_commands[];
 
 
 /* Certificate and key management. */
@@ -341,45 +325,8 @@ typedef enum scanner_type
 int
 scanner_type_valid (scanner_type_t);
 
-typedef resource_t credential_t;
-typedef resource_t alert_t;
-typedef resource_t filter_t;
-typedef resource_t group_t;
-typedef resource_t host_t;
-typedef resource_t tag_t;
-typedef resource_t target_t;
-typedef resource_t task_t;
-typedef resource_t ticket_t;
-typedef resource_t tls_certificate_t;
-typedef resource_t result_t;
-typedef resource_t report_t;
-typedef resource_t report_host_t;
-typedef resource_t report_config_t;
-typedef resource_t report_config_param_t;
-typedef resource_t report_format_t;
-typedef resource_t report_format_param_t;
-typedef resource_t role_t;
-typedef resource_t note_t;
-typedef resource_t nvt_t;
-typedef resource_t override_t;
-typedef resource_t permission_t;
-typedef resource_t port_list_t;
-typedef resource_t port_range_t;
-typedef resource_t schedule_t;
-typedef resource_t scanner_t;
-typedef resource_t setting_t;
-typedef resource_t user_t;
-
-
-/* GMP GET support.
- *
- * The standalone parts of the GET support are in manage_get.h. */
-
-resource_t
-get_iterator_resource (iterator_t*);
-
-user_t
-get_iterator_owner (iterator_t*);
+int
+scanner_type_supports_unix_sockets (scanner_type_t);
 
 
 /* Resources. */
@@ -405,15 +352,6 @@ find_resource (const char*, const char*, resource_t*);
 gboolean
 find_resource_no_acl (const char*, const char*, resource_t*);
 
-const char *
-type_name_plural (const char*);
-
-const char *
-type_name (const char*);
-
-int
-type_is_scap (const char*);
-
 int
 delete_resource (const char *, const char *, int);
 
@@ -425,22 +363,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
 
 
 /* Events and Alerts. */
-
-/**
- * @brief Data about a report sent by an alert.
- */
-typedef struct {
-  gchar *local_filename;          ///< Path to the local report file.
-  gchar *remote_filename;         ///< Path or filename to send to / as.
-  gchar *content_type;            ///< The MIME content type of the report.
-  gchar *report_format_name;      ///< Name of the report format used.
-} alert_report_data_t;
-
-void
-alert_report_data_free (alert_report_data_t *);
-
-void
-alert_report_data_reset (alert_report_data_t *);
 
 /**
  * @brief Default format string for alert email, when including report.
@@ -543,183 +465,6 @@ alert_report_data_reset (alert_report_data_t *);
  "This ticket was created automatically as a security scan escalation.\n"     \
  "Please contact your local system administrator if you think it\n"           \
  "was created or assigned erroneously.\n"
-
-/**
- * @brief Types of task events.
- */
-typedef enum
-{
-  EVENT_ERROR,
-  EVENT_TASK_RUN_STATUS_CHANGED,
-  EVENT_NEW_SECINFO,
-  EVENT_UPDATED_SECINFO,
-  EVENT_TICKET_RECEIVED,
-  EVENT_ASSIGNED_TICKET_CHANGED,
-  EVENT_OWNED_TICKET_CHANGED
-} event_t;
-
-/**
- * @brief Types of alerts.
- */
-typedef enum
-{
-  ALERT_METHOD_ERROR,
-  ALERT_METHOD_EMAIL,
-  ALERT_METHOD_HTTP_GET,
-  ALERT_METHOD_SOURCEFIRE,
-  ALERT_METHOD_START_TASK,
-  ALERT_METHOD_SYSLOG,
-  ALERT_METHOD_VERINICE,
-  ALERT_METHOD_SEND,
-  ALERT_METHOD_SCP,
-  ALERT_METHOD_SNMP,
-  ALERT_METHOD_SMB,
-  ALERT_METHOD_TIPPINGPOINT,
-  ALERT_METHOD_VFIRE,
-} alert_method_t;
-
-/**
- * @brief Types of alert conditions.
- */
-typedef enum
-{
-  ALERT_CONDITION_ERROR,
-  ALERT_CONDITION_ALWAYS,
-  ALERT_CONDITION_SEVERITY_AT_LEAST,
-  ALERT_CONDITION_SEVERITY_CHANGED,
-  ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-  ALERT_CONDITION_FILTER_COUNT_CHANGED
-} alert_condition_t;
-
-int
-manage_check_alerts (GSList *, const db_conn_info_t *);
-
-int
-create_alert (const char*, const char*, const char*, const char*, event_t,
-              GPtrArray*, alert_condition_t, GPtrArray*, alert_method_t,
-              GPtrArray*, alert_t*);
-
-int
-copy_alert (const char*, const char*, const char*, alert_t*);
-
-int
-modify_alert (const char*, const char*, const char*, const char*,
-              const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
-              alert_method_t, GPtrArray*);
-
-int
-delete_alert (const char *, int);
-
-char *
-alert_uuid (alert_t);
-
-gboolean
-find_alert_with_permission (const char *, alert_t *, const char *);
-
-int
-manage_alert (const char *, const char *, event_t, const void*, gchar **);
-
-int
-manage_test_alert (const char *, gchar **);
-
-int
-alert_in_use (alert_t);
-
-int
-trash_alert_in_use (alert_t);
-
-int
-alert_writable (alert_t);
-
-int
-trash_alert_writable (alert_t);
-
-int
-alert_count (const get_data_t *);
-
-int
-init_alert_iterator (iterator_t*, get_data_t*);
-
-int
-alert_iterator_event (iterator_t*);
-
-int
-alert_iterator_condition (iterator_t*);
-
-int
-alert_iterator_method (iterator_t*);
-
-char *
-alert_iterator_filter_uuid (iterator_t*);
-
-char *
-alert_iterator_filter_name (iterator_t*);
-
-int
-alert_iterator_filter_trash (iterator_t*);
-
-int
-alert_iterator_filter_readable (iterator_t*);
-
-int
-alert_iterator_active (iterator_t*);
-
-const char*
-alert_condition_name (alert_condition_t);
-
-gchar*
-alert_condition_description (alert_condition_t, alert_t);
-
-const char*
-event_name (event_t);
-
-gchar*
-event_description (event_t, const void *, const char *);
-
-alert_method_t
-alert_method (alert_t alert);
-
-const char*
-alert_method_name (alert_method_t);
-
-alert_condition_t
-alert_condition_from_name (const char*);
-
-event_t
-event_from_name (const char*);
-
-alert_method_t
-alert_method_from_name (const char*);
-
-void
-init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
-
-const char*
-alert_data_iterator_name (iterator_t*);
-
-const char*
-alert_data_iterator_data (iterator_t*);
-
-void
-init_alert_task_iterator (iterator_t*, alert_t, int);
-
-const char*
-alert_task_iterator_name (iterator_t*);
-
-const char*
-alert_task_iterator_uuid (iterator_t*);
-
-int
-alert_task_iterator_readable (iterator_t*);
-
-void
-init_task_alert_iterator (iterator_t*, task_t);
-
-const char*
-task_alert_iterator_uuid (iterator_t*);
-
-const char*
-task_alert_iterator_name (iterator_t*);
 
 
 /* Task global variables and preprocessor variables. */
@@ -1196,19 +941,9 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 /* Reports. */
 
 /**
- * @brief Default apply_overrides setting
- */
-#define APPLY_OVERRIDES_DEFAULT 0
-
-/**
  * @brief Default quality of detection percentage.
  */
 #define QOD_DEFAULT 75
-
-/**
- * @brief Default min quality of detection percentage for filters.
- */
-#define MIN_QOD_DEFAULT 70
 
 /**
  * @brief Default size to limit note and override text to in reports.
@@ -2800,12 +2535,14 @@ manage_system_report (const char *, const char *, const char *, const char *,
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
-                       const char *, const char *, const char *);
+                       const char *, const char *, const char *,
+                       const char *, const char *);
 
 int
 manage_modify_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
-                       const char *, const char *, const char *, const char *);
+                       const char *, const char *, const char *, const char *,
+                       const char *, const char *);
 
 int
 manage_delete_scanner (GSList *, const db_conn_info_t *, const gchar *);
@@ -2816,16 +2553,53 @@ manage_verify_scanner (GSList *, const db_conn_info_t *, const gchar *);
 int
 manage_get_scanners (GSList *, const db_conn_info_t *);
 
-int
+
+typedef enum {
+  CREATE_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
+  CREATE_SCANNER_SUCCESS = 0,             ///< Success
+  CREATE_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
+  CREATE_SCANNER_MISSING_TYPE,            ///< Missing type
+  CREATE_SCANNER_MISSING_HOST,            ///< Missing host
+  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
+  CREATE_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
+  CREATE_SCANNER_INVALID_TYPE,            ///< Invalid type
+  CREATE_SCANNER_INVALID_PORT,            ///< Invalid port
+  CREATE_SCANNER_INVALID_HOST,            ///< Invalid host
+  CREATE_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
+  CREATE_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
+  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
+  CREATE_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+} create_scanner_return_t;
+
+create_scanner_return_t
 create_scanner (const char*, const char *, const char *, const char *,
-                const char *, scanner_t *, const char *, const char *);
+                const char *, scanner_t *, const char *, const char *,
+                const char *, const char *);
 
 int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
-int
+typedef enum {
+  MODIFY_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
+  MODIFY_SCANNER_SUCCESS = 0,             ///< Success
+  MODIFY_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
+  MODIFY_SCANNER_MISSING_ID,              ///< Missing scanner id
+  MODIFY_SCANNER_NOT_FOUND,               ///< Scanner not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
+  MODIFY_SCANNER_INVALID_TYPE,            ///< Invalid type
+  MODIFY_SCANNER_INVALID_PORT,            ///< Invalid port
+  MODIFY_SCANNER_INVALID_HOST,            ///< Invalid host
+  MODIFY_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
+  MODIFY_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
+  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
+  MODIFY_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+} modify_scanner_return_t;
+
+modify_scanner_return_t
 modify_scanner (const char*, const char*, const char*, const char *,
-                const char *, const char *, const char *, const char *);
+                const char *, const char *, const char *, const char *,
+                const char *, const char *);
 
 int
 delete_scanner (const char *, int);
@@ -2851,11 +2625,14 @@ scanner_writable (scanner_t);
 const char *
 scanner_uuid_default ();
 
+gboolean
+scanner_has_relay (scanner_t);
+
 char *
-scanner_host (scanner_t);
+scanner_host (scanner_t, gboolean);
 
 int
-scanner_port (scanner_t);
+scanner_port (scanner_t, gboolean);
 
 int
 scanner_type (scanner_t);
@@ -2911,6 +2688,12 @@ scanner_iterator_key_pub (iterator_t *);
 const char*
 scanner_iterator_credential_type (iterator_t *);
 
+const char*
+scanner_iterator_relay_host (iterator_t *);
+
+int
+scanner_iterator_relay_port (iterator_t *);
+
 int
 scanner_config_iterator_readable (iterator_t *);
 
@@ -2950,7 +2733,8 @@ osp_connect_with_data (const char *,
                        int,
                        const char *,
                        const char *,
-                       const char *);
+                       const char *,
+                       gboolean);
 
 osp_connection_t *
 osp_scanner_connect (scanner_t);
@@ -3279,66 +3063,6 @@ int
 modify_role (const char *, const char *, const char *, const char *);
 
 
-/* Filter Utilities. */
-
-/**
- * @brief Keyword type.
- */
-typedef enum
-{
-  KEYWORD_TYPE_UNKNOWN,
-  KEYWORD_TYPE_INTEGER,
-  KEYWORD_TYPE_DOUBLE,
-  KEYWORD_TYPE_STRING
-} keyword_type_t;
-
-/**
- * @brief Comparison returns.
- */
-typedef enum
-{
-  KEYWORD_RELATION_APPROX,
-  KEYWORD_RELATION_COLUMN_ABOVE,
-  KEYWORD_RELATION_COLUMN_APPROX,
-  KEYWORD_RELATION_COLUMN_EQUAL,
-  KEYWORD_RELATION_COLUMN_BELOW,
-  KEYWORD_RELATION_COLUMN_REGEXP
-} keyword_relation_t;
-
-/**
- * @brief Keyword.
- */
-struct keyword
-{
-  gchar *column;                 ///< The column prefix, or NULL.
-  int approx;                    ///< Whether the keyword is like "~example".
-  int equal;                     ///< Whether the keyword is like "=example".
-  int integer_value;             ///< Integer value of the keyword.
-  double double_value;           ///< Floating point value of the keyword.
-  int quoted;                    ///< Whether the keyword was quoted.
-  gchar *string;                 ///< The keyword string, outer quotes removed.
-  keyword_type_t type;           ///< Type of keyword.
-  keyword_relation_t relation;   ///< The relation.
-};
-
-/**
- * @brief Keyword type.
- */
-typedef struct keyword keyword_t;
-
-int
-keyword_special (keyword_t *);
-
-const char *
-keyword_relation_symbol (keyword_relation_t);
-
-void
-filter_free (array_t*);
-
-array_t *
-split_filter (const gchar*);
-
-
 /* Filters. */
 
 /**
@@ -3361,19 +3085,13 @@ char*
 filter_uuid (filter_t);
 
 char*
+trash_filter_uuid (filter_t);
+
+char*
 filter_name (filter_t);
 
-gchar*
-filter_term (const char *);
-
-gchar*
-filter_term_value (const char *, const char *);
-
-int
-filter_term_apply_overrides (const char *);
-
-int
-filter_term_min_qod (const char *);
+char*
+trash_filter_name (filter_t);
 
 int
 create_filter (const char*, const char*, const char*, const char*, filter_t*);
@@ -3648,9 +3366,6 @@ setting_iterator_comment (iterator_t*);
 
 const char*
 setting_iterator_value (iterator_t*);
-
-int
-setting_value_int (const char *, int *);
 
 int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
@@ -4064,9 +3779,6 @@ nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
 
 int
 nvts_check_feed (int *, int *, gchar **);
-
-int
-manage_update_nvts (const gchar *);
 
 int
 manage_rebuild (GSList *, const db_conn_info_t *);

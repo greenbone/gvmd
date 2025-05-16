@@ -1,10 +1,10 @@
-name: 'Build and Test'
+name: "Build and Test"
 
 on:
   push:
-    branches: [ main, stable, oldstable ]
+    branches: [main, stable, oldstable]
   pull_request:
-    branches: [ main, stable, oldstable ]
+    branches: [main, stable, oldstable]
 
 jobs:
   check-format:
@@ -93,3 +93,25 @@ jobs:
           files: build/coverage/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
+
+  cmake-format-check:
+    name: Check CMake Formatting
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: greenbone/actions/uv@v3
+        with:
+          install: gersemi
+      - name: Check CMake Format
+        id: check
+        run: |
+          gersemi --check . cmake
+      - name: Report Diff
+        if: ${{ failure() && steps.check.outcome == 'failure' }}
+        run: |
+          echo "## CMake Format Check" >> $GITHUB_STEP_SUMMARY
+          gersemi --check --no-warn-about-unknown-commands . cmake >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          echo "## CMake Format Diff" >> $GITHUB_STEP_SUMMARY
+          echo '```diff' >> $GITHUB_STEP_SUMMARY
+          gersemi --diff . cmake >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

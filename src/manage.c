@@ -734,74 +734,6 @@ xml_escape_text_truncated (const char *string, size_t max_len,
 }
 
 /**
- * @brief Return the plural name of a resource type.
- *
- * @param[in]  type  Resource type.
- *
- * @return Plural name of type.
- */
-const char *
-type_name_plural (const char* type)
-{
-  if (type == NULL)
-    return "ERROR";
-
-  if (strcasecmp (type, "cpe") == 0)
-    return "CPEs";
-  if (strcasecmp (type, "cve") == 0)
-    return "CVEs";
-  if (strcasecmp (type, "cert_bund_adv") == 0)
-    return "CERT-Bund Advisories";
-  if (strcasecmp (type, "dfn_cert_adv") == 0)
-    return "DFN-CERT Advisories";
-  if (strcasecmp (type, "nvt") == 0)
-    return "NVTs";
-
-  return "ERROR";
-}
-
-/**
- * @brief Return the name of a resource type.
- *
- * @param[in]  type  Resource type.
- *
- * @return Name of type.
- */
-const char *
-type_name (const char* type)
-{
-  if (type == NULL)
-    return "ERROR";
-
-  if (strcasecmp (type, "cpe") == 0)
-    return "CPE";
-  if (strcasecmp (type, "cve") == 0)
-    return "CVE";
-  if (strcasecmp (type, "cert_bund_adv") == 0)
-    return "CERT-Bund Advisory";
-  if (strcasecmp (type, "dfn_cert_adv") == 0)
-    return "DFN-CERT Advisory";
-  if (strcasecmp (type, "nvt") == 0)
-    return "NVT";
-
-  return "ERROR";
-}
-
-/**
- * @brief Check if a type is a SCAP type.
- *
- * @param[in]  type  Resource type.
- *
- * @return Name of type.
- */
-int
-type_is_scap (const char* type)
-{
-  return (strcasecmp (type, "cpe") == 0)
-         || (strcasecmp (type, "cve") == 0);
-}
-
-/**
  * @brief Check whether a resource is available.
  *
  * @param[in]   type        Type.
@@ -849,6 +781,22 @@ scanner_type_valid (scanner_type_t scanner_type)
       && scanner_type < SCANNER_TYPE_MAX
       && scanner_type != 4
       && scanner_type != 1)
+    return 1;
+  return 0;
+}
+
+/**
+ * @brief Check if a scanner type supports UNIX sockets.
+ *
+ * @param[in]  scanner_type  Scanner type.
+ *
+ * @return 1 if unix sockets are supported, else 0.
+ */
+int
+scanner_type_supports_unix_sockets (scanner_type_t scanner_type)
+{
+  if (scanner_type == SCANNER_TYPE_OPENVAS
+      || scanner_type == SCANNER_TYPE_OSP_SENSOR)
     return 1;
   return 0;
 }
@@ -1396,298 +1344,6 @@ task_t current_scanner_task = (task_t) 0;
 report_t global_current_report = (report_t) 0;
 
 
-/* Alerts. */
-
-/**
- * @brief Frees a alert_report_data_t struct, including contained data.
- *
- * @param[in]  data   The struct to free.
- */
-void
-alert_report_data_free (alert_report_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  alert_report_data_reset (data);
-  g_free (data);
-}
-
-/**
- * @brief Frees content of an alert_report_data_t, but not the struct itself.
- *
- * @param[in]  data   The struct to free.
- */
-void
-alert_report_data_reset (alert_report_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  g_free (data->content_type);
-  g_free (data->local_filename);
-  g_free (data->remote_filename);
-  g_free (data->report_format_name);
-
-  memset (data, 0, sizeof (alert_report_data_t));
-}
-
-/**
- * @brief Get the name of an alert condition.
- *
- * @param[in]  condition  Condition.
- *
- * @return The name of the condition (for example, "Always").
- */
-const char*
-alert_condition_name (alert_condition_t condition)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return "Always";
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        return "Filter count at least";
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        return "Filter count changed";
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        return "Severity at least";
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        return "Severity changed";
-      default:
-        return "Internal Error";
-    }
-}
-
-/**
- * @brief Get the name of an alert event.
- *
- * @param[in]  event  Event.
- *
- * @return The name of the event (for example, "Run status changed").
- */
-const char*
-event_name (event_t event)
-{
-  switch (event)
-    {
-      case EVENT_TASK_RUN_STATUS_CHANGED: return "Task run status changed";
-      case EVENT_NEW_SECINFO:             return "New SecInfo arrived";
-      case EVENT_UPDATED_SECINFO:         return "Updated SecInfo arrived";
-      case EVENT_TICKET_RECEIVED:         return "Ticket received";
-      case EVENT_ASSIGNED_TICKET_CHANGED: return "Assigned ticket changed";
-      case EVENT_OWNED_TICKET_CHANGED:    return "Owned ticket changed";
-      default:                            return "Internal Error";
-    }
-}
-
-/**
- * @brief Get a description of an alert condition.
- *
- * @param[in]  condition  Condition.
- * @param[in]  alert  Alert.
- *
- * @return Freshly allocated description of condition.
- */
-gchar*
-alert_condition_description (alert_condition_t condition,
-                             alert_t alert)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return g_strdup ("Always");
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        {
-          char *count;
-          gchar *ret;
-
-          count = alert_data (alert, "condition", "count");
-          ret = g_strdup_printf ("Filter count at least %s",
-                                 count ? count : "0");
-          free (count);
-          return ret;
-        }
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        return g_strdup ("Filter count changed");
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        {
-          char *level = alert_data (alert, "condition", "severity");
-          gchar *ret = g_strdup_printf ("Task severity is at least '%s'",
-                                        level);
-          free (level);
-          return ret;
-        }
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        {
-          char *direction;
-          direction = alert_data (alert, "condition", "direction");
-          gchar *ret = g_strdup_printf ("Task severity %s", direction);
-          free (direction);
-          return ret;
-        }
-      default:
-        return g_strdup ("Internal Error");
-    }
-}
-
-/**
- * @brief Get a description of an alert event.
- *
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  task_name   Name of task if required in description, else NULL.
- *
- * @return Freshly allocated description of event.
- */
-gchar*
-event_description (event_t event, const void *event_data, const char *task_name)
-{
-  switch (event)
-    {
-      case EVENT_TASK_RUN_STATUS_CHANGED:
-        if (task_name)
-          return g_strdup_printf
-                  ("The security scan task '%s' changed status to '%s'",
-                   task_name,
-                   run_status_name ((task_status_t) event_data));
-        return g_strdup_printf ("Task status changed to '%s'",
-                                run_status_name ((task_status_t) event_data));
-        break;
-      case EVENT_NEW_SECINFO:
-        return g_strdup_printf ("New SecInfo arrived");
-        break;
-      case EVENT_UPDATED_SECINFO:
-        return g_strdup_printf ("Updated SecInfo arrived");
-        break;
-      case EVENT_TICKET_RECEIVED:
-        return g_strdup_printf ("Ticket received");
-        break;
-      case EVENT_ASSIGNED_TICKET_CHANGED:
-        return g_strdup_printf ("Assigned ticket changed");
-        break;
-      case EVENT_OWNED_TICKET_CHANGED:
-        return g_strdup_printf ("Owned ticket changed");
-        break;
-      default:
-        return g_strdup ("Internal Error");
-    }
-}
-
-/**
- * @brief Get the name of an alert method.
- *
- * @param[in]  method  Method.
- *
- * @return The name of the method (for example, "Email" or "SNMP").
- */
-const char*
-alert_method_name (alert_method_t method)
-{
-  switch (method)
-    {
-      case ALERT_METHOD_EMAIL:       return "Email";
-      case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
-      case ALERT_METHOD_SCP:         return "SCP";
-      case ALERT_METHOD_SEND:        return "Send";
-      case ALERT_METHOD_SMB:         return "SMB";
-      case ALERT_METHOD_SNMP:        return "SNMP";
-      case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
-      case ALERT_METHOD_START_TASK:  return "Start Task";
-      case ALERT_METHOD_SYSLOG:      return "Syslog";
-      case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
-      case ALERT_METHOD_VERINICE:    return "verinice Connector";
-      case ALERT_METHOD_VFIRE:       return "Alemba vFire";
-      default:                       return "Internal Error";
-    }
-}
-
-/**
- * @brief Get an alert condition from a name.
- *
- * @param[in]  name  Condition name.
- *
- * @return The condition.
- */
-alert_condition_t
-alert_condition_from_name (const char* name)
-{
-  if (strcasecmp (name, "Always") == 0)
-    return ALERT_CONDITION_ALWAYS;
-  if (strcasecmp (name, "Filter count at least") == 0)
-    return ALERT_CONDITION_FILTER_COUNT_AT_LEAST;
-  if (strcasecmp (name, "Filter count changed") == 0)
-    return ALERT_CONDITION_FILTER_COUNT_CHANGED;
-  if (strcasecmp (name, "Severity at least") == 0)
-    return ALERT_CONDITION_SEVERITY_AT_LEAST;
-  if (strcasecmp (name, "Severity changed") == 0)
-    return ALERT_CONDITION_SEVERITY_CHANGED;
-  return ALERT_CONDITION_ERROR;
-}
-
-/**
- * @brief Get an event from a name.
- *
- * @param[in]  name  Event name.
- *
- * @return The event.
- */
-event_t
-event_from_name (const char* name)
-{
-  if (strcasecmp (name, "Task run status changed") == 0)
-    return EVENT_TASK_RUN_STATUS_CHANGED;
-  if (strcasecmp (name, "New SecInfo arrived") == 0)
-    return EVENT_NEW_SECINFO;
-  if (strcasecmp (name, "Updated SecInfo arrived") == 0)
-    return EVENT_UPDATED_SECINFO;
-  if (strcasecmp (name, "Ticket received") == 0)
-    return EVENT_TICKET_RECEIVED;
-  if (strcasecmp (name, "Assigned ticket changed") == 0)
-    return EVENT_ASSIGNED_TICKET_CHANGED;
-  if (strcasecmp (name, "Owned ticket changed") == 0)
-    return EVENT_OWNED_TICKET_CHANGED;
-  return EVENT_ERROR;
-}
-
-/**
- * @brief Get an alert method from a name.
- *
- * @param[in]  name  Method name.
- *
- * @return The method.
- */
-alert_method_t
-alert_method_from_name (const char* name)
-{
-  if (strcasecmp (name, "Email") == 0)
-    return ALERT_METHOD_EMAIL;
-  if (strcasecmp (name, "HTTP Get") == 0)
-    return ALERT_METHOD_HTTP_GET;
-  if (strcasecmp (name, "SCP") == 0)
-    return ALERT_METHOD_SCP;
-  if (strcasecmp (name, "Send") == 0)
-    return ALERT_METHOD_SEND;
-  if (strcasecmp (name, "SMB") == 0)
-    return ALERT_METHOD_SMB;
-  if (strcasecmp (name, "SNMP") == 0)
-    return ALERT_METHOD_SNMP;
-  if (strcasecmp (name, "Sourcefire Connector") == 0)
-    return ALERT_METHOD_SOURCEFIRE;
-  if (strcasecmp (name, "Start Task") == 0)
-    return ALERT_METHOD_START_TASK;
-  if (strcasecmp (name, "Syslog") == 0)
-    return ALERT_METHOD_SYSLOG;
-  if (strcasecmp (name, "TippingPoint SMS") == 0)
-    return ALERT_METHOD_TIPPINGPOINT;
-  if (strcasecmp (name, "verinice Connector") == 0)
-    return ALERT_METHOD_VERINICE;
-  if (strcasecmp (name, "Alemba vFire") == 0)
-    return ALERT_METHOD_VFIRE;
-  return ALERT_METHOD_ERROR;
-}
-
-
 /* General task facilities. */
 
 /**
@@ -1799,14 +1455,17 @@ set_task_interrupted (task_t task, const gchar *message)
  * @param[in]   ca_pub      CA Certificate.
  * @param[in]   key_pub     Certificate.
  * @param[in]   key_priv    Private key.
+ * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
  */
 static void
 delete_osp_scan (const char *report_id, const char *host, int port,
-                 const char *ca_pub, const char *key_pub, const char *key_priv)
+                 const char *ca_pub, const char *key_pub, const char *key_priv,
+                 gboolean use_relay_mapper)
 {
   osp_connection_t *connection;
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      use_relay_mapper);
   if (!connection)
     {
       return;
@@ -1824,6 +1483,7 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  * @param[in]   ca_pub      CA Certificate.
  * @param[in]   key_pub     Certificate.
  * @param[in]   key_priv    Private key.
+ * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
  * @param[in]   details     1 for detailed report, 0 otherwise.
  * @param[in]   pop_results 1 to pop results, 0 to leave results intact.
  * @param[out]  report_xml  Scan report.
@@ -1833,15 +1493,17 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  */
 static int
 get_osp_scan_report (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub, const char
-                     *key_priv, int details, int pop_results,
+                     const char *ca_pub, const char *key_pub,
+                     const char *key_priv, gboolean use_relay_mapper,
+                     int details, int pop_results,
                      char **report_xml)
 {
   osp_connection_t *connection;
   int progress;
   char *error = NULL;
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      use_relay_mapper);
   if (!connection)
     {
       return -1;
@@ -1878,15 +1540,16 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
  */
 static osp_scan_status_t
 get_osp_scan_status (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub, const char
-                     *key_priv)
+                     const char *ca_pub, const char *key_pub,
+                     const char *key_priv, gboolean use_relay_mapper)
 {
   osp_connection_t *connection;
   char *error = NULL;
   osp_get_scan_status_opts_t get_scan_opts;
   osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      use_relay_mapper);
   if (!connection)
     {
       return status;
@@ -1952,6 +1615,7 @@ osp_scan_semaphore_update_end (int add_result_on_error,
 static int
 handle_osp_scan (task_t task, report_t report, const char *scan_id)
 {
+  gboolean has_relay;
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
   scanner_t scanner;
@@ -1959,8 +1623,9 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
   int retry, connection_retry;
 
   scanner = task_scanner (task);
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
+  has_relay = scanner_has_relay (scanner);
+  host = scanner_host (scanner, has_relay);
+  port = scanner_port (scanner, has_relay);
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
@@ -1999,7 +1664,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
               delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                key_priv);
+                               key_priv, has_relay == FALSE);
               rc = -3;
               break;
             }
@@ -2007,7 +1672,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
       /* Get only the progress, without results and details. */
       progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                      key_priv, 0, 0, NULL);
+                                      key_priv, has_relay == FALSE,
+                                      0, 0, NULL);
 
       if (progress < 0 || progress > 100)
         {
@@ -2020,7 +1686,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               if (osp_scan_semaphore_update_end (TRUE, task, report))
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
+                                   key_priv, has_relay == FALSE);
                   rc = -3;
                   break;
                 }
@@ -2040,7 +1706,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           report_add_result (report, result);
           osp_scan_semaphore_update_end (FALSE, task, report);
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                           key_priv);
+                           key_priv, has_relay == FALSE);
           rc = -1;
           break;
         }
@@ -2049,7 +1715,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           /* Get the full OSP report. */
           char *report_xml = NULL;
           progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 1, 1, &report_xml);
+                                          key_priv, has_relay == FALSE,
+                                          1, 1, &report_xml);
           if (progress < 0 || progress > 100)
             {
               if (retry > 0 && progress == -1)
@@ -2060,7 +1727,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   if (osp_scan_semaphore_update_end (TRUE, task, report))
                     {
                       delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                       key_priv);
+                                       key_priv, has_relay == FALSE);
                       rc = -3;
                       break;
                     }
@@ -2091,7 +1758,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               g_free (report_xml);
 
               osp_scan_status = get_osp_scan_status (scan_id, host, port,
-                                                     ca_pub, key_pub, key_priv);
+                                                     ca_pub, key_pub, key_priv,
+                                                     has_relay == FALSE);
 
               if (osp_scan_status == OSP_SCAN_STATUS_QUEUED)
                 {
@@ -2112,7 +1780,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
+                                   key_priv, has_relay == FALSE);
                   osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -3;
                   break;
@@ -2128,7 +1796,8 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                       if (osp_scan_semaphore_update_end (TRUE, task, report))
                         {
                           delete_osp_scan (scan_id, host, port, ca_pub,
-                                           key_pub, key_priv);
+                                           key_pub, key_priv,
+                                           has_relay == FALSE);
                           rc = -3;
                           break;
                         }
@@ -2143,7 +1812,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
+                                   key_priv, has_relay == FALSE);
                   osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -1;
                   break;
@@ -2152,7 +1821,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                        && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
                 {
                   delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
+                                   key_priv, has_relay == FALSE);
                   osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = 0;
                   break;
@@ -2171,7 +1840,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       if (osp_scan_semaphore_update_end (TRUE, task, report))
         {
           delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                           key_priv);
+                           key_priv, has_relay == FALSE);
           rc = -3;
           break;
         }
@@ -2824,8 +2493,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
             osp_value = "0";
           else
             osp_value = value;
-          g_hash_table_replace (scanner_options,
-                                g_strdup (name),
+          g_hash_table_replace (scanner_options, g_strdup (name),
                                 g_strdup (osp_value));
         }
       else if (name && value && g_str_has_prefix (name, "timeout."))
@@ -2835,7 +2503,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
           g_warning ("%s: Timeout preference using obsolete format: %s",
                      __func__, name);
         }
-
     }
   cleanup_iterator (&scanner_prefs_iter);
 
@@ -4576,25 +4243,55 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             const char *titles, gchar **performance_str,
                             gchar **error)
 {
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int port;
-  osp_connection_t *connection = NULL;
-  osp_get_performance_opts_t opts;
-  int connection_retry, return_value;
+#if OPENVASD
+  openvasd_connector_t connector;
+  int err;
+  openvasd_get_performance_opts_t opts;
 
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
+  connector = openvasd_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      *error = g_strdup ("Could not connect to scanner");
+      return 6;
+    }
+
+  opts.start = start;
+  opts.end = end;
+  opts.titles = titles;
+
+  err = openvasd_parsed_performance (connector, opts, performance_str, error);
+  if (err)
+    {
+      g_warning ("Error getting OSP performance report: %s", *error);
+      openvasd_connector_free (connector);
+      return 6;
+    }
+
+  openvasd_connector_free (connector);
+#else
+  gboolean has_relay;
+  char *host, *ca_pub, *key_pub, *key_priv;
+  int return_value, port;
+  osp_connection_t *connection = NULL;
+  int connection_retry;
+  osp_get_performance_opts_t opts;
+
+  has_relay = scanner_has_relay (scanner);
+  host = scanner_host (scanner, has_relay);
+  port = scanner_port (scanner, has_relay);
   ca_pub = scanner_ca_pub (scanner);
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
 
   connection_retry = get_scanner_connection_retry ();
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      has_relay == FALSE);
   while (connection == NULL && connection_retry > 0)
     {
       sleep(1);
       connection = osp_connect_with_data (host, port,
-                                          ca_pub, key_pub, key_priv);
+                                          ca_pub, key_pub, key_priv,
+                                          has_relay == FALSE);
       connection_retry--;
     }
 
@@ -4626,6 +4323,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 
   osp_connection_close (connection);
   g_free (opts.titles);
+#endif
 
   return 0;
 }
@@ -7566,7 +7264,7 @@ nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
 {
 #if OPENVASD == 1
   return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                  vts_version);
+                                                vts_version);
 #else
   return nvts_feed_info_internal (get_osp_vt_update_socket (),
                                   vts_version,
@@ -7641,7 +7339,7 @@ nvts_check_feed (int *lockfile_in_use,
   char *vts_version = NULL;
 
   ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                  &vts_version);
+                                               &vts_version);
   self_test_exit_error = 0;
   *self_test_error_msg = NULL;
   if (ret == 0 && vts_version)
@@ -7697,19 +7395,6 @@ gvm_migrate_secinfo (int feed_type)
   feed_lockfile_unlock (&lockfile);
 
   return ret;
-}
-
-/**
- * @brief Update NVT cache using OSP.
- *
- * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-int
-manage_update_nvts (const gchar *update_socket)
-{
-  return manage_update_nvt_cache (update_socket);
 }
 
 
@@ -8739,14 +8424,13 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
           const char *openvasd_value;
 
           // Workaround for boolean scanner preferences
-          if (strcmp (value, "0") == 0)
-            openvasd_value = "no";
-          else if (strcmp (value, "1") == 0)
-            openvasd_value = "yes";
+          if (strcmp (value, "no") == 0)
+            openvasd_value = "0";
+          else if (strcmp (value, "yes") == 0)
+            openvasd_value = "1";
           else
             openvasd_value = value;
-          g_hash_table_replace (scanner_options,
-                                g_strdup (name),
+          g_hash_table_replace (scanner_options, g_strdup (name),
                                 g_strdup (openvasd_value));
         }
       /* Timeouts are stored as SERVER_PREFS, but are actually
@@ -8763,7 +8447,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
             openvasd_vt_single_add_value (openvasd_vt, "0", value);
           g_strfreev (oid);
         }
-
     }
   cleanup_iterator (&scanner_prefs_iter);
 

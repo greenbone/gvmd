@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2020-2022 Greenbone AG
+# Copyright (C) 2020-2025 Greenbone AG
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -52,11 +52,9 @@ echo -n "  <comment>"
 echo -n `sql "SELECT comment FROM configs WHERE uuid = '$UUID'"`
 echo "</comment>"
 
-echo -n "  <type>"
-echo -n `sql "SELECT type FROM configs WHERE uuid = '$UUID'"`
-echo "</type>"
-
-echo "  <usage_type>scan</usage_type>"
+echo -n "  <usage_type>"
+echo -n `sql "SELECT usage_type FROM configs WHERE uuid = '$UUID'"`
+echo "</usage_type>"
 
 echo "  <preferences>"
 
