@@ -1263,9 +1263,11 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
  * @param[in]  clean     Filter.
  * @param[in]  keyword   Keyword
  * @param[in]  relation  Relation char.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  */
 static void
-append_relation (GString *clean, keyword_t *keyword, const char relation)
+append_relation (GString *clean, keyword_t *keyword, const char relation,
+                 int ignore_max_rows_per_page)
 {
   if (strcmp (keyword->column, "rows") == 0)
     {
@@ -1280,7 +1282,7 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
                               " %s%c%i",
                               keyword->column,
                               relation,
-                              manage_max_rows (max));
+                              manage_max_rows (max, ignore_max_rows_per_page));
     }
   else if (keyword->quoted)
     g_string_append_printf (clean,
@@ -1301,11 +1303,13 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
  *
  * @param[in]  filter  Filter.
  * @param[in]  column  Keyword to remove, or NULL.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Cleaned filter.
  */
 gchar *
-manage_clean_filter_remove (const gchar *filter, const gchar *column)
+manage_clean_filter_remove (const gchar *filter, const gchar *column,
+                            int ignore_max_rows_per_page)
 {
   GString *clean;
   keyword_t **point;
@@ -1335,19 +1339,19 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
         switch (keyword->relation)
           {
             case KEYWORD_RELATION_COLUMN_EQUAL:
-              append_relation (clean, keyword, '=');
+              append_relation (clean, keyword, '=', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_APPROX:
-              append_relation (clean, keyword, '~');
+              append_relation (clean, keyword, '~', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_ABOVE:
-              append_relation (clean, keyword, '>');
+              append_relation (clean, keyword, '>', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_BELOW:
-              append_relation (clean, keyword, '<');
+              append_relation (clean, keyword, '<', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_REGEXP:
-              append_relation (clean, keyword, ':');
+              append_relation (clean, keyword, ':', ignore_max_rows_per_page);
               break;
 
             case KEYWORD_RELATION_APPROX:
@@ -1386,13 +1390,14 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
  * @brief Clean a filter.
  *
  * @param[in]  filter  Filter.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Cleaned filter.
  */
 gchar *
-manage_clean_filter (const gchar *filter)
+manage_clean_filter (const gchar *filter, int ignore_max_rows_per_page)
 {
-  return manage_clean_filter_remove (filter, NULL);
+  return manage_clean_filter_remove (filter, NULL, ignore_max_rows_per_page);
 }
 
 /**
@@ -1859,7 +1864,8 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
  * @param[in]  filter_columns  Filter columns.
  * @param[in]  select_columns  SELECT columns.
  * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
- * @param[out] trash           Whether the trash table is being queried.
+ * @param[in]  trash           Whether the trash table is being queried.
+ * @param[in]  ignore_max_rows_per_page Whether to ignore "Max Rows Per Page".
  * @param[out] order_return  If given then order clause.
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
@@ -1871,9 +1877,10 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
 gchar *
 filter_clause (const char* type, const char* filter,
                const char **filter_columns, column_t *select_columns,
-               column_t *where_columns, int trash, gchar **order_return,
-               int *first_return, int *max_return, array_t **permissions,
-               gchar **owner_filter)
+               column_t *where_columns, int trash,
+               int ignore_max_rows_per_page,
+               gchar **order_return, int *first_return, int *max_return,
+               array_t **permissions, gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -2917,7 +2924,7 @@ filter_clause (const char* type, const char* filter,
       else if (*max_return < 1)
         *max_return = -1;
 
-      *max_return = manage_max_rows (*max_return);
+      *max_return = manage_max_rows (*max_return, ignore_max_rows_per_page);
     }
 
   if (strlen (clause->str))
@@ -3770,8 +3777,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                           (get->trash && trash_where_columns)
                            ? trash_where_columns
                            : where_columns,
-                          get->trash, &order, &first, &max, &permissions,
-                          &owner_filter);
+                          get->trash, get->ignore_max_rows_per_page,
+                          &order, &first, &max, &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -4640,7 +4647,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                           get->trash && trash_where_columns
                            ? trash_where_columns
                            : where_columns,
-                          get->trash, NULL, NULL, NULL, &permissions,
+                          get->trash, get->ignore_max_rows_per_page,
+                          NULL, NULL, NULL, &permissions,
                           &owner_filter);
 
   g_free (filter);
@@ -16603,11 +16611,6 @@ DEF_ACCESS (prognosis_iterator_cpe, 3);
 /* Reports. */
 
 /**
- * @brief Whether to ignore the Max Rows Per Page settings.
- */
-int ignore_max_rows_per_page = 0;
-
-/**
  * @brief Create a new GHashTable for containing resource rowids.
  *
  * @return The newly allocated GHashTable
@@ -21808,9 +21811,8 @@ report_severity_data (report_t report, const char *host,
       get_data_t *get_all;
 
       get_all = report_results_get_data (1, -1, apply_overrides, 0);
-      ignore_max_rows_per_page = 1;
+      get_all->ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, get_all, report, host, NULL);
-      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity;
@@ -21836,11 +21838,10 @@ report_severity_data (report_t report, const char *host,
       get_filtered.filter = get->filter;
       get_filtered.type = get->type;
       get_filtered.ignore_pagination = 1;
+      get_filtered.ignore_max_rows_per_page = 1;
 
-      ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, &get_filtered, report, host,
                                          NULL);
-      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity;
@@ -22337,11 +22338,10 @@ report_compliance_f_counts (report_t report,
   get_filtered.filter = get->filter;
   get_filtered.type = get->type;
   get_filtered.ignore_pagination = 1;
+  get_filtered.ignore_max_rows_per_page = 1;
 
-  ignore_max_rows_per_page = 1;
   init_result_get_iterator (&results, &get_filtered, report, NULL,
                             NULL);
-  ignore_max_rows_per_page = 0;
   while (next (&results))
     {
       const char* compliance;
@@ -24984,7 +24984,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &apply_overrides, &zone);
     }
 
-  max_results = manage_max_rows (max_results);
+  max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
 
   #if CVSS3_RATINGS == 1
   levels = levels ? levels : g_strdup ("chmlgdf");
@@ -25162,7 +25162,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   clean = manage_clean_filter (term
                                 ? term
-                                : (get->filter ? get->filter : ""));
+                                : (get->filter ? get->filter : ""),
+                               get->ignore_max_rows_per_page);
 
   term_value = filter_term_value (clean, "min_qod");
   if (term_value == NULL)
@@ -43822,7 +43823,8 @@ create_filter (const char *name, const char *comment, const char *type,
     }
   quoted_name = sql_quote (name ?: "");
 
-  clean_term = manage_clean_filter (term ? term : "");
+  clean_term = manage_clean_filter (term ? term : "",
+                                    0 /* ignore_max_rows_per_page */);
   quoted_term = sql_quote (clean_term);
   g_free (clean_term);
 
@@ -44465,7 +44467,8 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     }
 
   quoted_name = sql_quote(name ?: "");
-  clean_term = manage_clean_filter (term ? term : "");
+  clean_term = manage_clean_filter (term ? term : "",
+                                    0 /* ignore_max_rows_per_page */);
   quoted_term = sql_quote (clean_term);
   g_free (clean_term);
   quoted_comment = sql_quote (comment ? comment : "");
@@ -48331,7 +48334,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, 0, NULL, NULL, NULL, NULL, NULL);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -48452,7 +48455,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, 0, NULL, NULL, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
@@ -49285,18 +49288,17 @@ modify_setting (const gchar *uuid, const gchar *name,
  * @brief Return max, adjusted according to maximum allowed rows.
  *
  * @param[in]  max  Max.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Adjusted max.
  */
 int
-manage_max_rows (int max)
+manage_max_rows (int max, int ignore_max_rows_per_page)
 {
   int max_rows;
 
-  if (current_credentials.uuid == NULL)
-    return max;
-
-  if (ignore_max_rows_per_page
+  if (current_credentials.uuid == NULL
+      || ignore_max_rows_per_page
       || setting_value_int (SETTING_UUID_MAX_ROWS_PER_PAGE, &max_rows))
     return max;
 
@@ -52939,8 +52941,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
-
-  ignore_max_rows_per_page = 1;
+  resources_get.ignore_max_rows_per_page = 1;
   filtered_select = NULL;
 
   if (strcasecmp (type, "TICKET") == 0)
@@ -53013,7 +53014,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             break;
           default:
             g_free (columns);
-            ignore_max_rows_per_page = 0;
             g_warning ("%s: Failed to build filter SELECT", __func__);
             sql_rollback ();
             g_free (resources_get.filter);
@@ -53023,7 +53023,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             return -1;
         }
     }
-  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -53119,8 +53118,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
+  resources_get.ignore_max_rows_per_page = 1;
 
-  ignore_max_rows_per_page = 1;
   iterator_select = NULL;
 
   if (strcasecmp (type, "TICKET") == 0)
@@ -53129,7 +53128,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
        * to contain each per-resource implementation in its own file. */
       if (init_ticket_iterator (&resources, &resources_get))
         {
-          ignore_max_rows_per_page = 0;
           g_warning ("%s: Failed to init ticket iterator", __func__);
           sql_rollback ();
           g_free (resources_get.filter);
@@ -53186,7 +53184,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             break;
           default:
             g_free (columns);
-            ignore_max_rows_per_page = 0;
             g_warning ("%s: Failed to build filter SELECT", __func__);
             sql_rollback ();
             g_free (resources_get.filter);
@@ -53196,7 +53193,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             return -1;
         }
     }
-  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -54711,6 +54707,7 @@ type_build_select (const char *type, const char *columns_str,
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, where_columns, get->trash,
+                          get->ignore_max_rows_per_page,
                           &filter_order, &first, &max, &permissions,
                           &owner_filter);
 

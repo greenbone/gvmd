@@ -320,7 +320,8 @@ filter_term_sql (const char *);
 
 gchar *
 filter_clause (const char*, const char*, const char **, column_t *,
-               column_t *, int, gchar **, int *, int *, array_t **, gchar **);
+               column_t *, int, int, gchar **, int *, int *, array_t **,
+               gchar **);
 
 void
 check_alerts ();
