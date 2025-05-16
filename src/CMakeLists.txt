@@ -165,6 +165,7 @@ set(
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
+  manage_sql_copy.c
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
