@@ -25,6 +25,10 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_filter_utils.h"
+#include "manage_resources.h"
+#include "manage_settings.h"
+
 #include "manage_alerts.h"
 #include "manage_configs.h"
 #include "manage_events.h"
@@ -143,20 +147,6 @@ manage_reset_currents ();
 /* Commands. */
 
 #define MAX_LOCK_RETRIES 16
-
-/**
- * @brief A command.
- */
-typedef struct
-{
-  gchar *name;     ///< Command name.
-  gchar *summary;  ///< Summary of command.
-} command_t;
-
-/**
- * @brief The GMP command list.
- */
-extern command_t gmp_commands[];
 
 
 /* Certificate and key management. */
@@ -338,44 +328,6 @@ scanner_type_valid (scanner_type_t);
 int
 scanner_type_supports_unix_sockets (scanner_type_t);
 
-typedef resource_t credential_t;
-typedef resource_t filter_t;
-typedef resource_t group_t;
-typedef resource_t host_t;
-typedef resource_t tag_t;
-typedef resource_t target_t;
-typedef resource_t ticket_t;
-typedef resource_t tls_certificate_t;
-typedef resource_t result_t;
-typedef resource_t report_t;
-typedef resource_t report_host_t;
-typedef resource_t report_config_t;
-typedef resource_t report_config_param_t;
-typedef resource_t report_format_t;
-typedef resource_t report_format_param_t;
-typedef resource_t role_t;
-typedef resource_t note_t;
-typedef resource_t nvt_t;
-typedef resource_t override_t;
-typedef resource_t permission_t;
-typedef resource_t port_list_t;
-typedef resource_t port_range_t;
-typedef resource_t schedule_t;
-typedef resource_t scanner_t;
-typedef resource_t setting_t;
-typedef resource_t user_t;
-
-
-/* GMP GET support.
- *
- * The standalone parts of the GET support are in manage_get.h. */
-
-resource_t
-get_iterator_resource (iterator_t*);
-
-user_t
-get_iterator_owner (iterator_t*);
-
 
 /* Resources. */
 
@@ -399,15 +351,6 @@ find_resource (const char*, const char*, resource_t*);
 
 gboolean
 find_resource_no_acl (const char*, const char*, resource_t*);
-
-const char *
-type_name_plural (const char*);
-
-const char *
-type_name (const char*);
-
-int
-type_is_scap (const char*);
 
 int
 delete_resource (const char *, const char *, int);
@@ -998,19 +941,9 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 /* Reports. */
 
 /**
- * @brief Default apply_overrides setting
- */
-#define APPLY_OVERRIDES_DEFAULT 0
-
-/**
  * @brief Default quality of detection percentage.
  */
 #define QOD_DEFAULT 75
-
-/**
- * @brief Default min quality of detection percentage for filters.
- */
-#define MIN_QOD_DEFAULT 70
 
 /**
  * @brief Default size to limit note and override text to in reports.
@@ -3130,66 +3063,6 @@ int
 modify_role (const char *, const char *, const char *, const char *);
 
 
-/* Filter Utilities. */
-
-/**
- * @brief Keyword type.
- */
-typedef enum
-{
-  KEYWORD_TYPE_UNKNOWN,
-  KEYWORD_TYPE_INTEGER,
-  KEYWORD_TYPE_DOUBLE,
-  KEYWORD_TYPE_STRING
-} keyword_type_t;
-
-/**
- * @brief Comparison returns.
- */
-typedef enum
-{
-  KEYWORD_RELATION_APPROX,
-  KEYWORD_RELATION_COLUMN_ABOVE,
-  KEYWORD_RELATION_COLUMN_APPROX,
-  KEYWORD_RELATION_COLUMN_EQUAL,
-  KEYWORD_RELATION_COLUMN_BELOW,
-  KEYWORD_RELATION_COLUMN_REGEXP
-} keyword_relation_t;
-
-/**
- * @brief Keyword.
- */
-struct keyword
-{
-  gchar *column;                 ///< The column prefix, or NULL.
-  int approx;                    ///< Whether the keyword is like "~example".
-  int equal;                     ///< Whether the keyword is like "=example".
-  int integer_value;             ///< Integer value of the keyword.
-  double double_value;           ///< Floating point value of the keyword.
-  int quoted;                    ///< Whether the keyword was quoted.
-  gchar *string;                 ///< The keyword string, outer quotes removed.
-  keyword_type_t type;           ///< Type of keyword.
-  keyword_relation_t relation;   ///< The relation.
-};
-
-/**
- * @brief Keyword type.
- */
-typedef struct keyword keyword_t;
-
-int
-keyword_special (keyword_t *);
-
-const char *
-keyword_relation_symbol (keyword_relation_t);
-
-void
-filter_free (array_t*);
-
-array_t *
-split_filter (const gchar*);
-
-
 /* Filters. */
 
 /**
@@ -3219,18 +3092,6 @@ filter_name (filter_t);
 
 char*
 trash_filter_name (filter_t);
-
-gchar*
-filter_term (const char *);
-
-gchar*
-filter_term_value (const char *, const char *);
-
-int
-filter_term_apply_overrides (const char *);
-
-int
-filter_term_min_qod (const char *);
 
 int
 create_filter (const char*, const char*, const char*, const char*, filter_t*);
@@ -3505,9 +3366,6 @@ setting_iterator_comment (iterator_t*);
 
 const char*
 setting_iterator_value (iterator_t*);
-
-int
-setting_value_int (const char *, int *);
 
 int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
