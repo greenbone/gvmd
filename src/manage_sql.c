@@ -53866,21 +53866,17 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
   if (cacert)
     {
       /* check if the certificate is valid */
-      time_t activation_time, expiration_time;
-      gchar *md5_fingerprint, *issuer;
       err = get_certificate_info (cacert,
                                   -1,
                                   TRUE,
-                                  &activation_time,
-                                  &expiration_time,
-                                  &md5_fingerprint,
+                                  NULL,   /* activation_time */
+                                  NULL,   /* expiration_time */
+                                  NULL,   /* md5_fingerprint */
                                   NULL,   /* sha256_fingerprint */
                                   NULL,   /* subject */
-                                  &issuer,
+                                  NULL,   /* issuer */
                                   NULL,   /* serial */
                                   NULL);  /* certificate_format */
-      g_free (md5_fingerprint);
-      g_free (issuer);
 
       if (!err)
         {
