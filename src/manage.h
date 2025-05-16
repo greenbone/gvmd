@@ -1577,10 +1577,10 @@ manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                gchar **, int *, int *, int *, int *, gchar **);
 
 gchar *
-manage_clean_filter (const gchar *);
+manage_clean_filter (const gchar *, int);
 
 gchar *
-manage_clean_filter_remove (const gchar *, const gchar *);
+manage_clean_filter_remove (const gchar *, const gchar *, int);
 
 int
 manage_count_hosts (const char *, const char *);
@@ -3337,7 +3337,7 @@ secinfo_count_after (const get_data_t *, const char *, time_t, gboolean);
 /* Settings. */
 
 int
-manage_max_rows (int);
+manage_max_rows (int, int);
 
 int
 setting_count (const char *);
