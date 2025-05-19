@@ -23,6 +23,7 @@
  * PostreSQL backend of the SQL interface.
  */
 
+#include "ipc.h"
 #include "sql.h"
 
 #include <assert.h>
@@ -289,12 +290,21 @@ sql_open (const db_conn_info_t *database)
                                database->port ? database->port : "",
                                database->user ? database->user : "",
                                "gvmd");
+
+  if (semaphore_op (SEMAPHORE_DB_CONNECTIONS, -1, database->semaphore_timeout))
+    {
+      g_warning ("%s: error signaling database connection semaphore",
+                 __func__);
+      g_free (conn_info);
+      return -1;
+    }
   conn = PQconnectStart (conn_info);
   g_free (conn_info);
   if (conn == NULL)
     {
       g_warning ("%s: PQconnectStart failed to allocate conn",
                  __func__);
+      semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
       return -1;
     }
   if (PQstatus (conn) == CONNECTION_BAD)
@@ -395,6 +405,7 @@ sql_open (const db_conn_info_t *database)
  fail:
   PQfinish (conn);
   conn = NULL;
+  semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
   return -1;
 }
 
@@ -406,6 +417,7 @@ sql_close ()
 {
   PQfinish (conn);
   conn = NULL;
+  semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
 }
 
 /**
@@ -415,6 +427,7 @@ void
 sql_close_fork ()
 {
   conn = NULL;
+  semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
 }
 
 /**

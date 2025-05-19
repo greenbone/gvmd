@@ -168,6 +168,11 @@
 #define MAX_HOSTS_DEFAULT "20"
 
 /**
+ * @brief Maximum number of reports to process every SCHEDULE_PERIOD.
+ */
+#define MAX_REPORTS_PER_TICK 10
+
+/**
  * @brief Number of minutes until the authentication cache is deleted
  *        if the session is idle.
  */
@@ -192,6 +197,16 @@ static int feed_lock_timeout = 0;
  * @brief Maximum number of concurrent scan updates.
  */
 static int max_concurrent_scan_updates = 0;
+
+/**
+ * @brief Maximum number of database connections.
+ */
+static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+
+/**
+ * @brief Maximum number of imported reports processed concurrently.
+ */
+static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
 
 /**
  * @brief Retries for waiting for memory to be available.
@@ -5427,6 +5442,130 @@ manage_sync (sigset_t *sigmask_current,
 }
 
 /**
+ * @brief Perform any processing of imported reports that is due.
+ *
+ * In gvmd, periodically called from the main daemon loop.
+ */
+void
+manage_process_report_imports ()
+{
+  lockfile_t lockfile;
+  iterator_t reports;
+  report_t report;
+  int pid, ret;
+
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+
+  init_iterator (&reports, "SELECT id FROM reports"
+                           " WHERE scan_run_status = %u"
+                           " AND processing_required = 1"
+                           " ORDER BY creation_time LIMIT %d;",
+                           TASK_STATUS_RUNNING,
+                           MAX_REPORTS_PER_TICK);
+
+  while (next (&reports))
+    {
+      report = iterator_int64 (&reports, 0);
+
+      gchar *lockfile_path =
+        g_build_filename (GVMD_STATE_DIR,
+                          g_strdup_printf ("gvm-process-report-%llu", report),
+                          NULL);
+      ret = lockfile_lock_path_nb (&lockfile, lockfile_path);
+      if (ret > 0)
+        {
+          g_debug ("%s: Report %llu is already being processed", 
+                   __func__,
+                   report);
+          continue;
+        }
+      if (ret < 0)
+        {
+          g_critical ("%s: Error getting lock for report %llu",
+                      __func__,
+                      report);
+          cleanup_iterator (&reports);
+          exit (EXIT_FAILURE);
+        }
+
+      pid = fork ();
+      switch (pid)
+        {
+          case 0:
+            /* Child.   */
+
+            init_sentry ();
+            setproctitle ("process report import");
+
+            if (semaphore_op (SEMAPHORE_REPORTS_PROCESSING, -1, 1))
+              {
+                g_debug ("%s: Failed to signal reports processing semaphore",
+                         __func__);
+                exit (EXIT_SUCCESS);
+              }
+
+            /* Clean up the process. */
+            cleanup_manage_process (FALSE);
+
+            init_sentry ();
+            reinit_manage_process ();
+
+            if (process_report_import (report))
+              {
+                lockfile_unlock (&lockfile);
+                if (unlink (lockfile_path))
+                  g_warning ("%s: Failed to delete lock file %s: %s",
+                            __func__,
+                            lockfile_path,
+                            strerror (errno));
+                g_free (lockfile_path);
+                set_report_scan_run_status (report, TASK_STATUS_INTERRUPTED);
+                g_warning ("%s: failed to process imported report %llu",
+                           __func__,
+                           report);
+                gvm_close_sentry ();
+                semaphore_op (SEMAPHORE_REPORTS_PROCESSING, +1, 0);
+                exit (EXIT_FAILURE);
+              }
+
+            lockfile_unlock (&lockfile);
+            if (unlink (lockfile_path))
+              g_warning ("%s: Failed to delete lock file %s: %s",
+                         __func__,
+                         lockfile_path,
+                         strerror (errno));
+            g_free (lockfile_path);
+            semaphore_op (SEMAPHORE_REPORTS_PROCESSING, +1, 0);
+
+            cleanup_manage_process (FALSE);
+            gvm_close_sentry ();
+            exit (EXIT_SUCCESS);
+
+          case -1:
+            /* Parent when error. */
+            g_warning ("%s: fork: %s", __func__, strerror (errno));
+            lockfile_unlock (&lockfile);
+            if (unlink (lockfile_path))
+              g_warning ("%s: Failed to delete lock file %s: %s",
+                         __func__,
+                         lockfile_path,
+                         strerror (errno));
+            g_free (lockfile_path);
+            cleanup_iterator (&reports);
+            exit (EXIT_FAILURE);
+    
+          default:
+            /* Parent. */
+            g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+            continue;
+          }
+    }
+  cleanup_iterator (&reports);
+  exit (EXIT_SUCCESS);
+}
+
+/**
  * @brief Adds a switch statement for handling the return value of a
  *        gvmd data rebuild.
  * @param type  The type as a description string, e.g. "port lists"
@@ -6760,6 +6899,28 @@ get_max_concurrent_scan_updates ()
 }
 
 /**
+ * @brief Get the maximum number of database connections.
+ *
+ * @return The current maximum number of database connections.
+ */
+int
+get_max_database_connections ()
+{
+  return max_database_connections;
+}
+
+/**
+ * @brief Get the maximum number of reports to be processed concurrently.
+ *
+ * @return The current maximum number of reports to be processed concurrently.
+ */
+int
+get_max_concurrent_report_processing ()
+{
+  return max_concurrent_report_processing;
+}
+
+/**
  * @brief Set the maximum number of concurrent scan updates.
  *
  * @param new_max The new maximum number of concurrent scan updates.
@@ -6771,6 +6932,34 @@ set_max_concurrent_scan_updates (int new_max)
     max_concurrent_scan_updates = 0;
   else
     max_concurrent_scan_updates = new_max;
+}
+
+/**
+ * @brief Set the maximum number of database connections.
+ *
+ * @param new_max The current maximum number of database connections. 
+ */
+void
+set_max_database_connections (int new_max)
+{
+  if (new_max <= 0)
+    max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  else
+    max_database_connections = new_max;
+}
+
+/**
+ * @brief Set the maximum number of concurrent imported report processing.
+ *
+ * @param new_max The current maximum number of concurrent report processing.
+ */
+void
+set_max_concurrent_report_processing (int new_max)
+{
+  if (new_max <= 0)
+  max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
+  else
+  max_concurrent_report_processing = new_max;
 }
 
 /**

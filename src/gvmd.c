@@ -238,7 +238,7 @@ static gnutls_certificate_credentials_t client_credentials;
 /**
  * @brief Database connection info.
  */
-static db_conn_info_t database = { NULL, NULL, NULL, NULL };
+static db_conn_info_t database = { NULL, NULL, NULL, NULL, 60};
 
 /**
  * @brief Is this process parent or child?
@@ -1405,6 +1405,83 @@ fork_feed_sync ()
 }
 
 /**
+ * @brief Forks a process for processing imported reports.
+ *
+ * @return 0 success, -1 error.
+ *         Always exits with EXIT_SUCCESS in child.
+ */
+static int
+fork_process_report_imports ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+  if (sigaddset (&sigmask_all, SIGCHLD))
+    {
+      g_critical ("%s: Error adding SIGCHLD to signal set", __func__);
+      return -1;
+    }
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.   */
+        init_sentry ();
+        setproctitle ("Manage process report imports");
+
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+        /* Clean up the process. */
+        cleanup_manage_process (FALSE);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        manage_process_report_imports ();
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+        exit (EXIT_SUCCESS);
+        break;
+
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return -1;
+
+      default:
+        /* Parent.  Unblock signals and continue. */
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return 0;
+    }
+}
+
+/**
  * @brief Serve incoming connections, scheduling periodically.
  *
  * Enter an infinite loop, waiting for connections and passing the work to
@@ -1486,6 +1563,7 @@ serve_and_schedule ()
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
           fork_feed_sync ();
+          fork_process_report_imports ();
           last_sync_time = time (NULL);
         }
 
@@ -1546,6 +1624,7 @@ serve_and_schedule ()
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
           fork_feed_sync ();
+          fork_process_report_imports ();
           last_sync_time = time (NULL);
         }
 
@@ -1923,6 +2002,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
   static int max_concurrent_scan_updates = 0;
+  static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
@@ -1993,6 +2074,10 @@ gvmd (int argc, char** argv, char *env[])
           &(database.user),
           "Use <user> as database user.",
           "<user>" },
+        { "db-semaphore-timeout", '\0', 0, G_OPTION_ARG_INT,
+          &(database.semaphore_timeout),
+          "Use <semaphore_timeout> as sempahore timeout for PostgreSQL connections.",
+          "<semaphore_timeout>" },
         { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
           G_OPTION_ARG_NONE,
           &decrypt_all_credentials,
@@ -2111,6 +2196,16 @@ gvmd (int argc, char** argv, char *env[])
           &max_concurrent_scan_updates,
           "Maximum number of scan updates that can run at the same time."
           " Default: 0 (unlimited).",
+          "<number>" },
+        { "max-database-connections", '\0', 0, G_OPTION_ARG_INT,
+          &max_database_connections,
+          "Maximum number of database connections at the same time."
+          " Default: 50",
+          "<number>" },
+        { "max-concurrent-report-processing", '\0', 0, G_OPTION_ARG_INT,
+          &max_concurrent_report_processing,
+          "Maximum number of imported reports processed at the same time."
+          " Default: 30",
           "<number>" },
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT,
           &max_email_attachment_size,
@@ -2481,6 +2576,9 @@ gvmd (int argc, char** argv, char *env[])
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
+  /* Initialize Inter-Process Communication */
+  init_semaphore_set ();
+
   /* Switch to UTC for scheduling. */
 
   if (migrate_database
@@ -2525,8 +2623,9 @@ gvmd (int argc, char** argv, char *env[])
   /* Set maximum number of concurrent scan updates */
   set_max_concurrent_scan_updates (max_concurrent_scan_updates);
 
-  /* Initialize Inter-Process Communication */
-  init_semaphore_set ();
+  set_max_database_connections (max_database_connections);
+
+  set_max_concurrent_report_processing (max_concurrent_report_processing);
 
   /* Enable GNUTLS debugging if requested via env variable.  */
   {

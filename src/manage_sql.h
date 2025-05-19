@@ -440,6 +440,9 @@ create_indexes_cve ();
 void
 drop_indexes_cve ();
 
+int
+process_report_import (report_t);
+
 #if OPENVASD
 void
 parse_openvasd_report (task_t, report_t, GSList *, time_t, time_t);

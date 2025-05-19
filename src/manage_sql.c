@@ -33,10 +33,12 @@
 #include <stdio.h>
 #include "manage.h"
 #include "debug_utils.h"
+#include "ipc.h"
 #include "manage_sql.h"
 #include "manage_alerts.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
@@ -396,7 +398,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL };
+db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL, NULL, 60 };
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -12775,6 +12777,7 @@ init_manage_internal (GSList *log_config,
   gvmd_db_conn_info.host = database->host ? g_strdup (database->host) : NULL;
   gvmd_db_conn_info.port = database->port ? g_strdup (database->port) : NULL;
   gvmd_db_conn_info.user = database->user ? g_strdup (database->user) : NULL;
+  gvmd_db_conn_info.semaphore_timeout = database->semaphore_timeout;
 
   if (fork_connection)
     manage_fork_connection = fork_connection;
@@ -17088,9 +17091,10 @@ insert_report_host_detail (report_t report, const char *host,
 }
 
 /**
- * @brief Maximum number of values per insert, when uploading report.
+ * @brief Maximum number of COPY statements per transaction, 
+ *        when uploading report.
  */
-#define CREATE_REPORT_INSERT_SIZE 300
+#define CREATE_REPORT_COPY_CHUNK_SIZE 3000
 
 /**
  * @brief Number of results per transaction, when uploading report.
@@ -17101,6 +17105,90 @@ insert_report_host_detail (report_t report, const char *host,
  * @brief Number of microseconds to sleep between insert chunks.
  */
 #define CREATE_REPORT_CHUNK_SLEEP 1000
+
+/**
+ * @brief Size of the buffer used for COPY statements in bytes.
+ */
+#define BUFFER_SIZE (20 * 1048576)  /* 20 MiB */
+
+/**
+ * @brief Process imported report.
+ * 
+ * Adds TLS certificates to the database and creates assets from the report.
+ *
+ * @param[in]  report  Report to process.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+process_report_import (report_t report)
+{
+  iterator_t hosts;
+  task_t task;
+  int uuid_was_null;
+
+  init_report_host_iterator (&hosts, report, NULL, 0);
+
+  report_task (report, &task);
+  if (task == 0)
+    {
+      cleanup_iterator (&hosts);
+      return -1;
+    }
+
+  uuid_was_null = 0;
+  if (current_credentials.uuid == NULL)
+    {
+      current_credentials.uuid = task_owner_uuid (task);
+      uuid_was_null = 1;
+    }
+
+  sql_begin_immediate ();
+
+  while (next (&hosts))
+    {
+      const char* host = host_iterator_host (&hosts);
+      gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+      add_assets_from_host_in_report (report, host);
+    }
+
+  sql_commit ();
+  cleanup_iterator (&hosts);
+
+  current_scanner_task = task;
+  global_current_report = report;
+  set_task_run_status (task, TASK_STATUS_PROCESSING);
+
+  if (sql_int ("SELECT coalesce (in_assets, 0) = 1 FROM reports"
+               " WHERE id = %llu;",
+               report))
+    {
+      if (create_asset_report (report_uuid (report), ""))
+        {
+          g_warning ("%s: failed to create assets from report %llu", 
+                     __func__,
+                     report);
+          set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+          return -1;
+        }
+    }
+
+  sql ("UPDATE reports SET processing_required = 0"
+       " WHERE id = %llu;",
+       report);
+
+  set_task_run_status (task, TASK_STATUS_DONE);
+  current_scanner_task = 0;
+  global_current_report = 0;
+
+  if (uuid_was_null)
+    {
+      g_free (current_credentials.uuid);
+      current_credentials.uuid = NULL;
+    }
+
+  return 0;
+}
 
 /**
  * @brief Create a report from an array of results.
@@ -17127,14 +17215,15 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                array_t *host_starts, array_t *host_ends, array_t *details,
                char **report_id)
 {
-  int index, in_assets_int, count, insert_count, first, rc;
+  int index, in_assets_int, count, rc;
   create_report_result_t *result, *end, *start;
   report_t report;
   user_t owner;
   task_t task;
   pid_t pid;
   host_detail_t *detail;
-  GString *insert;
+  db_copy_buffer_t copy_buffer;
+  resource_t result_rowid, report_host_details_rowid;
 
   in_assets_int
     = (in_assets && strcmp (in_assets, "") && strcmp (in_assets, "0"));
@@ -17280,6 +17369,15 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   /* Add the results. */
 
+  db_copy_buffer_init (&copy_buffer,
+                       BUFFER_SIZE,
+                       "COPY results"
+                       " (id, uuid, owner, date, task, host, hostname, port,"
+                       "  nvt, type, description,"
+                       "  nvt_version, severity, qod, qod_type,"
+                       "  result_nvt, report)"
+                       " FROM STDIN;");
+
   if (sql_int64 (&owner,
                  "SELECT owner FROM tasks WHERE tasks.id = %llu",
                  task))
@@ -17299,10 +17397,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                               0);
 
   g_debug ("%s: add results", __func__);
-  insert = g_string_new ("");
   index = 0;
-  first = 1;
-  insert_count = 0;
   count = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
@@ -17312,77 +17407,71 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_qod, *quoted_qod_type;
       g_debug ("%s: add results: index: %i", __func__, index);
 
-      quoted_host = sql_quote (result->host ? result->host : "");
-      quoted_hostname = sql_quote (result->hostname ? result->hostname : "");
-      quoted_port = sql_quote (result->port ? result->port : "");
-      quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
-      quoted_description = sql_quote (result->description
+      quoted_host = sql_copy_escape (result->host ? result->host : "");
+      quoted_hostname = sql_copy_escape (result->hostname ? result->hostname : "");
+      quoted_port = sql_copy_escape (result->port ? result->port : "");
+      quoted_nvt_oid = sql_copy_escape (result->nvt_oid ? result->nvt_oid : "");
+      quoted_description = sql_copy_escape (result->description
                                        ? result->description
                                        : "");
-      quoted_scan_nvt_version = sql_quote (result->scan_nvt_version
+      quoted_scan_nvt_version = sql_copy_escape (result->scan_nvt_version
                                        ? result->scan_nvt_version
                                        : "");
-      quoted_severity =  sql_quote (result->severity ? result->severity : "");
+      quoted_severity =  sql_copy_escape (result->severity ? result->severity : "");
       if (result->qod && strcmp (result->qod, "") && strcmp (result->qod, "0"))
-        quoted_qod = sql_quote (result->qod);
+        quoted_qod = sql_copy_escape (result->qod);
       else
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
-      quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
+      quoted_qod_type = sql_copy_escape (result->qod_type ? result->qod_type : "");
       result_nvt_notice (quoted_nvt_oid);
 
-      if (first)
-        g_string_append (insert,
-                         "INSERT INTO results"
-                         " (uuid, owner, date, task, host, hostname, port,"
-                         "  nvt, type, description,"
-                         "  nvt_version, severity, qod, qod_type,"
-                         "  result_nvt, report)"
-                         " VALUES");
-      else
-        g_string_append (insert, ", ");
-      first = 0;
-      g_string_append_printf (insert,
-                              " (make_uuid (), %llu, m_now (), %llu, '%s',"
-                              "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-                              "  '%s', '%s',"
-                              "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
-                              "  %llu)",
-                              owner,
-                              task,
-                              quoted_host,
-                              quoted_hostname,
-                              quoted_port,
-                              quoted_nvt_oid,
-                              result->threat
-                               ? threat_message_type (result->threat)
-                               : "Log Message",
-                              quoted_description,
-                              quoted_scan_nvt_version,
-                              quoted_severity,
-                              quoted_qod,
-                              quoted_qod_type,
-                              quoted_nvt_oid,
-                              report);
-
-      /* Limit the number of results inserted at a time. */
-      if (insert_count == CREATE_REPORT_INSERT_SIZE)
+      if (sql_int64 (&result_rowid,
+        "SELECT nextval('results_id_seq');"))
         {
-          sql ("%s", insert->str);
-          g_string_truncate (insert, 0);
-          count++;
-          insert_count = 0;
-          first = 1;
-
-          if (count == CREATE_REPORT_CHUNK_SIZE)
-            {
-              report_cache_counts (report, 1, 1, NULL);
-              sql_commit ();
-              gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-              sql_begin_immediate ();
-              count = 0;
-            }
+          g_warning ("%s: failed to get result row ID", __func__);
+          return -1;
         }
-      insert_count++;
+
+      char* uuid = gvm_uuid_make ();
+      if (uuid == NULL)
+        {
+          g_warning ("%s: failed to generate result UUID", __func__);
+          return -2;
+        }
+      time_t date = time (NULL);
+
+      resource_t result_nvt;
+
+      if (sql_int64 (&result_nvt,
+                     "SELECT id FROM result_nvts WHERE nvt = '%s';",
+                     quoted_nvt_oid))
+        {
+          g_warning ("%s: failed to get result_nvt ID", __func__);
+          return -1;
+        }
+
+      int ret = db_copy_buffer_append_printf
+                  (&copy_buffer,
+                  "%llu\t%s\t%llu\t%lld\t%llu\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%llu\t%llu\n",
+                  result_rowid,
+                  uuid,
+                  owner,
+                  (long long) date,
+                  task,
+                  quoted_host,
+                  quoted_hostname,
+                  quoted_port,
+                  quoted_nvt_oid,
+                  result->threat
+                  ? threat_message_type (result->threat)
+                  : "Log Message",
+                  quoted_description,
+                  quoted_scan_nvt_version,
+                  quoted_severity,
+                  quoted_qod,
+                  quoted_qod_type,
+                  result_nvt,
+                  report);
 
       g_free (quoted_host);
       g_free (quoted_hostname);
@@ -17393,11 +17482,40 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_free (quoted_severity);
       g_free (quoted_qod);
       g_free (quoted_qod_type);
+      g_free (uuid);
+
+      if (ret)
+        {
+          g_warning ("%s: failed to write to database copy buffer",
+                     __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
+      count++;
+
+      if (count == CREATE_REPORT_COPY_CHUNK_SIZE)
+        {
+          if (db_copy_buffer_commit (&copy_buffer, FALSE))
+            {
+              db_copy_buffer_cleanup (&copy_buffer);
+              return -1;
+            }
+          report_cache_counts (report, 1, 1, NULL);
+          sql_commit ();
+          gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+          sql_begin_immediate ();
+          count = 0;
+        }
     }
 
-  if (first == 0)
+  if (count > 0)
     {
-      sql ("%s", insert->str);
+      if (db_copy_buffer_commit (&copy_buffer, TRUE))
+      {
+        db_copy_buffer_cleanup (&copy_buffer);
+        return -1;
+      }
       report_cache_counts (report, 1, 1, NULL);
       sql_commit ();
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
@@ -17446,41 +17564,63 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       }
 
   g_debug ("%s: add host details", __func__);
+
+
+  db_copy_buffer_init (&copy_buffer,
+                       BUFFER_SIZE,
+                       "COPY report_host_details"
+                       " (id, report_host, source_type, source_name,"
+                           "  source_description, name, value)"
+                       " FROM STDIN;");
+
   index = 0;
-  first = 1;
   count = 0;
-  insert_count = 0;
-  g_string_truncate (insert, 0);
   while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
     if (detail->ip && detail->name)
       {
         char *quoted_host, *quoted_source_name, *quoted_source_type;
         char *quoted_source_desc, *quoted_name, *quoted_value;
 
-        quoted_host = sql_quote (detail->ip);
-        quoted_source_type = sql_quote (detail->source_type ?: "");
-        quoted_source_name = sql_quote (detail->source_name ?: "");
-        quoted_source_desc = sql_quote (detail->source_desc ?: "");
-        quoted_name = sql_quote (detail->name);
-        quoted_value = sql_quote (detail->value ?: "");
+        quoted_host = sql_copy_escape (detail->ip);
+        quoted_source_type = sql_copy_escape (detail->source_type ?: "");
+        quoted_source_name = sql_copy_escape (detail->source_name ?: "");
+        quoted_source_desc = sql_copy_escape (detail->source_desc ?: "");
+        quoted_name = sql_copy_escape (detail->name);
+        quoted_value = sql_copy_escape (detail->value ?: "");
 
-        if (first)
-          g_string_append (insert,
-                           "INSERT INTO report_host_details"
-                           " (report_host, source_type, source_name,"
-                           "  source_description, name, value)"
-                           " VALUES");
-        else
-          g_string_append (insert, ", ");
-        first = 0;
+        if (sql_int64 (&report_host_details_rowid,
+          "SELECT nextval('report_host_details_id_seq');"))
+          {
+            g_warning ("%s: failed to get report_host_details row ID", __func__);
+            return -1;
+          }
 
-        g_string_append_printf (insert,
-                                " ((SELECT id FROM report_hosts"
-                                "   WHERE report = %llu AND host = '%s'),"
-                                "  '%s', '%s', '%s', '%s', '%s')",
-                                report, quoted_host, quoted_source_type,
-                                quoted_source_name, quoted_source_desc,
-                                quoted_name, quoted_value);
+        resource_t report_host;
+
+        sql_int64 (&report_host,
+                    "SELECT id FROM report_hosts"
+                    "   WHERE report = %llu AND host = '%s';",
+                    report,
+                    quoted_host);
+
+        int ret = db_copy_buffer_append_printf
+                    (&copy_buffer,
+                    "%llu\t%llu\t%s\t%s\t%s\t%s\t%s\n",
+                    report_host_details_rowid,
+                    report_host,
+                    quoted_source_type,
+                    quoted_source_name,
+                    quoted_source_desc,
+                    quoted_name,
+                    quoted_value);
+
+        if (ret)
+        {
+          g_warning ("%s: failed to write to database copy buffer",
+                      __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
 
         g_free (quoted_host);
         g_free (quoted_source_type);
@@ -17489,59 +17629,35 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         g_free (quoted_name);
         g_free (quoted_value);
 
-        /* Limit the number of details inserted at a time. */
-        if (insert_count == CREATE_REPORT_INSERT_SIZE)
+        count++;
+        if (count == CREATE_REPORT_COPY_CHUNK_SIZE)
           {
-            sql ("%s", insert->str);
-            g_string_truncate (insert, 0);
-            count++;
-            insert_count = 0;
-            first = 1;
-
-            if (count == CREATE_REPORT_CHUNK_SIZE)
-              {
-                sql_commit ();
-                gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-                sql_begin_immediate ();
-                count = 0;
-              }
+            if (db_copy_buffer_commit (&copy_buffer, FALSE))
+            {
+              db_copy_buffer_cleanup (&copy_buffer);
+              return -1;
+            }            
+            sql_commit ();
+            gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+            sql_begin_immediate ();
+            count = 0;
           }
-        insert_count++;
       }
-
-  sql_commit ();
-
-  index = 0;
-  sql_begin_immediate ();
-  while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
-                                                             index++)))
-    if (end->host)
-      {
-        sql_commit ();
-        gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-        add_assets_from_host_in_report (report, end->host);
-        sql_begin_immediate ();
-      }
-
-  if (first == 0)
-    sql ("%s", insert->str);
-
-  sql_commit ();
-  g_string_free (insert, TRUE);
-
-  current_scanner_task = task;
-  global_current_report = report;
-  set_task_run_status (task, TASK_STATUS_PROCESSING);
-
-  if (in_assets_int)
+  if (db_copy_buffer_commit (&copy_buffer, TRUE))
     {
-      create_asset_report (*report_id, "");
+      db_copy_buffer_cleanup (&copy_buffer);
+      return -1;
     }
 
-  set_task_run_status (task, TASK_STATUS_DONE);
-  current_scanner_task = 0;
-  global_current_report = 0;
+  sql_commit ();
+
+  sql ("UPDATE reports SET processing_required = 1, in_assets = %d"
+       " WHERE id = %llu;",
+       in_assets_int ? 1 : 0,
+       report);
+
   gvm_close_sentry ();
+  cleanup_manage_process (FALSE); //check this
   exit (EXIT_SUCCESS);
   return 0;
 }
