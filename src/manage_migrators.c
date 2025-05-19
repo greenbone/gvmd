@@ -3347,6 +3347,40 @@ migrate_258_to_259 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 259 to version 260.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_259_to_260 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 259. */
+
+  if (manage_db_version () != 259)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add processing_required and in_assets fields to reports
+
+  sql ("ALTER TABLE reports ADD COLUMN processing_required integer DEFAULT 0;");
+  sql ("ALTER TABLE reports ADD COLUMN in_assets integer;");
+ 
+  /* Set the database version to 260. */
+
+  set_db_version (260);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3412,6 +3446,7 @@ static migrator_t database_migrators[] = {
   {257, migrate_256_to_257},
   {258, migrate_257_to_258},
   {259, migrate_258_to_259},
+  {260, migrate_259_to_260},
   /* End marker. */
   {-1, NULL}};
 
