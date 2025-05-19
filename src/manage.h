@@ -143,12 +143,14 @@ manage_cleanup_process_error (int);
 void
 manage_reset_currents ();
 
-
 /* Commands. */
 
 #define MAX_LOCK_RETRIES 16
 
-
+#define MAX_DATABASE_CONNECTIONS_DEFAULT 50
+
+#define MAX_REPORT_PROCESSING_DEFAULT 30
+
 /* Certificate and key management. */
 
 gchar*
@@ -976,6 +978,9 @@ find_report_with_permission (const char *, report_t *, const char *);
 
 report_t
 make_report (task_t, const char *, task_status_t);
+
+void
+manage_process_report_imports ();
 
 int
 qod_from_type (const char *);
@@ -3736,6 +3741,18 @@ get_max_concurrent_scan_updates ();
 
 void
 set_max_concurrent_scan_updates (int);
+
+int
+get_max_database_connections ();
+
+void
+set_max_database_connections (int);
+
+int
+get_max_concurrent_report_processing ();
+
+void
+set_max_concurrent_report_processing (int);
 
 int
 get_mem_wait_retries ();

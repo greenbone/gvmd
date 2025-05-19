@@ -33,10 +33,11 @@
  */
 typedef struct
 {
-  gchar *name; ///< The database name
-  gchar *host; ///< The database host or socket directory
-  gchar *port; ///< The database port or socket file extension
-  gchar *user; ///< The database user name
+  gchar *name;              ///< The database name
+  gchar *host;              ///< The database host or socket directory
+  gchar *port;              ///< The database port or socket file extension
+  gchar *user;              ///< The database user name
+  time_t semaphore_timeout; ///< Semaphore timeout for database connections
 } db_conn_info_t;
 
 /* Helpers. */
