@@ -44462,10 +44462,10 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
       return 1;
     }
 
-  f_name = name ? g_strdup (name) :  filter_name (filter);
-  f_comment = comment ? g_strdup (comment) :  filter_comment (filter);
-  f_type = type ? g_strdup (type) :  filter_type (filter);
-  f_term = term ? g_strdup (term) :  filter_term (filter_id);
+  f_name = name ? g_strdup (name) : filter_name (filter);
+  f_comment = comment ? g_strdup (comment) : filter_comment (filter);
+  f_type = type ? g_strdup (type) : filter_type (filter);
+  f_term = term ? g_strdup (term) : filter_term (filter_id);
 
   db_type = type_db_name (f_type);
   if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
@@ -44491,7 +44491,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   else
     {
       g_free (f_type);
-      f_type = g_strdup("");
+      f_type = g_strdup ("");
     }
 
   assert (current_credentials.uuid);
