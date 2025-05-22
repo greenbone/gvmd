@@ -44504,9 +44504,8 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
                   g_strdup ("");
 
   sql ("UPDATE filters SET"
-       " uuid = uuid"
-       "%s%s%s%s"
-       ", modification_time = m_now ()"
+       " modification_time = m_now ()"
+       " %s%s%s%s"
        " WHERE id = %llu;",
        t_name,
        t_comment,
