@@ -64,6 +64,9 @@ alert_owner (alert_t);
 char *
 alert_owner_uuid (alert_t);
 
+char*
+alert_owner_name (alert_t);
+
 char *
 alert_name (alert_t);
 

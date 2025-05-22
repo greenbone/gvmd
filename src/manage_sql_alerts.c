@@ -1610,6 +1610,20 @@ alert_owner_uuid (alert_t alert)
 }
 
 /**
+ * @brief Return the name of the owner of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return Newly allocated user name.
+ */
+char*
+alert_owner_name (alert_t alert)
+{
+  return sql_string ("SELECT name FROM users WHERE id ="
+                     " (SELECT owner FROM alerts WHERE id = %llu);",
+                     alert);
+}
+/**
  * @brief Return the name of an alert.
  *
  * @param[in]  alert  Alert.

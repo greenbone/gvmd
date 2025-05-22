@@ -10464,14 +10464,9 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
               return -1;
             }
 
-          owner_id = sql_string ("SELECT uuid FROM users"
-                                 " WHERE id = (SELECT owner FROM alerts"
-                                 "              WHERE id = %llu)",
-                                 alert);
-          owner_name = sql_string ("SELECT name FROM users"
-                                   " WHERE id = (SELECT owner FROM alerts"
-                                   "              WHERE id = %llu)",
-                                   alert);
+
+          owner_id = alert_owner_uuid (alert);
+          owner_name = alert_owner_name (alert);
 
           if (owner_id == NULL)
             {
