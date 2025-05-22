@@ -44439,8 +44439,7 @@ int
 modify_filter (const char *filter_id, const char *name, const char *comment,
                const char *term, const char *type)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type;
-  gchar *quoted_filter_id, *clean_term;
+  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
   char *t_name, *t_comment, *t_term, *t_type;
   filter_t filter;
   const char *db_type;
@@ -44464,7 +44463,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     }
 
   db_type = type_db_name (type);
-  if (type && db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
     {
       if (!valid_subtype (type))
         {
@@ -44473,13 +44472,9 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
         }
     }
 
-  if (type && db_type)
+  if (type)
     {
       type = valid_subtype (type) ? type : db_type;
-    }
-  else
-    {
-      type = "";
     }
 
   assert (current_credentials.uuid);
@@ -44519,7 +44514,6 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
         }
     }
 
-  quoted_filter_id = sql_quote(filter_id);
   quoted_name = sql_quote(name ?: "");
   clean_term = manage_clean_filter (term ? term : "",
                                     0 /* ignore_max_rows_per_page */);
@@ -44538,11 +44532,10 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
                   g_strdup ("");
 
   sql ("UPDATE filters SET"
-       " uuid = '%s'"
+       " uuid = uuid"
        "%s%s%s%s"
        ", modification_time = m_now ()"
        " WHERE id = %llu;",
-       quoted_filter_id,
        t_name,
        t_comment,
        t_term,
@@ -44553,7 +44546,6 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   g_free (t_comment);
   g_free (t_term);
   g_free (t_type);
-  g_free (quoted_filter_id);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_term);
