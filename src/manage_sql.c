@@ -8895,12 +8895,7 @@ generate_report_filename (report_t report, report_format_t report_format,
   if (custom_format && strcmp (custom_format, ""))
     fname_format = g_strdup (custom_format);
   else
-    fname_format
-      = sql_string ("SELECT value FROM settings"
-                    " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
-                    " AND " ACL_GLOBAL_OR_USER_OWNS ()
-                    " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
-                    current_credentials.uuid);
+    setting_value (SETTING_UUID_FILE_REPORT, &fname_format);
 
   report_id = report_uuid (report);
 
@@ -9565,12 +9560,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
               char *recipient_credential_id;
               credential_t recipient_credential;
 
-              fname_format
-                = sql_string ("SELECT value FROM settings"
-                              " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
-                              " AND " ACL_GLOBAL_OR_USER_OWNS ()
-                              " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
-                              current_credentials.uuid);
+              setting_value (SETTING_UUID_FILE_REPORT, &fname_format);
 
               report_id = report_uuid (report);
 
