@@ -8999,10 +8999,7 @@ trigger_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
 
   // Get report
   if (report == 0)
-    switch (sql_int64 (&report,
-                       "SELECT max (id) FROM reports"
-                       " WHERE task = %llu",
-                       task))
+    switch (task_last_report_any_status (task, &report))
       {
         case 0:
           if (report)
@@ -9948,10 +9945,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           if (report == 0)
-            switch (sql_int64 (&report,
-                                "SELECT max (id) FROM reports"
-                                " WHERE task = %llu",
-                                task))
+            switch (task_last_report_any_status (task, &report))
               {
                 case 0:
                   if (report)
