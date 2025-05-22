@@ -44412,29 +44412,14 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
                const char *term, const char *type)
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
+  char *t_name, *t_comment, *t_term, *t_type;
   filter_t filter;
   const char *db_type;
 
   if (filter_id == NULL)
     return 4;
 
-  db_type = type_db_name (type);
-  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
-    {
-      if (!valid_subtype (type))
-        return 3;
-    }
-  type = valid_subtype (type) ? type : db_type;
-
   sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_filter") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
 
   filter = 0;
   if (find_filter_with_permission (filter_id, &filter, "modify_filter"))
@@ -44447,6 +44432,29 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
+    }
+
+  db_type = type_db_name (type);
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
+    {
+      if (!valid_subtype (type))
+        {
+          sql_rollback ();
+          return 3;
+        }
+    }
+
+  if (type)
+    {
+      type = valid_subtype (type) ? type : db_type;
+    }
+
+  assert (current_credentials.uuid);
+
+  if (acl_user_may ("modify_filter") == 0)
+    {
+      sql_rollback ();
+      return 99;
     }
 
   /* If the filter is linked to an alert, check that the type is valid. */
@@ -44486,19 +44494,29 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_type = sql_quote (type ? type : "");
 
+  t_name = name ? g_strdup_printf (", name = '%s'", quoted_name) :
+                  g_strdup ("");
+  t_comment = comment ? g_strdup_printf (", comment = '%s'", quoted_comment) :
+                        g_strdup ("");
+  t_term = term ? g_strdup_printf (", term = '%s'", quoted_term) :
+                  g_strdup ("");
+  t_type = type ? g_strdup_printf (", type = lower ('%s')", quoted_type) :
+                  g_strdup ("");
+
   sql ("UPDATE filters SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " term = '%s',"
-       " type = lower ('%s'),"
        " modification_time = m_now ()"
+       " %s%s%s%s"
        " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       quoted_term,
-       quoted_type,
+       t_name,
+       t_comment,
+       t_term,
+       t_type,
        filter);
 
+  g_free (t_name);
+  g_free (t_comment);
+  g_free (t_term);
+  g_free (t_type);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_term);
