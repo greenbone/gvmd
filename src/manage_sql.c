@@ -44439,8 +44439,9 @@ int
 modify_filter (const char *filter_id, const char *name, const char *comment,
                const char *term, const char *type)
 {
-  char *f_name, *f_comment, *f_term, *f_type;
-  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
+  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type;
+  gchar *quoted_filter_id, *clean_term;
+  char *t_name, *t_comment, *t_term, *t_type;
   filter_t filter;
   const char *db_type;
 
@@ -44462,46 +44463,29 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
       return 1;
     }
 
-  f_name = name ? g_strdup (name) : filter_name (filter);
-  f_comment = comment ? g_strdup (comment) : filter_comment (filter);
-  f_type = type ? g_strdup (type) : filter_type (filter);
-  f_term = term ? g_strdup (term) : filter_term (filter_id);
-
-  db_type = type_db_name (f_type);
-  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
+  db_type = type_db_name (type);
+  if (type && db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
     {
-      if (!valid_subtype (f_type))
+      if (!valid_subtype (type))
         {
-          g_free (f_name);
-          g_free (f_comment);
-          g_free (f_type);
-          g_free (f_term);
           sql_rollback ();
           return 3;
         }
     }
 
-  if (f_type && db_type)
+  if (type && db_type)
     {
-      char *t_type;
-      t_type = valid_subtype (f_type) ? g_strdup (f_type) : g_strdup (db_type);
-      g_free (f_type);
-      f_type = t_type;
+      type = valid_subtype (type) ? type : db_type;
     }
   else
     {
-      g_free (f_type);
-      f_type = g_strdup ("");
+      type = "";
     }
 
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_filter") == 0)
     {
-      g_free (f_name);
-      g_free (f_comment);
-      g_free (f_type);
-      g_free (f_term);
       sql_rollback ();
       return 99;
     }
@@ -44510,68 +44494,66 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
 
   if ((filter_in_use_for_output (filter)
        || filter_in_use_for_result_event (filter))
-      && f_type
-      && strcasecmp (f_type, "result"))
+      && type
+      && strcasecmp (type, "result"))
     {
-      g_free (f_name);
-      g_free (f_comment);
-      g_free (f_type);
-      g_free (f_term);
       sql_rollback ();
       return 5;
     }
 
   if (filter_in_use_for_secinfo_event (filter)
-      && f_type
-      && strcasecmp (f_type, "info"))
+      && type
+      && strcasecmp (type, "info"))
     {
-      g_free (f_name);
-      g_free (f_comment);
-      g_free (f_type);
-      g_free (f_term);
       sql_rollback ();
       return 6;
     }
 
   /* Check whether a filter with the same name exists already. */
-  if (f_name)
+  if (name)
     {
-      if (resource_with_name_exists (f_name, "filter", filter))
+      if (resource_with_name_exists (name, "filter", filter))
         {
-          g_free (f_name);
-          g_free (f_comment);
-          g_free (f_type);
-          g_free (f_term);
           sql_rollback ();
           return 2;
         }
     }
 
-  quoted_name = sql_quote(f_name ?: "");
-  clean_term = manage_clean_filter (f_term ? f_term : "",
+  quoted_filter_id = sql_quote(filter_id);
+  quoted_name = sql_quote(name ?: "");
+  clean_term = manage_clean_filter (term ? term : "",
                                     0 /* ignore_max_rows_per_page */);
   quoted_term = sql_quote (clean_term);
   g_free (clean_term);
-  quoted_comment = sql_quote (f_comment ? f_comment : "");
-  quoted_type = sql_quote (f_type ? f_type : "");
+  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_type = sql_quote (type ? type : "");
+
+  t_name = name ? g_strdup_printf (", name = '%s'", quoted_name) :
+                  g_strdup ("");
+  t_comment = comment ? g_strdup_printf (", comment = '%s'", quoted_comment) :
+                        g_strdup ("");
+  t_term = term ? g_strdup_printf (", term = '%s'", quoted_term) :
+                  g_strdup ("");
+  t_type = type ? g_strdup_printf (", type = lower ('%s')", quoted_type) :
+                  g_strdup ("");
 
   sql ("UPDATE filters SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " term = '%s',"
-       " type = lower ('%s'),"
-       " modification_time = m_now ()"
+       " uuid = '%s'"
+       "%s%s%s%s"
+       ", modification_time = m_now ()"
        " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       quoted_term,
-       quoted_type,
+       quoted_filter_id,
+       t_name,
+       t_comment,
+       t_term,
+       t_type,
        filter);
 
-  g_free (f_name);
-  g_free (f_comment);
-  g_free (f_type);
-  g_free (f_term);
+  g_free (t_name);
+  g_free (t_comment);
+  g_free (t_term);
+  g_free (t_type);
+  g_free (quoted_filter_id);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_term);
