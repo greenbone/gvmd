@@ -3093,12 +3093,6 @@ filter_name (filter_t);
 char*
 trash_filter_name (filter_t);
 
-char*
-filter_comment (filter_t);
-
-char*
-filter_type (filter_t);
-
 int
 create_filter (const char*, const char*, const char*, const char*, filter_t*);
 

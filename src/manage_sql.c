@@ -43772,34 +43772,6 @@ trash_filter_name (filter_t filter)
 }
 
 /**
- * @brief Return the comment of a filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return comment of filter.
- */
-char*
-filter_comment (filter_t filter)
-{
-  return sql_string ("SELECT comment FROM filters WHERE id = %llu;",
-                     filter);
-}
-
-/**
- * @brief Return the type of a filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return type of filter.
- */
-char*
-filter_type (filter_t filter)
-{
-  return sql_string ("SELECT type FROM filters WHERE id = %llu;",
-                     filter);
-}
-
-/**
  * @brief Return the term of a filter.
  *
  * @param[in]  uuid  Filter UUID.
