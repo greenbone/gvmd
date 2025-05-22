@@ -8897,8 +8897,7 @@ generate_report_filename (report_t report, report_format_t report_format,
   else
     fname_format
       = sql_string ("SELECT value FROM settings"
-                    " WHERE name"
-                    "       = 'Report Export File Name'"
+                    " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
                     " AND " ACL_GLOBAL_OR_USER_OWNS ()
                     " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                     current_credentials.uuid);
@@ -9568,8 +9567,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
 
               fname_format
                 = sql_string ("SELECT value FROM settings"
-                              " WHERE name"
-                              "       = 'Report Export File Name'"
+                              " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
                               " AND " ACL_GLOBAL_OR_USER_OWNS ()
                               " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
                               current_credentials.uuid);
