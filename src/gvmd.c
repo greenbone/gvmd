@@ -1251,7 +1251,11 @@ fork_update_nvt_cache (pid_t *child_pid_out)
           }
 
 #if FEED_VT_METADATA == 1
-        if (manage_update_nvts_from_feed (0))
+       /* Re-open DB after fork. */
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+
+        if (manage_update_nvts_from_feed (FALSE))
           {
             g_warning ("%s: NVTs update from feed failed", __func__);
             cleanup_manage_process (FALSE);

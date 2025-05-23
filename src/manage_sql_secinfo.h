@@ -213,7 +213,4 @@ set_secinfo_fast_init (int);
 void
 update_scap_extra ();
 
-int
-manage_feed_timestamp (const gchar *);
-
 #endif /* not _GVMD_MANAGE_SQL_SECINFO_H */

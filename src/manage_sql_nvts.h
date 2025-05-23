@@ -162,7 +162,7 @@ family_count ();
 
 #if FEED_VT_METADATA == 1
 int
-manage_update_nvts_from_feed ();
+manage_update_nvts_from_feed (gboolean);
 
 int
 nvts_feed_version_status_from_timestamp ();

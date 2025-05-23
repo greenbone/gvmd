@@ -5984,11 +5984,11 @@ sync_secinfo (sigset_t *sigmask_current, int (*update) (void),
 /**
  * @brief Get the feed timestamp.
  *
- * @param[in]  name  Feed type: SCAP or CERT or NVTS.
+ * @param[in]  name  Feed type: SCAP or CERT.
  *
  * @return Timestamp from feed.  0 if missing.  -1 on error.
  */
-int
+static int
 manage_feed_timestamp (const gchar *name)
 {
   GError *error;
@@ -6000,11 +6000,6 @@ manage_feed_timestamp (const gchar *name)
   if (strcasecmp (name, "scap") == 0)
     g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);
-#if FEED_VT_METADATA
-  else if (strcasecmp (name, "nvts") == 0)
-    g_file_get_contents (GVM_NVT_DATA_DIR "/timestamp", &timestamp, &len,
-                        &error);
-#endif
   else
     g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);

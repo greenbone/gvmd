@@ -5305,7 +5305,6 @@ feed_sync_required ()
       case 1:
       case 2:
       case 3:
-      case 4:
         g_debug ("%s: NVTs need to be updated (status %d)",
                 __func__, feed_status_ret);
         return TRUE;

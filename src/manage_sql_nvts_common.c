@@ -532,12 +532,13 @@ prepare_nvts_insert (int rebuild) {
  *
  * @param[in] count_new_vts         Number of newly added VTs.
  * @param[in] count_modified_vts    Number of modified VTs.
- * @param[in] scanner_feed_version  Scanner feed version.
+ * @param[in] nvts_feed_version     NVTs feed version.
  * @param[in] rebuild               Whether we are rebuilding tables.
  */
 void
 finalize_nvts_insert (int count_new_vts, int count_modified_vts,
-                               const gchar *scanner_feed_version, int rebuild) {
+                      const gchar *nvts_feed_version, int rebuild)
+{
   if (rebuild) {
       sql("DROP VIEW IF EXISTS results_autofp;");
       sql("DROP VIEW vulns;");
@@ -555,8 +556,8 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
 
   set_nvts_check_time(count_new_vts, count_modified_vts);
 
-  if (scanner_feed_version)
-    set_nvts_feed_version(scanner_feed_version);
+  if (nvts_feed_version)
+    set_nvts_feed_version(nvts_feed_version);
 
   if (check_config_families())
     g_warning ("%s: Error updating config families."
@@ -578,7 +579,7 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
  * @return 0 success, -1 error.
  */
 int
-update_preferences_from_nvt (nvti_t *nvti, GList **preferences)
+update_preferences_from_nvti (nvti_t *nvti, GList **preferences)
 {
   assert (preferences);
 

@@ -267,7 +267,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
           insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
 
           preferences = NULL;
-          if (update_preferences_from_nvt (nvti, &preferences))
+          if (update_preferences_from_nvti (nvti, &preferences))
             {
               sql_rollback ();
               return -1;
@@ -438,8 +438,6 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
     return ret;
 
   update_nvt_end (old_nvts_last_modified);
-
-  openvasd_response_cleanup (resp);
 
   return 0;
 }
