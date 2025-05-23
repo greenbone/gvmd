@@ -24,8 +24,13 @@
 #ifndef _GVMD_IPC_H
 #define _GVMD_IPC_H
 
+#include <time.h>
+
 typedef enum {
-  SEMAPHORE_SCAN_UPDATE = 0
+  SEMAPHORE_SCAN_UPDATE = 0,
+  SEMAPHORE_DB_CONNECTIONS = 1,
+  SEMAPHORE_REPORTS_PROCESSING = 2,
+  SEMAPHORE_SET_SIZE = 3
 } semaphore_index_t;
 
 int
