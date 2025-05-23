@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, stable, oldstable]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-format:
     name: Check formatting

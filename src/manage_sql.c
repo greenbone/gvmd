@@ -48,6 +48,7 @@
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
+#include "manage_commands.h"
 #include "manage_authentication.h"
 #include "lsc_user.h"
 #include "sql.h"
@@ -195,6 +196,12 @@ set_task_interrupted (task_t, const gchar *);
 
 
 /* Static headers. */
+
+gchar *
+report_creation_time (report_t);
+
+gchar *
+report_modification_time (report_t);
 
 static int
 report_counts_cache_exists (report_t, int, int);
@@ -405,201 +412,6 @@ static struct timeval last_msg;
  * @brief The VT verification collation override
  */
 static gchar *vt_verification_collation = NULL;
-
-/* GMP commands. */
-
-/**
- * @brief The GMP command list.
- */
-command_t gmp_commands[]
- = {{"AUTHENTICATE", "Authenticate with the manager." },
-    {"CREATE_ALERT", "Create an alert."},
-    {"CREATE_ASSET", "Create an asset."},
-    {"CREATE_CONFIG", "Create a config."},
-    {"CREATE_CREDENTIAL", "Create a credential."},
-    {"CREATE_FILTER", "Create a filter."},
-    {"CREATE_GROUP", "Create a group."},
-    {"CREATE_NOTE", "Create a note."},
-    {"CREATE_OVERRIDE", "Create an override."},
-    {"CREATE_PERMISSION", "Create a permission."},
-    {"CREATE_PORT_LIST", "Create a port list."},
-    {"CREATE_PORT_RANGE", "Create a port range in a port list."},
-    {"CREATE_REPORT", "Create a report."},
-    {"CREATE_REPORT_CONFIG", "Create a report config."},
-    {"CREATE_REPORT_FORMAT", "Create a report format."},
-    {"CREATE_ROLE", "Create a role."},
-    {"CREATE_SCANNER", "Create a scanner."},
-    {"CREATE_SCHEDULE", "Create a schedule."},
-    {"CREATE_TAG", "Create a tag."},
-    {"CREATE_TARGET", "Create a target."},
-    {"CREATE_TASK", "Create a task."},
-    {"CREATE_TICKET", "Create a ticket."},
-    {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
-    {"CREATE_USER", "Create a new user."},
-    {"DELETE_ALERT", "Delete an alert."},
-    {"DELETE_ASSET", "Delete an asset."},
-    {"DELETE_CONFIG", "Delete a config."},
-    {"DELETE_CREDENTIAL", "Delete a credential."},
-    {"DELETE_FILTER", "Delete a filter."},
-    {"DELETE_GROUP", "Delete a group."},
-    {"DELETE_NOTE", "Delete a note."},
-    {"DELETE_OVERRIDE", "Delete an override."},
-    {"DELETE_PERMISSION", "Delete a permission."},
-    {"DELETE_PORT_LIST", "Delete a port list."},
-    {"DELETE_PORT_RANGE", "Delete a port range."},
-    {"DELETE_REPORT", "Delete a report."},
-    {"DELETE_REPORT_CONFIG", "Delete a report config."},
-    {"DELETE_REPORT_FORMAT", "Delete a report format."},
-    {"DELETE_ROLE", "Delete a role."},
-    {"DELETE_SCANNER", "Delete a scanner."},
-    {"DELETE_SCHEDULE", "Delete a schedule."},
-    {"DELETE_TAG", "Delete a tag."},
-    {"DELETE_TARGET", "Delete a target."},
-    {"DELETE_TASK", "Delete a task."},
-    {"DELETE_TICKET", "Delete a ticket."},
-    {"DELETE_TLS_CERTIFICATE", "Delete a TLS certificate."},
-    {"DELETE_USER", "Delete an existing user."},
-    {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
-    {"EMPTY_TRASHCAN", "Empty the trashcan."},
-    {"GET_AGGREGATES", "Get aggregates of resources."},
-    {"GET_ALERTS", "Get all alerts."},
-    {"GET_ASSETS", "Get all assets."},
-    {"GET_CONFIGS", "Get all configs."},
-    {"GET_CREDENTIALS", "Get all credentials."},
-    {"GET_FEEDS", "Get details of one or all feeds this Manager uses."},
-    {"GET_FILTERS", "Get all filters."},
-    {"GET_GROUPS", "Get all groups."},
-    {"GET_INFO", "Get raw information for a given item."},
-    {"GET_LICENSE", "Get license information." },
-    {"GET_NOTES", "Get all notes."},
-    {"GET_NVTS", "Get one or all available NVTs."},
-    {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
-    {"GET_OVERRIDES", "Get all overrides."},
-    {"GET_PERMISSIONS", "Get all permissions."},
-    {"GET_PORT_LISTS", "Get all port lists."},
-    {"GET_PREFERENCES", "Get preferences for all available NVTs."},
-    {"GET_REPORTS", "Get all reports."},
-    {"GET_REPORT_CONFIGS", "Get all report configs."},
-    {"GET_REPORT_FORMATS", "Get all report formats."},
-    {"GET_RESULTS", "Get results."},
-    {"GET_ROLES", "Get all roles."},
-    {"GET_SCANNERS", "Get all scanners."},
-    {"GET_SCHEDULES", "Get all schedules."},
-    {"GET_SETTINGS", "Get all settings."},
-    {"GET_SYSTEM_REPORTS", "Get all system reports."},
-    {"GET_TAGS", "Get all tags."},
-    {"GET_TARGETS", "Get all targets."},
-    {"GET_TASKS", "Get all tasks."},
-    {"GET_TICKETS", "Get all tickets."},
-    {"GET_TLS_CERTIFICATES", "Get all TLS certificates."},
-    {"GET_USERS", "Get all users."},
-    {"GET_VERSION", "Get the Greenbone Management Protocol version."},
-    {"GET_VULNS", "Get all vulnerabilities."},
-    {"HELP", "Get this help text."},
-    {"MODIFY_ALERT", "Modify an existing alert."},
-    {"MODIFY_ASSET", "Modify an existing asset."},
-    {"MODIFY_AUTH", "Modify the authentication methods."},
-    {"MODIFY_CONFIG", "Update an existing config."},
-    {"MODIFY_CREDENTIAL", "Modify an existing credential."},
-    {"MODIFY_FILTER", "Modify an existing filter."},
-    {"MODIFY_GROUP", "Modify an existing group."},
-    {"MODIFY_LICENSE", "Modify the existing license."},
-    {"MODIFY_NOTE", "Modify an existing note."},
-    {"MODIFY_OVERRIDE", "Modify an existing override."},
-    {"MODIFY_PERMISSION", "Modify an existing permission."},
-    {"MODIFY_PORT_LIST", "Modify an existing port list."},
-    {"MODIFY_REPORT_CONFIG", "Modify an existing report config."},
-    {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
-    {"MODIFY_ROLE", "Modify an existing role."},
-    {"MODIFY_SCANNER", "Modify an existing scanner."},
-    {"MODIFY_SCHEDULE", "Modify an existing schedule."},
-    {"MODIFY_SETTING", "Modify an existing setting."},
-    {"MODIFY_TAG", "Modify an existing tag."},
-    {"MODIFY_TARGET", "Modify an existing target."},
-    {"MODIFY_TASK", "Update an existing task."},
-    {"MODIFY_TICKET", "Modify an existing ticket."},
-    {"MODIFY_TLS_CERTIFICATE", "Modify an existing TLS certificate."},
-    {"MODIFY_USER", "Modify a user."},
-    {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
-    {"RESTORE", "Restore a resource."},
-    {"RESUME_TASK", "Resume a stopped task."},
-    {"RUN_WIZARD", "Run a wizard."},
-    {"START_TASK", "Manually start an existing task."},
-    {"STOP_TASK", "Stop a running task."},
-    {"SYNC_CONFIG", "Synchronize a config with a scanner."},
-    {"TEST_ALERT", "Run an alert."},
-    {"VERIFY_REPORT_FORMAT", "Verify a report format."},
-    {"VERIFY_SCANNER", "Verify a scanner."},
-    {NULL, NULL}};
-
-/**
- * @brief Check whether a command name is valid.
- *
- * @param[in]  name  Command name.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_gmp_command (const char* name)
-{
-  command_t *command;
-  command = gmp_commands;
-  while (command[0].name)
-    if (strcasecmp (command[0].name, name) == 0)
-      return 1;
-    else
-      command++;
-  return 0;
-}
-
-/**
- * @brief Get the type associated with a GMP command.
- *
- * @param[in]  name  Command name.
- *
- * @return Freshly allocated type name if any, else NULL.
- */
-static gchar *
-gmp_command_type (const char* name)
-{
-  const char *under;
-  under = strchr (name, '_');
-  if (under && (strlen (under) > 1))
-    {
-      gchar *command;
-      under++;
-      command = g_strdup (under);
-      if (command[strlen (command) - 1] == 's')
-        command[strlen (command) - 1] = '\0';
-      if (valid_type (command))
-        return command;
-      g_free (command);
-    }
-  return NULL;
-}
-
-/**
- * @brief Check whether a GMP command takes a resource.
- *
- * MODIFY_TARGET, for example, takes a target.
- *
- * @param[in]  name  Command name.
- *
- * @return 1 if takes resource, else 0.
- */
-static int
-gmp_command_takes_resource (const char* name)
-{
-  assert (name);
-  return strcasecmp (name, "AUTHENTICATE")
-         && strcasestr (name, "CREATE_") != name
-         && strcasestr (name, "DESCRIBE_") != name
-         && strcasecmp (name, "EMPTY_TRASHCAN")
-         && strcasecmp (name, "GET_VERSION")
-         && strcasecmp (name, "HELP")
-         && strcasecmp (name, "RUN_WIZARD")
-         && strcasestr (name, "SYNC_") != name;
-}
 
 
 /* General helpers. */
@@ -1027,789 +839,6 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
 
 
 /* Filter utilities. */
-
-/**
- * @brief Get the symbol of a keyword relation.
- *
- * @param[in]  relation  Relation.
- *
- * @return Relation symbol.
- */
-const char *
-keyword_relation_symbol (keyword_relation_t relation)
-{
-  switch (relation)
-    {
-      case KEYWORD_RELATION_APPROX:        return "~";
-      case KEYWORD_RELATION_COLUMN_ABOVE:  return ">";
-      case KEYWORD_RELATION_COLUMN_APPROX: return "~";
-      case KEYWORD_RELATION_COLUMN_EQUAL:  return "=";
-      case KEYWORD_RELATION_COLUMN_BELOW:  return "<";
-      case KEYWORD_RELATION_COLUMN_REGEXP: return ":";
-      default:                             return "";
-    }
-}
-
-/**
- * @brief Free a keyword.
- *
- * @param[in]  keyword  Filter keyword.
- */
-static void
-keyword_free (keyword_t* keyword)
-{
-  g_free (keyword->string);
-  g_free (keyword->column);
-}
-
-/**
- * @brief Get whether a keyword is special (like "and").
- *
- * @param[in]  keyword  Keyword.
- *
- * @return 1 if special, else 0.
- */
-int
-keyword_special (keyword_t *keyword)
-{
-  if (keyword->string)
-    return (strcmp (keyword->string, "and") == 0)
-           || (strcmp (keyword->string, "or") == 0)
-           || (strcmp (keyword->string, "not") == 0)
-           || (strcmp (keyword->string, "re") == 0)
-           || (strcmp (keyword->string, "regexp") == 0);
-  return 0;
-}
-
-/**
- * @brief Parse a filter column relation.
- *
- * @param[in]  relation  Filter relation.
- *
- * @return keyword relation
- */
-static keyword_relation_t
-parse_column_relation (const char relation)
-{
-  switch (relation)
-    {
-      case '=': return KEYWORD_RELATION_COLUMN_EQUAL;
-      case '~': return KEYWORD_RELATION_COLUMN_APPROX;
-      case '>': return KEYWORD_RELATION_COLUMN_ABOVE;
-      case '<': return KEYWORD_RELATION_COLUMN_BELOW;
-      case ':': return KEYWORD_RELATION_COLUMN_REGEXP;
-      default:  return KEYWORD_RELATION_COLUMN_APPROX;
-    }
-}
-
-/**
- * @brief Parse a filter keyword.
- *
- * @param[in]  keyword  Filter keyword.
- */
-static void
-parse_keyword (keyword_t* keyword)
-{
-  gchar *string;
-  int digits;
-
-  if (keyword->column == NULL && keyword->equal == 0)
-    {
-      keyword->relation = KEYWORD_RELATION_APPROX;
-      keyword->type = KEYWORD_TYPE_STRING;
-      return;
-    }
-
-  /* Special values to substitute */
-
-  if (keyword->column
-      && (strcasecmp (keyword->column, "severity") == 0
-          || strcasecmp (keyword->column, "new_severity") == 0))
-    {
-      if (strcasecmp (keyword->string, "Log") == 0)
-        {
-          keyword->double_value = SEVERITY_LOG;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
-      if (strcasecmp (keyword->string, "False Positive") == 0)
-        {
-          keyword->double_value = SEVERITY_FP;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
-      else if (strcasecmp (keyword->string, "Error") == 0)
-        {
-          keyword->double_value = SEVERITY_ERROR;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
-    }
-
-  /* The type. */
-
-  string = keyword->string;
-  if (*string == '\0')
-    {
-      keyword->type = KEYWORD_TYPE_STRING;
-      return;
-    }
-  if (*string && *string == '-' && strlen (string) > 1) string++;
-  digits = 0;
-  while (*string && isdigit (*string))
-    {
-      digits = 1;
-      string++;
-    }
-  if (digits == 0)
-    keyword->type = KEYWORD_TYPE_STRING;
-  else if (*string)
-    {
-      struct tm date;
-      gchar next;
-      int parsed_integer;
-      double parsed_double;
-      char dummy[2];
-      memset (&date, 0, sizeof (date));
-      next = *(string + 1);
-      if (next == '\0' && *string == 's')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + atoi (keyword->string);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'm')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + (atoi (keyword->string) * 60);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'h')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + (atoi (keyword->string) * 3600);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'd')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + (atoi (keyword->string) * 86400);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'w')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + atoi (keyword->string) * 604800;
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'M')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = add_months (now, atoi (keyword->string));
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'y')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = add_months (now,
-                                               atoi (keyword->string) * 12);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      // Add cases for t%H:%M although it is incorrect sometimes it is easier
-      // to call filter.lower on the frontend then it can happen that the
-      // T indicator is lowered as well.
-      else if (strptime (keyword->string, "%Y-%m-%dt%H:%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dtH:M %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (strptime (keyword->string, "%Y-%m-%dt%Hh%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dtHhM %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dTH:M %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      // Add T%Hh%M for downwards compatible filter
-      else if (strptime (keyword->string, "%Y-%m-%dT%Hh%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dTHhM %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (memset (&date, 0, sizeof (date)),
-               strptime (keyword->string, "%Y-%m-%d", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-d %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (sscanf (keyword->string, "%d%1s", &parsed_integer, dummy) == 1)
-        {
-          keyword->integer_value = parsed_integer;
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (sscanf (keyword->string, "%lf%1s", &parsed_double, dummy) == 1
-               && parsed_double <= DBL_MAX)
-        {
-          keyword->double_value = parsed_double;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-        }
-      else
-        keyword->type = KEYWORD_TYPE_STRING;
-    }
-  else
-    {
-      keyword->integer_value = atoi (keyword->string);
-      keyword->type = KEYWORD_TYPE_INTEGER;
-    }
-}
-
-/**
- * @brief Cleans up keywords with special conditions and relations.
- *
- * @param[in]  keyword  Keyword to clean up.
- */
-static void
-cleanup_keyword (keyword_t *keyword)
-{
-  if (keyword->column == NULL)
-    return;
-
-  if (strcasecmp (keyword->column, "first") == 0)
-    {
-      /* "first" must be >= 1 */
-      if (keyword->integer_value <= 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 1;
-          keyword->string = g_strdup ("1");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "rows") == 0)
-    {
-      /* rows must be >= 1 or a special value (-1 or -2) */
-      if (keyword->integer_value == 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 1;
-          keyword->string = g_strdup ("1");
-        }
-      else if (keyword->integer_value < -2)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = -1;
-          keyword->string = g_strdup ("-1");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "min_qod") == 0)
-    {
-      /* min_qod must be a percentage (between 0 and 100) */
-      if (keyword->integer_value < 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 0;
-          keyword->string = g_strdup ("0");
-        }
-      else if (keyword->integer_value > 100)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 100;
-          keyword->string = g_strdup ("100");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "apply_overrides") == 0
-           || strcasecmp (keyword->column, "overrides") == 0
-           || strcasecmp (keyword->column, "notes") == 0
-           || strcasecmp (keyword->column, "result_hosts_only") == 0)
-    {
-      /* Boolean options (0 or 1) */
-      if (keyword->integer_value != 0 && keyword->integer_value != 1)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 1;
-          keyword->string = g_strdup ("1");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "delta_states") == 0
-           || strcasecmp (keyword->column, "levels") == 0
-           || strcasecmp (keyword->column, "sort") == 0
-           || strcasecmp (keyword->column, "sort-reverse") == 0)
-    {
-      /* Text options */
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-}
-
-/**
- * @brief Check whether a keyword has any effect in the filter.
- *
- * Some keywords are redundant, like a second sort= keyword.
- *
- * @param[in]  array    Array of existing keywords.
- * @param[in]  keyword  Keyword under consideration.
- *
- * @return 0 no, 1 yes.
- */
-static int
-keyword_applies (array_t *array, const keyword_t *keyword)
-{
-  if (keyword->column
-      && ((strcmp (keyword->column, "sort") == 0)
-          || (strcmp (keyword->column, "sort-reverse") == 0))
-      && (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column
-              && ((strcmp (item->column, "sort") == 0)
-                  || (strcmp (item->column, "sort-reverse") == 0)))
-            return 0;
-        }
-      return 1;
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "first") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "first") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "rows") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "rows") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "apply_overrides") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "apply_overrides") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "delta_states") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "delta_states") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "levels") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "levels") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "min_qod") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "min_qod") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "notes") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "notes") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "overrides") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "overrides") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "result_hosts_only") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "result_hosts_only") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "timezone") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "timezone") == 0))
-            return 0;
-        }
-    }
-
-  return 1;
-}
-
-/**
- * @brief Free a split filter.
- *
- * @param[in]  split  Split filter.
- */
-void
-filter_free (array_t *split)
-{
-  keyword_t **point;
-  for (point = (keyword_t**) split->pdata; *point; point++)
-    keyword_free (*point);
-  array_free (split);
-}
-
-/**
- * @brief Flag to control the default sorting produced by split_filter.
- *
- * If this is true, and the filter does not specify a sort field, then
- * split_filter will not insert a default sort term, so that the random
- * (and fast) table order in the database will be used.
- */
-static int table_order_if_sort_not_specified = 0;
-
-/**
- * @brief Ensure filter parts contains the special keywords.
- *
- * @param[in]  parts         Array of keyword strings.
- * @param[in]  given_filter  Filter term.
- */
-void
-split_filter_add_specials (array_t *parts, const gchar* given_filter)
-{
-  int index, first, max, sort;
-  keyword_t *keyword;
-
-  index = parts->len;
-  first = max = sort = 0;
-  while (index--)
-    {
-      keyword_t *item;
-      item = (keyword_t*) g_ptr_array_index (parts, index);
-      if (item->column && (strcmp (item->column, "first") == 0))
-        first = 1;
-      else if (item->column && (strcmp (item->column, "rows") == 0))
-        max = 1;
-      else if (item->column
-               && ((strcmp (item->column, "sort") == 0)
-                   || (strcmp (item->column, "sort-reverse") == 0)))
-        sort = 1;
-    }
-
-  if (first == 0)
-    {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->column = g_strdup ("first");
-      keyword->string = g_strdup ("1");
-      keyword->type = KEYWORD_TYPE_STRING;
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      array_add (parts, keyword);
-    }
-
-  if (max == 0)
-    {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->column = g_strdup ("rows");
-      keyword->string = g_strdup ("-2");
-      keyword->type = KEYWORD_TYPE_STRING;
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      array_add (parts, keyword);
-    }
-
-  if (table_order_if_sort_not_specified == 0 && sort == 0)
-    {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->column = g_strdup ("sort");
-      keyword->string = g_strdup ("name");
-      keyword->type = KEYWORD_TYPE_STRING;
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      array_add (parts, keyword);
-    }
-}
-
-/**
- * @brief Split the filter term into parts.
- *
- * @param[in]  given_filter  Filter term.
- *
- * @return Array of strings, the parts.
- */
-array_t *
-split_filter (const gchar* given_filter)
-{
-  int in_quote, between;
-  array_t *parts;
-  const gchar *current_part, *filter;
-  keyword_t *keyword;
-
-  assert (given_filter);
-
-  /* Collect the filter terms in an array. */
-
-  filter = given_filter;
-  parts = make_array ();
-  in_quote = 0;
-  between = 1;
-  keyword = NULL;
-  current_part = filter;  /* To silence compiler warning. */
-  while (*filter)
-    {
-      switch (*filter)
-        {
-          case '=':
-          case '~':
-            if (between)
-              {
-                /* Empty index.  Start a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                if (*filter == '=')
-                  keyword->equal = 1;
-                else
-                  keyword->approx = 1;
-                current_part = filter + 1;
-                between = 0;
-                break;
-              }
-          case ':':
-          case '>':
-          case '<':
-            if (between)
-              {
-                /* Empty index.  Start a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                current_part = filter;
-                between = 0;
-                break;
-              }
-            if (in_quote)
-              break;
-            /* End of an index. */
-            if (keyword == NULL)
-              {
-                assert (0);
-                break;
-              }
-            if (keyword->column)
-              /* Already had an index char. */
-              break;
-            if (filter <= (current_part - 1))
-              {
-                assert (0);
-                break;
-              }
-            keyword->column = g_strndup (current_part,
-                                         filter - current_part);
-            current_part = filter + 1;
-            keyword->relation = parse_column_relation(*filter);
-            break;
-
-          case ' ':
-          case '\t':
-          case '\n':
-          case '\r':
-            if (in_quote || between)
-              break;
-            /* End of a part. */
-            if (keyword == NULL)
-              {
-                assert (0);
-                break;
-              }
-            keyword->string = g_strndup (current_part, filter - current_part);
-            parse_keyword (keyword);
-            cleanup_keyword (keyword);
-            if (keyword_applies (parts, keyword))
-              array_add (parts, keyword);
-            keyword = NULL;
-            between = 1;
-            break;
-
-          case '"':
-            if (in_quote)
-              {
-                /* End of a quoted part. */
-                if (keyword == NULL)
-                  {
-                    assert (0);
-                    break;
-                  }
-                keyword->quoted = 1;
-                keyword->string = g_strndup (current_part,
-                                             filter - current_part);
-                parse_keyword (keyword);
-                cleanup_keyword (keyword);
-                if (keyword_applies (parts, keyword))
-                  array_add (parts, keyword);
-                keyword = NULL;
-                in_quote = 0;
-                between = 1;
-              }
-            else if (between)
-              {
-                /* Start of a quoted part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                in_quote = 1;
-                current_part = filter + 1;
-                between = 0;
-              }
-            else if (keyword->column && filter == current_part)
-              {
-                /* A quoted index. */
-                in_quote = 1;
-                current_part++;
-              }
-            else if ((keyword->equal || keyword->approx)
-                     && filter == current_part)
-              {
-                /* A quoted exact term, like ="abc"
-                 * or a prefixed approximate term, like ~"abc". */
-                in_quote = 1;
-                current_part++;
-              }
-            /* Else just a quote in a keyword, like ab"cd. */
-            break;
-
-          default:
-            if (between)
-              {
-                /* Start of a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                current_part = filter;
-                between = 0;
-              }
-            break;
-        }
-      filter++;
-    }
-  if (between == 0)
-    {
-      if (keyword == NULL)
-        assert (0);
-      else
-        {
-          keyword->quoted = in_quote;
-          keyword->string = g_strdup (current_part);
-          parse_keyword (keyword);
-          cleanup_keyword (keyword);
-          if (keyword_applies (parts, keyword))
-            array_add (parts, keyword);
-          keyword = NULL;
-        }
-    }
-  assert (keyword == NULL);
-
-  /* Make sure the special keywords appear in the array. */
-
-  split_filter_add_specials (parts, given_filter);
-
-  array_add (parts, NULL);
-
-  return parts;
-}
 
 /**
  * @brief Get info from a filter.
@@ -2240,9 +1269,11 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
  * @param[in]  clean     Filter.
  * @param[in]  keyword   Keyword
  * @param[in]  relation  Relation char.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  */
 static void
-append_relation (GString *clean, keyword_t *keyword, const char relation)
+append_relation (GString *clean, keyword_t *keyword, const char relation,
+                 int ignore_max_rows_per_page)
 {
   if (strcmp (keyword->column, "rows") == 0)
     {
@@ -2257,7 +1288,7 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
                               " %s%c%i",
                               keyword->column,
                               relation,
-                              manage_max_rows (max));
+                              manage_max_rows (max, ignore_max_rows_per_page));
     }
   else if (keyword->quoted)
     g_string_append_printf (clean,
@@ -2278,11 +1309,13 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
  *
  * @param[in]  filter  Filter.
  * @param[in]  column  Keyword to remove, or NULL.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Cleaned filter.
  */
 gchar *
-manage_clean_filter_remove (const gchar *filter, const gchar *column)
+manage_clean_filter_remove (const gchar *filter, const gchar *column,
+                            int ignore_max_rows_per_page)
 {
   GString *clean;
   keyword_t **point;
@@ -2312,19 +1345,19 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
         switch (keyword->relation)
           {
             case KEYWORD_RELATION_COLUMN_EQUAL:
-              append_relation (clean, keyword, '=');
+              append_relation (clean, keyword, '=', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_APPROX:
-              append_relation (clean, keyword, '~');
+              append_relation (clean, keyword, '~', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_ABOVE:
-              append_relation (clean, keyword, '>');
+              append_relation (clean, keyword, '>', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_BELOW:
-              append_relation (clean, keyword, '<');
+              append_relation (clean, keyword, '<', ignore_max_rows_per_page);
               break;
             case KEYWORD_RELATION_COLUMN_REGEXP:
-              append_relation (clean, keyword, ':');
+              append_relation (clean, keyword, ':', ignore_max_rows_per_page);
               break;
 
             case KEYWORD_RELATION_APPROX:
@@ -2363,13 +1396,14 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
  * @brief Clean a filter.
  *
  * @param[in]  filter  Filter.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Cleaned filter.
  */
 gchar *
-manage_clean_filter (const gchar *filter)
+manage_clean_filter (const gchar *filter, int ignore_max_rows_per_page)
 {
-  return manage_clean_filter_remove (filter, NULL);
+  return manage_clean_filter_remove (filter, NULL, ignore_max_rows_per_page);
 }
 
 /**
@@ -2836,7 +1870,8 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
  * @param[in]  filter_columns  Filter columns.
  * @param[in]  select_columns  SELECT columns.
  * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
- * @param[out] trash           Whether the trash table is being queried.
+ * @param[in]  trash           Whether the trash table is being queried.
+ * @param[in]  ignore_max_rows_per_page Whether to ignore "Max Rows Per Page".
  * @param[out] order_return  If given then order clause.
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
@@ -2848,9 +1883,10 @@ filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
 gchar *
 filter_clause (const char* type, const char* filter,
                const char **filter_columns, column_t *select_columns,
-               column_t *where_columns, int trash, gchar **order_return,
-               int *first_return, int *max_return, array_t **permissions,
-               gchar **owner_filter)
+               column_t *where_columns, int trash,
+               int ignore_max_rows_per_page,
+               gchar **order_return, int *first_return, int *max_return,
+               array_t **permissions, gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -3894,7 +2930,7 @@ filter_clause (const char* type, const char* filter,
       else if (*max_return < 1)
         *max_return = -1;
 
-      *max_return = manage_max_rows (*max_return);
+      *max_return = manage_max_rows (*max_return, ignore_max_rows_per_page);
     }
 
   if (strlen (clause->str))
@@ -3905,285 +2941,6 @@ filter_clause (const char* type, const char* filter,
 
 
 /* Resources. */
-
-/**
- * @brief Check whether a resource type name is valid.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_type (const char* type)
-{
-  return (strcasecmp (type, "alert") == 0)
-         || (strcasecmp (type, "asset") == 0)
-         || (strcasecmp (type, "config") == 0)
-         || (strcasecmp (type, "credential") == 0)
-         || (strcasecmp (type, "filter") == 0)
-         || (strcasecmp (type, "group") == 0)
-         || (strcasecmp (type, "host") == 0)
-         || (strcasecmp (type, "info") == 0)
-         || (strcasecmp (type, "note") == 0)
-         || (strcasecmp (type, "os") == 0)
-         || (strcasecmp (type, "override") == 0)
-         || (strcasecmp (type, "permission") == 0)
-         || (strcasecmp (type, "port_list") == 0)
-         || (strcasecmp (type, "report") == 0)
-         || (strcasecmp (type, "report_config") == 0)
-         || (strcasecmp (type, "report_format") == 0)
-         || (strcasecmp (type, "result") == 0)
-         || (strcasecmp (type, "role") == 0)
-         || (strcasecmp (type, "scanner") == 0)
-         || (strcasecmp (type, "schedule") == 0)
-         || (strcasecmp (type, "tag") == 0)
-         || (strcasecmp (type, "target") == 0)
-         || (strcasecmp (type, "task") == 0)
-         || (strcasecmp (type, "ticket") == 0)
-         || (strcasecmp (type, "tls_certificate") == 0)
-         || (strcasecmp (type, "user") == 0)
-         || (strcasecmp (type, "vuln") == 0);
-}
-
-/**
- * @brief Check whether a resource subtype name is valid.
- *
- * @param[in]  subtype  Subtype of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_subtype (const char* type)
-{
-    return (strcasecmp (type, "audit_report") == 0)
-          || (strcasecmp (type, "audit") == 0)
-          || (strcasecmp (type, "policy") == 0);
-}
-
-/**
- * @brief Return DB name of type.
- *
- * @param[in]  type  Database or pretty name.
- *
- * @return Database name of type if possible, else NULL.
- */
-static const char *
-type_db_name (const char* type)
-{
-  if (type == NULL)
-    return NULL;
-
-  if (valid_type (type))
-    return type;
-
-  if (strcasecmp (type, "Alert") == 0)
-    return "alert";
-  if (strcasecmp (type, "Asset") == 0)
-    return "asset";
-  if (strcasecmp (type, "Config") == 0)
-    return "config";
-  if (strcasecmp (type, "Credential") == 0)
-    return "credential";
-  if (strcasecmp (type, "Filter") == 0)
-    return "filter";
-  if (strcasecmp (type, "Note") == 0)
-    return "note";
-  if (strcasecmp (type, "Override") == 0)
-    return "override";
-  if (strcasecmp (type, "Permission") == 0)
-    return "permission";
-  if (strcasecmp (type, "Port List") == 0)
-    return "port_list";
-  if (strcasecmp (type, "Report") == 0)
-    return "report";
-  if (strcasecmp (type, "Report Config") == 0)
-    return "report_config";
-  if (strcasecmp (type, "Report Format") == 0)
-    return "report_format";
-  if (strcasecmp (type, "Result") == 0)
-    return "result";
-  if (strcasecmp (type, "Role") == 0)
-    return "role";
-  if (strcasecmp (type, "Scanner") == 0)
-    return "scanner";
-  if (strcasecmp (type, "Schedule") == 0)
-    return "schedule";
-  if (strcasecmp (type, "Tag") == 0)
-    return "tag";
-  if (strcasecmp (type, "Target") == 0)
-    return "target";
-  if (strcasecmp (type, "Task") == 0)
-    return "task";
-  if (strcasecmp (type, "Ticket") == 0)
-    return "ticket";
-  if (strcasecmp (type, "TLS Certificate") == 0)
-    return "tls_certificate";
-  if (strcasecmp (type, "SecInfo") == 0)
-    return "info";
-  return NULL;
-}
-
-/**
- * @brief Check whether a resource type is an asset subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_asset_subtype (const char *type)
-{
-  return (strcasecmp (type, "host")
-          && strcasecmp (type, "os"))
-         == 0;
-}
-
-/**
- * @brief Check whether a resource type is an info subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_info_subtype (const char *type)
-{
-  return (strcasecmp (type, "nvt")
-          && strcasecmp (type, "cve")
-          && strcasecmp (type, "cpe")
-          && strcasecmp (type, "cert_bund_adv")
-          && strcasecmp (type, "dfn_cert_adv"))
-         == 0;
-}
-
-/**
- * @brief Check whether a resource type is a report subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_report_subtype (const char *type)
-{
-  return (strcasecmp (type, "audit_report") == 0);
-}
-
-/**
- * @brief Check whether a resource type is a task subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_task_subtype (const char *type)
-{
-  return (strcasecmp (type, "audit") == 0);
-}
-
-/**
- * @brief Check whether a resource type is a config subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_config_subtype (const char *type)
-{
-  return (strcasecmp (type, "policy") == 0);
-}
-
-/**
- * @brief Check whether a type has a name and comment.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_named (const char *type)
-{
-  return strcasecmp (type, "note")
-         && strcasecmp (type, "override");
-}
-
-/**
- * @brief Check whether a type must have globally unique names.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_globally_unique (const char *type)
-{
-  if (strcasecmp (type, "user") == 0)
-    return 1;
-  else
-    return 0;
-}
-
-/**
- * @brief Check whether a type has a comment.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_has_comment (const char *type)
-{
-  return strcasecmp (type, "report_format");
-}
-
-/**
- * @brief Check whether a resource type uses the trashcan.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_has_trash (const char *type)
-{
-  return strcasecmp (type, "report")
-         && strcasecmp (type, "result")
-         && strcasecmp (type, "info")
-         && type_is_info_subtype (type) == 0
-         && strcasecmp (type, "vuln")
-         && strcasecmp (type, "user")
-         && strcasecmp (type, "tls_certificate");
-}
-
-/**
- * @brief Check whether a resource type has an owner.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_owned (const char* type)
-{
-  return strcasecmp (type, "info")
-         && type_is_info_subtype (type) == 0
-         && strcasecmp (type, "vuln");
-}
-
-/**
- * @brief Check whether the trash is in the real table.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_trash_in_table (const char *type)
-{
-  return strcasecmp (type, "task") == 0;
-}
 
 /* TODO Only used by find_scanner, find_permission and check_permission_args. */
 /**
@@ -5026,8 +3783,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                           (get->trash && trash_where_columns)
                            ? trash_where_columns
                            : where_columns,
-                          get->trash, &order, &first, &max, &permissions,
-                          &owner_filter);
+                          get->trash, get->ignore_max_rows_per_page,
+                          &order, &first, &max, &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -5896,7 +4653,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                           get->trash && trash_where_columns
                            ? trash_where_columns
                            : where_columns,
-                          get->trash, NULL, NULL, NULL, &permissions,
+                          get->trash, get->ignore_max_rows_per_page,
+                          NULL, NULL, NULL, &permissions,
                           &owner_filter);
 
   g_free (filter);
@@ -8096,7 +6854,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   pkcs12_file = g_strdup_printf ("%s/pkcs12", report_dir);
 
-  if (strlen (pkcs12_64))
+  if (pkcs12_64 && strlen (pkcs12_64))
     pkcs12 = (gchar*) g_base64_decode (pkcs12_64, &pkcs12_len);
   else
     {
@@ -9109,7 +7867,7 @@ alert_subject_print (const gchar *subject, event_t event,
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
-                  else if (type_is_scap (event_data))
+                  else if (secinfo_type_is_scap (event_data))
                     date = scap_check_time ();
                   else
                     date = cert_check_time ();
@@ -9161,12 +7919,14 @@ alert_subject_print (const gchar *subject, event_t event,
             case 's':
               /* Type. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, type_name (event_data));
+                g_string_append (new_subject,
+                                 secinfo_type_name (event_data));
               break;
             case 'S':
               /* Type, plural. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, type_name_plural (event_data));
+                g_string_append (new_subject,
+                                 secinfo_type_name_plural (event_data));
               break;
             case 'T':
               g_string_append_printf (new_subject, "%i", total);
@@ -9280,7 +8040,7 @@ alert_message_print (const gchar *message, event_t event,
 
                   if (event_data && (strcasecmp (event_data, "nvt") == 0))
                     date = nvts_check_time ();
-                  else if (type_is_scap (event_data))
+                  else if (secinfo_type_is_scap (event_data))
                     date = scap_check_time ();
                   else
                     date = cert_check_time ();
@@ -9390,12 +8150,14 @@ alert_message_print (const gchar *message, event_t event,
             case 's':
               /* Type. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_message, type_name (event_data));
+                g_string_append (new_message,
+                                 secinfo_type_name (event_data));
               break;
             case 'S':
               /* Type, plural. */
               if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_message, type_name_plural (event_data));
+                g_string_append (new_message,
+                                 secinfo_type_name_plural (event_data));
               break;
             case 't':
               {
@@ -9647,7 +8409,7 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   subject = g_strdup_printf
              ("[GVM] %s %s arrived",
               event == EVENT_NEW_SECINFO ? "New" : "Updated",
-              type_name_plural (type ? type : "nvt"));
+              secinfo_type_name_plural (type ? type : "nvt"));
   alert_subject = alert_data (alert, "method", "subject");
   if (alert_subject && strlen (alert_subject))
     {
@@ -9691,13 +8453,8 @@ email_secinfo (alert_t alert, task_t task, event_t event,
   condition_filter_id = alert_data (alert, "condition", "filter_id");
   if (condition_filter_id)
     {
-      gchar *quoted_filter_id;
-      quoted_filter_id = sql_quote (condition_filter_id);
-      sql_int64 (&condition_filter,
-                 "SELECT id FROM filters WHERE uuid = '%s'",
-                 quoted_filter_id);
+      find_resource_no_acl ("filter", condition_filter_id, &condition_filter);
       term = filter_term (condition_filter_id);
-      g_free (quoted_filter_id);
     }
   free (condition_filter_id);
 
@@ -9971,33 +8728,17 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get last report from task if no report is given
 
-  if (report == 0)
-    switch (sql_int64 (&report,
-                        "SELECT max (id) FROM reports"
-                        " WHERE task = %llu",
-                        task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-      }
+  if ((report == 0)
+      && (task_last_report_any_status (task, &report)
+          || (report == 0)))
+    {
+      if (alert_filter_get)
+        {
+          get_data_reset (alert_filter_get);
+          g_free (alert_filter_get);
+        }
+      return -1;
+    }
 
   // Get report format or use fallback.
 
@@ -10164,17 +8905,9 @@ generate_report_filename (report_t report, report_format_t report_format,
 
   report_id = report_uuid (report);
 
-  creation_time
-    = sql_string ("SELECT iso_time (creation_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
+  creation_time = report_creation_time (report);
 
-  modification_time
-    = sql_string ("SELECT iso_time (modification_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
+  modification_time = report_modification_time (report);
 
   report_task (report, &task);
   report_task_name = task_name (task);
@@ -15715,8 +14448,9 @@ static int
 task_last_report_any_status (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
-                     "SELECT id FROM reports WHERE task = %llu"
-                     " ORDER BY creation_time DESC LIMIT 1;",
+                     "SELECT max (id) FROM reports"
+                     " WHERE task = %llu"
+                     " LIMIT 1;",
                      task))
     {
       case 0:
@@ -17853,11 +16587,6 @@ DEF_ACCESS (prognosis_iterator_cpe, 3);
 
 
 /* Reports. */
-
-/**
- * @brief Whether to ignore the Max Rows Per Page settings.
- */
-int ignore_max_rows_per_page = 0;
 
 /**
  * @brief Create a new GHashTable for containing resource rowids.
@@ -22970,6 +21699,40 @@ report_timestamp (const char* report_id, gchar** timestamp)
 }
 
 /**
+ * @brief Get the creation time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_creation_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (creation_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+
+/**
+ * @brief Get the modification time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_modification_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (modification_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+
+/**
  * @brief Return the run status of the scan associated with a report.
  *
  * @param[in]   report  Report.
@@ -23060,9 +21823,8 @@ report_severity_data (report_t report, const char *host,
       get_data_t *get_all;
 
       get_all = report_results_get_data (1, -1, apply_overrides, 0);
-      ignore_max_rows_per_page = 1;
+      get_all->ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, get_all, report, host, NULL);
-      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity;
@@ -23088,11 +21850,10 @@ report_severity_data (report_t report, const char *host,
       get_filtered.filter = get->filter;
       get_filtered.type = get->type;
       get_filtered.ignore_pagination = 1;
+      get_filtered.ignore_max_rows_per_page = 1;
 
-      ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, &get_filtered, report, host,
                                          NULL);
-      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity;
@@ -23589,11 +22350,10 @@ report_compliance_f_counts (report_t report,
   get_filtered.filter = get->filter;
   get_filtered.type = get->type;
   get_filtered.ignore_pagination = 1;
+  get_filtered.ignore_max_rows_per_page = 1;
 
-  ignore_max_rows_per_page = 1;
   init_result_get_iterator (&results, &get_filtered, report, NULL,
                             NULL);
-  ignore_max_rows_per_page = 0;
   while (next (&results))
     {
       const char* compliance;
@@ -26236,7 +24996,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &apply_overrides, &zone);
     }
 
-  max_results = manage_max_rows (max_results);
+  max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
 
   #if CVSS3_RATINGS == 1
   levels = levels ? levels : g_strdup ("chmlgdf");
@@ -26414,7 +25174,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   clean = manage_clean_filter (term
                                 ? term
-                                : (get->filter ? get->filter : ""));
+                                : (get->filter ? get->filter : ""),
+                               get->ignore_max_rows_per_page);
 
   term_value = filter_term_value (clean, "min_qod");
   if (term_value == NULL)
@@ -33033,8 +31794,8 @@ new_secinfo_message (event_t event, const void* event_data, alert_t alert)
                               ? " new "
                               : " ",
                              count == 1
-                              ? type_name (type)
-                              : type_name_plural (type),
+                              ? secinfo_type_name (type)
+                              : secinfo_type_name_plural (type),
                              event == EVENT_NEW_SECINFO
                               ? ""
                               : (count == 1 ? " was" : " were"),
@@ -45018,7 +43779,7 @@ trash_filter_name (filter_t filter)
  * @return Newly allocated term if available, else NULL.
  */
 gchar*
-filter_term (const char *uuid)
+filter_term_sql (const char *uuid)
 {
   gchar *quoted_uuid, *ret;
   quoted_uuid = sql_quote (uuid);
@@ -45027,99 +43788,6 @@ filter_term (const char *uuid)
   g_free (quoted_uuid);
   return ret;
 }
-
-/**
- * @brief Return the value of a column keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- * @param[in]  column  Column name.
- *
- * @return Value of column keyword if one exists, else NULL.
- */
-gchar*
-filter_term_value (const char *term, const char *column)
-{
-  keyword_t **point;
-  array_t *split;
-
-  if (term == NULL)
-    return NULL;
-
-  split = split_filter (term);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-
-      keyword = *point;
-      if (keyword->column
-          && ((strcasecmp (keyword->column, column) == 0)
-              || (keyword->column[0] == '_'
-                  && (strcasecmp (keyword->column + 1, column) == 0))))
-        {
-          gchar *ret = g_strdup (keyword->string);
-          filter_free (split);
-          return ret;
-        }
-      point++;
-    }
-  filter_free (split);
-  return NULL;
-}
-
-/**
- * @brief Return the value of the apply_overrides keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of apply_overrides if it exists, else APPLY_OVERRIDES_DEFAULT.
- */
-int
-filter_term_apply_overrides (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *apply_overrides_str;
-
-      apply_overrides_str = filter_term_value (term, "apply_overrides");
-      ret = apply_overrides_str
-              ? (strcmp (apply_overrides_str, "0") ? 1 : 0)
-              : APPLY_OVERRIDES_DEFAULT;
-
-      g_free (apply_overrides_str);
-      return ret;
-    }
-  else
-    return APPLY_OVERRIDES_DEFAULT;
-}
-
-/**
- * @brief Return the value of the min_qod keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of min_qod if it exists, else MIN_QOD_DEFAULT.
- */
-int
-filter_term_min_qod (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *min_qod_str;
-
-      min_qod_str = filter_term_value (term, "min_qod");
-      ret = (min_qod_str && strcmp (min_qod_str, ""))
-              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
-
-      g_free (min_qod_str);
-      return ret;
-    }
-  else
-    return MIN_QOD_DEFAULT;
-}
-
 
 /**
  * @brief Create a filter.
@@ -45167,7 +43835,8 @@ create_filter (const char *name, const char *comment, const char *type,
     }
   quoted_name = sql_quote (name ?: "");
 
-  clean_term = manage_clean_filter (term ? term : "");
+  clean_term = manage_clean_filter (term ? term : "",
+                                    0 /* ignore_max_rows_per_page */);
   quoted_term = sql_quote (clean_term);
   g_free (clean_term);
 
@@ -45743,29 +44412,14 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
                const char *term, const char *type)
 {
   gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
+  char *t_name, *t_comment, *t_term, *t_type;
   filter_t filter;
   const char *db_type;
 
   if (filter_id == NULL)
     return 4;
 
-  db_type = type_db_name (type);
-  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
-    {
-      if (!valid_subtype (type))
-        return 3;
-    }
-  type = valid_subtype (type) ? type : db_type;
-
   sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_filter") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
 
   filter = 0;
   if (find_filter_with_permission (filter_id, &filter, "modify_filter"))
@@ -45778,6 +44432,29 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     {
       sql_rollback ();
       return 1;
+    }
+
+  db_type = type_db_name (type);
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
+    {
+      if (!valid_subtype (type))
+        {
+          sql_rollback ();
+          return 3;
+        }
+    }
+
+  if (type)
+    {
+      type = valid_subtype (type) ? type : db_type;
+    }
+
+  assert (current_credentials.uuid);
+
+  if (acl_user_may ("modify_filter") == 0)
+    {
+      sql_rollback ();
+      return 99;
     }
 
   /* If the filter is linked to an alert, check that the type is valid. */
@@ -45810,25 +44487,36 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     }
 
   quoted_name = sql_quote(name ?: "");
-  clean_term = manage_clean_filter (term ? term : "");
+  clean_term = manage_clean_filter (term ? term : "",
+                                    0 /* ignore_max_rows_per_page */);
   quoted_term = sql_quote (clean_term);
   g_free (clean_term);
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_type = sql_quote (type ? type : "");
 
+  t_name = name ? g_strdup_printf (", name = '%s'", quoted_name) :
+                  g_strdup ("");
+  t_comment = comment ? g_strdup_printf (", comment = '%s'", quoted_comment) :
+                        g_strdup ("");
+  t_term = term ? g_strdup_printf (", term = '%s'", quoted_term) :
+                  g_strdup ("");
+  t_type = type ? g_strdup_printf (", type = lower ('%s')", quoted_type) :
+                  g_strdup ("");
+
   sql ("UPDATE filters SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " term = '%s',"
-       " type = lower ('%s'),"
        " modification_time = m_now ()"
+       " %s%s%s%s"
        " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       quoted_term,
-       quoted_type,
+       t_name,
+       t_comment,
+       t_term,
+       t_type,
        filter);
 
+  g_free (t_name);
+  g_free (t_comment);
+  g_free (t_term);
+  g_free (t_type);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_term);
@@ -49676,7 +48364,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, 0, NULL, NULL, NULL, NULL, NULL);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -49797,7 +48485,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, 0, NULL, NULL, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
@@ -49895,7 +48583,7 @@ DEF_ACCESS (setting_iterator_value, 4);
  * @return 0 success, -1 error.
  */
 int
-setting_value (const char *uuid, char **value)
+setting_value_sql (const char *uuid, char **value)
 {
   gchar *quoted_uuid;
 
@@ -49941,7 +48629,7 @@ setting_value (const char *uuid, char **value)
  * @return 0 success, -1 error.
  */
 int
-setting_value_int (const char *uuid, int *value)
+setting_value_int_sql (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
 
@@ -50630,18 +49318,17 @@ modify_setting (const gchar *uuid, const gchar *name,
  * @brief Return max, adjusted according to maximum allowed rows.
  *
  * @param[in]  max  Max.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Adjusted max.
  */
 int
-manage_max_rows (int max)
+manage_max_rows (int max, int ignore_max_rows_per_page)
 {
   int max_rows;
 
-  if (current_credentials.uuid == NULL)
-    return max;
-
-  if (ignore_max_rows_per_page
+  if (current_credentials.uuid == NULL
+      || ignore_max_rows_per_page
       || setting_value_int (SETTING_UUID_MAX_ROWS_PER_PAGE, &max_rows))
     return max;
 
@@ -53823,10 +52510,11 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
  *                              keep current value.
  */
-void
+int
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
                       int allow_plaintext, gchar *cacert, int ldaps_only)
 {
+  int err = 0;
   gchar *quoted;
 
   sql_begin_immediate ();
@@ -53864,11 +52552,27 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 
   if (cacert)
     {
-      sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
-      quoted = sql_quote (cacert);
-      sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
-           quoted);
-      g_free (quoted);
+      /* check if the certificate is valid */
+      err = get_certificate_info (cacert,
+                                  -1,
+                                  TRUE,
+                                  NULL,   /* activation_time */
+                                  NULL,   /* expiration_time */
+                                  NULL,   /* md5_fingerprint */
+                                  NULL,   /* sha256_fingerprint */
+                                  NULL,   /* subject */
+                                  NULL,   /* issuer */
+                                  NULL,   /* serial */
+                                  NULL);  /* certificate_format */
+
+      if (!err)
+        {
+          sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
+          quoted = sql_quote (cacert);
+          sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
+               quoted);
+          g_free (quoted);
+        }
     }
 
   if (ldaps_only >= 0)
@@ -53879,6 +52583,7 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
     }
 
   sql_commit ();
+  return err;
 }
 
 /**
@@ -54266,8 +52971,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
-
-  ignore_max_rows_per_page = 1;
+  resources_get.ignore_max_rows_per_page = 1;
   filtered_select = NULL;
 
   if (strcasecmp (type, "TICKET") == 0)
@@ -54340,7 +53044,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             break;
           default:
             g_free (columns);
-            ignore_max_rows_per_page = 0;
             g_warning ("%s: Failed to build filter SELECT", __func__);
             sql_rollback ();
             g_free (resources_get.filter);
@@ -54350,7 +53053,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             return -1;
         }
     }
-  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -54446,8 +53148,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
+  resources_get.ignore_max_rows_per_page = 1;
 
-  ignore_max_rows_per_page = 1;
   iterator_select = NULL;
 
   if (strcasecmp (type, "TICKET") == 0)
@@ -54456,7 +53158,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
        * to contain each per-resource implementation in its own file. */
       if (init_ticket_iterator (&resources, &resources_get))
         {
-          ignore_max_rows_per_page = 0;
           g_warning ("%s: Failed to init ticket iterator", __func__);
           sql_rollback ();
           g_free (resources_get.filter);
@@ -54513,7 +53214,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             break;
           default:
             g_free (columns);
-            ignore_max_rows_per_page = 0;
             g_warning ("%s: Failed to build filter SELECT", __func__);
             sql_rollback ();
             g_free (resources_get.filter);
@@ -54523,7 +53223,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             return -1;
         }
     }
-  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -56038,6 +54737,7 @@ type_build_select (const char *type, const char *columns_str,
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, where_columns, get->trash,
+                          get->ignore_max_rows_per_page,
                           &filter_order, &first, &max, &permissions,
                           &owner_filter);
 

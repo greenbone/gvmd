@@ -19,6 +19,6 @@
 #ifndef _GVMD_MANAGE_TASKS_H
 #define _GVMD_MANAGE_TASKS_H
 
-typedef resource_t task_t;
+
 
 #endif /* not _GVMD_MANAGE_TASKS_H */

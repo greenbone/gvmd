@@ -19,15 +19,13 @@
 #ifndef _GVMD_MANAGE_ALERTS_H
 #define _GVMD_MANAGE_ALERTS_H
 
-#include "iterator.h"
+#include "manage_resources.h"
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_tasks.h"
 #include "sql.h"
 
 #include <glib.h>
-
-typedef resource_t alert_t;
 
 int
 get_max_email_attachment_size ();

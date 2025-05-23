@@ -22,7 +22,6 @@
  */
 
 #include "manage_get.h"
-#include "manage_sql.h"
 #include "sql.h"
 
 #include <stdlib.h>
