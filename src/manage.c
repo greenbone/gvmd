@@ -931,7 +931,6 @@ severity_to_type (double severity)
     }
 }
 
-
 
 /* Encryption key management. */
 
@@ -1038,7 +1037,6 @@ manage_set_encryption_key (GSList *log_config,
   manage_option_cleanup ();
   return 0;
 }
-
 
 
 /* Credentials. */
@@ -8172,7 +8170,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
           *error = g_strdup_printf ("Failed to stop old report: %ld",
                                     response->code);
           openvasd_connector_free (connection);
-          openvasd_response_cleanup(response);
+          openvasd_response_cleanup (response);
           return -1;
         }
       response = openvasd_delete_scan (connection);
@@ -8180,7 +8178,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_cleanup(response);
+          openvasd_response_cleanup (response);
           openvasd_connector_free (connection);
           return -1;
         }
@@ -8193,12 +8191,12 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
       /* OSP can't stop an already finished/interrupted scan,
        * but it must be delete to be resumed. */
       g_debug ("%s: Scan %s finished", __func__, scan_id);
-     response = openvasd_delete_scan (connection);
+      response = openvasd_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_cleanup(response);
+          openvasd_response_cleanup (response);
           openvasd_connector_free (connection);
           return -1;
         }
@@ -8211,12 +8209,12 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
     {
       g_debug ("%s: Scan %s stopped or interrupted",
                __func__, scan_id);
-    response = openvasd_delete_scan (connection);
+      response = openvasd_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_cleanup(response);
+          openvasd_response_cleanup (response);
           openvasd_connector_free (connection);
           return -1;
         }
@@ -8670,7 +8668,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
               parse_openvasd_report (task, report, results, start_time,
                                      end_time);
               if (results != NULL)
-                {                  
+                {
                   g_slist_free_full (results,
                                      (GDestroyNotify) openvasd_result_free);
                 }
@@ -8913,4 +8911,3 @@ run_openvasd_task (task_t task, int from, char **report_id)
   return 0;
 }
 #endif
-
