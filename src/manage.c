@@ -8126,9 +8126,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
                                   char **error)
 {
   openvasd_connector_t connection;
-
   openvasd_scan_status_t status;
-  openvasd_resp_t response;
 
   assert (task);
   assert (scan_id);
@@ -8160,6 +8158,8 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   else if (status->status == OPENVASD_SCAN_STATUS_RUNNING
            || status->status == OPENVASD_SCAN_STATUS_REQUESTED)
     {
+      openvasd_resp_t response;
+
       g_debug ("%s: Scan %s queued or running", __func__, scan_id);
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
@@ -8188,6 +8188,8 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
     }
   else if (status->status == OPENVASD_SCAN_STATUS_SUCCEEDED)
     {
+      openvasd_resp_t response;
+
       /* OSP can't stop an already finished/interrupted scan,
        * but it must be delete to be resumed. */
       g_debug ("%s: Scan %s finished", __func__, scan_id);
@@ -8207,6 +8209,8 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   else if (status->status == OPENVASD_SCAN_STATUS_STOPPED
            || status->status == OPENVASD_SCAN_STATUS_FAILED)
     {
+      openvasd_resp_t response;
+
       g_debug ("%s: Scan %s stopped or interrupted",
                __func__, scan_id);
       response = openvasd_delete_scan (connection);
