@@ -275,6 +275,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
   resp = openvasd_get_vt_stream_init (connector);
   if (resp->code < 0)
     {
+      openvasd_response_cleanup (resp);
       g_warning ("%s: failed to get VTs", __func__);
       return -1;
     }
@@ -435,6 +436,7 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
   resp = openvasd_get_vts (connector);
   if (resp->code != 200)
     {
+      openvasd_response_cleanup (resp);
       g_warning ("%s: failed to get scanner preferences", __func__);
       return -1;
     }
@@ -518,6 +520,8 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
   check_preference_names (1, old_nvts_last_modified);
 
   check_whole_only_in_configs ();
+
+  openvasd_response_cleanup (resp);
 
   return 0;
 }

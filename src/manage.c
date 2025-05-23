@@ -8090,10 +8090,13 @@ stop_openvasd_task (task_t task)
   if (response->code < 0)
     {
       ret = -1;
+      openvasd_response_cleanup (response);
       g_free (scan_id);
       goto end_stop_openvasd;
     }
+  openvasd_response_cleanup (response);
   response = openvasd_delete_scan (connector);
+  openvasd_response_cleanup (response);
   g_free (scan_id);
 end_stop_openvasd:
   openvasd_connector_free (connector);
@@ -8173,6 +8176,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
           openvasd_response_cleanup (response);
           return -1;
         }
+      openvasd_response_cleanup (response);
       response = openvasd_delete_scan (connection);
       if (response->code != 204)
         {
@@ -8182,6 +8186,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
           openvasd_connector_free (connection);
           return -1;
         }
+      openvasd_response_cleanup (response);
       openvasd_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
@@ -8202,6 +8207,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
           openvasd_connector_free (connection);
           return -1;
         }
+      openvasd_response_cleanup (response);
       openvasd_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
@@ -8222,6 +8228,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
           openvasd_connector_free (connection);
           return -1;
         }
+      openvasd_response_cleanup (response);
       openvasd_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
