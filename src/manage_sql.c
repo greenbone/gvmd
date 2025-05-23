@@ -6854,7 +6854,7 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   pkcs12_file = g_strdup_printf ("%s/pkcs12", report_dir);
 
-  if (strlen (pkcs12_64))
+  if (pkcs12_64 && strlen (pkcs12_64))
     pkcs12 = (gchar*) g_base64_decode (pkcs12_64, &pkcs12_len);
   else
     {
