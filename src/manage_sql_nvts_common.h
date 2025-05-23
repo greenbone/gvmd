@@ -81,7 +81,7 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
                                const gchar *scanner_feed_version, int rebuild);
 
 int
-update_preferences_from_nvt (nvti_t *nvti, GList **preferences);
+update_preferences_from_nvti (nvti_t *nvti, GList **preferences);
 
 void
 update_nvt_end (const time_t old_nvts_last_modified);
