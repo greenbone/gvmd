@@ -68,6 +68,25 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j $(nproc) -- install
 
+  build-gvmd-with-openvasd:
+    name: Build gvmd with openvasd
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container:
+          - stable
+          - testing
+    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: Configure and compile gvmd
+        run: |
+          rm -rf .git
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENVASD=1
+          cmake --build build -j $(nproc) -- install
+
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
