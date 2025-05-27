@@ -163,6 +163,7 @@ set(
   manage_commands.c
   manage_get.c
   manage_license.c
+  manage_osp.c
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c

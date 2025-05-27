@@ -258,7 +258,17 @@ void
 manage_transaction_stop (gboolean);
 
 
-/* Task structures. */
+/* Task macros and structures. */
+
+/**
+ * @brief Default for Scanner max_checks preference.
+ */
+#define MAX_CHECKS_DEFAULT "4"
+
+/**
+ * @brief Default for Scanner max_hosts preference.
+ */
+#define MAX_HOSTS_DEFAULT "20"
 
 /**
  * @brief Task statuses, also used as scan/report statuses.
@@ -790,6 +800,9 @@ config_task_iterator_readable (iterator_t*);
 
 
 /* General severity related facilities. */
+
+const char *
+threat_message_type (const char *);
 
 int
 severity_in_level (double, const char *);
