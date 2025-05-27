@@ -427,7 +427,6 @@ void
 sql_close_fork ()
 {
   conn = NULL;
-  semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
 }
 
 /**
