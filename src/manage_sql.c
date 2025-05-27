@@ -18558,6 +18558,27 @@ init_report_iterator_task (iterator_t* iterator, task_t task)
 }
 
 /**
+ * @brief Initialise a report iterator for reports that require processing.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  max       Maximum number of reports returned.
+ */
+void
+init_report_awaiting_processing_iterator (iterator_t* iterator, int max)
+{
+  if (max < 1)
+    max = -1;
+
+  init_iterator (iterator,
+                 "SELECT id FROM reports"
+                 " WHERE scan_run_status = %u"
+                 " AND processing_required = 1"
+                 " ORDER BY creation_time LIMIT %s;",
+                 TASK_STATUS_RUNNING,
+                 sql_select_limit (max));
+}
+
+/**
  * @brief Get the UUID from a report iterator.
  *
  * @param[in]  iterator  Iterator.

@@ -5457,12 +5457,7 @@ manage_process_report_imports ()
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  init_iterator (&reports, "SELECT id FROM reports"
-                           " WHERE scan_run_status = %u"
-                           " AND processing_required = 1"
-                           " ORDER BY creation_time LIMIT %d;",
-                           TASK_STATUS_RUNNING,
-                           MAX_REPORTS_PER_TICK);
+ init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
 
   while (next (&reports))
     {
@@ -5538,7 +5533,7 @@ manage_process_report_imports ()
             g_free (lockfile_path);
             semaphore_op (SEMAPHORE_REPORTS_PROCESSING, +1, 0);
 
-            cleanup_manage_process (FALSE);
+            cleanup_manage_process (TRUE);
             gvm_close_sentry ();
             exit (EXIT_SUCCESS);
 

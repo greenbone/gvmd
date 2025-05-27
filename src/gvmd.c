@@ -2576,6 +2576,15 @@ gvmd (int argc, char** argv, char *env[])
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
+  /* Set maximum number of concurrent scan updates */
+  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
+
+  /* Set maximum number of database connections */
+  set_max_database_connections (max_database_connections);
+
+  /* Set maximum number of concurrent report processing */
+  set_max_concurrent_report_processing (max_concurrent_report_processing);
+
   /* Initialize Inter-Process Communication */
   init_semaphore_set ();
 
@@ -2619,13 +2628,6 @@ gvmd (int argc, char** argv, char *env[])
     {
       g_debug ("Sentry support disabled");
     }
-
-  /* Set maximum number of concurrent scan updates */
-  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
-
-  set_max_database_connections (max_database_connections);
-
-  set_max_concurrent_report_processing (max_concurrent_report_processing);
 
   /* Enable GNUTLS debugging if requested via env variable.  */
   {
