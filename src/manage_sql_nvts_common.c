@@ -532,12 +532,13 @@ prepare_nvts_insert (int rebuild) {
  *
  * @param[in] count_new_vts         Number of newly added VTs.
  * @param[in] count_modified_vts    Number of modified VTs.
- * @param[in] scanner_feed_version  Scanner feed version.
+ * @param[in] nvts_feed_version     NVTs feed version.
  * @param[in] rebuild               Whether we are rebuilding tables.
  */
 void
 finalize_nvts_insert (int count_new_vts, int count_modified_vts,
-                               const gchar *scanner_feed_version, int rebuild) {
+                      const gchar *nvts_feed_version, int rebuild)
+{
   if (rebuild) {
       sql("DROP VIEW IF EXISTS results_autofp;");
       sql("DROP VIEW vulns;");
@@ -554,7 +555,9 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
   }
 
   set_nvts_check_time(count_new_vts, count_modified_vts);
-  set_nvts_feed_version(scanner_feed_version);
+
+  if (nvts_feed_version)
+    set_nvts_feed_version(nvts_feed_version);
 
   if (check_config_families())
     g_warning ("%s: Error updating config families."
@@ -567,3 +570,132 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
     count_new_vts, count_modified_vts);
 }
 
+/**
+ * @brief Update NVT preferences from an NVTI structure
+ *
+ * @param[in]  nvti         NVTI structure.
+ * @param[out] preferences  List of NVT preferences.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_preferences_from_nvti (nvti_t *nvti, GList **preferences)
+{
+  assert (preferences);
+
+  int prefs_count = nvti_pref_len(nvti);
+  for (int j = 0; j < prefs_count; j++)
+    {
+      int id;
+      char *char_id, *type, *name, *def;
+      const nvtpref_t *pref = NULL;
+
+      pref = nvti_pref (nvti, j);
+
+      id = nvtpref_id (pref);
+      char_id = g_strdup_printf ("%d", id);
+      type = g_strdup (nvtpref_type (pref));
+      name = g_strdup (nvtpref_name (pref));
+      def = g_strdup (nvtpref_default (pref));
+
+      if (type == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: PARAM missing type attribute for OID: %s",
+                     __func__, nvti_oid(nvti));
+          g_string_free (debug, TRUE);
+        }
+      else if (id < 0)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: PARAM missing id attribute for OID: %s",
+                     __func__, nvti_oid(nvti));
+          g_string_free (debug, TRUE);
+        }
+      else if (name == NULL)
+        {
+          GString *debug = g_string_new ("");
+          g_warning ("%s: PARAM missing NAME for OID: %s",
+                     __func__, nvti_oid (nvti));
+          g_string_free (debug, TRUE);
+        }
+      else
+        {
+          gchar *full_name;
+          preference_t *preference;
+
+          full_name = g_strdup_printf ("%s:%d:%s:%s",
+                                       nvti_oid (nvti),
+                                       id,
+                                       type,
+                                       name);
+
+          blank_control_chars (full_name);
+          preference = g_malloc0 (sizeof (preference_t));
+          preference->free_strings = 1;
+          preference->name = full_name;
+          if (def)
+            preference->value = g_strdup (def);
+          else
+            preference->value = g_strdup ("");
+          preference->nvt_oid = g_strdup (nvti_oid (nvti));
+          preference->id = g_strdup (char_id);
+          preference->type = g_strdup (type);
+          preference->pref_name = g_strdup (name);
+          *preferences = g_list_prepend (*preferences, preference);
+        }
+
+      g_free (char_id);
+      g_free (name);
+      g_free (type);
+      g_free (def);
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Updates report counts cache, config preferences and whole-only 
+ *        families after NVT sync.
+ *
+ * @param[in] old_nvts_last_modified  Time NVTs considered to be modified after.
+ */
+void
+update_nvt_end (const time_t old_nvts_last_modified)
+{
+
+  time_t last_modified = old_nvts_last_modified;
+
+  /* Update the cache of report counts. */
+  reports_clear_count_cache_dynamic ();
+
+  /* Tell the main process to update its NVTi cache. */
+  sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
+        sql_schema ());
+
+  g_info ("Updating VTs in database ... done (%i VTs).",
+          sql_int ("SELECT count (*) FROM nvts;"));
+
+  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
+                "                  FROM meta"
+                "                  WHERE name = 'checked_preferences'),"
+                "                 0);")
+      == 0)
+    {
+      check_old_preference_names ("config_preferences");
+      check_old_preference_names ("config_preferences_trash");
+
+      /* Force update of names in new format in case hard-coded names
+        * used by migrators are outdated */
+      last_modified = 0;
+
+      sql ("INSERT INTO meta (name, value)"
+            " VALUES ('checked_preferences', 1)"
+            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+    }
+
+    check_preference_names (0, last_modified);
+    check_preference_names (1, last_modified);
+
+    check_whole_only_in_configs ();
+}

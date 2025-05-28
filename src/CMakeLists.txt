@@ -558,6 +558,9 @@ add_definitions(
 
 add_definitions(-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions(-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")
+if(FEED_VT_METADATA)
+  add_definitions(-DGVM_NVT_DATA_DIR="${GVM_NVT_DATA_DIR}")
+endif(FEED_VT_METADATA)
 
 if(GVM_SCANNER_CERTIFICATE)
   add_definitions(-DSCANNERCERT="${GVM_SCANNER_CERTIFICATE}")
