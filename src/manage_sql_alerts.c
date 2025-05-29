@@ -2420,3 +2420,32 @@ check_alerts ()
         }
     }
 }
+
+/**
+ * @brief Get the SMB file path format to use for an alert.
+ *
+ * @param[in]  alert  Alert.
+ * @param[in]  task   Task.
+ *
+ * @return Freshly allocated path if there's a tag, else NULL.
+ */
+gchar *
+alert_smb_file_path (alert_t alert, task_t task)
+{
+  gchar *file_path_format;
+
+  file_path_format = sql_string ("SELECT value FROM tags"
+                                 " WHERE name = 'smb-alert:file_path'"
+                                 "   AND EXISTS"
+                                 "         (SELECT * FROM tag_resources"
+                                 "           WHERE resource_type = 'task'"
+                                 "             AND resource = %llu"
+                                 "             AND tag = tags.id)"
+                                 " ORDER BY modification_time LIMIT 1;",
+                                 task);
+
+  if (file_path_format)
+    return file_path_format;
+
+  return alert_data (alert, "method", "smb_file_path");
+}
