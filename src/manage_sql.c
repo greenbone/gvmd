@@ -9958,19 +9958,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
           share_path = alert_data (alert, "method", "smb_share_path");
           max_protocol = alert_data (alert, "method", "smb_max_protocol");
 
-          file_path_format
-            = sql_string ("SELECT value FROM tags"
-                          " WHERE name = 'smb-alert:file_path'"
-                          "   AND EXISTS"
-                          "         (SELECT * FROM tag_resources"
-                          "           WHERE resource_type = 'task'"
-                          "             AND resource = %llu"
-                          "             AND tag = tags.id)"
-                          " ORDER BY modification_time LIMIT 1;",
-                          task);
-
-          if (file_path_format == NULL)
-            file_path_format = alert_data (alert, "method", "smb_file_path");
+          file_path_format = alert_smb_file_path (alert, task);
 
           file_path_is_dir = (g_str_has_suffix (file_path_format, "\\")
                               || g_str_has_suffix (file_path_format, "/"));
