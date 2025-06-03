@@ -15442,7 +15442,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 && get_reports_data->format_id
                                 && strcmp
                                     (get_reports_data->format_id,
-                                     "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                     REPORT_FORMAT_UUID_XML)
                                 && strcmp
                                     (get_reports_data->format_id,
                                       "5057e5cc-b825-11e4-9d0e-28d24461215b"),
