@@ -23,6 +23,11 @@
 
 #include <glib.h>
 
+/**
+ * @brief Report format UUID.
+ */
+#define REPORT_FORMAT_UUID_XML "a994b278-1f62-11e1-96ac-406186ea4fc5"
+
 gboolean
 find_report_format_with_permission (const char*, report_format_t*,
                                     const char *);

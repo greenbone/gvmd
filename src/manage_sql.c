@@ -9773,7 +9773,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    "scp_report_format",
                    NULL,
                    /* XML fallback. */
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
+                   "REPORT_FORMAT_UUID_XML",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL,
@@ -9877,7 +9877,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    "send_report_format",
                    NULL,
                    /* XML fallback. */
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
+                   "REPORT_FORMAT_UUID_XML",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL,
@@ -9980,7 +9980,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                   (alert, report, task, get,
                    "smb_report_format",
                    NULL,
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   "REPORT_FORMAT_UUID_XML", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
@@ -10303,7 +10303,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                   (alert, report, task, get,
                    NULL, /* Report format not configurable */
                    NULL,
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   "REPORT_FORMAT_UUID_XML", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
