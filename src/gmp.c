@@ -15372,7 +15372,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               /* Skip task name for Anonymous XML report format. */
               if (get_reports_data->format_id == NULL
                   || strcmp (get_reports_data->format_id,
-                             "5057e5cc-b825-11e4-9d0e-28d24461215b"))
+                             "REPORT_FORMAT_UUID_ANON_XML"))
                 {
                   gchar *report_task_name;
                   report_task_name = task_name (task);
@@ -15445,7 +15445,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                      REPORT_FORMAT_UUID_XML)
                                 && strcmp
                                     (get_reports_data->format_id,
-                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
+                                      "REPORT_FORMAT_UUID_ANON_XML"),
                                 send_to_client,
                                 gmp_parser->client_writer,
                                 gmp_parser->client_writer_data,
