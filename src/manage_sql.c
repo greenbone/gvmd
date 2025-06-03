@@ -9561,17 +9561,9 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
 
               report_id = report_uuid (report);
 
-              creation_time
-                = sql_string ("SELECT iso_time (start_time)"
-                              " FROM reports"
-                              " WHERE id = %llu",
-                              report);
+              creation_time = report_start_time (report);
 
-              modification_time
-                = sql_string ("SELECT iso_time (end_time)"
-                              " FROM reports"
-                              " WHERE id = %llu",
-                              report);
+              modification_time = report_end_time (report);
 
               file_name
                 = gvm_export_file_name (fname_format,
@@ -21696,6 +21688,37 @@ report_modification_time (report_t report)
                      report);
 }
 
+/**
+ * @brief Get the start time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_start_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (start_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+/**
+ * @brief Get the end time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_end_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (end_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
 
 /**
  * @brief Return the run status of the scan associated with a report.

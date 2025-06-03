@@ -702,6 +702,79 @@ nvts_feed_version_status_internal_osp (const gchar *update_socket,
 }
 
 /**
+ * @brief Update scanner preferences via OSP.
+ *
+ * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_scanner_preferences_osp (const gchar *update_socket)
+{
+  GSList *scanner_prefs;
+  osp_connection_t *connection;
+
+  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
+  if (!connection)
+    {
+      g_warning ("%s: failed to connect to %s ",
+                __func__, update_socket);
+      return -1;
+    }
+
+  scanner_prefs = NULL;
+  if (osp_get_scanner_details (connection, NULL, &scanner_prefs))
+    {
+      g_warning ("%s: failed to get scanner preferences", __func__);
+      osp_connection_close (connection);
+      return -1;
+    }
+  else
+    {
+      GString *prefs_sql;
+      GSList *point;
+      int first;
+
+      point = scanner_prefs;
+      first = 1;
+
+      osp_connection_close (connection);
+      prefs_sql = g_string_new ("INSERT INTO nvt_preferences (name, value)"
+                                " VALUES");
+      while (point)
+        {
+          osp_param_t *param;
+          gchar *quoted_name, *quoted_value;
+
+          param = point->data;
+          quoted_name = sql_quote (osp_param_id (param));
+          quoted_value = sql_quote (osp_param_default (param));
+
+          g_string_append_printf (prefs_sql,
+                                  "%s ('%s', '%s')",
+                                  first ? "" : ",",
+                                  quoted_name,
+                                  quoted_value);
+          first = 0;
+          point = g_slist_next (point);
+          g_free (quoted_name);
+          g_free (quoted_value);
+        }
+      g_string_append (prefs_sql,
+                       " ON CONFLICT (name)"
+                       " DO UPDATE SET value = EXCLUDED.value;");
+
+      if (first == 0)
+        {
+          sql ("%s", prefs_sql->str);
+        }
+
+      g_string_free (prefs_sql, TRUE);
+    }
+  return 0;
+}
+
+/**
  * @brief Update VTs via OSP.
  *
  * @param[in]  osp_uuid         UUID of ospd-openvas to connect to.
@@ -716,7 +789,6 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
                       gchar *scanner_feed_version, int rebuild)
 {
   osp_connection_t *connection;
-  GSList *scanner_prefs;
   element_t vts;
   osp_get_vts_opts_t get_vts_opts;
   time_t old_nvts_last_modified;
@@ -773,98 +845,11 @@ update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
     return ret;
 
   /* Update scanner preferences */
+  ret = update_scanner_preferences_osp (update_socket);
+  if (ret)
+    return ret;
 
-  connection = osp_connection_new (update_socket, 0, NULL, NULL, NULL);
-  if (!connection)
-    {
-      g_warning ("%s: failed to connect to %s (3)",
-                __func__, update_socket);
-      return -1;
-    }
-
-  scanner_prefs = NULL;
-  if (osp_get_scanner_details (connection, NULL, &scanner_prefs))
-    {
-      g_warning ("%s: failed to get scanner preferences", __func__);
-      osp_connection_close (connection);
-      return -1;
-    }
-  else
-    {
-      GString *prefs_sql;
-      GSList *point;
-      int first;
-
-      point = scanner_prefs;
-      first = 1;
-
-      osp_connection_close (connection);
-      prefs_sql = g_string_new ("INSERT INTO nvt_preferences (name, value)"
-                                " VALUES");
-      while (point)
-        {
-          osp_param_t *param;
-          gchar *quoted_name, *quoted_value;
-
-          param = point->data;
-          quoted_name = sql_quote (osp_param_id (param));
-          quoted_value = sql_quote (osp_param_default (param));
-
-          g_string_append_printf (prefs_sql,
-                                  "%s ('%s', '%s')",
-                                  first ? "" : ",",
-                                  quoted_name,
-                                  quoted_value);
-          first = 0;
-          point = g_slist_next (point);
-          g_free (quoted_name);
-          g_free (quoted_value);
-        }
-      g_string_append (prefs_sql,
-                       " ON CONFLICT (name)"
-                       " DO UPDATE SET value = EXCLUDED.value;");
-
-      if (first == 0)
-        {
-          sql ("%s", prefs_sql->str);
-        }
-
-      g_string_free (prefs_sql, TRUE);
-    }
-
-  /* Update the cache of report counts. */
-
-  reports_clear_count_cache_dynamic ();
-
-  /* Tell the main process to update its NVTi cache. */
-  sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
-       sql_schema ());
-
-  g_info ("Updating VTs in database ... done (%i VTs).",
-          sql_int ("SELECT count (*) FROM nvts;"));
-
-  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
-               "                  FROM meta"
-               "                  WHERE name = 'checked_preferences'),"
-               "                 0);")
-      == 0)
-    {
-      check_old_preference_names ("config_preferences");
-      check_old_preference_names ("config_preferences_trash");
-
-      /* Force update of names in new format in case hard-coded names
-       * used by migrators are outdated */
-      old_nvts_last_modified = 0;
-
-      sql ("INSERT INTO meta (name, value)"
-           " VALUES ('checked_preferences', 1)"
-           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
-    }
-
-  check_preference_names (0, old_nvts_last_modified);
-  check_preference_names (1, old_nvts_last_modified);
-
-  check_whole_only_in_configs ();
+  update_nvt_end (old_nvts_last_modified);
 
   return 0;
 }
