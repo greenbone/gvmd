@@ -84,6 +84,7 @@
  */
 
 #include "gmp.h"
+#include "gmp_agents.h"
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
@@ -4348,6 +4349,7 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
+  CLIENT_DELETE_AGENTS,
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4373,6 +4375,7 @@ typedef enum
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
+  CLIENT_GET_AGENTS,
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4415,6 +4418,7 @@ typedef enum
   CLIENT_GET_VULNS,
   CLIENT_HELP,
   CLIENT_LOGOUT,
+  CLIENT_MODIFY_AGENTS,
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -4912,6 +4916,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
           }
+        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
+          {
+            delete_agents_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENTS);
+          }
         else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -5145,6 +5154,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
+
+        ELSE_GET_START (agents, AGENTS)
+
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
             gchar *data_column = g_strdup ("");
@@ -5849,6 +5861,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                           attribute_values);
             set_client_state (CLIENT_LOGOUT);
           }
+        else if (strcasecmp ("MODIFY_AGENTS", element_name) == 0)
+          {
+            modify_agents_start (gmp_parser, attribute_names,
+                                 attribute_values);
+            set_client_state (CLIENT_MODIFY_AGENTS);
+          }
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
@@ -6189,6 +6207,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_AGGREGATES_TEXT_COLUMN);
           }
         ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_AGENTS:
+      modify_agents_element_start (gmp_parser, element_name,
+                                   attribute_names,
+                                   attribute_values);
+      break;
 
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -7892,6 +7916,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else
           set_read_over (gmp_parser);
         break;
+
+    case CLIENT_DELETE_AGENTS:
+      delete_agents_element_start (gmp_parser, element_name,
+                                   attribute_names,
+                                   attribute_values);
+      break;
 
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
@@ -17173,6 +17203,34 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           g_slist_free (params);
         }
 #endif
+#if ENABLE_AGENTS
+      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_AGENT_CONTROLLER)
+          && get_scanners_data->get.details)
+        {
+          char *desc = NULL;
+          GSList *params = NULL;
+
+          if (!agent_control_get_details_from_iterator (&scanners, &desc, &params))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<info><scanner><name>agent-controller</name><version>0.1</version>"
+                "</scanner><daemon><name>AgentController</name><version>1.0</version>"
+                "</daemon><protocol><name>SCANNER API</name><version>0.1"
+                "</version></protocol><description>Agent Control Scanner</description>");
+
+              SENDF_TO_CLIENT_OR_FAIL ("<params>");
+              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
+            }
+          else
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<info><scanner><name/><version/></scanner>"
+              "<daemon><name/><version/></daemon>"
+              "<protocol><name/><version/></protocol><description/><params/>"
+              "</info>");
+          g_free (desc);
+          g_slist_free (params);
+        }
+#endif
       else if (get_scanners_data->get.details)
         {
           SENDF_TO_CLIENT_OR_FAIL
@@ -20688,6 +20746,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+      CASE_GET_END (AGENTS, agents);
 
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);
@@ -24264,6 +24324,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_USER_SOURCES);
         break;
 
+    case CLIENT_DELETE_AGENTS:
+      if (delete_agents_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
           {
@@ -24292,6 +24357,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           break;
         }
+      case CLIENT_MODIFY_AGENTS:
+        if (modify_agents_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
@@ -28398,6 +28467,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
 
+    case CLIENT_DELETE_AGENTS:
+      delete_agents_element_text (text, text_len);
+      break;
 
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
@@ -28422,6 +28494,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         get_license_element_text (text, text_len);
         break;
 
+
+      case CLIENT_MODIFY_AGENTS:
+        modify_agents_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
               &modify_alert_data->name);

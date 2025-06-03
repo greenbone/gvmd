@@ -53,6 +53,11 @@
 #include <gvm/openvasd/openvasd.h>
 #endif
 
+#if ENABLE_AGENTS
+#include <gvm/agent_controller/agent_controller.h>
+#include "manage_agents.h"
+#endif
+
 /**
  * @brief OID of ping_host.nasl
  */
@@ -319,7 +324,8 @@ typedef enum scanner_type
   /* 4 was removed (SCANNER_TYPE_GMP). */
   SCANNER_TYPE_OSP_SENSOR = 5,
   SCANNER_TYPE_OPENVASD = 6,
-  SCANNER_TYPE_MAX = 7,
+  SCANNER_TYPE_AGENT_CONTROLLER = 7,
+  SCANNER_TYPE_MAX = 8,
 } scanner_type_t;
 
 int
