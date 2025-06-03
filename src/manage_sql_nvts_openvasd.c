@@ -56,91 +56,6 @@ static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
 static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
 
 /**
- * @brief Update NVT from an NVTI structure
- *
- * @param[in]  vt           OSP GET_VTS VT element.
- * @param[in]  oid          OID of NVT.
- * @param[in]  preferences  All NVT preferences.
- *
- * @return 0 success, -1 error.
- */
-static int
-update_preferences_from_openvasd_nvt (nvti_t *nvti, GList **preferences)
-{
-  assert (preferences);
-
-  int prefs_count = nvti_pref_len(nvti);
-  for (int j = 0; j < prefs_count; j++)
-    {
-      int id;
-      char *char_id, *type, *name, *def;
-      const nvtpref_t *pref = NULL;
-
-      pref = nvti_pref (nvti, j);
-
-      id = nvtpref_id (pref);
-      char_id = g_strdup_printf ("%d", id);
-      type = g_strdup (nvtpref_type (pref));
-      name = g_strdup (nvtpref_name (pref));
-      def = g_strdup (nvtpref_default (pref));
-
-      if (type == NULL)
-        {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: PARAM missing type attribute for OID: %s",
-                     __func__, nvti_oid(nvti));
-          g_string_free (debug, TRUE);
-        }
-      else if (id < 0)
-        {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: PARAM missing id attribute for OID: %s",
-                     __func__, nvti_oid(nvti));
-          g_string_free (debug, TRUE);
-        }
-      else if (name == NULL)
-        {
-          GString *debug = g_string_new ("");
-          g_warning ("%s: PARAM missing NAME for OID: %s",
-                     __func__, nvti_oid (nvti));
-          g_string_free (debug, TRUE);
-        }
-      else
-        {
-          gchar *full_name;
-          preference_t *preference;
-
-          full_name = g_strdup_printf ("%s:%d:%s:%s",
-                                       nvti_oid (nvti),
-                                       id,
-                                       type,
-                                       name);
-
-          blank_control_chars (full_name);
-          preference = g_malloc0 (sizeof (preference_t));
-          preference->free_strings = 1;
-          preference->name = full_name;
-          if (def)
-            preference->value = g_strdup (def);
-          else
-            preference->value = g_strdup ("");
-          preference->nvt_oid = g_strdup (nvti_oid (nvti));
-          preference->id = g_strdup (char_id);
-          preference->type = g_strdup (type);
-          preference->pref_name = g_strdup (name);
-          *preferences = g_list_prepend (*preferences, preference);
-        }
-
-      g_free (char_id);
-      g_free (name);
-      g_free (type);
-      g_free (def);
-    }
-
-  return 0;
-}
-
-/**
  * @brief Struct containing the stream buffer.
  */
 struct FILESTREAM {
@@ -327,7 +242,19 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
       // If the stream is not running anymore, parse the remaining VTs.
       while ((running && non_read_count > GVM_JSON_PULL_READ_BUFFER_SIZE * 8) || !running)
         {
-          if (parse_vt_json (&parser, &event, &nvti))
+          int ret = parse_vt_json (&parser, &event, &nvti);
+          if (ret == -1)
+            {
+              g_warning ("%s: Parser error: %s", __func__, event.error_message);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (stream);
+              g_free(nvti);
+              openvasd_response_cleanup (resp);
+              sql_rollback ();
+              return -1;
+            }
+          if (ret)
             {
               break_flag = 1;
               break;
@@ -340,7 +267,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
           insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
 
           preferences = NULL;
-          if (update_preferences_from_openvasd_nvt (nvti, &preferences))
+          if (update_preferences_from_nvti (nvti, &preferences))
             {
               sql_rollback ();
               return -1;
@@ -379,40 +306,21 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
 }
 
 /**
- * @brief Update VTs via openvasd.
+ * @brief Update scanner preferences via openvasd.
+ * 
+ * @param[in]  scan  openvasd scanner.
  *
- * @param[in]  db_feed_version       Feed version from meta table.
- * @param[in]  scanner_feed_version  Feed version from scanner.
- * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.
- *
- * @return 0 success, 1 VT integrity check failed, -1 error.
+ * @return 0 success, -1 error.
  */
 int
-update_nvt_cache_openvasd (gchar *db_feed_version,
-                           gchar *scanner_feed_version, int rebuild)
+update_scanner_preferences_openvasd (scanner_t scan)
 {
-  openvasd_connector_t connector = NULL;
+  int first;
   openvasd_resp_t resp;
-  scanner_t scan;
-
-  time_t old_nvts_last_modified;
-  int ret;
-
-  if (rebuild
-      || db_feed_version == NULL
-      || strcmp (db_feed_version, "") == 0
-      || strcmp (db_feed_version, "0") == 0)
-    old_nvts_last_modified = 0;
-  else
-    old_nvts_last_modified
-      = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
-
-
-  /* Update NVTs. */
-  if (find_resource_no_acl ("scanner", SCANNER_UUID_OPENVASD_DEFAULT, &scan))
-    return -1;
-  if (scan == 0)
-    return -1;
+  openvasd_connector_t connector = NULL;
+  GString *prefs_sql;
+  GSList *point;
+  GSList *scan_prefs = NULL;
 
   connector = openvasd_scanner_connect (scan, NULL);
   if (!connector)
@@ -422,17 +330,6 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
       return -1;
     }
 
-  ret = update_nvts_from_openvasd_vts (connector, scanner_feed_version, rebuild);
-
-  if (ret)
-    {
-      openvasd_connector_free (connector);
-      return ret;
-    }
-
-  /* Update scanner preferences */
-  // TODO: update scanner preferences
-
   resp = openvasd_get_vts (connector);
   if (resp->code != 200)
     {
@@ -440,15 +337,11 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
       g_warning ("%s: failed to get scanner preferences", __func__);
       return -1;
     }
-  GSList *scan_prefs = NULL;
 
   openvasd_parsed_scans_preferences (connector, &scan_prefs);
   g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
+  openvasd_response_cleanup (resp);
   openvasd_connector_free (connector);
-
-  GString *prefs_sql;
-  GSList *point;
-  int first;
 
   point = scan_prefs;
   first = 1;
@@ -487,41 +380,64 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
 
   g_string_free (prefs_sql, TRUE);
 
-  /* Update the cache of report counts. */
+  return 0;
+}
 
-  reports_clear_count_cache_dynamic ();
+/**
+ * @brief Update VTs via openvasd.
+ *
+ * @param[in]  db_feed_version       Feed version from meta table.
+ * @param[in]  scanner_feed_version  Feed version from scanner.
+ * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.
+ *
+ * @return 0 success, 1 VT integrity check failed, -1 error.
+ */
+int
+update_nvt_cache_openvasd (gchar *db_feed_version,
+                           gchar *scanner_feed_version, int rebuild)
+{
+  openvasd_connector_t connector = NULL;
+  scanner_t scan;
+  time_t old_nvts_last_modified;
+  int ret;
 
-  /* Tell the main process to update its NVTi cache. */
-  sql ("UPDATE %s.meta SET value = 1 WHERE name = 'update_nvti_cache';",
-       sql_schema ());
+  if (rebuild
+      || db_feed_version == NULL
+      || strcmp (db_feed_version, "") == 0
+      || strcmp (db_feed_version, "0") == 0)
+    old_nvts_last_modified = 0;
+  else
+    old_nvts_last_modified
+      = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
 
-  g_info ("Updating VTs in database ... done (%i VTs).",
-          sql_int ("SELECT count (*) FROM nvts;"));
+  /* Update NVTs. */
+  if (find_resource_no_acl ("scanner", SCANNER_UUID_OPENVASD_DEFAULT, &scan))
+    return -1;
+  if (scan == 0)
+    return -1;
 
-  if (sql_int ("SELECT coalesce ((SELECT CAST (value AS INTEGER)"
-               "                  FROM meta"
-               "                  WHERE name = 'checked_preferences'),"
-               "                 0);")
-      == 0)
+  connector = openvasd_scanner_connect (scan, NULL);
+  if (!connector)
     {
-      check_old_preference_names ("config_preferences");
-      check_old_preference_names ("config_preferences_trash");
-
-      /* Force update of names in new format in case hard-coded names
-       * used by migrators are outdated */
-      old_nvts_last_modified = 0;
-
-      sql ("INSERT INTO meta (name, value)"
-           " VALUES ('checked_preferences', 1)"
-           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+      g_warning ("%s: failed to connect to scanner (%s)", __func__,
+                 SCANNER_UUID_OPENVASD_DEFAULT);
+      return -1;
     }
 
-  check_preference_names (0, old_nvts_last_modified);
-  check_preference_names (1, old_nvts_last_modified);
+  ret = update_nvts_from_openvasd_vts (connector, scanner_feed_version, rebuild);
 
-  check_whole_only_in_configs ();
+  openvasd_connector_free (connector);
 
-  openvasd_response_cleanup (resp);
+  if (ret)
+    return ret;
+
+  /* Update scanner preferences */
+  ret = update_scanner_preferences_openvasd (scan);
+
+  if (ret)
+    return ret;
+
+  update_nvt_end (old_nvts_last_modified);
 
   return 0;
 }

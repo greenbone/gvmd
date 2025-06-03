@@ -239,6 +239,12 @@ if(NOT GVM_SCAP_DATA_DIR)
   set(GVM_SCAP_DATA_DIR "${GVM_STATE_DIR}/scap-data")
 endif(NOT GVM_SCAP_DATA_DIR)
 
+if(FEED_VT_METADATA)
+  if(NOT GVM_NVT_DATA_DIR)
+    set(GVM_NVT_DATA_DIR "${LOCALSTATEDIR}/lib/openvas/vt-metadata")
+  endif(NOT GVM_NVT_DATA_DIR)
+endif(FEED_VT_METADATA)
+
 # System username to use when dropping privileges
 if(NOT GVM_DEFAULT_DROP_USER)
   set(GVM_DEFAULT_DROP_USER "")
@@ -266,6 +272,11 @@ elseif(CVSS3_RATINGS EQUAL 0)
   set(IF_NOT_CVSS3_RATINGS "")
   set(ENDIF_NOT_CVSS3_RATINGS "")
 endif()
+
+if(NOT FEED_VT_METADATA)
+  set(FEED_VT_METADATA 0)
+endif(NOT FEED_VT_METADATA)
+add_definitions(-DFEED_VT_METADATA=${FEED_VT_METADATA})
 
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message("-- Log file: ${GVMD_LOG_FILE}")
