@@ -2206,6 +2206,55 @@ alert_task_iterator_readable (iterator_t* iterator)
 }
 
 /**
+ * @brief Initialise a vFire alert iterator for method call data.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  alert  Alert.
+ */
+void
+init_alert_vfire_call_iterator (iterator_t *iterator, alert_t alert)
+{
+  init_iterator (iterator,
+                 "SELECT SUBSTR(name, %i), data"
+                 " FROM alert_method_data"
+                 " WHERE alert = %llu"
+                 " AND name %s 'vfire_call_%%';",
+                 strlen ("vfire_call_") + 1, alert, sql_ilike_op ());
+}
+
+/**
+ * @brief Return the name from an alert vFire call iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.
+ */
+const char*
+alert_vfire_call_iterator_name (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = iterator_string (iterator, 0);
+  return ret;
+}
+
+/**
+ * @brief Return the value from an alert vFire call iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.
+ */
+const char*
+alert_vfire_call_iterator_value (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = iterator_string (iterator, 1);
+  return ret;
+}
+
+/**
  * @brief Check for new SCAP SecInfo after an update.
  */
 static void

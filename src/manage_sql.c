@@ -8979,7 +8979,6 @@ trigger_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
   iterator_t data_iterator;
   GTree *call_input;
   char *description_template;
-  int name_offset;
 
   if ((event == EVENT_TICKET_RECEIVED)
       || (event == EVENT_ASSIGNED_TICKET_CHANGED)
@@ -9159,21 +9158,14 @@ trigger_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
   // Call input data
   call_input = g_tree_new_full ((GCompareDataFunc) g_strcmp0,
                                 NULL, g_free, g_free);
-  name_offset = strlen ("vfire_call_");
-  init_iterator (&data_iterator,
-                 "SELECT name, data"
-                 " FROM alert_method_data"
-                 " WHERE alert = %llu"
-                 " AND name %s 'vfire_call_%%';",
-                 alert, sql_ilike_op ());
+  init_alert_vfire_call_iterator (&data_iterator, alert);
 
   while (next (&data_iterator))
     {
       gchar *name, *value;
-      name = g_strdup (iterator_string (&data_iterator, 0)
-                        + name_offset);
-      value = g_strdup (iterator_string (&data_iterator, 1));
 
+      name = g_strdup (alert_vfire_call_iterator_name (&data_iterator));
+      value = g_strdup (alert_vfire_call_iterator_value (&data_iterator));
       g_tree_replace (call_input, name, value);
     }
   cleanup_iterator (&data_iterator);
@@ -11520,7 +11512,7 @@ update_nvti_cache ()
    * to sort the data by NVT, which would make the query too slow. */
   init_iterator (&nvts,
                  "SELECT nvts.oid, vt_refs.type, vt_refs.ref_id,"
-                 "       vt_refs.ref_text"
+                 "       vt_refs.ref_text, nvts.qod"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
 
@@ -11538,6 +11530,7 @@ update_nvti_cache ()
         {
           nvti = nvti_new ();
           nvti_set_oid (nvti, iterator_string (&nvts, 0));
+          nvti_set_qod(nvti, iterator_string (&nvts, 4));
 
           nvtis_add (nvti_cache, nvti);
 

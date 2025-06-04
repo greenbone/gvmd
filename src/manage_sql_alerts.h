@@ -82,4 +82,13 @@ alert_applies_to_task (alert_t, task_t);
 gchar *
 alert_smb_file_path (alert_t, task_t);
 
+void
+init_alert_vfire_call_iterator (iterator_t *, alert_t);
+
+const char*
+alert_vfire_call_iterator_name (iterator_t *);
+
+const char*
+alert_vfire_call_iterator_value (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_SQL_ALERTS_H */
