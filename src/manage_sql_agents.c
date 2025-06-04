@@ -42,19 +42,33 @@ delete_existing_agent_ips (const gchar *agent_id)
 }
 
 /**
- * @brief Check whether an agent already exists in the database.
+ * @brief Check if a value exists in a given column of the agents table.
  *
- * @param agent_id Agent identifier to search.
+ * @param column_name Column to search (e.g., "agent_id" or "uuid").
+ * @param value       Value to match against.
  * @return 1 if exists, 0 if not, -1 on error.
  */
 static int
-agent_exists (const gchar *agent_id)
+agent_column_exists (const gchar *column_name, const gchar *value)
 {
-  gchar *insert_agent_id = sql_insert (agent_id);
-  int result = sql_int (
-    "SELECT COUNT(*) FROM agents WHERE agent_id = %s;",
-    insert_agent_id);
-  g_free (insert_agent_id);
+  if (!column_name || !value)
+    {
+      g_warning ("%s: column_name or value is NULL", __func__);
+      return -1;
+    }
+
+  gchar *insert_value = sql_insert (value);
+  gchar *query = g_strdup_printf (
+    "SELECT COUNT(*) FROM agents WHERE %s = %s;", column_name, insert_value);
+
+  int result = sql_int (query);
+
+  g_free (query);
+  g_free (insert_value);
+
+  if (result < 0)
+    g_warning ("%s: SQL execution failed for column %s", __func__, column_name);
+
   return result < 0 ? -1 : (result > 0);
 }
 
@@ -188,6 +202,55 @@ agent_ip_data_list_add (agent_ip_data_list_t list, agent_ip_data_t ip_data)
 }
 
 /**
+ * @brief Resolve a scanner_t from an agent UUID string.
+ *
+ * Looks up the agents table to fetch the scanner ID that corresponds
+ * to the provided agent UUID.
+ *
+ * @param agent_uuid UUID of the agent as a string.
+ * @return Scanner ID, or 0/-1 on failure.
+ */
+scanner_t
+get_scanner_from_agent_uuid (const gchar *agent_uuid)
+{
+  scanner_t scanner = 0;
+
+  if (!agent_uuid)
+    {
+      g_warning ("%s: Agent UUID is required but missing", __func__);
+      manage_option_cleanup ();
+      return -1;
+    }
+
+  int exists = agent_column_exists ("uuid", agent_uuid);
+  if (exists == -1)
+    {
+      g_warning ("%s: Failed to check if agent UUID '%s' exists (DB error)", __func__, agent_uuid);
+      manage_option_cleanup ();
+      return -1;
+    }
+  if (exists == 0)
+    {
+      g_warning ("%s: Agent UUID '%s' not found", __func__, agent_uuid);
+      manage_option_cleanup ();
+      return -1;
+    }
+
+  gchar *insert_agent_uuid = sql_insert (agent_uuid);
+  scanner = sql_int ("SELECT scanner FROM agents WHERE uuid = %s;", insert_agent_uuid);
+  g_free (insert_agent_uuid);
+
+  if (scanner <= 0)
+    {
+      g_warning ("%s: Failed to find scanner for agent UUID %s", __func__, agent_uuid);
+      manage_option_cleanup ();
+      return -1;
+    }
+
+  return scanner;
+}
+
+/**
  * @brief Synchronize agent data list into the SQL database.
  *
  * Performs UPSERT logic: existing agents are updated, new agents
@@ -227,7 +290,7 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
     {
       agent_data_t agent = agent_list->agents[i];
 
-      gboolean exists = agent_exists(agent->agent_id);
+      gboolean exists = agent_column_exists ("agent_id", agent->agent_id);
 
       if (exists)
         {
@@ -313,23 +376,55 @@ init_agent_iterator (iterator_t *iterator, get_data_t *get)
 }
 
 /**
- * @brief Initialize a raw agent iterator with a custom WHERE clause.
+ * @brief Initialize an agent iterator for a specific scanner and list of agent UUIDs.
  *
- * @param iterator Pointer to iterator to initialize.
- * @param clause   Custom SQL WHERE clause.
+ * @param iterator  Pointer to the iterator to initialize.
+ * @param scanner   Scanner context used to filter agents.
+ * @param uuid_list List of agent UUIDs to include in the iteration.
  */
 void
-init_custom_agent_iterator (iterator_t *iterator, const gchar *clause)
+init_agent_uuid_list_iterator (iterator_t *iterator, scanner_t scanner,
+                               agent_uuid_list_t uuid_list)
 {
-  init_iterator (
-   iterator,
-   "SELECT id, uuid, name, comment, creation_time, modification_time, "
-   "creation_time AS created, modification_time AS modified, "
-   "id, name, agent_id, hostname, authorized, min_interval, heartbeat_interval, "
-   "connection_status, last_update, schedule, comment, creation_time, "
-   "modification_time, uuid, scanner, owner "
-   "FROM agents WHERE %s",
-   clause);
+  get_data_t get;
+  memset(&get, 0, sizeof(get));
+  get.type = "agent";
+  get.ignore_pagination = 1;
+  get.ignore_max_rows_per_page = 1;
+
+  GString *where_clause = g_string_new (NULL);
+
+  // Add scanner condition
+  g_string_append_printf (where_clause, " AND scanner = %llu", scanner);
+
+  // Add UUID conditions if any
+  if (uuid_list && uuid_list->count > 0)
+    {
+      g_string_append (where_clause, " AND uuid IN (");
+      for (int i = 0; i < uuid_list->count; ++i)
+        {
+          gchar *quoted_uuid = sql_quote (uuid_list->agent_uuids[i]);
+          g_string_append_printf (where_clause, "'%s'%s",
+                                  quoted_uuid,
+                                  (i < uuid_list->count - 1) ? ", " : "");
+          g_free (quoted_uuid);
+        }
+      g_string_append (where_clause, ")");
+    }
+  static column_t columns[] = AGENT_ITERATOR_COLUMNS;
+  static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
+  init_get_iterator (iterator,
+                     "agent",
+                     &get,
+                     columns,
+                     NULL,              // no trash columns
+                     filter_columns,
+                     0,                 // no trashcan
+                     NULL,              // no joins
+                     where_clause->str,
+                     0);
+
+  g_string_free (where_clause, TRUE);
 }
 
 /**
@@ -370,39 +465,12 @@ load_agent_ip_addresses (const char *agent_id)
 }
 
 /**
- * @brief Retrieve UUID of current row from agent iterator.
- */
-const char *
-agent_iterator_uuid (iterator_t *iterator)
-{
-  return iterator_string (iterator, 1);
-}
-
-/**
- * @brief Retrieve name of current agent.
- */
-const char *
-agent_iterator_name (iterator_t *iterator)
-{
-  return iterator_string (iterator, 2);
-}
-
-/**
  * @brief Retrieve agent_id from iterator.
  */
 const char *
 agent_iterator_agent_id (iterator_t *iterator)
 {
-  return iterator_string (iterator, 10);
-}
-
-/**
- * @brief Retrieve scanner ID of current agent.
- */
-scanner_t
-agent_iterator_scanner (iterator_t *iterator)
-{
-  return iterator_int (iterator, 22);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
 }
 
 /**
@@ -411,7 +479,7 @@ agent_iterator_scanner (iterator_t *iterator)
 const char *
 agent_iterator_hostname (iterator_t *iterator)
 {
-  return iterator_string (iterator, 11);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
 }
 
 /**
@@ -420,7 +488,7 @@ agent_iterator_hostname (iterator_t *iterator)
 int
 agent_iterator_authorized (iterator_t *iterator)
 {
-  return iterator_int (iterator, 12);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
 }
 
 /**
@@ -429,7 +497,7 @@ agent_iterator_authorized (iterator_t *iterator)
 int
 agent_iterator_min_interval (iterator_t *iterator)
 {
-  return iterator_int (iterator, 13);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -438,7 +506,7 @@ agent_iterator_min_interval (iterator_t *iterator)
 int
 agent_iterator_heartbeat_interval (iterator_t *iterator)
 {
-  return iterator_int (iterator, 14);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -447,7 +515,7 @@ agent_iterator_heartbeat_interval (iterator_t *iterator)
 const char *
 agent_iterator_connection_status (iterator_t *iterator)
 {
-  return iterator_string (iterator, 15);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -456,7 +524,7 @@ agent_iterator_connection_status (iterator_t *iterator)
 time_t
 agent_iterator_last_update (iterator_t *iterator)
 {
-  return iterator_int (iterator, 16);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -465,43 +533,16 @@ agent_iterator_last_update (iterator_t *iterator)
 const char *
 agent_iterator_schedule (iterator_t *iterator)
 {
-  return iterator_string (iterator, 17);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
- * @brief Retrieve owner of the agent.
+ * @brief Retrieve scanner ID of current agent.
  */
-user_t
-agent_iterator_owner (iterator_t *iterator)
+scanner_t
+agent_iterator_scanner (iterator_t *iterator)
 {
-  return iterator_int (iterator, 23);
-}
-
-/**
- * @brief Retrieve comment field of the agent.
- */
-const char *
-agent_iterator_comment (iterator_t *iterator)
-{
-  return iterator_string (iterator, 3);
-}
-
-/**
- * @brief Retrieve creation timestamp of the agent.
- */
-time_t
-agent_iterator_creation_time (iterator_t *iterator)
-{
-  return iterator_int (iterator, 4);
-}
-
-/**
- * @brief Retrieve modification timestamp of the agent.
- */
-time_t
-agent_iterator_modification_time (iterator_t *iterator)
-{
-  return iterator_int (iterator, 7);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
 }
 
 /**

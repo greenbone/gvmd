@@ -291,18 +291,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
   entity_t root = (entity_t) modify_agent_data.context->first->data;
 
-  // Extract scanner_id from attribute
-  entity_t scanner_elem = entity_child (root, "scanner");
-  const gchar *scanner_uuid = scanner_elem ? entity_attribute (scanner_elem, "id") : NULL;
-
-  if (!scanner_uuid || !is_uuid (scanner_uuid))
-    {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "Invalid or missing scanner_id"));
-      modify_agents_reset ();
-      return;
-    }
-
-  // Extract agent UUIDs from attribute
+  // Extract <agents>
   entity_t agents_elem = entity_child (root, "agents");
   if (!agents_elem)
     {
@@ -359,12 +348,46 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
   if ((e = entity_child (root, "comment")))
     comment = g_strdup (entity_text (e));
 
-  int success = modify_and_resync_agents (scanner_uuid, agent_uuids, update, comment);
+  agent_response_t response = modify_and_resync_agents (agent_uuids, update, comment);
 
-  if (success == 0)
-    SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agents"));
-  else
-    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+  switch (response)
+    {
+      case AGENT_RESPONSE_SUCCESS:
+        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agents"));
+        break;
+
+      case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "No agents provided"));
+        break;
+
+      case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "Failed to resolve scanner from agent UUID"));
+        break;
+
+      case AGENT_RESPONSE_GET_AGENTS_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents: Failed to fetch agents from controller"));
+        break;
+
+      case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "Agents belong to different scanners"));
+        break;
+
+      case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents: Failed to connect to scanner"));
+        break;
+
+      case AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents: Update request to agent controller failed"));
+        break;
+
+      case AGENT_RESPONSE_SYNC_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents: Sync after update failed"));
+        break;
+
+      default:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents: Unknown error"));
+        break;
+    }
 
   agent_uuid_list_free (agent_uuids);
   agent_controller_agent_update_free (update);
@@ -485,18 +508,7 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
   entity_t root = (entity_t) delete_agent_data.context->first->data;
 
-  // Updated scanner extraction from attribute
-  entity_t scanner_elem = entity_child (root, "scanner");
-  const gchar *scanner_uuid = scanner_elem ? entity_attribute (scanner_elem, "id") : NULL;
-
-  if (!scanner_uuid || !is_uuid (scanner_uuid))
-    {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Invalid or missing scanner_id"));
-      delete_agent_reset ();
-      return;
-    }
-
-  // Updated agents list extraction from attribute
+  // Extract <agents>
   entity_t agents_elem = entity_child (root, "agents");
   if (!agents_elem)
     {
@@ -534,11 +546,46 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
   agent_uuids->count = uuid_array->len;
   agent_uuids->agent_uuids = (gchar **) g_ptr_array_free (uuid_array, FALSE);
 
-  int success = delete_and_resync_agents (scanner_uuid, agent_uuids);
-  if (success == 0)
-    SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agents"));
-  else
-    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+  agent_response_t response = delete_and_resync_agents (agent_uuids);
+
+  switch (response)
+    {
+      case AGENT_RESPONSE_SUCCESS:
+        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agents"));
+        break;
+
+      case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "No agents provided"));
+        break;
+
+      case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Scanner lookup failed from agent UUID"));
+        break;
+
+      case AGENT_RESPONSE_GET_AGENTS_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents: Failed to resolve agents from controller"));
+        break;
+
+      case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Agents belong to different scanners"));
+        break;
+
+      case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents: Failed to connect to scanner"));
+        break;
+
+      case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents: Agent controller delete failed"));
+        break;
+
+      case AGENT_RESPONSE_SYNC_FAILED:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents: Resync after deletion failed"));
+        break;
+
+      default:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents: Unknown error"));
+        break;
+    }
 
   agent_uuid_list_free (agent_uuids);
 #else

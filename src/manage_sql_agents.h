@@ -25,9 +25,7 @@
  */
 #define AGENT_ITERATOR_COLUMNS                                         \
 {                                                                      \
-GET_ITERATOR_COLUMNS_PREFIX (""),                                      \
-{ "id",               NULL, KEYWORD_TYPE_INTEGER },                    \
-{ "name",             NULL, KEYWORD_TYPE_STRING },                     \
+GET_ITERATOR_COLUMNS (agents),                                         \
 { "agent_id",         NULL, KEYWORD_TYPE_STRING },                     \
 { "hostname",         NULL, KEYWORD_TYPE_STRING },                     \
 { "authorized",       NULL, KEYWORD_TYPE_INTEGER },                    \
@@ -36,12 +34,7 @@ GET_ITERATOR_COLUMNS_PREFIX (""),                                      \
 { "connection_status", NULL, KEYWORD_TYPE_STRING },                    \
 { "last_update",      NULL, KEYWORD_TYPE_INTEGER },                    \
 { "schedule",         NULL, KEYWORD_TYPE_STRING },                     \
-{ "comment",          NULL, KEYWORD_TYPE_STRING },                     \
-{ "creation_time",    NULL, KEYWORD_TYPE_INTEGER },                    \
-{ "modification_time", NULL, KEYWORD_TYPE_INTEGER },                   \
-{ "uuid",             NULL, KEYWORD_TYPE_STRING },                     \
 { "scanner",          NULL, KEYWORD_TYPE_INTEGER },                    \
-{ "owner",            NULL, KEYWORD_TYPE_INTEGER },                    \
 { NULL,               NULL, KEYWORD_TYPE_UNKNOWN }                     \
 }
 
@@ -74,6 +67,9 @@ sync_agents_from_data_list (agent_data_list_t agent_list);
 
 void
 update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment);
+
+scanner_t
+get_scanner_from_agent_uuid(const gchar *agent_uuid);
 
 #endif //_GVMD_MANAGE_SQL_AGENTS_H
 #endif // ENABLE_AGENTS

@@ -170,37 +170,6 @@ convert_agent_data_list_to_agent_control_list (agent_data_list_t list)
 }
 
 /**
- * @brief Resolve a scanner_t from a UUID string.
- *
- * Validates and fetches the scanner ID that matches the given UUID,
- * ensuring proper permissions.
- *
- * @param scanner_uuid  UUID of the scanner as a string.
- * @return Scanner ID, or 0/-1 on failure.
- */
-static scanner_t
-get_scanner_from_uuid(const gchar *scanner_uuid)
-{
-  scanner_t scanner = 0;
-
-  if (!scanner_uuid)
-    {
-      g_warning ("%s: Scanner UUID is required but missing", __func__);
-      manage_option_cleanup ();
-      return -1;
-    }
-
-  if (find_scanner_with_permission (scanner_uuid, &scanner, "get_scanners"))
-    {
-      g_warning ("%s: Failed to find scanner with UUID %s", __func__, scanner_uuid);
-      manage_option_cleanup ();
-      return -1;
-    }
-
-  return scanner;
-}
-
-/**
  * @brief Retrieve agent controller agents from GVMD UUIDs.
  *
  * Filters and converts a list of agent UUIDs to agent controller format.
@@ -219,7 +188,7 @@ get_agent_controller_agents_from_uuid (scanner_t scanner,
       return NULL;
     }
 
-  agent_data_list_t agent_data_list = get_filtered_agents (scanner, agent_uuids);
+  agent_data_list_t agent_data_list = get_agents_by_scanner_and_uuids (scanner, agent_uuids);
   if (agent_data_list->count == 0)
     {
       g_warning ("%s: No matching agents found for scanner", __func__);
@@ -494,28 +463,11 @@ sync_agents_from_agent_controller (gvmd_agent_connector_t connector)
  * @return Allocated agent_data_list_t or NULL.
  */
 agent_data_list_t
-get_filtered_agents (scanner_t scanner, agent_uuid_list_t uuid_list)
+get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list)
 {
   iterator_t iterator;
-  GString *filter = g_string_new (NULL);
 
-  // Add scanner condition
-  g_string_append_printf (filter, "scanner = %llu", scanner);
-
-  // Add UUID conditions if any
-  if (uuid_list && uuid_list->count > 0)
-    {
-      g_string_append (filter, " AND (");
-      for (int i = 0; i < uuid_list->count; ++i)
-        {
-          g_string_append_printf (filter, "uuid = '%s'%s",
-                                  uuid_list->agent_uuids[i],
-                                  (i < uuid_list->count - 1) ? " OR " : "");
-        }
-      g_string_append (filter, ")");
-    }
-
-  init_custom_agent_iterator (&iterator, filter->str);
+  init_agent_uuid_list_iterator (&iterator, scanner, uuid_list);
 
   agent_data_list_t list = g_malloc0 (sizeof (struct agent_data_list));
   list->count = 0;
@@ -536,19 +488,18 @@ get_filtered_agents (scanner_t scanner, agent_uuid_list_t uuid_list)
       agent->connection_status = g_strdup (agent_iterator_connection_status (&iterator));
       agent->last_update_agent_control = agent_iterator_last_update (&iterator);
       agent->schedule = g_strdup (agent_iterator_schedule (&iterator));
-      agent->comment = g_strdup (agent_iterator_comment (&iterator));
-      agent->creation_time = agent_iterator_creation_time (&iterator);
-      agent->modification_time = agent_iterator_modification_time (&iterator);
+      agent->comment = g_strdup (get_iterator_comment (&iterator));
+      agent->creation_time = get_iterator_creation_time (&iterator);
+      agent->modification_time = get_iterator_modification_time (&iterator);
       agent->scanner = agent_iterator_scanner (&iterator);
-      agent->owner = agent_iterator_owner (&iterator);
-      agent->uuid = g_strdup (agent_iterator_uuid (&iterator));
+      agent->owner = get_iterator_owner (&iterator);
+      agent->uuid = g_strdup (get_iterator_uuid (&iterator));
       agent->ip_addresses = load_agent_ip_addresses (agent->agent_id);
 
       list->agents = g_realloc (list->agents, sizeof (agent_data_t) * (list->count + 1));
       list->agents[list->count++] = agent;
     }
 
-  g_string_free (filter, TRUE);
   cleanup_iterator (&iterator);
   return list;
 }
@@ -559,15 +510,14 @@ get_filtered_agents (scanner_t scanner, agent_uuid_list_t uuid_list)
  * Sends update instructions for the selected agents and re-synchronizes
  * their state from the agent controller.
  *
- * @param scanner_uuid  UUID of the scanner used.
  * @param agent_uuids   UUID list of agents to update.
  * @param agent_update  Update parameters for the agent controller.
  * @param comment       Optional comment to apply to agents.
- * @return 0 on success, -1 on error.
+ * @return AGENT_RESPONSE_SUCCESS on success,
+ *         or an appropriate AGENT_RESPONSE_* error code on failure.
  */
-int
-modify_and_resync_agents (const gchar *scanner_uuid,
-                          agent_uuid_list_t agent_uuids,
+agent_response_t
+modify_and_resync_agents (agent_uuid_list_t agent_uuids,
                           agent_controller_agent_update_t agent_update,
                           const gchar *comment)
 {
@@ -576,12 +526,18 @@ modify_and_resync_agents (const gchar *scanner_uuid,
   gvmd_agent_connector_t connector = NULL;
   int result = -1;
 
-  scanner = get_scanner_from_uuid (scanner_uuid);
-
-  if (!scanner)
+  if (!agent_uuids || agent_uuids->count == 0)
     {
-      g_warning ("%s: get_scanner_from_uuid failed", __func__);
-      return -1;
+      g_warning ("%s: No agents to modify", __func__);
+      return AGENT_RESPONSE_NO_AGENTS_PROVIDED;
+    }
+
+  scanner = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0]);
+
+  if (scanner == -1)
+    {
+      g_warning ("%s: get_scanner_from_agent_uuid failed", __func__);
+      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
     }
 
   agent_control_list = get_agent_controller_agents_from_uuid (scanner, agent_uuids);
@@ -589,16 +545,22 @@ modify_and_resync_agents (const gchar *scanner_uuid,
     {
       g_warning ("%s: get_agent_controller_agents_from_uuid failed", __func__);
       agent_controller_agent_list_free (agent_control_list);
-      return -1;
+      return AGENT_RESPONSE_GET_AGENTS_FAILED;
+    }
+  if (agent_control_list->count != agent_uuids->count)
+    {
+      g_warning ("%s: All agents do not belong to the same scanner", __func__);
+      agent_controller_agent_list_free (agent_control_list);
+      return AGENT_RESPONSE_AGENT_SCANNER_MISMATCH;
     }
 
   connector = gvmd_agent_connector_new_from_scanner (scanner);
   if (!connector)
     {
-      g_warning ("%s: Failed to create agent connector for scanner %s", __func__, scanner_uuid);
+      g_warning ("%s: Failed to create agent connector for scanner ", __func__);
       agent_controller_agent_list_free (agent_control_list);
       manage_option_cleanup ();
-      return -1;
+      return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
     }
 
   int update_result = agent_controller_update_agents (
@@ -612,7 +574,7 @@ modify_and_resync_agents (const gchar *scanner_uuid,
       agent_controller_agent_list_free (agent_control_list);
       gvmd_agent_connector_free (connector);
       manage_option_cleanup ();
-      return -1;
+      return AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED;
     }
 
  if (comment)
@@ -620,14 +582,20 @@ modify_and_resync_agents (const gchar *scanner_uuid,
 
   result = sync_agents_from_agent_controller (connector);
   if (result < 0)
-    g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
+    {
+      g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
+      agent_controller_agent_list_free (agent_control_list);
+      gvmd_agent_connector_free (connector);
+      manage_option_cleanup ();
+      return AGENT_RESPONSE_SYNC_FAILED;
+    }
 
   // Cleanup
   agent_controller_agent_list_free (agent_control_list);
   gvmd_agent_connector_free (connector);
   manage_option_cleanup ();
 
-  return result;
+  return AGENT_RESPONSE_SUCCESS;
 }
 
 /**
@@ -636,41 +604,53 @@ modify_and_resync_agents (const gchar *scanner_uuid,
  * Issues deletion requests for the specified agents and re-synchronizes
  * the GVMD agent list to reflect the updated state.
  *
- * @param scanner_uuid  UUID of the scanner.
  * @param agent_uuids   List of UUIDs to delete.
- * @return 0 on success, -1 on failure.
+ * @return AGENT_RESPONSE_SUCCESS on success,
+ *         or an appropriate AGENT_RESPONSE_* error code on failure.
  */
-int
-delete_and_resync_agents (const gchar *scanner_uuid,
-                          agent_uuid_list_t agent_uuids)
+agent_response_t
+delete_and_resync_agents (agent_uuid_list_t agent_uuids)
 {
   scanner_t scanner = 0;
   agent_controller_agent_list_t agent_control_list = NULL;
   gvmd_agent_connector_t connector = NULL;
   int result = -1;
 
-  scanner = get_scanner_from_uuid (scanner_uuid);
+  if (!agent_uuids || agent_uuids->count == 0)
+    {
+      g_warning ("%s: No agents to modify", __func__);
+      return AGENT_RESPONSE_NO_AGENTS_PROVIDED;
+    }
+
+  scanner = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0]);
 
   if (!scanner)
     {
-      g_warning ("%s: get_scanner_from_uuid failed", __func__);
-      return -1;
+      g_warning ("%s: get_scanner_from_agent_uuid failed", __func__);
+      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
     }
   agent_control_list = get_agent_controller_agents_from_uuid (scanner, agent_uuids);
   if (!agent_control_list || agent_control_list->count == 0)
     {
       g_warning ("%s: get_agent_controller_agents_from_uuid failed", __func__);
       agent_controller_agent_list_free (agent_control_list);
-      return -1;
+      return AGENT_RESPONSE_GET_AGENTS_FAILED;
+    }
+
+  if (agent_control_list->count != agent_uuids->count)
+    {
+      g_warning ("%s: All agents do not belong to the same scanner", __func__);
+      agent_controller_agent_list_free (agent_control_list);
+      return AGENT_RESPONSE_AGENT_SCANNER_MISMATCH;
     }
 
   connector = gvmd_agent_connector_new_from_scanner (scanner);
   if (!connector)
     {
-      g_warning ("%s: Failed to create agent connector for scanner %s", __func__, scanner_uuid);
+      g_warning ("%s: Failed to create agent connector for scanner", __func__);
       agent_controller_agent_list_free (agent_control_list);
       manage_option_cleanup ();
-      return -1;
+      return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
     }
 
   int update_result = agent_controller_delete_agents (
@@ -683,21 +663,27 @@ delete_and_resync_agents (const gchar *scanner_uuid,
       agent_controller_agent_list_free (agent_control_list);
       gvmd_agent_connector_free (connector);
       manage_option_cleanup ();
-      return -1;
+      return AGENT_RESPONSE_CONTROLLER_DELETE_FAILED;
     }
 
   delete_agents_filtered (agent_uuids, 0);
 
   result = sync_agents_from_agent_controller (connector);
   if (result < 0)
-    g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
+    {
+      g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
+      agent_controller_agent_list_free (agent_control_list);
+      gvmd_agent_connector_free (connector);
+      manage_option_cleanup ();
+      return AGENT_RESPONSE_SYNC_FAILED;
+    }
 
   // Cleanup
   agent_controller_agent_list_free (agent_control_list);
   gvmd_agent_connector_free (connector);
   manage_option_cleanup ();
 
-  return result;
+  return AGENT_RESPONSE_SUCCESS;
 }
 
 #endif // ENABLE_AGENTS
