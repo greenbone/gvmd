@@ -4015,3 +4015,20 @@ manage_scap_loaded ()
                     " ::integer;",
                     sql_database ());
 }
+#if FEED_VT_METADATA == 1
+/**
+ * @brief Check whether NVTS table is available in database.
+ *
+ * @return 1 if NVTS table is loaded, else 0.
+ */
+int
+manage_nvts_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = '%s'"
+                    "               AND table_schema = 'public'"
+                    "               AND table_name = 'nvts')"
+                    " ::integer;",
+                    sql_database ());
+}
+#endif

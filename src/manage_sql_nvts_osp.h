@@ -52,4 +52,7 @@ nvts_feed_version_status_internal_osp (const gchar *update_socket,
                                    gchar **db_feed_version_out,
                                    gchar **scanner_feed_version_out);
 
+int
+update_scanner_preferences_osp (const gchar *update_socket);
+
 #endif //MANAGE_NVTS_OSP_H

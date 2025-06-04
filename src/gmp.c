@@ -13057,6 +13057,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                            "</feature>",
                            OPENVASD ? 1 : 0);
 
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>FEED_VT_METADATA</name>"
+                           "</feature>",
+                           FEED_VT_METADATA ? 1 : 0);
+
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
 
@@ -15397,7 +15402,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               /* Skip task name for Anonymous XML report format. */
               if (get_reports_data->format_id == NULL
                   || strcmp (get_reports_data->format_id,
-                             "5057e5cc-b825-11e4-9d0e-28d24461215b"))
+                             "REPORT_FORMAT_UUID_ANON_XML"))
                 {
                   gchar *report_task_name;
                   report_task_name = task_name (task);
@@ -15467,10 +15472,10 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 && get_reports_data->format_id
                                 && strcmp
                                     (get_reports_data->format_id,
-                                     "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                     REPORT_FORMAT_UUID_XML)
                                 && strcmp
                                     (get_reports_data->format_id,
-                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
+                                      "REPORT_FORMAT_UUID_ANON_XML"),
                                 send_to_client,
                                 gmp_parser->client_writer,
                                 gmp_parser->client_writer_data,

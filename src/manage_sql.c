@@ -9561,17 +9561,9 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
 
               report_id = report_uuid (report);
 
-              creation_time
-                = sql_string ("SELECT iso_time (start_time)"
-                              " FROM reports"
-                              " WHERE id = %llu",
-                              report);
+              creation_time = report_start_time (report);
 
-              modification_time
-                = sql_string ("SELECT iso_time (end_time)"
-                              " FROM reports"
-                              " WHERE id = %llu",
-                              report);
+              modification_time = report_end_time (report);
 
               file_name
                 = gvm_export_file_name (fname_format,
@@ -9781,7 +9773,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    "scp_report_format",
                    NULL,
                    /* XML fallback. */
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
+                   "REPORT_FORMAT_UUID_XML",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL,
@@ -9885,7 +9877,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    "send_report_format",
                    NULL,
                    /* XML fallback. */
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
+                   "REPORT_FORMAT_UUID_XML",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL,
@@ -9988,7 +9980,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                   (alert, report, task, get,
                    "smb_report_format",
                    NULL,
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   "REPORT_FORMAT_UUID_XML", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
@@ -10311,7 +10303,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                   (alert, report, task, get,
                    NULL, /* Report format not configurable */
                    NULL,
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
+                   "REPORT_FORMAT_UUID_XML", /* XML fallback */
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
@@ -21708,6 +21700,37 @@ report_modification_time (report_t report)
                      report);
 }
 
+/**
+ * @brief Get the start time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_start_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (start_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+/**
+ * @brief Get the end time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_end_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (end_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
 
 /**
  * @brief Return the run status of the scan associated with a report.
