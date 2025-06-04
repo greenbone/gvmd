@@ -11532,7 +11532,7 @@ update_nvti_cache ()
    * to sort the data by NVT, which would make the query too slow. */
   init_iterator (&nvts,
                  "SELECT nvts.oid, vt_refs.type, vt_refs.ref_id,"
-                 "       vt_refs.ref_text"
+                 "       vt_refs.ref_text, nvts.qod"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
 
@@ -11550,6 +11550,7 @@ update_nvti_cache ()
         {
           nvti = nvti_new ();
           nvti_set_oid (nvti, iterator_string (&nvts, 0));
+          nvti_set_qod(nvti, iterator_string (&nvts, 4));
 
           nvtis_add (nvti_cache, nvti);
 
