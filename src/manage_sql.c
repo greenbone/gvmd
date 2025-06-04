@@ -5361,28 +5361,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 /* Events and Alerts. */
 
 /**
- * @brief Return the UUID of the filter of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return UUID if there's a filter, else NULL.
- */
-static char *
-alert_filter_id (alert_t alert)
-{
-  return sql_string ("SELECT"
-                     " (CASE WHEN (SELECT filter IS NULL OR filter = 0"
-                     "             FROM alerts WHERE id = %llu)"
-                     "  THEN NULL"
-                     "  ELSE (SELECT uuid FROM filters"
-                     "        WHERE id = (SELECT filter FROM alerts"
-                     "                    WHERE id = %llu))"
-                     "  END);",
-                     alert,
-                     alert);
-}
-
-/**
  * @brief Write the content of a plain text email to a stream.
  *
  * @param[in]  content_file  Stream to write the email content to.
