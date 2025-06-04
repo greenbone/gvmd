@@ -42999,20 +42999,16 @@ clean_feed_role_permissions (const char *type,
 
   sql_roles = g_string_new ("(");
 
-  if (roles_str)
+  roles = g_strsplit (roles_str, ",", 0);
+  role = roles;
+  while (*role)
     {
-      roles = g_strsplit (roles_str, ",", 0);
-      role = roles;
-      while (*role)
-        {
-          gchar *quoted_role = sql_insert (*role);
-          g_string_append (sql_roles, quoted_role);
+      gchar *quoted_role = sql_insert (*role);
+      g_string_append (sql_roles, quoted_role);
 
-          role ++;
-          if (*role)
-            g_string_append (sql_roles, ", ");
-        }
-
+      role ++;
+      if (*role)
+        g_string_append (sql_roles, ", ");
     }
 
   g_string_append (sql_roles, ")");
