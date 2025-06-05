@@ -702,6 +702,28 @@ Prerequisites for certificate generation:
 
 * GnuTLS certtool (Debian package: gnutls-bin)
 
+## Enable Agent Control Support
+
+To enable agent management and integration with the Agent Control service, make sure to configure your build with the `ENABLE_AGENTS` flag enabled.
+
+In your CMake configuration:
+
+```bash
+cmake -DENABLE_AGENTS=1 ..
+```
+
+This flag ensures that gvmd is built with support for Agent Control and can interact with agent-based components.
+
+## Set the Agent Owner
+
+Agent resources retrieved from the Agent Control service are associated with a user. gvmd requires an "Agent Owner" to be configured in order to import and manage agents properly.
+
+Use the following command to set the Agent Owner:
+
+```bash
+gvmd --modify-setting 1ee1f106-8b2e-461c-b426-7f5d76001b29 --value <uuid_of_user>
+```
+
 ## Static code analysis with the Clang Static Analyzer
 
 If you want to use the Clang Static Analyzer (https://clang-analyzer.llvm.org/)

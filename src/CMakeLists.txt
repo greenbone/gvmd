@@ -37,6 +37,18 @@ if(OPENVASD)
 else(OPENVASD)
   message(STATUS "OPENVASD flag is not enabled")
 endif(OPENVASD)
+if(ENABLE_AGENTS)
+  if(NOT OPENVASD)
+    pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.22)
+  endif(NOT OPENVASD)
+  pkg_check_modules(
+    LIBGVM_AGENT_CONTROLLER
+    REQUIRED
+    libgvm_agent_controller>=22.22
+  )
+else(ENABLE_AGENTS)
+  message(STATUS "ENABLE_AGENTS flag is not enabled")
+endif(ENABLE_AGENTS)
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
@@ -114,6 +126,7 @@ else(WITH_LIBTHEIA)
 endif(WITH_LIBTHEIA)
 
 include_directories(
+  ${LIBGVM_AGENT_CONTROLLER_INCLUDE_DIRS}
   ${LIBGVM_GMP_INCLUDE_DIRS}
   ${LIBGVM_OPENVASD_INCLUDE_DIRS}
   ${LIBGVM_BASE_INCLUDE_DIRS}
@@ -142,6 +155,7 @@ set(
   ALL_MANAGE_SRC
   manage.c
   manage_acl.c
+  manage_agents.c
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -166,6 +180,7 @@ set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
   manage_sql_copy.c
+  manage_sql_agents.c
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -184,6 +199,7 @@ set(
 set(
   ALL_GMP_SRC
   gmp.c
+  gmp_agents.c
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -354,6 +370,7 @@ target_link_libraries(
   ${CJSON_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}
@@ -378,6 +395,7 @@ target_link_libraries(
   ${CJSON_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_OPENVASD_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
@@ -402,6 +420,7 @@ target_link_libraries(
   ${CJSON_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}
@@ -426,6 +445,7 @@ target_link_libraries(
   ${CJSON_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}
@@ -450,6 +470,7 @@ target_link_libraries(
   ${CJSON_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}
@@ -474,6 +495,7 @@ target_link_libraries(
   ${CJSON_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}
@@ -489,6 +511,7 @@ target_link_libraries(
   ${LIBBSD_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_OPENVASD_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}

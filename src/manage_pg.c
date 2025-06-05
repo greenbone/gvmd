@@ -2224,6 +2224,31 @@ create_tables ()
        "  method integer,"
        "  creation_time integer);");
 
+#if ENABLE_AGENTS
+  sql ("CREATE TABLE IF NOT EXISTS agents"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid UUID NOT NULL UNIQUE,"
+       "  name TEXT NOT NULL,"
+       "  agent_id TEXT UNIQUE NOT NULL,"
+       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  hostname TEXT,"
+       "  authorized INTEGER NOT NULL,"
+       "  min_interval INTEGER,"
+       "  heartbeat_interval INTEGER,"
+       "  connection_status TEXT,"
+       "  last_update INTEGER,"
+       "  schedule TEXT,"
+       "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
+       "  comment TEXT,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
+       "  ip_address TEXT NOT NULL);");
+#endif /* ENABLE_AGENTS */
+
   sql ("CREATE TABLE IF NOT EXISTS alerts"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
