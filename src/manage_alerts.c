@@ -529,7 +529,7 @@ manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
 }
 
 
-/* Events and Alerts. */
+/* Triggering an Alert. */
 
 /**
  * @brief Write the content of a plain text email to a stream.
