@@ -1427,38 +1427,60 @@ cleanup_nvt_sequences () {
 
 #if FEED_VT_METADATA == 1
 /**
- * @brief GET NVTs feed file timestamp, as a string.
+ * @brief GET NVTs feed info timestamp, as a string.
  *
- * @return Timestamp of feed file, "" if missing and NULL on error.
+ * @return Timestamp of NVTs feed, NULL on error.
  */
 gchar *
-nvts_feed_file_timestamp ()
+nvts_feed_info_timestamp ()
 {
   GError *error;
-  gchar *timestamp;
+  gchar *content, *feed_info_path, *timestamp;
   gsize len;
+  GRegex *regex;
 
   error = NULL;
-  g_file_get_contents (GVM_NVT_DATA_DIR "/timestamp", &timestamp, &len,
+
+  feed_info_path = g_build_filename (GVM_NVT_DIR, "plugin_feed_info.inc",
+                                     NULL);
+
+  g_file_get_contents (feed_info_path, &content, &len,
                        &error);
   if (error)
     {
-      if (error->code == G_FILE_ERROR_NOENT)
-      {
-        g_error_free (error);
-        return "";
-      }
-      else
-        {
-          g_warning ("%s: Failed to get NVTs feed timestamp: %s",
-                    __func__,
-                    error->message);
-          g_error_free (error);
-          return NULL;
-        }
+      g_warning ("%s: Failed to get NVTs feed timestamp: %s",
+                 __func__, error->message);
+      g_error_free (error);
+      g_free (feed_info_path);
+      return NULL;
     }
 
-  g_debug ("%s: NVTs feed file timestamp: %s", __func__, timestamp);
+  regex = g_regex_new ("^PLUGIN_SET[ \t]*=[ \t]*\"([0-9]+)\"",
+                       G_REGEX_MULTILINE, 0, NULL);
+  if (regex == NULL)
+    {
+      g_warning ("%s: Failed to create regex for NVTs feed timestamp",
+                 __func__);
+      g_free (content);
+      g_free (feed_info_path);
+      return NULL;
+    }
+
+  GMatchInfo *match_info;
+  timestamp = NULL;
+  if (g_regex_match (regex, content, 0, &match_info))
+    timestamp = g_match_info_fetch (match_info, 1);
+
+  if (timestamp == NULL)
+    g_warning ("%s: Failed to parse timestamp from %s", __func__,
+               feed_info_path);
+
+  g_debug ("%s: NVTs feed timestamp: %s", __func__, timestamp);
+
+  g_match_info_free (match_info);
+  g_regex_unref (regex);
+  g_free (feed_info_path);
+  g_free (content);
 
   return timestamp;
 }
@@ -1466,50 +1488,48 @@ nvts_feed_file_timestamp ()
 /**
  * @brief Get the NVTs feed file timestamp in seconds since epoch.
  *
- * @return Timestamp from feed, 0 if missing, -1 on error.
+ * @return Timestamp from feed, -1 on error.
  */
 int
-nvts_feed_file_epoch ()
+nvts_feed_info_epoch ()
 {
   gchar *timestamp;
   time_t epoch_time;
   struct tm tm;
 
-  timestamp = nvts_feed_file_timestamp ();
+  timestamp = nvts_feed_info_timestamp ();
 
   if (timestamp == NULL)
     {
-      g_warning ("%s: Error reading NVTs feed file timestamp", __func__);
+      g_warning ("%s: Error reading NVTs feed timestamp", __func__);
       return -1;
     }
 
-  if (strcmp (timestamp, "") == 0)
-    epoch_time = 0;
-  else
+  if (strlen (timestamp) < 12)
     {
-      if (strlen (timestamp) < 12)
-        {
-          g_warning ("%s: feed timestamp too short: %s",
-                     __func__, timestamp);
-          g_free (timestamp);
-          return -1;
-        }
-
-      memset (&tm, 0, sizeof (struct tm));
-      if (strptime (timestamp, "%Y%m%d%H%M", &tm) == NULL)
-        {
-          g_warning ("%s: Failed to parse time", __func__);
-          return -1;
-        }
-      epoch_time = mktime (&tm);
-      if (epoch_time == -1)
-        {
-          g_warning ("%s: Failed to make time", __func__);
-          return -1;
-        }
+      g_warning ("%s: feed timestamp too short: %s",
+                  __func__, timestamp);
+      g_free (timestamp);
+      return -1;
     }
 
-  g_debug ("%s: NVTS feed file epoch: %ld", __func__, (long) epoch_time);
+  memset (&tm, 0, sizeof (struct tm));
+  if (strptime (timestamp, "%Y%m%d%H%M", &tm) == NULL)
+    {
+      g_warning ("%s: Failed to parse time", __func__);
+      g_free (timestamp);
+      return -1;
+    }
+  epoch_time = mktime (&tm);
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: Failed to make time", __func__);
+      g_free (timestamp);
+      return -1;
+    }
+
+  g_debug ("%s: NVTS feed info epoch: %ld", __func__, (long) epoch_time);
+  g_free (timestamp);
   return epoch_time;
 }
 
@@ -1522,14 +1542,14 @@ nvts_feed_file_epoch ()
 int
 nvts_feed_version_status_from_timestamp ()
 {
-  int feed_file_timestamp;
+  int feed_info_timestamp;
   time_t feed_version_epoch;
 
   if (manage_nvts_loaded () == 0)
     return 2;
 
-  feed_file_timestamp = nvts_feed_file_epoch ();
-  if (feed_file_timestamp == -1)
+  feed_info_timestamp = nvts_feed_info_epoch ();
+  if (feed_info_timestamp == -1)
     return -1;
 
   feed_version_epoch = nvts_feed_version_epoch ();
@@ -1542,10 +1562,10 @@ nvts_feed_version_status_from_timestamp ()
       return 3;
     }
 
-  if (feed_version_epoch == feed_file_timestamp)
+  if (feed_version_epoch == feed_info_timestamp)
     return 0;
   
-  if (feed_version_epoch > feed_file_timestamp)
+  if (feed_version_epoch > feed_info_timestamp)
     {
       g_warning ("%s: last nvts database update later than last feed update",
                   __func__);
@@ -1771,14 +1791,14 @@ update_nvts_from_feed (gchar *db_feed_version,
 
   g_info ("%s: Updating NVTs from feed", __func__);
 
-  full_path = g_build_filename (GVM_NVT_DATA_DIR,
+  full_path = g_build_filename (GVM_NVT_DIR,
                                 "vt-metadata.json.gz",
                                 NULL);
 
   if (g_stat (full_path, &state))
     {
       g_free (full_path);
-      full_path = g_build_filename (GVM_NVT_DATA_DIR,
+      full_path = g_build_filename (GVM_NVT_DIR,
                                     "vt-metadata.json",
                                     NULL);
     }
@@ -1843,11 +1863,11 @@ manage_update_nvts_from_feed (gboolean reset_nvts_db)
     set_nvts_feed_version ("0");
 
   db_feed_version = nvts_feed_version ();
-  nvts_feed_file_version = nvts_feed_file_timestamp ();
+  nvts_feed_file_version = nvts_feed_info_timestamp ();
 
   if (nvts_feed_file_version == NULL)
     {
-      g_warning ("%s: Failed to get NVTs feed file version", __func__);
+      g_warning ("%s: Failed to get NVTs feed info timestamp", __func__);
       return -1;
     }
 
