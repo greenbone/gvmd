@@ -177,6 +177,11 @@
 
 extern db_conn_info_t gvmd_db_conn_info;
 
+/**
+ * @brief Function to fork a connection that will accept GMP requests.
+ */
+extern manage_connection_forker_t manage_fork_connection;
+
 
 /* Function prototypes */
 
@@ -195,6 +200,10 @@ gchar *report_host_hostname (report_host_t);
 gchar *report_host_best_os_cpe (report_host_t);
 
 gchar *report_host_best_os_txt (report_host_t);
+
+gchar *report_creation_time (report_t);
+
+gchar *report_modification_time (report_t);
 
 gchar *report_start_time (report_t);
 
@@ -306,6 +315,15 @@ int
 scap_check_time ();
 
 int
+nvts_check_time ();
+
+gchar *
+new_secinfo_list (event_t, const void *, alert_t, int *);
+
+gchar *
+new_secinfo_message (event_t, const void *, alert_t);
+
+int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
 
@@ -340,11 +358,10 @@ void
 update_all_config_caches ();
 
 int
-trigger (alert_t alert, task_t task, report_t report, event_t event,
-         const void* event_data, alert_method_t method,
-         alert_condition_t condition,
-         const get_data_t *get, int notes_details, int overrides_details,
-         gchar **script_message);
+task_report_previous (task_t, report_t, report_t *);
+
+int
+task_last_report_any_status (task_t, report_t *);
 
 int
 task_second_last_report (task_t, report_t *);

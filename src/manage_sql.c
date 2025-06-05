@@ -67,14 +67,11 @@
 #include <glib/gstdio.h>
 #include <gnutls/x509.h>
 #include <malloc.h>
-#include <pwd.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
 #include <grp.h>
@@ -88,7 +85,6 @@
 #include <gvm/base/logging.h>
 #include <bsd/unistd.h>
 #include <gvm/util/fileutils.h>
-#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/radiusutils.h>
@@ -199,12 +195,6 @@ set_task_interrupted (task_t, const gchar *);
 
 /* Static headers. */
 
-gchar *
-report_creation_time (report_t);
-
-gchar *
-report_modification_time (report_t);
-
 static int
 report_counts_cache_exists (report_t, int, int);
 
@@ -249,12 +239,6 @@ role_is_predefined (role_t);
 static int
 role_is_predefined_id (const char *);
 
-static gchar *
-new_secinfo_message (event_t, const void*, alert_t);
-
-static gchar *
-new_secinfo_list (event_t, const void*, alert_t, int*);
-
 #if CVSS3_RATINGS == 1
 static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
@@ -278,12 +262,6 @@ vuln_iterator_opts_from_filter (const gchar *);
 
 static gchar*
 vuln_iterator_extra_with_from_filter (const gchar *);
-
-static int
-task_last_report_any_status (task_t, report_t *);
-
-static int
-task_report_previous (task_t task, report_t, report_t *);
 
 static gboolean
 find_trash_task (const char*, task_t*);
@@ -383,7 +361,7 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-static manage_connection_forker_t manage_fork_connection;
+manage_connection_forker_t manage_fork_connection;
 
 /**
  * @brief Max number of hosts per target.
@@ -648,7 +626,7 @@ vector_find_filter (const gchar **vector, const gchar *string)
  *
  * @return Last check time.
  */
-static int
+int
 nvts_check_time ()
 {
   return sql_int ("SELECT"
@@ -9192,7 +9170,7 @@ set_task_start_time_ctime (task_t task, char* time)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_report_previous (task_t task, report_t report, report_t *previous)
 {
   switch (sql_int64 (previous,
@@ -9262,7 +9240,7 @@ task_last_report (task_t task, report_t *report)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_last_report_any_status (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
@@ -26699,7 +26677,7 @@ new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
  *
  * @return Freshly allocated list.
  */
-static gchar *
+gchar *
 new_secinfo_list (event_t event, const void* event_data, alert_t alert,
                   int *count_return)
 {
@@ -26748,7 +26726,7 @@ new_secinfo_list (event_t event, const void* event_data, alert_t alert,
  *
  * @return Freshly allocated message.
  */
-static gchar *
+gchar *
 new_secinfo_message (event_t event, const void* event_data, alert_t alert)
 {
   gchar *type, *list, *message, *name, *point;
