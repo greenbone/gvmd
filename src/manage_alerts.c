@@ -24,10 +24,25 @@
  */
 
 #include "manage_alerts.h"
+#include "debug_utils.h"
+#include "manage_report_formats.h"
 #include "manage_sql.h"
 #include "manage_sql_alerts.h"
 #include "manage_acl.h"
+#include "manage_sql_report_formats.h"
+#include "manage_sql_tickets.h"
+#include "manage_tickets.h"
 
+#include <bsd/unistd.h>
+#include <glib/gstdio.h>
+#include <grp.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <gvm/gmp/gmp.h>
+#include <gvm/util/fileutils.h>
+#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/uuidutils.h>
 
 #undef G_LOG_DOMAIN
