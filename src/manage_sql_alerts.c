@@ -1637,6 +1637,28 @@ alert_name (alert_t alert)
 }
 
 /**
+ * @brief Return the UUID of the filter of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return UUID if there's a filter, else NULL.
+ */
+char *
+alert_filter_id (alert_t alert)
+{
+  return sql_string ("SELECT"
+                     " (CASE WHEN (SELECT filter IS NULL OR filter = 0"
+                     "             FROM alerts WHERE id = %llu)"
+                     "  THEN NULL"
+                     "  ELSE (SELECT uuid FROM filters"
+                     "        WHERE id = (SELECT filter FROM alerts"
+                     "                    WHERE id = %llu))"
+                     "  END);",
+                     alert,
+                     alert);
+}
+
+/**
  * @brief Return whether a alert is in use by a task.
  *
  * @param[in]  alert  Alert.

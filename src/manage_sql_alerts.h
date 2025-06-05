@@ -70,6 +70,9 @@ alert_owner_name (alert_t);
 char *
 alert_name (alert_t);
 
+char *
+alert_filter_id (alert_t);
+
 event_t
 alert_event (alert_t);
 
