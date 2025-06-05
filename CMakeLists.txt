@@ -239,12 +239,6 @@ if(NOT GVM_SCAP_DATA_DIR)
   set(GVM_SCAP_DATA_DIR "${GVM_STATE_DIR}/scap-data")
 endif(NOT GVM_SCAP_DATA_DIR)
 
-if(FEED_VT_METADATA)
-  if(NOT GVM_NVT_DATA_DIR)
-    set(GVM_NVT_DATA_DIR "${LOCALSTATEDIR}/lib/openvas/vt-metadata")
-  endif(NOT GVM_NVT_DATA_DIR)
-endif(FEED_VT_METADATA)
-
 # System username to use when dropping privileges
 if(NOT GVM_DEFAULT_DROP_USER)
   set(GVM_DEFAULT_DROP_USER "")
