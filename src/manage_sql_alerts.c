@@ -1637,6 +1637,28 @@ alert_name (alert_t alert)
 }
 
 /**
+ * @brief Return the UUID of the filter of an alert.
+ *
+ * @param[in]  alert  Alert.
+ *
+ * @return UUID if there's a filter, else NULL.
+ */
+char *
+alert_filter_id (alert_t alert)
+{
+  return sql_string ("SELECT"
+                     " (CASE WHEN (SELECT filter IS NULL OR filter = 0"
+                     "             FROM alerts WHERE id = %llu)"
+                     "  THEN NULL"
+                     "  ELSE (SELECT uuid FROM filters"
+                     "        WHERE id = (SELECT filter FROM alerts"
+                     "                    WHERE id = %llu))"
+                     "  END);",
+                     alert,
+                     alert);
+}
+
+/**
  * @brief Return whether a alert is in use by a task.
  *
  * @param[in]  alert  Alert.
@@ -2206,6 +2228,55 @@ alert_task_iterator_readable (iterator_t* iterator)
 }
 
 /**
+ * @brief Initialise a vFire alert iterator for method call data.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  alert  Alert.
+ */
+void
+init_alert_vfire_call_iterator (iterator_t *iterator, alert_t alert)
+{
+  init_iterator (iterator,
+                 "SELECT SUBSTR(name, %i), data"
+                 " FROM alert_method_data"
+                 " WHERE alert = %llu"
+                 " AND name %s 'vfire_call_%%';",
+                 strlen ("vfire_call_") + 1, alert, sql_ilike_op ());
+}
+
+/**
+ * @brief Return the name from an alert vFire call iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.
+ */
+const char*
+alert_vfire_call_iterator_name (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = iterator_string (iterator, 0);
+  return ret;
+}
+
+/**
+ * @brief Return the value from an alert vFire call iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Value, or NULL if iteration is complete.
+ */
+const char*
+alert_vfire_call_iterator_value (iterator_t *iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = iterator_string (iterator, 1);
+  return ret;
+}
+
+/**
  * @brief Check for new SCAP SecInfo after an update.
  */
 static void
@@ -2419,4 +2490,33 @@ check_alerts ()
                max_time);
         }
     }
+}
+
+/**
+ * @brief Get the SMB file path format to use for an alert.
+ *
+ * @param[in]  alert  Alert.
+ * @param[in]  task   Task.
+ *
+ * @return Freshly allocated path if there's a tag, else NULL.
+ */
+gchar *
+alert_smb_file_path (alert_t alert, task_t task)
+{
+  gchar *file_path_format;
+
+  file_path_format = sql_string ("SELECT value FROM tags"
+                                 " WHERE name = 'smb-alert:file_path'"
+                                 "   AND EXISTS"
+                                 "         (SELECT * FROM tag_resources"
+                                 "           WHERE resource_type = 'task'"
+                                 "             AND resource = %llu"
+                                 "             AND tag = tags.id)"
+                                 " ORDER BY modification_time LIMIT 1;",
+                                 task);
+
+  if (file_path_format)
+    return file_path_format;
+
+  return alert_data (alert, "method", "smb_file_path");
 }

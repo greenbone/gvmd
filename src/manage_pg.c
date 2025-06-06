@@ -2890,7 +2890,9 @@ create_tables ()
        "  scan_run_status integer,"
        "  slave_progress integer,"
        "  flags integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  processing_required integer DEFAULT 0,"
+       "  in_assets integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id SERIAL PRIMARY KEY,"

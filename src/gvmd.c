@@ -238,7 +238,7 @@ static gnutls_certificate_credentials_t client_credentials;
 /**
  * @brief Database connection info.
  */
-static db_conn_info_t database = { NULL, NULL, NULL, NULL };
+static db_conn_info_t database = { NULL, NULL, NULL, NULL, 60};
 
 /**
  * @brief Is this process parent or child?
@@ -1404,6 +1404,83 @@ fork_feed_sync ()
     }
 }
 
+/**
+ * @brief Forks a process for processing imported reports.
+ *
+ * @return 0 success, -1 error.
+ *         Always exits with EXIT_SUCCESS in child.
+ */
+static int
+fork_process_report_imports ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+  if (sigaddset (&sigmask_all, SIGCHLD))
+    {
+      g_critical ("%s: Error adding SIGCHLD to signal set", __func__);
+      return -1;
+    }
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.   */
+        init_sentry ();
+        setproctitle ("Manage process report imports");
+
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+        /* Clean up the process. */
+        cleanup_manage_process (FALSE);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        manage_process_report_imports ();
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+        exit (EXIT_SUCCESS);
+        break;
+
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return -1;
+
+      default:
+        /* Parent.  Unblock signals and continue. */
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return 0;
+    }
+}
+
 #if ENABLE_AGENTS
 /**
  * @brief Forks a process to sync agents from Agent Control scanners.
@@ -1594,6 +1671,7 @@ serve_and_schedule ()
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
           fork_feed_sync ();
+          fork_process_report_imports ();
 #if ENABLE_AGENTS
           fork_agents_sync ();
 #endif
@@ -1657,6 +1735,7 @@ serve_and_schedule ()
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
           fork_feed_sync ();
+          fork_process_report_imports ();
 #if ENABLE_AGENTS
           fork_agents_sync ();
 #endif
