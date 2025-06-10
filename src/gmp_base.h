@@ -130,6 +130,9 @@ log_event (const char *, const char *, const char *, const char *)
   __attribute__ ((weak));
 
 void
+log_event_plural (const char *, const char *, const char *, const char *);
+
+void
 log_event_fail (const char *, const char *, const char *, const char *);
 
 /* Status codes. */

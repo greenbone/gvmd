@@ -357,10 +357,12 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
     {
       case AGENT_RESPONSE_SUCCESS:
         SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agents"));
+        log_event_plural ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "No agents provided"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
@@ -371,6 +373,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
+            log_event_fail ("agents", "Agents", NULL, "modified");
             return;
           }
         break;
@@ -383,6 +386,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
+            log_event_fail ("agents", "Agents", NULL, "modified");
             return;
           }
         break;
@@ -393,28 +397,38 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
 
       case AGENT_RESPONSE_INVALID_AGENT_OWNER:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "Agents belong to different scanners"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
                                      "modify_agents",
                                      "Could not connect to Agent-Controller"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+                                   "modify_agents",
+                                   "Updates of Agents in Agent-Controller failed"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_SYNC_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+                                   "modify_agents",
+                                   "Synchronization of Agents in Agent-Controller failed"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       default:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
     }
 
@@ -583,6 +597,7 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
     {
       case AGENT_RESPONSE_SUCCESS:
         SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agents"));
+        log_event_plural ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
@@ -593,6 +608,7 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
+            log_event_fail ("agents", "Agents", NULL, "deleted");
             return;
           }
         break;
@@ -604,6 +620,7 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
+            log_event_fail ("agents", "Agents", NULL, "deleted");
             return;
           }
         break;
@@ -615,36 +632,50 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
+            log_event_fail ("agents", "Agents", NULL, "deleted");
             return;
           }
         break;
 
       case AGENT_RESPONSE_INVALID_ARGUMENT:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_INVALID_AGENT_OWNER:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Agents belong to different scanners"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+                                   "delete_agents",
+                                   "Could not connect to Agent-Controller"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+                                 "delete_agents",
+                                 "Deletion of Agents in Agent-Controller failed"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_SYNC_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+                                   "delete_agents",
+                                   "Synchronization of Agents in Agent-Controller failed"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       default:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
     }
 
