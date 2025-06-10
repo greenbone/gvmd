@@ -1135,6 +1135,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 {
   int index, ret;
   gchar *quoted_name, *quoted_comment, *item;
+  gchar *new_name, *new_comment;
   alert_t alert;
   filter_t filter;
 
@@ -1210,26 +1211,39 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       free (type);
     }
 
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ? comment : "");
+  new_name = NULL;
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      new_name = g_strdup_printf (" name = '%s',", quoted_name);
+      g_free (quoted_name);
+    }
+
+  new_comment = NULL;
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment);
+      new_comment = g_strdup_printf (" comment = '%s',", quoted_comment);
+      g_free (quoted_comment);
+    }
 
   sql ("UPDATE alerts SET"
-       " name = '%s',"
-       " comment = '%s',"
+       "%s"
+       "%s"
        " filter = %llu,"
        " active = %s,"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
+       new_name ?: "",
+       new_comment ?: "",
        filter,
        active
         ? (strcmp (active, "0") ? "1" : "0")
         : "active",
        alert);
 
-  g_free (quoted_comment);
-  g_free (quoted_name);
+  g_free (new_name);
+  g_free (new_comment);
 
   /* Modify alert event */
   if (event != EVENT_ERROR)
