@@ -1134,8 +1134,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
               GPtrArray *method_data)
 {
   int index, ret;
-  gchar *quoted_name, *quoted_comment, *item;
-  gchar *new_name, *new_comment;
+  gchar *new_name, *new_comment, *item;
   alert_t alert;
   filter_t filter;
 
@@ -1214,7 +1213,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
   new_name = NULL;
   if (name)
     {
-      quoted_name = sql_quote (name);
+      gchar *quoted_name = sql_quote (name);
       new_name = g_strdup_printf (" name = '%s',", quoted_name);
       g_free (quoted_name);
     }
@@ -1222,7 +1221,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
   new_comment = NULL;
   if (comment)
     {
-      quoted_comment = sql_quote (comment);
+      gchar *quoted_comment = sql_quote (comment);
       new_comment = g_strdup_printf (" comment = '%s',", quoted_comment);
       g_free (quoted_comment);
     }
