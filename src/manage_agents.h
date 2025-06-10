@@ -101,15 +101,17 @@ struct agent_uuid_list
 typedef struct agent_uuid_list *agent_uuid_list_t;
 
 typedef enum {
-  AGENT_RESPONSE_SUCCESS = 0,                     ///< Success
-  AGENT_RESPONSE_NO_AGENTS_PROVIDED = -1,         ///< No agent UUIDs provided
-  AGENT_RESPONSE_SCANNER_LOOKUP_FAILED = -2,      ///< Scanner lookup failed
-  AGENT_RESPONSE_GET_AGENTS_FAILED = -3,          ///< Failed to get agents from controller
-  AGENT_RESPONSE_AGENT_SCANNER_MISMATCH = -4,       ///< Agent list count mismatch (not same scanner)
-  AGENT_RESPONSE_CONNECTOR_CREATION_FAILED = -5,  ///< Failed to create connector
-  AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED = -6,   ///< Failed to update agents
-  AGENT_RESPONSE_CONTROLLER_DELETE_FAILED = -7,   ///< Failed to delete agents
-  AGENT_RESPONSE_SYNC_FAILED = -8                 ///< Failed during sync
+  AGENT_RESPONSE_SUCCESS = 0,                       ///< Success
+  AGENT_RESPONSE_NO_AGENTS_PROVIDED = -1,           ///< No agent UUIDs provided
+  AGENT_RESPONSE_SCANNER_LOOKUP_FAILED = -2,        ///< Scanner lookup failed
+  AGENT_RESPONSE_AGENT_SCANNER_MISMATCH = -3,       ///< Agent list count mismatch (not same scanner)
+  AGENT_RESPONSE_CONNECTOR_CREATION_FAILED = -4,    ///< Failed to create connector
+  AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED = -5,     ///< Failed to update agents
+  AGENT_RESPONSE_CONTROLLER_DELETE_FAILED = -6,     ///< Failed to delete agents
+  AGENT_RESPONSE_SYNC_FAILED = -7,                  ///< Failed during sync
+  AGENT_RESPONSE_INVALID_ARGUMENT = -8,             ///< Failed invalid argument
+  AGENT_RESPONSE_INVALID_AGENT_OWNER = -9,          ///< Failed getting owner UUID
+  AGENT_RESPONSE_AGENT_NOT_FOUND = -10              ///< Failed getting owner UUID
 } agent_response_t;
 
 gvmd_agent_connector_t
@@ -124,20 +126,28 @@ agent_ip_data_list_free (agent_ip_data_list_t ip_list);
 void
 agent_data_free (agent_data_t data);
 
+agent_ip_data_list_t
+agent_ip_data_list_new (int count);
+
 void
 agent_ip_data_free (agent_ip_data_t ip_data);
 
 void
 agent_data_list_free (agent_data_list_t agents);
 
+agent_uuid_list_t
+agent_uuid_list_new (int count);
+
 void
 agent_uuid_list_free (agent_uuid_list_t uuid_list);
 
-int
+agent_response_t
 sync_agents_from_agent_controller (gvmd_agent_connector_t connector);
 
-agent_data_list_t
-get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list);
+agent_response_t
+get_agents_by_scanner_and_uuids (scanner_t scanner,
+                                 agent_uuid_list_t uuid_list,
+                                 agent_data_list_t out_list);
 
 agent_response_t
 modify_and_resync_agents (agent_uuid_list_t agent_uuids,
@@ -151,7 +161,7 @@ int
 init_agent_iterator (iterator_t *iterator, get_data_t *get);
 
 void
-init_agent_uuid_list_iterator (iterator_t *iterator, scanner_t scanner,
+init_agent_uuid_list_iterator (iterator_t *iterator,
                                agent_uuid_list_t uuid_list);
 
 agent_ip_data_list_t
@@ -194,7 +204,7 @@ int
 agent_in_use (agent_t agent);
 
 void
-delete_agents_filtered (agent_uuid_list_t agent_uuids, scanner_t scanner);
+delete_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t agent_uuids);
 
 #endif // _GVMD_MANAGE_AGENTS_H
 #endif // ENABLE_AGENTS

@@ -23,43 +23,43 @@
 /**
  * @brief Agent iterator columns.
  */
-#define AGENT_ITERATOR_COLUMNS                                         \
-{                                                                      \
-GET_ITERATOR_COLUMNS (agents),                                         \
-{ "agent_id",         NULL, KEYWORD_TYPE_STRING },                     \
-{ "hostname",         NULL, KEYWORD_TYPE_STRING },                     \
-{ "authorized",       NULL, KEYWORD_TYPE_INTEGER },                    \
-{ "min_interval",     NULL, KEYWORD_TYPE_INTEGER },                    \
-{ "heartbeat_interval", NULL, KEYWORD_TYPE_INTEGER },                  \
-{ "connection_status", NULL, KEYWORD_TYPE_STRING },                    \
-{ "last_update",      NULL, KEYWORD_TYPE_INTEGER },                    \
-{ "schedule",         NULL, KEYWORD_TYPE_STRING },                     \
-{ "scanner",          NULL, KEYWORD_TYPE_INTEGER },                    \
-{ NULL,               NULL, KEYWORD_TYPE_UNKNOWN }                     \
+#define AGENT_ITERATOR_COLUMNS                                             \
+{                                                                          \
+GET_ITERATOR_COLUMNS (agents),                                             \
+{ "agent_id",            NULL, KEYWORD_TYPE_STRING  },                     \
+{ "hostname",            NULL, KEYWORD_TYPE_STRING  },                     \
+{ "authorized",          NULL, KEYWORD_TYPE_INTEGER },                     \
+{ "min_interval",        NULL, KEYWORD_TYPE_INTEGER },                     \
+{ "heartbeat_interval",  NULL, KEYWORD_TYPE_INTEGER },                     \
+{ "connection_status",   NULL, KEYWORD_TYPE_STRING  },                     \
+{ "last_update",         NULL, KEYWORD_TYPE_INTEGER },                     \
+{ "schedule",            NULL, KEYWORD_TYPE_STRING  },                     \
+{ "scanner",             NULL, KEYWORD_TYPE_INTEGER },                     \
+{ NULL,                  NULL, KEYWORD_TYPE_UNKNOWN }                      \
 }
 
 /**
  * @brief Filter columns for agent iterator.
  */
-#define AGENT_ITERATOR_FILTER_COLUMNS       \
-{                                           \
-"uuid",                                     \
-"agent_id",                                 \
-"name",                                     \
-"hostname",                                 \
-"scanner",                                  \
-"authorized",                               \
-"min_interval",                             \
-"heartbeat_interval",                       \
-"connection_status",                        \
-"last_update",                              \
-"schedule",                                 \
-"comment",                                  \
-"creation_time",                            \
-"modification_time",                        \
-"owner",                                    \
-"id",                                       \
-NULL                                        \
+#define AGENT_ITERATOR_FILTER_COLUMNS         \
+{                                             \
+  "uuid",                                     \
+  "agent_id",                                 \
+  "name",                                     \
+  "hostname",                                 \
+  "scanner",                                  \
+  "authorized",                               \
+  "min_interval",                             \
+  "heartbeat_interval",                       \
+  "connection_status",                        \
+  "last_update",                              \
+  "schedule",                                 \
+  "comment",                                  \
+  "creation_time",                            \
+  "modification_time",                        \
+  "owner",                                    \
+  "id",                                       \
+  NULL                                        \
 }
 
 int

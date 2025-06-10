@@ -38063,7 +38063,7 @@ delete_scanner (const char *scanner_id, int ultimate)
     }
 
 #if ENABLE_AGENTS
-  delete_agents_filtered (NULL, scanner);
+  delete_agents_by_scanner_and_uuids (scanner, NULL);
 #endif // ENABLE_AGENTS
 
   sql ("DELETE FROM scanners WHERE id = %llu;", scanner);

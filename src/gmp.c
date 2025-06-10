@@ -13062,6 +13062,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                            "</feature>",
                            FEED_VT_METADATA ? 1 : 0);
 
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>ENABLE_AGENTS</name>"
+                           "</feature>",
+                           ENABLE_AGENTS ? 1 : 0);
+
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
 

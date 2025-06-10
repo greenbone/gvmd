@@ -30,7 +30,7 @@
 /**
  * @brief Delete all existing IP addresses for a given agent.
  *
- * @param agent_id Agent identifier whose IPs will be removed.
+ * @param[in] agent_id Agent identifier whose IPs will be removed.
  */
 static void
 delete_existing_agent_ips (const gchar *agent_id)
@@ -44,8 +44,8 @@ delete_existing_agent_ips (const gchar *agent_id)
 /**
  * @brief Check if a value exists in a given column of the agents table.
  *
- * @param column_name Column to search (e.g., "agent_id" or "uuid").
- * @param value       Value to match against.
+ * @param[in] column_name Column to search (e.g., "agent_id" or "uuid").
+ * @param[in] value       Value to match against.
  * @return 1 if exists, 0 if not, -1 on error.
  */
 static int
@@ -75,7 +75,7 @@ agent_column_exists (const gchar *column_name, const gchar *value)
 /**
  * @brief Update an existing agent record in the database.
  *
- * @param agent Pointer to the agent data to update.
+ * @param[in] agent Pointer to the agent data to update.
  */
 static void
 update_existing_agent (agent_data_t agent)
@@ -110,8 +110,8 @@ update_existing_agent (agent_data_t agent)
 /**
  * @brief Append an agent's data as a row to a COPY buffer.
  *
- * @param buffer COPY buffer for agents.
- * @param agent  Agent whose data will be appended.
+ * @param[out] buffer COPY buffer for agents.
+ * @param[in] agent  Agent whose data will be appended.
  */
 static void
 append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
@@ -156,9 +156,9 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
 /**
  * @brief Append all IPs of an agent to a COPY buffer.
  *
- * @param buffer   COPY buffer for agent IPs.
- * @param agent_id ID of the agent.
- * @param ip_list  List of IP addresses to append.
+ * @param[out] buffer   COPY buffer for agent IPs.
+ * @param[in] agent_id ID of the agent.
+ * @param[in] ip_list  List of IP addresses to append.
  */
 static void
 append_ip_rows_to_buffer (db_copy_buffer_t *buffer,
@@ -187,27 +187,12 @@ append_ip_rows_to_buffer (db_copy_buffer_t *buffer,
 }
 
 /**
- * @brief Add an IP data entry to an agent_ip_data_list.
- *
- * @param list     Target IP list.
- * @param ip_data  IP data to append.
- */
-static void
-agent_ip_data_list_add (agent_ip_data_list_t list, agent_ip_data_t ip_data)
-{
-  g_return_if_fail (list);
-
-  list->items = g_realloc (list->items, (list->count + 1) * sizeof (agent_ip_data_t));
-  list->items[list->count++] = ip_data;
-}
-
-/**
  * @brief Resolve a scanner_t from an agent UUID string.
  *
  * Looks up the agents table to fetch the scanner ID that corresponds
  * to the provided agent UUID.
  *
- * @param agent_uuid UUID of the agent as a string.
+ * @param[in] agent_uuid UUID of the agent as a string.
  * @return Scanner ID, or 0/-1 on failure.
  */
 scanner_t
@@ -233,7 +218,7 @@ get_scanner_from_agent_uuid (const gchar *agent_uuid)
     {
       g_warning ("%s: Agent UUID '%s' not found", __func__, agent_uuid);
       manage_option_cleanup ();
-      return -1;
+      return -2;
     }
 
   gchar *insert_agent_uuid = sql_insert (agent_uuid);
@@ -256,7 +241,7 @@ get_scanner_from_agent_uuid (const gchar *agent_uuid)
  * Performs UPSERT logic: existing agents are updated, new agents
  * and all IPs are inserted via COPY.
  *
- * @param agent_list List of agents to sync.
+ * @param[in] agent_list List of agents to sync.
  * @return 0 on success, -1 on failure.
  */
 int
@@ -334,8 +319,9 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
 /**
  * @brief Initialize SQL-based agent iterator with filtering support.
  *
- * @param iterator Pointer to iterator to initialize.
- * @param get      Get parameters to construct SQL WHERE clause.
+ * @param[out] iterator Pointer to the iterator to initialize.
+ * @param[in]  get      Get parameters containing filtering criteria (e.g., agent ID).
+ *
  * @return 0 on success, -1 on failure.
  */
 int
@@ -347,18 +333,13 @@ init_agent_iterator (iterator_t *iterator, get_data_t *get)
   static column_t columns[] = AGENT_ITERATOR_COLUMNS;
   static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
 
-  g_autofree gchar *id_clause = NULL;
-  g_autofree gchar *full_clause = NULL;
+  gchar *quoted = NULL;
+  gchar *where_clause = NULL;
 
   if (get->id)
     {
-      g_autofree gchar *quoted = sql_quote (get->id);
-      id_clause = g_strdup_printf ("agent_id = '%s'", quoted);
-    }
-
-  if (id_clause)
-    {
-      full_clause = g_strdup (id_clause);
+      quoted = sql_quote (get->id);
+      where_clause = g_strdup_printf ("agent_id = '%s'", quoted);
     }
 
   int ret = init_get_iterator (iterator,
@@ -369,8 +350,11 @@ init_agent_iterator (iterator_t *iterator, get_data_t *get)
                                filter_columns,
                                0,                 // no trashcan
                                NULL,              // no joins
-                               full_clause,
+                               where_clause,
                                0);
+
+  g_free (where_clause);
+  g_free (quoted);
 
   return ret;
 }
@@ -378,12 +362,11 @@ init_agent_iterator (iterator_t *iterator, get_data_t *get)
 /**
  * @brief Initialize an agent iterator for a specific scanner and list of agent UUIDs.
  *
- * @param iterator  Pointer to the iterator to initialize.
- * @param scanner   Scanner context used to filter agents.
- * @param uuid_list List of agent UUIDs to include in the iteration.
+ * @param[out] iterator  Pointer to the iterator to initialize.
+ * @param[in] uuid_list List of agent UUIDs to include in the iteration.
  */
 void
-init_agent_uuid_list_iterator (iterator_t *iterator, scanner_t scanner,
+init_agent_uuid_list_iterator (iterator_t *iterator,
                                agent_uuid_list_t uuid_list)
 {
   get_data_t get;
@@ -393,9 +376,6 @@ init_agent_uuid_list_iterator (iterator_t *iterator, scanner_t scanner,
   get.ignore_max_rows_per_page = 1;
 
   GString *where_clause = g_string_new (NULL);
-
-  // Add scanner condition
-  g_string_append_printf (where_clause, " AND scanner = %llu", scanner);
 
   // Add UUID conditions if any
   if (uuid_list && uuid_list->count > 0)
@@ -430,7 +410,8 @@ init_agent_uuid_list_iterator (iterator_t *iterator, scanner_t scanner,
 /**
  * @brief Load all IP addresses associated with a given agent.
  *
- * @param agent_id ID of the agent.
+ * @param[in] agent_id ID of the agent.
+ *
  * @return List of IP addresses associated with the agent.
  */
 agent_ip_data_list_t
@@ -438,26 +419,36 @@ load_agent_ip_addresses (const char *agent_id)
 {
   g_return_val_if_fail (agent_id, NULL);
 
-  agent_ip_data_list_t list = g_malloc0 (sizeof (struct agent_ip_data_list));
-  list->count = 0;
-  list->items = NULL;  // Start empty
+  gchar *inserted_agent_id = sql_insert (agent_id);
+  gchar *count_query = g_strdup_printf (
+    "SELECT COUNT(*) FROM agent_ip_addresses WHERE agent_id = %s;",
+          inserted_agent_id);
+  int count = sql_int (count_query);
+  g_free (count_query);
+
+  if (count <= 0)
+    return NULL;
+
+  agent_ip_data_list_t list = agent_ip_data_list_new (count);
+  if (!list)
+    return NULL;
 
   iterator_t ip_iterator;
 
   init_iterator (&ip_iterator,
-                 "SELECT ip_address FROM agent_ip_addresses WHERE agent_id = '%s';",
-                 agent_id);
+                 "SELECT ip_address FROM agent_ip_addresses WHERE agent_id = %s;",
+                 inserted_agent_id);
 
-  while (next (&ip_iterator))
+  int index = 0;
+  while (next (&ip_iterator) && index < count)
     {
       const char *ip_str = iterator_string (&ip_iterator, 0);
       if (!ip_str)
         continue;
 
-      agent_ip_data_t ip_data = g_malloc0 (sizeof (struct agent_ip_data));
-      ip_data->ip_address = g_strdup (ip_str);
-
-      agent_ip_data_list_add (list, ip_data);
+      list->items[index] = g_malloc0 (sizeof (struct agent_ip_data));
+      list->items[index]->ip_address = g_strdup (ip_str);
+      index++;
     }
 
   cleanup_iterator (&ip_iterator);
@@ -590,13 +581,16 @@ agent_in_use (agent_t agent)
 /**
  * @brief Delete agents and associated IPs using a filtered UUID list.
  *
- * Optionally filters by scanner. Uses SQL transactions.
+ * Deletes agents from the database and their associated IPs.
+ * If @p agent_uuids is provided and non-empty, only those agents will be deleted.
+ * If @p agent_uuids is NULL or empty, and @p scanner is non-zero,
+ * deletes all agents associated with that scanner.
  *
- * @param agent_uuids List of agent UUIDs to delete.
- * @param scanner     Optional scanner filter (0 to ignore).
+ * @param[in] scanner     Optional scanner filter (0 to ignore).
+ * @param[in] agent_uuids List of agent UUIDs to delete.
  */
 void
-delete_agents_filtered (agent_uuid_list_t agent_uuids, scanner_t scanner)
+delete_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t agent_uuids)
 {
   GString *where_clause = g_string_new ("WHERE 1=1");
 
@@ -640,8 +634,8 @@ delete_agents_filtered (agent_uuid_list_t agent_uuids, scanner_t scanner)
 /**
  * @brief Update comment field for a set of agents.
  *
- * @param agent_uuids  List of agent UUIDs to update.
- * @param new_comment  New comment to set.
+ * @param[in] agent_uuids  List of agent UUIDs to update.
+ * @param[in] new_comment  New comment to set.
  */
 void
 update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment)

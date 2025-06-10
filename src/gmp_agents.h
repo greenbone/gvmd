@@ -9,8 +9,8 @@
  *
  * Headers for GMP handlers for agent control commands.
  */
-#ifndef GMP_AGENTS_H
-#define GMP_AGENTS_H
+#ifndef _GVMD_GMP_AGENTS_H
+#define _GVMD_GMP_AGENTS_H
 
 #include "gmp_base.h"
 
@@ -71,4 +71,4 @@ delete_agents_element_end (gmp_parser_t *gmp_parser,
 void
 delete_agents_run (gmp_parser_t *gmp_parser, GError **error);
 
-#endif //GMP_AGENTS_H
+#endif //_GVMD_GMP_AGENTS_H

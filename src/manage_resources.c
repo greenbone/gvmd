@@ -26,8 +26,13 @@
 int
 valid_type (const char* type)
 {
-  return (strcasecmp (type, "agent") == 0)
-         || (strcasecmp (type, "alert") == 0)
+
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "agent") == 0)
+    return 1;
+#endif
+
+  return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "asset") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
@@ -87,8 +92,11 @@ type_db_name (const char* type)
   if (valid_type (type))
     return type;
 
+#if ENABLE_AGENTS
   if (strcasecmp (type, "Agent") == 0)
     return "agent";
+#endif
+
   if (strcasecmp (type, "Alert") == 0)
     return "alert";
   if (strcasecmp (type, "Asset") == 0)

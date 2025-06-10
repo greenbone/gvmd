@@ -6756,6 +6756,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
   <command>
     <name>delete_agents</name>
     <summary>Delete agents</summary>
@@ -6823,6 +6824,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>delete_alert</name>
     <summary>Delete an alert</summary>
@@ -8747,6 +8749,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
   <command>
     <name>get_agents</name>
     <summary>Get agents</summary>
@@ -9200,6 +9203,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>get_alerts</name>
     <summary>Get one or many alerts</summary>
@@ -27217,6 +27221,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
   <command>
     <name>modify_agents</name>
     <summary>Modify agents</summary>
@@ -27319,6 +27324,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>modify_alert</name>
     <summary>Modify an existing alert</summary>
