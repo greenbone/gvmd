@@ -2576,6 +2576,15 @@ gvmd (int argc, char** argv, char *env[])
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
+  /* Setup logging. */
+  rc_name = g_build_filename (GVM_SYSCONF_DIR,
+                              "gvmd_log.conf",
+                              NULL);
+  if (gvm_file_is_readable (rc_name))
+    log_config = load_log_configuration (rc_name);
+  g_free (rc_name);
+  setup_log_handlers (log_config);
+
   /* Set maximum number of concurrent scan updates */
   set_max_concurrent_scan_updates (max_concurrent_scan_updates);
 
@@ -2607,16 +2616,6 @@ gvmd (int argc, char** argv, char *env[])
   /* Set umask to hoard created files, including the database. */
 
   umask (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
-
-  /* Setup logging. */
-
-  rc_name = g_build_filename (GVM_SYSCONF_DIR,
-                              "gvmd_log.conf",
-                              NULL);
-  if (gvm_file_is_readable (rc_name))
-    log_config = load_log_configuration (rc_name);
-  g_free (rc_name);
-  setup_log_handlers (log_config);
 
   /* Log whether sentry support is enabled */
   if (sentry_initialized)
