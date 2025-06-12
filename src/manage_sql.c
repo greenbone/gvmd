@@ -32927,6 +32927,10 @@ delete_scanner (const char *scanner_id, int ultimate)
       tags_remove_resource ("scanner", scanner, LOCATION_TABLE);
     }
 
+#if ENABLE_AGENTS
+  delete_agents_by_scanner_and_uuids (scanner, NULL);
+#endif // ENABLE_AGENTS
+
   sql ("DELETE FROM scanners WHERE id = %llu;", scanner);
   sql_commit ();
   return 0;
@@ -33975,6 +33979,63 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
 }
 #endif
 
+#if ENABLE_AGENTS
+/**
+ * @brief Get an Agent Control scanner's preferences info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  desc        Scanner description.
+ * @param[out]  params      Scanner parameters.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+agent_control_get_details_from_iterator (iterator_t *iterator, char **desc,
+                                         GSList **params)
+{
+  int port;
+  const char *host, *ca_pub, *key_pub, *key_priv;
+  const char *protocol = "https";
+  agent_controller_connector_t connection;
+
+  assert (iterator);
+
+  host = scanner_iterator_host (iterator);
+  port = scanner_iterator_port (iterator);
+  ca_pub = scanner_iterator_ca_pub (iterator);
+  key_pub = scanner_iterator_key_pub (iterator);
+  key_priv = scanner_iterator_key_priv (iterator);
+
+  if (!ca_pub || !key_pub)
+    {
+      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
+      protocol = "http";
+    }
+
+  connection = agent_controller_connector_new ();
+  if (!connection)
+    return 1;
+
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
+
+  *desc = g_strdup_printf ("Agent Control Scanner on %s://%s:%d", protocol, host, port);
+
+  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
+  agent_controller_connector_free (connection);
+
+  if (agents == NULL)
+    return 1;
+
+  agent_controller_agent_list_free (agents);
+  return 0;
+}
+#endif
+
 /**
  * @brief Verify a scanner.
  *
@@ -34011,6 +34072,11 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD)
+    {
+      cleanup_iterator (&scanner);
+      return 0;
+    }
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
     {
       cleanup_iterator (&scanner);
       return 0;
@@ -34075,6 +34141,9 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_OPENVASD:
             scanner_type_str = "openvasd";
+            break;
+          case SCANNER_TYPE_AGENT_CONTROLLER:
+            scanner_type_str = "agent-controller";
             break;
           default:
             scanner_type_str = NULL;
@@ -44003,7 +44072,9 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid)
     {
       /* Filters */
-      if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
+      if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
+        setting_name = g_strdup ("Agents Filter");
+      else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
@@ -44304,6 +44375,8 @@ manage_max_rows (int max, int ignore_max_rows_per_page)
 static const gchar *
 setting_name (const gchar *uuid)
 {
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+    return "Agent Owner";
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
@@ -44345,6 +44418,8 @@ setting_is_default_ca_cert (const gchar *uuid)
 static const gchar *
 setting_description (const gchar *uuid)
 {
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+    return "User who is given ownership of new Agents.";
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
@@ -44403,8 +44478,9 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0
-      && strlen (value))
+  if ((strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0
+     || (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0 ))
+    && strlen (value))
     {
       user_t value_user;
       gchar *quoted_uuid;
@@ -44550,7 +44626,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Modifying setting.");
 
-  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER)
+      && strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
@@ -44581,7 +44658,8 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
     {
       user_t user;
 
-      if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+      if ((strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+          || (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
           || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
