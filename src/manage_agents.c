@@ -207,7 +207,7 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
 {
   if (!scanner)
     {
-      g_warning ("get_agent_controller_agents_from_uuids: scanner ID is missing or invalid");
+      g_warning ("%s: scanner ID is missing or invalid", __func__);
       return AGENT_RESPONSE_INVALID_ARGUMENT;
     }
 
