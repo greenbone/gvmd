@@ -197,11 +197,22 @@ internal_error_send_to_client (GError** error)
  */
 static void
 log_event_internal (const char *type, const char *type_name, const char *id,
-                    const char *action, int fail)
+                    const char *action, int fail, int plural)
 {
   gchar *domain;
 
   domain = g_strdup_printf ("event %s", type);
+
+  const gchar *verb_phrase;
+
+  if (fail)
+    {
+     verb_phrase = "could not be";
+    }
+  else
+    {
+      verb_phrase =  plural ? "have been" : "has been";
+    }
 
   if (id)
     {
@@ -217,14 +228,14 @@ log_event_internal (const char *type, const char *type_name, const char *id,
         g_log (domain, G_LOG_LEVEL_MESSAGE,
                "%s %s (%s) %s %s by %s",
                type_name, name, id,
-               fail ? "could not be" : "has been",
+               verb_phrase,
                action,
                current_credentials.username);
       else
         g_log (domain, G_LOG_LEVEL_MESSAGE,
                "%s %s %s %s by %s",
                type_name, id,
-               fail ? "could not be" : "has been",
+               verb_phrase,
                action,
                current_credentials.username);
 
@@ -234,7 +245,7 @@ log_event_internal (const char *type, const char *type_name, const char *id,
     g_log (domain, G_LOG_LEVEL_MESSAGE,
            "%s %s %s by %s",
            type_name,
-           fail ? "could not be" : "has been",
+           verb_phrase,
            action,
            current_credentials.username);
 
@@ -253,7 +264,23 @@ void
 log_event (const char *type, const char *type_name, const char *id,
            const char *action)
 {
-  log_event_internal (type, type_name, id, action, 0);
+  log_event_internal (type, type_name, id, action, 0, 0);
+}
+
+
+/**
+ * @brief Creates a plural log event entry for a resource action.
+ *
+ * @param[in]   type        Resource type.
+ * @param[in]   type_name   Resource type name.
+ * @param[in]   id          Resource id.
+ * @param[in]   action      Action done.
+ */
+void
+log_event_plural (const char *type, const char *type_name, const char *id,
+           const char *action)
+{
+  log_event_internal (type, type_name, id, action, 0, 1);
 }
 
 /**
@@ -268,5 +295,5 @@ void
 log_event_fail (const char *type, const char *type_name, const char *id,
                 const char *action)
 {
-  log_event_internal (type, type_name, id, action, 1);
+  log_event_internal (type, type_name, id, action, 1, 0);
 }

@@ -54,6 +54,11 @@
 #define SETTING_UUID_FEED_IMPORT_OWNER "78eceaec-3385-11ea-b237-28d24461215b"
 
 /**
+ * @brief UUID of 'Agent Owner' setting.
+ */
+#define SETTING_UUID_AGENT_OWNER "1ee1f106-8b2e-461c-b426-7f5d76001b29"
+
+/**
  * @brief UUID of 'Feed Import Roles' setting.
  */
 #define SETTING_UUID_FEED_IMPORT_ROLES "ff000362-338f-11ea-9051-28d24461215b"

@@ -1481,6 +1481,114 @@ fork_process_report_imports ()
     }
 }
 
+#if ENABLE_AGENTS
+/**
+ * @brief Forks a process to sync agents from Agent Control scanners.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_agents_sync ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  static gboolean agent_sync_in_progress = FALSE;
+
+  if (agent_sync_in_progress)
+    {
+      g_debug ("%s: Agent sync skipped because one is already in progress", __func__);
+      return 1;
+    }
+
+  agent_sync_in_progress = TRUE;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+      case 0:
+        /* Child */
+        init_sentry ();
+        setproctitle ("Synchronizing agent data");
+
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+        cleanup_manage_process (FALSE);
+
+       init_manage_process (&database);
+
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        /* Iterate scanners and sync agents. */
+      iterator_t scanner_iterator;
+      get_data_t get = { 0 };
+
+      if (init_scanner_iterator (&scanner_iterator, &get) == 0)
+        {
+          while (next (&scanner_iterator))
+            {
+              scanner_t scanner = get_iterator_resource (&scanner_iterator);
+              if (scanner && scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+                {
+                  gvmd_agent_connector_t connector =
+                    gvmd_agent_connector_new_from_scanner (scanner);
+
+                  if (connector && connector->base)
+                    sync_agents_from_agent_controller (connector);
+
+                  gvmd_agent_connector_free (connector);
+                }
+            }
+
+          cleanup_iterator (&scanner_iterator);
+        }
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+        exit (EXIT_SUCCESS);
+
+      case -1:
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
+        agent_sync_in_progress = FALSE;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return -1;
+
+      default:
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        agent_sync_in_progress = TRUE;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return 0;
+    }
+}
+#endif //ENABLE_AGENTS
+
 /**
  * @brief Serve incoming connections, scheduling periodically.
  *
@@ -1564,6 +1672,9 @@ serve_and_schedule ()
         {
           fork_feed_sync ();
           fork_process_report_imports ();
+#if ENABLE_AGENTS
+          fork_agents_sync ();
+#endif
           last_sync_time = time (NULL);
         }
 
@@ -1625,6 +1736,9 @@ serve_and_schedule ()
         {
           fork_feed_sync ();
           fork_process_report_imports ();
+#if ENABLE_AGENTS
+          fork_agents_sync ();
+#endif
           last_sync_time = time (NULL);
         }
 
@@ -2576,6 +2690,15 @@ gvmd (int argc, char** argv, char *env[])
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
+  /* Setup logging. */
+  rc_name = g_build_filename (GVM_SYSCONF_DIR,
+                              "gvmd_log.conf",
+                              NULL);
+  if (gvm_file_is_readable (rc_name))
+    log_config = load_log_configuration (rc_name);
+  g_free (rc_name);
+  setup_log_handlers (log_config);
+
   /* Set maximum number of concurrent scan updates */
   set_max_concurrent_scan_updates (max_concurrent_scan_updates);
 
@@ -2607,16 +2730,6 @@ gvmd (int argc, char** argv, char *env[])
   /* Set umask to hoard created files, including the database. */
 
   umask (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
-
-  /* Setup logging. */
-
-  rc_name = g_build_filename (GVM_SYSCONF_DIR,
-                              "gvmd_log.conf",
-                              NULL);
-  if (gvm_file_is_readable (rc_name))
-    log_config = load_log_configuration (rc_name);
-  g_free (rc_name);
-  setup_log_handlers (log_config);
 
   /* Log whether sentry support is enabled */
   if (sentry_initialized)

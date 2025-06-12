@@ -2756,6 +2756,8 @@ create_task_check_scanner_type (scanner_t scanner)
     return 1;
   if (stype == SCANNER_TYPE_OPENVASD)
     return 1;
+  if (stype == SCANNER_TYPE_AGENT_CONTROLLER)
+    return 1;
 
   return 0;
 }
