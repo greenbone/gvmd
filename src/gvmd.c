@@ -2116,6 +2116,8 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
   static int max_concurrent_scan_updates = 0;
+  static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
@@ -2186,6 +2188,10 @@ gvmd (int argc, char** argv, char *env[])
           &(database.user),
           "Use <user> as database user.",
           "<user>" },
+        { "db-semaphore-timeout", '\0', 0, G_OPTION_ARG_INT,
+          &(database.semaphore_timeout),
+          "Use <semaphore_timeout> as sempahore timeout for PostgreSQL connections.",
+          "<semaphore_timeout>" },
         { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
           G_OPTION_ARG_NONE,
           &decrypt_all_credentials,
@@ -2304,6 +2310,16 @@ gvmd (int argc, char** argv, char *env[])
           &max_concurrent_scan_updates,
           "Maximum number of scan updates that can run at the same time."
           " Default: 0 (unlimited).",
+          "<number>" },
+        { "max-database-connections", '\0', 0, G_OPTION_ARG_INT,
+          &max_database_connections,
+          "Maximum number of database connections at the same time."
+          " Default: 50",
+          "<number>" },
+        { "max-concurrent-report-processing", '\0', 0, G_OPTION_ARG_INT,
+          &max_concurrent_report_processing,
+          "Maximum number of imported reports processed at the same time."
+          " Default: 30",
           "<number>" },
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT,
           &max_email_attachment_size,
@@ -2674,6 +2690,27 @@ gvmd (int argc, char** argv, char *env[])
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
+  /* Setup logging. */
+  rc_name = g_build_filename (GVM_SYSCONF_DIR,
+                              "gvmd_log.conf",
+                              NULL);
+  if (gvm_file_is_readable (rc_name))
+    log_config = load_log_configuration (rc_name);
+  g_free (rc_name);
+  setup_log_handlers (log_config);
+
+  /* Set maximum number of concurrent scan updates */
+  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
+
+  /* Set maximum number of database connections */
+  set_max_database_connections (max_database_connections);
+
+  /* Set maximum number of concurrent report processing */
+  set_max_concurrent_report_processing (max_concurrent_report_processing);
+
+  /* Initialize Inter-Process Communication */
+  init_semaphore_set ();
+
   /* Switch to UTC for scheduling. */
 
   if (migrate_database
@@ -2694,16 +2731,6 @@ gvmd (int argc, char** argv, char *env[])
 
   umask (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
 
-  /* Setup logging. */
-
-  rc_name = g_build_filename (GVM_SYSCONF_DIR,
-                              "gvmd_log.conf",
-                              NULL);
-  if (gvm_file_is_readable (rc_name))
-    log_config = load_log_configuration (rc_name);
-  g_free (rc_name);
-  setup_log_handlers (log_config);
-
   /* Log whether sentry support is enabled */
   if (sentry_initialized)
     {
@@ -2714,12 +2741,6 @@ gvmd (int argc, char** argv, char *env[])
     {
       g_debug ("Sentry support disabled");
     }
-
-  /* Set maximum number of concurrent scan updates */
-  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
-
-  /* Initialize Inter-Process Communication */
-  init_semaphore_set ();
 
   /* Enable GNUTLS debugging if requested via env variable.  */
   {
@@ -3098,8 +3119,6 @@ gvmd (int argc, char** argv, char *env[])
         type = SCANNER_TYPE_OSP_SENSOR;
       else if (!strcasecmp (scanner_type, "openvasd"))
         type = SCANNER_TYPE_OPENVASD;
-      else if (!strcasecmp (scanner_type, "agent-controller"))
-        type = SCANNER_TYPE_AGENT_CONTROLLER;
       else
         {
           type = atoi (scanner_type);
@@ -3145,8 +3164,6 @@ gvmd (int argc, char** argv, char *env[])
             type = SCANNER_TYPE_OSP_SENSOR;
           else if (!strcasecmp (scanner_type, "openvasd"))
             type = SCANNER_TYPE_OPENVASD;
-          else if (!strcasecmp (scanner_type, "agent-controller"))
-            type = SCANNER_TYPE_AGENT_CONTROLLER;
           else
             {
               type = atoi (scanner_type);
