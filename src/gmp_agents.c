@@ -322,7 +322,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         {
           agent_uuid_list_free (agent_uuids);
           SENDF_TO_CLIENT_OR_FAIL (
-            XML_ERROR_SYNTAX ("delete_agents", "Agent UUID '%s' is invalid"),
+            XML_ERROR_SYNTAX ("modify_agents", "Agent UUID '%s' is invalid"),
             uuid);
           modify_agents_reset ();
           return;
