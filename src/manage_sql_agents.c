@@ -193,12 +193,15 @@ append_ip_rows_to_buffer (db_copy_buffer_t *buffer,
  * to the provided agent UUID.
  *
  * @param[in] agent_uuid UUID of the agent as a string.
- * @return Scanner ID, or 0/-1 on failure.
+ * @param[out] scanner scanner row id of the agent.
+ * @return 0 on success, or -1 on failure if agent uuid is missing
+ *                       or -2 on failure if DB error occurred
+ *                       or -3 on failure if the agent uuid not found
+ *                       or -4 on failure if the scanner row id not found
  */
-scanner_t
-get_scanner_from_agent_uuid (const gchar *agent_uuid)
+int
+get_scanner_from_agent_uuid (const gchar *agent_uuid, scanner_t *scanner)
 {
-  scanner_t scanner = 0;
 
   if (!agent_uuid)
     {
@@ -212,27 +215,27 @@ get_scanner_from_agent_uuid (const gchar *agent_uuid)
     {
       g_warning ("%s: Failed to check if agent UUID '%s' exists (DB error)", __func__, agent_uuid);
       manage_option_cleanup ();
-      return -1;
+      return -2;
     }
   if (exists == 0)
     {
       g_warning ("%s: Agent UUID '%s' not found", __func__, agent_uuid);
       manage_option_cleanup ();
-      return -2;
+      return -3;
     }
 
   gchar *insert_agent_uuid = sql_insert (agent_uuid);
-  scanner = sql_int ("SELECT scanner FROM agents WHERE uuid = %s;", insert_agent_uuid);
+  *scanner = sql_int ("SELECT scanner FROM agents WHERE uuid = %s;", insert_agent_uuid);
   g_free (insert_agent_uuid);
 
-  if (scanner <= 0)
+  if (*scanner <= 0)
     {
       g_warning ("%s: Failed to find scanner for agent UUID %s", __func__, agent_uuid);
       manage_option_cleanup ();
-      return -1;
+      return -4;
     }
 
-  return scanner;
+  return 0;
 }
 
 /**

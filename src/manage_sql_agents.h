@@ -23,19 +23,19 @@
 /**
  * @brief Agent iterator columns.
  */
-#define AGENT_ITERATOR_COLUMNS                                             \
-{                                                                          \
-GET_ITERATOR_COLUMNS (agents),                                             \
-{ "agent_id",            NULL, KEYWORD_TYPE_STRING  },                     \
-{ "hostname",            NULL, KEYWORD_TYPE_STRING  },                     \
-{ "authorized",          NULL, KEYWORD_TYPE_INTEGER },                     \
-{ "min_interval",        NULL, KEYWORD_TYPE_INTEGER },                     \
-{ "heartbeat_interval",  NULL, KEYWORD_TYPE_INTEGER },                     \
-{ "connection_status",   NULL, KEYWORD_TYPE_STRING  },                     \
-{ "last_update",         NULL, KEYWORD_TYPE_INTEGER },                     \
-{ "schedule",            NULL, KEYWORD_TYPE_STRING  },                     \
-{ "scanner",             NULL, KEYWORD_TYPE_INTEGER },                     \
-{ NULL,                  NULL, KEYWORD_TYPE_UNKNOWN }                      \
+#define AGENT_ITERATOR_COLUMNS                                               \
+{                                                                            \
+  GET_ITERATOR_COLUMNS     (agents),                                         \
+  { "agent_id",            NULL, KEYWORD_TYPE_STRING  },                     \
+  { "hostname",            NULL, KEYWORD_TYPE_STRING  },                     \
+  { "authorized",          NULL, KEYWORD_TYPE_INTEGER },                     \
+  { "min_interval",        NULL, KEYWORD_TYPE_INTEGER },                     \
+  { "heartbeat_interval",  NULL, KEYWORD_TYPE_INTEGER },                     \
+  { "connection_status",   NULL, KEYWORD_TYPE_STRING  },                     \
+  { "last_update",         NULL, KEYWORD_TYPE_INTEGER },                     \
+  { "schedule",            NULL, KEYWORD_TYPE_STRING  },                     \
+  { "scanner",             NULL, KEYWORD_TYPE_INTEGER },                     \
+  { NULL,                  NULL, KEYWORD_TYPE_UNKNOWN }                      \
 }
 
 /**
@@ -68,8 +68,8 @@ sync_agents_from_data_list (agent_data_list_t agent_list);
 void
 update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment);
 
-scanner_t
-get_scanner_from_agent_uuid(const gchar *agent_uuid);
+int
+get_scanner_from_agent_uuid(const gchar *agent_uuid, scanner_t *scanner);
 
 #endif //_GVMD_MANAGE_SQL_AGENTS_H
 #endif // ENABLE_AGENTS

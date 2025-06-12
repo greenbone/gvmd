@@ -205,13 +205,21 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
                                        agent_uuid_list_t agent_uuids,
                                        agent_controller_agent_list_t out_list)
 {
-  if (!scanner || !agent_uuids || agent_uuids->count == 0 )
+  if (!scanner)
     {
+      g_warning ("get_agent_controller_agents_from_uuids: scanner ID is missing or invalid");
+      return AGENT_RESPONSE_INVALID_ARGUMENT;
+    }
+
+  if (!agent_uuids || agent_uuids->count == 0)
+    {
+      g_warning ("get_agent_controller_agents_from_uuids: agent UUID list is NULL or empty");
       return AGENT_RESPONSE_INVALID_ARGUMENT;
     }
 
   if (!out_list || out_list->count == 0)
     {
+      g_warning ("get_agent_controller_agents_from_uuids: output list is NULL or empty");
       return AGENT_RESPONSE_INVALID_ARGUMENT;
     }
 
@@ -238,6 +246,33 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
   agent_data_list_free (agent_data_list);
 
   return AGENT_RESPONSE_SUCCESS;
+}
+
+/**
+ * @brief Maps the return value of get_scanner_from_agent_uuid() to agent_response_t.
+ *
+ * @param[in] result Return code from get_scanner_from_agent_uuid().
+ *
+ * @return Corresponding agent_response_t enum value.
+ */
+static agent_response_t
+map_get_scanner_result_to_agent_response (int result)
+{
+  switch (result)
+    {
+    case 0:
+      return AGENT_RESPONSE_SUCCESS;
+    case -1:
+      return AGENT_RESPONSE_INVALID_ARGUMENT;
+    case -2:
+      return AGENT_RESPONSE_INTERNAL_ERROR;
+    case -3:
+      return AGENT_RESPONSE_AGENT_NOT_FOUND;
+    case -4:
+      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
+    default:
+      return AGENT_RESPONSE_INTERNAL_ERROR;
+    }
 }
 
 /**
@@ -633,16 +668,10 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
       return AGENT_RESPONSE_NO_AGENTS_PROVIDED;
     }
 
-  scanner = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0]);
-
-  if (scanner == -1)
-    {
-      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
-    }
-  if (scanner == -2)
-    {
-      return AGENT_RESPONSE_AGENT_NOT_FOUND;
-    }
+  int ret = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0], &scanner);
+  agent_response_t map_response = map_get_scanner_result_to_agent_response (ret);
+  if (map_response != AGENT_RESPONSE_SUCCESS)
+    return map_response;
 
   agent_control_list = agent_controller_agent_list_new (agent_uuids->count);
   agent_response_t get_response = get_agent_controller_agents_from_uuids (
@@ -722,16 +751,11 @@ delete_and_resync_agents (agent_uuid_list_t agent_uuids)
       return AGENT_RESPONSE_NO_AGENTS_PROVIDED;
     }
 
-  scanner = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0]);
+  int ret = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0], &scanner);
+  agent_response_t map_response = map_get_scanner_result_to_agent_response (ret);
+  if (map_response != AGENT_RESPONSE_SUCCESS)
+    return map_response;
 
-  if (scanner == -1)
-    {
-      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
-    }
-  if (scanner == -2)
-    {
-      return AGENT_RESPONSE_AGENT_NOT_FOUND;
-    }
   agent_control_list = agent_controller_agent_list_new (agent_uuids->count);
   agent_response_t get_result = get_agent_controller_agents_from_uuids (
                                      scanner,

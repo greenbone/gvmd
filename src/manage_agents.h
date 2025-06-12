@@ -111,7 +111,8 @@ typedef enum {
   AGENT_RESPONSE_SYNC_FAILED = -7,                  ///< Failed during sync
   AGENT_RESPONSE_INVALID_ARGUMENT = -8,             ///< Failed invalid argument
   AGENT_RESPONSE_INVALID_AGENT_OWNER = -9,          ///< Failed getting owner UUID
-  AGENT_RESPONSE_AGENT_NOT_FOUND = -10              ///< Failed getting owner UUID
+  AGENT_RESPONSE_AGENT_NOT_FOUND = -10,             ///< Failed getting owner UUID
+  AGENT_RESPONSE_INTERNAL_ERROR = -11               ///< Internal error
 } agent_response_t;
 
 gvmd_agent_connector_t

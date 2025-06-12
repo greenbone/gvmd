@@ -302,9 +302,11 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  GPtrArray *uuid_array = g_ptr_array_new_with_free_func (g_free);
   GSList *agent_entities = agents_elem->entities;
+  int uuid_count = g_slist_length (agent_entities);
+  agent_uuid_list_t agent_uuids = agent_uuid_list_new (uuid_count);
 
+  int index = 0;
   for (; agent_entities; agent_entities = g_slist_next (agent_entities))
     {
       entity_t agent_elem = agent_entities->data;
@@ -315,23 +317,26 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
       const gchar *uuid = entity_attribute (agent_elem, "id");
 
       if (uuid && is_uuid (uuid))
-        g_ptr_array_add (uuid_array, g_strdup (uuid));
+        agent_uuids->agent_uuids[index++] = g_strdup (uuid);
+      else
+        {
+          agent_uuid_list_free (agent_uuids);
+          SENDF_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("delete_agents", "Agent UUID '%s' is invalid"),
+            uuid);
+          modify_agents_reset ();
+          return;
+        }
     }
 
-  if (uuid_array->len == 0)
+  if (index == 0)
     {
-      g_ptr_array_free (uuid_array, TRUE);
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "No valid agent UUIDs"));
+      agent_uuid_list_free (agent_uuids);
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("modify_agents", "No agent UUIDs provided"));
       modify_agents_reset ();
       return;
     }
-
-  agent_uuid_list_t agent_uuids = agent_uuid_list_new (uuid_array->len);
-  for (int i = 0; i < uuid_array->len; ++i)
-    {
-      agent_uuids->agent_uuids[i] = g_strdup(g_ptr_array_index(uuid_array, i));
-    }
-  g_ptr_array_free(uuid_array, TRUE);
 
   // Parse update fields
   agent_controller_agent_update_t update = agent_controller_agent_update_new ();
@@ -373,9 +378,10 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
-            log_event_fail ("agents", "Agents", NULL, "modified");
             return;
           }
+
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_AGENT_NOT_FOUND:
@@ -386,9 +392,10 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
-            log_event_fail ("agents", "Agents", NULL, "modified");
             return;
           }
+
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       case AGENT_RESPONSE_INVALID_ARGUMENT:
@@ -424,6 +431,11 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
                                    "modify_agents",
                                    "Synchronization of Agents in Agent-Controller failed"));
         log_event_fail ("agents", "Agents", NULL, "modified");
+        break;
+
+      case AGENT_RESPONSE_INTERNAL_ERROR:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       default:
@@ -561,35 +573,41 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  GPtrArray *uuid_array = g_ptr_array_new_with_free_func (g_free);
   GSList *agent_entities = agents_elem->entities;
+  int uuid_count = g_slist_length (agent_entities);
+  agent_uuid_list_t agent_uuids = agent_uuid_list_new (uuid_count);
 
+  int index = 0;
   for (; agent_entities; agent_entities = g_slist_next (agent_entities))
     {
       entity_t agent_elem = agent_entities->data;
+
       if (strcmp (entity_name (agent_elem), "agent") != 0)
         continue;
 
       const gchar *uuid = entity_attribute (agent_elem, "id");
 
       if (uuid && is_uuid (uuid))
-        g_ptr_array_add (uuid_array, g_strdup (uuid));
+        agent_uuids->agent_uuids[index++] = g_strdup (uuid);
+      else
+        {
+          agent_uuid_list_free (agent_uuids);
+          SENDF_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("delete_agents", "Agent UUID '%s' is invalid"),
+            uuid);
+          modify_agents_reset ();
+          return;
+        }
     }
 
-  if (uuid_array->len == 0)
+  if (index == 0)
     {
-      g_ptr_array_free (uuid_array, TRUE);
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "No valid agent UUIDs"));
-      delete_agent_reset ();
+      agent_uuid_list_free (agent_uuids);
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("delete_agents", "No agent UUIDs provided"));
+      modify_agents_reset ();
       return;
     }
-
-  agent_uuid_list_t agent_uuids = agent_uuid_list_new (uuid_array->len);
-  for (int i = 0; i < uuid_array->len; ++i)
-    {
-      agent_uuids->agent_uuids[i] = g_strdup(g_ptr_array_index(uuid_array, i));
-    }
-  g_ptr_array_free(uuid_array, TRUE);
 
   agent_response_t response = delete_and_resync_agents (agent_uuids);
 
@@ -608,9 +626,10 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
-            log_event_fail ("agents", "Agents", NULL, "deleted");
             return;
           }
+
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
       case AGENT_RESPONSE_AGENT_NOT_FOUND:
         if (send_find_error_to_client ("modify_agents",
@@ -620,9 +639,10 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
-            log_event_fail ("agents", "Agents", NULL, "deleted");
             return;
           }
+
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
       case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
         if (send_find_error_to_client ("delete_agents",
@@ -632,9 +652,10 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
           {
             error_send_to_client (error);
             modify_agents_reset ();
-            log_event_fail ("agents", "Agents", NULL, "deleted");
             return;
           }
+
+        log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
       case AGENT_RESPONSE_INVALID_ARGUMENT:
@@ -670,6 +691,11 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
                                    "delete_agents",
                                    "Synchronization of Agents in Agent-Controller failed"));
+        log_event_fail ("agents", "Agents", NULL, "deleted");
+        break;
+
+      case AGENT_RESPONSE_INTERNAL_ERROR:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
         log_event_fail ("agents", "Agents", NULL, "deleted");
         break;
 
