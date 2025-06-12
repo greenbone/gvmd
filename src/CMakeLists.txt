@@ -176,6 +176,8 @@ set(
   manage_utils.c
   manage_migrators.c
   manage_pg.c
+  manage_scan_handler.c
+  manage_scan_queue.c
 )
 
 set(
@@ -196,6 +198,7 @@ set(
   manage_sql_nvts_osp.c
   manage_sql_nvts_openvasd.c
   manage_sql_nvts_common.c
+  manage_sql_scan_queue.c
 )
 
 set(

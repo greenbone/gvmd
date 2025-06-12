@@ -56,6 +56,7 @@
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_scan_queue.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -4151,6 +4152,21 @@ manage_sync (sigset_t *sigmask_current,
 }
 
 /**
+ * @brief Handle queued task actions like the scan queue or report processing.
+ */
+void
+manage_queued_task_actions ()
+{
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+  
+  setproctitle ("Manage process report imports");
+  manage_process_report_imports ();
+  setproctitle ("Manage scan queue");
+  manage_handle_scan_queue ();
+}
+
+/**
  * @brief Perform any processing of imported reports that is due.
  *
  * In gvmd, periodically called from the main daemon loop.
@@ -4163,10 +4179,7 @@ manage_process_report_imports ()
   report_t report;
   int pid, ret;
 
-  reinit_manage_process ();
-  manage_session_init (current_credentials.uuid);
-
- init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
+  init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
 
   while (next (&reports))
     {
@@ -4190,7 +4203,7 @@ manage_process_report_imports ()
                       __func__,
                       report);
           cleanup_iterator (&reports);
-          exit (EXIT_FAILURE);
+          return;
         }
 
       pid = fork ();
@@ -4257,7 +4270,7 @@ manage_process_report_imports ()
                          strerror (errno));
             g_free (lockfile_path);
             cleanup_iterator (&reports);
-            exit (EXIT_FAILURE);
+            return;
     
           default:
             /* Parent. */
@@ -4266,7 +4279,6 @@ manage_process_report_imports ()
           }
     }
   cleanup_iterator (&reports);
-  exit (EXIT_SUCCESS);
 }
 
 /**

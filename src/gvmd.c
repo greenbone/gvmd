@@ -107,6 +107,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
+#include "manage_scan_queue.h"
 #include "gmpd.h"
 #include "utils.h"
 
@@ -1405,13 +1406,16 @@ fork_feed_sync ()
 }
 
 /**
- * @brief Forks a process for processing imported reports.
+ * @brief Forks a process for handling queued scan or audit task actions.
+ * 
+ * These actions include processing imported reports and handling the task
+ *  queue.
  *
  * @return 0 success, -1 error.
  *         Always exits with EXIT_SUCCESS in child.
  */
 static int
-fork_process_report_imports ()
+fork_queued_task_actions ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1438,7 +1442,7 @@ fork_process_report_imports ()
       case 0:
         /* Child.   */
         init_sentry ();
-        setproctitle ("Manage process report imports");
+        setproctitle ("Manage queued task actions");
 
         if (sigmask_normal)
           pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
@@ -1458,7 +1462,7 @@ fork_process_report_imports ()
             manager_socket_2 = -1;
           }
 
-        manage_process_report_imports ();
+        manage_queued_task_actions ();
 
         cleanup_manage_process (FALSE);
         gvm_close_sentry ();
@@ -1600,12 +1604,13 @@ fork_agents_sync ()
 static void
 serve_and_schedule ()
 {
-  time_t last_schedule_time, last_sync_time;
+  time_t last_schedule_time, last_sync_time, last_queue_time;
   sigset_t sigmask_all;
   static sigset_t sigmask_current;
 
   last_schedule_time = 0;
   last_sync_time = 0;
+  last_queue_time = 0;
 
   if (sigfillset (&sigmask_all))
     {
@@ -1671,14 +1676,18 @@ serve_and_schedule ()
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
           fork_feed_sync ();
-          fork_process_report_imports ();
 #if ENABLE_AGENTS
           fork_agents_sync ();
 #endif
           last_sync_time = time (NULL);
         }
+      if ((time (NULL) - last_queue_time) >= QUEUE_PERIOD)
+        {
+          fork_queued_task_actions ();
+          last_queue_time = time (NULL);
+        }
 
-      timeout.tv_sec = SCHEDULE_PERIOD;
+      timeout.tv_sec = QUEUE_PERIOD;
       timeout.tv_nsec = 0;
       ret = pselect (nfds, &readfds, NULL, &exceptfds, &timeout,
                      sigmask_normal);
@@ -1735,11 +1744,15 @@ serve_and_schedule ()
       if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
         {
           fork_feed_sync ();
-          fork_process_report_imports ();
 #if ENABLE_AGENTS
           fork_agents_sync ();
 #endif
           last_sync_time = time (NULL);
+        }
+      if ((time (NULL) - last_queue_time) >= QUEUE_PERIOD)
+        {
+          fork_queued_task_actions ();
+          last_queue_time = time (NULL);
         }
 
       if (termination_signal)
@@ -2115,14 +2128,18 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static int max_active_scan_handlers = DEFAULT_MAX_ACTIVE_SCAN_HANDLERS;
   static int max_concurrent_scan_updates = 0;
   static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
   static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
+  static int scan_handler_active_time = 0;
+  static gboolean use_scan_queue = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
   static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
   static gchar *vt_verification_collation = NULL;
+
 
   GString *full_disable_commands = g_string_new ("");
 
@@ -2306,6 +2323,11 @@ gvmd (int argc, char** argv, char *env[])
           &listen_owner,
           "Owner of the unix socket",
           "<string>" },
+        { "max-active-scan-handlers", '\0', 0, G_OPTION_ARG_INT,
+          &max_active_scan_handlers,
+          "Maximum number of scan handlers from the scan queue that can be"
+          " active at the same time.",
+          "<number>" },
         { "max-concurrent-scan-updates", '\0', 0, G_OPTION_ARG_INT,
           &max_concurrent_scan_updates,
           "Maximum number of scan updates that can run at the same time."
@@ -2473,6 +2495,19 @@ gvmd (int argc, char** argv, char *env[])
           " Either 'OpenVAS', 'OSP', 'OSP-Sensor'"
           " or a number as used in GMP.",
           "<scanner-type>" },
+        { "scan-handler-active-time", '\0', 0, G_OPTION_ARG_INT,
+          &scan_handler_active_time,
+          "Minimum time in seconds which queued scan handlers will keep"
+          " getting results of running scans before allowing the next"
+          " queued scan handler to run."
+          " Defaults to 0 (always exit after getting results once).",
+          "<seconds>" },
+        { "scan-queue", '\0', 0, G_OPTION_ARG_NONE,
+          &use_scan_queue,
+          "Use the gvmd scan queue which will periodically start new scan"
+          " handler up to a given number (max-active-scan-handlers) instead"
+          " of keeping handlers running for the entire scan duration.",
+          NULL },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT,
           &schedule_timeout,
           "Time out tasks that are more than <time> minutes overdue."
@@ -2775,6 +2810,13 @@ gvmd (int argc, char** argv, char *env[])
     }
   else
     g_debug ("Relay mapper disabled.");
+
+  /*
+   * Set up scan queue
+   */
+  set_use_scan_queue (use_scan_queue);
+  set_scan_handler_active_time (scan_handler_active_time);
+  set_max_active_scan_handlers (max_active_scan_handlers);
 
   /*
    * Parameters for new credential encryption keys

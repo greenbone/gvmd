@@ -1001,6 +1001,9 @@ report_t
 make_report (task_t, const char *, task_status_t);
 
 void
+manage_queued_task_actions ();
+
+void
 manage_process_report_imports ();
 
 int
@@ -2803,6 +2806,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  * @brief Seconds between calls to manage_schedule.
  */
 #define SCHEDULE_PERIOD 10
+
+/**
+ * @brief Seconds between calls to manage_queued_task_actions.
+ */
+#define QUEUE_PERIOD 5
 
 /**
  * @brief Minimum schedule timeout seconds.
