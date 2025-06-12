@@ -434,8 +434,8 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         break;
 
       case AGENT_RESPONSE_INTERNAL_ERROR:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+        log_event_fail ("agents", "Agents", NULL, "modified");
         break;
 
       default:
