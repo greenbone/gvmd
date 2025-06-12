@@ -2759,6 +2759,12 @@ create_tables ()
        "  timestamp bigint,"
        "  tls_versions text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS scan_queue"
+       " (report integer unique,"
+       "  queued_time_secs integer,"
+       "  queued_time_nano integer,"
+       "  handler_pid integer);");
+  
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
