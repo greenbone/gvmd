@@ -213,7 +213,7 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
 
   if (!agent_uuids || agent_uuids->count == 0)
     {
-      g_warning ("get_agent_controller_agents_from_uuids: agent UUID list is NULL or empty");
+      g_warning ("%s: agent UUID list is NULL or empty", __func__);
       return AGENT_RESPONSE_INVALID_ARGUMENT;
     }
 
