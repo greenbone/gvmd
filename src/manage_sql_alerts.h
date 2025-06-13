@@ -94,4 +94,10 @@ alert_vfire_call_iterator_name (iterator_t *);
 const char*
 alert_vfire_call_iterator_value (iterator_t *);
 
+gchar *
+new_secinfo_list (event_t, const void *, alert_t, int *);
+
+gchar *
+new_secinfo_message (event_t, const void *, alert_t);
+
 #endif /* not _GVMD_MANAGE_SQL_ALERTS_H */
