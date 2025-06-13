@@ -11,8 +11,20 @@
 #ifndef _GVMD_SCAN_HANDLER_H
 #define _GVMD_SCAN_HANDLER_H
 
+#include <gvm/osp/osp.h>
 #include <glib.h>
 #include "manage_resources.h"
+
+osp_connection_t *
+osp_connect_with_data (const char *,
+                       int,
+                       const char *,
+                       const char *,
+                       const char *,
+                       gboolean);
+
+osp_connection_t *
+osp_scanner_connect (scanner_t);
 
 int
 run_osp_scan_get_report (task_t, int, char **);

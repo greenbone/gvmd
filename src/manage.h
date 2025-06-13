@@ -2756,17 +2756,6 @@ osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
 int
 osp_get_details_from_iterator (iterator_t *, char **, GSList **);
 
-osp_connection_t *
-osp_connect_with_data (const char *,
-                       int,
-                       const char *,
-                       const char *,
-                       const char *,
-                       gboolean);
-
-osp_connection_t *
-osp_scanner_connect (scanner_t);
-
 int
 get_scanner_connection_retry ();
 
