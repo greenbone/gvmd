@@ -3003,36 +3003,24 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 
   openvasd_connector_free (connector);
 #else
-  gboolean has_relay;
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int return_value, port;
+  osp_connect_data_t *conn_data;
+  int return_value;
   osp_connection_t *connection = NULL;
   int connection_retry;
   osp_get_performance_opts_t opts;
 
-  has_relay = scanner_has_relay (scanner);
-  host = scanner_host (scanner, has_relay);
-  port = scanner_port (scanner, has_relay);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
+  conn_data = osp_connect_data_from_scanner (scanner);
 
   connection_retry = get_scanner_connection_retry ();
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
-                                      has_relay == FALSE);
+  connection = osp_connect_with_data (conn_data);
   while (connection == NULL && connection_retry > 0)
     {
       sleep(1);
-      connection = osp_connect_with_data (host, port,
-                                          ca_pub, key_pub, key_priv,
-                                          has_relay == FALSE);
+      connection = osp_connect_with_data (conn_data);
       connection_retry--;
     }
 
-  free (host);
-  free (ca_pub);
-  free (key_pub);
-  free (key_priv);
+  osp_connect_data_free (conn_data);
 
   if (connection == NULL)
     {
