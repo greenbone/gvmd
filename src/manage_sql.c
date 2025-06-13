@@ -34071,7 +34071,8 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD)
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD
+      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     {
       cleanup_iterator (&scanner);
       return 0;
@@ -34141,6 +34142,8 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_OPENVASD:
             scanner_type_str = "openvasd";
+          case SCANNER_TYPE_OPENVASD_SENSOR:
+            scanner_type_str = "openvasd-sensor";
             break;
           case SCANNER_TYPE_AGENT_CONTROLLER:
             scanner_type_str = "agent-controller";
