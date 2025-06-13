@@ -13,6 +13,164 @@
 #include "manage_sql.h"
 
 /**
+ * @brief Create a new connection to an OSP scanner using the relay mapper.
+ *
+ * @param[in]   host     Original host name or IP address.
+ * @param[in]   port     Original port.
+ * @param[in]   ca_pub   Original CA certificate.
+ * @param[in]   key_pub  Public key for authentication.
+ * @param[in]   key_priv Private key for authentication.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+static osp_connection_t *
+osp_scanner_mapped_relay_connect (const char *host, int port,
+                                  const char *ca_pub,
+                                  const char *key_pub, const char *key_priv)
+{
+  int ret, new_port;
+  gchar *new_host, *new_ca_pub;
+  osp_connection_t *connection;
+
+  new_host = NULL;
+  new_ca_pub = NULL;
+  new_port = 0;
+
+  ret = slave_get_relay (host,
+                         port,
+                         ca_pub,
+                         "OSP",
+                         &new_host,
+                         &new_port,
+                         &new_ca_pub);
+
+  switch (ret)
+    {
+      case 0:
+        break;
+      case 1:
+        g_warning ("No relay found for Scanner at %s:%d", host, port);
+        return NULL;
+      default:
+        g_warning ("%s: Error getting relay for Scanner at %s:%d",
+                   __func__, host, port);
+        return NULL;
+    }
+
+  connection
+    = osp_connection_new (new_host, new_port, new_ca_pub, key_pub, key_priv);
+
+  if (connection == NULL)
+    {
+      if (new_port)
+        g_warning ("Could not connect to relay at %s:%d"
+                    " for Scanner at %s:%d",
+                    new_host, new_port, host, port);
+      else
+        g_warning ("Could not connect to relay at %s"
+                    " for Scanner at %s:%d",
+                    new_host, host, port);
+    }
+
+  g_free (new_host);
+  g_free (new_ca_pub);
+
+  return connection;
+}
+
+/**
+ * @brief Create a new connection to an OSP scanner using the scanner data.
+ *
+ * @param[in]   host     Host name or IP address.
+ * @param[in]   port     Port.
+ * @param[in]   ca_pub   CA certificate.
+ * @param[in]   key_pub  Public key.
+ * @param[in]   key_priv Private key.
+ * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+osp_connection_t *
+osp_connect_with_data (const char *host,
+                       int port,
+                       const char *ca_pub,
+                       const char *key_pub,
+                       const char *key_priv,
+                       gboolean use_relay_mapper)
+{
+  osp_connection_t *connection;
+  int is_unix_socket = (host && *host == '/') ? 1 : 0;
+
+  if (is_unix_socket == 0
+      && use_relay_mapper
+      && get_relay_mapper_path ())
+    {
+      connection
+        = osp_scanner_mapped_relay_connect (host, port, ca_pub, key_pub,
+                                            key_priv);
+    }
+  else
+    {
+      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+
+      if (connection == NULL)
+        {
+          if (is_unix_socket)
+            g_warning ("Could not connect to Scanner at %s", host);
+          else
+            g_warning ("Could not connect to Scanner at %s:%d", host, port);
+        }
+    }
+  return connection;
+}
+
+/**
+ * @brief Create a new connection to an OSP scanner.
+ *
+ * @param[in]   scanner     Scanner.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+osp_connection_t *
+osp_scanner_connect (scanner_t scanner)
+{
+  int port;
+  osp_connection_t *connection;
+  char *host, *ca_pub, *key_pub, *key_priv;
+  gboolean has_relay;
+
+  assert (scanner);
+
+  has_relay = scanner_has_relay (scanner);
+  host = scanner_host (scanner, has_relay);
+
+  if (host && *host == '/')
+    {
+      port = 0;
+      ca_pub = NULL;
+      key_pub = NULL;
+      key_priv = NULL;
+    }
+  else
+    {
+      port = scanner_port (scanner, has_relay);
+      ca_pub = scanner_ca_pub (scanner);
+      key_pub = scanner_key_pub (scanner);
+      key_priv = scanner_key_priv (scanner);
+    }
+
+  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
+                                      has_relay == FALSE);
+
+  g_free (host);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  return connection;
+}
+
+
+/**
  * @brief Delete an OSP scan.
  *
  * @param[in]   report_id   Report ID.
