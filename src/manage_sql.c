@@ -33157,7 +33157,7 @@ DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return Scanner private key, or NULL if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-static const char*
+const char*
 scanner_iterator_key_priv (iterator_t* iterator)
 {
   const char *private_key;
@@ -33703,29 +33703,12 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
                                char **s_ver, char **d_name, char **d_ver,
                                char **p_name, char **p_ver)
 {
+  osp_connect_data_t conn_data;
   osp_connection_t *connection;
-  gboolean has_relay;
-  const char *host;
-  int port;
 
-  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
-  if (has_relay)
-    {
-      host = scanner_iterator_relay_host (iterator);
-      port = scanner_iterator_relay_port (iterator);
-    }
-  else
-    {
-      host = scanner_iterator_host (iterator);
-      port = scanner_iterator_port (iterator);
-    }
   assert (iterator);
-  connection = osp_connect_with_data (host,
-                                      port,
-                                      scanner_iterator_ca_pub (iterator),
-                                      scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator),
-                                      has_relay == FALSE);
+  osp_connect_data_from_scanner_iterator (iterator, &conn_data);
+  connection = osp_connect_with_data (&conn_data);
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -33747,29 +33730,12 @@ int
 osp_get_details_from_iterator (iterator_t *iterator, char **desc,
                                GSList **params)
 {
+  osp_connect_data_t conn_data;
   osp_connection_t *connection;
-  gboolean has_relay;
-  const char *host;
-  int port;
 
-  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
-  if (has_relay)
-    {
-      host = scanner_iterator_relay_host (iterator);
-      port = scanner_iterator_relay_port (iterator);
-    }
-  else
-    {
-      host = scanner_iterator_host (iterator);
-      port = scanner_iterator_port (iterator);
-    }
   assert (iterator);
-  connection = osp_connect_with_data (host,
-                                      port,
-                                      scanner_iterator_ca_pub (iterator),
-                                      scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator),
-                                      has_relay == FALSE);
+  osp_connect_data_from_scanner_iterator (iterator, &conn_data);
+  connection = osp_connect_with_data (&conn_data);
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))

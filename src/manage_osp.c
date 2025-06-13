@@ -13,6 +13,97 @@
 #include "manage_sql.h"
 
 /**
+ * @brief Frees an osp_connect_data_t struct and its field.
+ * 
+ * @param[in] conn_data  Connection data struct to free.
+ */
+void
+osp_connect_data_free (osp_connect_data_t *conn_data)
+{
+  g_free (conn_data->host);
+  g_free (conn_data->ca_pub);
+  g_free (conn_data->key_pub);
+  g_free (conn_data->key_priv);
+  g_free (conn_data);
+}
+
+/**
+ * @brief Get OSP connection data from a scanner.
+ *
+ * @param[in]  scanner  The scanner to get the data from.
+ *
+ * @return Newly allocated connection data struct.
+ */
+osp_connect_data_t *
+osp_connect_data_from_scanner (scanner_t scanner)
+{
+  gboolean has_relay;
+  osp_connect_data_t *conn_data = g_malloc0 (sizeof (osp_connect_data_t));
+
+  has_relay = scanner_has_relay (scanner);
+  conn_data->host = scanner_host (scanner, has_relay);
+  conn_data->use_relay_mapper = has_relay == FALSE;
+  conn_data->host = scanner_host (scanner, has_relay);
+
+  if (conn_data->host && *(conn_data->host) == '/')
+    {
+      conn_data->port = 0;
+      conn_data->ca_pub = NULL;
+      conn_data->key_pub = NULL;
+      conn_data->key_priv = NULL;
+    }
+  else
+    {
+      conn_data->port = scanner_port (scanner, has_relay);
+      conn_data->ca_pub = scanner_ca_pub (scanner);
+      conn_data->key_pub = scanner_key_pub (scanner);
+      conn_data->key_priv = scanner_key_priv (scanner);
+    }
+
+  return conn_data;
+}
+
+
+/**
+ * @brief Get OSP connection data from a scanner iterator.
+ * 
+ * Fields are expected to be cleaned up by the iterator.
+ *
+ * @param[in]     iterator  The scanner iterator to get the data from.
+ * @param[in,out] conn_data 
+ */
+void
+osp_connect_data_from_scanner_iterator (iterator_t *iterator,
+                                        osp_connect_data_t *conn_data)
+{
+  gboolean has_relay;
+  
+  assert (iterator);
+
+  has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
+  conn_data->use_relay_mapper = (has_relay == FALSE);
+  conn_data->host = has_relay ? (char*)(scanner_iterator_relay_host (iterator))
+                              : (char*)(scanner_iterator_host (iterator));
+
+  if (conn_data->host && *(conn_data->host) == '/')
+    {
+      conn_data->port = 0;
+      conn_data->ca_pub = NULL;
+      conn_data->key_priv = NULL;
+      conn_data->key_pub = NULL;
+    }
+  else
+    {
+      conn_data->port = has_relay ? scanner_iterator_relay_port (iterator)
+                                  : scanner_iterator_port (iterator);
+
+      conn_data->ca_pub = (char*) scanner_iterator_ca_pub (iterator);
+      conn_data->key_priv = (char*) scanner_iterator_key_priv (iterator);
+      conn_data->key_pub = (char*) scanner_iterator_key_pub (iterator);
+    }
+}
+
+/**
  * @brief Create a new connection to an OSP scanner using the relay mapper.
  *
  * @param[in]   host     Original host name or IP address.
@@ -24,9 +115,7 @@
  * @return New connection if success, NULL otherwise.
  */
 static osp_connection_t *
-osp_scanner_mapped_relay_connect (const char *host, int port,
-                                  const char *ca_pub,
-                                  const char *key_pub, const char *key_priv)
+osp_scanner_mapped_relay_connect (osp_connect_data_t *conn_data)
 {
   int ret, new_port;
   gchar *new_host, *new_ca_pub;
@@ -36,9 +125,9 @@ osp_scanner_mapped_relay_connect (const char *host, int port,
   new_ca_pub = NULL;
   new_port = 0;
 
-  ret = slave_get_relay (host,
-                         port,
-                         ca_pub,
+  ret = slave_get_relay (conn_data->host,
+                         conn_data->port,
+                         conn_data->ca_pub,
                          "OSP",
                          &new_host,
                          &new_port,
@@ -49,27 +138,29 @@ osp_scanner_mapped_relay_connect (const char *host, int port,
       case 0:
         break;
       case 1:
-        g_warning ("No relay found for Scanner at %s:%d", host, port);
+        g_warning ("No relay found for Scanner at %s:%d",
+                   conn_data->host, conn_data->port);
         return NULL;
       default:
         g_warning ("%s: Error getting relay for Scanner at %s:%d",
-                   __func__, host, port);
+                   __func__, conn_data->host, conn_data->port);
         return NULL;
     }
 
   connection
-    = osp_connection_new (new_host, new_port, new_ca_pub, key_pub, key_priv);
+    = osp_connection_new (new_host, new_port, new_ca_pub,
+                          conn_data->key_pub, conn_data->key_priv);
 
   if (connection == NULL)
     {
       if (new_port)
         g_warning ("Could not connect to relay at %s:%d"
                     " for Scanner at %s:%d",
-                    new_host, new_port, host, port);
+                    new_host, new_port, conn_data->host, conn_data->port);
       else
         g_warning ("Could not connect to relay at %s"
                     " for Scanner at %s:%d",
-                    new_host, host, port);
+                    new_host, conn_data->host, conn_data->port);
     }
 
   g_free (new_host);
@@ -91,34 +182,34 @@ osp_scanner_mapped_relay_connect (const char *host, int port,
  * @return New connection if success, NULL otherwise.
  */
 osp_connection_t *
-osp_connect_with_data (const char *host,
-                       int port,
-                       const char *ca_pub,
-                       const char *key_pub,
-                       const char *key_priv,
-                       gboolean use_relay_mapper)
+osp_connect_with_data (osp_connect_data_t *conn_data)
 {
   osp_connection_t *connection;
-  int is_unix_socket = (host && *host == '/') ? 1 : 0;
+  int is_unix_socket = (conn_data->host && *(conn_data->host) == '/') ? 1 : 0;
 
   if (is_unix_socket == 0
-      && use_relay_mapper
+      && conn_data->use_relay_mapper
       && get_relay_mapper_path ())
     {
       connection
-        = osp_scanner_mapped_relay_connect (host, port, ca_pub, key_pub,
-                                            key_priv);
+        = osp_scanner_mapped_relay_connect (conn_data);
     }
   else
     {
-      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+      connection = osp_connection_new (conn_data->host,
+                                       conn_data->port,
+                                       conn_data->ca_pub,
+                                       conn_data->key_pub,
+                                       conn_data->key_priv);
 
       if (connection == NULL)
         {
           if (is_unix_socket)
-            g_warning ("Could not connect to Scanner at %s", host);
+            g_warning ("Could not connect to Scanner at %s",
+                       conn_data->host);
           else
-            g_warning ("Could not connect to Scanner at %s:%d", host, port);
+            g_warning ("Could not connect to Scanner at %s:%d",
+                       conn_data->host, conn_data->port);
         }
     }
   return connection;
@@ -134,38 +225,13 @@ osp_connect_with_data (const char *host,
 osp_connection_t *
 osp_scanner_connect (scanner_t scanner)
 {
-  int port;
+  osp_connect_data_t *conn_data;
   osp_connection_t *connection;
-  char *host, *ca_pub, *key_pub, *key_priv;
-  gboolean has_relay;
 
   assert (scanner);
-
-  has_relay = scanner_has_relay (scanner);
-  host = scanner_host (scanner, has_relay);
-
-  if (host && *host == '/')
-    {
-      port = 0;
-      ca_pub = NULL;
-      key_pub = NULL;
-      key_priv = NULL;
-    }
-  else
-    {
-      port = scanner_port (scanner, has_relay);
-      ca_pub = scanner_ca_pub (scanner);
-      key_pub = scanner_key_pub (scanner);
-      key_priv = scanner_key_priv (scanner);
-    }
-
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
-                                      has_relay == FALSE);
-
-  g_free (host);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
+  conn_data = osp_connect_data_from_scanner (scanner);
+  connection = osp_connect_with_data (conn_data);
+  osp_connect_data_free (conn_data);
   return connection;
 }
 
@@ -182,14 +248,11 @@ osp_scanner_connect (scanner_t scanner)
  * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
  */
 static void
-delete_osp_scan (const char *report_id, const char *host, int port,
-                 const char *ca_pub, const char *key_pub, const char *key_priv,
-                 gboolean use_relay_mapper)
+delete_osp_scan (const char *report_id, osp_connect_data_t *conn_data)
 {
   osp_connection_t *connection;
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
-                                      use_relay_mapper);
+  connection = osp_connect_with_data (conn_data);
   if (!connection)
     {
       return;
@@ -216,9 +279,7 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  *         progress value between 0 and 100 on success.
  */
 static int
-get_osp_scan_report (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub,
-                     const char *key_priv, gboolean use_relay_mapper,
+get_osp_scan_report (const char *scan_id, osp_connect_data_t *conn_data,
                      int details, int pop_results,
                      char **report_xml)
 {
@@ -226,8 +287,7 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
   int progress;
   char *error = NULL;
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
-                                      use_relay_mapper);
+  connection = osp_connect_with_data (conn_data);
   if (!connection)
     {
       return -1;
@@ -263,17 +323,14 @@ get_osp_scan_report (const char *scan_id, const char *host, int port,
  * @return 0 in success, -1 otherwise.
  */
 static osp_scan_status_t
-get_osp_scan_status (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub,
-                     const char *key_priv, gboolean use_relay_mapper)
+get_osp_scan_status (const char *scan_id, osp_connect_data_t *conn_data)
 {
   osp_connection_t *connection;
   char *error = NULL;
   osp_get_scan_status_opts_t get_scan_opts;
   osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
 
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv,
-                                      use_relay_mapper);
+  connection = osp_connect_with_data (conn_data);
   if (!connection)
     {
       return status;
@@ -1184,20 +1241,15 @@ handle_osp_scan_start (task_t task, target_t target, const char *report_id,
 int
 handle_osp_scan (task_t task, report_t report, const char *scan_id)
 {
-  gboolean has_relay;
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int rc, port;
+  int rc;
   scanner_t scanner;
+  osp_connect_data_t *conn_data;
   gboolean started, queued_status_updated;
   int retry, connection_retry;
 
   scanner = task_scanner (task);
-  has_relay = scanner_has_relay (scanner);
-  host = scanner_host (scanner, has_relay);
-  port = scanner_port (scanner, has_relay);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
+  conn_data = osp_connect_data_from_scanner (scanner);
+
   started = FALSE;
   queued_status_updated = FALSE;
   connection_retry = get_scanner_connection_retry ();
@@ -1232,17 +1284,14 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                   "Error waiting for scan update semaphore", "", "",
                   QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
-              delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                               key_priv, has_relay == FALSE);
+              delete_osp_scan (scan_id, conn_data);
               rc = -3;
               break;
             }
         }
 
       /* Get only the progress, without results and details. */
-      progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                      key_priv, has_relay == FALSE,
-                                      0, 0, NULL);
+      progress = get_osp_scan_report (scan_id, conn_data, 0, 0, NULL);
 
       if (progress < 0 || progress > 100)
         {
@@ -1250,12 +1299,11 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
             {
               retry--;
               g_warning ("Connection lost with the scanner at %s. "
-                         "Trying again in 1 second.", host);
+                         "Trying again in 1 second.", conn_data->host);
               gvm_sleep (1);
               if (osp_scan_semaphore_update_end (TRUE, task, report))
                 {
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv, has_relay == FALSE);
+                  delete_osp_scan (scan_id, conn_data);
                   rc = -3;
                   break;
                 }
@@ -1274,8 +1322,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
           osp_scan_semaphore_update_end (FALSE, task, report);
-          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                           key_priv, has_relay == FALSE);
+          delete_osp_scan (scan_id, conn_data);
           rc = -1;
           break;
         }
@@ -1283,8 +1330,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
         {
           /* Get the full OSP report. */
           char *report_xml = NULL;
-          progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, has_relay == FALSE,
+          progress = get_osp_scan_report (scan_id, conn_data,
                                           1, 1, &report_xml);
           if (progress < 0 || progress > 100)
             {
@@ -1292,11 +1338,10 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                 {
                   retry--;
                   g_warning ("Connection lost with the scanner at %s. "
-                             "Trying again in 1 second.", host);
+                             "Trying again in 1 second.", conn_data->host);
                   if (osp_scan_semaphore_update_end (TRUE, task, report))
                     {
-                      delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                       key_priv, has_relay == FALSE);
+                      delete_osp_scan (scan_id, conn_data);
                       rc = -3;
                       break;
                     }
@@ -1326,9 +1371,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               parse_osp_report (task, report, report_xml);
               g_free (report_xml);
 
-              osp_scan_status = get_osp_scan_status (scan_id, host, port,
-                                                     ca_pub, key_pub, key_priv,
-                                                     has_relay == FALSE);
+              osp_scan_status = get_osp_scan_status (scan_id, conn_data);
 
               if (osp_scan_status == OSP_SCAN_STATUS_QUEUED)
                 {
@@ -1348,8 +1391,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                      "Task interrupted unexpectedly", "", "",
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv, has_relay == FALSE);
+                  delete_osp_scan (scan_id, conn_data);
                   osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -3;
                   break;
@@ -1361,12 +1403,10 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                     {
                       retry--;
                       g_warning ("Connection lost with the scanner at %s. "
-                                 "Trying again in 1 second.", host);
+                                 "Trying again in 1 second.", conn_data->host);
                       if (osp_scan_semaphore_update_end (TRUE, task, report))
                         {
-                          delete_osp_scan (scan_id, host, port, ca_pub,
-                                           key_pub, key_priv,
-                                           has_relay == FALSE);
+                          delete_osp_scan (scan_id, conn_data);
                           rc = -3;
                           break;
                         }
@@ -1380,8 +1420,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
                      "Scan stopped unexpectedly by the server", "", "",
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv, has_relay == FALSE);
+                  delete_osp_scan (scan_id, conn_data);
                   osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = -1;
                   break;
@@ -1389,8 +1428,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
               else if (progress == 100
                        && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
                 {
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv, has_relay == FALSE);
+                  delete_osp_scan (scan_id, conn_data);
                   osp_scan_semaphore_update_end (FALSE, task, report);
                   rc = 0;
                   break;
@@ -1408,8 +1446,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
 
       if (osp_scan_semaphore_update_end (TRUE, task, report))
         {
-          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                           key_priv, has_relay == FALSE);
+          delete_osp_scan (scan_id, conn_data);
           rc = -3;
           break;
         }
@@ -1418,10 +1455,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
       gvm_sleep (5);
     }
 
-  g_free (host);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
+  osp_connect_data_free (conn_data);
   return rc;
 }
 
