@@ -3869,7 +3869,8 @@ run_task (const char *task_id, char **report_id, int from)
     return run_osp_task (task, from, report_id);
 
 #if OPENVASD
-  if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD)
+  if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD
+    || scanner_type (scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     return run_openvasd_task (task, from, report_id);
 #endif
 
@@ -4031,7 +4032,8 @@ stop_task (const char *task_id)
     return stop_osp_task (task);
 
 #if OPENVASD
-  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD)
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD_SENSOR)
     return stop_openvasd_task (task);
 #endif
 
