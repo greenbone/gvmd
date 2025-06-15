@@ -33957,6 +33957,9 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
           case SCANNER_TYPE_AGENT_CONTROLLER:
             scanner_type_str = "agent-controller";
             break;
+          case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+            scanner_type_str = "agent-controller-sensor";
+            break;
           default:
             scanner_type_str = NULL;
         }
