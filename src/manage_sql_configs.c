@@ -2835,6 +2835,9 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
   if (stype == SCANNER_TYPE_OPENVASD_SENSOR)
     return 0;
 
+  if (stype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    return 0;
+
   /* Default Scanner with OpenVAS Config. */
   if (scanner == 0)
     return 0;
