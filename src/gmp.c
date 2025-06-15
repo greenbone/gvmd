@@ -17214,7 +17214,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
         }
 #endif
 #if ENABLE_AGENTS
-      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_AGENT_CONTROLLER)
+      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
           && get_scanners_data->get.details)
         {
           char *desc = NULL;
@@ -17223,7 +17223,7 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           if (!agent_control_get_details_from_iterator (&scanners, &desc, &params))
             {
               SENDF_TO_CLIENT_OR_FAIL
-               ("<info><scanner><name>agent-controller</name><version>0.1</version>"
+               ("<info><scanner><name>agent-controller-sensor</name><version>0.1</version>"
                 "</scanner><daemon><name>AgentController</name><version>1.0</version>"
                 "</daemon><protocol><name>SCANNER API</name><version>0.1"
                 "</version></protocol><description>Agent Control Scanner</description>");
