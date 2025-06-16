@@ -180,8 +180,6 @@ manage_attach_databases ();
  */
 extern int authenticate_allow_all;
 
-const char *threat_message_type (const char *);
-
 int delete_reports (task_t);
 
 int
