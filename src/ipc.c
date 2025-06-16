@@ -181,6 +181,38 @@ init_semaphore_set ()
 }
 
 /**
+ * @brief Reinitializes the semaphore set.
+ *
+ * @return 0 success, -1 error
+ */
+int
+reinit_semaphore_set ()
+{
+  gchar *key_file_name = g_build_filename (GVM_STATE_DIR, "gvmd.sem", NULL);
+
+  semaphore_set_key = ftok (key_file_name, 0);
+
+  if (semaphore_set_key < 0)
+    {
+      g_warning ("%s: error creating semaphore key for file %s: %s",
+                 __func__, key_file_name, strerror (errno));
+      g_free (key_file_name);
+      return -1;
+    }
+  g_free (key_file_name);
+
+  semaphore_set = semget (semaphore_set_key, 0, 0);
+
+  if (semaphore_set < 0)
+    {
+      g_warning ("%s: error getting semaphore set: %s",
+                 __func__, strerror (errno));
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Performs a semaphore operation (signal or wait).
  *
  * A negative op_value will try to decrease the semaphore value

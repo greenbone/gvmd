@@ -39,4 +39,7 @@ init_semaphore_set ();
 int
 semaphore_op (semaphore_index_t, short int, time_t);
 
+int
+reinit_semaphore_set ();
+
 #endif /* not _GVMD_IPC_H */
