@@ -13,6 +13,7 @@
 
 #include <gvm/osp/osp.h>
 #include <glib.h>
+#include "manage_openvas.h"
 #include "manage_resources.h"
 
 typedef struct
