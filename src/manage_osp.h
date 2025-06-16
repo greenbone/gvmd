@@ -17,12 +17,13 @@
 
 typedef struct
 {
-  char *host;
-  int port;
-  char *ca_pub;
-  char *key_pub;
-  char *key_priv;
-  gboolean use_relay_mapper;
+  char *host;               ///< Hostname, IP or socket path of the scanner
+  int port;                 ///< Port of the scanner
+  char *ca_pub;             ///< CA Certificate of the scanner
+  char *key_pub;            ///< Public key used to connect
+  char *key_priv;           ///< Private key used to connect
+  gboolean use_relay_mapper;///< Whether to use the external relay mapper.
+                            ///< Does not indicate use of arelay from the DB.
 } osp_connect_data_t;
 
 void
