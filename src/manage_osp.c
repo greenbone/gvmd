@@ -13,7 +13,7 @@
 #include "manage_sql.h"
 
 /**
- * @brief Frees an osp_connect_data_t struct and its field.
+ * @brief Frees an osp_connect_data_t struct and its fields.
  * 
  * @param[in] conn_data  Connection data struct to free.
  */
@@ -29,10 +29,14 @@ osp_connect_data_free (osp_connect_data_t *conn_data)
 
 /**
  * @brief Get OSP connection data from a scanner.
+ * 
+ * If a relay is defined in the scanners table, the struct will contain the
+ *  relay host and port and .
  *
  * @param[in]  scanner  The scanner to get the data from.
  *
- * @return Newly allocated connection data struct.
+ * @return New allocated connection data struct. Caller should free it with
+ *         osp_connect_data_free
  */
 osp_connect_data_t *
 osp_connect_data_from_scanner (scanner_t scanner)
@@ -69,8 +73,8 @@ osp_connect_data_from_scanner (scanner_t scanner)
  * 
  * Fields are expected to be cleaned up by the iterator.
  *
- * @param[in]     iterator  The scanner iterator to get the data from.
- * @param[in,out] conn_data 
+ * @param[in]  iterator  The scanner iterator to get the data from.
+ * @param[out] conn_data Struct to add data to connect to the scanner to.
  */
 void
 osp_connect_data_from_scanner_iterator (iterator_t *iterator,
@@ -106,11 +110,8 @@ osp_connect_data_from_scanner_iterator (iterator_t *iterator,
 /**
  * @brief Create a new connection to an OSP scanner using the relay mapper.
  *
- * @param[in]   host     Original host name or IP address.
- * @param[in]   port     Original port.
- * @param[in]   ca_pub   Original CA certificate.
- * @param[in]   key_pub  Public key for authentication.
- * @param[in]   key_priv Private key for authentication.
+ * @param[in] conn_data Original data used to look up the relay and connect
+ *                      to the scanner.
  *
  * @return New connection if success, NULL otherwise.
  */
@@ -172,12 +173,7 @@ osp_scanner_mapped_relay_connect (osp_connect_data_t *conn_data)
 /**
  * @brief Create a new connection to an OSP scanner using the scanner data.
  *
- * @param[in]   host     Host name or IP address.
- * @param[in]   port     Port.
- * @param[in]   ca_pub   CA certificate.
- * @param[in]   key_pub  Public key.
- * @param[in]   key_priv Private key.
- * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
+ * @param[in]  conn_data Data used to connect to the scanner.
  *
  * @return New connection if success, NULL otherwise.
  */
@@ -240,12 +236,7 @@ osp_scanner_connect (scanner_t scanner)
  * @brief Delete an OSP scan.
  *
  * @param[in]   report_id   Report ID.
- * @param[in]   host        Scanner host.
- * @param[in]   port        Scanner port.
- * @param[in]   ca_pub      CA Certificate.
- * @param[in]   key_pub     Certificate.
- * @param[in]   key_priv    Private key.
- * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
+ * @param[in]   conn_data   Data used to connect to the scanner.
  */
 static void
 delete_osp_scan (const char *report_id, osp_connect_data_t *conn_data)
@@ -265,12 +256,7 @@ delete_osp_scan (const char *report_id, osp_connect_data_t *conn_data)
  * @brief Get an OSP scan's report.
  *
  * @param[in]   scan_id     Scan ID.
- * @param[in]   host        Scanner host.
- * @param[in]   port        Scanner port.
- * @param[in]   ca_pub      CA Certificate.
- * @param[in]   key_pub     Certificate.
- * @param[in]   key_priv    Private key.
- * @param[in]   use_relay_mapper  Whether to use the external relay mapper.
+ * @param[in]   conn_data   Data used to connect to the scanner.
  * @param[in]   details     1 for detailed report, 0 otherwise.
  * @param[in]   pop_results 1 to pop results, 0 to leave results intact.
  * @param[out]  report_xml  Scan report.
@@ -314,11 +300,7 @@ get_osp_scan_report (const char *scan_id, osp_connect_data_t *conn_data,
  * @brief Get an OSP scan's status.
  *
  * @param[in]   scan_id     Scan ID.
- * @param[in]   host        Scanner host.
- * @param[in]   port        Scanner port.
- * @param[in]   ca_pub      CA Certificate.
- * @param[in]   key_pub     Certificate.
- * @param[in]   key_priv    Private key.
+ * @param[in]   conn_data   Data used to connect to the scanner.
  *
  * @return 0 in success, -1 otherwise.
  */
