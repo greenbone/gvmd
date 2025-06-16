@@ -8,8 +8,8 @@
  * @brief Greenbone Vulnerability Manager OSP scan handling.
  */
 
-#ifndef _GVMD_SCAN_HANDLER_H
-#define _GVMD_SCAN_HANDLER_H
+#ifndef _GVMD_MANAGE_OSP_H
+#define _GVMD_MANAGE_OSP_H
 
 #include <gvm/osp/osp.h>
 #include <glib.h>
@@ -53,4 +53,4 @@ handle_osp_scan (task_t, report_t, const char *);
 int
 handle_osp_scan_end (task_t, int);
 
-#endif /* _GVMD_SCAN_HANDLER_H */
+#endif /* _GVMD_MANAGE_OSP_H */
