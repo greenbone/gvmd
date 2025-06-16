@@ -6304,6 +6304,8 @@ init_manage_create_functions ()
 void
 init_manage_process (const db_conn_info_t *database)
 {
+  if (reinit_semaphore_set())
+    abort ();
   if (init_manage_open_db (database))
     return;
   init_manage_create_functions ();
