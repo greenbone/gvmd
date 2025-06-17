@@ -33951,6 +33951,7 @@ verify_scanner (const char *scanner_id, char **version)
       cleanup_iterator (&scanner);
       return 0;
     }
+#if ENABLE_AGENTS
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
     {
       cleanup_iterator (&scanner);
@@ -33969,6 +33970,7 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
+#endif
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
