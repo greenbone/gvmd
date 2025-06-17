@@ -11,6 +11,12 @@
 #include "manage_openvas.h"
 #include "manage_sql.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Add OSP preferences for limiting hosts for users.
  *
