@@ -12,6 +12,12 @@
 #include "manage_osp.h"
 #include "manage_sql.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Frees an osp_connect_data_t struct and its fields.
  * 
@@ -45,7 +51,6 @@ osp_connect_data_from_scanner (scanner_t scanner)
   osp_connect_data_t *conn_data = g_malloc0 (sizeof (osp_connect_data_t));
 
   has_relay = scanner_has_relay (scanner);
-  conn_data->host = scanner_host (scanner, has_relay);
   conn_data->use_relay_mapper = has_relay == FALSE;
   conn_data->host = scanner_host (scanner, has_relay);
 
