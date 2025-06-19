@@ -169,6 +169,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <pattern>xsd:token { pattern = "[0-9\.]{1,80}" }</pattern>
   </type>
   <type>
+    <name>scanner_type</name>
+    <summary>A number specifying the type of a scanner</summary>
+    <description>
+      The mapping of the numbers is as follows:
+      '2' for OpenVAS (classic), '3' for CVE, '5' for OSP Sensor,
+      '6' for OpenVASD, '7' for Agent Controller,
+      '8' for OpenVASD Sensor, '9' for Agent Controller Sensor.
+    </description>
+    <pattern>xsd:token { pattern = "2|3|5|6|7|8|9" }</pattern>
+  </type>
+  <type>
     <name>severity</name>
     <summary>A severity score</summary>
     <description>
@@ -20806,13 +20817,8 @@ END:VCALENDAR
           </column>
           <column>
             <name>type</name>
-            <type>
-              <alts>
-                <alt>1</alt>
-                <alt>2</alt>
-              </alts>
-            </type>
-            <summary>Scanner type: '1' for OSP, '2' for OpenVAS (classic)</summary>
+            <type>scanner_type</type>
+            <summary>Type of the scanner</summary>
           </column>
           <column>
             <name>relay_host</name>
@@ -20889,6 +20895,7 @@ END:VCALENDAR
           <e>relay_port</e>
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
+          <o><e>info</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -21134,6 +21141,81 @@ END:VCALENDAR
               <name>permissions</name>
               <summary>Permissions the user has on the task</summary>
               <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>info</name>
+          <pattern>
+            <o><e>scanner</e></o>
+            <o><e>daemon</e></o>
+            <o><e>protocol</e></o>
+            <o><e>description</e></o>
+            <o><e>params</e></o>
+          </pattern>
+          <ele>
+            <name>scanner</name>
+            <pattern>
+              <e>name</e>
+              <e>version</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner</summary>
+              <pattern></pattern>
+            </ele>
+            <ele>
+              <name>version</name>
+              <summary>Version of the scanner</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>daemon</name>
+            <pattern>
+              <e>name</e>
+              <e>version</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner daemon</summary>
+              <pattern></pattern>
+            </ele>
+            <ele>
+              <name>version</name>
+              <summary>Version of the scanner daemon</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>protocol</name>
+            <pattern>
+              <e>name</e>
+              <e>version</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner protocol</summary>
+              <pattern></pattern>
+            </ele>
+            <ele>
+              <name>version</name>
+              <summary>Version of the scanner protocol</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Description of the scanner.</summary>
+          </ele>
+          <ele>
+            <name>params</name>
+            <pattern>
+              <any><e>param</e></any>
+            </pattern>
+            <ele>
+              <name>param</name>
+              <summary>Parameter of the scanner.</summary>
             </ele>
           </ele>
         </ele>
