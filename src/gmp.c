@@ -17007,7 +17007,7 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
             SENDF_TO_CLIENT_OR_FAIL
              ("<info><scanner><name/><version/></scanner>"
               "<daemon><name/><version/></daemon>"
-              "<protocol><name/><version/><59923/protocol><description/><params/>"
+              "<protocol><name/><version/></protocol><description/><params/>"
               "</info>");
           g_free (s_name);
           g_free (s_ver);
