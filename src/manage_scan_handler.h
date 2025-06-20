@@ -15,6 +15,6 @@
 #include <glib.h>
 
 int
-fork_scan_handler (const char *, report_t, task_t, user_t);
+fork_scan_handler (const char *, report_t, task_t, user_t, int);
 
 #endif /* _GVMD_SCAN_HANDLER_H */

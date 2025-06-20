@@ -161,8 +161,11 @@ manage_handle_scan_queue ()
             = scan_queue_iterator_task (&queue_iterator);
           user_t owner
             = scan_queue_iterator_owner (&queue_iterator);
+          int start_from
+            = scan_queue_iterator_start_from (&queue_iterator);
             
-          new_handler_pid = fork_scan_handler (report_id, report, task, owner);
+          new_handler_pid = fork_scan_handler (report_id, report, task, owner,
+                                               start_from);
           if (new_handler_pid >= 0)
             {
               active_count ++;
