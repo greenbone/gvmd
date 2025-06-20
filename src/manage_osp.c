@@ -10,6 +10,7 @@
 
 #include "ipc.h"
 #include "manage_osp.h"
+#include "manage_scan_queue.h"
 #include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
@@ -886,6 +887,8 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
  * @param[in]  report     Row id of the scan report
  * @param[in]  scan_id    UUID of the scan report
  * @param[in]  conn_data   Data used to connect to the scanner.
+ * @param[in,out]  queued_status_updated  Whether the "queued" status was set.
+ * @param[in,out]  started                Whether the scan was started.
  * 
  * @return 0 if scan finished, 1 if caller should retry if appropriate,
  *         2 if scan is running or queued by the scanner,
@@ -895,7 +898,7 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
 static int
 update_osp_scan (task_t task, report_t report, const char *scan_id,
                  osp_connect_data_t *conn_data, int *retry_ptr,
-                 int *queued_status_updated_ptr, int *started_ptr)
+                 int *queued_status_updated, int *started)
 {
   int progress;
   osp_scan_status_t osp_scan_status;
@@ -979,12 +982,12 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
 
           if (osp_scan_status == OSP_SCAN_STATUS_QUEUED)
             {
-              if (*queued_status_updated_ptr == FALSE)
+              if (*queued_status_updated == FALSE)
                 {
                   set_task_run_status (task, TASK_STATUS_QUEUED);
                   set_report_scan_run_status (global_current_report,
                                               TASK_STATUS_QUEUED);
-                  *queued_status_updated_ptr = TRUE;
+                  *queued_status_updated = TRUE;
                   return 2;
                 }
             }
@@ -1032,15 +1035,21 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
             {
               delete_osp_scan (scan_id, conn_data);
               osp_scan_semaphore_update_end (FALSE, task, report);
+              if (*started == FALSE)
+                {
+                  set_task_run_status (task, TASK_STATUS_RUNNING);
+                  set_report_scan_run_status (global_current_report,
+                                              TASK_STATUS_RUNNING);
+                }
               return 0;
             }
           else if (osp_scan_status == OSP_SCAN_STATUS_RUNNING
-                    && *started_ptr == FALSE)
+                    && *started == FALSE)
             {
               set_task_run_status (task, TASK_STATUS_RUNNING);
               set_report_scan_run_status (global_current_report,
                                           TASK_STATUS_RUNNING);
-              *started_ptr = TRUE;
+              *started = TRUE;
               return 2;
             }
         }
@@ -1053,24 +1062,27 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
  * 
  * @param[in]  task       The task of the OSP scan
  * @param[in]  target     The target of the scan task
- * @param[in]  report_id  UUID of the scan report
- * @param[in]  from       0 start from beginning, 1 continue from stopped,
+ * @param[in]  scan_id    UUID of the scan / report
+ * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
  *                        2 continue if stopped else start from beginning.
+ * @param[in]  wait_until_active  Whether to wait until scan is queued or
+ *                                running
  *
  * @return 0 success, -1 if error.
  */
 int
-handle_osp_scan_start (task_t task, target_t target, const char *report_id,
-                       int from)
+handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
+                       int start_from, gboolean wait_until_active)
 {
   char *error = NULL;
-  int rc = launch_osp_openvas_task (task, target, report_id, from, &error);
+  int rc;
 
+  rc = launch_osp_openvas_task (task, target, scan_id, start_from, &error);
   if (rc)
     {
       result_t result;
 
-      g_warning ("OSP start_scan %s: %s", report_id, error);
+      g_warning ("OSP start_scan %s: %s", scan_id, error);
       result = make_osp_result (task, "", "", "",
                                 threat_message_type ("Error"),
                                 error, "", "", QOD_DEFAULT, NULL, NULL);
@@ -1084,7 +1096,74 @@ handle_osp_scan_start (task_t task, target_t target, const char *report_id,
 
       return (-1);
     }
-  return 0;
+
+  if (wait_until_active)
+    {
+      gboolean started, queued_status_updated;
+      scanner_t scanner;
+      osp_connect_data_t *conn_data;
+      int connection_retry, retry;
+      report_t report;
+
+      started = FALSE;
+      queued_status_updated = FALSE;
+      report = global_current_report;
+      scanner = task_scanner (task);
+      conn_data = osp_connect_data_from_scanner (scanner);
+
+      connection_retry = get_scanner_connection_retry ();
+      retry = connection_retry;
+      rc = -1;
+      while (retry >= 0)
+        {
+          int sem_op_ret, run_status;
+
+          run_status = task_run_status (task);
+          if (run_status == TASK_STATUS_STOPPED
+              || run_status == TASK_STATUS_STOP_REQUESTED)
+            {
+              rc = -4;
+              break;
+            }
+
+          sem_op_ret = osp_scan_semaphore_update_start (TRUE, task, report);
+          if (sem_op_ret == 1)
+            continue;
+          else if (sem_op_ret)
+            {
+              delete_osp_scan (scan_id, conn_data);
+              rc = -3;
+              break;
+            }
+
+          rc = update_osp_scan (task, report, scan_id, conn_data,
+                                &retry, &queued_status_updated, &started);
+
+          // Exit loop on error or if scan finished
+          if (rc <= 0)
+            break;
+
+          if (osp_scan_semaphore_update_end (TRUE, task, report))
+            {
+              delete_osp_scan (scan_id, conn_data);
+              rc = -3;
+              break;
+            }
+          
+          // Exit loop if scan is queued or started
+          if (rc == 2)
+            break;
+
+          retry = connection_retry;
+          gvm_sleep (5);
+        }
+
+      osp_connect_data_free (conn_data);
+    }
+  else
+    rc = 0;
+
+  return rc < 0 ? -1 : 0;
 }
 
 /**
@@ -1093,24 +1172,36 @@ handle_osp_scan_start (task_t task, target_t target, const char *report_id,
  * @param[in]   task      The task.
  * @param[in]   report    The report.
  * @param[in]   scan_id   The UUID of the scan on the scanner.
+ * @param[in]   yield_time  Time after which to yield if there are more
+ * .                        queued scans than the maximum active count or
+ *                          0 for non-queued scans running until the end.
  *
  * @return 0 if success, -1 if error, -2 if scan was stopped,
  *         -3 if the scan was interrupted, -4 already stopped.
  */
 int
-handle_osp_scan (task_t task, report_t report, const char *scan_id)
+handle_osp_scan (task_t task, report_t report, const char *scan_id,
+                 time_t yield_time)
 {
+  int max_active_scans;
+  task_status_t task_status;
   int rc;
   scanner_t scanner;
   osp_connect_data_t *conn_data;
   gboolean started, queued_status_updated;
   int retry, connection_retry;
 
+  if (yield_time)
+    {
+      max_active_scans = get_max_active_scan_handlers ();
+    }
+
   scanner = task_scanner (task);
   conn_data = osp_connect_data_from_scanner (scanner);
 
-  started = FALSE;
-  queued_status_updated = FALSE;
+  task_status = task_run_status (task);
+  started = (task_status == TASK_STATUS_RUNNING);
+  queued_status_updated = started || (task_status == TASK_STATUS_QUEUED);
   connection_retry = get_scanner_connection_retry ();
 
   retry = connection_retry;
@@ -1150,6 +1241,11 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id)
           rc = -3;
           break;
         }
+
+      if (yield_time 
+          && time (NULL) >= yield_time
+          && scan_queue_length () > max_active_scans)
+        break;
 
       retry = connection_retry;
       gvm_sleep (5);

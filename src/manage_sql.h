@@ -455,6 +455,9 @@ create_indexes_cve ();
 void
 drop_indexes_cve ();
 
+void
+report_set_processing_required (report_t, int, int);
+
 int
 process_report_import (report_t);
 
