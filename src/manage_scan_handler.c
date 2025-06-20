@@ -9,6 +9,7 @@
  */
 
 #include "utils.h"
+#include "manage_osp.h"
 #include "manage_sql.h"
 #include "manage_sql_scan_queue.h"
 #include "manage_scan_handler.h"
@@ -22,63 +23,150 @@
 #define G_LOG_DOMAIN "md   scan"
 
 /**
+ * @brief Handle a OSP scan in the gvmd scan queue.
+ * 
+ * @param[in]  scan_id    UUID of the scan / report to handle.
+ * @param[in]  report     Row id of the report.
+ * @param[in]  task       Row id of the task.
+ * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
+ *                        2 continue if stopped else start from beginning.
+ * 
+ * @return 0 scan finished, 2 scan running,
+ *         -1 if error, -2 if scan was stopped,
+ *         -3 if the scan was interrupted, -4 already stopped.
+ */
+static int
+handle_queued_osp_scan (const char *scan_id, report_t report,
+                        task_t task, int start_from)
+{
+  task_status_t status = task_run_status (task);
+  
+  switch (status)
+    {
+      case TASK_STATUS_REQUESTED:
+        {
+          int rc;
+          target_t target = task_target (task);
+          rc = handle_osp_scan_start (task, target, scan_id, start_from,
+                                      TRUE);
+          return (rc == 0) ? 2 : rc;
+        }
+      default:
+        {
+          time_t yield_time = time (NULL) + get_scan_handler_active_time ();
+          int ret = handle_osp_scan (task, report, scan_id, yield_time);
+          return ret;
+        }
+    }
+  
+}
+
+/**
+ * @brief Handle a scan in the gvmd scan queue.
+ * 
+ * @param[in]  scan_id    UUID of the scan / report to handle.
+ * @param[in]  report     Row id of the report.
+ * @param[in]  task       Row id of the task.
+ * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
+ *                        2 continue if stopped else start from beginning.
+ *
+ * @return 0 scan finished, 2 scan running,
+ *         -1 if error, -2 if scan was stopped,
+ *         -3 if the scan was interrupted, -4 already stopped.
+ */
+static int
+handle_queued_scan (const char *scan_id, report_t report, task_t task,
+                    scanner_t scanner, int start_from)
+{
+  scanner_type_t current_scanner_type = scanner_type (scanner);
+  switch (current_scanner_type)
+    {
+      case SCANNER_TYPE_OPENVAS:
+      case SCANNER_TYPE_OSP_SENSOR:
+        return handle_queued_osp_scan (scan_id, report, task, start_from);
+      default:
+        {
+          g_warning ("%s: Scanner type not supported by queue: %d",
+                     __func__, current_scanner_type);
+          set_task_interrupted (task,
+                                "Internal error:"
+                                " Scanner type not supported by queue");
+          set_report_scan_run_status (report, TASK_STATUS_INTERRUPTED);
+          return -1;
+        }
+    }
+}
+
+/**
  * @brief Handle a scan defined a by a queue entry.
  * 
- * @param[in]  report_id  UUID of the scan to handle.
+ * @param[in]  scan_id    UUID of the scan / report to handle.
  * @param[in]  report     Row id of the scan to handle.
  * @param[in]  task       Row id of the scan to handle.
  * @param[in]  owner      Owner of the report.
+ * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
+ *                        2 continue if stopped else start from beginning.
  *
  * @return 0 success, -1 error.
  */
 static int
 handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
-                         user_t owner)
+                         user_t owner, int start_from)
 {
-  time_t loop_end_time, last_loop_check;
+  int rc = -1;
   gchar *owner_uuid = NULL, *owner_name = NULL;
-  int max_active_scan_handlers = get_max_active_scan_handlers ();
-  gboolean scan_active, may_continue_loop;
-  g_debug ("Handling scan in pid: %d | task: %llu | report: %llu",
-             getpid (), task, report);
+  scanner_t scanner;
+
+  g_debug ("Handling scan %s (%llu) for task %llu",
+           report_id, report, task);
 
   owner_uuid = user_uuid (owner);
   owner_name = owner_uuid ? user_name (owner_uuid) : NULL;
   current_credentials.uuid = owner_uuid;
   current_credentials.username = owner_name;
   manage_session_init (current_credentials.uuid);
-  // TODO: Use these when real scan handling is introduced
-  // current_scanner_task = task;
-  // global_current_report = report;
+  current_scanner_task = task;
+  global_current_report = report;
 
-  loop_end_time = time (NULL) + get_scan_handler_active_time ();
-  last_loop_check = 0;
-
-  srand (getpid());
-
-  scan_active = may_continue_loop = TRUE;
-  while (scan_active && may_continue_loop)
+  scanner = task_scanner (task);
+  if (scanner == 0)
     {
-      // TODO: Replace with actual scan handling
-      g_debug ("Scan handler in pid %d running", getpid ());
-      gvm_sleep (1);
-      scan_active = rand () % 10;
-
-      last_loop_check = time (NULL);
-      if (last_loop_check >= loop_end_time
-          && scan_queue_length () > max_active_scan_handlers)
-        may_continue_loop = FALSE;
+      g_warning ("%s: scanner not found", __func__);
+      set_task_interrupted (task,
+                            "Internal error getting scanner in queue handler");
+      set_report_scan_run_status (report, TASK_STATUS_INTERRUPTED);
     }
 
-  if (scan_active)
+  rc = handle_queued_scan (report_id, report, task, scanner, start_from);
+
+  if (rc == 2)
     {
-      g_debug ("Scan handler in pid %d requeued", getpid ());
+      g_debug ("Requeued scan %s (%llu) for task %llu",
+               report_id, report, task);
+      global_current_report = 0;
+      current_scanner_task = 0;
       scan_queue_move_to_end (report);
     }
   else
     {
-      g_debug ("Scan handler in pid %d finished", getpid ());
+      g_debug ("Scan %s (%llu) for task %llu ended with return code %d",
+               report_id, report, task, rc);
+
       scan_queue_remove (report);
+      global_current_report = 0;
+      current_scanner_task = 0;
+
+      if (rc == 0)
+        {
+          gchar *in_assets;
+          int in_assets_int;
+          
+          in_assets = task_preference_value (task, "in_assets");
+          in_assets_int = atoi (in_assets);
+          g_free (in_assets);
+
+          report_set_processing_required (report, 1, in_assets_int);
+        }
     }
 
   return 0;
@@ -91,12 +179,14 @@ handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
  * @param[in]  report     Row id of the scan to handle.
  * @param[in]  task       Row id of the scan to handle.
  * @param[in]  owner      Owner of the report.
+ * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
+ *                        2 continue if stopped else start from beginning.
  *
  * @return The PID of the new handler process or -1 on error.
  */
 pid_t
 fork_scan_handler (const char *report_id, report_t report, task_t task,
-                   user_t owner)
+                   user_t owner, int start_from)
 {
   int pipe_fds[2];
   int nbytes;
@@ -121,7 +211,8 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 // Grandchild
                 close (pipe_fds[1]);
                 reinit_manage_process ();
-                handle_scan_queue_entry (report_id, report, task, owner);
+                handle_scan_queue_entry (report_id, report, task, owner,
+                                         start_from);
                 exit (EXIT_SUCCESS);
               case -1:
                 // Child on error

@@ -43,6 +43,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
+#include "manage_scan_queue.h"
 #include "manage_sql_alerts.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_port_lists.h"
@@ -7361,6 +7362,9 @@ stop_active_tasks ()
   iterator_t tasks;
   get_data_t get;
 
+  /* Clear the scan queue */
+  scan_queue_clear ();
+  
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
@@ -11978,6 +11982,25 @@ insert_report_host_detail (report_t report, const char *host,
 #define BUFFER_SIZE (20 * 1048576)  /* 20 MiB */
 
 /**
+ * @brief Set whether processing of a report is required
+ *        and whether to add it to assets.
+ * 
+ * @param[in]  report               The report to set the flags.
+ * @param[in]  processing_required  Whether processing is required.
+ * @param[in]  in_assets            Whether to add to assets.
+ */
+void
+report_set_processing_required (report_t report,
+                                int processing_required, int in_assets)
+{
+  sql ("UPDATE reports SET processing_required = %d, in_assets = %d"
+       " WHERE id = %llu;",
+       processing_required ? 1 : 0,
+       in_assets ? 1 : 0,
+       report);
+}
+
+/**
  * @brief Process imported report.
  * 
  * Adds TLS certificates to the database and creates assets from the report.
@@ -12517,10 +12540,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   sql_commit ();
 
-  sql ("UPDATE reports SET processing_required = 1, in_assets = %d"
-       " WHERE id = %llu;",
-       in_assets_int ? 1 : 0,
-       report);
+  report_set_processing_required (report, 1, in_assets_int);
 
   gvm_close_sentry ();
   cleanup_manage_process (FALSE); //check this
@@ -40464,7 +40484,8 @@ manage_report_host_add (report_t report, const char *host, time_t start,
                         time_t end)
 {
   char *quoted_host = sql_quote (host);
-
+  resource_t report_host;
+  
   sql ("INSERT INTO report_hosts"
        " (report, host, start_time, end_time, current_port, max_port)"
        " SELECT %llu, '%s', %lld, %lld, 0, 0"
@@ -40472,8 +40493,11 @@ manage_report_host_add (report_t report, const char *host, time_t start,
        "                   AND host = '%s');",
        report, quoted_host, (long long) start, (long long) end, report,
        quoted_host);
+  report_host = sql_int64_0 ("SELECT id FROM report_hosts"
+                             " WHERE report = %llu AND host = '%s';",
+                             report, quoted_host);
   g_free (quoted_host);
-  return sql_last_insert_id ();
+  return report_host;
 }
 
 /**
