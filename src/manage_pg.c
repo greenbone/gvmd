@@ -2709,7 +2709,8 @@ create_tables ()
        " (report integer unique,"
        "  queued_time_secs integer,"
        "  queued_time_nano integer,"
-       "  handler_pid integer);");
+       "  handler_pid integer,"
+       "  start_from integer);");
   
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"

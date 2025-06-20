@@ -14,6 +14,15 @@
 #include "time.h"
 
 /**
+ * @brief Remove all entries from the scan queue.
+ */
+void
+scan_queue_clear ()
+{
+  sql ("TRUNCATE scan_queue;");
+}
+
+/**
  * @brief Add a scan to the queue.
  * 
  * @param[in]  report  The report of the scan to add.
@@ -76,9 +85,9 @@ scan_queue_remove (report_t report)
 }
 
 /**
- * @brief Remove a scan from the queue.
- * 
- * @param[in]  report  The report of the scan to remove.
+ * @brief Gets the length of the gvmd scan queue.
+ *
+ * @return  The number of scans in the queue.
  */
 int
 scan_queue_length ()
@@ -96,7 +105,7 @@ void
 init_scan_queue_iterator (iterator_t *iterator)
 {
   init_iterator (iterator,
-                 "SELECT report, handler_pid,"
+                 "SELECT report, handler_pid, start_from,"
                  " reports.uuid, reports.task, reports.owner"
                  " FROM scan_queue LEFT JOIN reports ON reports.id = report"
                  " ORDER BY queued_time_secs ASC, queued_time_nano ASC;");
@@ -130,11 +139,25 @@ scan_queue_iterator_handler_pid (iterator_t *iterator)
 }
 
 /**
+ * @brief Get where to start the scan from.
+ * 
+ * @return 0 start from beginning, 1 continue from stopped,
+ *         2 continue if stopped else start from beginning.
+ */
+int
+scan_queue_iterator_start_from (iterator_t* iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int (iterator, 2);
+}
+
+/**
  * @brief Get the report UUID from a scan queue iterator.
  * 
  * @return The report UUID or NULL if iteration is finished.
  */
-DEF_ACCESS (scan_queue_iterator_report_uuid, 2);
+DEF_ACCESS (scan_queue_iterator_report_uuid, 3);
 
 /**
  * @brief Get the task row id from a scan queue iterator.
@@ -146,7 +169,7 @@ scan_queue_iterator_task (iterator_t* iterator)
 {
   if (iterator->done)
     return 0;
-  return iterator_int64 (iterator, 3);
+  return iterator_int64 (iterator, 4);
 }
 
 /**
@@ -159,5 +182,5 @@ scan_queue_iterator_owner (iterator_t* iterator)
 {
   if (iterator->done)
     return 0;
-  return iterator_int64 (iterator, 4);
+  return iterator_int64 (iterator, 5);
 }

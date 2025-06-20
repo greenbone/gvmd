@@ -25,6 +25,9 @@ scan_queue_iterator_report (iterator_t*);
 pid_t
 scan_queue_iterator_handler_pid (iterator_t *);
 
+int
+scan_queue_iterator_start_from (iterator_t*);
+
 const char *
 scan_queue_iterator_report_uuid (iterator_t *);
 
