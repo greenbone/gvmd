@@ -856,6 +856,9 @@ severity_data_level_counts (const severity_data_t*,
 const char*
 run_status_name (task_status_t);
 
+void
+set_task_interrupted (task_t, const gchar *);
+
 int
 start_task (const char *, char**);
 

@@ -42,6 +42,9 @@ manage_handle_scan_queue ();
 // Functions defined in manage_sql_scan_queue.c
 
 void
+scan_queue_clear ();
+
+void
 scan_queue_add (report_t);
 
 void
