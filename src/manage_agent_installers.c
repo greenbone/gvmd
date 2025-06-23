@@ -583,6 +583,7 @@ manage_sync_agent_installers ()
 gboolean
 should_sync_agent_installers ()
 {
+#if ENABLE_AGENTS
   time_t db_last_update;
   GStatBuf state;
   if (! agent_installers_feed_metadata_file_exists ())
@@ -600,6 +601,6 @@ should_sync_agent_installers ()
 
   if (state.st_mtime >= db_last_update)
     return TRUE;
-
+#endif /* ENABLE_AGENTS */
   return FALSE;
 }
