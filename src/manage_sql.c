@@ -189,9 +189,6 @@ stop_task_internal (task_t);
 int
 validate_username (const gchar *);
 
-void
-set_task_interrupted (task_t, const gchar *);
-
 
 /* Static headers. */
 
