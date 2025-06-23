@@ -2631,6 +2631,9 @@ gvmd (int argc, char** argv, char *env[])
 #if FEED_VT_METADATA == 1
       printf ("Feed VT metadata enabled\n");
 #endif
+#if ENABLE_AGENTS == 1
+      printf ("Agent scanning and management enabled\n");
+#endif
       printf ("Copyright (C) 2009-2025 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
