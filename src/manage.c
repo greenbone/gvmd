@@ -4143,7 +4143,9 @@ manage_sync (sigset_t *sigmask_current,
                         "data objects feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
+#if ENABLE_AGENTS
           manage_sync_agent_installers ();
+#endif /* ENABLE_AGENTS */
           manage_sync_configs ();
           manage_sync_port_lists ();
           manage_sync_report_formats ();
@@ -5411,7 +5413,9 @@ gboolean
 manage_gvmd_data_feed_dirs_exist ()
 {
   return gvm_file_is_readable (GVMD_FEED_DIR)
+#if ENABLE_AGENTS
          && agent_installers_feed_metadata_file_exists ()
+#endif
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();
