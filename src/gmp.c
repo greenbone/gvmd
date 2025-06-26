@@ -452,6 +452,8 @@ typedef struct
   char *comment;           ///< Comment.
   char *copy;              ///< UUID of resource to copy.
   char *kdc;               ///< Kerberos KDC (key distribution centers).
+  char *kdcs_kdc;          ///< Current Kerberos KDC (key distribution centers).
+  array_t *kdcs;           ///< List of Kerberos KDC (key distribution centers).
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
@@ -2525,6 +2527,8 @@ typedef struct
   char *community;            ///< SNMP Community string.
   char *credential_id;        ///< ID of credential to modify.
   char *kdc;                  ///< Kerberos KDC (key distribution centers).
+  char *kdcs_kdc;             ///< Current Kerberos KDC (key distribution centers).
+  array_t *kdcs;              ///< List of Kerberos KDC (key distribution centers).
   int key;                    ///< Whether the command included a key element.
   char *key_phrase;           ///< Passphrase for key.
   char *key_private;          ///< Private key from key.
@@ -2561,6 +2565,8 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->privacy_algorithm);
   free (data->privacy_password);
   free (data->realm);
+  free (data->kdcs_kdc);
+  array_free (data->kdcs);
 
   memset (data, 0, sizeof (modify_credential_data_t));
 }
@@ -4108,6 +4114,8 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_COMMUNITY,
   CLIENT_CREATE_CREDENTIAL_COPY,
   CLIENT_CREATE_CREDENTIAL_KDC,
+  CLIENT_CREATE_CREDENTIAL_KDCS,
+  CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
@@ -4448,6 +4456,8 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_COMMENT,
   CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
   CLIENT_MODIFY_CREDENTIAL_KDC,
+  CLIENT_MODIFY_CREDENTIAL_KDCS,
+  CLIENT_MODIFY_CREDENTIAL_KDCS_KDC,
   CLIENT_MODIFY_CREDENTIAL_KEY,
   CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
   CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
@@ -6341,6 +6351,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
           }
+        else if (strcasecmp ("KDCS", element_name) == 0)
+          {
+            modify_credential_data->kdcs = make_array ();
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
+          }
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             modify_credential_data->key = 1;
@@ -6363,6 +6378,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("REALM", element_name) == 0)
           {
             set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
+          }
+        ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_CREDENTIAL_KDCS:
+        if (strcasecmp ("KDC", element_name) == 0)
+          {
+            gvm_free_string_var (&modify_credential_data->kdcs_kdc);
+            gvm_append_string (&modify_credential_data->kdcs_kdc, "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC);
           }
         ELSE_READ_OVER;
 
@@ -7042,6 +7066,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
         else if (strcasecmp ("KDC", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_KDC);
+        else if (strcasecmp ("KDCS", element_name) == 0)
+          {
+            create_credential_data->kdcs = make_array ();
+            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
+          }
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             create_credential_data->key = 1;
@@ -7064,6 +7093,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_REALM);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
+        ELSE_READ_OVER;
+
+      case CLIENT_CREATE_CREDENTIAL_KDCS:
+        if (strcasecmp ("KDC", element_name) == 0)
+          {
+            gvm_free_string_var (&create_credential_data->kdcs_kdc);
+            gvm_append_string (&create_credential_data->kdcs_kdc, "");
+            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS_KDC);
+          }
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL_KEY:
@@ -12420,11 +12458,24 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           kdc = credential_iterator_kdc (&credentials);
           realm = credential_iterator_realm (&credentials);
 
-          SENDF_TO_CLIENT_OR_FAIL
-           ("<kdc>%s</kdc>"
-            "<realm>%s</realm>",
+          SENDF_TO_CLIENT_OR_FAIL (
+            "<kdc>%s</kdc>"
+            "<realm>%s</realm>"
+            "<kdcs>",
             kdc ? kdc : "",
             realm ? realm : "");
+
+          if (kdc && *kdc)
+            {
+              gchar **kdc_elements = g_strsplit (kdc, ",", -1);
+              for (gchar **elem = kdc_elements; *elem; ++elem)
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<kdc>%s</kdc>", *elem);
+                }
+              g_strfreev (kdc_elements);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("</kdcs>");
         }
 
       if (type && (strcmp (type, "snmp") == 0))
@@ -21766,6 +21817,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_credential_data->privacy_password,
                          create_credential_data->privacy_algorithm,
                          create_credential_data->kdc,
+                         create_credential_data->kdcs,
                          create_credential_data->realm,
                          create_credential_data->type,
                          create_credential_data->allow_insecure,
@@ -21884,6 +21936,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Selected type requires a realm"));
                 break;
+              case 21:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                  "Invalid kdc value(s)"));
+                break;
+              case 22:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                  "Invalid kerberos realm value"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21907,6 +21969,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, KDC);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, KDCS);
+      case CLIENT_CREATE_CREDENTIAL_KDCS_KDC:
+        {
+          array_add (create_credential_data->kdcs,
+                     g_strdup (create_credential_data->kdcs_kdc));
+          create_credential_data->kdcs_kdc = NULL;
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
+          break;
+        }
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
@@ -25027,6 +25098,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_credential_data->privacy_password,
                     modify_credential_data->privacy_algorithm,
                     modify_credential_data->kdc,
+                    modify_credential_data->kdcs,
                     modify_credential_data->realm,
                     modify_credential_data->allow_insecure))
             {
@@ -25125,6 +25197,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_credential_data->credential_id,
                                 "modified");
                 break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid kdc value(s)"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 12:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid kerberos realm value"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
@@ -25151,6 +25239,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KDC);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDCS);
+      case CLIENT_MODIFY_CREDENTIAL_KDCS_KDC:
+        {
+          array_add (modify_credential_data->kdcs,
+                     g_strdup (modify_credential_data->kdcs_kdc));
+          modify_credential_data->kdcs_kdc = NULL;
+          set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
+          break;
+        }
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
@@ -27848,6 +27945,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_KDC,
               &modify_credential_data->kdc);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC,
+              &modify_credential_data->kdcs_kdc);
+
       APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
               &modify_credential_data->key_phrase);
 
@@ -27984,6 +28084,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_KDC,
               &create_credential_data->kdc);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
+              &create_credential_data->kdcs_kdc);
 
       APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
               &create_credential_data->key_phrase);
