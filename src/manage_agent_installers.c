@@ -14,6 +14,7 @@
 #include "manage_sql_agent_installers.h"
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/fileutils.h>
+#include <gvm/util/streamvalidator.h>
 #include <glib/gstdio.h>
 
 #undef G_LOG_DOMAIN
@@ -80,6 +81,10 @@ agent_installer_file_is_valid (const char *installer_path,
 {
   gchar *canonical_feed_path, *full_installer_path, *canonical_installer_path;
   FILE *file;
+  gvm_stream_validator_t validator = NULL;
+  gvm_stream_validator_return_t validator_return;
+  char file_buffer[AGENT_INSTALLER_READ_BUFFER_SIZE];
+  size_t read_bytes;
 
   canonical_feed_path = g_canonicalize_filename (feed_dir_agent_installers (),
                                                  "/");
@@ -113,19 +118,74 @@ agent_installer_file_is_valid (const char *installer_path,
   g_free (canonical_feed_path);
   g_free (full_installer_path);
 
+  validator_return = gvm_stream_validator_new (expected_checksum,
+                                               expected_size,
+                                               &validator);
+  if (validator_return)
+    {
+      if (message)
+        *message = g_strdup_printf ("error in expected checksum: %s",
+                                    gvm_stream_validator_return_str (
+                                      validator_return));
+      return FALSE;
+    }
+
   file = fopen (canonical_installer_path, "rb");
+  g_free (canonical_installer_path);
+
   if (file == NULL)
     {
       if (message)
         *message = g_strdup_printf ("error opening installer file: %s",
                                     strerror (errno));
-      g_free (canonical_installer_path);
+      gvm_stream_validator_free (validator);
       return FALSE;
     }
 
-  // TODO: Add file size and checksum verification
+  do {
+    read_bytes = fread (file_buffer,
+                        1,
+                        AGENT_INSTALLER_READ_BUFFER_SIZE,
+                        file);
+    if (read_bytes)
+      {
+        validator_return = gvm_stream_validator_write (validator,
+                                                       file_buffer,
+                                                       read_bytes);
+        if (validator_return)
+          {
+            if (message)
+              *message = g_strdup_printf ("file validation failed: %s",
+                                          gvm_stream_validator_return_str (
+                                            validator_return));
+            fclose (file);
+            gvm_stream_validator_free (validator);
+            return FALSE;
+          }
+      }
+  } while (read_bytes);
 
+  if (ferror (file))
+    {
+      if (message)
+        *message = g_strdup_printf ("error reading installer file: %s",
+                                    strerror (errno));
+      fclose (file);
+      gvm_stream_validator_free (validator);
+      return FALSE;
+    }
   fclose (file);
+
+  validator_return = gvm_stream_validator_check (validator);
+  gvm_stream_validator_free (validator);
+  if (validator_return)
+    {
+      if (message)
+        *message = g_strdup_printf ("file validation failed: %s",
+                                    gvm_stream_validator_return_str (
+                                      validator_return));
+      return FALSE;
+    }
 
   if (message)
     *message = g_strdup ("valid");

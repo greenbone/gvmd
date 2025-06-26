@@ -17,6 +17,8 @@
 #include "iterator.h"
 #include "gmp_get.h"
 
+#define AGENT_INSTALLER_READ_BUFFER_SIZE 4096
+
 typedef resource_t agent_installer_t;
 
 typedef struct {
