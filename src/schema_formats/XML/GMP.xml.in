@@ -4214,6 +4214,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
       <o><e>kdc</e></o>
+      <o><e>kdcs</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
@@ -4260,6 +4261,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <name>kdc</name>
       <pattern>text</pattern>
       <summary>The Kerberos KDC (key distribution center(s))</summary>
+    </ele>
+    <ele>
+      <name>kdcs</name>
+      <summary>Multiple Kerberos KDCs</summary>
+      <description>
+        <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
+      </description>
+      <pattern>
+        <e>kdc</e>*
+      </pattern>
+      <ele>
+        <name>kdc</name>
+        <summary>A single Kerberos Key Distribution Center</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>key</name>
@@ -4449,6 +4465,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <create_credential_response status="201"
                                     status_text="OK, resource created"
                                     id="4aa5bf8a-502d-4023-96b0-352fe202a097">
+        </create_credential_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a Kerberos credential with multiple KDCs</summary>
+      <request>
+        <create_credential>
+          <name>Kerberos Cluster Auth</name>
+          <type>krb5</type>
+          <login>admin</login>
+          <password>secret123</password>
+          <realm>EXAMPLE.COM</realm>
+           <kdc>kdc1.example.com,kdc2.example.com,192.168.1.10</kdc>
+          <kdcs>
+            <kdc>kdc1.example.com</kdc>
+            <kdc>kdc2.example.com</kdc>
+            <kdc>192.168.1.10</kdc>
+          </kdcs>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response status="201"
+                                    status_text="OK, resource created"
+                                    id="b2a4a8c3-9f44-4e7f-bd64-7c69b0ec100e">
         </create_credential_response>
       </response>
     </example>
@@ -11704,6 +11744,7 @@ END:VCALENDAR
             </or>
           </o>
           <o><e>kdc</e></o>
+          <o><e>kdcs</e></o>
           <o><e>realm</e></o>
         </pattern>
         <ele>
@@ -11999,6 +12040,21 @@ END:VCALENDAR
           <name>kdc</name>
           <pattern>text</pattern>
           <summary>The Kerberos KDC (key distribution center(s))</summary>
+        </ele>
+        <ele>
+          <name>kdcs</name>
+          <summary>Multiple Kerberos KDCs</summary>
+          <description>
+            <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
+          </description>
+          <pattern>
+            <e>kdc</e>*
+          </pattern>
+          <ele>
+            <name>kdc</name>
+            <summary>A single Kerberos Key Distribution Center</summary>
+            <pattern>text</pattern>
+          </ele>
         </ele>
         <ele>
           <name>realm</name>
@@ -27975,6 +28031,7 @@ END:VCALENDAR
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
       <o><e>kdc</e></o>
+      <o><e>kdcs</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
@@ -28013,6 +28070,21 @@ END:VCALENDAR
       <name>kdc</name>
       <pattern>text</pattern>
       <summary>The Kerberos KDC (key distribution center(s))</summary>
+    </ele>
+    <ele>
+      <name>kdcs</name>
+      <summary>Multiple Kerberos KDCs</summary>
+      <description>
+        <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
+      </description>
+      <pattern>
+        <e>kdc</e>*
+      </pattern>
+      <ele>
+        <name>kdc</name>
+        <summary>A single Kerberos Key Distribution Center</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>key</name>

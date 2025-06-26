@@ -26351,6 +26351,142 @@ validate_credential_username_for_format (const gchar *username,
 }
 
 /**
+ * @brief Validate the format and resolvability of a Kerberos KDC input string.
+ *
+ * @param[in] kdc_input  A comma or newline-separated list of KDC hostnames or IPs.
+ *
+ * @return TRUE if all KDC entries are valid hosts, FALSE otherwise.
+ */
+static gboolean
+validate_credential_kdc_format (const char *kdc_input)
+{
+  if (!kdc_input || !*kdc_input)
+    return FALSE;
+
+  gchar *input_copy = g_strdup (kdc_input);
+  for (gchar *p = input_copy; *p; ++p)
+    {
+      if (*p == '\n')
+        *p = ',';
+    }
+
+  gchar **parts = g_strsplit (input_copy, ",", 0);
+  g_free (input_copy);
+
+  for (gchar **ptr = parts; *ptr != NULL; ptr++)
+    {
+      const gchar *entry = *ptr;
+
+      // reject empty strings
+      if (!*entry)
+        {
+          g_strfreev (parts);
+          return FALSE;
+        }
+
+      // validate whitespace in the KDC entry
+      for (const gchar *c = entry; *c; ++c)
+        {
+          if (g_ascii_isspace (*c))
+            {
+              g_strfreev (parts);
+              return FALSE;
+            }
+        }
+
+      // validate host or IP
+      if (gvm_get_host_type (entry) == -1)
+        {
+          g_strfreev (parts);
+          return FALSE;
+        }
+    }
+
+  g_strfreev (parts);
+  return TRUE;
+}
+
+/**
+ * @brief Validate the format and resolvability of a list of Kerberos KDCs.
+ *
+ * This function checks that each entry in the provided kdcs array:
+ * - does not contain any whitespace,
+ * - can be resolved via gvm_get_host_type(),
+ * and if all entries are valid, it joins them into a single comma-separated string.
+ *
+ * @param[in]  kdcs        A pointer to an array of KDC strings (hostnames or IPs).
+ * @param[out] joined_out  A location to store the resulting joined string
+ *                         if validation succeeds.
+ *                         The caller is responsible for freeing
+ *                         the returned string using g_free().
+ *
+ * @return TRUE if all KDC entries are valid and @joined_out is set; FALSE otherwise.
+ */
+static gboolean
+validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
+{
+  if (!kdcs || kdcs->len == 0 || !joined_out)
+    return FALSE;
+
+  GString *joined = g_string_new ("");
+
+  for (size_t i = 0; i < kdcs->len; ++i)
+    {
+      const char *kdc_val = g_ptr_array_index (kdcs, i);
+
+      // reject whitespace
+      for (const char *c = kdc_val; *c; ++c)
+        {
+          if (g_ascii_isspace (*c))
+            {
+              g_string_free (joined, TRUE);
+              return FALSE;
+            }
+        }
+
+      // reject unresolvable host
+      if (gvm_get_host_type (kdc_val) == -1)
+        {
+          g_string_free (joined, TRUE);
+          return FALSE;
+        }
+
+      if (i > 0)
+        g_string_append_c (joined, ',');
+
+      g_string_append (joined, kdc_val);
+    }
+
+  *joined_out = g_string_free (joined, FALSE);
+  return TRUE;
+}
+
+/**
+ * @brief Validate the format of a Kerberos realm string.
+ *
+ * This function checks whether the given @realm is non-empty and does not
+ * contain any whitespace characters.
+ *
+ * @param[in] realm  A string representing the Kerberos realm.
+ *
+ * @return TRUE if the realm is valid; FALSE otherwise.
+ */
+gboolean
+validate_credential_realm_format (const char *realm)
+{
+  if (!realm || !*realm)
+    return FALSE;
+
+  for (const char *c = realm; *c; ++c)
+    {
+      if (g_ascii_isspace (*c))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+/**
  * @brief Length of password generated in create_credential.
  */
 #define PASSWORD_LENGTH 10
@@ -26373,6 +26509,7 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  privacy_password   SNMP privacy password.
  * @param[in]  privacy_algorithm  SNMP privacy algorithm.
  * @param[in]  kdc             Kerberos KDC (key distribution centers).
+ * @param[in]  kdcs            List of Kerberos KDCs.
  * @param[in]  realm           Kerberos realm.
  * @param[in]  given_type      Credential type or NULL.
  * @param[in]  allow_insecure  Whether to allow insecure uses.
@@ -26388,6 +26525,8 @@ validate_credential_username_for_format (const gchar *username,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
  *         17 invalid certificate, 18 cannot determine type,
  *         19 key distribution center missing, 20 realm missing,
+ *         21 invalid key distribution center,
+ *         22 invalid kerberos realm,
  *         99 permission denied, -1 error.
  */
 int
@@ -26397,7 +26536,7 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
-                   const char* kdc, const char *realm,
+                   const char* kdc, array_t* kdcs, const char *realm,
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -26410,6 +26549,7 @@ create_credential (const char* name, const char* comment, const char* login,
   int auto_generate, allow_insecure_int;
   int using_snmp_v3;
   int ret;
+  gchar *kdc_value = NULL;
 
   assert (name && strlen (name) > 0);
   assert (current_credentials.uuid);
@@ -26513,12 +26653,39 @@ create_credential (const char* name, const char* comment, const char* login,
   else if (key_public == NULL && auto_generate == 0
            && strcmp (quoted_type, "pgp") == 0)
     ret = 9;
-  else if (kdc == NULL && auto_generate == 0
-           && strcmp (quoted_type, "krb5") == 0)
-    ret = 19;
-  else if (realm == NULL && auto_generate == 0
-           && strcmp (quoted_type, "krb5") == 0)
-    ret = 20;
+  else if (strcmp (quoted_type, "krb5") == 0)
+    {
+      if (kdcs && kdcs->len > 0)
+        {
+          if (!validate_credential_kdcs_format (kdcs, &kdc_value))
+            {
+              ret = 21;
+            }
+        }
+      else if (kdc)
+        {
+          if (!validate_credential_kdc_format (kdc))
+            {
+              ret = 21;
+            }
+          else
+            {
+              kdc_value = g_strdup (kdc);
+            }
+        }
+      else
+        {
+          // both kdcs and kdc missing
+          ret = 19;
+        }
+      if (ret == 0)
+        {
+          if (realm == NULL && auto_generate == 0)
+            ret = 20;
+          else if (!validate_credential_realm_format (realm))
+            ret = 22;
+        }
+    }
   else if (strcmp (quoted_type, "snmp") == 0)
     {
       if (login || given_password || auth_algorithm
@@ -26594,8 +26761,11 @@ create_credential (const char* name, const char* comment, const char* login,
                            "username", login);
     }
 
-  if (kdc)
-    set_credential_data (new_credential, "kdc", kdc);
+  if (kdc_value)
+    {
+      set_credential_data (new_credential, "kdc", kdc_value);
+      g_free (kdc_value);
+    }
   if (key_public)
     set_credential_data (new_credential, "public_key", key_public);
   if (certificate)
@@ -26903,6 +27073,7 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   privacy_password    Privacy password of Credential.
  * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
  * @param[in]   kdc                 Kerberos KDC (key distribution centers).
+ * @param[in]   kdcs                List of Kerberos KDCs.
  * @param[in]   realm               Kerberos realm.
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
@@ -26912,6 +27083,8 @@ copy_credential (const char* name, const char* comment,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
+ *         11 invalid key distribution center,
+ *         12 invalid kerberos realm,
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -26923,7 +27096,8 @@ modify_credential (const char *credential_id,
                    const char* certificate,
                    const char* community, const char* auth_algorithm,
                    const char* privacy_password, const char* privacy_algorithm,
-                   const char* kdc, const char* realm,
+                   const char* kdc, array_t* kdcs,
+                   const char* realm,
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -27203,10 +27377,40 @@ modify_credential (const char *credential_id,
         {
           if (password)
             set_credential_password (credential, password);
-          if (kdc)
-            set_credential_data (credential, "kdc", kdc);
+          if (kdcs)
+            {
+              gchar *joined_kdcs = NULL;
+
+              if (!validate_credential_kdcs_format (kdcs, &joined_kdcs))
+                {
+                  sql_rollback ();
+                  return 11;
+                }
+
+              set_credential_data (credential, "kdc", joined_kdcs);
+              g_free (joined_kdcs);
+            }
+          else if (kdc)
+            {
+              if (!validate_credential_kdc_format (kdc))
+                {
+                  sql_rollback ();
+                  return 11;
+                }
+
+              set_credential_data (credential, "kdc", kdc);
+            }
+
           if (realm)
-            set_credential_data (credential, "realm", realm);
+            {
+              if (!validate_credential_realm_format (realm))
+                {
+                  sql_rollback ();
+                  return 12;
+                }
+
+              set_credential_data (credential, "realm", realm);
+            }
         }
       else
         {
