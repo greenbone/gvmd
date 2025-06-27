@@ -4260,7 +4260,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <ele>
       <name>kdc</name>
       <pattern>text</pattern>
-      <summary>The Kerberos KDC (key distribution center(s))</summary>
+      <summary>Deprecated: This element is deprecated. Use kdcs instead. The Kerberos KDC (key distribution center(s))</summary>
     </ele>
     <ele>
       <name>kdcs</name>
@@ -4269,7 +4269,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
       </description>
       <pattern>
-        <e>kdc</e>*
+         <any><e>kdc</e></any>
       </pattern>
       <ele>
         <name>kdc</name>
@@ -12039,7 +12039,7 @@ END:VCALENDAR
         <ele>
           <name>kdc</name>
           <pattern>text</pattern>
-          <summary>The Kerberos KDC (key distribution center(s))</summary>
+          <summary>Deprecated: This element is deprecated. Use kdcs instead. The Kerberos KDC (key distribution center(s))</summary>
         </ele>
         <ele>
           <name>kdcs</name>
@@ -12048,7 +12048,7 @@ END:VCALENDAR
             <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
           </description>
           <pattern>
-            <e>kdc</e>*
+             <any><e>kdc</e></any>
           </pattern>
           <ele>
             <name>kdc</name>
@@ -28069,7 +28069,7 @@ END:VCALENDAR
     <ele>
       <name>kdc</name>
       <pattern>text</pattern>
-      <summary>The Kerberos KDC (key distribution center(s))</summary>
+      <summary>Deprecated: This element is deprecated. Use kdcs instead. The Kerberos KDC (key distribution center(s))</summary>
     </ele>
     <ele>
       <name>kdcs</name>
@@ -28078,7 +28078,7 @@ END:VCALENDAR
         <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
       </description>
       <pattern>
-        <e>kdc</e>*
+         <any><e>kdc</e></any>
       </pattern>
       <ele>
         <name>kdc</name>
