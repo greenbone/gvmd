@@ -56,6 +56,7 @@
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_scan_queue.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -1455,7 +1456,7 @@ set_task_interrupted (task_t task, const gchar *message)
  *
  * @param[in]   task       The task.
  * @param[in]   target     The target.
- * @param[in]   from       0 start from beginning, 1 continue from stopped,
+ * @param[in]   start_from 0 start from beginning, 1 continue from stopped,
  *                         2 continue if stopped else start from beginning.
  * @param[out]  report_id_return   UUID of the report.
  *
@@ -1463,7 +1464,7 @@ set_task_interrupted (task_t task, const gchar *message)
  *         doesn't return and simply exits.
  */
 static int
-fork_osp_scan_handler (task_t task, target_t target, int from,
+fork_osp_scan_handler (task_t task, target_t target, int start_from,
                        char **report_id_return)
 {
   char *report_id = NULL;
@@ -1475,7 +1476,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   if (report_id_return)
     *report_id_return = NULL;
 
-  if (run_osp_scan_get_report (task, from, &report_id))
+  if (run_osp_scan_get_report (task, start_from, &report_id))
     return -1;
 
   current_scanner_task = task;
@@ -1519,7 +1520,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  if (handle_osp_scan_start (task, target, report_id, from))
+  if (handle_osp_scan_start (task, target, report_id, start_from, FALSE))
     {
       g_free (report_id);
       gvm_close_sentry ();
@@ -1528,11 +1529,56 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
 
   setproctitle ("OSP: Handling scan %s", report_id);
 
-  rc = handle_osp_scan (task, global_current_report, report_id);
+  rc = handle_osp_scan (task, global_current_report, report_id, 0);
   g_free (report_id);
   rc = handle_osp_scan_end (task, rc);
   gvm_close_sentry ();
   exit (rc);
+}
+
+/**
+ * @brief Prepare an OSP scan and add it to the gvmd scan queue.
+ *
+ * @param[in]   task       The task.
+ * @param[in]   start_from 0 start from beginning, 1 continue from stopped,
+ *                         2 continue if stopped else start from beginning.
+ * @param[out]  report_id_return   UUID of the report.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+queue_osp_task (task_t task, int start_from, char **report_id_return)
+{
+  char *report_id = NULL;
+  report_t report = 0;
+
+  if (report_id_return)
+    *report_id_return = NULL;
+
+  if (run_osp_scan_get_report (task, start_from, &report_id))
+    return -1;
+
+  if (find_resource_no_acl ("report", report_id, &report))
+    {
+      g_warning ("%s: error getting report '%s'",
+                 __func__, report_id);
+      g_free (report_id);
+      return -1;
+    }
+  else if (report == 0)
+    {
+      g_warning ("%s: could not find report '%s'",
+                 __func__, report_id);
+      g_free (report_id);
+      return -1;
+    }
+
+  scan_queue_add (report);
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  set_report_scan_run_status (report, TASK_STATUS_REQUESTED);
+  g_debug ("%s: report %s (%llu) added to scan queue",
+           __func__, report_id, report);
+  return 0;
 }
 
 /**
@@ -1567,11 +1613,23 @@ run_osp_task (task_t task, int from, char **report_id)
         return 99;
     }
 
-  if (fork_osp_scan_handler (task, target, from, report_id))
+  if (get_use_scan_queue ())
     {
-      g_warning ("Couldn't fork OSP scan handler");
-      return -1;
+      if (queue_osp_task (task, from, report_id))
+        {
+          g_warning ("Couldn't queue OSP scan");
+          return -1;
+        }
     }
+  else
+    {
+      if (fork_osp_scan_handler (task, target, from, report_id))
+        {
+          g_warning ("Couldn't fork OSP scan handler");
+          return -1;
+        }
+    }
+
   return 0;
 }
 
@@ -4151,6 +4209,21 @@ manage_sync (sigset_t *sigmask_current,
 }
 
 /**
+ * @brief Handle queued task actions like the scan queue or report processing.
+ */
+void
+manage_queued_task_actions ()
+{
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+  
+  setproctitle ("Manage process report imports");
+  manage_process_report_imports ();
+  setproctitle ("Manage scan queue");
+  manage_handle_scan_queue ();
+}
+
+/**
  * @brief Perform any processing of imported reports that is due.
  *
  * In gvmd, periodically called from the main daemon loop.
@@ -4163,10 +4236,7 @@ manage_process_report_imports ()
   report_t report;
   int pid, ret;
 
-  reinit_manage_process ();
-  manage_session_init (current_credentials.uuid);
-
- init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
+  init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
 
   while (next (&reports))
     {
@@ -4190,7 +4260,7 @@ manage_process_report_imports ()
                       __func__,
                       report);
           cleanup_iterator (&reports);
-          exit (EXIT_FAILURE);
+          return;
         }
 
       pid = fork ();
@@ -4257,7 +4327,7 @@ manage_process_report_imports ()
                          strerror (errno));
             g_free (lockfile_path);
             cleanup_iterator (&reports);
-            exit (EXIT_FAILURE);
+            return;
     
           default:
             /* Parent. */
@@ -4266,7 +4336,6 @@ manage_process_report_imports ()
           }
     }
   cleanup_iterator (&reports);
-  exit (EXIT_SUCCESS);
 }
 
 /**
