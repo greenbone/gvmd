@@ -88,6 +88,7 @@
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
+#include "gmp_agent_installers.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
@@ -4358,6 +4359,7 @@ typedef enum
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
   CLIENT_DELETE_AGENTS,
+  CLIENT_DELETE_AGENT_INSTALLER,
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4384,6 +4386,7 @@ typedef enum
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
+  CLIENT_GET_AGENT_INSTALLERS,
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4906,6 +4909,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
           }
+        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
+          {
+            delete_start ("agent_installer", "Agent Installer",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_REPORT_CONFIG);
+          }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
@@ -5166,6 +5175,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_EMPTY_TRASHCAN);
 
         ELSE_GET_START (agents, AGENTS)
+
+        ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
 
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
@@ -20331,6 +20342,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
+      case CLIENT_DELETE_AGENT_INSTALLER:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
@@ -20828,6 +20844,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+      CASE_GET_END (AGENT_INSTALLERS, agent_installers);
 
       CASE_GET_END (AGENTS, agents);
 

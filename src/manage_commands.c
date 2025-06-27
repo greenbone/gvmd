@@ -45,6 +45,7 @@ command_t gmp_commands[]
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
     {"DELETE_AGENTS", "Delete one or more agents."},
+    {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
@@ -70,8 +71,11 @@ command_t gmp_commands[]
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
-    {"GET_AGGREGATES", "Get aggregates of resources."},
+#if ENABLE_AGENTS
     {"GET_AGENTS", "Get all agents."},
+    {"GET_AGENT_INSTALLERS", "Get all agent installers."},
+#endif /* ENABLE_AGENTS */
+    {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
     {"GET_CONFIGS", "Get all configs."},
