@@ -33321,9 +33321,14 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
   ca_pub = scanner_iterator_ca_pub (iterator);
   key_pub = scanner_iterator_key_pub (iterator);
   key_priv = scanner_iterator_key_priv (iterator);
-  protocol = "https";
 
-  connection = openvasd_connector_new();
+  /* Determine protocol based on certificate presence */
+  if (ca_pub && key_pub && key_priv)
+    protocol = "https";
+  else
+    protocol = "http";
+
+  connection = openvasd_connector_new ();
 
   openvasd_connector_builder (connection, OPENVASD_HOST, host);
   openvasd_connector_builder (connection, OPENVASD_PROTOCOL, protocol);
@@ -50140,6 +50145,7 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
   int port;
   openvasd_connector_t connection;
   char *host, *ca_pub, *key_pub, *key_priv;
+  const char *protocol;
 
   assert (scanner);
   has_relay = scanner_has_relay (scanner);
@@ -50149,13 +50155,19 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
 
-  connection = openvasd_connector_new();
+  /* Determine protocol based on certificate presence */
+  if (ca_pub && key_pub && key_priv)
+    protocol = "https";
+  else
+    protocol = "http";
+
+  connection = openvasd_connector_new ();
 
   openvasd_connector_builder (connection, OPENVASD_HOST, host);
   openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
   openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
   openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
-  openvasd_connector_builder (connection, OPENVASD_PROTOCOL, "https");
+  openvasd_connector_builder (connection, OPENVASD_PROTOCOL, protocol);
   openvasd_connector_builder (connection, OPENVASD_PORT, (void *) &port);
 
   if (scan_id && scan_id[0] != '\0')
