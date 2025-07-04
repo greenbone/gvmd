@@ -154,7 +154,6 @@ agent_installer_stream_is_valid (FILE *stream,
               *message = g_strdup_printf ("file validation failed: %s",
                                           gvm_stream_validator_return_str (
                                             validator_return));
-            gvm_stream_validator_free (validator);
             return FALSE;
           }
       }
@@ -239,6 +238,11 @@ agent_installer_file_is_valid (const char *installer_path,
 /* Agent installer feed sync */
 
 /**
+ * @brief Current agent installer feed directory.
+ */
+static const char *agent_installer_feed_path = NULL;
+
+/**
  * @brief Get path to agent installers directory in feed.
  *
  * @return Path to agent installers in feed.
@@ -246,12 +250,11 @@ agent_installer_file_is_valid (const char *installer_path,
 const gchar *
 feed_dir_agent_installers ()
 {
-  static gchar *path = NULL;
-  if (path == NULL)
-    path = g_build_filename (GVMD_FEED_DIR,
-                             "agent-installers",
-                             NULL);
-  return path;
+  if (agent_installer_feed_path == NULL)
+    agent_installer_feed_path = g_build_filename (GVMD_FEED_DIR,
+                                                  "agent-installers",
+                                                  NULL);
+  return agent_installer_feed_path;
 }
 
 /**
