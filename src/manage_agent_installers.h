@@ -16,8 +16,17 @@
 #include "manage.h"
 #include "iterator.h"
 #include "gmp_get.h"
+#include <gvm/util/streamvalidator.h>
+#include <stdio.h>
 
 #define AGENT_INSTALLER_READ_BUFFER_SIZE 4096
+
+#define AGENT_INSTALLER_BASE64_BUFFER_SIZE                \
+        ((AGENT_INSTALLER_READ_BUFFER_SIZE / 3 + 2) * 4)
+
+#define AGENT_INSTALLER_BASE64_WITH_BREAKS_BUFFER_SIZE    \
+        (AGENT_INSTALLER_BASE64_BUFFER_SIZE               \
+         + AGENT_INSTALLER_BASE64_BUFFER_SIZE / 76 + 1)   \
 
 typedef resource_t agent_installer_t;
 
@@ -53,6 +62,12 @@ agent_installer_cpe_data_free (agent_installer_cpe_data_t *);
 
 int
 delete_agent_installer (const char*, int);
+
+FILE *
+open_agent_installer_file (const char *, gchar **);
+
+gboolean
+agent_installer_stream_is_valid (FILE *, gvm_stream_validator_t, gchar **);
 
 gboolean
 agent_installer_file_is_valid (const char *, const char *, int, gchar**);

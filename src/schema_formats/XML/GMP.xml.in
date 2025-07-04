@@ -8683,7 +8683,7 @@ END:VCALENDAR
       </ele>
     </response>
     <example>
-      <summary>Export a agent installer</summary>
+      <summary>Export metadata of an agent installer</summary>
       <request>
         <get_agent_installers
           agent_installer_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
@@ -8724,6 +8724,90 @@ END:VCALENDAR
             </cpes>
           </agent_installer>
         </get_agent_installers_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agent_installer_file</name>
+    <summary>Get the file of an agent installer</summary>
+    <description>
+      <p>
+        The client uses the get_agent_installer_file to get the
+        file of an agent installer.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <summary>UUID of the agent installer to get the file of</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>file</e>
+      </pattern>
+      <ele>
+        <name>file</name>
+        <pattern>
+          <attrib>
+            <name>agent_installer_id</name>
+            <type>uuid</type>
+            <required>1</required>
+            <summary>UUID of the agent installer</summary>
+          </attrib>
+          <e>name</e>
+          <e>content_type</e>
+          <e>file_extension</e>
+          <e>checksum</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <type>text</type>
+          <summary>Name of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <type>text</type>
+          <summary>MIME content type of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>file_extension</name>
+          <type>text</type>
+          <summary>File extension of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>checksum</name>
+          <type>text</type>
+          <summary>Checksum the agent installer</summary>
+        </ele>
+        <ele>
+          <name>content</name>
+          <type>text</type>
+          <summary>The base-64 encoded file content</summary>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Export an agent installer file</summary>
+      <request>
+        <get_agent_installer_file agent_installer_id="xy"/>
+      </request>
+      <response>
+        <get_agent_installer_file_response>
+        </get_agent_installer_file_response>
       </response>
     </example>
   </command>
