@@ -278,6 +278,22 @@ add_executable(
 
 add_test(manage-test manage-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_agent_installers.c)
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql_agent_installers.c)
+add_executable(
+  manage-agent-installers-test
+  EXCLUDE_FROM_ALL
+  manage_agent_installers_tests.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
+)
+
+add_test(manage-agent-installers-test manage-agent-installers-test)
+
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SQL_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql.c)
 add_executable(
@@ -328,6 +344,7 @@ add_custom_target(
   DEPENDS
     gmp-tickets-test
     manage-test
+    manage-agent-installers-test
     manage-sql-test
     manage-utils-test
     utils-test
@@ -414,6 +431,32 @@ target_link_libraries(
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
 )
+target_link_libraries(
+  manage-agent-installers-test
+  cgreen
+  m
+  ${GNUTLS_LDFLAGS}
+  ${GPGME_LDFLAGS}
+  ${CMAKE_THREAD_LIBS_INIT}
+  ${LINKER_HARDENING_FLAGS}
+  ${LINKER_DEBUG_FLAGS}
+  ${PostgreSQL_LIBRARIES}
+  ${LIBBSD_LDFLAGS}
+  ${CJSON_LDFLAGS}
+  ${GLIB_LDFLAGS}
+  ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
+  ${LIBGVM_BASE_LDFLAGS}
+  ${LIBGVM_OPENVASD_LDFLAGS}
+  ${LIBGVM_UTIL_LDFLAGS}
+  ${LIBGVM_OSP_LDFLAGS}
+  ${LIBGVM_GMP_LDFLAGS}
+  ${LIBGVM_HTTP_LDFLAGS}
+  ${LIBICAL_LDFLAGS}
+  ${LINKER_HARDENING_FLAGS}
+  ${OPT_THEIA_TGT}
+)
+
 target_link_libraries(
   manage-sql-test
   cgreen
@@ -529,6 +572,7 @@ target_link_libraries(
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-test PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(manage-agent-installers-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-sql-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-utils-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
@@ -544,6 +588,10 @@ endif(GVMD_VERSION)
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options(
+    manage-agent-installers-test
+    PUBLIC ${C_FLAGS_DEBUG_GVMD}
+  )
   target_compile_options(manage-sql-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
