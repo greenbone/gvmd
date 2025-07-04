@@ -39,4 +39,27 @@ void
 get_agent_installers_element_text (const gchar *,
                                    gsize);
 
+void
+get_agent_installer_file_run (gmp_parser_t *,
+                              GError **);
+
+void
+get_agent_installer_file_start (const gchar **,
+                                const gchar **);
+
+void
+get_agent_installer_file_element_start (gmp_parser_t *,
+                                        const gchar *,
+                                        const gchar **,
+                                        const gchar **);
+
+int
+get_agent_installer_file_element_end (gmp_parser_t *,
+                                      GError **,
+                                      const gchar *);
+
+void
+get_agent_installer_file_element_text (const gchar *,
+                                       gsize);
+
 #endif // not _GVMD_GMP_AGENT_INSTALLERS_H

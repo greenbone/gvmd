@@ -14,7 +14,6 @@
 #include "manage_sql_agent_installers.h"
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/fileutils.h>
-#include <gvm/util/streamvalidator.h>
 #include <glib/gstdio.h>
 
 #undef G_LOG_DOMAIN
@@ -64,27 +63,18 @@ agent_installer_cpe_data_free (agent_installer_cpe_data_t *data)
 /* File handling */
 
 /**
- * @brief Check if an agent installer file is valid.
+ * @brief Open an agent installer file.
  *
- * @param[in]  installer_path     Path of the installer file to check.
- * @param[in]  expected_checksum  The expected checksum.
- * @param[in]  expected_size      The expected file size.
- * @param[out] message            Optional result message output.
+ * @param[in]  installer_path  The relative installer path to open.
+ * @param[out] message         Optional result message output.
  *
- * @return TRUE if file is valid, FALSE otherwise.
+ * @return FILE pointer on success, NULL on failure.
  */
-gboolean
-agent_installer_file_is_valid (const char *installer_path,
-                               const char *expected_checksum,
-                               int expected_size,
-                               gchar **message)
+FILE *
+open_agent_installer_file (const char *installer_path, gchar **message)
 {
   gchar *canonical_feed_path, *full_installer_path, *canonical_installer_path;
   FILE *file;
-  gvm_stream_validator_t validator = NULL;
-  gvm_stream_validator_return_t validator_return;
-  char file_buffer[AGENT_INSTALLER_READ_BUFFER_SIZE];
-  size_t read_bytes;
 
   canonical_feed_path = g_canonicalize_filename (feed_dir_agent_installers (),
                                                  "/");
@@ -93,7 +83,7 @@ agent_installer_file_is_valid (const char *installer_path,
                                           NULL);
   canonical_installer_path = g_canonicalize_filename (full_installer_path,
                                                       "/");
-  
+
   if (! g_str_has_prefix (canonical_installer_path, canonical_feed_path))
     {
       if (message)
@@ -112,11 +102,104 @@ agent_installer_file_is_valid (const char *installer_path,
       g_free (full_installer_path);
       g_free (canonical_installer_path);
 
-      return FALSE;
+      return NULL;
     }
 
   g_free (canonical_feed_path);
   g_free (full_installer_path);
+
+  file = fopen (canonical_installer_path, "rb");
+  g_free (canonical_installer_path);
+  if (file == NULL)
+    {
+      if (message)
+        *message = g_strdup_printf ("error opening installer file: %s",
+                                    strerror (errno));
+      return NULL;
+    }
+  return file;
+}
+
+/**
+ * @brief Read a stream and check if it is a valid agent installer file.
+ *
+ * @param[in]  stream             The stream to check.
+ * @param[in]  validator          The validator to use.
+ * @param[out] message            Optional result message output.
+ *
+ * @return TRUE if file is valid, FALSE otherwise.
+ */
+gboolean
+agent_installer_stream_is_valid (FILE *stream,
+                                 gvm_stream_validator_t validator,
+                                 gchar **message)
+{
+  gvm_stream_validator_return_t validator_return;
+  char file_buffer[AGENT_INSTALLER_READ_BUFFER_SIZE];
+  size_t read_bytes;
+
+  do {
+    read_bytes = fread (file_buffer,
+                        1,
+                        AGENT_INSTALLER_READ_BUFFER_SIZE,
+                        stream);
+    if (read_bytes)
+      {
+        validator_return = gvm_stream_validator_write (validator,
+                                                       file_buffer,
+                                                       read_bytes);
+        if (validator_return)
+          {
+            if (message)
+              *message = g_strdup_printf ("file validation failed: %s",
+                                          gvm_stream_validator_return_str (
+                                            validator_return));
+            gvm_stream_validator_free (validator);
+            return FALSE;
+          }
+      }
+  } while (read_bytes);
+
+  if (ferror (stream))
+    {
+      if (message)
+        *message = g_strdup_printf ("error reading installer file: %s",
+                                    strerror (errno));
+      return FALSE;
+    }
+
+  validator_return = gvm_stream_validator_end (validator);
+  if (validator_return)
+    {
+      if (message)
+        *message = g_strdup_printf ("file validation failed: %s",
+                                    gvm_stream_validator_return_str (
+                                      validator_return));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+/**
+ * @brief Check if an agent installer file is valid.
+ *
+ * @param[in]  installer_path     Path of the installer file to check.
+ * @param[in]  expected_checksum  The expected checksum.
+ * @param[in]  expected_size      The expected file size.
+ * @param[out] message            Optional result message output.
+ *
+ * @return TRUE if file is valid, FALSE otherwise.
+ */
+gboolean
+agent_installer_file_is_valid (const char *installer_path,
+                               const char *expected_checksum,
+                               int expected_size,
+                               gchar **message)
+{
+  FILE *file;
+  gvm_stream_validator_t validator = NULL;
+  gvm_stream_validator_return_t validator_return;
 
   validator_return = gvm_stream_validator_new (expected_checksum,
                                                expected_size,
@@ -130,62 +213,22 @@ agent_installer_file_is_valid (const char *installer_path,
       return FALSE;
     }
 
-  file = fopen (canonical_installer_path, "rb");
-  g_free (canonical_installer_path);
-
+  file = open_agent_installer_file (installer_path, message);
   if (file == NULL)
     {
-      if (message)
-        *message = g_strdup_printf ("error opening installer file: %s",
-                                    strerror (errno));
       gvm_stream_validator_free (validator);
       return FALSE;
     }
 
-  do {
-    read_bytes = fread (file_buffer,
-                        1,
-                        AGENT_INSTALLER_READ_BUFFER_SIZE,
-                        file);
-    if (read_bytes)
-      {
-        validator_return = gvm_stream_validator_write (validator,
-                                                       file_buffer,
-                                                       read_bytes);
-        if (validator_return)
-          {
-            if (message)
-              *message = g_strdup_printf ("file validation failed: %s",
-                                          gvm_stream_validator_return_str (
-                                            validator_return));
-            fclose (file);
-            gvm_stream_validator_free (validator);
-            return FALSE;
-          }
-      }
-  } while (read_bytes);
-
-  if (ferror (file))
+  if (! agent_installer_stream_is_valid (file, validator, message))
     {
-      if (message)
-        *message = g_strdup_printf ("error reading installer file: %s",
-                                    strerror (errno));
+      gvm_stream_validator_free (validator);
       fclose (file);
-      gvm_stream_validator_free (validator);
       return FALSE;
     }
-  fclose (file);
 
-  validator_return = gvm_stream_validator_check (validator);
   gvm_stream_validator_free (validator);
-  if (validator_return)
-    {
-      if (message)
-        *message = g_strdup_printf ("file validation failed: %s",
-                                    gvm_stream_validator_return_str (
-                                      validator_return));
-      return FALSE;
-    }
+  fclose (file);
 
   if (message)
     *message = g_strdup ("valid");
