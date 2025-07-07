@@ -27,24 +27,24 @@ find_package(Threads)
 ## might occur.
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
-pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.17)
-pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.17)
-pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.17)
-pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.17)
+pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.23)
+pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.23)
+pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.23)
+pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.23)
 if(OPENVASD)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.21)
-  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.21)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.23)
+  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.23)
 else(OPENVASD)
   message(STATUS "OPENVASD flag is not enabled")
 endif(OPENVASD)
 if(ENABLE_AGENTS)
   if(NOT OPENVASD)
-    pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.22)
+    pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.23)
   endif(NOT OPENVASD)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=22.22
+    libgvm_agent_controller>=22.23
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
