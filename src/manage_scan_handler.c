@@ -101,8 +101,8 @@ handle_queued_scan (const char *scan_id, report_t report, task_t task,
  * @brief Handle a scan defined a by a queue entry.
  * 
  * @param[in]  scan_id    UUID of the scan / report to handle.
- * @param[in]  report     Row id of the scan to handle.
- * @param[in]  task       Row id of the scan to handle.
+ * @param[in]  report     Row id of the report.
+ * @param[in]  task       Row id of the task.
  * @param[in]  owner      Owner of the report.
  * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
  *                        2 continue if stopped else start from beginning.
@@ -176,8 +176,8 @@ handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
  * @brief Fork a new handler process for a given scan queue entry.
  * 
  * @param[in]  report_id  UUID of the scan to handle.
- * @param[in]  report     Row id of the scan to handle.
- * @param[in]  task       Row id of the scan to handle.
+ * @param[in]  report     Row id of the report.
+ * @param[in]  task       Row id of the task.
  * @param[in]  owner      Owner of the report.
  * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
  *                        2 continue if stopped else start from beginning.

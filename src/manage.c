@@ -1579,6 +1579,7 @@ queue_osp_task (task_t task, int start_from, char **report_id_return)
   set_report_scan_run_status (report, TASK_STATUS_REQUESTED);
   g_debug ("%s: report %s (%llu) added to scan queue",
            __func__, report_id, report);
+  g_free (report_id);
   return 0;
 }
 
