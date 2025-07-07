@@ -40464,14 +40464,20 @@ manage_report_host_add (report_t report, const char *host, time_t start,
                         time_t end)
 {
   char *quoted_host = sql_quote (host);
+  int exists = 0;
 
+  exists = sql_int ("SELECT count (*) FROM report_hosts WHERE report = %llu"
+                    " AND host = '%s';",
+                    report, quoted_host);
+  if (exists)
+    {
+      g_free (quoted_host);
+      return 0;
+    }
   sql ("INSERT INTO report_hosts"
        " (report, host, start_time, end_time, current_port, max_port)"
-       " SELECT %llu, '%s', %lld, %lld, 0, 0"
-       " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
-       "                   AND host = '%s');",
-       report, quoted_host, (long long) start, (long long) end, report,
-       quoted_host);
+       " VALUES (%llu, '%s', %lld, %lld, 0, 0);",
+       report, quoted_host, (long long) start, (long long) end);
   g_free (quoted_host);
   return sql_last_insert_id ();
 }
