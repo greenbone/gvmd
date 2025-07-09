@@ -2225,6 +2225,24 @@ create_tables ()
        "  creation_time integer);");
 
 #if ENABLE_AGENTS
+  sql ("CREATE TABLE IF NOT EXISTS agent_groups"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid UUID NOT NULL UNIQUE,"
+       "  name TEXT NOT NULL,"
+       "  comment TEXT,"
+       "  agent_controller_id TEXT,",
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_groups_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid UUID NOT NULL UNIQUE,"
+       "  name TEXT NOT NULL,"
+       "  comment TEXT,"
+       "  agent_controller_id TEXT,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS agents"
        " (id SERIAL PRIMARY KEY,"
        "  uuid UUID NOT NULL UNIQUE,"
@@ -2242,6 +2260,10 @@ create_tables ()
        "  comment TEXT,"
        "  creation_time INTEGER,"
        "  modification_time INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agents_agent_groups"
+       " (agent_id INTEGER NOT NULL REFERENCES agents (id) ON DELETE CASCADE,"
+       "  group_id INTEGER NOT NULL REFERENCES agent_groups (id) ON DELETE CASCADE);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
        " (id SERIAL PRIMARY KEY,"

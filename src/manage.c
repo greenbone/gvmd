@@ -51,6 +51,9 @@
 #include "ipc.h"
 #include "manage.h"
 #include "manage_acl.h"
+#if ENABLE_AGENTS
+#include "manage_agent_groups.h"
+#endif
 #include "manage_configs.h"
 #include "manage_osp.h"
 #include "manage_port_lists.h"

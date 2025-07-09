@@ -156,6 +156,7 @@ set(
   manage.c
   manage_acl.c
   manage_agents.c
+  ${MANAGE_AGENT_GROUPS_C}
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -183,6 +184,7 @@ set(
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
+  ${MANAGE_SQL_AGENT_GROUPS_C}
   manage_sql_copy.c
   manage_sql_agents.c
   manage_sql_alerts.c
@@ -205,6 +207,7 @@ set(
   ALL_GMP_SRC
   gmp.c
   gmp_agents.c
+  ${GMP_AGENT_GROUP_C}
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -244,6 +247,12 @@ add_library(all-sql-obj OBJECT ${ALL_SQL_SRC})
 add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 
 ## Program
+
+if(ENABLE_AGENTS)
+  set(GMP_AGENT_GROUP_C gmp_agent_groups.c)
+  set(MANAGE_AGENT_GROUPS_C manage_agent_groups.c)
+  set(MANAGE_SQL_AGENT_GROUPS_C manage_sql_agent_groups.c)
+endif(ENABLE_AGENTS)
 
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_utils.c)
@@ -681,11 +690,27 @@ add_dependencies(check cppcheck)
 
 ## Tag files
 
+if(ENABLE_AGENTS)
+  set(
+    TAGS_GMP_AGENT_GROUPS_C
+    "${CMAKE_CURRENT_SOURCE_DIR}/gmp_agent_groups.c"
+  )
+  set(
+    TAG_MANAGE_AGENT_GROUPS_C
+    "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_groups.c"
+  )
+  set(
+    TAGS_MANAGE_SQL_AGENT_GROUPS_C
+    "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_groups.c"
+  )
+endif(ENABLE_AGENTS)
+
 set(
   C_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
+  "${TAGS_GMP_AGENT_GROUPS_C}"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
@@ -697,6 +722,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
+  "${TAG_MANAGE_AGENT_GROUPS_C}"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
@@ -706,6 +732,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
+  "${TAGS_MANAGE_SQL_AGENT_GROUPS_C}"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"

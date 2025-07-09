@@ -28,7 +28,8 @@ valid_type (const char* type)
 {
 
 #if ENABLE_AGENTS
-  if (strcasecmp (type, "agent") == 0)
+  if (strcasecmp (type, "agent") == 0
+     || strcasecmp (type, "agent_group") == 0)
     return 1;
 #endif
 
@@ -95,6 +96,8 @@ type_db_name (const char* type)
 #if ENABLE_AGENTS
   if (strcasecmp (type, "Agent") == 0)
     return "agent";
+  if (strcasecmp (type, "Agent Group") == 0)
+    return "agent_group";
 #endif
 
   if (strcasecmp (type, "Alert") == 0)

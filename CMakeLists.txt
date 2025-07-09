@@ -245,6 +245,11 @@ if(NOT GVM_DEFAULT_DROP_USER)
 endif(NOT GVM_DEFAULT_DROP_USER)
 
 # Feature toggles
+if (NOT ENABLE_AGENTS)
+  set(ENABLE_AGENTS 0)
+endif(NOT ENABLE_AGENTS)
+add_defintions(-DENABLE_AGENTS=${ENABLE_AGENTS})
+
 if(NOT OPENVASD)
   set(OPENVASD 0)
 endif(NOT OPENVASD)
@@ -276,6 +281,14 @@ if(NOT FEED_VT_METADATA)
   set(FEED_VT_METADATA 0)
 endif(NOT FEED_VT_METADATA)
 add_definitions(-DFEED_VT_METADATA=${FEED_VT_METADATA})
+
+if(ENABLE_AGENTS EQUAL 1)
+  set(IF_ENABLE_AGENTS "")
+  set(ENDIF_ENABLE_AGENTS "")
+elseif(ENABLE_AGENTS EQUAL 0)
+  set(IF_ENABLE_AGENTS "<!--")
+  set(ENDIF_ENABLE_AGENTS "-->")
+endif()
 
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message("-- Log file: ${GVMD_LOG_FILE}")

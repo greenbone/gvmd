@@ -85,6 +85,9 @@
 
 #include "gmp.h"
 #include "gmp_agents.h"
+#if ENABLE_AGENTS
+#include "gmp_agent_groups.h"
+#endif
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
@@ -4082,6 +4085,9 @@ typedef enum
   CLIENT_AUTHENTICATE_CREDENTIALS,
   CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD,
   CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
+#if ENABLE_AGENTS
+  CLIENT_CREATE_AGENT_GROUP,
+#endif
   CLIENT_CREATE_ALERT,
   CLIENT_CREATE_ALERT_ACTIVE,
   CLIENT_CREATE_ALERT_COMMENT,
@@ -4358,6 +4364,9 @@ typedef enum
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
   CLIENT_DELETE_AGENTS,
+#if ENABLE_AGENTS
+  CLIENT_DELETE_AGENT_GROUP,
+#endif
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4384,6 +4393,9 @@ typedef enum
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
+#if ENABLE_AGENTS
+  CLIENT_GET_AGENT_GROUPS,
+#endif
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4427,6 +4439,9 @@ typedef enum
   CLIENT_HELP,
   CLIENT_LOGOUT,
   CLIENT_MODIFY_AGENTS,
+#if ENABLE_AGENTs
+  CLIENT_MODIFY_AGENT_GROUP,
+#endif
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -4931,6 +4946,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             delete_agents_start (gmp_parser, attribute_names, attribute_values);
             set_client_state (CLIENT_DELETE_AGENTS);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("DELETE_AGENT_GROUP", element_name) == 0)
+          {
+            delete_agent_group_start (gmp_parser, attribute_names, 
+                                      attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT_GROUPS);
+          }
+#endif
         else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -5166,6 +5189,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_EMPTY_TRASHCAN);
 
         ELSE_GET_START (agents, AGENTS)
+
+#if ENABLE_AGENTS
+        ELSE_GET_START (agent_groups, AGENT_GROUPS)
+#endif
 
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
@@ -5877,6 +5904,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                  attribute_values);
             set_client_state (CLIENT_MODIFY_AGENTS);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("MODIFY_AGENT_GROUP") == 0)
+          {
+            modify_agent_group_start (gmp_parser, attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_MODIFY_AGENT_GROUP);
+          }
+#endif
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
@@ -6217,13 +6252,18 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_AGGREGATES_TEXT_COLUMN);
           }
         ELSE_READ_OVER;
-
       case CLIENT_MODIFY_AGENTS:
       modify_agents_element_start (gmp_parser, element_name,
                                    attribute_names,
                                    attribute_values);
       break;
-
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_GROUP:
+      modify_agent_group_element_start (gmp_parser, element_name,
+                                        attribute_names,
+                                        attribute_values);
+#endif
+      break;
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
           {
@@ -7960,6 +8000,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                    attribute_names,
                                    attribute_values);
       break;
+
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT_GROUP:
+        delete_agent_group_element_start (gmp_parser, element_name,
+                                           attribute_names,
+                                           attribute_values);
+        break;
+#endif
 
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
@@ -20830,6 +20878,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
       CASE_GET_END (AGENTS, agents);
+      
+#if ENABLE_AGENTS
+      CASE_GET_END (AGENT_GROUPS, agent_groups);
+#endif
 
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);
@@ -24431,6 +24483,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
       break;
 
+#if ENABLE_AGENTS
+      CASE_DELETE (AGENT_GROUP, agent_group, "Agent Group");
+#endif
+
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
           {
@@ -24463,6 +24519,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         if (modify_agents_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_GROUP:
+        if (modify_agent_group_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
@@ -28605,6 +28667,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       delete_agents_element_text (text, text_len);
       break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT_GROUP:
+        delete_agent_group_element_text (text, text_len);
+        break;
+#endif
+
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
           GList *last = g_list_last (get_aggregates_data->data_columns);
@@ -28632,6 +28700,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_AGENTS:
         modify_agents_element_text (text, text_len);
         break;
+
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_GROUP:
+        modify_agent_group_element_text (text, text_len);
+        break;
+#endif
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
               &modify_alert_data->name);

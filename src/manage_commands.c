@@ -21,6 +21,7 @@
  */
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
+    {"CREATE_AGENT_GROUP", "Create an agent group."},
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
@@ -44,6 +45,7 @@ command_t gmp_commands[]
     {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
+    {"DELETE_AGENT_GROUP", "Delete one or more agent groups"},
     {"DELETE_AGENTS", "Delete one or more agents."},
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
@@ -72,6 +74,7 @@ command_t gmp_commands[]
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_AGENTS", "Get all agents."},
+    {"GET_AGENT_GROUPS", "Get all agent groups"},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
     {"GET_CONFIGS", "Get all configs."},
@@ -106,6 +109,7 @@ command_t gmp_commands[]
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
+    {"MODIFY_AGENT_GROUP", "Modify an existing agent groups."},
     {"MODIFY_AGENTS", "Modify one or more existing agents."},
     {"MODIFY_ALERT", "Modify an existing alert."},
     {"MODIFY_ASSET", "Modify an existing asset."},
