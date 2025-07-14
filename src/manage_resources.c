@@ -42,6 +42,9 @@ valid_type (const char* type)
          || (strcasecmp (type, "host") == 0)
          || (strcasecmp (type, "info") == 0)
          || (strcasecmp (type, "note") == 0)
+#if ENABLE_CONTAINER_SCANNING
+         || (strcasecmp (type, "oci_image_target") == 0)
+#endif
          || (strcasecmp (type, "os") == 0)
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "permission") == 0)
@@ -112,6 +115,10 @@ type_db_name (const char* type)
     return "filter";
   if (strcasecmp (type, "Note") == 0)
     return "note";
+#if ENABLE_CONTAINER_SCANNING
+  if (strcasecmp (type, "OCI Image Target") == 0)
+      return "oci_image_target";
+#endif
   if (strcasecmp (type, "Override") == 0)
     return "override";
   if (strcasecmp (type, "Permission") == 0)

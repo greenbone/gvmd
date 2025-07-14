@@ -92,6 +92,7 @@
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
+#include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_configs.h"
 #include "gmp_report_formats.h"
@@ -4153,6 +4154,7 @@ typedef enum
   CLIENT_CREATE_NOTE_TASK,
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
+  CLIENT_CREATE_OCI_IMAGE_TARGET,
   CLIENT_CREATE_OVERRIDE,
   CLIENT_CREATE_OVERRIDE_ACTIVE,
   CLIENT_CREATE_OVERRIDE_COPY,
@@ -4369,6 +4371,7 @@ typedef enum
   CLIENT_DELETE_FILTER,
   CLIENT_DELETE_GROUP,
   CLIENT_DELETE_NOTE,
+  CLIENT_DELETE_OCI_IMAGE_TARGET,
   CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_PERMISSION,
   CLIENT_DELETE_PORT_LIST,
@@ -4409,6 +4412,7 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
+  CLIENT_GET_OCI_IMAGE_TARGETS,
   CLIENT_GET_OVERRIDES,
   CLIENT_GET_PERMISSIONS,
   CLIENT_GET_PORT_LISTS,
@@ -4499,6 +4503,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
   CLIENT_MODIFY_NOTE_NVT,
+  CLIENT_MODIFY_OCI_IMAGE_TARGET,
   CLIENT_MODIFY_OVERRIDE,
   CLIENT_MODIFY_OVERRIDE_ACTIVE,
   CLIENT_MODIFY_OVERRIDE_HOSTS,
@@ -4847,6 +4852,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE);
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("CREATE_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            create_oci_image_target_start (gmp_parser, attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_CREATE_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE);
         else if (strcasecmp ("CREATE_PORT_LIST", element_name) == 0)
@@ -5012,6 +5025,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               delete_note_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_NOTE);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("DELETE_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            delete_start ("oci_image_target", "OCI Image Target",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("DELETE_OVERRIDE", element_name) == 0)
           {
             const gchar* attribute;
@@ -5517,6 +5538,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_OVERRIDES);
           }
+#if ENABLE_CONTAINER_SCANNING
+        ELSE_GET_START (oci_image_targets, OCI_IMAGE_TARGETS)
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("GET_PORT_LISTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5972,6 +5996,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_note_data->note_id);
             set_client_state (CLIENT_MODIFY_NOTE);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("MODIFY_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            modify_oci_image_target_start (gmp_parser,
+                                           attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_MODIFY_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "override_id",
@@ -7238,6 +7271,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
         ELSE_READ_OVER;
 
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_start (gmp_parser,
+                                               element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
+
       case CLIENT_CREATE_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_PERMISSION_COMMENT);
@@ -8044,6 +8084,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_NOTE_NVT);
           }
         ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_start (gmp_parser,
+                                               element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
 
       case CLIENT_MODIFY_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -13147,6 +13194,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                            "<name>ENABLE_AGENTS</name>"
                            "</feature>",
                            ENABLE_AGENTS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>ENABLE_CONTAINER_SCANNING</name>"
+                           "</feature>",
+                           ENABLE_CONTAINER_SCANNING ? 1 : 0);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
@@ -20454,6 +20506,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (PORT_LIST, port_list, "Port list");
       CASE_DELETE (PORT_RANGE, port_range, "Port range");
 
+      case CLIENT_DELETE_OCI_IMAGE_TARGET:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_DELETE_REPORT:
         if (delete_report_data->report_id)
           {
@@ -20939,6 +20996,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_nvt_families (gmp_parser, error);
         break;
 
+      CASE_GET_END (OCI_IMAGE_TARGETS, oci_image_targets);
+
       case CLIENT_GET_OVERRIDES:
         handle_get_overrides (gmp_parser, error);
         break;
@@ -21281,6 +21340,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_CREATE_CONFIG:
         if (create_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        if (create_oci_image_target_element_end (gmp_parser,
+                                                 error,
+                                                element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
 
@@ -25589,6 +25655,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_NOTE, THREAT);
       CLOSE (CLIENT_MODIFY_NOTE, NVT);
 
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_end (gmp_parser,
+                                             error,
+                                             element_name);
+        break;
+
       case CLIENT_MODIFY_OVERRIDE:
         {
           int max;
@@ -28296,6 +28368,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_OVERRIDE_THREAT,
               &create_override_data->threat);
 
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_CREATE_PERMISSION_COMMENT,
               &create_permission_data->comment);
@@ -28781,6 +28856,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_NOTE_NVT,
               &modify_note_data->nvt_oid);
 
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_MODIFY_OVERRIDE_ACTIVE,
               &modify_override_data->active);
