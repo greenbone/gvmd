@@ -115,7 +115,12 @@ set(GVMD_SCAP_DATABASE_VERSION 22)
 
 set(GVMD_CERT_DATABASE_VERSION 8)
 
-set(GMP_VERSION "22.8")
+if(ENABLE_AGENTS)
+  # Set a to the next GMP version if unstable features are enabled
+  set(GMP_VERSION "22.8")
+else(ENABLE_AGENTS)
+  set(GMP_VERSION "22.7")
+endif(ENABLE_AGENTS)
 
 if(SYSCONF_INSTALL_DIR)
   set(SYSCONFDIR "${SYSCONF_INSTALL_DIR}")

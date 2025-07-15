@@ -7019,8 +7019,10 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
+#if ENABLE_AGENTS
   if (strcasecmp (type, "agent_installer") == 0)
     return delete_agent_installer (resource_id, ultimate);
+#endif /* ENABLE_AGENTS */
   if (strcasecmp (type, "report_config") == 0)
     return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)

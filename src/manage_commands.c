@@ -44,8 +44,10 @@ command_t gmp_commands[]
     {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
+#if ENABLE_AGENTS
     {"DELETE_AGENTS", "Delete one or more agents."},
     {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
+#endif /* ENABLE_AGENTS */
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
@@ -74,6 +76,7 @@ command_t gmp_commands[]
 #if ENABLE_AGENTS
     {"GET_AGENTS", "Get all agents."},
     {"GET_AGENT_INSTALLERS", "Get all agent installers."},
+    {"GET_AGENT_INSTALLER_FILE", "Get an agent installer file."},
 #endif /* ENABLE_AGENTS */
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
