@@ -224,8 +224,6 @@ agent_installer_data_copy_as_sql_inserts (agent_installer_data_t *data)
   return new_data;
 }
 
-#undef GET_AGENT_INSTALLER_JSON_STR
-
 /**
  * @brief Create a new agent installer using an agent_installer_data_t struct.
  *
