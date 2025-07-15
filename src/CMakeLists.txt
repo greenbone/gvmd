@@ -599,21 +599,26 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   # If we got GIT_REVISION at configure time,
   # assume we can get it at build time as well
   if(GIT_REVISION)
-    # a custom target that is always built
-    add_custom_target(revisiontag ALL)
+    # Path to generated header
+    set(GIT_REVISION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/gitrevision.h)
 
-    # creates gitversion.h using cmake script
+    # Create gitrevision.h using CMake script
     add_custom_command(
-      TARGET revisiontag
+      OUTPUT ${GIT_REVISION_HEADER}
       COMMAND
         ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P
         ${CMAKE_SOURCE_DIR}/cmake/GetGit.cmake
+      DEPENDS ${CMAKE_SOURCE_DIR}/cmake/GetGit.cmake
+      VERBATIM
     )
 
-    # explicitly say that the executable depends on custom target
-    add_dependencies(gvmd revisiontag)
+    # Custom target that triggers the command
+    add_custom_target(revisiontag ALL DEPENDS ${GIT_REVISION_HEADER})
 
-    # include the output directory, where the gitversion.h file is generated
+    # Ensure the object files depending on gitrevision.h are built *after* it's created
+    add_dependencies(all-misc-obj revisiontag)
+
+    # Include the output directory where gitrevision.h is generated
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
     add_definitions(-DGIT_REV_AVAILABLE)
   endif(GIT_REVISION)
