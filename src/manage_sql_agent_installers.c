@@ -227,6 +227,52 @@ agent_installer_data_copy_as_sql_inserts (agent_installer_data_t *data)
 #undef GET_AGENT_INSTALLER_JSON_STR
 
 /**
+ * @brief Grant 'Feed Import Roles' access to a agent installer.
+ *
+ * @param[in]  agent_installer_id  UUID of agent installer.
+ */
+static void
+create_feed_agent_installer_permissions (const gchar *agent_installer_id)
+{
+  gchar *roles, **split, **point;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_ROLES, &roles);
+
+  if (roles == NULL || strlen (roles) == 0)
+    {
+      g_debug ("%s: no 'Feed Import Roles', so not creating permissions",
+               __func__);
+      g_free (roles);
+      return;
+    }
+
+  point = split = g_strsplit (roles, ",", 0);
+  while (*point)
+    {
+      permission_t permission;
+
+      if (create_permission_no_acl ("get_agent_installers",
+                                    "Automatically created for agent installer"
+                                    " from feed",
+                                    NULL,
+                                    agent_installer_id,
+                                    "role",
+                                    g_strstrip (*point),
+                                    &permission))
+        /* Keep going because we aren't strict about checking the value
+         * of the setting, and because we don't adjust the setting when
+         * roles are removed. */
+        g_warning ("%s: failed to create permission for role '%s'",
+                   __func__, g_strstrip (*point));
+
+      point++;
+    }
+  g_strfreev (split);
+
+  g_free (roles);
+}
+
+/**
  * @brief Create a new agent installer using an agent_installer_data_t struct.
  *
  * @param[in]  agent_installer_data  Structure containing the data
@@ -302,6 +348,10 @@ create_agent_installer_from_data (agent_installer_data_t *agent_installer_data)
              "Agent Installer",
              agent_installer_data->uuid,
              "created");
+
+  /* Create permissions. */
+  create_feed_agent_installer_permissions (agent_installer_data->uuid);
+
   return 0;
 }
 
