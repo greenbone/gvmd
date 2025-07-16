@@ -4917,6 +4917,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->hosts_allow = 0;
           }
 #if ENABLE_AGENTS
+        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
+          {
+            delete_agents_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENTS);
+          }
         else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
           {
             delete_start ("agent_installer", "Agent Installer",
@@ -4924,6 +4929,19 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_DELETE_REPORT_CONFIG);
           }
 #endif /* ENABLE_AGENTS */
+        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "alert_id",
+                              &delete_alert_data->alert_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_alert_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_alert_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_ALERT);
+          }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
@@ -4943,26 +4961,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
-          }
-#if ENABLE_AGENTS
-        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
-          {
-            delete_agents_start (gmp_parser, attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_AGENTS);
-          }
-#endif /* ENABLE_AGENTS */
-        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "alert_id",
-                              &delete_alert_data->alert_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_alert_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_alert_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_ALERT);
           }
         else if (strcasecmp ("DELETE_CREDENTIAL", element_name) == 0)
           {
@@ -5281,6 +5279,33 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_AGGREGATES);
           }
+        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            get_data_parse_attributes (&get_alerts_data->get,
+                                       "alert",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_alerts_data->tasks = strcmp (attribute, "0");
+            else
+              get_alerts_data->tasks = 0;
+
+            set_client_state (CLIENT_GET_ALERTS);
+          }
+        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_assets_data->get, "asset",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_assets_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_ASSETS);
+          }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5317,33 +5342,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               }
 
             set_client_state (CLIENT_GET_CONFIGS);
-          }
-        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
-          {
-            const gchar* attribute;
-
-            get_data_parse_attributes (&get_alerts_data->get,
-                                       "alert",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "tasks", &attribute))
-              get_alerts_data->tasks = strcmp (attribute, "0");
-            else
-              get_alerts_data->tasks = 0;
-
-            set_client_state (CLIENT_GET_ALERTS);
-          }
-        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
-          {
-            const gchar* typebuf;
-            get_data_parse_attributes (&get_assets_data->get, "asset",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "type", &typebuf))
-              get_assets_data->type = g_ascii_strdown (typebuf, -1);
-            set_client_state (CLIENT_GET_ASSETS);
           }
         else if (strcasecmp ("GET_CREDENTIALS", element_name) == 0)
           {
@@ -20364,6 +20362,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        delete_agents_element_text (text, text_len);
+        break;
+
       case CLIENT_DELETE_AGENT_INSTALLER:
         delete_run (gmp_parser, error);
         set_client_state (CLIENT_AUTHENTIC);
@@ -28649,12 +28651,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
-
-#if ENABLE_AGENTS
-      case CLIENT_DELETE_AGENTS:
-        delete_agents_element_text (text, text_len);
-        break;
-#endif /* ENABLE_AGENTS */
 
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
