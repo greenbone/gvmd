@@ -113,7 +113,9 @@ command_t gmp_commands[]
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
+#if ENABLE_AGENTS
     {"MODIFY_AGENTS", "Modify one or more existing agents."},
+#endif /* ENABLE_AGENTS */
     {"MODIFY_ALERT", "Modify an existing alert."},
     {"MODIFY_ASSET", "Modify an existing asset."},
     {"MODIFY_AUTH", "Modify the authentication methods."},
