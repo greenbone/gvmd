@@ -20362,10 +20362,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
-      case CLIENT_DELETE_AGENTS:
-        delete_agents_element_text (text, text_len);
-        break;
-
       case CLIENT_DELETE_AGENT_INSTALLER:
         delete_run (gmp_parser, error);
         set_client_state (CLIENT_AUTHENTIC);
@@ -27972,6 +27968,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        delete_agents_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_CONFIG:
         modify_config_element_text (text, text_len);
