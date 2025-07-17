@@ -7027,6 +7027,10 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
     return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "agent_group") == 0)
+    return delete_agent_group (resource_id, ultimate);
+#endif
   if (strcasecmp (type, "tls_certificate") == 0)
     return delete_tls_certificate (resource_id, ultimate);
   assert (0);

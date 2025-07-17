@@ -3715,6 +3715,106 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>create_agent_group</name>
+    <summary>Create an agent group</summary>
+    <description>
+      <p>
+        A name for the new agent group is required. Optionally, a comment and a list of agents
+        to include in the group should be provided.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>agents</e></o>
+      <o><e>copy</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of the new agent group</summary>
+      <pattern>text</pattern>
+      <required>1</required>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Optional user-supplied comment</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>agents</name>
+      <summary>List of agents to include in the group</summary>
+      <pattern>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>UUID of an existing group to copy from</summary>
+      <pattern>uuid</pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an agent group with agents</summary>
+      <request>
+        <create_agent_group>
+          <name>Test Agent Group</name>
+          <comment>Created via gvm-cli for testing</comment>
+          <agents>
+            <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
+            <agent id="c947ffac-a562-4ac9-9bb5-361b597c67be"/>
+          </agents>
+        </create_agent_group>
+      </request>
+      <response>
+        <create_agent_group_response status="201" status_text="Created" id="90f1cde5-a477-42f5-9e0a-b7a78f9bcd23"/>
+      </response>
+    </example>
+    <example>
+      <summary>Create an agent group by copying another</summary>
+      <request>
+        <create_agent_group>
+          <name>Copied Agent Group</name>
+          <copy>6c04e86e-ea40-46a1-80f4-cfce27f821b5</copy>
+        </create_agent_group>
+      </request>
+      <response>
+        <create_agent_group_response status="201" status_text="Created" id="abc123de-4f56-789a-bcde-1234567890ab"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>create_alert</name>
     <summary>Create an alert</summary>
@@ -6809,6 +6909,61 @@ END:VCALENDAR
   </command>
   @IF_ENABLE_AGENTS@
   <command>
+    <name>delete_agent_group</name>
+    <summary>Delete an agent group</summary>
+    <description>
+      <p>
+        The client uses the <code>delete_agent_group</code> command to delete an
+        existing agent group.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+      <p>
+        If <code>ultimate</code> is set to 1, the agent group is permanently deleted.
+        If set to 0, the group is moved to the trashcan and can be restored later.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_group_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or move to trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an agent group</summary>
+      <request>
+        <delete_agent_group agent_group_id="6fca29e3-8b96-4e6b-9ee1-8845680dbda5" ultimate="1"/>
+      </request>
+      <response>
+        <delete_agent_group_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_agents</name>
     <summary>Delete agents</summary>
     <description>
@@ -9469,6 +9624,147 @@ END:VCALENDAR
     </example>
   </command>
   @IF_ENABLE_AGENTS@
+  <command>
+    <name>get_agent_groups</name>
+    <summary>Get agent groups</summary>
+    <description>
+      <p>
+        The client uses the <code>get_agent_groups</code> command to retrieve a list of agent groups.
+      </p>
+    </description>
+    <pattern>
+      <o><e>agent_group_id</e></o>
+      <o><e>filter</e></o>
+      <o><e>filt_id</e></o>
+    </pattern>
+    <ele>
+      <name>agent_group_id</name>
+      <summary>UUID of a specific agent group</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filter</name>
+      <summary>Filter term</summary>
+      <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filt_id</name>
+      <summary>Filter UUID</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent_group</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>agent_groups</e></o>
+        <o><e>agent_group_count</e></o>
+      </pattern>
+      <ele>
+        <name>agent_group</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>scanner</e>
+          <e>agents</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          <e>field</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_groups</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_group_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all agent groups</summary>
+      <request>
+        <get_agent_groups/>
+      </request>
+      <response>
+        <get_agent_groups_response status="200" status_text="OK">
+          <agent_group id="cadc0390-f392-4cc5-9fbf-62af5e78a930">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Test Agent Group</name>
+            <comment>Created via gvm-cli for testing</comment>
+            <creation_time>2025-07-15T14:15:31Z</creation_time>
+            <modification_time>2025-07-15T14:15:31Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
+              <name>Agent Controller</name>
+            </scanner>
+            <agents>GAT-29::6b9ac61f, GAT-29-p0MPX0FT</agents>
+          </agent_group>
+        </get_agent_groups_response>
+      </response>
+    </example>
+  </command>
   <command>
     <name>get_agents</name>
     <summary>Get agents</summary>
@@ -28028,6 +28324,84 @@ END:VCALENDAR
     </example>
   </command>
   @IF_ENABLE_AGENTS@
+  <command>
+    <name>modify_agent_group</name>
+    <summary>Modify an agent group</summary>
+    <description>
+      <p>
+        The <code>agent_group_id</code> attribute is required to identify which group
+        should be modified.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_group_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>agents</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>New name for the agent group</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Optional comment for the agent group</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>agents</name>
+      <summary>List of agents to assign to the group</summary>
+      <pattern>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify an agent group</summary>
+      <request>
+        <modify_agent_group agent_group_id="6fca29e3-8b96-4e6b-9ee1-8845680dbda5">
+          <name>Updated Group Name</name>
+          <comment>Modified via gvm-cli</comment>
+          <agents>
+            <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
+          </agents>
+        </modify_agent_group>
+      </request>
+      <response>
+        <modify_agent_group_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
   <command>
     <name>modify_agents</name>
     <summary>Modify agents</summary>
