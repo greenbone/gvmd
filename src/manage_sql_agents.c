@@ -667,4 +667,23 @@ update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment)
   g_string_free (uuid_list, TRUE);
 }
 
+/**
+ * @brief Retrieve the internal row ID of an agent by its UUID and scanner ID.
+ *
+ * @param[in]  agent_uuid   The UUID of the agent.
+ * @param[in]  scanner_id   The scanner row ID.
+ *
+ * @return The row ID of the agent if found and associated with the scanner,
+ *         otherwise returns 0.
+ */
+agent_t
+agent_id_by_uuid_and_scanner (const gchar *agent_uuid, scanner_t scanner_id)
+{
+  g_return_val_if_fail (agent_uuid != NULL, 0);
+
+  return sql_int64_0 (
+    "SELECT id FROM agents WHERE uuid = '%s' AND scanner = %llu;",
+    agent_uuid, scanner_id);
+}
+
 #endif // ENABLE_AGENTS
