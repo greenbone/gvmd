@@ -39359,6 +39359,65 @@ manage_restore (const char *id)
       return 0;
     }
 
+#if ENABLE_AGENTS
+  /* Agent Installer. */
+
+  if (find_trash ("agent_installer", id, &resource))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (resource)
+    {
+      agent_installer_t agent_installer;
+
+      agent_installer
+        = sql_int64_0 ("INSERT INTO agent_installers"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update)"
+                       " SELECT uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update"
+                       " FROM agent_installers_trash WHERE id = %llu"
+                       " RETURNING id;",
+                       resource);
+
+      sql ("INSERT INTO agent_installer_cpes"
+           " (agent_installer, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl)"
+           " SELECT %llu, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl"
+           " FROM agent_installer_cpes_trash WHERE agent_installer = %llu;",
+           agent_installer,
+           resource);
+
+      permissions_set_locations ("agent_installer",
+                                 resource,
+                                 agent_installer,
+                                 LOCATION_TABLE);
+      tags_set_locations ("agent_installer",
+                          resource,
+                          agent_installer,
+                          LOCATION_TABLE);
+
+      sql ("DELETE FROM agent_installer_cpes_trash"
+           " WHERE agent_installer = %llu;",
+          resource);
+      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;", resource);
+
+      sql_commit ();
+      return 0;
+    }
+#endif /* ENABLE_AGENTS */
+
   /* Alert. */
 
   if (find_trash ("alert", id, &resource))
@@ -40254,6 +40313,14 @@ manage_empty_trashcan ()
        "                                    WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM groups_trash" WHERE_OWNER);
+#if ENABLE_AGENTS
+  sql ("DELETE FROM agent_installer_cpes_trash"
+       " WHERE agent_installer IN (SELECT id from agent_installers_trash"
+       "                           WHERE owner = (SELECT id FROM users"
+       "                                          WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM agent_installers_trash" WHERE_OWNER);
+#endif /* ENABLE_AGENTS */
   sql ("DELETE FROM alert_condition_data_trash"
        " WHERE alert IN (SELECT id from alerts_trash"
        "                 WHERE owner = (SELECT id FROM users"
@@ -43550,6 +43617,8 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* Filters */
       if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
         setting_name = g_strdup ("Agents Filter");
+      else if (strcmp (uuid, "a39a719a-e6bc-4d9f-a1e6-a53e5b014b05") == 0)
+        setting_name = g_strdup ("Agent Installers Filter");
       else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)

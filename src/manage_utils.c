@@ -307,6 +307,12 @@ valid_db_resource_type (const char* type)
   if (type == NULL)
     return 0;
 
+#ifdef ENABLE_AGENTS
+  if ((strcasecmp (type, "agent") == 0)
+      || (strcasecmp (type, "agent_installer") == 0))
+    return 1;
+#endif /* ENABLE_AGENTS */
+
   return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "cpe") == 0)

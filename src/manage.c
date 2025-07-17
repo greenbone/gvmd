@@ -51,6 +51,7 @@
 #include "ipc.h"
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_agent_installers.h"
 #include "manage_configs.h"
 #include "manage_osp.h"
 #include "manage_port_lists.h"
@@ -4190,7 +4191,8 @@ manage_sync (sigset_t *sigmask_current,
     }
 
   if (try_gvmd_data_sync
-      && (should_sync_configs ()
+      && (should_sync_agent_installers ()
+          || should_sync_configs ()
           || should_sync_port_lists ()
           || should_sync_report_formats ()))
     {
@@ -4200,6 +4202,9 @@ manage_sync (sigset_t *sigmask_current,
                         "data objects feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
+#if ENABLE_AGENTS
+          manage_sync_agent_installers ();
+#endif /* ENABLE_AGENTS */
           manage_sync_configs ();
           manage_sync_port_lists ();
           manage_sync_report_formats ();
@@ -5478,6 +5483,9 @@ gboolean
 manage_gvmd_data_feed_dirs_exist ()
 {
   return gvm_file_is_readable (GVMD_FEED_DIR)
+#if ENABLE_AGENTS
+         && agent_installers_feed_metadata_file_exists ()
+#endif
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();
@@ -7011,6 +7019,10 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "agent_installer") == 0)
+    return delete_agent_installer (resource_id, ultimate);
+#endif /* ENABLE_AGENTS */
   if (strcasecmp (type, "report_config") == 0)
     return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)

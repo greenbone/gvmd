@@ -88,6 +88,7 @@
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
+#include "gmp_agent_installers.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
@@ -4357,7 +4358,10 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
+#if ENABLE_AGENTS
   CLIENT_DELETE_AGENTS,
+  CLIENT_DELETE_AGENT_INSTALLER,
+#endif /* ENABLE_AGENTS */
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4383,7 +4387,11 @@ typedef enum
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
+#if ENABLE_AGENTS
   CLIENT_GET_AGENTS,
+  CLIENT_GET_AGENT_INSTALLERS,
+  CLIENT_GET_AGENT_INSTALLER_FILE,
+#endif /* ENABLE_AGENTS */
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4426,7 +4434,9 @@ typedef enum
   CLIENT_GET_VULNS,
   CLIENT_HELP,
   CLIENT_LOGOUT,
+#if ENABLE_AGENTS
   CLIENT_MODIFY_AGENTS,
+#endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -4906,6 +4916,32 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
+          {
+            delete_agents_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENTS);
+          }
+        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
+          {
+            delete_start ("agent_installer", "Agent Installer",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_REPORT_CONFIG);
+          }
+#endif /* ENABLE_AGENTS */
+        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "alert_id",
+                              &delete_alert_data->alert_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_alert_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_alert_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_ALERT);
+          }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
@@ -4925,24 +4961,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
-          }
-        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
-          {
-            delete_agents_start (gmp_parser, attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_AGENTS);
-          }
-        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "alert_id",
-                              &delete_alert_data->alert_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_alert_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_alert_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_ALERT);
           }
         else if (strcasecmp ("DELETE_CREDENTIAL", element_name) == 0)
           {
@@ -5165,7 +5183,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
 
+#if ENABLE_AGENTS
         ELSE_GET_START (agents, AGENTS)
+
+        ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
+
+        ELSE_GET_START (agent_installer_file, AGENT_INSTALLER_FILE)
+#endif /* ENABLE_AGENTS */
 
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
@@ -5255,6 +5279,33 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_AGGREGATES);
           }
+        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            get_data_parse_attributes (&get_alerts_data->get,
+                                       "alert",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_alerts_data->tasks = strcmp (attribute, "0");
+            else
+              get_alerts_data->tasks = 0;
+
+            set_client_state (CLIENT_GET_ALERTS);
+          }
+        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_assets_data->get, "asset",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_assets_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_ASSETS);
+          }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5291,33 +5342,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               }
 
             set_client_state (CLIENT_GET_CONFIGS);
-          }
-        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
-          {
-            const gchar* attribute;
-
-            get_data_parse_attributes (&get_alerts_data->get,
-                                       "alert",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "tasks", &attribute))
-              get_alerts_data->tasks = strcmp (attribute, "0");
-            else
-              get_alerts_data->tasks = 0;
-
-            set_client_state (CLIENT_GET_ALERTS);
-          }
-        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
-          {
-            const gchar* typebuf;
-            get_data_parse_attributes (&get_assets_data->get, "asset",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "type", &typebuf))
-              get_assets_data->type = g_ascii_strdown (typebuf, -1);
-            set_client_state (CLIENT_GET_ASSETS);
           }
         else if (strcasecmp ("GET_CREDENTIALS", element_name) == 0)
           {
@@ -5871,12 +5895,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                           attribute_values);
             set_client_state (CLIENT_LOGOUT);
           }
+#if ENABLE_AGENTS
         else if (strcasecmp ("MODIFY_AGENTS", element_name) == 0)
           {
             modify_agents_start (gmp_parser, attribute_names,
                                  attribute_values);
             set_client_state (CLIENT_MODIFY_AGENTS);
           }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
@@ -6218,11 +6244,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_READ_OVER;
 
+#if ENABLE_AGENTS
       case CLIENT_MODIFY_AGENTS:
       modify_agents_element_start (gmp_parser, element_name,
                                    attribute_names,
                                    attribute_values);
       break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -7955,11 +7983,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_read_over (gmp_parser);
         break;
 
-    case CLIENT_DELETE_AGENTS:
-      delete_agents_element_start (gmp_parser, element_name,
-                                   attribute_names,
-                                   attribute_values);
-      break;
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        delete_agents_element_start (gmp_parser, element_name,
+                                    attribute_names,
+                                    attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
@@ -20331,6 +20361,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT_INSTALLER:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
+
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
@@ -20829,7 +20866,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
 
+#if ENABLE_AGENTS
+      CASE_GET_END (AGENT_INSTALLERS, agent_installers);
+
+      CASE_GET_END (AGENT_INSTALLER_FILE, agent_installer_file);
+
       CASE_GET_END (AGENTS, agents);
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);
@@ -24426,10 +24469,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_USER_SOURCES);
         break;
 
-    case CLIENT_DELETE_AGENTS:
-      if (delete_agents_element_end (gmp_parser, error, element_name))
-        set_client_state (CLIENT_AUTHENTIC);
-      break;
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        if (delete_agents_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
@@ -24459,10 +24504,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           break;
         }
+#if ENABLE_AGENTS
       case CLIENT_MODIFY_AGENTS:
         if (modify_agents_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
+#endif /* ENABLE_AGENTS */
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
@@ -27921,6 +27968,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        delete_agents_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_CONFIG:
         modify_config_element_text (text, text_len);
@@ -28601,10 +28653,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
 
-    case CLIENT_DELETE_AGENTS:
-      delete_agents_element_text (text, text_len);
-      break;
-
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
           GList *last = g_list_last (get_aggregates_data->data_columns);
@@ -28628,10 +28676,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         get_license_element_text (text, text_len);
         break;
 
-
+#if ENABLE_AGENTS
       case CLIENT_MODIFY_AGENTS:
         modify_agents_element_text (text, text_len);
         break;
+#endif /* ENABLE_AGENTS */
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
               &modify_alert_data->name);

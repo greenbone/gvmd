@@ -27,24 +27,24 @@ find_package(Threads)
 ## might occur.
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
-pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.17)
-pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.17)
-pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.17)
-pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.17)
+pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.23)
+pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.23)
+pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.23)
+pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.23)
 if(OPENVASD)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.21)
-  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.21)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.23)
+  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.23)
 else(OPENVASD)
   message(STATUS "OPENVASD flag is not enabled")
 endif(OPENVASD)
 if(ENABLE_AGENTS)
   if(NOT OPENVASD)
-    pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.22)
+    pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.23)
   endif(NOT OPENVASD)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=22.22
+    libgvm_agent_controller>=22.23
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
@@ -156,6 +156,7 @@ set(
   manage.c
   manage_acl.c
   manage_agents.c
+  manage_agent_installers.c
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -185,6 +186,7 @@ set(
   manage_sql.c
   manage_sql_copy.c
   manage_sql_agents.c
+  manage_sql_agent_installers.c
   manage_sql_alerts.c
   manage_sql_events.c
   manage_sql_nvts.c
@@ -205,6 +207,7 @@ set(
   ALL_GMP_SRC
   gmp.c
   gmp_agents.c
+  gmp_agent_installers.c
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -275,6 +278,22 @@ add_executable(
 
 add_test(manage-test manage-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_agent_installers.c)
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql_agent_installers.c)
+add_executable(
+  manage-agent-installers-test
+  EXCLUDE_FROM_ALL
+  manage_agent_installers_tests.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
+)
+
+add_test(manage-agent-installers-test manage-agent-installers-test)
+
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SQL_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql.c)
 add_executable(
@@ -325,6 +344,7 @@ add_custom_target(
   DEPENDS
     gmp-tickets-test
     manage-test
+    manage-agent-installers-test
     manage-sql-test
     manage-utils-test
     utils-test
@@ -411,6 +431,32 @@ target_link_libraries(
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
 )
+target_link_libraries(
+  manage-agent-installers-test
+  cgreen
+  m
+  ${GNUTLS_LDFLAGS}
+  ${GPGME_LDFLAGS}
+  ${CMAKE_THREAD_LIBS_INIT}
+  ${LINKER_HARDENING_FLAGS}
+  ${LINKER_DEBUG_FLAGS}
+  ${PostgreSQL_LIBRARIES}
+  ${LIBBSD_LDFLAGS}
+  ${CJSON_LDFLAGS}
+  ${GLIB_LDFLAGS}
+  ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
+  ${LIBGVM_BASE_LDFLAGS}
+  ${LIBGVM_OPENVASD_LDFLAGS}
+  ${LIBGVM_UTIL_LDFLAGS}
+  ${LIBGVM_OSP_LDFLAGS}
+  ${LIBGVM_GMP_LDFLAGS}
+  ${LIBGVM_HTTP_LDFLAGS}
+  ${LIBICAL_LDFLAGS}
+  ${LINKER_HARDENING_FLAGS}
+  ${OPT_THEIA_TGT}
+)
+
 target_link_libraries(
   manage-sql-test
   cgreen
@@ -526,6 +572,7 @@ target_link_libraries(
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-test PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(manage-agent-installers-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-sql-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-utils-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
@@ -541,6 +588,10 @@ endif(GVMD_VERSION)
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  target_compile_options(
+    manage-agent-installers-test
+    PUBLIC ${C_FLAGS_DEBUG_GVMD}
+  )
   target_compile_options(manage-sql-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
@@ -691,6 +742,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
@@ -702,6 +754,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
@@ -711,6 +764,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"

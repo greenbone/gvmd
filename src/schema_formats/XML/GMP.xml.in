@@ -6875,6 +6875,59 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  <command>
+    <name>delete_agent_installer</name>
+    <summary>Delete an agent installer</summary>
+    <description>
+      <p>
+        The client uses the delete_agent_installer command to delete an existing
+        agent installer.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an agent installer</summary>
+      <request>
+        <delete_agent_installer
+          agent_installer_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_agent_installer>
+      </request>
+      <response>
+        <delete_agent_installer_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
   @ENDIF_ENABLE_AGENTS@
   <command>
     <name>delete_alert</name>
@@ -8145,6 +8198,621 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>get_agent_installers</name>
+    <summary>Get one or many agent installers</summary>
+    <description>
+      <p>
+        The client uses the get_agent_installers command to get agent installer
+        information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <summary>ID of single agent installer to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the agent installer</summary>
+          </column>
+          <column>
+            <name>content_type</name>
+            <type>text</type>
+            <summary>MIME content type of the agent installer</summary>
+          </column>
+          <column>
+            <name>file_extension</name>
+            <type>text</type>
+            <summary>File extension of the agent installer</summary>
+          </column>
+          <column>
+            <name>version</name>
+            <type>text</type>
+            <summary>Version of the agent installer</summary>
+          </column>
+          <column>
+            <name>last_update</name>
+            <type>iso_time</type>
+            <summary>Time the agent installer was last updated</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include full agent installer details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan agent installers instead</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent_installer</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>agent_installers</e>
+        <e>agent_installer_count</e>
+      </pattern>
+      <ele>
+        <name>agent_installer</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>description</e>
+          <e>content_type</e>
+          <e>file_extension</e>
+          <e>version</e>
+          <e>checksum</e>
+          <e>file_size</e>
+          <e>last_update</e>
+          <o><e>file_validity</e></o>
+          <e>cpes</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the agent installer</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the agent installer</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the agent installer is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any targets are using the agent installer</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the agent installer
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the agent installer</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>Description of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <summary>MIME content type of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>file_extension</name>
+          <summary>File extension of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>Version of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>checksum</name>
+          <summary>Checksum string of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>file_size</name>
+          <summary>File size of the agent installer</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>last_update</name>
+          <summary>Time the agent installer was last updated from the feed</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>file_validity</name>
+          <summary>Text indicating if the installer file is valid</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>cpes</name>
+          <summary>
+            List of operating systems the installer is intended for as CPE matches
+          </summary>
+          <pattern>
+            <any><e>cpe</e></any>
+          </pattern>
+          <ele>
+            <name>criteria</name>
+            <summary>A base CPE ID for the match criteria</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>version_start_including</name>
+            <summary>From version (including)</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>version_start_excluding</name>
+            <summary>From version (excluding)</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>version_end_including</name>
+            <summary>Up to version (including)</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>version_end_excluding</name>
+            <summary>Up to version (exluding)</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agent_installers</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First agent installer</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of agent installers</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_installer_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of agent installers after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of agent installers on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Export metadata of an agent installer</summary>
+      <request>
+        <get_agent_installers
+          agent_installer_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
+          details="1">
+        </get_agent_installers>
+      </request>
+      <response>
+        <get_agent_installers_response status="200" status_text="OK">
+          <agent_installer id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <name>Windows 11</name>
+            <comment/>
+            <creation_time>2025-04-11T13:30:00Z</creation_time>
+            <modification_time>2025-04-11T13:32:00Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <description>Greenbone Agent for Windows 11</description>
+            <content_type>application/zip</content_type>
+            <file_extension>zip</file_extension>
+            <version>1.3.0</version>
+            <checksum>sha256:3bbd04dd65dbb8b3f272bd8013d0d4b12fe54be30bb81f3e5df66306fe0fa0d3</checksum>
+            <file_size>21567890</file_size>
+            <last_update>2025-05-06T11:12:57Z</last_update>
+            <file_validity>valid</file_validity>
+            <cpes>
+              <cpe>
+                <criteria>cpe:2.3:o:microsoft:windows:*:*:*:*:*:*:*:*</criteria>
+                <version_start_excl>11.10.0</version_start_excl>
+                <version_end_incl>11.10.5</version_end_incl>
+              </cpe>
+            </cpes>
+          </agent_installer>
+        </get_agent_installers_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agent_installer_file</name>
+    <summary>Get the file of an agent installer</summary>
+    <description>
+      <p>
+        The client uses the get_agent_installer_file to get the
+        file of an agent installer.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <summary>UUID of the agent installer to get the file of</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>file</e>
+      </pattern>
+      <ele>
+        <name>file</name>
+        <pattern>
+          <attrib>
+            <name>agent_installer_id</name>
+            <type>uuid</type>
+            <required>1</required>
+            <summary>UUID of the agent installer</summary>
+          </attrib>
+          <e>name</e>
+          <e>content_type</e>
+          <e>file_extension</e>
+          <e>checksum</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <type>text</type>
+          <summary>Name of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <type>text</type>
+          <summary>MIME content type of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>file_extension</name>
+          <type>text</type>
+          <summary>File extension of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>checksum</name>
+          <type>text</type>
+          <summary>Checksum the agent installer</summary>
+        </ele>
+        <ele>
+          <name>content</name>
+          <type>text</type>
+          <summary>The base-64 encoded file content</summary>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Export an agent installer file</summary>
+      <request>
+        <get_agent_installer_file agent_installer_id="xy"/>
+      </request>
+      <response>
+        <get_agent_installer_file_response>
+        </get_agent_installer_file_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>get_aggregates</name>
     <summary>Get aggregates of various resources</summary>
