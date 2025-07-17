@@ -39359,6 +39359,7 @@ manage_restore (const char *id)
       return 0;
     }
 
+#if ENABLE_AGENTS
   /* Agent Installer. */
 
   if (find_trash ("agent_installer", id, &resource))
@@ -39415,6 +39416,7 @@ manage_restore (const char *id)
       sql_commit ();
       return 0;
     }
+#endif /* ENABLE_AGENTS */
 
   /* Alert. */
 
