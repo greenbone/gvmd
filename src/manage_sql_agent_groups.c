@@ -107,8 +107,11 @@ agent_group_count (const get_data_t *get)
   static const char *extra_columns[] = AGENT_GROUP_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = AGENT_GROUP_ITERATOR_COLUMNS;
   static column_t trash_columns[] = AGENT_GROUP_ITERATOR_TRASH_COLUMNS;
+  const char *join_clause = " LEFT JOIN"
+                            " (SELECT id as scanner_id, name AS scanner_name, uuid AS scanner_uuid FROM scanners )"
+                            " ON scanner_id = scanner";
 
-  return count ("agent_group", get, columns, trash_columns, extra_columns, 0, 0, 0, TRUE);
+  return count ("agent_group", get, columns, trash_columns, extra_columns, 0, join_clause, 0, TRUE);
 }
 
 /**
@@ -125,8 +128,12 @@ init_agent_group_iterator (iterator_t *iterator, get_data_t *get)
   static const char *filter_columns[] = AGENT_GROUP_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = AGENT_GROUP_ITERATOR_COLUMNS;
   static column_t trash_columns[] = AGENT_GROUP_ITERATOR_TRASH_COLUMNS;
+  const char *join_clause = " LEFT JOIN"
+                            " (SELECT id as scanner_id, name AS scanner_name, uuid AS scanner_uuid FROM scanners )"
+                            " ON scanner_id = scanner";
 
-  return init_get_iterator (iterator, "agent_group", get, columns, trash_columns, filter_columns, 0, NULL, NULL, TRUE);
+  return init_get_iterator (iterator, "agent_group", get, columns, trash_columns, filter_columns, 0,
+                            join_clause, NULL, TRUE);
 }
 
 /**
@@ -137,40 +144,13 @@ init_agent_group_iterator (iterator_t *iterator, get_data_t *get)
  *
  * @return 0 on success, non-zero on error.
  */
-int
+void
 init_agent_group_agents_iterator (iterator_t *iterator,
                                   agent_group_t group_id)
 {
-  static column_t columns[] = AGENT_GROUP_AGENT_ITERATOR_COLUMNS;
-  static const char *filter_columns[] = AGENT_GROUP_AGENT_ITERATOR_FILTER_COLUMNS;
-
-  get_data_t get;
-  memset(&get, 0, sizeof(get));
-  get.type = "agent";
-  get.ignore_pagination = 1;
-  get.ignore_max_rows_per_page = 1;
-
-  gchar *join_clause =
-    g_strdup ("JOIN agent_group_agents ON agent_group_agents.agent_id = agents.id");
-
-  gchar *where_clause =
-    g_strdup_printf ("AND agent_group_agents.group_id = %llu", group_id);
-
-  int ret = init_get_iterator (
-    iterator,
-    "agent",
-    &get,
-    columns,
-    NULL,
-    filter_columns,
-    0,
-    join_clause,
-    where_clause,
-    FALSE);
-
-  g_free (join_clause);
-  g_free (where_clause);
-  return ret;
+   init_iterator (iterator, "SELECT agents.uuid, agents.name FROM agents"
+                            " LEFT JOIN agent_group_agents ON agent_group_agents.agent_id = agents.id"
+                            " WHERE agent_group_agents.group_id = %llu;", group_id);
 }
 
 /**
@@ -575,6 +555,24 @@ agent_group_iterator_scanner (iterator_t *iterator)
 {
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
 }
+
+/**
+ * @brief Retrieve scanner name of current agent group.
+ *
+ * @param[in] iterator  Iterator pointing to the current agent group entry.
+ *
+ * @return The scanner name associated with the current agent group.
+ */
+DEF_ACCESS (agent_group_iterator_scanner_name, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Retrieve scanner uuid of current agent group.
+ *
+ * @param[in] iterator  Iterator pointing to the current agent group entry.
+ *
+ * @return The scanner uuid associated with the current agent group.
+ */
+DEF_ACCESS (agent_group_iterator_scanner_id, GET_ITERATOR_COLUMN_COUNT + 2);
 
 
 /**
