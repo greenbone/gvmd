@@ -75,6 +75,24 @@ map_get_scanner_result_to_agent_group_resp (int result)
   }
 }
 
+/**
+ * @brief Check if the current user has "get_scanners" permission on a scanner.
+ *
+ * @param[in] scanner  Scanner row ID to check.
+ *
+ * @return TRUE if the user has access, FALSE otherwise.
+ */
+static gboolean
+user_has_get_access_to_scanner (scanner_t scanner)
+{
+  char *s_uuid = scanner_uuid (scanner);
+  if (!s_uuid)
+    return FALSE;
+
+  gboolean allowed = acl_user_has_access_uuid ("scanner", s_uuid, "get_scanners", 0);
+  g_free (s_uuid);
+  return allowed;
+}
 
 /**
  * @brief Count the number of agent groups based on filter criteria.
@@ -112,6 +130,50 @@ init_agent_group_iterator (iterator_t *iterator, get_data_t *get)
 }
 
 /**
+ * @brief Initialize an iterator to retrieve all agents belonging to a specific agent group.
+ *
+ * @param[out] iterator   The iterator to initialize.
+ * @param[in]  group_id   The internal row ID of the agent group whose agents should be listed.
+ *
+ * @return 0 on success, non-zero on error.
+ */
+int
+init_agent_group_agents_iterator (iterator_t *iterator,
+                                  agent_group_t group_id)
+{
+  static column_t columns[] = AGENT_GROUP_AGENT_ITERATOR_COLUMNS;
+  static const char *filter_columns[] = AGENT_GROUP_AGENT_ITERATOR_FILTER_COLUMNS;
+
+  get_data_t get;
+  memset(&get, 0, sizeof(get));
+  get.type = "agent";
+  get.ignore_pagination = 1;
+  get.ignore_max_rows_per_page = 1;
+
+  gchar *join_clause =
+    g_strdup ("JOIN agent_group_agents ON agent_group_agents.agent_id = agents.id");
+
+  gchar *where_clause =
+    g_strdup_printf ("AND agent_group_agents.group_id = %llu", group_id);
+
+  int ret = init_get_iterator (
+    iterator,
+    "agent",
+    &get,
+    columns,
+    NULL,
+    filter_columns,
+    0,
+    join_clause,
+    where_clause,
+    FALSE);
+
+  g_free (join_clause);
+  g_free (where_clause);
+  return ret;
+}
+
+/**
  * @brief Create a new agent group with associated agents.
  *
  * Generates a UUID for the group, validates the scanner UUID, inserts the group into the DB,
@@ -139,6 +201,10 @@ create_agent_group (agent_group_data_t group_data,
   agent_group_resp_t map_response = map_get_scanner_result_to_agent_group_resp (ret);
   if (map_response != AGENT_GROUP_RESP_SUCCESS)
     return map_response;
+
+  // Check scanner permission
+  if (!user_has_get_access_to_scanner (scanner))
+    return AGENT_GROUP_RESP_SCANNER_PERMISSION;
 
   //Set scanner to agent_group
   group_data->scanner = scanner;
@@ -191,13 +257,17 @@ create_agent_group (agent_group_data_t group_data,
   for (int i = 0; i < agent_uuids->count; ++i)
     {
       const gchar *uuid = agent_uuids->agent_uuids[i];
-      agent_t agent_id = agent_id_by_uuid_and_scanner (uuid, group_data->scanner);
-
-      if (agent_id == 0)
+      agent_t agent_id;
+      int result = agent_id_by_uuid_and_scanner (uuid, group_data->scanner, &agent_id);
+      if (result != 0)
         {
-          db_copy_buffer_cleanup (&buffer);
-          sql_rollback ();
-          return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
+           db_copy_buffer_cleanup (&buffer);
+           sql_rollback ();
+
+           if (result == 1)
+             return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
+           else if (result == 2)
+             return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
         }
 
       db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", new_agent_group, agent_id);
@@ -263,17 +333,30 @@ modify_agent_group (agent_group_t agent_group,
       sql_rollback ();
       return AGENT_GROUP_RESP_SCANNER_NOT_FOUND;
     }
+  // Check scanner permission
+  if (!user_has_get_access_to_scanner (scanner))
+    {
+      db_copy_buffer_cleanup (&buffer);
+      sql_rollback ();
+      return AGENT_GROUP_RESP_SCANNER_PERMISSION;
+    }
+
   group_data->scanner = scanner;
 
   for (int i = 0; i < agent_uuids->count; ++i)
     {
     const gchar *uuid = agent_uuids->agent_uuids[i];
-    agent_t agent_id = agent_id_by_uuid_and_scanner (uuid, group_data->scanner);
-    if (agent_id == 0)
+    agent_t agent_id;
+    int result = agent_id_by_uuid_and_scanner (uuid, group_data->scanner, &agent_id);
+    if (result != 0)
     {
       db_copy_buffer_cleanup (&buffer);
       sql_rollback ();
-      return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
+
+      if (result == 1)
+        return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
+      else if (result == 2)
+        return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
     }
 
      db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", agent_group, agent_id);
@@ -481,27 +564,6 @@ empty_trashcan_agent_groups ()
 }
 
 /**
- * @brief Gets agent names of a group as a comma-separated string.
- *
- * @param[in] group_id The agent group ID.
- *
- * @return Comma-separated agent names (e.g., "name1, name2, name3"),
- *         or NULL if none found.
- */
-gchar *
-agent_group_agents_string (agent_group_t group_id)
-{
-  return sql_string (
-    "SELECT group_concat(name, ', ') "
-    "FROM (SELECT agents.name "
-    "      FROM agents, agent_group_agents "
-    "      WHERE agent_group_agents.group_id = %llu "
-    "      AND agent_group_agents.agent_id = agents.id "
-    "      GROUP BY agents.name) AS sub;",
-    group_id);
-}
-
-/**
  * @brief Retrieve scanner ID of current agent group.
  *
  * @param[in] iterator  Iterator pointing to the current agent group entry.
@@ -634,6 +696,32 @@ delete_agent_groups_by_scanner (scanner_t scanner)
   sql_commit ();
 
   g_string_free (where_clause, TRUE);
+}
+
+/**
+ * @brief Retrieve the UUID of the current agent in the agent group agent iterator.
+ *
+ * @param[in] iterator The iterator positioned at the current agent row.
+ *
+ * @return A pointer to the UUID string, or NULL if not available.
+ */
+const char *
+agent_group_agent_iterator_uuid (iterator_t *iterator)
+{
+  return iterator_string (iterator, 0);
+}
+
+/**
+ * @brief Retrieve the name of the current agent in the agent group agent iterator.
+ *
+ * @param[in] iterator The iterator positioned at the current agent row.
+ *
+ * @return A pointer to the agent name string, or NULL if not available.
+ */
+const char *
+agent_group_agent_iterator_name (iterator_t *iterator)
+{
+  return iterator_string (iterator, 1);
 }
 
 #endif // ENABLE_AGENTS
