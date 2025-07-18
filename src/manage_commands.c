@@ -21,6 +21,9 @@
  */
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
+#if ENABLE_AGENTS
+    {"CREATE_AGENT_GROUP", "Create an agent group."},
+#endif
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
@@ -45,6 +48,7 @@ command_t gmp_commands[]
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
 #if ENABLE_AGENTS
+    {"DELETE_AGENT_GROUP", "Delete an agent group."},
     {"DELETE_AGENTS", "Delete one or more agents."},
     {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
 #endif /* ENABLE_AGENTS */
@@ -74,6 +78,7 @@ command_t gmp_commands[]
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
 #if ENABLE_AGENTS
+    {"GET_AGENT_GROUPS", "Get all agent groups."},
     {"GET_AGENTS", "Get all agents."},
     {"GET_AGENT_INSTALLERS", "Get all agent installers."},
     {"GET_AGENT_INSTALLER_FILE", "Get an agent installer file."},
@@ -114,6 +119,7 @@ command_t gmp_commands[]
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
 #if ENABLE_AGENTS
+    {"MODIFY_AGENT_GROUP", "Modify an agent group."},
     {"MODIFY_AGENTS", "Modify one or more existing agents."},
 #endif /* ENABLE_AGENTS */
     {"MODIFY_ALERT", "Modify an existing alert."},

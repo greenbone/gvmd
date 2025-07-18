@@ -20,6 +20,7 @@
 
 #include "iterator.h"
 #include "manage.h"
+#include "manage_agent_common.h"
 
 typedef resource_t agent_t;
 
@@ -93,13 +94,6 @@ struct agent_data_list
 };
 typedef struct agent_data_list *agent_data_list_t;
 
-struct agent_uuid_list
-{
-  int count;
-  gchar **agent_uuids;
-};
-typedef struct agent_uuid_list *agent_uuid_list_t;
-
 typedef enum {
   AGENT_RESPONSE_SUCCESS = 0,                       ///< Success
   AGENT_RESPONSE_NO_AGENTS_PROVIDED = -1,           ///< No agent UUIDs provided
@@ -135,12 +129,6 @@ agent_ip_data_free (agent_ip_data_t ip_data);
 
 void
 agent_data_list_free (agent_data_list_t agents);
-
-agent_uuid_list_t
-agent_uuid_list_new (int count);
-
-void
-agent_uuid_list_free (agent_uuid_list_t uuid_list);
 
 agent_response_t
 sync_agents_from_agent_controller (gvmd_agent_connector_t connector);

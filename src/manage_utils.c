@@ -306,6 +306,10 @@ valid_db_resource_type (const char* type)
 {
   if (type == NULL)
     return 0;
+#if ENABLE_AGENTS
+  if(strcasecmp (type, "agent_group") == 0)
+    return 1;
+#endif
 
 #ifdef ENABLE_AGENTS
   if ((strcasecmp (type, "agent") == 0)

@@ -155,6 +155,8 @@ set(
   ALL_MANAGE_SRC
   manage.c
   manage_acl.c
+  manage_agent_common.c
+  manage_agent_groups.c
   manage_agents.c
   manage_agent_installers.c
   manage_alerts.c
@@ -185,6 +187,7 @@ set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
   manage_sql_copy.c
+  manage_sql_agent_groups.c
   manage_sql_agents.c
   manage_sql_agent_installers.c
   manage_sql_alerts.c
@@ -206,6 +209,7 @@ set(
 set(
   ALL_GMP_SRC
   gmp.c
+  gmp_agent_groups.c
   gmp_agents.c
   gmp_agent_installers.c
   gmp_base.c
