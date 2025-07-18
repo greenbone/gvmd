@@ -179,6 +179,7 @@ set(
   manage_pg.c
   manage_scan_handler.c
   manage_scan_queue.c
+  manage_oci_image_targets.c
 )
 
 set(
@@ -201,6 +202,7 @@ set(
   manage_sql_nvts_openvasd.c
   manage_sql_nvts_common.c
   manage_sql_scan_queue.c
+  manage_sql_oci_image_targets.c
 )
 
 set(
@@ -219,6 +221,7 @@ set(
   gmp_report_formats.c
   gmp_tickets.c
   gmp_tls_certificates.c
+  gmp_oci_image_targets.c
 )
 
 set(ALL_SQL_SRC sql.c sql_pg.c)
@@ -294,6 +297,21 @@ add_executable(
 
 add_test(manage-agent-installers-test manage-agent-installers-test)
 
+set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_oci_image_targets.c)
+add_executable(
+  manage-oci-image-targets-test
+  EXCLUDE_FROM_ALL
+  manage_oci_image_targets_tests.c
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+  ${TEST_TARGET_EXTRA_SRC}
+)
+
+add_test(manage-oci-image-targets-test manage-oci-image-targets-test)
+
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SQL_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql.c)
 add_executable(
@@ -345,6 +363,7 @@ add_custom_target(
     gmp-tickets-test
     manage-test
     manage-agent-installers-test
+    manage-oci-image-targets-test
     manage-sql-test
     manage-utils-test
     utils-test
@@ -456,7 +475,31 @@ target_link_libraries(
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
 )
-
+target_link_libraries(
+  manage-oci-image-targets-test
+  cgreen
+  m
+  ${GNUTLS_LDFLAGS}
+  ${GPGME_LDFLAGS}
+  ${CMAKE_THREAD_LIBS_INIT}
+  ${LINKER_HARDENING_FLAGS}
+  ${LINKER_DEBUG_FLAGS}
+  ${PostgreSQL_LIBRARIES}
+  ${LIBBSD_LDFLAGS}
+  ${CJSON_LDFLAGS}
+  ${GLIB_LDFLAGS}
+  ${GTHREAD_LDFLAGS}
+  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
+  ${LIBGVM_BASE_LDFLAGS}
+  ${LIBGVM_OPENVASD_LDFLAGS}
+  ${LIBGVM_UTIL_LDFLAGS}
+  ${LIBGVM_OSP_LDFLAGS}
+  ${LIBGVM_GMP_LDFLAGS}
+  ${LIBGVM_HTTP_LDFLAGS}
+  ${LIBICAL_LDFLAGS}
+  ${LINKER_HARDENING_FLAGS}
+  ${OPT_THEIA_TGT}
+)
 target_link_libraries(
   manage-sql-test
   cgreen
@@ -573,6 +616,10 @@ target_link_libraries(
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-agent-installers-test PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(
+  manage-oci-image-targets-test
+  PROPERTIES LINKER_LANGUAGE C
+)
 set_target_properties(manage-sql-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-utils-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
@@ -590,6 +637,10 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(
     manage-agent-installers-test
+    PUBLIC ${C_FLAGS_DEBUG_GVMD}
+  )
+  target_compile_options(
+    manage-oci-image-targets-test
     PUBLIC ${C_FLAGS_DEBUG_GVMD}
   )
   target_compile_options(manage-sql-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
@@ -747,6 +798,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_configs.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
@@ -759,6 +811,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
@@ -769,6 +822,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"

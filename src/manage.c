@@ -58,6 +58,7 @@
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_scan_queue.h"
+#include "manage_oci_image_targets.h"
 #include "manage_sql.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -7023,6 +7024,10 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
   if (strcasecmp (type, "agent_installer") == 0)
     return delete_agent_installer (resource_id, ultimate);
 #endif /* ENABLE_AGENTS */
+#if ENABLE_CONTAINER_SCANNING
+  if (strcasecmp (type, "oci_image_target") == 0)
+    return delete_oci_image_target (resource_id, ultimate);
+#endif /* ENABLE_CONTAINER_SCANNING */
   if (strcasecmp (type, "report_config") == 0)
     return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)

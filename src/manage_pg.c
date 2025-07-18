@@ -2650,6 +2650,31 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
+#if ENABLE_CONTAINER_SCANNING
+  sql ("CREATE TABLE IF NOT EXISTS oci_image_targets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  image_references text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS oci_image_targets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  image_references text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER,"
+       "  credential_location integer);");
+#endif /* ENABLE_CONTAINER_SCANNING */
+
   sql ("CREATE TABLE IF NOT EXISTS tickets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2908,6 +2933,8 @@ create_tables ()
        "  target_location integer,"
        "  schedule_location integer,"
        "  scanner_location integer,"
+       "  oci_image_target integer,"
+       "  oci_image_target_location integer,"
        "  upload_result_count integer,"
        "  hosts_ordering text,"
        "  alterable integer,"
