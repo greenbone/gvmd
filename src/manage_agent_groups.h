@@ -78,6 +78,12 @@ init_agent_group_iterator (iterator_t *iterator, get_data_t *get);
 scanner_t
 agent_group_iterator_scanner (iterator_t *iterator);
 
+const char*
+agent_group_iterator_scanner_name (iterator_t *iterator);
+
+const char*
+agent_group_iterator_scanner_id (iterator_t *iterator);
+
 int
 copy_agent_group (const char *name,
                   const char *comment,
@@ -105,7 +111,7 @@ trash_agent_group_writable (agent_group_t);
 void
 delete_agent_groups_by_scanner (scanner_t scanner);
 
-int
+void
 init_agent_group_agents_iterator (iterator_t *iterator,
                                   agent_group_t group_id);
 

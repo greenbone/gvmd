@@ -96,8 +96,7 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
 
   while (1)
     {
-      scanner_t scanner;
-      char *agent_scanner_name, *agent_scanner_uuid;
+      const char *agent_scanner_name, *agent_scanner_uuid;
 
       ret = get_next (&agent_groups, &get_agent_groups_data.get, &first, &count,
                       init_agent_group_iterator);
@@ -110,9 +109,8 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
-      scanner = agent_group_iterator_scanner (&agent_groups);
-      agent_scanner_uuid = scanner_uuid (scanner);
-      agent_scanner_name = scanner_name (scanner);
+      agent_scanner_uuid = agent_group_iterator_scanner_id (&agent_groups);
+      agent_scanner_name = agent_group_iterator_scanner_name (&agent_groups);
 
       // Start <agent_group>
       SEND_GET_COMMON (agent_group,
@@ -125,29 +123,25 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
                                agent_scanner_uuid ? agent_scanner_uuid : "",
                                agent_scanner_name ? agent_scanner_name : "");
 
-  iterator_t agent_iter;
-  if (init_agent_group_agents_iterator (&agent_iter, get_iterator_resource (&agent_groups)) == 0)
-  {
+      iterator_t agent_iter;
+      init_agent_group_agents_iterator (&agent_iter, get_iterator_resource (&agent_groups));
       SEND_TO_CLIENT_OR_FAIL ("<agents>");
       while (next (&agent_iter))
-      {
-        const char *uuid = agent_group_agent_iterator_uuid (&agent_iter);
-        const char *name = agent_group_agent_iterator_name (&agent_iter);
+        {
+          const char *uuid = agent_group_agent_iterator_uuid (&agent_iter);
+          const char *name = agent_group_agent_iterator_name (&agent_iter);
 
-        SENDF_TO_CLIENT_OR_FAIL (
-          "<agent id=\"%s\"><name>%s</name></agent>",
-          uuid ? uuid : "",
-          name ? name : "");
-      }
-        SEND_TO_CLIENT_OR_FAIL ("</agents>");
-        cleanup_iterator (&agent_iter);
-    }
+          SENDF_TO_CLIENT_OR_FAIL (
+            "<agent id=\"%s\"><name>%s</name></agent>",
+            uuid ? uuid : "",
+            name ? name : "");
+        }
+
+      SEND_TO_CLIENT_OR_FAIL ("</agents>");
+      cleanup_iterator (&agent_iter);
 
       SEND_TO_CLIENT_OR_FAIL ("</agent_group>");
       count++;
-
-      g_free(agent_scanner_name);
-      g_free(agent_scanner_uuid);
     }
 
   cleanup_iterator (&agent_groups);

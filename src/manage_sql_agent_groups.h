@@ -23,33 +23,27 @@
 #define AGENT_GROUP_ITERATOR_FILTER_COLUMNS \
 {                                           \
   GET_ITERATOR_FILTER_COLUMNS,              \
-  "scanner",                                \
+  "scanner_name",                           \
+  "scanner_id",                             \
   NULL                                      \
 }
 
-#define AGENT_GROUP_ITERATOR_COLUMNS                  \
-{                                                     \
-  GET_ITERATOR_COLUMNS (agent_groups),                \
-  { "scanner", NULL, KEYWORD_TYPE_INTEGER },          \
-  { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }           \
+#define AGENT_GROUP_ITERATOR_COLUMNS                          \
+{                                                             \
+  GET_ITERATOR_COLUMNS (agent_groups),                        \
+  { "scanner", NULL, KEYWORD_TYPE_INTEGER },                  \
+  { "scanner_name", "scanner_name", KEYWORD_TYPE_STRING },   \
+  { "scanner_uuid", "scanner_id", KEYWORD_TYPE_STRING },     \
+  { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }                   \
 }
 
-#define AGENT_GROUP_ITERATOR_TRASH_COLUMNS             \
-{                                                      \
-  GET_ITERATOR_COLUMNS (agent_groups_trash),           \
-  { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }            \
-}
-
-#define AGENT_GROUP_AGENT_ITERATOR_COLUMNS                \
-{                                                         \
-  { "agents.uuid", NULL, KEYWORD_TYPE_STRING },           \
-  { "agents.name", NULL, KEYWORD_TYPE_STRING },           \
-  { NULL,          NULL, KEYWORD_TYPE_UNKNOWN }           \
-}
-
-#define AGENT_GROUP_AGENT_ITERATOR_FILTER_COLUMNS \
-{                                                 \
-  NULL                                            \
+#define AGENT_GROUP_ITERATOR_TRASH_COLUMNS                    \
+{                                                             \
+  GET_ITERATOR_COLUMNS (agent_groups_trash),                  \
+  { "scanner", NULL, KEYWORD_TYPE_INTEGER },                  \
+  { "scanner_name", "scanner_name", KEYWORD_TYPE_STRING },   \
+  { "scanner_uuid", "scanner_id", KEYWORD_TYPE_STRING },     \
+  { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }                   \
 }
 
 int
