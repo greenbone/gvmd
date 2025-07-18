@@ -40,6 +40,18 @@
   { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }            \
 }
 
+#define AGENT_GROUP_AGENT_ITERATOR_COLUMNS                \
+{                                                         \
+  { "agents.uuid", NULL, KEYWORD_TYPE_STRING },           \
+  { "agents.name", NULL, KEYWORD_TYPE_STRING },           \
+  { NULL,          NULL, KEYWORD_TYPE_UNKNOWN }           \
+}
+
+#define AGENT_GROUP_AGENT_ITERATOR_FILTER_COLUMNS \
+{                                                 \
+  NULL                                            \
+}
+
 int
 restore_agent_group (const char *agent_group_uuid);
 

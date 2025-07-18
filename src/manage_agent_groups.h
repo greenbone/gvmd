@@ -75,9 +75,6 @@ agent_group_count (const get_data_t *get);
 int
 init_agent_group_iterator (iterator_t *iterator, get_data_t *get);
 
-gchar *
-agent_group_agents_string (agent_group_t group_id);
-
 scanner_t
 agent_group_iterator_scanner (iterator_t *iterator);
 
@@ -107,6 +104,16 @@ trash_agent_group_writable (agent_group_t);
 
 void
 delete_agent_groups_by_scanner (scanner_t scanner);
+
+int
+init_agent_group_agents_iterator (iterator_t *iterator,
+                                  agent_group_t group_id);
+
+const char*
+agent_group_agent_iterator_uuid (iterator_t *iterator);
+
+const char*
+agent_group_agent_iterator_name (iterator_t *iterator);
 
 #endif // _GVMD_MANAGE_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS

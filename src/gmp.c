@@ -4364,8 +4364,8 @@ typedef enum
   CLIENT_CREATE_USER_SOURCES_SOURCE,
 #if ENABLE_AGENTS
   CLIENT_DELETE_AGENT_GROUP,
-  CLIENT_DELETE_AGENTS,
   CLIENT_DELETE_AGENT_INSTALLER,
+  CLIENT_DELETE_AGENTS,
 #endif /* ENABLE_AGENTS */
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
@@ -4394,9 +4394,9 @@ typedef enum
   CLIENT_EMPTY_TRASHCAN,
 #if ENABLE_AGENTS
   CLIENT_GET_AGENT_GROUPS,
-  CLIENT_GET_AGENTS,
-  CLIENT_GET_AGENT_INSTALLERS,
   CLIENT_GET_AGENT_INSTALLER_FILE,
+  CLIENT_GET_AGENT_INSTALLERS,
+  CLIENT_GET_AGENTS,
 #endif /* ENABLE_AGENTS */
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
@@ -4932,22 +4932,22 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->hosts_allow = 0;
           }
 #if ENABLE_AGENTS
-        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
-          {
-            delete_agents_start (gmp_parser, attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_AGENTS);
-          }
-        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
-          {
-            delete_start ("agent_installer", "Agent Installer",
-                          attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_REPORT_CONFIG);
-          }
         else if (strcasecmp ("DELETE_AGENT_GROUP", element_name) == 0)
           {
             delete_start ("agent_group", "Agent Group",
                           attribute_names, attribute_values);
             set_client_state (CLIENT_DELETE_AGENT_GROUP);
+          }
+        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
+          {
+            delete_start ("agent_installer", "Agent Installer",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT_INSTALLER);
+          }
+        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
+          {
+            delete_agents_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENTS);
           }
 #endif /* ENABLE_AGENTS */
         else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
@@ -5207,11 +5207,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 #if ENABLE_AGENTS
         ELSE_GET_START (agent_groups, AGENT_GROUPS)
 
-        ELSE_GET_START (agents, AGENTS)
+        ELSE_GET_START (agent_installer_file, AGENT_INSTALLER_FILE)
 
         ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
 
-        ELSE_GET_START (agent_installer_file, AGENT_INSTALLER_FILE)
+        ELSE_GET_START (agents, AGENTS)
 #endif /* ENABLE_AGENTS */
 
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)

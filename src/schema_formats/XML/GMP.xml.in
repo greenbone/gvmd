@@ -9692,6 +9692,29 @@ END:VCALENDAR
           <e>scanner</e>
           <e>agents</e>
         </pattern>
+        <ele>
+          <name>agents</name>
+          <summary>Agents assigned to the group</summary>
+          <pattern>
+            <any><e>agent</e></any>
+          </pattern>
+          <ele>
+            <name>agent</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the agent</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
       </ele>
       <ele>
         <name>filters</name>
@@ -9759,7 +9782,14 @@ END:VCALENDAR
             <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
               <name>Agent Controller</name>
             </scanner>
-            <agents>GAT-29::6b9ac61f, GAT-29-p0MPX0FT</agents>
+            <agents>
+              <agent id="6b9ac61f-aaaa-bbbb-cccc-ddeeff001122">
+                <name>GAT-29</name>
+              </agent>
+              <agent id="6b9ac61f-bbbb-cccc-dddd-eeff00112233">
+                <name>GAT-29-p0MPX0FT</name>
+              </agent>
+            </agents>
           </agent_group>
         </get_agent_groups_response>
       </response>
