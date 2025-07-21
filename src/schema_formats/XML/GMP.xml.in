@@ -6964,6 +6964,59 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>delete_agent_installer</name>
+    <summary>Delete an agent installer</summary>
+    <description>
+      <p>
+        The client uses the delete_agent_installer command to delete an existing
+        agent installer.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an agent installer</summary>
+      <request>
+        <delete_agent_installer
+          agent_installer_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_agent_installer>
+      </request>
+      <response>
+        <delete_agent_installer_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_agents</name>
     <summary>Delete agents</summary>
     <description>
@@ -7027,59 +7080,6 @@ END:VCALENDAR
       </request>
       <response>
         <delete_agents_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>delete_agent_installer</name>
-    <summary>Delete an agent installer</summary>
-    <description>
-      <p>
-        The client uses the delete_agent_installer command to delete an existing
-        agent installer.
-      </p>
-      <p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_installer_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Delete an agent installer</summary>
-      <request>
-        <delete_agent_installer
-          agent_installer_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_agent_installer>
-      </request>
-      <response>
-        <delete_agent_installer_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -8355,6 +8355,177 @@ END:VCALENDAR
   </command>
   @IF_ENABLE_AGENTS@
   <command>
+    <name>get_agent_groups</name>
+    <summary>Get agent groups</summary>
+    <description>
+      <p>
+        The client uses the <code>get_agent_groups</code> command to retrieve a list of agent groups.
+      </p>
+    </description>
+    <pattern>
+      <o><e>agent_group_id</e></o>
+      <o><e>filter</e></o>
+      <o><e>filt_id</e></o>
+    </pattern>
+    <ele>
+      <name>agent_group_id</name>
+      <summary>UUID of a specific agent group</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filter</name>
+      <summary>Filter term</summary>
+      <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filt_id</name>
+      <summary>Filter UUID</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent_group</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>agent_groups</e></o>
+        <o><e>agent_group_count</e></o>
+      </pattern>
+      <ele>
+        <name>agent_group</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>scanner</e>
+          <e>agents</e>
+        </pattern>
+        <ele>
+          <name>agents</name>
+          <summary>Agents assigned to the group</summary>
+          <pattern>
+            <any><e>agent</e></any>
+          </pattern>
+          <ele>
+            <name>agent</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the agent</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          <e>field</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_groups</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_group_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all agent groups</summary>
+      <request>
+        <get_agent_groups/>
+      </request>
+      <response>
+        <get_agent_groups_response status="200" status_text="OK">
+          <agent_group id="cadc0390-f392-4cc5-9fbf-62af5e78a930">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Test Agent Group</name>
+            <comment>Created via gvm-cli for testing</comment>
+            <creation_time>2025-07-15T14:15:31Z</creation_time>
+            <modification_time>2025-07-15T14:15:31Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
+              <name>Agent Controller</name>
+            </scanner>
+            <agents>
+              <agent id="6b9ac61f-aaaa-bbbb-cccc-ddeeff001122">
+                <name>GAT-29</name>
+              </agent>
+              <agent id="6b9ac61f-bbbb-cccc-dddd-eeff00112233">
+                <name>GAT-29-p0MPX0FT</name>
+              </agent>
+            </agents>
+          </agent_group>
+        </get_agent_groups_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_agent_installers</name>
     <summary>Get one or many agent installers</summary>
     <description>
@@ -8964,6 +9135,459 @@ END:VCALENDAR
       <response>
         <get_agent_installer_file_response>
         </get_agent_installer_file_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agents</name>
+    <summary>Get agents</summary>
+    <description>
+      <p>
+        The client uses the <code>get_agents</code> command to retrieve a list of registered agents.
+      </p>
+      <p>
+        The response includes detailed information about each agent, including metadata,
+        status, schedule, scanner association, and IP addresses.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_id</name>
+        <summary>ID of a specific agent</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>Index of the first item returned, starting at 1 (e.g. first=5 starts at the 5th item)</summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Agent unique identifier</summary>
+          </column>
+          <column>
+            <name>agent_id</name>
+            <type>text</type>
+            <summary>Agent ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name of the agent</summary>
+          </column>
+          <column>
+            <name>hostname</name>
+            <type>text</type>
+            <summary>Hostname of the agent machine</summary>
+          </column>
+          <column>
+            <name>scanner</name>
+            <type>text</type>
+            <summary>UUID of the scanner the agent belongs to</summary>
+          </column>
+          <column>
+            <name>authorized</name>
+            <type>integer</type>
+            <summary>Whether the agent is authorized (1) or not (0)</summary>
+          </column>
+          <column>
+            <name>min_interval</name>
+            <type>integer</type>
+            <summary>Minimum interval between scans (in seconds)</summary>
+          </column>
+          <column>
+            <name>heartbeat_interval</name>
+            <type>integer</type>
+            <summary>Interval for agent heartbeat (in seconds)</summary>
+          </column>
+          <column>
+            <name>connection_status</name>
+            <type>text</type>
+            <summary>Status of agent connection</summary>
+          </column>
+          <column>
+            <name>last_update</name>
+            <type>iso_time</type>
+            <summary>Last time the agent was updated</summary>
+          </column>
+          <column>
+            <name>schedule</name>
+            <type>text</type>
+            <summary>Scheduled update interval</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Agent comment field</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>id</name>
+            <type>uuid</type>
+            <summary>ID alias for agent UUID</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>Filter UUID</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>agents</e>
+        <e>agent_count</e>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>hostname</e>
+          <e>agent_id</e>
+          <e>authorized</e>
+          <e>min_interval</e>
+          <e>heartbeat_interval</e>
+          <e>connection_status</e>
+          <e>last_update</e>
+          <e>schedule</e>
+          <e>scanner</e>
+          <any><e>ip</e></any>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the agent</summary>
+          <pattern><e>name</e></pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the owner</summary>
+            <pattern><type>name</type></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Name of the agent</summary>
+          <pattern><type>name</type></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment on the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation timestamp</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Modification timestamp</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether agent is writable</summary>
+          <pattern><type>boolean</type></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether agent is currently in use</summary>
+          <pattern><type>boolean</type></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions current user has on the agent</summary>
+          <pattern><any><e>permission</e></any></pattern>
+          <ele>
+            <name>permission</name>
+            <pattern><e>name</e></pattern>
+            <ele>
+              <name>name</name>
+              <summary>Permission name</summary>
+              <pattern><type>name</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>hostname</name>
+          <summary>Hostname of the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>agent_id</name>
+          <summary>Agent identifier string</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>authorized</name>
+          <summary>Authorization flag</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>min_interval</name>
+          <summary>Minimum interval in seconds</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>heartbeat_interval</name>
+          <summary>Heartbeat interval in seconds</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>connection_status</name>
+          <summary>Connection status of the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>last_update</name>
+          <summary>Timestamp of last update</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>schedule</name>
+          <summary>Agent schedule</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>scanner</name>
+          <summary>Associated scanner</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the scanner</summary>
+            <pattern><type>name</type></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ip</name>
+          <summary>IP addresses of the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Parsed filter keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Filter column</summary>
+              <pattern><type>text</type></pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Operator</summary>
+              <pattern><alts><alt>=</alt><alt>:</alt><alt>~</alt><alt>&gt;</alt><alt>&lt;</alt></alts></pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Filter value</summary>
+              <pattern><type>text</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern><e>field</e></pattern>
+        <ele>
+          <name>field</name>
+          <pattern><e>order</e></pattern>
+          <ele>
+            <name>order</name>
+            <pattern><alts><alt>ascending</alt><alt>descending</alt></alts></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agents</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Count after filtering</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Page count</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Retrieve a filtered agent result</summary>
+      <request>
+        <get_agents/>
+      </request>
+      <response>
+        <get_agents_response status="200" status_text="OK">
+          <agent id="62462fe0-5834-4630-afc2-0d040c63487c">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>GAT-29-p0MPX0FT</name>
+            <comment>Routine sync update</comment>
+            <creation_time>2025-05-30T06:24:51Z</creation_time>
+            <modification_time>2025-06-03T09:20:26Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <hostname>GAT-29</hostname>
+            <agent_id>GAT-29-p0MPX0FT</agent_id>
+            <authorized>1</authorized>
+            <min_interval>2000</min_interval>
+            <heartbeat_interval>0</heartbeat_interval>
+            <connection_status>inactive</connection_status>
+            <last_update>2025-05-23T08:25:17Z</last_update>
+            <schedule>@every 8h</schedule>
+            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
+              <name>Agent Controller</name>
+            </scanner>
+            <ip>127.0.0.1</ip>
+            <ip>::1</ip>
+            <ip>192.168.79.157</ip>
+            <ip>fe80::fe3e:acb9:1b5b:27da</ip>
+            <ip>192.168.1.11</ip>
+          </agent>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <agents start="1" max="1000"/>
+          <agent_count>
+            <filtered>1</filtered>
+            <page>1</page>
+          </agent_count>
+        </get_agents_response>
       </response>
     </example>
   </command>
@@ -9623,632 +10247,6 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_AGENTS@
-  <command>
-    <name>get_agent_groups</name>
-    <summary>Get agent groups</summary>
-    <description>
-      <p>
-        The client uses the <code>get_agent_groups</code> command to retrieve a list of agent groups.
-      </p>
-    </description>
-    <pattern>
-      <o><e>agent_group_id</e></o>
-      <o><e>filter</e></o>
-      <o><e>filt_id</e></o>
-    </pattern>
-    <ele>
-      <name>agent_group_id</name>
-      <summary>UUID of a specific agent group</summary>
-      <pattern><type>uuid</type></pattern>
-      <required>0</required>
-    </ele>
-    <ele>
-      <name>filter</name>
-      <summary>Filter term</summary>
-      <pattern><type>text</type></pattern>
-      <required>0</required>
-    </ele>
-    <ele>
-      <name>filt_id</name>
-      <summary>Filter UUID</summary>
-      <pattern><type>uuid</type></pattern>
-      <required>0</required>
-    </ele>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>agent_group</e></any>
-        <o><e>filters</e></o>
-        <o><e>sort</e></o>
-        <o><e>agent_groups</e></o>
-        <o><e>agent_group_count</e></o>
-      </pattern>
-      <ele>
-        <name>agent_group</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>permissions</e>
-          <e>scanner</e>
-          <e>agents</e>
-        </pattern>
-        <ele>
-          <name>agents</name>
-          <summary>Agents assigned to the group</summary>
-          <pattern>
-            <any><e>agent</e></any>
-          </pattern>
-          <ele>
-            <name>agent</name>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the agent</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <e>keywords</e>
-        </pattern>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern>
-          <e>field</e>
-        </pattern>
-      </ele>
-      <ele>
-        <name>agent_groups</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>agent_group_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-      </ele>
-    </response>
-    <example>
-      <summary>Get all agent groups</summary>
-      <request>
-        <get_agent_groups/>
-      </request>
-      <response>
-        <get_agent_groups_response status="200" status_text="OK">
-          <agent_group id="cadc0390-f392-4cc5-9fbf-62af5e78a930">
-            <owner>
-              <name>username</name>
-            </owner>
-            <name>Test Agent Group</name>
-            <comment>Created via gvm-cli for testing</comment>
-            <creation_time>2025-07-15T14:15:31Z</creation_time>
-            <modification_time>2025-07-15T14:15:31Z</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <permissions>
-              <permission>
-                <name>Everything</name>
-              </permission>
-            </permissions>
-            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
-              <name>Agent Controller</name>
-            </scanner>
-            <agents>
-              <agent id="6b9ac61f-aaaa-bbbb-cccc-ddeeff001122">
-                <name>GAT-29</name>
-              </agent>
-              <agent id="6b9ac61f-bbbb-cccc-dddd-eeff00112233">
-                <name>GAT-29-p0MPX0FT</name>
-              </agent>
-            </agents>
-          </agent_group>
-        </get_agent_groups_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_agents</name>
-    <summary>Get agents</summary>
-    <description>
-      <p>
-        The client uses the <code>get_agents</code> command to retrieve a list of registered agents.
-      </p>
-      <p>
-        The response includes detailed information about each agent, including metadata,
-        status, schedule, scanner association, and IP addresses.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_id</name>
-        <summary>ID of a specific agent</summary>
-        <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>filter</name>
-        <summary>Filter term</summary>
-        <type>text</type>
-        <filter_keywords>
-          <option>
-            <name>first</name>
-            <type>integer</type>
-            <summary>Index of the first item returned, starting at 1 (e.g. first=5 starts at the 5th item)</summary>
-          </option>
-          <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
-            <name>sort</name>
-            <type>text</type>
-            <summary>Column to sort by in ascending order</summary>
-          </option>
-          <option>
-            <name>sort-reverse</name>
-            <type>text</type>
-            <summary>Column to sort by in descending order</summary>
-          </option>
-          <column>
-            <name>uuid</name>
-            <type>uuid</type>
-            <summary>Agent unique identifier</summary>
-          </column>
-          <column>
-            <name>agent_id</name>
-            <type>text</type>
-            <summary>Agent ID</summary>
-          </column>
-          <column>
-            <name>name</name>
-            <type>name</type>
-            <summary>Name of the agent</summary>
-          </column>
-          <column>
-            <name>hostname</name>
-            <type>text</type>
-            <summary>Hostname of the agent machine</summary>
-          </column>
-          <column>
-            <name>scanner</name>
-            <type>text</type>
-            <summary>UUID of the scanner the agent belongs to</summary>
-          </column>
-          <column>
-            <name>authorized</name>
-            <type>integer</type>
-            <summary>Whether the agent is authorized (1) or not (0)</summary>
-          </column>
-          <column>
-            <name>min_interval</name>
-            <type>integer</type>
-            <summary>Minimum interval between scans (in seconds)</summary>
-          </column>
-          <column>
-            <name>heartbeat_interval</name>
-            <type>integer</type>
-            <summary>Interval for agent heartbeat (in seconds)</summary>
-          </column>
-          <column>
-            <name>connection_status</name>
-            <type>text</type>
-            <summary>Status of agent connection</summary>
-          </column>
-          <column>
-            <name>last_update</name>
-            <type>iso_time</type>
-            <summary>Last time the agent was updated</summary>
-          </column>
-          <column>
-            <name>schedule</name>
-            <type>text</type>
-            <summary>Scheduled update interval</summary>
-          </column>
-          <column>
-            <name>comment</name>
-            <type>text</type>
-            <summary>Agent comment field</summary>
-          </column>
-          <column>
-            <name>created</name>
-            <type>iso_time</type>
-            <summary>Creation time</summary>
-          </column>
-          <column>
-            <name>modified</name>
-            <type>iso_time</type>
-            <summary>Modification time</summary>
-          </column>
-          <column>
-            <name>owner</name>
-            <type>name</type>
-            <summary>Name of the owner</summary>
-          </column>
-          <column>
-            <name>id</name>
-            <type>uuid</type>
-            <summary>ID alias for agent UUID</summary>
-          </column>
-        </filter_keywords>
-      </attrib>
-      <attrib>
-        <name>filt_id</name>
-        <summary>Filter UUID</summary>
-        <type>uuid</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>agent</e></any>
-        <e>filters</e>
-        <e>sort</e>
-        <e>agents</e>
-        <e>agent_count</e>
-      </pattern>
-      <ele>
-        <name>agent</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>name</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>permissions</e>
-          <e>hostname</e>
-          <e>agent_id</e>
-          <e>authorized</e>
-          <e>min_interval</e>
-          <e>heartbeat_interval</e>
-          <e>connection_status</e>
-          <e>last_update</e>
-          <e>schedule</e>
-          <e>scanner</e>
-          <any><e>ip</e></any>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the agent</summary>
-          <pattern><e>name</e></pattern>
-          <ele>
-            <name>name</name>
-            <summary>Name of the owner</summary>
-            <pattern><type>name</type></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>name</name>
-          <summary>Name of the agent</summary>
-          <pattern><type>name</type></pattern>
-        </ele>
-        <ele>
-          <name>comment</name>
-          <summary>Comment on the agent</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Creation timestamp</summary>
-          <pattern><type>iso_time</type></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Modification timestamp</summary>
-          <pattern><type>iso_time</type></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <summary>Whether agent is writable</summary>
-          <pattern><type>boolean</type></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <summary>Whether agent is currently in use</summary>
-          <pattern><type>boolean</type></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>Permissions current user has on the agent</summary>
-          <pattern><any><e>permission</e></any></pattern>
-          <ele>
-            <name>permission</name>
-            <pattern><e>name</e></pattern>
-            <ele>
-              <name>name</name>
-              <summary>Permission name</summary>
-              <pattern><type>name</type></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>hostname</name>
-          <summary>Hostname of the agent</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-        <ele>
-          <name>agent_id</name>
-          <summary>Agent identifier string</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-        <ele>
-          <name>authorized</name>
-          <summary>Authorization flag</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-        <ele>
-          <name>min_interval</name>
-          <summary>Minimum interval in seconds</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-        <ele>
-          <name>heartbeat_interval</name>
-          <summary>Heartbeat interval in seconds</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-        <ele>
-          <name>connection_status</name>
-          <summary>Connection status of the agent</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-        <ele>
-          <name>last_update</name>
-          <summary>Timestamp of last update</summary>
-          <pattern><type>iso_time</type></pattern>
-        </ele>
-        <ele>
-          <name>schedule</name>
-          <summary>Agent schedule</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-        <ele>
-          <name>scanner</name>
-          <summary>Associated scanner</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>Name of the scanner</summary>
-            <pattern><type>name</type></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>ip</name>
-          <summary>IP addresses of the agent</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-      </ele>
-      <ele>
-        <name>filters</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>term</e>
-          <e>keywords</e>
-        </pattern>
-        <ele>
-          <name>term</name>
-          <summary>Filter term</summary>
-          <pattern><type>text</type></pattern>
-        </ele>
-        <ele>
-          <name>keywords</name>
-          <summary>Parsed filter keywords</summary>
-          <pattern><any><e>keyword</e></any></pattern>
-          <ele>
-            <name>keyword</name>
-            <pattern>
-              <e>column</e>
-              <e>relation</e>
-              <e>value</e>
-            </pattern>
-            <ele>
-              <name>column</name>
-              <summary>Filter column</summary>
-              <pattern><type>text</type></pattern>
-            </ele>
-            <ele>
-              <name>relation</name>
-              <summary>Operator</summary>
-              <pattern><alts><alt>=</alt><alt>:</alt><alt>~</alt><alt>&gt;</alt><alt>&lt;</alt></alts></pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Filter value</summary>
-              <pattern><type>text</type></pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>sort</name>
-        <pattern><e>field</e></pattern>
-        <ele>
-          <name>field</name>
-          <pattern><e>order</e></pattern>
-          <ele>
-            <name>order</name>
-            <pattern><alts><alt>ascending</alt><alt>descending</alt></alts></pattern>
-          </ele>
-        </ele>
-      </ele>
-      <ele>
-        <name>agents</name>
-        <pattern>
-          <attrib>
-            <name>start</name>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-        </pattern>
-      </ele>
-      <ele>
-        <name>agent_count</name>
-        <pattern>
-          <e>filtered</e>
-          <e>page</e>
-        </pattern>
-        <ele>
-          <name>filtered</name>
-          <summary>Count after filtering</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-        <ele>
-          <name>page</name>
-          <summary>Page count</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Retrieve a filtered agent result</summary>
-      <request>
-        <get_agents/>
-      </request>
-      <response>
-        <get_agents_response status="200" status_text="OK">
-          <agent id="62462fe0-5834-4630-afc2-0d040c63487c">
-            <owner>
-              <name>username</name>
-            </owner>
-            <name>GAT-29-p0MPX0FT</name>
-            <comment>Routine sync update</comment>
-            <creation_time>2025-05-30T06:24:51Z</creation_time>
-            <modification_time>2025-06-03T09:20:26Z</modification_time>
-            <writable>1</writable>
-            <in_use>0</in_use>
-            <permissions>
-              <permission>
-                <name>Everything</name>
-              </permission>
-            </permissions>
-            <hostname>GAT-29</hostname>
-            <agent_id>GAT-29-p0MPX0FT</agent_id>
-            <authorized>1</authorized>
-            <min_interval>2000</min_interval>
-            <heartbeat_interval>0</heartbeat_interval>
-            <connection_status>inactive</connection_status>
-            <last_update>2025-05-23T08:25:17Z</last_update>
-            <schedule>@every 8h</schedule>
-            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
-              <name>Agent Controller</name>
-            </scanner>
-            <ip>127.0.0.1</ip>
-            <ip>::1</ip>
-            <ip>192.168.79.157</ip>
-            <ip>fe80::fe3e:acb9:1b5b:27da</ip>
-            <ip>192.168.1.11</ip>
-          </agent>
-          <filters id="">
-            <term>first=1 rows=10 sort=name</term>
-            <keywords>
-              <keyword>
-                <column>first</column>
-                <relation>=</relation>
-                <value>1</value>
-              </keyword>
-              <keyword>
-                <column>rows</column>
-                <relation>=</relation>
-                <value>10</value>
-              </keyword>
-              <keyword>
-                <column>sort</column>
-                <relation>=</relation>
-                <value>name</value>
-              </keyword>
-            </keywords>
-          </filters>
-          <sort>
-            <field>name<order>ascending</order></field>
-          </sort>
-          <agents start="1" max="1000"/>
-          <agent_count>
-            <filtered>1</filtered>
-            <page>1</page>
-          </agent_count>
-        </get_agents_response>
-      </response>
-    </example>
-  </command>
-  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>get_alerts</name>
     <summary>Get one or many alerts</summary>
