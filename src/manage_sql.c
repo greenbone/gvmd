@@ -46,6 +46,7 @@
 #include "manage_scan_queue.h"
 #include "manage_sql_alerts.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_oci_image_targets.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
@@ -54,6 +55,7 @@
 #include "manage_acl.h"
 #include "manage_commands.h"
 #include "manage_authentication.h"
+#include "manage_oci_image_targets.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "utils.h"
@@ -27567,6 +27569,15 @@ delete_credential (const char *credential_id, int ultimate)
            "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_credential,
            credential);
+#if ENABLE_CONTAINER_SCANNING
+      sql ("UPDATE oci_image_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_credential,
+           credential);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       permissions_set_locations ("credential", credential,
                                  trash_credential,
@@ -27747,6 +27758,11 @@ credential_in_use (credential_t credential)
   ret = !!(sql_int ("SELECT count (*) FROM targets_login_data"
                     " WHERE credential = %llu;",
                     credential)
+#if ENABLE_CONTAINER_SCANNING
+           || sql_int ("SELECT count (*) FROM oci_image_targets"
+                       " WHERE credential = %llu;",
+                       credential)
+#endif /* ENABLE_CONTAINER_SCANNING */
            || sql_int ("SELECT count (*) FROM scanners"
                        " WHERE credential = %llu;",
                        credential)
@@ -39296,6 +39312,13 @@ manage_restore (const char *id)
   if (ret != 2)
     return ret;
 
+#if ENABLE_CONTAINER_SCANNING
+  /* OCI Image Targets. */
+  ret = restore_oci_image_target (id);
+  if (ret != 2)
+    return ret;
+#endif /* ENABLE_CONTAINER_SCANNING */
+
   /* Config. */
 
   if (find_trash ("config", id, &resource))
@@ -39692,6 +39715,15 @@ manage_restore (const char *id)
            " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
+#if ENABLE_CONTAINER_SCANNING
+      sql ("UPDATE oci_image_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           credential,
+           resource);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       permissions_set_locations ("credential", resource, credential,
                                  LOCATION_TABLE);
@@ -40359,6 +40391,9 @@ manage_empty_trashcan ()
   sql ("DELETE FROM credentials_trash" WHERE_OWNER);
   sql ("DELETE FROM filters_trash" WHERE_OWNER);
   sql ("DELETE FROM notes_trash" WHERE_OWNER);
+#if ENABLE_CONTAINER_SCANNING
+  sql ("DELETE FROM oci_image_targets_trash" WHERE_OWNER);
+#endif /* ENABLE_CONTAINER_SCANNING */
   sql ("DELETE FROM overrides_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions_trash" WHERE_OWNER);
   empty_trashcan_port_lists ();
@@ -43653,6 +43688,10 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Hosts Filter");
       else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
         setting_name = g_strdup ("Notes Filter");
+#if ENABLE_CONTAINER_SCANNING
+      else if (strcmp (uuid, "db61a364-de40-4552-b1bc-a518744f847a") == 0)
+        setting_name = g_strdup ("OCI Image Targets Filter");
+#endif
       else if (strcmp (uuid, "f608c3ec-ce73-4ff6-8e04-7532749783af") == 0)
         setting_name = g_strdup ("Operating Systems Filter");
       else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)

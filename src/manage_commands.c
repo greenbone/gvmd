@@ -31,6 +31,9 @@ command_t gmp_commands[]
     {"CREATE_FILTER", "Create a filter."},
     {"CREATE_GROUP", "Create a group."},
     {"CREATE_NOTE", "Create a note."},
+#if ENABLE_CONTAINER_SCANNING
+    {"CREATE_OCI_IMAGE_TARGET", "Create an OCI image target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"CREATE_OVERRIDE", "Create an override."},
     {"CREATE_PERMISSION", "Create a permission."},
     {"CREATE_PORT_LIST", "Create a port list."},
@@ -59,6 +62,9 @@ command_t gmp_commands[]
     {"DELETE_FILTER", "Delete a filter."},
     {"DELETE_GROUP", "Delete a group."},
     {"DELETE_NOTE", "Delete a note."},
+#if ENABLE_CONTAINER_SCANNING
+    {"DELETE_OCI_IMAGE_TARGET", "Delete an OCI image target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"DELETE_OVERRIDE", "Delete an override."},
     {"DELETE_PERMISSION", "Delete a permission."},
     {"DELETE_PORT_LIST", "Delete a port list."},
@@ -96,6 +102,9 @@ command_t gmp_commands[]
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
     {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
+#if ENABLE_CONTAINER_SCANNING
+    {"GET_OCI_IMAGE_TARGETS", "Get all OCI image targets."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"GET_OVERRIDES", "Get all overrides."},
     {"GET_PERMISSIONS", "Get all permissions."},
     {"GET_PORT_LISTS", "Get all port lists."},
@@ -131,6 +140,9 @@ command_t gmp_commands[]
     {"MODIFY_GROUP", "Modify an existing group."},
     {"MODIFY_LICENSE", "Modify the existing license."},
     {"MODIFY_NOTE", "Modify an existing note."},
+#if ENABLE_CONTAINER_SCANNING
+    {"MODIFY_OCI_IMAGE_TARGET", "Modify an existing OCI image target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PERMISSION", "Modify an existing permission."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},

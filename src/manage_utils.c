@@ -330,6 +330,9 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "os") == 0)
          || (strcasecmp (type, "note") == 0)
          || (strcasecmp (type, "nvt") == 0)
+#if ENABLE_CONTAINER_SCANNING
+         || (strcasecmp (type, "oci_image_target") == 0)
+#endif /* ENABLE_CONTAINER_SCANNING */
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "permission") == 0)
