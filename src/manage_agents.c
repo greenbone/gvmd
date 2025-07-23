@@ -728,6 +728,13 @@ delete_and_resync_agents (agent_uuid_list_t agent_uuids)
       return get_result;
     }
 
+  if (agents_in_use (agent_uuids))
+    {
+      agent_controller_agent_list_free (agent_control_list);
+      manage_option_cleanup ();
+      return AGENT_RESPONSE_IN_USE_ERROR;
+    }
+
   connector = gvmd_agent_connector_new_from_scanner (scanner);
   if (!connector)
     {

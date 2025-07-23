@@ -19,8 +19,11 @@
 #define _GVMD_MANAGE_AGENTS_H
 
 #include "iterator.h"
-#include "manage.h"
 #include "manage_agent_common.h"
+#include "manage_get.h"
+#include "manage_resources.h"
+
+#include <agent_controller/agent_controller.h>
 
 typedef resource_t agent_t;
 
@@ -106,7 +109,8 @@ typedef enum {
   AGENT_RESPONSE_INVALID_ARGUMENT = -8,             ///< Failed invalid argument
   AGENT_RESPONSE_INVALID_AGENT_OWNER = -9,          ///< Failed getting owner UUID
   AGENT_RESPONSE_AGENT_NOT_FOUND = -10,             ///< Failed getting owner UUID
-  AGENT_RESPONSE_INTERNAL_ERROR = -11               ///< Internal error
+  AGENT_RESPONSE_INTERNAL_ERROR = -11,              ///< Internal error
+  AGENT_RESPONSE_IN_USE_ERROR = -12                 ///< Agent is in used by an Agent Group
 } agent_response_t;
 
 gvmd_agent_connector_t
@@ -194,6 +198,9 @@ agent_in_use (agent_t agent);
 
 void
 delete_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t agent_uuids);
+
+gboolean
+agents_in_use (agent_uuid_list_t agent_uuids);
 
 #endif // _GVMD_MANAGE_AGENTS_H
 #endif // ENABLE_AGENTS

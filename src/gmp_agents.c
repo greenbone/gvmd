@@ -445,7 +445,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
         log_event_fail ("agents", "Agents", NULL, "modified");
         break;
-
+      case AGENT_RESPONSE_IN_USE_ERROR:
       default:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
         log_event_fail ("agents", "Agents", NULL, "modified");
@@ -705,6 +705,11 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
       case AGENT_RESPONSE_INTERNAL_ERROR:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
         log_event_fail ("agents", "Agents", NULL, "deleted");
+        break;
+
+      case AGENT_RESPONSE_IN_USE_ERROR:
+        SENDF_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Resource is in use"));
+        log_event_fail ("agent", "Agents", NULL, "deleted");
         break;
 
       default:
