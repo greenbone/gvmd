@@ -110,7 +110,7 @@ typedef enum {
   AGENT_RESPONSE_INVALID_AGENT_OWNER = -9,          ///< Failed getting owner UUID
   AGENT_RESPONSE_AGENT_NOT_FOUND = -10,             ///< Failed getting owner UUID
   AGENT_RESPONSE_INTERNAL_ERROR = -11,              ///< Internal error
-  AGENT_RESPONSE_IN_USE_ERROR = -12                 ///< Agent is in used by an Agent Group
+  AGENT_RESPONSE_IN_USE_ERROR = -12                 ///< Agent is used by an Agent Group
 } agent_response_t;
 
 gvmd_agent_connector_t

@@ -572,7 +572,7 @@ agent_writable (agent_t agent)
  * @brief Check if an agent is currently in use.
  *
  * @param agent Resource identifier.
- * @return Always returns 0 (not in use).
+ * @return 1 if the agent is in use, 0 otherwise.
  */
 int
 agent_in_use (agent_t agent)
