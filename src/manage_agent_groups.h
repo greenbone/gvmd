@@ -18,8 +18,9 @@
 #define _GVMD_MANAGE_AGENT_GROUPS_H
 
 #include "iterator.h"
-#include "manage.h"
 #include "manage_agent_common.h"
+#include "manage_get.h"
+#include "manage_resources.h"
 
 typedef resource_t agent_group_t;
 
