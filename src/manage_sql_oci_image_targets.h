@@ -17,10 +17,10 @@
  */
 
 /**
- * @file manage_sql_report_configs.h
- * @brief GVM management layer: Report configs SQL.
+ * @file manage_sql_oci_image_targets.h
+ * @brief GVM management layer: OCI Image Targets SQL.
  *
- * SQL report config code for the GVM management layer.
+ * SQL OCI image targets code for the GVM management layer.
  */
 
 #ifndef _GVMD_MANAGE_SQL_OCI_IMAGE_TARGETS_H
