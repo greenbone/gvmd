@@ -667,4 +667,45 @@ update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment)
   g_string_free (uuid_list, TRUE);
 }
 
+/**
+ * @brief Retrieve the internal row ID of an agent by its UUID and scanner ID.
+ *
+ * @param[in]  agent_uuid   The UUID of the agent.
+ * @param[in]  scanner_id   The expected scanner row ID.
+ * @param[out] agent_id_out Pointer to store the resolved agent ID.
+ *
+ * @return 0 if success,
+ *         1 if agent not found,
+ *         2 if scanner mismatch.
+ */
+int
+agent_id_by_uuid_and_scanner (const gchar *agent_uuid,
+                              scanner_t scanner_id,
+                              agent_t *agent_id_out)
+{
+  g_return_val_if_fail (agent_uuid != NULL, 1);
+  g_return_val_if_fail (agent_id_out != NULL, 1);
+
+  // Get the agent ID with matching scanner
+  agent_t agent_id = sql_int64_0 (
+    "SELECT id FROM agents WHERE uuid = '%s' AND scanner = %llu;",
+    agent_uuid, scanner_id);
+
+  if (agent_id != 0)
+  {
+    *agent_id_out = agent_id;
+    return 0;  // success
+  }
+
+  // Check if agent exists but scanner doesn't match
+  agent_id = sql_int64_0 (
+    "SELECT id FROM agents WHERE uuid = '%s';",
+    agent_uuid);
+
+  if (agent_id != 0)
+    return 2;  // scanner mismatch
+
+  return 1;  // agent not found
+}
+
 #endif // ENABLE_AGENTS

@@ -29,7 +29,8 @@ valid_type (const char* type)
 
 #if ENABLE_AGENTS
   if (strcasecmp (type, "agent") == 0
-      || strcasecmp (type, "agent_installer") == 0) 
+      || strcasecmp (type, "agent_group") == 0
+      || strcasecmp (type, "agent_installer") == 0)
     return 1;
 #endif
 
@@ -99,6 +100,8 @@ type_db_name (const char* type)
 #if ENABLE_AGENTS
   if (strcasecmp (type, "Agent") == 0)
     return "agent";
+  if (strcasecmp (type, "Agent Group") == 0)
+    return "agent_group";
   if (strcasecmp (type, "Agent Installer") == 0)
     return "agent_installer";
 #endif

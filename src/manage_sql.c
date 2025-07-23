@@ -97,6 +97,7 @@
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
 #include "manage_report_configs.h"
+#include "manage_sql_agent_groups.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -32517,6 +32518,9 @@ delete_scanner (const char *scanner_id, int ultimate)
     }
 
 #if ENABLE_AGENTS
+  // Delete agent groups related to the scanner.
+  delete_agent_groups_by_scanner (scanner);
+  // Delete agents related to the scanner.
   delete_agents_by_scanner_and_uuids (scanner, NULL);
 #endif // ENABLE_AGENTS
 
@@ -39281,6 +39285,13 @@ manage_restore (const char *id)
       return 99;
     }
 
+#if ENABLE_AGENTS
+  /* Agent Group. */
+  ret = restore_agent_group (id);
+  if (ret != 2)
+    return ret;
+#endif
+
   /* Port List. */
   ret = restore_port_list (id);
   if (ret != 2)
@@ -40318,6 +40329,9 @@ manage_empty_trashcan ()
       sql_rollback ();
       return 99;
     }
+#if ENABLE_AGENTS
+  empty_trashcan_agent_groups ();
+#endif
 
   sql ("DELETE FROM nvt_selectors"
        " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
@@ -43650,7 +43664,9 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid)
     {
       /* Filters */
-      if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
+      if (strcmp (uuid, "391fc4f4-9f6c-4f0e-a689-37dd7d70d144") == 0)
+        setting_name = g_strdup ("Agent Groups Filter");
+      else if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
         setting_name = g_strdup ("Agents Filter");
       else if (strcmp (uuid, "a39a719a-e6bc-4d9f-a1e6-a53e5b014b05") == 0)
         setting_name = g_strdup ("Agent Installers Filter");
