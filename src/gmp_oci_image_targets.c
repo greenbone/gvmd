@@ -124,8 +124,7 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
       switch (copy_oci_image_target (name ? entity_text (name) : NULL,
                                      comment ? entity_text (comment) : NULL,
                                      entity_text (copy),
-                                     &new_oci_image_target,
-                                     &error_message))
+                                     &new_oci_image_target))
         {
           case 0:
             {
@@ -234,14 +233,14 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
       case 1:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
-                              "OCI image target with given name exists already"));
+                             "OCI image target with given name exists already"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
       case 2:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
-                              "Error in image references specification: %s"),
+                             "Error in image references specification: %s"),
                               error_message);
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
@@ -249,7 +248,7 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
       case 3:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
-                              "Invalid credential"));
+                             "Invalid credential"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
@@ -264,7 +263,7 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
       case 5:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
-                              "Invalid credential type"));
+                             "Invalid credential type"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;

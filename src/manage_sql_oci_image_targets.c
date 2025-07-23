@@ -1,3 +1,8 @@
+/* Copyright (C) 2025 Greenbone AG
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 #include "debug_utils.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage_oci_image_targets.h"
@@ -19,7 +24,7 @@
  * @param[in]   credential_id    Credential for accessing the registry.
  * @param[in]   image_references Image OCI URLs
  * @param[out]  oci_image_target Created target.
- * @param[out]  error_message     Error message if any.
+ * @param[out]  error_message    Error message if any.
  *
  * @return 0 success, 1 target exists already, 2 error in image URLS,
  *         3 invalid credential, 4 could not find credential,
@@ -58,6 +63,7 @@ create_oci_image_target (const char* name,
   if (!validate_oci_image_references (image_references, error_message))
     {
       sql_rollback ();
+      g_free (quoted_name);
       return 2;
     }
 
@@ -78,12 +84,18 @@ create_oci_image_target (const char* name,
                                                "get_credentials"))
             {
               sql_rollback ();
+              g_free (quoted_name);
+              g_free (quoted_urls);
+              g_free (quoted_comment);
               return -1;
             }
 
           if (credential == 0)
             {
               sql_rollback ();
+              g_free (quoted_name);
+              g_free (quoted_urls);
+              g_free (quoted_comment);
               return 4;
             }
 
@@ -91,6 +103,10 @@ create_oci_image_target (const char* name,
           if (strcmp (type, "up"))
             {
               sql_rollback ();
+              g_free (quoted_name);
+              g_free (quoted_urls);
+              g_free (quoted_comment);
+              g_free (type);
               return 5;
             }
           g_free (type);
@@ -98,6 +114,9 @@ create_oci_image_target (const char* name,
       else
         {
           sql_rollback ();
+          g_free (quoted_name);
+          g_free (quoted_urls);
+          g_free (quoted_comment);
           return 3;
         }
     }
@@ -146,8 +165,7 @@ int
 copy_oci_image_target (const char* name,
                        const char* comment,
                        const char *oci_image_target_id,
-                       oci_image_target_t* new_oci_image_target,
-                       gchar **error_message)
+                       oci_image_target_t* new_oci_image_target)
 {
   int ret;
   oci_image_target_t old_oci_image_target;

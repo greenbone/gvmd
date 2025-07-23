@@ -16,6 +16,8 @@
 #include "iterator.h"
 #include "manage.h"
 
+typedef resource_t oci_image_target_t;
+
 gboolean
 find_oci_image_target_with_permission (const char*,
                                        oci_image_target_t*,
@@ -39,7 +41,7 @@ create_oci_image_target (const char*, const char*, const char*,
 
 int
 copy_oci_image_target (const char*, const char*, 
-                       const char*, oci_image_target_t*, gchar **);
+                       const char*, oci_image_target_t*);
 
 int
 modify_oci_image_target (const char*, const char*, const char*,

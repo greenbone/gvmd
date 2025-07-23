@@ -58,12 +58,30 @@ Ensure (manage_oci_image_targets, accepts_registry_repo)
   g_free (given);
 }
 
+Ensure (manage_oci_image_targets, accepts_only_registry)
+{
+  gchar *given;
+  given = g_strdup ("oci://myregistry.com");
+
+  assert_that (valid_oci_url(given), is_equal_to (0));
+  g_free (given);
+}
+
 Ensure (manage_oci_image_targets, accepts_registry_port)
 {
   gchar *given;
   given = g_strdup ("oci://myregistry.com:12345");
 
   assert_that (valid_oci_url(given), is_equal_to (0));
+  g_free (given);
+}
+
+Ensure (manage_oci_image_targets, rejects_empty_image_ref_url_after_prefix)
+{
+  gchar *given;
+  given = g_strdup ("oci://");
+
+  assert_that (valid_oci_url(given), is_equal_to (-1));
   g_free (given);
 }
 
@@ -148,8 +166,11 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_oci_image_targets,
                                 accepts_registry_port);
 
-  add_test_with_context (suite, manage_oci_image_targets, 
+  add_test_with_context (suite, manage_oci_image_targets,
                                 rejects_invalid_port);
+
+  add_test_with_context (suite, manage_oci_image_targets,
+                                rejects_empty_image_ref_url_after_prefix);
 
   add_test_with_context (suite, manage_oci_image_targets,
                                 accepts_registry_as_ipv4);
@@ -165,6 +186,9 @@ main (int argc, char **argv)
 
   add_test_with_context (suite, manage_oci_image_targets,
                                 rejects_invalid_ipv6);
+
+  add_test_with_context (suite, manage_oci_image_targets,
+                                accepts_only_registry);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());

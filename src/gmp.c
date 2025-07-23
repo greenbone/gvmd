@@ -5516,6 +5516,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_nvt_families_data->sort_order = 1;
             set_client_state (CLIENT_GET_NVT_FAMILIES);
           }
+#if ENABLE_CONTAINER_SCANNING
+        ELSE_GET_START (oci_image_targets, OCI_IMAGE_TARGETS)
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("GET_OVERRIDES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5538,9 +5541,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_OVERRIDES);
           }
-#if ENABLE_CONTAINER_SCANNING
-        ELSE_GET_START (oci_image_targets, OCI_IMAGE_TARGETS)
-#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("GET_PORT_LISTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -21343,13 +21343,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_CREATE_OCI_IMAGE_TARGET:
-        if (create_oci_image_target_element_end (gmp_parser,
-                                                 error,
-                                                element_name))
-          set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_CREATE_ALERT:
         {
           event_t event;
@@ -22498,6 +22491,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_NOTE, TASK);
       CLOSE (CLIENT_CREATE_NOTE, TEXT);
       CLOSE (CLIENT_CREATE_NOTE, THREAT);
+
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        if (create_oci_image_target_element_end (gmp_parser,
+                                                 error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
 
       case CLIENT_CREATE_OVERRIDE:
         {
@@ -28340,6 +28340,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_NOTE_THREAT,
               &create_note_data->threat);
 
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_CREATE_OVERRIDE_ACTIVE,
               &create_override_data->active);
@@ -28367,10 +28370,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_OVERRIDE_THREAT,
               &create_override_data->threat);
-
-      case CLIENT_CREATE_OCI_IMAGE_TARGET:
-        create_oci_image_target_element_text (text, text_len);
-        break;
 
       APPEND (CLIENT_CREATE_PERMISSION_COMMENT,
               &create_permission_data->comment);
