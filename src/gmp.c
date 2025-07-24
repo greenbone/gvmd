@@ -1725,6 +1725,7 @@ typedef struct
   get_data_t get;    ///< Get Args.
   int scanners;      ///< Boolean.  Whether to return scanners using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
+  int oci_image_targets; ///< Boolean.  Whether to return OCI image targets.
 } get_credentials_data_t;
 
 /**
@@ -5407,7 +5408,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_credentials_data->targets = strcmp (attribute, "0");
             else
               get_credentials_data->targets = 0;
-
+#if ENABLE_CONTAINER_SCANNING
+            if (find_attribute (attribute_names, attribute_values,
+                                "oci_image_targets", &attribute))
+              get_credentials_data->oci_image_targets = strcmp (attribute, "0");
+            else
+              get_credentials_data->oci_image_targets = 0;
+#endif /* ENABLE_CONTAINER_SCANNING */
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
@@ -12762,6 +12769,32 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</targets>");
         }
 
+#if ENABLE_CONTAINER_SCANNING
+      if (get_credentials_data->oci_image_targets)
+        {
+          iterator_t oci_image_targets;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<oci_image_targets>");
+          init_credential_oci_image_target_iterator
+            (&oci_image_targets, get_iterator_resource (&credentials), 0);
+          while (next (&oci_image_targets))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<oci_image_target id=\"%s\">"
+                "<name>%s</name>",
+                credential_oci_target_iterator_uuid (&oci_image_targets),
+                credential_oci_target_iterator_name (&oci_image_targets));
+              if (credential_oci_target_iterator_readable (&oci_image_targets))
+                SEND_TO_CLIENT_OR_FAIL ("</oci_image_target>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</oci_image_target>");
+            }
+          cleanup_iterator (&oci_image_targets);
+
+          SEND_TO_CLIENT_OR_FAIL ("</oci_image_targets>");
+        }
+#endif
       SEND_TO_CLIENT_OR_FAIL ("</credential>");
       count++;
     }
