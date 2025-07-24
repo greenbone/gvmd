@@ -45736,6 +45736,21 @@ delete_user (const char *user_id_arg, const char *name_arg,
   sql ("DELETE FROM targets WHERE owner = %llu;", user);
   sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
 
+#if ENABLE_CONTAINER_SCANNING
+  /* OCI Image Targets. */
+  if (user_resources_in_use (user,
+                             "oci_image_targets",
+                             oci_image_target_in_use,
+                             "oci_image_targets_trash",
+                             trash_oci_image_target_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM oci_image_targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM oci_image_targets_trash WHERE owner = %llu;", user);
+#endif /* ENABLE_CONTAINER_SCANNING */
+
   /* Delete resources used indirectly by tasks */
 
   /* Filters (used by alerts and settings). */
