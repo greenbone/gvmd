@@ -1,8 +1,8 @@
-name: 'Build Documentation'
+name: "Build Documentation"
 
 on:
   push:
-    branches: [ main, stable, oldstable ]
+    branches: [main, stable, oldstable]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +22,7 @@ jobs:
   build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: ${{ vars.IMAGE_REGISTRY }}/greenbone/gvmd-build:stable
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
