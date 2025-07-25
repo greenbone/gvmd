@@ -84,7 +84,7 @@ init_semaphore_set ()
       return -1;
     }
   fclose (key_file);
-  semaphore_set_key = ftok (key_file_name, 0);
+  semaphore_set_key = ftok (key_file_name, 42);
   if (semaphore_set_key < 0)
     {
       g_warning ("%s: error creating semaphore key for file %s: %s",
@@ -190,7 +190,7 @@ reinit_semaphore_set ()
 {
   gchar *key_file_name = g_build_filename (GVM_STATE_DIR, "gvmd.sem", NULL);
 
-  semaphore_set_key = ftok (key_file_name, 0);
+  semaphore_set_key = ftok (key_file_name, 42);
 
   if (semaphore_set_key < 0)
     {
