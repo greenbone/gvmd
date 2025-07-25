@@ -12824,6 +12824,13 @@ END:VCALENDAR
         <summary>Whether to include a list of targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
+@IF_ENABLE_CONTAINER_SCANNNING@
+      <attrib>
+        <name>oci_image_targets</name>
+        <summary>Whether to include a list of OCI image targets using the credentials</summary>
+        <type>boolean</type>
+      </attrib>
+@ENDIF_ENABLE_CONTAINER_SCANNNING@
       <attrib>
         <name>format</name>
         <type>
@@ -12882,6 +12889,9 @@ END:VCALENDAR
           <o><e>certificate_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
+@IF_ENABLE_CONTAINER_SCANNNING@
+          <o><e>oci_image_targets</e></o>
+@ENDIF_ENABLE_CONTAINER_SCANNNING@
           <o>
             <or>
               <e>public_key</e>
@@ -13157,6 +13167,37 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
+@IF_ENABLE_CONTAINER_SCANNNING@
+        <ele>
+          <name>oci_image_targets</name>
+          <summary>All OCI image targets using this credential</summary>
+          <pattern>
+            <any><e>oci_image_target</e></any>
+          </pattern>
+          <ele>
+            <name>oci_image_target</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the OCI image target</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the OCI image target</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+@ENDIF_ENABLE_CONTAINER_SCANNNING@
         <ele>
           <name>public_key</name>
           <pattern>text</pattern>

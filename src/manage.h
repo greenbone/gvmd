@@ -2217,6 +2217,20 @@ credential_target_iterator_name (iterator_t*);
 int
 credential_target_iterator_readable (iterator_t*);
 
+#if ENABLE_CONTAINER_SCANNING
+void
+init_credential_oci_image_target_iterator (iterator_t*, credential_t, int);
+
+const char*
+credential_oci_target_iterator_uuid (iterator_t*);
+
+const char*
+credential_oci_target_iterator_name (iterator_t*);
+
+int
+credential_oci_target_iterator_readable (iterator_t*);
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 void
 init_credential_scanner_iterator (iterator_t*, credential_t, int);
 
