@@ -2,14 +2,14 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ main, stable, oldstable ]
+    branches: [main, stable, oldstable]
   pull_request:
-    branches: [ main, stable, oldstable ]
+    branches: [main, stable, oldstable]
     paths-ignore:
-      - '**/*.md'
-      - '**/*.txt'
+      - "**/*.md"
+      - "**/*.txt"
   schedule:
-    - cron: '30 5 * * 0' # 5:30h on Sundays
+    - cron: "30 5 * * 0" # 5:30h on Sundays
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,28 +23,28 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
 
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'c' ]
+        language: ["c"]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Install build dependencies
-      run: sh .github/install-dependencies.sh .github/build-dependencies.list
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-    # build between init and analyze ...
-    - name: Configure and compile gvmd
-      run: |
-        mkdir build
-        cd build/
-        cmake -DCMAKE_BUILD_TYPE=Debug ..
-        make install
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sh .github/install-dependencies.sh .github/build-dependencies.list
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      # build between init and analyze ...
+      - name: Configure and compile gvmd
+        run: |
+          mkdir build
+          cd build/
+          cmake -DCMAKE_BUILD_TYPE=Debug ..
+          make install
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
