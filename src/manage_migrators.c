@@ -3415,6 +3415,40 @@ migrate_260_to_261 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 261 to version 262.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_261_to_262 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 261. */
+
+  if (manage_db_version () != 261)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add agent_group_target and agent_group_name fields to tasks
+
+  sql ("ALTER TABLE tasks ADD COLUMN agent_group integer;");
+  sql ("ALTER TABLE tasks ADD COLUMN agent_group_location integer;");
+
+  /* Set the database version to 262. */
+
+  set_db_version (262);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3482,6 +3516,7 @@ static migrator_t database_migrators[] = {
   {259, migrate_258_to_259},
   {260, migrate_259_to_260},
   {261, migrate_260_to_261},
+  {262, migrate_261_to_262},
   /* End marker. */
   {-1, NULL}};
 

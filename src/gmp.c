@@ -1053,6 +1053,7 @@ typedef struct
   char *schedule_id;    ///< ID of task schedule.
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;      ///< ID of task target.
+  char *agent_group_id; ///< ID of task agent group.
   task_t task;          ///< ID of new task.
   char *usage_type;     ///< Usage type ("scan" or "audit")
 } create_task_data_t;
@@ -1093,6 +1094,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->schedule_periods);
   free (data->target_id);
   free (data->usage_type);
+  free (data -> agent_group_id);
 
   memset (data, 0, sizeof (create_task_data_t));
 }
@@ -2961,6 +2963,7 @@ typedef struct
   char *schedule_id;   ///< ID of new schedule for task.
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;     ///< ID of new target for task.
+  char *agent_group_id; ///< ID of new agent group for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -3003,6 +3006,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_periods);
   free (data->target_id);
   free (data->task_id);
+  free (data->agent_group_id);
 
   memset (data, 0, sizeof (modify_task_data_t));
 }
@@ -4334,6 +4338,9 @@ typedef enum
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SSH_ELEVATE_CREDENTIAL,
   CLIENT_CREATE_TASK,
+#if ENABLE_AGENTS
+  CLIENT_CREATE_TASK_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_ALTERABLE,
   CLIENT_CREATE_TASK_COMMENT,
@@ -4594,6 +4601,9 @@ typedef enum
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_MODIFY_TASK,
+#if ENABLE_AGENTS
+  CLIENT_MODIFY_TASK_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_TASK_ALERT,
   CLIENT_MODIFY_TASK_ALTERABLE,
   CLIENT_MODIFY_TASK_COMMENT,
@@ -6890,6 +6900,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_task_data->scanner_id);
             set_client_state (CLIENT_MODIFY_TASK_SCANNER);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
+          {
+             append_attribute (attribute_names, attribute_values, "id",
+                               &modify_task_data->agent_group_id);
+             set_client_state (CLIENT_MODIFY_TASK_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -7948,6 +7966,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_task_data->config_id);
             set_client_state (CLIENT_CREATE_TASK_CONFIG);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data -> agent_group_id);
+            set_client_state (CLIENT_CREATE_TASK_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -24142,13 +24168,42 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->target_id == NULL)
+          if (create_task_data->target_id == NULL && create_task_data->agent_group_id == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "A target is required"));
               goto create_task_fail;
             }
+
+#if ENABLE_AGENTS
+          if (create_task_data -> agent_group_id)
+          {
+              /* Agent task. */
+              g_warning("agent group id %s",create_task_data -> agent_group_id);
+              agent_group_t agent_group = 0;
+
+              if (find_agent_group_with_permission (
+                create_task_data -> agent_group_id, &agent_group,
+                "get_agent_groups"))
+              {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+              }
+              set_task_agent_group (create_task_data -> task, agent_group);
+              set_task_agent_group_location (create_task_data->task);
+              set_task_usage_type (create_task_data -> task,
+                                   create_task_data -> usage_type);
+              SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
+                                       tsk_uuid);
+              make_task_complete (create_task_data -> task);
+              log_event ("task", "Task", tsk_uuid, "created");
+              g_free (tsk_uuid);
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+          }
+#endif /* ENABLE_AGENTS */
 
           if (strcmp (create_task_data->target_id, "0") == 0)
             {
@@ -24434,6 +24489,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, USAGE_TYPE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE_PERIODS);
+#if ENABLE_AGENTS
+      CLOSE (CLIENT_CREATE_TASK, AGENT_GROUP);
+#endif /* ENABLE_AGENTS */
 
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
@@ -26966,6 +27024,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       modify_task_data->schedule_periods,
                                       modify_task_data->preferences,
                                       modify_task_data->hosts_ordering,
+                                      modify_task_data->agent_group_id,
                                       &fail_alert_id,
                                       &fail_group_id))
               {
@@ -27120,6 +27179,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
+
+#if ENABLE_AGENTS
+              case 18 :
+                if (send_find_error_to_client
+                  ("modify_task", "agent_group",
+                   modify_task_data -> agent_group_id, gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("agent_group", "Agent Group",
+                                modify_task_data -> task_id,
+                                "modified");
+                break;
+#endif /*ENABLE_AGENTS*/
                 default:
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -27149,6 +27223,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE_PERIODS);
       CLOSE (CLIENT_MODIFY_TASK, TARGET);
+#if ENABLE_AGENTS
+      CLOSE (CLIENT_MODIFY_TASK, AGENT_GROUP);
+#endif /* ENABLE_AGENTS */
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);

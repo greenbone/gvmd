@@ -606,6 +606,17 @@ task_target_in_trash (task_t);
 void
 set_task_target (task_t, target_t);
 
+#if ENABLE_AGENTS
+void
+set_task_agent_group (task_t task, agent_group_t agent_group);
+
+void
+set_task_agent_group_location (task_t task);
+
+void
+delete_agent_group_tasks_by_scanner (scanner_t scanner);
+#endif
+
 void
 set_task_hosts_ordering (task_t, const char *);
 
@@ -778,7 +789,7 @@ int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *,
-             array_t *, const gchar *, gchar **, gchar **);
+             array_t *, const gchar *, const gchar *, gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);
