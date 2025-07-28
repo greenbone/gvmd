@@ -24177,32 +24177,50 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 
 #if ENABLE_AGENTS
-          if (create_task_data -> agent_group_id)
-          {
-              /* Agent task. */
-              g_warning("agent group id %s",create_task_data -> agent_group_id);
+          if (create_task_data->agent_group_id)
+            {
+              /* Agent group task */
               agent_group_t agent_group = 0;
 
               if (find_agent_group_with_permission (
-                create_task_data -> agent_group_id, &agent_group,
-                "get_agent_groups"))
-              {
+                    create_task_data->agent_group_id, &agent_group,
+                    "get_agent_groups"))
+                {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   goto create_task_fail;
-              }
-              set_task_agent_group (create_task_data -> task, agent_group);
+                }
+
+              set_task_agent_group (create_task_data->task, agent_group);
               set_task_agent_group_location (create_task_data->task);
-              set_task_usage_type (create_task_data -> task,
-                                   create_task_data -> usage_type);
+              set_task_usage_type (create_task_data->task,
+                                   create_task_data->usage_type);
+
+              /* Set schedule and schedule_periods */
+              int schedule_ret = set_task_schedule_and_periods (
+                create_task_data->task, create_task_data->schedule_id,
+                create_task_data->schedule_periods);
+
+              if (schedule_ret == -1)
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              else if (schedule_ret == -2)
+                {
+                  SEND_TO_CLIENT_OR_FAIL (
+                    XML_ERROR_SYNTAX ("create_task", "Schedule must exist"));
+                  goto create_task_fail;
+                }
+
               SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
                                        tsk_uuid);
-              make_task_complete (create_task_data -> task);
+              make_task_complete (create_task_data->task);
               log_event ("task", "Task", tsk_uuid, "created");
               g_free (tsk_uuid);
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
-          }
+            }
 #endif /* ENABLE_AGENTS */
 
           if (strcmp (create_task_data->target_id, "0") == 0)
@@ -24265,54 +24283,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             set_task_alterable (create_task_data->task, 1);
 
           /* Set any schedule. */
+          int schedule_ret = set_task_schedule_and_periods (
+            create_task_data->task, create_task_data->schedule_id,
+            create_task_data->schedule_periods);
 
-          if (create_task_data->schedule_id)
+          if (schedule_ret == -1)
             {
-              schedule_t schedule;
-              int periods;
-
-              periods = create_task_data->schedule_periods
-                         ? atoi (create_task_data->schedule_periods)
-                         : 0;
-              if (find_schedule_with_permission (create_task_data->schedule_id,
-                                                 &schedule,
-                                                 "get_schedules"))
-                {
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-                  goto create_task_fail;
-                }
-              if (schedule == 0)
-                {
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_task",
-                                      "Schedule must exist"));
-                  goto create_task_fail;
-                }
-              /** @todo
-               *
-               * This is a contention hole.  Some other process could remove
-               * the schedule at this point.  The variable "schedule" would
-               * still refer to the removed schedule.
-               *
-               * This happens all over the place.  Anywhere that a libmanage
-               * client gets a reference to a resource, in fact.
-               *
-               * Possibly libmanage should lock the db whenever it hands out a
-               * reference, and the client should call something to release
-               * the lock when it's done.
-               *
-               * In many cases, like this one, the client could pass the UUID
-               * directly to libmanage, instead of getting the reference.  In
-               * this case the client would then need something like
-               * set_task_schedule_uuid.
-               */
-              set_task_schedule (create_task_data->task, schedule, periods);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              goto create_task_fail;
             }
-          else if (create_task_data->schedule_periods
-                   && strlen (create_task_data->schedule_periods))
-            set_task_schedule_periods_id
-             (create_task_data->task,
-              atoi (create_task_data->schedule_periods));
+          else if (schedule_ret == -2)
+            {
+              SEND_TO_CLIENT_OR_FAIL (
+                XML_ERROR_SYNTAX ("create_task", "Schedule must exist"));
+              goto create_task_fail;
+            }
 
           /* Set any observers. */
 
