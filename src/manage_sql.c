@@ -8787,6 +8787,55 @@ set_task_target (task_t task, target_t target)
        task);
 }
 
+#if ENABLE_AGENTS
+/**
+ * @brief Set the agent group of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  agent_group  Agent group.
+ */
+void
+set_task_agent_group (task_t task, agent_group_t agent_group)
+{
+  sql ("UPDATE tasks SET agent_group = %llu, modification_time = m_now ()"
+       " WHERE id = %llu;",
+       agent_group,
+       task);
+}
+
+/**
+ * @brief Set the agent group location of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  agent_group  Agent group.
+ */
+void
+set_task_agent_group_location (task_t task)
+{
+  sql ("UPDATE tasks SET agent_group_location = 0, modification_time = m_now ()"
+       " WHERE id = %llu;",
+       task);
+}
+
+/**
+ * @brief Delete tasks associated with agent groups for a specific scanner.
+ *
+ * This function deletes all tasks that are linked to agent groups
+ * which belong to the given scanner. It should be called before
+ * deleting the agent controller (scanner) to prevent dangling references.
+ *
+ * @param[in] scanner  The row ID of the scanner.
+ */
+void
+delete_agent_group_tasks_by_scanner (scanner_t scanner)
+{
+  sql (
+    "DELETE FROM tasks "
+    "WHERE agent_group IN (SELECT id FROM agent_groups WHERE scanner = %llu);",
+    scanner);
+}
+#endif /*ENABLE_AGENTS*/
+
 /**
  * @brief Set the hosts ordering of a task.
  *
@@ -23270,6 +23319,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  * @param[in]  schedule_periods  Period of schedule.
  * @param[in]  preferences       Preferences.
  * @param[in]  hosts_ordering    Host scan order.
+ * @param[in]  agent_group_id    Agent group.
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
@@ -23281,6 +23331,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for container tasks only
+ *         18 failed to find agent group
  *         certain fields may be edited, -1 error.
  */
 int
@@ -23293,6 +23344,7 @@ modify_task (const gchar *task_id, const gchar *name,
              const gchar *schedule_periods,
              array_t *preferences,
              const gchar *hosts_ordering,
+             const gchar *agent_group_id,
              gchar **fail_alert_id,
              gchar **fail_group_id)
 {
@@ -23475,6 +23527,27 @@ modify_task (const gchar *task_id, const gchar *name,
       else
         set_task_target (task, target);
     }
+#if ENABLE_AGENTS
+  if (agent_group_id) {
+    agent_group_t agent_group;
+
+    agent_group = 0;
+    if ((task_run_status(task) != TASK_STATUS_NEW)
+        && (task_alterable(task) == 0))
+      return 16;
+    else if (find_agent_group_with_permission(agent_group_id,
+                                              &agent_group,
+                                              "get_agent_groups"))
+      return -1;
+    else if (agent_group == 0)
+      return 18;
+    else
+      {
+        set_task_agent_group (task, agent_group);
+        set_task_agent_group_location (task);
+      }
+  }
+#endif
 
   if (preferences)
     switch (set_task_preferences (task, preferences))
@@ -32518,6 +32591,8 @@ delete_scanner (const char *scanner_id, int ultimate)
     }
 
 #if ENABLE_AGENTS
+   // Delete agent group tasks related to the scanner.
+  delete_agent_group_tasks_by_scanner (scanner);
   // Delete agent groups related to the scanner.
   delete_agent_groups_by_scanner (scanner);
   // Delete agents related to the scanner.

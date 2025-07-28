@@ -122,5 +122,9 @@ agent_group_agent_iterator_uuid (iterator_t *iterator);
 const char*
 agent_group_agent_iterator_name (iterator_t *iterator);
 
+gboolean
+find_agent_group_with_permission (const char* uuid, agent_group_t* agent_group,
+                                  const char *permission);
+
 #endif // _GVMD_MANAGE_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS

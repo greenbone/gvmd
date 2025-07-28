@@ -436,8 +436,25 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
            " SELECT %llu, agent_id FROM agent_group_agents WHERE group_id = %llu;",
            trash_id, agent_group);
 
+    /* Update the location of the agent_group in any trashcan tasks. */
+    sql ("UPDATE tasks"
+         " SET agent_group = %llu,"
+         "     agent_group_location = " G_STRINGIFY (LOCATION_TRASH)
+         " WHERE agent_group = %llu"
+         " AND agent_group_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+         trash_id,
+         agent_group);
+
       permissions_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
       tags_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
+    }
+  else if (sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE agent_group = %llu"
+                    " AND agent_group_location = " G_STRINGIFY (LOCATION_TABLE),
+                    agent_group))
+    {
+      sql_rollback ();
+      return 1;
     }
   else
     {
@@ -508,6 +525,16 @@ restore_agent_group (const char *agent_group_uuid)
   // Restore permissions and tags
   permissions_set_locations ("agent_group", trash_id, restored_id, LOCATION_TABLE);
   tags_set_locations ("agent_group", trash_id, restored_id, LOCATION_TABLE);
+
+  /* Update the agent_group in any tasks. */
+  sql ("UPDATE tasks"
+        " SET agent_group = %llu,"
+        " agent_group_location = " G_STRINGIFY (LOCATION_TABLE)
+        " WHERE agent_group = %llu"
+        " AND agent_group_location = " G_STRINGIFY (LOCATION_TRASH),
+        restored_id,
+        trash_id);
+
 
   // Clean up trash entries
   sql ("DELETE FROM agent_group_agents_trash WHERE agent_group = %llu;", trash_id);
@@ -720,6 +747,85 @@ const char *
 agent_group_agent_iterator_name (iterator_t *iterator)
 {
   return iterator_string (iterator, 1);
+}
+
+/**
+ * @brief Find an agent group for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of agent group.
+ * @param[out]  agent_group Agent group return, 0 if successfully failed to find target.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_agent_group_with_permission (const char *uuid, agent_group_t *agent_group,
+                                  const char *permission)
+{
+  return find_resource_with_permission ("agent_group", uuid, agent_group,
+                                        permission, 0);
+}
+
+
+/**
+ * @brief Return whether a agent_group is in use.
+ *
+ * @param[in]  agent_group  Agent Group row id.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+agent_group_in_use (agent_group_t agent_group)
+{
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE agent_group = %llu"
+                    " AND agent_group_location = "
+                    G_STRINGIFY (LOCATION_TABLE)
+                    " AND hidden = 0;",
+                    agent_group);
+}
+
+/**
+ * @brief Return whether a trashcan agent_group is in use.
+ *
+ * @param[in]  agent_group  Agent Group row id.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_agent_group_in_use (agent_group_t agent_group)
+{
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                  " WHERE agent_group = %llu"
+                  " AND agent_group_location = "
+                  G_STRINGIFY (LOCATION_TRASH),
+                  agent_group);
+}
+
+/**
+ * @brief Return whether a agent_group is writable.
+ *
+ * @param[in]  agent_group  Agent Group row id.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+agent_group_writable (agent_group_t agent_group)
+{
+  return 1;
+}
+
+/**
+ * @brief Return whether a trashcan agent_group is writable.
+ *
+ * @param[in]  agent_group  Agent Group row id.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+trash_agent_group_writable (agent_group_t agent_group)
+{
+  return trash_agent_group_in_use (agent_group) == 0;
 }
 
 #endif // ENABLE_AGENTS
