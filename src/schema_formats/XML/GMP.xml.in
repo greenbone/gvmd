@@ -6464,6 +6464,9 @@ END:VCALENDAR
       <o><e>alterable</e></o>
       <o><e>usage_type</e></o>
       <e>config</e>
+      @IF_ENABLE_AGENTS@
+      <e>agent_group</e>
+      @ENDIF_ENABLE_AGENTS@
       <e>target</e>
       <o><e>hosts_ordering</e></o>
       <e>scanner</e>
@@ -6529,6 +6532,19 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
+    @IF_ENABLE_AGENTS@
+    <ele>
+      <name>agent_group</name>
+      <summary>The agents scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_AGENTS@
     <ele>
       <name>hosts_ordering</name>
       <summary>The order hosts are scanned in</summary>
@@ -6672,6 +6688,25 @@ END:VCALENDAR
         </create_task_response>
       </response>
     </example>
+    @IF_ENABLE_AGENTS@
+    <example>
+      <summary>Create an agent group task, for agent controller</summary>
+      <request>
+        <create_task>
+          <name>Agent Group Task</name>
+          <comment>Task with agent group assigned</comment>
+          <usage_type>scan</usage_type>
+          <agent_group id="fd9bd047-fac8-49e7-bd45-64652f713a41"/>
+        </create_task>
+      </request>
+      <response>
+        <create_task_response status="201"
+                              status_text="OK, resource created"
+                              id="b7f0afbe-bdb3-11e9-9847-28d24461215b">
+        </create_task_response>
+      </response>
+    </example>
+    @ENDIF_ENABLE_AGENTS@
   </command>
   <command>
     <name>create_ticket</name>
@@ -31473,6 +31508,9 @@ END:VCALENDAR
         <e>schedule_periods</e>
         <e>scanner</e>
         <e>target</e>
+        @IF_ENABLE_AGENTS@
+        <e>agent_group</e>
+        @ENDIF_ENABLE_AGENTS@
         <e>file</e>
       </or>
     </pattern>
@@ -31579,6 +31617,19 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
+    @IF_ENABLE_AGENTS@
+    <ele>
+      <name>agent_group</name>
+      <summary>The agents scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_AGENTS@
     <ele>
       <name>file</name>
       <summary>File to attach to task</summary>
