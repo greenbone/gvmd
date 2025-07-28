@@ -9553,6 +9553,65 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
 }
 
 /**
+ * @brief Set task schedule and schedule periods.
+ *
+ * If a valid schedule_id is provided, looks up the schedule and sets it for the task.
+ * If not, falls back to setting schedule_periods if available.
+ *
+ * @param[in,out] task              Task object to update.
+ * @param[in]     schedule_id       UUID of the schedule.
+ * @param[in]     schedule_periods  Optional string representing number of periods.
+ *
+ * @return 0  on success,
+ *         -1 if schedule lookup failed with permission,
+ *         -2 if schedule not found.
+ */
+int
+set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
+                               const gchar *schedule_periods)
+{
+  if (schedule_id)
+    {
+      schedule_t schedule;
+      int periods = schedule_periods ? atoi (schedule_periods) : 0;
+
+      if (find_schedule_with_permission (schedule_id,
+                                         &schedule, "get_schedules"))
+        {
+          return -1;
+        }
+      if (schedule == 0)
+        {
+          return -2;
+        }
+      /** @todo
+       *
+       * This is a contention hole.  Some other process could remove
+       * the schedule at this point.  The variable "schedule" would
+       * still refer to the removed schedule.
+       *
+       * This happens all over the place.  Anywhere that a libmanage
+       * client gets a reference to a resource, in fact.
+       *
+       * Possibly libmanage should lock the db whenever it hands out a
+       * reference, and the client should call something to release
+       * the lock when it's done.
+       *
+       * In many cases, like this one, the client could pass the UUID
+       * directly to libmanage, instead of getting the reference.  In
+       * this case the client would then need something like
+       * set_task_schedule_uuid.
+       */
+      set_task_schedule (task, schedule, periods);
+    }
+  else if (schedule_periods
+           && strlen (schedule_periods))
+    set_task_schedule_periods_id (task,
+                                  atoi (schedule_periods));
+  return 0;
+}
+
+/**
  * @brief Set the schedule of a task.
  *
  * @param[in]  task      Task.

@@ -615,7 +615,11 @@ set_task_agent_group_location (task_t task);
 
 void
 delete_agent_group_tasks_by_scanner (scanner_t scanner);
-#endif
+#endif /* ENABLE_AGENTS */
+
+int
+set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
+                               const gchar *schedule_periods);
 
 void
 set_task_hosts_ordering (task_t, const char *);
