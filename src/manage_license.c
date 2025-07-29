@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_license.c
+ * @file
  * @brief GVM management layer: License information.
  *
  * Non-SQL license information code for the GVM management layer.

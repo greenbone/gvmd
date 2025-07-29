@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_port_lists.c
+ * @file
  * @brief GVM GMP layer: Port Lists
  *
  * GMP port lists.

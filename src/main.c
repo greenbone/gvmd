@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  main.c
+ * @file
  * @brief Main function of gvmd.
  *
  * This file separates out the "main" function of gvmd.

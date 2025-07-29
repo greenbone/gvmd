@@ -17,7 +17,7 @@
  */
 
 /**
- * @file sql_pg.c
+ * @file
  * @brief Generic SQL interface: PostgreSQL backend
  *
  * PostreSQL backend of the SQL interface.

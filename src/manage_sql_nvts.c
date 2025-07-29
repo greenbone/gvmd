@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts.c
+ * @file
  * @brief GVM management layer: NVTs
  *
  * The NVT parts of the GVM management layer.

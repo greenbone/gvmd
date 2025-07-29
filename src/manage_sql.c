@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_sql.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management library.
  */
 

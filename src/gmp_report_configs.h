@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_report_formats.h
+ * @file
  * @brief GVM GMP layer: Report Configs headers
  *
  * Headers for GMP report configurations.

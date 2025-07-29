@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage_sql_secinfo.h
+ * @file
  * @brief Manager Manage library: SQL backend headers.
  */
 

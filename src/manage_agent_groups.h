@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agent_groups.h
+ * @file
  * @brief Agent group management interface for GVMD.
  *
  * This header defines core data structures and function prototypes

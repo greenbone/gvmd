@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage_sql.h
+ * @file
  * @brief Manager Manage library: SQL backend headers.
  */
 

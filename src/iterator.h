@@ -17,7 +17,7 @@
  */
 
 /**
- * @file iterator.h
+ * @file
  * @brief Headers for Iterators.
  *
  * The interface here is for "external" use.  The SQL parts of the interface

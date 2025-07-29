@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_osp.h
+ * @file
  * @brief Greenbone Vulnerability Manager OSP scan handling.
  */
 

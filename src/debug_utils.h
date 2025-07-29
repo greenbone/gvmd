@@ -18,7 +18,7 @@
 
 
 /**
- * @file debug_utils.h
+ * @file
  * @brief Headers for debug utilties and Sentry integration
  */
 

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file utils.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: General utilities.
  */
 

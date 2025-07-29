@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agents.c
+ * @file
  * @brief Agent management implementation for GVMD.
  *
  * This file contains the logic for synchronizing, modifying, and deleting agents

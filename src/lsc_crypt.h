@@ -17,7 +17,7 @@
  */
 
 /*
- * @file lsc_crypt.h
+ * @file
  * @brief LSC credentials encryption support
  */
 

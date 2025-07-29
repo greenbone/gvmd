@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_report_configs.c
+ * @file
  * @brief GVM management layer: Report configs.
  *
  * Non-SQL report config code for the GVM management layer.

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmpd.h
+ * @file
  * @brief Headers for the GMP daemon.
  */
 

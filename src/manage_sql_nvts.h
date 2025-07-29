@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts.h
+ * @file
  * @brief Manager Manage library: SQL backend headers.
  */
 

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_events.c
+ * @file
  * @brief GVM management layer: Events SQL
  *
  * The Events SQL for the GVM management layer.

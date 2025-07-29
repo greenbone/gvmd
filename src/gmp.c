@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  gmp.c
+ * @file
  * @brief The Greenbone Vulnerability Manager GMP library.
  *
  * This file defines a Greenbone Management Protocol (GMP) library, for

@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_filter_utils.c
+ * @file
  * @brief GVM management layer: Filter utilities.
  *
  * Filter parser and handling utilities code for the GVM management layer.

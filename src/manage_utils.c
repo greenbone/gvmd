@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_utils.c
+ * @file
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
  */
 
@@ -44,7 +44,7 @@
 #define SECS_PER_DAY 86400
 
 /**
- * @file  manage_utils.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management library.
  *
  * Utilities used by the manage library that do not depend on anything.

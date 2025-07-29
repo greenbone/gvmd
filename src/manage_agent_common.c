@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agent_common.c
+ * @file
  * @brief Implementation of shared agent utilities for GVMD.
  */
 

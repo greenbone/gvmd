@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_pg.c
+ * @file
  * @brief GVM management layer: PostgreSQL specific facilities
  *
  * This file contains the parts of the GVM management layer that need

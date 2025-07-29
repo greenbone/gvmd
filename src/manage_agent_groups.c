@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agent_groups.c
+ * @file
  * @brief Agent group data utilities and access control checks for GVMD.
  */
 

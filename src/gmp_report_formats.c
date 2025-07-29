@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_report_formats.c
+ * @file
  * @brief GVM GMP layer: Report Formats
  *
  * GMP report formats.

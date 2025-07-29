@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage_utils.h
+ * @file
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
  */
 

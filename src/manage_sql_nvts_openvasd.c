@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts_openvasd.c
+ * @file
  * @brief GVM management layer: openvasd NVT logic
  *
  * NVT logic specific to openvasd in the GVM management layer.
