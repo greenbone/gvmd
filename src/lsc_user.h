@@ -17,7 +17,7 @@
  */
 
 /*
- * @file lsc_user.h
+ * @file
  * @brief LSC user credentials package generation.
  */
 

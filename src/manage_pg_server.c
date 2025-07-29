@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_pg_server.c
+ * @file
  * @brief GVM management layer: Postgres server-side functions.
  *
  * This file contains a server-side module for Postgres, that defines SQL

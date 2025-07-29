@@ -17,7 +17,7 @@
  */
 
 /**
- * @file debug_utils.c
+ * @file
  * @brief Debug utilties and Sentry integration
  */
 

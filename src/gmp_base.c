@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_base.c
+ * @file
  * @brief GVM GMP layer: Base facilities.
  *
  * GMP base facilities used by all modules, but not exported for users of the GMP

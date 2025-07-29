@@ -4,7 +4,7 @@
  */
 
 /**
- * @file scan_handler.c
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager OSP scan handling.
  */
 

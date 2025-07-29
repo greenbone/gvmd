@@ -27,7 +27,7 @@
 #include <gvm/base/hosts.h>
 
 /**
- * @file manage_sql_alerts.c
+ * @file
  * @brief GVM management layer: Alert SQL
  *
  * The Alert SQL for the GVM management layer.

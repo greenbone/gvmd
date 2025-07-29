@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp.h
+ * @file
  * @brief Headers for the GMP library.
  */
 

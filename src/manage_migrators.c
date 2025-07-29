@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_migrators.c
+ * @file
  * @brief The Greenbone Vulnerability Manager DB Migrators file.
  *
  * This file defines the functions used by the manager to migrate the DB to the

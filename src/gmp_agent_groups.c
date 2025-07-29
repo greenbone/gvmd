@@ -4,7 +4,7 @@
  */
 
 /**
- * @file gmp_agent_groups.c
+ * @file
  * @brief GVM GMP layer: Agent groups.
  *
  * GMP Handlers for reading, creating, modifying and deleting agent groups.

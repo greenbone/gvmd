@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_oci_image_targets.h
+ * @file
  * @brief GVM management layer: OCI Image Targets SQL.
  *
  * SQL OCI image targets code for the GVM management layer.

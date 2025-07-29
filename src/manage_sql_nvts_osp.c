@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts_osp.c
+ * @file
  * @brief GVM management layer: OSP NVT logic
  *
  * NVT logic specific to OSP in the GVM management layer.

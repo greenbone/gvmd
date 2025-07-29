@@ -17,7 +17,7 @@
  */
 
 /*
- * @file types.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: types.
  */
 

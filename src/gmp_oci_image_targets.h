@@ -4,7 +4,7 @@
  */
 
 /**
- * @file gmp_oci_image_targets.h
+ * @file
  * @brief GVM GMP layer: OCI Image Target headers.
  *
  * Headers for GMP handlers for OCI image target commands.

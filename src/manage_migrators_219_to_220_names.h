@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_migrators_219_to_220_names.h
+ * @file
  * @brief The Greenbone Vulnerability Manager DB Migrators support.
  *
  * This file the preference names used by migrate_219_to_220.

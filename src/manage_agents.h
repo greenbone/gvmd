@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agents.h
+ * @file
  * @brief Agent management interface for GVMD.
  *
  * This header defines core data structures and function prototypes

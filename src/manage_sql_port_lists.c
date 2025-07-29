@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_port_lists.c
+ * @file
  * @brief GVM management layer: Port list SQL
  *
  * The Port List SQL for the GVM management layer.

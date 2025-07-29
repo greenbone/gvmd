@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_logout.c
+ * @file
  * @brief GVM GMP layer: Logout handling
  *
  * This includes functions for GMP handling of the user logout.

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_configs.c
+ * @file
  * @brief GVM management layer: Config SQL
  *
  * The Config SQL for the GVM management layer.

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_events.c
+ * @file
  * @brief GVM management layer: Events.
  *
  * General functions for managing events.

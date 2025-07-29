@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_acl.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management library (Access
  * Control Layer).
  *

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file utils.c
+ * @file
  * @brief Generic utilities
  *
  * Generic helper utilities.  None of these are GVM specific.  They could

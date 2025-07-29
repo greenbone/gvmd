@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agent_common.h
+ * @file
  * @brief Common utilities for agent management in GVMD.
  *
  * This header provides shared data structures and utility functions

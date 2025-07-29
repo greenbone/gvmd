@@ -17,7 +17,7 @@
  */
 
 /**
- * @file sql.c
+ * @file
  * @brief Generic SQL interface
  *
  * This is a small generic interface for SQL database access.

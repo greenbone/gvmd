@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_license.c
+ * @file
  * @brief GVM GMP layer: License information
  *
  * This includes function and variable definitions for GMP handling

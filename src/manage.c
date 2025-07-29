@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management layer.
  *
  * This file defines a management layer, for implementing
