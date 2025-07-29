@@ -23427,7 +23427,7 @@ modify_task (const gchar *task_id, const gchar *name,
   if (task == 0)
     return 1;
 
-  if ((task_target (task) == 0)
+  if ((task_target (task) == 0 && agent_group_id == NULL)
       && (alerts->len || schedule_id))
     return 17;
 
