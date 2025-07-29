@@ -8830,6 +8830,14 @@ void
 delete_agent_group_tasks_by_scanner (scanner_t scanner)
 {
   sql (
+   "DELETE FROM task_preferences "
+   "WHERE task IN ("
+   "  SELECT id FROM tasks "
+   "  WHERE agent_group IN ("
+   "    SELECT id FROM agent_groups WHERE scanner = %llu));",
+   scanner);
+
+  sql (
     "DELETE FROM tasks "
     "WHERE agent_group IN (SELECT id FROM agent_groups WHERE scanner = %llu);",
     scanner);
