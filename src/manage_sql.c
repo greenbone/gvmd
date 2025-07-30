@@ -40536,39 +40536,6 @@ manage_empty_trashcan ()
  */
 
 /**
- * @brief Return the UUID of the asset associated with a result host.
- *
- * @param[in]  host    Host value from result.
- * @param[in]  result  Result.
- *
- * @return Asset UUID.
- */
-char *
-result_host_asset_id (const char *host, result_t result)
-{
-  gchar *quoted_host;
-  char *asset_id;
-
-  quoted_host = sql_quote (host);
-  asset_id = sql_string ("SELECT uuid FROM hosts"
-                         " WHERE id = (SELECT host FROM host_identifiers"
-                         "             WHERE source_type = 'Report Host'"
-                         "             AND name = 'ip'"
-                         "             AND source_id"
-                         "                 = (SELECT uuid"
-                         "                    FROM reports"
-                         "                    WHERE id = (SELECT report"
-                         "                                FROM results"
-                         "                                WHERE id = %llu))"
-                         "             AND value = '%s'"
-                         "             LIMIT 1);",
-                         result,
-                         quoted_host);
-  g_free (quoted_host);
-  return asset_id;
-}
-
-/**
  * @brief Return the UUID of a host.
  *
  * @param[in]  host  Host.
