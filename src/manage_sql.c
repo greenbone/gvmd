@@ -8795,52 +8795,57 @@ set_task_target (task_t task, target_t target)
  * @param[in]  agent_group  Agent group.
  */
 void
-set_task_agent_group (task_t task, agent_group_t agent_group)
+set_task_agent_group_and_location (task_t task, agent_group_t agent_group)
 {
-  sql ("UPDATE tasks SET agent_group = %llu, modification_time = m_now ()"
+  sql ("UPDATE tasks SET agent_group = %llu, agent_group_location = 0,"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        agent_group,
        task);
 }
 
 /**
- * @brief Set the agent group location of a task.
- *
- * @param[in]  task    Task.
- * @param[in]  agent_group  Agent group.
- */
-void
-set_task_agent_group_location (task_t task)
-{
-  sql ("UPDATE tasks SET agent_group_location = 0, modification_time = m_now ()"
-       " WHERE id = %llu;",
-       task);
-}
-
-/**
- * @brief Delete tasks associated with agent groups for a specific scanner.
- *
- * This function deletes all tasks that are linked to agent groups
- * which belong to the given scanner. It should be called before
- * deleting the agent controller (scanner) to prevent dangling references.
+ * @brief Return whether any task exists for agent groups of a scanner.
  *
  * @param[in] scanner  The row ID of the scanner.
+ *
+ * @return 1 if at least one task exists, else 0.
  */
-void
-delete_agent_group_tasks_by_scanner (scanner_t scanner)
+int
+agent_group_tasks_exist_by_scanner (scanner_t scanner)
 {
-  sql (
-   "DELETE FROM task_preferences "
-   "WHERE task IN ("
-   "  SELECT id FROM tasks "
-   "  WHERE agent_group IN ("
-   "    SELECT id FROM agent_groups WHERE scanner = %llu));",
-   scanner);
-
-  sql (
-    "DELETE FROM tasks "
-    "WHERE agent_group IN (SELECT id FROM agent_groups WHERE scanner = %llu);",
+  return !!sql_int (
+    "SELECT COUNT(*) FROM tasks"
+    " WHERE agent_group IN ("
+    "  SELECT id FROM agent_groups WHERE scanner = %llu)"
+    " AND agent_group_location = "
+    G_STRINGIFY (LOCATION_TABLE)
+    " AND hidden = 0;",
     scanner);
+}
+/**
+ * @brief Return whether any hidden task exists for agent groups of a scanner.
+ *
+ * @param[in] scanner  The row ID of the scanner.
+ *
+ * @return 1 if at least one task exists, else 0.
+ */
+int
+agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
+{
+  return !!sql_int (
+    "SELECT COUNT(*) FROM tasks "
+    "WHERE hidden != 0 "
+    " AND ("
+    "  (agent_group_location = %d"
+    "   AND agent_group IN ("
+    "    SELECT id FROM agent_groups WHERE scanner = %llu ))"
+    " OR "
+    "  (agent_group_location = %d "
+    "   AND agent_group IN ("
+    "    SELECT id FROM agent_groups_trash WHERE scanner = %llu ))"
+    ");",
+    LOCATION_TABLE, scanner, LOCATION_TRASH, scanner);
 }
 #endif /*ENABLE_AGENTS*/
 
@@ -23610,8 +23615,7 @@ modify_task (const gchar *task_id, const gchar *name,
       return 18;
     else
       {
-        set_task_agent_group (task, agent_group);
-        set_task_agent_group_location (task);
+        set_task_agent_group_and_location (task, agent_group);
       }
   }
 #endif
@@ -32701,6 +32705,15 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       scanner_t trash_scanner;
 
+#if ENABLE_AGENTS
+      // check scanner is in used by agent_group
+      if (agent_group_tasks_exist_by_scanner (scanner))
+        {
+          sql_rollback ();
+          return 1;
+        }
+#endif // ENABLE_AGENTS
+
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -32739,11 +32752,18 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       permissions_set_orphans ("scanner", scanner, LOCATION_TABLE);
       tags_remove_resource ("scanner", scanner, LOCATION_TABLE);
+
+#if ENABLE_AGENTS
+      if (agent_group_hidden_tasks_exist_by_scanner (scanner)
+          || agent_group_tasks_exist_by_scanner (scanner))
+        {
+          sql_rollback ();
+          return 1;
+        }
+#endif // ENABLE_AGENTS
     }
 
 #if ENABLE_AGENTS
-   // Delete agent group tasks related to the scanner.
-  delete_agent_group_tasks_by_scanner (scanner);
   // Delete agent groups related to the scanner.
   delete_agent_groups_by_scanner (scanner);
   // Delete agents related to the scanner.

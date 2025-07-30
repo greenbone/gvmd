@@ -166,4 +166,7 @@ manage_rebuild_configs ();
 gboolean
 should_sync_configs ();
 
+gboolean
+scanner_type_requires_config (int scanner_type);
+
 #endif /* not _GVMD_MANAGE_CONFIGS_H */

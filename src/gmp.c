@@ -1094,7 +1094,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->schedule_periods);
   free (data->target_id);
   free (data->usage_type);
-  free (data -> agent_group_id);
+  free (data->agent_group_id);
 
   memset (data, 0, sizeof (create_task_data_t));
 }
@@ -7970,7 +7970,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
-                              &create_task_data -> agent_group_id);
+                              &create_task_data->agent_group_id);
             set_client_state (CLIENT_CREATE_TASK_AGENT_GROUP);
           }
 #endif /* ENABLE_AGENTS */
@@ -24049,6 +24049,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           target_t target = 0;
           scanner_t scanner = 0;
           char *tsk_uuid = NULL;
+          gboolean is_agent_task = FALSE;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -24075,7 +24076,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               name = task_name (create_task_data->task);
               comment = task_comment (create_task_data->task);
 
-              if(create_task_data->alterable)
+              if (create_task_data->alterable)
                 alterable = strcmp (create_task_data->alterable, "0") ? 1 : 0;
               else
                 alterable = -1;
@@ -24136,7 +24137,36 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 
           if (create_task_data->scanner_id == NULL)
-            create_task_data->scanner_id = g_strdup (scanner_uuid_default ());
+            {
+              if (create_task_data->agent_group_id)
+                is_agent_task = TRUE;
+              else
+                create_task_data->scanner_id =
+                  g_strdup (scanner_uuid_default ());
+            }
+
+          if (create_task_data->scanner_id != NULL)
+            {
+              if (find_scanner_with_permission (create_task_data->scanner_id,
+                                                &scanner, "get_scanners"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (create_task_data->scanner_id && scanner == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "scanner",
+                                                 create_task_data->scanner_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+
+              scanner_type_t type = scanner_type (scanner);
+              if (type == SCANNER_TYPE_AGENT_CONTROLLER
+                  || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+                is_agent_task = TRUE;
+            }
 
           /* Check permissions. */
 
@@ -24172,15 +24202,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "A target is required"));
+                                  "A target or agent group is required"));
               goto create_task_fail;
             }
 
 #if ENABLE_AGENTS
-          if (create_task_data->agent_group_id)
+          if (is_agent_task)
             {
               /* Agent group task */
               agent_group_t agent_group = 0;
+              scanner_t group_scanner = 0;
 
               if (find_agent_group_with_permission (
                     create_task_data->agent_group_id, &agent_group,
@@ -24190,40 +24221,37 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              set_task_agent_group (create_task_data->task, agent_group);
-              set_task_agent_group_location (create_task_data->task);
-              set_task_usage_type (create_task_data->task,
-                                   create_task_data->usage_type);
-
-              /* Set schedule and schedule_periods */
-              int schedule_ret = set_task_schedule_and_periods (
-                create_task_data->task, create_task_data->schedule_id,
-                create_task_data->schedule_periods);
-
-              if (schedule_ret == -1)
+              group_scanner = agent_group_scanner (agent_group);
+              if (group_scanner == 0)
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   goto create_task_fail;
                 }
-              else if (schedule_ret == -2)
+
+              if (create_task_data->scanner_id == NULL)
                 {
-                  SEND_TO_CLIENT_OR_FAIL (
-                    XML_ERROR_SYNTAX ("create_task", "Schedule must exist"));
+                  /* Scanner not specified by client, use the one from agent
+                   * group */
+                  scanner = group_scanner;
+                }
+              else if (scanner != group_scanner)
+                {
+                  /* Scanner specified by client does not match the one from
+                   * agent group */
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+                    "create_task",
+                    "Scanner ID does not match agent group's scanner"));
                   goto create_task_fail;
                 }
 
-              SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
-                                       tsk_uuid);
-              make_task_complete (create_task_data->task);
-              log_event ("task", "Task", tsk_uuid, "created");
-              g_free (tsk_uuid);
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              set_task_agent_group_and_location (create_task_data->task,
+                                                 agent_group);
             }
 #endif /* ENABLE_AGENTS */
 
-          if (strcmp (create_task_data->target_id, "0") == 0)
+          if (create_task_data->target_id != NULL
+              && strcmp (create_task_data->target_id, "0") == 0
+              && !is_agent_task)
             {
               /* Container task. */
 
@@ -24238,14 +24266,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
-            }
-
-          if (create_task_data->config_id == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "A config is required"));
-              goto create_task_fail;
             }
 
           /* Set any alert. */
@@ -24354,23 +24374,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
             }
 
-          if (find_scanner_with_permission (create_task_data->scanner_id,
-                                            &scanner,
-                                            "get_scanners"))
+          if ((scanner == 0) || scanner_type_requires_config (scanner_type (scanner)))
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (create_task_data->scanner_id && scanner == 0)
-            {
-              if (send_find_error_to_client ("create_task", "scanner",
-                                             create_task_data->scanner_id,
-                                             gmp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
-          if ((scanner == 0) || (scanner_type (scanner) != SCANNER_TYPE_CVE))
-            {
+              if (create_task_data->config_id == NULL)
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "A config is required"));
+                  goto create_task_fail;
+                }
+
               if (find_config_with_permission (create_task_data->config_id,
                                                &config,
                                                "get_configs"))
@@ -24395,24 +24408,27 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
             }
-          if (find_target_with_permission (create_task_data->target_id,
-                                           &target,
-                                           "get_targets"))
+
+          if (!is_agent_task)
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (target == 0)
-            {
-              if (send_find_error_to_client ("create_task", "target",
-                                             create_task_data->target_id,
-                                             gmp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
+              if (find_target_with_permission (create_task_data->target_id,
+                                               &target, "get_targets"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (target == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "target",
+                                                 create_task_data->target_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+              set_task_target (create_task_data->task, target);
             }
 
           set_task_config (create_task_data->task, config);
-          set_task_target (create_task_data->task, target);
           set_task_scanner (create_task_data->task, scanner);
           set_task_hosts_ordering (create_task_data->task,
                                    create_task_data->hosts_ordering);
@@ -27167,16 +27183,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
 #if ENABLE_AGENTS
               case 18 :
-                if (send_find_error_to_client
-                  ("modify_task", "agent_group",
-                   modify_task_data -> agent_group_id, gmp_parser))
+                if (send_find_error_to_client ("modify_task", "agent_group",
+                                               modify_task_data->agent_group_id,
+                                               gmp_parser))
                   {
                     error_send_to_client (error);
                     return;
                   }
                 log_event_fail ("agent_group", "Agent Group",
-                                modify_task_data -> task_id,
-                                "modified");
+                                modify_task_data->task_id, "modified");
                 break;
 #endif /*ENABLE_AGENTS*/
                 default:
