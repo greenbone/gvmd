@@ -608,13 +608,13 @@ set_task_target (task_t, target_t);
 
 #if ENABLE_AGENTS
 void
-set_task_agent_group (task_t task, agent_group_t agent_group);
+set_task_agent_group_and_location (task_t task, agent_group_t agent_group);
 
-void
-set_task_agent_group_location (task_t task);
+int
+agent_group_tasks_exist_by_scanner (scanner_t scanner);
 
-void
-delete_agent_group_tasks_by_scanner (scanner_t scanner);
+int
+agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner);
 #endif /* ENABLE_AGENTS */
 
 int

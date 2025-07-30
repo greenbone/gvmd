@@ -448,10 +448,7 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
       permissions_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
       tags_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
     }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE agent_group = %llu"
-                    " AND agent_group_location = " G_STRINGIFY (LOCATION_TABLE),
-                    agent_group))
+  else if (agent_group_in_use (agent_group))
     {
       sql_rollback ();
       return 1;
@@ -826,6 +823,20 @@ int
 trash_agent_group_writable (agent_group_t agent_group)
 {
   return trash_agent_group_in_use (agent_group) == 0;
+}
+
+/**
+ * @brief Return scanner row of agent group.
+ *
+ * @param[in]  agent_group  Agent Group row id.
+ *
+ * @return scanner row id
+ */
+scanner_t
+agent_group_scanner (agent_group_t agent_group)
+{
+  return sql_int64_0 ("SELECT scanner FROM agent_groups WHERE id = %llu;",
+                      agent_group);
 }
 
 #endif // ENABLE_AGENTS

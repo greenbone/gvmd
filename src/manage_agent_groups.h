@@ -126,5 +126,8 @@ gboolean
 find_agent_group_with_permission (const char* uuid, agent_group_t* agent_group,
                                   const char *permission);
 
+scanner_t
+agent_group_scanner (agent_group_t agent_group);
+
 #endif // _GVMD_MANAGE_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS
