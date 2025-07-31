@@ -14,7 +14,7 @@
 #define _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
 
 #include "iterator.h"
-#include "manage.h"
+#include "manage_get.h"
 
 typedef resource_t oci_image_target_t;
 

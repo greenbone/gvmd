@@ -103,6 +103,7 @@
 #include "manage_acl.h"
 #include "manage_alerts.h"
 #include "manage_assets.h"
+#include "manage_oci_image_targets.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
@@ -1055,6 +1056,7 @@ typedef struct
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;      ///< ID of task target.
   char *agent_group_id; ///< ID of task agent group.
+  char *oci_image_target_id;  ///< ID of OCI image target.
   task_t task;          ///< ID of new task.
   char *usage_type;     ///< Usage type ("scan" or "audit")
 } create_task_data_t;
@@ -1094,6 +1096,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->schedule_id);
   free (data->schedule_periods);
   free (data->target_id);
+  free (data->oci_image_target_id);
   free (data->usage_type);
   free (data->agent_group_id);
 
@@ -2965,6 +2968,7 @@ typedef struct
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;     ///< ID of new target for task.
   char *agent_group_id; ///< ID of new agent group for task.
+  char *oci_image_target_id; ///< ID of new OCI target for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -3006,6 +3010,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_id);
   free (data->schedule_periods);
   free (data->target_id);
+  free (data->oci_image_target_id);
   free (data->task_id);
   free (data->agent_group_id);
 
@@ -4351,6 +4356,9 @@ typedef enum
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
   CLIENT_CREATE_TASK_OBSERVERS_GROUP,
+  #if ENABLE_CONTAINER_SCANNING
+  CLIENT_CREATE_TASK_OCI_IMAGE_TARGET,
+  #endif /* ENABLE_CONTAINER_SCANNING */
   CLIENT_CREATE_TASK_PREFERENCES,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -4612,6 +4620,9 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
   CLIENT_MODIFY_TASK_OBSERVERS_GROUP,
+  #if ENABLE_CONTAINER_SCANNING
+  CLIENT_MODIFY_TASK_OCI_IMAGE_TARGET,
+  #endif /* ENABLE_CONTAINER_SCANNING */
   CLIENT_MODIFY_TASK_PREFERENCES,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -6923,6 +6934,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_task_data->observers, "");
             set_client_state (CLIENT_MODIFY_TASK_OBSERVERS);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->oci_image_target_id);
+            set_client_state (CLIENT_MODIFY_TASK_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
           {
             modify_task_data->preferences = make_array ();
@@ -7978,6 +7997,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_OBSERVERS);
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->oci_image_target_id);
+            set_client_state (CLIENT_CREATE_TASK_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -18976,6 +19003,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *in_assets, *max_checks, *max_hosts;
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
       gchar *assets_min_qod;
+      gchar *oci_image_target_xml = NULL;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -19008,7 +19036,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         {
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
           target_in_trash = task_target_in_trash (index);
-          if ((target == 0)
+          if (target && (target == 0)
               && (task_iterator_run_status (&tasks)
                   == TASK_STATUS_RUNNING))
             {
@@ -19308,6 +19336,70 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               task_target_uuid = NULL;
               task_target_name = NULL;
             }
+
+#if ENABLE_CONTAINER_SCANNING
+          oci_image_target_t oci_image_target;
+          int oci_image_target_in_trash, oci_image_target_available;
+          char *task_oci_image_target_uuid, *task_oci_image_target_name;
+          gchar *task_oci_image_target_name_escaped;
+
+          oci_image_target = task_oci_image_target (index);
+          oci_image_target_in_trash = task_oci_image_target_in_trash (index);
+
+          if (oci_image_target || oci_image_target_in_trash)
+            {
+              oci_image_target_available = 1;
+              if (oci_image_target_in_trash)
+                {
+                  task_oci_image_target_uuid
+                    = trash_oci_image_target_uuid (oci_image_target);
+                  task_oci_image_target_name
+                    = trash_oci_image_target_name (oci_image_target);
+                  oci_image_target_available
+                    = trash_oci_image_target_readable (oci_image_target);
+                }
+              else if (oci_image_target)
+                {
+                  oci_image_target_t found;
+                  task_oci_image_target_uuid
+                    = oci_image_target_uuid (oci_image_target);
+                  task_oci_image_target_name
+                    = oci_image_target_name (oci_image_target);
+                  if (find_oci_image_target_with_permission (
+                                                    task_oci_image_target_uuid,
+                                                    &found,
+                                                    "get_oci_image_targets"))
+                    g_error ("%s: GET_TASKS: error finding"
+                            " task OCI image target, aborting",
+                            __func__);
+                  oci_image_target_available = (found > 0);
+                }
+              else
+                {
+                  task_oci_image_target_uuid = NULL;
+                  task_oci_image_target_name = NULL;
+                }
+              task_oci_image_target_name_escaped
+                = task_oci_image_target_name
+                    ? g_markup_escape_text (task_oci_image_target_name, -1)
+                    : NULL;
+
+              oci_image_target_xml = g_strdup_printf
+                ("<oci_image_target id=\"%s\">"
+                "<name>%s</name>"
+                "<trash>%i</trash>"
+                "%s"
+                "</oci_image_target>",
+                task_oci_image_target_uuid ?: "",
+                task_oci_image_target_name_escaped ?: "",
+                oci_image_target_in_trash,
+                oci_image_target_available ? "" : "<permissions/>");
+
+              free (task_oci_image_target_name);
+              free (task_oci_image_target_uuid);
+              g_free (task_oci_image_target_name_escaped);
+            }
+#endif
           config_available = 1;
           if (task_config_in_trash (index))
             config_available = trash_config_readable_uuid (config_uuid);
@@ -19380,6 +19472,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "<trash>%i</trash>"
                        "%s"
                        "</target>"
+#if ENABLE_CONTAINER_SCANNING
+                       "%s"
+#endif
                        "<hosts_ordering>%s</hosts_ordering>"
                        "<scanner id='%s'>"
                        "<name>%s</name>"
@@ -19407,6 +19502,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        task_target_name_escaped ?: "",
                        target_in_trash,
                        target_available ? "" : "<permissions/>",
+#if ENABLE_CONTAINER_SCANNING
+                       oci_image_target_xml ?: "",
+#endif
                        task_iterator_hosts_ordering (&tasks)
                         ? task_iterator_hosts_ordering (&tasks)
                         : "",
@@ -19453,12 +19551,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                               gmp_parser->client_writer_data))
             {
               g_free (response);
+              g_free (oci_image_target_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
               cleanup_iterator (&tasks);
               return;
             }
           g_free (response);
+          g_free (oci_image_target_xml);
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<observers>%s",
@@ -24081,6 +24181,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           scanner_t scanner = 0;
           char *tsk_uuid = NULL;
           gboolean is_agent_task = FALSE;
+          gboolean is_container_scanning_task = FALSE;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -24171,6 +24272,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               if (create_task_data->agent_group_id)
                 is_agent_task = TRUE;
+              else if (create_task_data->oci_image_target_id)
+                is_container_scanning_task = TRUE;
               else
                 create_task_data->scanner_id =
                   g_strdup (scanner_uuid_default ());
@@ -24197,6 +24300,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               if (type == SCANNER_TYPE_AGENT_CONTROLLER
                   || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
                 is_agent_task = TRUE;
+              else if (type == SCANNER_TYPE_CONTAINER_IMAGE)
+                is_container_scanning_task = TRUE;
             }
 
           /* Check permissions. */
@@ -24229,11 +24334,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->target_id == NULL && create_task_data->agent_group_id == NULL)
+          if (create_task_data->target_id == NULL 
+              && create_task_data->agent_group_id == NULL
+              && create_task_data->oci_image_target_id == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "A target or agent group is required"));
+                                  "A target or agent group"
+                                  " or OCI image target is required"));
               goto create_task_fail;
             }
 
@@ -24288,9 +24396,35 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 #endif /* ENABLE_AGENTS */
 
+#if ENABLE_CONTAINER_SCANNING
+          if (is_container_scanning_task)
+            {
+              oci_image_target_t oci_image_target = 0;
+
+              if (find_oci_image_target_with_permission
+                  (create_task_data->oci_image_target_id, &oci_image_target,
+                   "get_oci_image_targets"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (oci_image_target == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "oci_image_target",
+                                                 create_task_data->oci_image_target_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+              set_task_oci_image_target (create_task_data->task,
+                                         oci_image_target);
+            }
+#endif /* ENABLE_CONTAINER_SCANNING */
+
           if (create_task_data->target_id != NULL
               && strcmp (create_task_data->target_id, "0") == 0
-              && !is_agent_task)
+              && !is_agent_task
+              && !is_container_scanning_task)
             {
               /* Container task. */
 
@@ -24446,9 +24580,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Scanner and config mismatched types."));
                   goto create_task_fail;
                 }
+              set_task_config (create_task_data->task, config);
             }
 
-          if (!is_agent_task)
+          if (!is_agent_task && !is_container_scanning_task)
             {
               if (find_target_with_permission (create_task_data->target_id,
                                                &target, "get_targets"))
@@ -24467,7 +24602,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               set_task_target (create_task_data->task, target);
             }
 
-          set_task_config (create_task_data->task, config);
           set_task_scanner (create_task_data->task, scanner);
           set_task_hosts_ordering (create_task_data->task,
                                    create_task_data->hosts_ordering);
@@ -24524,6 +24658,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, ALERT);
       CLOSE (CLIENT_CREATE_TASK, NAME);
       CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
+#if ENABLE_CONTAINER_SCANNING
+      CLOSE (CLIENT_CREATE_TASK, OCI_IMAGE_TARGET);
+#endif /* ENABLE_CONTAINER_SCANNING */
       CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
       CLOSE (CLIENT_CREATE_TASK, TARGET);
       CLOSE (CLIENT_CREATE_TASK, USAGE_TYPE);
@@ -27065,6 +27202,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       modify_task_data->preferences,
                                       modify_task_data->hosts_ordering,
                                       modify_task_data->agent_group_id,
+                                      modify_task_data->oci_image_target_id,
                                       &fail_alert_id,
                                       &fail_group_id))
               {
@@ -27219,7 +27357,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-
 #if ENABLE_AGENTS
               case 18 :
                 if (send_find_error_to_client ("modify_task", "agent_group",
@@ -27233,6 +27370,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_task_data->task_id, "modified");
                 break;
 #endif /*ENABLE_AGENTS*/
+#if ENABLE_CONTAINER_SCANNING
+                case 19:
+                  if (send_find_error_to_client
+                       ("modify_task", "oci_image_target",
+                        modify_task_data->oci_image_target_id, gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+#endif /* ENABLE_CONTAINER_SCANNING */
                 default:
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -27265,6 +27416,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 #if ENABLE_AGENTS
       CLOSE (CLIENT_MODIFY_TASK, AGENT_GROUP);
 #endif /* ENABLE_AGENTS */
+#if ENABLE_CONTAINER_SCANNING
+      CLOSE (CLIENT_MODIFY_TASK, OCI_IMAGE_TARGET);
+#endif /* ENABLE_CONTAINER_SCANNING */
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
