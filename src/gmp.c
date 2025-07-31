@@ -27157,7 +27157,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     error_send_to_client (error);
                     return;
                   }
-                log_event_fail ("agent_group", "Agent Group",
+                log_event_fail ("task", "Task",
                                 modify_task_data->task_id, "modified");
                 break;
 #endif /*ENABLE_AGENTS*/
