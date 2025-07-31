@@ -8789,7 +8789,7 @@ set_task_target (task_t task, target_t target)
 
 #if ENABLE_AGENTS
 /**
- * @brief Set the agent group of a task.
+ * @brief Set the agent group of a task, also updating the agent group location.
  *
  * @param[in]  task    Task.
  * @param[in]  agent_group  Agent group.
@@ -32622,7 +32622,7 @@ delete_scanner (const char *scanner_id, int ultimate)
       scanner_t trash_scanner;
 
 #if ENABLE_AGENTS
-      // check scanner is in used by agent_group
+      // check scanner is in use by agent_group
       if (agent_group_tasks_exist_by_scanner (scanner))
         {
           sql_rollback ();
