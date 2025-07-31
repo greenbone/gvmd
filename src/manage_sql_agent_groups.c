@@ -95,6 +95,22 @@ user_has_get_access_to_scanner (scanner_t scanner)
 }
 
 /**
+ * @brief Check if an agent group is in use by any hidden tasks.
+ *
+ * @param agent_group The row ID of the agent group to check.
+ *
+ * @return 1 if the agent group is used in at least one hidden task, 0
+ * otherwise.
+ */
+static int
+agent_group_in_use_in_hidden_task (agent_group_t agent_group)
+{
+  return !!sql_int ("SELECT COUNT(*) FROM tasks "
+                    "WHERE hidden != 0 AND agent_group = %llu;",
+                    agent_group);
+}
+
+/**
  * @brief Count the number of agent groups based on filter criteria.
  *
  * @param[in] get  Pointer to the get_data_t structure containing filters and options.
@@ -357,7 +373,8 @@ modify_agent_group (agent_group_t agent_group,
  * @param[in] ultimate          If 0, perform a soft delete (move to trash);
  *                              if non-zero, perform a hard delete.
  *
- * @return 0 on success, 1 if already exists, 2 if not found, 99 permission denied, -1 on error.
+ * @return 0 on success, 1 if in use, 2 if not found, 99 permission denied,
+ *         -1 on error.
  */
 int
 delete_agent_group (const char *agent_group_uuid, int ultimate)
@@ -401,6 +418,12 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
           return 0;  // Already in trash
         }
 
+      if (agent_group_in_use_in_hidden_task (agent_group))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
       // Hard delete from trash
       sql ("DELETE FROM permissions"
            " WHERE resource_type = 'agent_group'"
@@ -422,6 +445,13 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
     {
       agent_group_t trash_id;
 
+      // Check agent group is in use
+      if (agent_group_in_use (agent_group))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
       // Move to trash
       sql ("INSERT INTO agent_groups_trash"
            " (uuid, name, comment, owner, scanner, creation_time, modification_time)"
@@ -436,25 +466,27 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
            " SELECT %llu, agent_id FROM agent_group_agents WHERE group_id = %llu;",
            trash_id, agent_group);
 
-    /* Update the location of the agent_group in any trashcan tasks. */
-    sql ("UPDATE tasks"
-         " SET agent_group = %llu,"
-         "     agent_group_location = " G_STRINGIFY (LOCATION_TRASH)
-         " WHERE agent_group = %llu"
-         " AND agent_group_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-         trash_id,
-         agent_group);
+      /* Update the location of the agent_group in any trashcan tasks. */
+      sql ("UPDATE tasks"
+           " SET agent_group = %llu,"
+           "     agent_group_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE agent_group = %llu"
+           " AND agent_group_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_id,
+           agent_group);
 
       permissions_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
       tags_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
     }
-  else if (agent_group_in_use (agent_group))
-    {
-      sql_rollback ();
-      return 1;
-    }
   else
     {
+      // Check agent group is in use in tasks or hidden tasks
+      if (agent_group_in_use (agent_group)
+          || agent_group_in_use_in_hidden_task (agent_group))
+        {
+          sql_rollback ();
+          return 1;
+        }
       // Hard delete
       sql ("DELETE FROM permissions"
            " WHERE resource_type = 'agent_group'"
@@ -525,12 +557,12 @@ restore_agent_group (const char *agent_group_uuid)
 
   /* Update the agent_group in any tasks. */
   sql ("UPDATE tasks"
-        " SET agent_group = %llu,"
-        " agent_group_location = " G_STRINGIFY (LOCATION_TABLE)
-        " WHERE agent_group = %llu"
-        " AND agent_group_location = " G_STRINGIFY (LOCATION_TRASH),
-        restored_id,
-        trash_id);
+       " SET agent_group = %llu,"
+       " agent_group_location = " G_STRINGIFY (LOCATION_TABLE)
+       " WHERE agent_group = %llu"
+       " AND agent_group_location = " G_STRINGIFY (LOCATION_TRASH),
+       restored_id,
+       trash_id);
 
 
   // Clean up trash entries
@@ -793,10 +825,10 @@ int
 trash_agent_group_in_use (agent_group_t agent_group)
 {
   return !!sql_int ("SELECT count(*) FROM tasks"
-                  " WHERE agent_group = %llu"
-                  " AND agent_group_location = "
-                  G_STRINGIFY (LOCATION_TRASH),
-                  agent_group);
+                    " WHERE agent_group = %llu"
+                    " AND agent_group_location = "
+                    G_STRINGIFY (LOCATION_TRASH),
+                    agent_group);
 }
 
 /**
