@@ -6467,6 +6467,9 @@ END:VCALENDAR
       @IF_ENABLE_AGENTS@
       <e>agent_group</e>
       @ENDIF_ENABLE_AGENTS@
+      @IF_ENABLE_CONTAINER_SCANNNING@
+      <e>oci_image_target</e>
+      @ENDIF_ENABLE_CONTAINER_SCANNNING@
       <e>target</e>
       <o><e>hosts_ordering</e></o>
       <e>scanner</e>
@@ -6545,6 +6548,19 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_AGENTS@
+    @IF_ENABLE_CONTAINER_SCANNNING@
+    <ele>
+      <name>oci_image_target</name>
+      <summary>The OCI images scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_CONTAINER_SCANNNING@
     <ele>
       <name>hosts_ordering</name>
       <summary>The order hosts are scanned in</summary>
@@ -6707,6 +6723,26 @@ END:VCALENDAR
       </response>
     </example>
     @ENDIF_ENABLE_AGENTS@
+    @IF_ENABLE_CONTAINER_SCANNNING@
+    <example>
+      <summary>Create an OCI image task</summary>
+      <request>
+        <create_task>
+          <name>OCI Image Task</name>
+          <comment>Task with OCI image target assigned</comment>
+          <usage_type>scan</usage_type>
+          <oci_image_target id="fd9bd047-fac8-49e7-bd45-64652f713a41"/>
+          <scanner id="8154d8e3-30ee-4959-9151-1863c89a8e62"/>
+        </create_task>
+      </request>
+      <response>
+        <create_task_response status="201"
+                              status_text="OK, resource created"
+                              id="b7f0afbe-bdb3-11e9-9847-28d24461215b">
+        </create_task_response>
+      </response>
+    </example>
+    @ENDIF_ENABLE_CONTAINER_SCANNNING@
   </command>
   <command>
     <name>create_ticket</name>
@@ -25484,6 +25520,9 @@ END:VCALENDAR
               <e>usage_type</e>
               <e>config</e>
               <e>target</e>
+              @IF_ENABLE_CONTAINER_SCANNNING@
+              <o><e>oci_image_target</e></o>
+              @ENDIF_ENABLE_CONTAINER_SCANNNING@
               <e>hosts_ordering</e>
               <e>scanner</e>
               <e>alert</e>
@@ -25699,6 +25738,38 @@ END:VCALENDAR
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
+        @IF_ENABLE_CONTAINER_SCANNNING@
+        <ele>
+          <name>oci_image_target</name>
+          <summary>The OCI images scanned by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+              <summary>ID of OCI image target</summary>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the OCI image target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the target</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        @ENDIF_ENABLE_CONTAINER_SCANNNING@
         <ele>
           <name>hosts_ordering</name>
           <summary>The order hosts are scanned in</summary>
@@ -31503,6 +31574,9 @@ END:VCALENDAR
         @IF_ENABLE_AGENTS@
         <e>agent_group</e>
         @ENDIF_ENABLE_AGENTS@
+        @IF_ENABLE_CONTAINER_SCANNNING@
+        <e>oci_image_target</e>
+        @ENDIF_ENABLE_CONTAINER_SCANNNING@
         <e>file</e>
       </or>
     </pattern>
@@ -31622,6 +31696,19 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_AGENTS@
+    @IF_ENABLE_CONTAINER_SCANNNING@
+    <ele>
+      <name>oci_image_target</name>
+      <summary>The OCI images scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_CONTAINER_SCANNNING@
     <ele>
       <name>file</name>
       <summary>File to attach to task</summary>

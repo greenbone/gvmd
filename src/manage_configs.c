@@ -644,6 +644,7 @@ scanner_type_requires_config (int scanner_type)
     case SCANNER_TYPE_CVE:
     case SCANNER_TYPE_AGENT_CONTROLLER:
     case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+    case SCANNER_TYPE_CONTAINER_IMAGE:
       return FALSE;
 
     default:

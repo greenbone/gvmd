@@ -60,6 +60,10 @@
 #include "manage_agents.h"
 #endif
 
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_oci_image_targets.h"
+#endif
+
 /**
  * @brief OID of ping_host.nasl
  */
@@ -341,7 +345,8 @@ typedef enum scanner_type
   SCANNER_TYPE_AGENT_CONTROLLER = 7,
   SCANNER_TYPE_OPENVASD_SENSOR = 8,
   SCANNER_TYPE_AGENT_CONTROLLER_SENSOR = 9,
-  SCANNER_TYPE_MAX = 10,
+  SCANNER_TYPE_CONTAINER_IMAGE = 10,
+  SCANNER_TYPE_MAX = 11,
 } scanner_type_t;
 
 int
@@ -621,6 +626,19 @@ int
 set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
                                const gchar *schedule_periods);
 
+#if ENABLE_CONTAINER_SCANNING
+
+oci_image_target_t
+task_oci_image_target (task_t);
+
+int
+task_oci_image_target_in_trash (task_t);
+
+void
+set_task_oci_image_target (task_t, oci_image_target_t);
+
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 void
 set_task_hosts_ordering (task_t, const char *);
 
@@ -793,7 +811,8 @@ int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *,
-             array_t *, const gchar *, const gchar *, gchar **, gchar **);
+             array_t *, const gchar *, const gchar *, const gchar *,
+             gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);

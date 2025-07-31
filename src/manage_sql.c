@@ -8826,6 +8826,69 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
 }
 #endif /*ENABLE_AGENTS*/
 
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Return the OCI image target of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return OCI image target of task.
+ */
+oci_image_target_t
+task_oci_image_target (task_t task)
+{
+  oci_image_target_t oci_image_target = 0;
+  switch (sql_int64 (&oci_image_target,
+                     "SELECT oci_image_target FROM tasks WHERE id = %llu;",
+                     task))
+    {
+      case 0:
+        return oci_image_target;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Return whether the OCI image target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_oci_image_target_in_trash (task_t task)
+{
+  return sql_int ("SELECT oci_image_target_location = " 
+                  G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE id = %llu;",
+                  task);
+}
+
+/**
+ * @brief Set the OCI image target of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  target  Target.
+ */
+void
+set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
+{
+  sql ("UPDATE tasks SET oci_image_target = %llu,"
+       " oci_image_target_location = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       oci_image_target,
+       task);
+}
+
+#endif
+
 /**
  * @brief Set the hosts ordering of a task.
  *
@@ -22570,11 +22633,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
   sql_begin_immediate ();
 
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "config, target, schedule, schedule_periods,"
+                            "config, target, oci_image_target,"
+                            " schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " hosts_ordering, usage_type, alterable",
+                            " oci_image_target_location, hosts_ordering,"
+                            " usage_type, alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -23366,6 +23431,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  * @param[in]  preferences       Preferences.
  * @param[in]  hosts_ordering    Host scan order.
  * @param[in]  agent_group_id    Agent group.
+ * @param[in]  oci_image_target_id  OCI image target.
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
@@ -23377,8 +23443,8 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for container tasks only
- *         18 failed to find agent group
- *         certain fields may be edited, -1 error.
+ *         certain fields may be edited, 18 failed to find agent group,
+           19 failed to find OCI image target, -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -23391,6 +23457,7 @@ modify_task (const gchar *task_id, const gchar *name,
              array_t *preferences,
              const gchar *hosts_ordering,
              const gchar *agent_group_id,
+             const gchar* oci_image_target_id,
              gchar **fail_alert_id,
              gchar **fail_group_id)
 {
@@ -23406,7 +23473,10 @@ modify_task (const gchar *task_id, const gchar *name,
   if (task == 0)
     return 1;
 
-  if ((task_target (task) == 0 && agent_group_id == NULL)
+
+  if ((task_target (task) == 0 
+       && (agent_group_id == NULL)
+       && (oci_image_target_id == NULL))
       && (alerts->len || schedule_id))
     return 17;
 
@@ -23458,7 +23528,9 @@ modify_task (const gchar *task_id, const gchar *name,
   else
     type_of_scanner = scanner_type (scanner);
 
-  if (config_id && (type_of_scanner != SCANNER_TYPE_CVE))
+  if (config_id 
+      && (type_of_scanner != SCANNER_TYPE_CVE)
+      && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE))
     {
       config_t config;
 
@@ -23593,6 +23665,25 @@ modify_task (const gchar *task_id, const gchar *name,
       }
   }
 #endif
+
+#if ENABLE_CONTAINER_SCANNING
+  if (oci_image_target_id)
+    {
+      oci_image_target_t oci_image_target = 0;
+
+      if ((task_run_status (task) != TASK_STATUS_NEW)
+          && (task_alterable (task) == 0))
+        return 16;
+      else if (find_oci_image_target_with_permission (oci_image_target_id,
+                                                      &oci_image_target,
+                                                      "get_oci_image_targets"))
+        return -1;
+      else if (oci_image_target == 0)
+        return 19;
+      else
+        set_task_oci_image_target (task, oci_image_target);
+    }
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   if (preferences)
     switch (set_task_preferences (task, preferences))
