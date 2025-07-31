@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_filter_utils.h
+ * @file
  * @brief GVM management layer: Filter utilities headers.
  *
  * Filter parser and handling utilities headers for the GVM management layer.

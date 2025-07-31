@@ -17,8 +17,10 @@
  */
 
 /**
- * @file manage_utils.c
+ * @file
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
+ *
+ * Utilities used by the manage library that do not depend on anything.
  */
 
 #include "manage_utils.h"
@@ -42,13 +44,6 @@
  * @brief Number of seconds in a day.
  */
 #define SECS_PER_DAY 86400
-
-/**
- * @file  manage_utils.c
- * @brief The Greenbone Vulnerability Manager management library.
- *
- * Utilities used by the manage library that do not depend on anything.
- */
 
 /**
  * @brief Get the current offset from UTC of a timezone.

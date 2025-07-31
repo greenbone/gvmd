@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_report_formats.c
+ * @file
  * @brief GVM management layer: Report format SQL
  *
  * The report format SQL for the GVM management layer.

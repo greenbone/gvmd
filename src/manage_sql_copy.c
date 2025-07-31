@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_copy.c
+ * @file
  * @brief GVM management layer: SQL COPY.
  *
  * Helper functions for using SQL COPY statements.

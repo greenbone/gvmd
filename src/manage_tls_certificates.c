@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_tls_certificates.c
+ * @file
  * @brief GVM management layer: TLS Certificates
  *
  * The TLS Certificates helper functions for the GVM management layer.

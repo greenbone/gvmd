@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_report_configs.c
+ * @file
  * @brief GVM GMP layer: Report Configs
  *
  * GMP report configurations.

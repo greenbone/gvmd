@@ -4,7 +4,7 @@
  */
 
 /**
- * @file gmp_agent_groups.h
+ * @file
  * @brief GVM GMP layer: Agent Group headers.
  *
  * Header for GMP Agent Group handlers

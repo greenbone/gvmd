@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_report_configs.h
+ * @file
  * @brief GVM management layer: Report configs SQL.
  *
  * SQL report config code for the GVM management layer.

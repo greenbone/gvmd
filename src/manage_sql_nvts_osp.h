@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts_osp.h
+ * @file
  * @brief Manager Manage library: OSP SQL backend headers.
  */
 

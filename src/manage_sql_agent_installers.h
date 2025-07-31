@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_agent_installers.h
+ * @file
  * @brief GVM SQL layer: Agent installer headers.
  *
  * Headers for SQL handlers of agent installers.

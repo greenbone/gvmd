@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  lsc_user.c
+ * @file
  * @brief GVM: Utilities for LSC credential package generation
  *
  * This file provides support for generating packages for LSC credentials.

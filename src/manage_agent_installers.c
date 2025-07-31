@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_agent_installers.c
+ * @file
  * @brief GVM manage layer: Agent installers.
  *
  * General management of agent installers.

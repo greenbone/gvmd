@@ -4,7 +4,7 @@
  */
 
 /**
- * @file scan_handler.c
+ * @file
  * @brief Greenbone Vulnerability Manager scan handler.
  */
 

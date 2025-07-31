@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_resources.c
+ * @file
  * @brief GVM management layer: Generic resource type handling.
  *
  * Non-SQL generic resource type handling code for the GVM management layer.

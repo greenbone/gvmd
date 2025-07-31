@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_settings.h
+ * @file
  * @brief GVM management layer: User Settings headers.
  *
  * User settings headers for the GVM management layer.

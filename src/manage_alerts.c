@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_alerts.c
+ * @file
  * @brief GVM management layer: Alerts.
  *
  * General functions for managing alerts.

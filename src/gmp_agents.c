@@ -4,7 +4,7 @@
  */
 
 /**
- * @file gmp_agents.c
+ * @file
  * @brief GVM GMP layer: Agent management
  *
  * This file contains GMP command implementations for managing agents,

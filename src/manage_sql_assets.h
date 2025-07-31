@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2022 Greenbone AG
+/* Copyright (C) 2009-2025 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -16,26 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _GVMD_MANAGE_SQL_ASSETS_H
+#define _GVMD_MANAGE_SQL_ASSETS_H
+
+#include "manage_resources.h"
+
 /**
  * @file
- * @brief Main function of gvmd.
+ * @brief GVM management layer: Asset SQL
  *
- * This file separates out the "main" function of gvmd.
+ * The Asset SQL for the GVM management layer.
  */
 
-#include "gvmd.h"
+char *
+result_host_asset_id (const char *, result_t);
 
-/**
- * @brief Main function.
- *
- * @param[in]  argc  The number of arguments in argv.
- * @param[in]  argv  The list of arguments to the program.
- * @param[in]  env   The program's environment arguments.
- *
- * @return EXIT_SUCCESS on success, EXIT_FAILURE on failure.
- */
-int
-main (int argc, char **argv, char *env[])
-{
-  return gvmd (argc, argv, env);
-}
+#endif /* not _GVMD_MANAGE_SQL_ASSETS_H */

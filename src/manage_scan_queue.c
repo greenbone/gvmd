@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_scan_queue.c
+ * @file
  * @brief Greenbone Vulnerability Manager scan queue.
  */
 

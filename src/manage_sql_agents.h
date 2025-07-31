@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_agents.h
+ * @file
  * @brief SQL interaction layer for agent data in GVMD.
  *
  * This header defines SQL-related operations for managing agents,

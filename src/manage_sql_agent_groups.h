@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_agent_groups.h
+ * @file
  * @brief SQL management functions and iterator definitions for agent groups.
  *
  * This header provides iterator macros and function declarations used

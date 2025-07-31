@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  gvmd.c
+ * @file
  * @brief The Greenbone Vulnerability Manager daemon.
  *
  * This file defines the Greenbone Vulnerability Manager daemon.  The Manager

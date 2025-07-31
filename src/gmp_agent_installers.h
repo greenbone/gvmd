@@ -4,7 +4,7 @@
  */
 
 /**
- * @file gmp_agent_installers.c
+ * @file
  * @brief GVM GMP layer: Agent installer headers.
  *
  * Headers for GMP handlers for agent installers.

@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_oci_image_targets.c
+ * @file
  * @brief GVM manage layer: OCI Image Targets.
  *
  * General management of OCI Image Targets.

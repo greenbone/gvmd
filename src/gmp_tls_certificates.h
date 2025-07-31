@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_tls_certificates.h
+ * @file
  * @brief GVM GMP layer: TLS Certificates headers
  *
  * Headers for GMP handling of TLS Certificates.

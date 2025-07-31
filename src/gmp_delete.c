@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_delete.c
+ * @file
  * @brief GVM GMP layer: DELETE commands
  *
  * Common DELETE command code for the GVM GMP layer.

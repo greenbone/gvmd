@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_copy.h
+ * @file
  * @brief GVM management layer: SQL COPY headers.
  *
  * SQL COPY headers for the GVM management layer.

@@ -192,6 +192,7 @@ set(
   manage_sql_agents.c
   manage_sql_agent_installers.c
   manage_sql_alerts.c
+  manage_sql_assets.c
   manage_sql_events.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
@@ -823,6 +824,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_assets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"

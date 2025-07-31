@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_agent_groups.c
+ * @file
  * @brief SQL backend implementation for agent group management in GVMD.
  *
  * This file provides the implementation of SQL interactions related to

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  lsc_crypt.c
+ * @file
  * @brief GVM: Utilities for LSC credential encryption
  *
  * This file provides support for encrypting LSC credentials.
