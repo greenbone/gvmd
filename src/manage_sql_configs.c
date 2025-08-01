@@ -2760,6 +2760,8 @@ create_task_check_scanner_type (scanner_t scanner)
     return 1;
   if (stype == SCANNER_TYPE_OPENVASD_SENSOR)
     return 1;
+  if (stype == SCANNER_TYPE_CONTAINER_IMAGE)
+    return 1;
 
   return 0;
 }
@@ -2836,6 +2838,9 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     return 0;
 
   if (stype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    return 0;
+
+  if (stype == SCANNER_TYPE_CONTAINER_IMAGE)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
