@@ -24206,6 +24206,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               goto create_task_fail;
             }
 
+          if (create_task_data->target_id && create_task_data->agent_group_id)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Only one of target_id or agent_group_id must be provided"));
+              goto create_task_fail;
+            }
+
 #if ENABLE_AGENTS
           if (is_agent_task)
             {
