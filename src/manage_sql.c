@@ -45,6 +45,7 @@
 #include "manage_tickets.h"
 #include "manage_scan_queue.h"
 #include "manage_sql_alerts.h"
+#include "manage_sql_assets.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage_sql_port_lists.h"
