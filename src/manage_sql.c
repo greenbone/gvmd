@@ -40783,20 +40783,6 @@ manage_empty_trashcan ()
  */
 
 /**
- * @brief Return the UUID of a host.
- *
- * @param[in]  host  Host.
- *
- * @return Host UUID.
- */
-char*
-host_uuid (resource_t host)
-{
-  return sql_string ("SELECT uuid FROM hosts WHERE id = %llu;",
-                     host);
-}
-
-/**
  * @brief Add a report host.
  *
  * @param[in]  report   UUID of resource.

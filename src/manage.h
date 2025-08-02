@@ -2283,9 +2283,6 @@ credential_encrypted_value (credential_t, const char*);
 
 /* Assets. */
 
-char*
-host_uuid (resource_t);
-
 host_t
 host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);

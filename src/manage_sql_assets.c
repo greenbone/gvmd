@@ -51,3 +51,17 @@ result_host_asset_id (const char *host, result_t result)
   g_free (quoted_host);
   return asset_id;
 }
+
+/**
+ * @brief Return the UUID of a host.
+ *
+ * @param[in]  host  Host.
+ *
+ * @return Host UUID.
+ */
+char*
+host_uuid (resource_t host)
+{
+  return sql_string ("SELECT uuid FROM hosts WHERE id = %llu;",
+                     host);
+}
