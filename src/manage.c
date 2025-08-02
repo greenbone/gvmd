@@ -52,6 +52,7 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_agent_installers.h"
+#include "manage_assets.h"
 #include "manage_configs.h"
 #include "manage_osp.h"
 #include "manage_port_lists.h"

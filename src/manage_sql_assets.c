@@ -65,3 +65,47 @@ host_uuid (resource_t host)
   return sql_string ("SELECT uuid FROM hosts WHERE id = %llu;",
                      host);
 }
+
+/**
+ * @brief Add a report host.
+ *
+ * @param[in]  report   UUID of resource.
+ * @param[in]  host     Host.
+ * @param[in]  start    Start time.
+ * @param[in]  end      End time.
+ *
+ * @return Report host.
+ */
+report_host_t
+manage_report_host_add (report_t report, const char *host, time_t start,
+                        time_t end)
+{
+  char *quoted_host = sql_quote (host);
+  resource_t report_host;
+  
+  sql ("INSERT INTO report_hosts"
+       " (report, host, start_time, end_time, current_port, max_port)"
+       " SELECT %llu, '%s', %lld, %lld, 0, 0"
+       " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
+       "                   AND host = '%s');",
+       report, quoted_host, (long long) start, (long long) end, report,
+       quoted_host);
+  report_host = sql_int64_0 ("SELECT id FROM report_hosts"
+                             " WHERE report = %llu AND host = '%s';",
+                             report, quoted_host);
+  g_free (quoted_host);
+  return report_host;
+}
+
+/**
+ * @brief Set end time of a report host.
+ *
+ * @param[in]  report_host  Report host.
+ * @param[in]  end_time     End time.
+ */
+void
+report_host_set_end_time (report_host_t report_host, time_t end_time)
+{
+  sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
+       end_time, report_host);
+}

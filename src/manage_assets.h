@@ -22,4 +22,10 @@
 char*
 host_uuid (resource_t);
 
+report_host_t
+manage_report_host_add (report_t, const char *, time_t, time_t);
+
+void
+report_host_set_end_time (report_host_t, time_t);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */
