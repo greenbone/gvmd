@@ -187,126 +187,194 @@ extern manage_connection_forker_t manage_fork_connection;
 
 typedef long long int rowid_t;
 
-int manage_db_empty ();
+int
+manage_db_empty ();
 
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
-char*
+char *
 report_host_ip (const char *);
 
-gchar *report_host_hostname (report_host_t);
+gchar *
+report_host_hostname (report_host_t);
 
-gchar *report_host_best_os_cpe (report_host_t);
+gchar *
+report_host_best_os_cpe (report_host_t);
 
-gchar *report_host_best_os_txt (report_host_t);
+gchar *
+report_host_best_os_txt (report_host_t);
 
-gchar *report_creation_time (report_t);
+gchar *
+report_creation_time (report_t);
 
-gchar *report_modification_time (report_t);
+gchar *
+report_modification_time (report_t);
 
-gchar *report_start_time (report_t);
+gchar *
+report_start_time (report_t);
 
-gchar *report_end_time (report_t);
+gchar *
+report_end_time (report_t);
 
-void trim_report (report_t);
+void
+trim_report (report_t);
 
-int delete_report_internal (report_t);
+int
+delete_report_internal (report_t);
 
-int set_report_scan_run_status (report_t, task_status_t);
+int
+set_report_scan_run_status (report_t, task_status_t);
 
-int update_report_modification_time (report_t);
+int
+update_report_modification_time (report_t);
 
-int set_report_slave_progress (report_t, int);
+int
+set_report_slave_progress (report_t, int);
 
-void init_task_file_iterator (iterator_t *, task_t, const char *);
-const char *task_file_iterator_name (iterator_t *);
-const char *task_file_iterator_content (iterator_t *);
+void
+init_task_file_iterator (iterator_t *, task_t, const char *);
 
-void set_task_schedule_next_time (task_t, time_t);
+const char *
+task_file_iterator_name (iterator_t *);
 
-void set_task_schedule_next_time_uuid (const gchar *, time_t);
+const char *
+task_file_iterator_content (iterator_t *);
 
-void init_preference_iterator (iterator_t *, config_t, const char *);
-const char *preference_iterator_name (iterator_t *);
-const char *preference_iterator_value (iterator_t *);
+void
+set_task_schedule_next_time (task_t, time_t);
 
-port_list_t target_port_list (target_t);
-credential_t target_ssh_credential (target_t);
-credential_t target_smb_credential (target_t);
-credential_t target_esxi_credential (target_t);
-credential_t target_ssh_elevate_credential (target_t);
-credential_t target_krb5_credential (target_t);
+void
+set_task_schedule_next_time_uuid (const gchar *, time_t);
 
-int create_current_report (task_t, char **, task_status_t);
+void
+init_preference_iterator (iterator_t *, config_t, const char *);
 
-int init_task_schedule_iterator (iterator_t *);
+const char *
+preference_iterator_name (iterator_t *);
 
-void cleanup_task_schedule_iterator (iterator_t *);
+const char *
+preference_iterator_value (iterator_t *);
 
-task_t task_schedule_iterator_task (iterator_t *);
+port_list_t
+target_port_list (target_t);
 
-const char *task_schedule_iterator_task_uuid (iterator_t *);
+credential_t
+target_ssh_credential (target_t);
+
+credential_t
+target_smb_credential (target_t);
+
+credential_t
+target_esxi_credential (target_t);
+
+credential_t
+target_ssh_elevate_credential (target_t);
+
+credential_t
+target_krb5_credential (target_t);
+
+int
+create_current_report (task_t, char **, task_status_t);
+
+int
+init_task_schedule_iterator (iterator_t *);
+
+void
+cleanup_task_schedule_iterator (iterator_t *);
+
+task_t
+task_schedule_iterator_task (iterator_t *);
+
+const char *
+task_schedule_iterator_task_uuid (iterator_t *);
 
 schedule_t task_schedule_iterator_schedule (iterator_t *);
 
-const char *task_schedule_iterator_icalendar (iterator_t *);
+const char *
+task_schedule_iterator_icalendar (iterator_t *);
 
-const char *task_schedule_iterator_timezone (iterator_t *);
+const char *
+task_schedule_iterator_timezone (iterator_t *);
 
-const char *task_schedule_iterator_owner_uuid (iterator_t *);
+const char *
+task_schedule_iterator_owner_uuid (iterator_t *);
 
-const char *task_schedule_iterator_owner_name (iterator_t *);
+const char *
+task_schedule_iterator_owner_name (iterator_t *);
 
-gboolean task_schedule_iterator_timed_out (iterator_t *);
+gboolean
+task_schedule_iterator_timed_out (iterator_t *);
 
-gboolean task_schedule_iterator_start_due (iterator_t *);
+gboolean
+task_schedule_iterator_start_due (iterator_t *);
 
-gboolean task_schedule_iterator_stop_due (iterator_t *);
+gboolean
+task_schedule_iterator_stop_due (iterator_t *);
 
-time_t task_schedule_iterator_initial_offset (iterator_t *);
+time_t
+task_schedule_iterator_initial_offset (iterator_t *);
 
-int set_task_schedule_uuid (const gchar*, schedule_t, int);
+int
+set_task_schedule_uuid (const gchar*, schedule_t, int);
 
-void reinit_manage_process ();
+void
+reinit_manage_process ();
 
-int manage_update_nvti_cache ();
+int
+manage_update_nvti_cache ();
 
-int manage_report_host_details (report_t, const char *, entity_t, GHashTable *);
+int
+manage_report_host_details (report_t, const char *, entity_t, GHashTable *);
 
-const char *run_status_name_internal (task_status_t);
+const char *
+run_status_name_internal (task_status_t);
 
-void update_config_cache_init (const char *);
+void
+update_config_cache_init (const char *);
 
-alive_test_t target_alive_tests (target_t);
+alive_test_t
+target_alive_tests (target_t);
 
-void manage_session_init (const char *);
+void
+manage_session_init (const char *);
 
-void check_generate_scripts ();
+void
+check_generate_scripts ();
 
-void auto_delete_reports ();
+void
+auto_delete_reports ();
 
-int parse_iso_time (const char *);
+int
+parse_iso_time (const char *);
 
-void set_report_scheduled (report_t);
+void
+set_report_scheduled (report_t);
 
-gchar *resource_uuid (const gchar *, resource_t);
+gchar *
+resource_uuid (const gchar *, resource_t);
 
-gboolean find_resource_with_permission (const char *, const char *,
+gboolean
+find_resource_with_permission (const char *, const char *,
                                         resource_t *, const char *, int);
 
 int
 resource_predefined (const gchar *, resource_t);
 
-void parse_osp_report (task_t, report_t, const char *);
+void
+parse_osp_report (task_t, report_t, const char *);
 
-void reschedule_task (const gchar *);
+void
+reschedule_task (const gchar *);
 
-void insert_port_range (port_list_t, port_protocol_t, int, int);
+void
+insert_port_range (port_list_t, port_protocol_t, int, int);
 
-int manage_cert_db_exists ();
+int
+manage_cert_db_exists ();
 
-int manage_scap_db_exists ();
+int
+manage_scap_db_exists ();
 
 int
 cert_check_time ();
@@ -326,11 +394,11 @@ init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
                    column_t *, const char **, int, const char *, const char *,
                    int);
 
-int openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
+int
+openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
 
 int
-agent_control_get_details_from_iterator (iterator_t *iterator, char **desc,
-                                         GSList **params);
+agent_control_get_details_from_iterator (iterator_t *, char **, GSList **);
 
 gchar *
 columns_build_select (column_t *);
