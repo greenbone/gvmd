@@ -31,4 +31,7 @@
 char *
 result_host_asset_id (const char *, result_t);
 
+int
+manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
+
 #endif /* not _GVMD_MANAGE_SQL_ASSETS_H */

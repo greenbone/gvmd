@@ -17,7 +17,12 @@
  */
 
 #include "manage_sql_assets.h"
+#include "manage.h"
+#include "manage_sql.h"
 #include "sql.h"
+
+#include <gvm/base/array.h>
+#include <gvm/util/xmlutils.h>
 
 /**
  * @brief Return the UUID of the asset associated with a result host.
@@ -108,4 +113,200 @@ report_host_set_end_time (report_host_t report_host, time_t end_time)
 {
   sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
        end_time, report_host);
+}
+
+// FIX Extern for now, until more code is moved in here.
+extern array_t *
+identifiers;
+
+// FIX Extern for now, until more code is moved in here.
+extern array_t *
+identifier_hosts;
+
+/**
+ * @brief Add host details to a report host.
+ *
+ * @param[in]  report  UUID of resource.
+ * @param[in]  ip      Host.
+ * @param[in]  entity  XML entity containing details.
+ * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
+ *
+ * @return 0 success, -1 failed to parse XML.
+ */
+static int
+manage_report_host_details (report_t report, const char *ip,
+                            entity_t entity, GHashTable *hashed_host_details)
+{
+  int in_assets;
+  entities_t details;
+  entity_t detail;
+  char *uuid;
+  char *hash_value;
+
+  in_assets = sql_int ("SELECT not(value = 'no') FROM task_preferences"
+                       " WHERE task = (SELECT task FROM reports"
+                       "                WHERE id = %llu)"
+                       " AND name = 'in_assets';",
+                       report);
+
+  details = entity->entities;
+  if (identifiers == NULL)
+    identifiers = make_array ();
+  if (identifier_hosts == NULL)
+    identifier_hosts = make_array ();
+  uuid = report_uuid (report);
+  while ((detail = first_entity (details)))
+    {
+      if (strcmp (entity_name (detail), "detail") == 0)
+        {
+          entity_t source, source_type, source_name, source_desc, name, value;
+
+          /* Parse host detail and add to report */
+          source = entity_child (detail, "source");
+          if (source == NULL)
+            goto error;
+          source_type = entity_child (source, "type");
+          if (source_type == NULL)
+            goto error;
+          source_name = entity_child (source, "name");
+          if (source_name == NULL)
+            goto error;
+          source_desc = entity_child (source, "description");
+          if (source_desc == NULL)
+            goto error;
+          name = entity_child (detail, "name");
+          if (name == NULL)
+            goto error;
+          value = entity_child (detail, "value");
+          if (value == NULL)
+            goto error;
+
+          if (!check_host_detail_exists (report, ip, entity_text (source_type),
+                                         entity_text (source_name),
+                                         entity_text (source_desc),
+                                         entity_text (name),
+                                         entity_text (value),
+                                         (char**) &hash_value,
+                                         hashed_host_details))
+            {
+              insert_report_host_detail
+               (report, ip, entity_text (source_type), entity_text (source_name),
+                entity_text (source_desc), entity_text (name), entity_text (value),
+                hash_value);
+              g_free (hash_value);
+            }
+          else
+            {
+              g_free (hash_value);
+              details = next_entities (details);
+              continue;
+            }
+
+          /* Only add to assets if "Add to Assets" is set on the task. */
+          if (in_assets)
+            {
+              if (strcmp (entity_text (name), "hostname") == 0)
+                {
+                  identifier_t *identifier;
+
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("hostname");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "MAC") == 0)
+                {
+                  identifier_t *identifier;
+
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("MAC");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "OS") == 0
+                  && g_str_has_prefix (entity_text (value), "cpe:"))
+                {
+                  identifier_t *identifier;
+
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("OS");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+              if (strcmp (entity_text (name), "ssh-key") == 0)
+                {
+                  identifier_t *identifier;
+
+                  identifier = g_malloc (sizeof (identifier_t));
+                  identifier->ip = g_strdup (ip);
+                  identifier->name = g_strdup ("ssh-key");
+                  identifier->value = g_strdup (entity_text (value));
+                  identifier->source_id = g_strdup (uuid);
+                  identifier->source_type = g_strdup ("Report Host Detail");
+                  identifier->source_data
+                    = g_strdup (entity_text (source_name));
+                  array_add (identifiers, identifier);
+                  array_add_new_string (identifier_hosts, g_strdup (ip));
+                }
+            }
+        }
+      details = next_entities (details);
+    }
+  free (uuid);
+
+  return 0;
+
+ error:
+  free (uuid);
+  return -1;
+}
+
+/**
+ * @brief Add a host detail to a report host.
+ *
+ * @param[in]  report  UUID of resource.
+ * @param[in]  host    Host.
+ * @param[in]  xml     Report host detail XML.
+ * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
+ *
+ * @return 0 success, -1 failed to parse XML, -2 host was NULL.
+ */
+int
+manage_report_host_detail (report_t report, const char *host,
+                           const char *xml, GHashTable *hashed_host_details)
+{
+  int ret;
+  entity_t entity;
+
+  if (host == NULL)
+    return -2;
+
+  entity = NULL;
+  if (parse_entity (xml, &entity))
+    return -1;
+
+  ret = manage_report_host_details (report,
+                                    host,
+                                    entity,
+                                    hashed_host_details);
+  free_entity (entity);
+  return ret;
 }

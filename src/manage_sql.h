@@ -324,9 +324,6 @@ reinit_manage_process ();
 int
 manage_update_nvti_cache ();
 
-int
-manage_report_host_details (report_t, const char *, entity_t, GHashTable *);
-
 const char *
 run_status_name_internal (task_status_t);
 
@@ -528,6 +525,25 @@ report_set_processing_required (report_t, int, int);
 
 int
 process_report_import (report_t);
+
+int
+check_host_detail_exists (report_t, const char *, const char *, const char *,
+                          const char *, const char *, const char *, char **,
+                          GHashTable *);
+
+// FIX moved here for now, until more code goes to manage*_assets.c
+/**
+ * @brief Host identifier type.
+ */
+typedef struct
+{
+  gchar *ip;                ///< IP of host.
+  gchar *name;              ///< Name of identifier, like "hostname".
+  gchar *value;             ///< Value of identifier.
+  gchar *source_type;       ///< Type of identifier source, like "Report Host".
+  gchar *source_id;         ///< ID of source.
+  gchar *source_data;       ///< Extra data for source.
+} identifier_t;
 
 #if OPENVASD
 void

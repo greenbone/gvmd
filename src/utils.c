@@ -1049,3 +1049,22 @@ phys_mem_total ()
 {
   return sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGESIZE);
 }
+
+
+/* Arrays. */
+
+/**
+ * @brief Ensure a string is in an array.
+ *
+ * @param[in]  array   Array.
+ * @param[in]  string  String.  Copied into array.
+ */
+void
+array_add_new_string (array_t *array, const gchar *string)
+{
+  guint index;
+  for (index = 0; index < array->len; index++)
+    if (strcmp (g_ptr_array_index (array, index), string) == 0)
+      return;
+  array_add (array, g_strdup (string));
+}
