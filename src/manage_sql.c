@@ -478,22 +478,6 @@ resource_with_name_exists_global (const char *name, const char *type,
 }
 
 /**
- * @brief Ensure a string is in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.  Copied into array.
- */
-static void
-array_add_new_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    if (strcmp (g_ptr_array_index (array, index), string) == 0)
-      return;
-  array_add (array, g_strdup (string));
-}
-
-/**
  * @brief Find a resource in the trashcan given a UUID.
  *
  * @param[in]   type      Type of resource.
@@ -22043,7 +22027,7 @@ check_osp_result_exists (report_t report, task_t task,
  *
  * @return     "1" if osp result already exists, else "0"
  */
-static int
+int
 check_host_detail_exists (report_t report, const char *host, const char *s_type,
                           const char *s_name, const char *s_desc, const char *name,
                           const char *value, char **detail_hash_value,
@@ -40825,20 +40809,7 @@ array_t *identifiers = NULL;
 /**
  * @brief Unique hosts listed in host_identifiers.
  */
-static array_t *identifier_hosts = NULL;
-
-/**
- * @brief Host identifier type.
- */
-typedef struct
-{
-  gchar *ip;                ///< IP of host.
-  gchar *name;              ///< Name of identifier, like "hostname".
-  gchar *value;             ///< Value of identifier.
-  gchar *source_type;       ///< Type of identifier source, like "Report Host".
-  gchar *source_id;         ///< ID of source.
-  gchar *source_data;       ///< Extra data for source.
-} identifier_t;
+array_t *identifier_hosts = NULL;
 
 /**
  * @brief Free an identifier.
@@ -41389,194 +41360,6 @@ host_routes_xml (host_t host)
   g_string_append (buffer, "</routes>");
 
   return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Add host details to a report host.
- *
- * @param[in]  report  UUID of resource.
- * @param[in]  ip      Host.
- * @param[in]  entity  XML entity containing details.
- * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
- *
- * @return 0 success, -1 failed to parse XML.
- */
-int
-manage_report_host_details (report_t report, const char *ip,
-                            entity_t entity, GHashTable *hashed_host_details)
-{
-  int in_assets;
-  entities_t details;
-  entity_t detail;
-  char *uuid;
-  char *hash_value;
-
-  in_assets = sql_int ("SELECT not(value = 'no') FROM task_preferences"
-                       " WHERE task = (SELECT task FROM reports"
-                       "                WHERE id = %llu)"
-                       " AND name = 'in_assets';",
-                       report);
-
-  details = entity->entities;
-  if (identifiers == NULL)
-    identifiers = make_array ();
-  if (identifier_hosts == NULL)
-    identifier_hosts = make_array ();
-  uuid = report_uuid (report);
-  while ((detail = first_entity (details)))
-    {
-      if (strcmp (entity_name (detail), "detail") == 0)
-        {
-          entity_t source, source_type, source_name, source_desc, name, value;
-
-          /* Parse host detail and add to report */
-          source = entity_child (detail, "source");
-          if (source == NULL)
-            goto error;
-          source_type = entity_child (source, "type");
-          if (source_type == NULL)
-            goto error;
-          source_name = entity_child (source, "name");
-          if (source_name == NULL)
-            goto error;
-          source_desc = entity_child (source, "description");
-          if (source_desc == NULL)
-            goto error;
-          name = entity_child (detail, "name");
-          if (name == NULL)
-            goto error;
-          value = entity_child (detail, "value");
-          if (value == NULL)
-            goto error;
-
-          if (!check_host_detail_exists (report, ip, entity_text (source_type),
-                                         entity_text (source_name),
-                                         entity_text (source_desc),
-                                         entity_text (name),
-                                         entity_text (value),
-                                         (char**) &hash_value,
-                                         hashed_host_details))
-            {
-              insert_report_host_detail
-               (report, ip, entity_text (source_type), entity_text (source_name),
-                entity_text (source_desc), entity_text (name), entity_text (value),
-                hash_value);
-              g_free (hash_value);
-            }
-          else
-            {
-              g_free (hash_value);
-              details = next_entities (details);
-              continue;
-            }
-
-          /* Only add to assets if "Add to Assets" is set on the task. */
-          if (in_assets)
-            {
-              if (strcmp (entity_text (name), "hostname") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("hostname");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "MAC") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("MAC");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "OS") == 0
-                  && g_str_has_prefix (entity_text (value), "cpe:"))
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("OS");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "ssh-key") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("ssh-key");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-            }
-        }
-      details = next_entities (details);
-    }
-  free (uuid);
-
-  return 0;
-
- error:
-  free (uuid);
-  return -1;
-}
-
-/**
- * @brief Add a host detail to a report host.
- *
- * @param[in]  report  UUID of resource.
- * @param[in]  host    Host.
- * @param[in]  xml     Report host detail XML.
- * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
- *
- * @return 0 success, -1 failed to parse XML, -2 host was NULL.
- */
-int
-manage_report_host_detail (report_t report, const char *host,
-                           const char *xml, GHashTable *hashed_host_details)
-{
-  int ret;
-  entity_t entity;
-
-  if (host == NULL)
-    return -2;
-
-  entity = NULL;
-  if (parse_entity (xml, &entity))
-    return -1;
-
-  ret = manage_report_host_details (report,
-                                    host,
-                                    entity,
-                                    hashed_host_details);
-  free_entity (entity);
-  return ret;
 }
 
 /**

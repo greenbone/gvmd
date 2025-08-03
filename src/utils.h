@@ -25,6 +25,7 @@
 #define _GVMD_UTILS_H
 
 #include <glib.h>
+#include <gvm/base/array.h>
 #include <gvm/util/xmlutils.h>
 #include <time.h>
 
@@ -114,5 +115,8 @@ phys_mem_available ();
 
 guint64
 phys_mem_total ();
+
+void
+array_add_new_string (array_t *, const gchar *);
 
 #endif /* not _GVMD_UTILS_H */
