@@ -50,7 +50,7 @@ void
 empty_trashcan_tickets ();
 
 void
-check_tickets ();
+check_tickets (task_t);
 
 void
 delete_tickets_user (user_t);
