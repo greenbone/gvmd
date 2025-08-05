@@ -193,6 +193,9 @@ manage_db_empty ();
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
+report_host_t
+host_iterator_report_host (iterator_t *);
+
 char *
 report_host_ip (const char *);
 
@@ -204,6 +207,24 @@ report_host_best_os_cpe (report_host_t);
 
 gchar *
 report_host_best_os_txt (report_host_t);
+
+int
+report_host_dead (report_host_t);
+
+int
+report_host_result_count (report_host_t);
+
+void
+init_report_host_details_iterator (iterator_t *, report_host_t);
+
+const char *
+report_host_details_iterator_name (iterator_t *);
+
+const char *
+report_host_details_iterator_value (iterator_t *);
+
+const char *
+report_host_details_iterator_source_name (iterator_t *);
 
 gchar *
 report_creation_time (report_t);
