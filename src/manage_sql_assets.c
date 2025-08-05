@@ -383,3 +383,137 @@ create_asset_host (const char *host_name, const char *comment,
 
   return 0;
 }
+
+/**
+ * @brief Check whether a string is an identifier name.
+ *
+ * @param[in]  name  Possible identifier name.
+ *
+ * @return 1 if an identifier name, else 0.
+ */
+static int
+identifier_name (const char *name)
+{
+  return (strcmp ("hostname", name) == 0)
+         || (strcmp ("MAC", name) == 0)
+         || (strcmp ("OS", name) == 0)
+         || (strcmp ("ssh-key", name) == 0);
+}
+
+/**
+ * @brief Create all available assets from a report.
+ *
+ * @param[in]  report_id  UUID of report.
+ * @param[in]  term       Filter term, for min_qod and apply_overrides.
+ *
+ * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
+ */
+int
+create_asset_report (const char *report_id, const char *term)
+{
+  resource_t report;
+  iterator_t hosts;
+  gchar *quoted_report_id;
+  int apply_overrides, min_qod;
+
+  if (report_id == NULL)
+    return -1;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("create_asset") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  report = 0;
+  if (find_report_with_permission (report_id, &report, "get_reports"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (report == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  /* These are freed by hosts_set_identifiers. */
+  if (identifiers == NULL)
+    identifiers = make_array ();
+  if (identifier_hosts == NULL)
+    identifier_hosts = make_array ();
+
+  quoted_report_id = sql_quote (report_id);
+  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_details WHERE source_id = '%s';",
+       quoted_report_id);
+  g_free (quoted_report_id);
+
+  init_report_host_iterator (&hosts, report, NULL, 0);
+  while (next (&hosts))
+    {
+      const char *host;
+      report_host_t report_host;
+      iterator_t details;
+
+      host = host_iterator_host (&hosts);
+      report_host = host_iterator_report_host (&hosts);
+
+      if (report_host_dead (report_host)
+          || report_host_result_count (report_host) == 0)
+        continue;
+
+      host_notice (host, "ip", host, "Report Host", report_id, 0, 0);
+
+      init_report_host_details_iterator (&details, report_host);
+      while (next (&details))
+        {
+          const char *name;
+
+          name = report_host_details_iterator_name (&details);
+
+          if (identifier_name (name))
+            {
+              const char *value;
+              identifier_t *identifier;
+
+              value = report_host_details_iterator_value (&details);
+
+              if ((strcmp (name, "OS") == 0)
+                  && (g_str_has_prefix (value, "cpe:") == 0))
+                continue;
+
+              identifier = g_malloc (sizeof (identifier_t));
+              identifier->ip = g_strdup (host);
+              identifier->name = g_strdup (name);
+              identifier->value = g_strdup (value);
+              identifier->source_id = g_strdup (report_id);
+              identifier->source_type = g_strdup ("Report Host Detail");
+              identifier->source_data
+               = g_strdup (report_host_details_iterator_source_name (&details));
+
+              array_add (identifiers, identifier);
+              array_add_new_string (identifier_hosts, g_strdup (host));
+            }
+        }
+      cleanup_iterator (&details);
+    }
+  cleanup_iterator (&hosts);
+  hosts_set_identifiers (report);
+  apply_overrides = filter_term_apply_overrides (term);
+  min_qod = filter_term_min_qod (term);
+  hosts_set_max_severity (report, &apply_overrides, &min_qod);
+  hosts_set_details (report);
+
+  sql_commit ();
+
+  return 0;
+}

@@ -31,4 +31,7 @@ report_host_set_end_time (report_host_t, time_t);
 int
 create_asset_host (const char *, const char *, resource_t* );
 
+int
+create_asset_report (const char *, const char *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

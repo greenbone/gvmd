@@ -2384,9 +2384,6 @@ int
 delete_asset (const char *, const char *, int);
 
 int
-create_asset_report (const char *, const char *);
-
-int
 add_assets_from_host_in_report (report_t report, const char *host);
 
 
