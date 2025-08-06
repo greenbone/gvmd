@@ -677,16 +677,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>value</e>
         <e>type</e>
       </pattern>
-        <ele>
-          <name>value</name>
-          <summary>The value of the QoD</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the QoD</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
+      <ele>
+        <name>value</name>
+        <summary>The value of the QoD</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The type of the QoD</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
     </ele>
     <ele>
       <name>refs</name>
@@ -2049,8 +2049,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <o><e>user_tags</e></o>
             <e>scan_run_status</e>
             <o>
-            <e>result_count</e>
-            <e>severity</e>
+              <e>result_count</e>
+              <e>severity</e>
             </o>
             <o><e>compliance_count</e></o>
             <o><e>compliance</e></o>
@@ -3003,7 +3003,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>end</e>
           <e>port_count</e>
           <o>
-          <e>result_count</e>
+            <e>result_count</e>
           </o>
           <o><e>compliance_count</e></o>
           <o><e>host_compliance</e></o>
@@ -4369,7 +4369,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
       </description>
       <pattern>
-         <any><e>kdc</e></any>
+        <any><e>kdc</e></any>
       </pattern>
       <ele>
         <name>kdc</name>
@@ -4577,7 +4577,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <login>admin</login>
           <password>secret123</password>
           <realm>EXAMPLE.COM</realm>
-           <kdc>kdc1.example.com,kdc2.example.com,192.168.1.10</kdc>
+          <kdc>kdc1.example.com,kdc2.example.com,192.168.1.10</kdc>
           <kdcs>
             <kdc>kdc1.example.com</kdc>
             <kdc>kdc2.example.com</kdc>
@@ -4907,7 +4907,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </response>
     </example>
   </command>
-@IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>create_oci_image_target</name>
     <summary>Create an OCI image target</summary>
@@ -5006,7 +5006,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </response>
     </example>
   </command>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>create_override</name>
     <summary>Create an override</summary>
@@ -7290,9 +7290,9 @@ END:VCALENDAR
           <name>asset_id</name>
           <summary>Single asset to delete</summary>
           <description>
-           <p>
-             Overrides report_id.
-           </p>
+            <p>
+              Overrides report_id.
+            </p>
           </description>
           <type>uuid</type>
           <required>1</required>
@@ -7587,7 +7587,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>delete_oci_image_target</name>
     <summary>Delete an OCI image target</summary>
@@ -7640,7 +7640,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>delete_override</name>
     <summary>Delete an override</summary>
@@ -11546,7 +11546,7 @@ END:VCALENDAR
             <pattern>text</pattern>
           </ele>
           <ele>
-<!-- FIX hosts/host_count? -->
+            <!-- FIX hosts/host_count? -->
             <name>installs</name>
             <summary>
               Number of hosts on which OS has been detected as the best match
@@ -12859,13 +12859,13 @@ END:VCALENDAR
         <summary>Whether to include a list of targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
-@IF_ENABLE_CONTAINER_SCANNNING@
+      @IF_ENABLE_CONTAINER_SCANNNING@
       <attrib>
         <name>oci_image_targets</name>
         <summary>Whether to include a list of OCI image targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+      @ENDIF_ENABLE_CONTAINER_SCANNNING@
       <attrib>
         <name>format</name>
         <type>
@@ -12924,9 +12924,9 @@ END:VCALENDAR
           <o><e>certificate_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
-@IF_ENABLE_CONTAINER_SCANNNING@
+          @IF_ENABLE_CONTAINER_SCANNNING@
           <o><e>oci_image_targets</e></o>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+          @ENDIF_ENABLE_CONTAINER_SCANNNING@
           <o>
             <or>
               <e>public_key</e>
@@ -13202,7 +13202,7 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
-@IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNNING@
         <ele>
           <name>oci_image_targets</name>
           <summary>All OCI image targets using this credential</summary>
@@ -13232,7 +13232,7 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNNING@
         <ele>
           <name>public_key</name>
           <pattern>text</pattern>
@@ -13270,7 +13270,7 @@ END:VCALENDAR
             <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
           </description>
           <pattern>
-             <any><e>kdc</e></any>
+            <any><e>kdc</e></any>
           </pattern>
           <ele>
             <name>kdc</name>
@@ -17053,7 +17053,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>get_oci_image_targets</name>
     <summary>Get one or many OCI image targets</summary>
@@ -17558,7 +17558,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>get_overrides</name>
     <summary>Get one or many overrides</summary>
@@ -21047,15 +21047,15 @@ END:VCALENDAR
         <type>boolean</type>
       </attrib>
       <attrib>
-          <name>usage_type</name>
-          <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
-          <type>
-            <alts>
-              <alt>scan</alt>
-              <alt>audit</alt>
-              <alt></alt>
-            </alts>
-          </type>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
+        <type>
+          <alts>
+            <alt>scan</alt>
+            <alt>audit</alt>
+            <alt></alt>
+          </alts>
+        </type>
       </attrib>
     </pattern>
     <response>
@@ -21983,7 +21983,7 @@ END:VCALENDAR
               </severities>
               <tags>NOTAGS</tags>
               <refs>
-                 <ref type="cve" id="CVE-2009-3095"/>
+                <ref type="cve" id="CVE-2009-3095"/>
               </refs>
             </nvt>
             <threat>Medium</threat>
@@ -22045,7 +22045,7 @@ END:VCALENDAR
               </severities>
               <tags>NOTAGS</tags>
               <refs>
-                 <ref type="cve" id="CVE-2009-3095"/>
+                <ref type="cve" id="CVE-2009-3095"/>
               </refs>
             </nvt>
             <threat>High</threat>
@@ -25956,8 +25956,8 @@ END:VCALENDAR
               <e>timestamp</e>
               <e>scan_end</e>
               <o>
-              <e>result_count</e>
-              <e>severity</e>
+                <e>result_count</e>
+                <e>severity</e>
               </o>
               <o><e>compliance_count</e></o>
             </pattern>
@@ -26504,7 +26504,7 @@ END:VCALENDAR
             <status>Done</status>
             <progress>-1</progress>
             <report_count>1
-            <finished>1</finished></report_count>
+              <finished>1</finished></report_count>
             <trend></trend>
             <schedule id="">
               <name></name>
@@ -26562,13 +26562,17 @@ END:VCALENDAR
             </keywords>
           </filters>
           <sort>
-            <field>name
-            <order>ascending</order></field>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
           </sort>
           <tasks start="1" max="10" />
-          <task_count>21
-          <filtered>1</filtered>
-          <page>1</page></task_count>
+          <task_count>
+            21
+            <filtered>1</filtered>
+            <page>1</page>
+          </task_count>
         </get_tasks_response>
       </response>
     </example>
@@ -29403,15 +29407,15 @@ END:VCALENDAR
       <summary>Modify the name and report filter of an alert and the condition that triggers it</summary>
       <request>
         <modify_alert alert_id='914b59f8-25f5-4c8f-832c-2379cd625236'>
-            <name>Low Level Alert 2</name>
-            <condition>
-              Threat level at least
-              <data>
-                Low
-                <name>level</name>
-              </data>
-            </condition>
-            <filter id='7a06bd00-7e4a-4669-b7d7-8fe65ec64a41'/>
+          <name>Low Level Alert 2</name>
+          <condition>
+            Threat level at least
+            <data>
+              Low
+              <name>level</name>
+            </data>
+          </condition>
+          <filter id='7a06bd00-7e4a-4669-b7d7-8fe65ec64a41'/>
         </modify_alert>
       </request>
       <response>
@@ -29884,7 +29888,7 @@ END:VCALENDAR
         <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
       </description>
       <pattern>
-         <any><e>kdc</e></any>
+        <any><e>kdc</e></any>
       </pattern>
       <ele>
         <name>kdc</name>
@@ -30318,7 +30322,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>modify_oci_image_target</name>
     <summary>Modify an existing OCI image target</summary>
@@ -30393,7 +30397,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>modify_override</name>
     <summary>Modify an existing override</summary>
@@ -31955,7 +31959,7 @@ END:VCALENDAR
           <type>boolean</type>
         </attrib>
         text
-       </pattern>
+      </pattern>
     </ele>
     <ele>
       <name>role</name>
@@ -33378,8 +33382,8 @@ END:VCALENDAR
     <description>
       <p>
         The TYPE element in the response will contain "up" instead of "pass"
-         for username + password credentials and "usk" instead of "gen" for
-         username + SSH key ones.
+        for username + password credentials and "usk" instead of "gen" for
+        username + SSH key ones.
       </p>
     </description>
     <version>7.0</version>
@@ -33459,8 +33463,8 @@ END:VCALENDAR
     <description>
       <p>
         The resuming of tasks is now done via the new command RESUME_TASK,
-    which is the former RESUME_STOPPED_TASK. There is no other resumable
-    status than "stopped" anymore and thus the command names are
+        which is the former RESUME_STOPPED_TASK. There is no other resumable
+        status than "stopped" anymore and thus the command names are
         consolidated for consistency and to avoid confusion.
       </p>
     </description>
