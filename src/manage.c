@@ -2704,10 +2704,13 @@ stop_osp_task (task_t task)
   task_t previous_task;
   report_t previous_report;
 
+  scan_report = task_running_report (task);
+  if (!scan_report)
+    return 0;
+
   previous_task = current_scanner_task;
   previous_report = global_current_report;
 
-  scan_report = task_running_report (task);
   scan_id = report_uuid (scan_report);
   if (!scan_id)
     goto end_stop_osp;
@@ -7066,9 +7069,13 @@ stop_openvasd_task (task_t task)
   openvasd_resp_t response;
   openvasd_connector_t connector = NULL;
 
+  scan_report = task_running_report (task);
+  if (!scan_report)
+    return 0;
+
   previous_task = current_scanner_task;
   previous_report = global_current_report;
-  scan_report = task_running_report (task);
+
   scan_id = report_uuid (scan_report);
   if (!scan_id)
     {
