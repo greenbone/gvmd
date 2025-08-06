@@ -315,12 +315,12 @@ message("-- Log file: ${GVMD_LOG_FILE}")
 set(GVMD_VERSION "${PROJECT_VERSION_STRING}")
 
 # Configure Doxyfile with version number
-configure_file(doc/Doxyfile.in doc/Doxyfile)
-configure_file(doc/Doxyfile_full.in doc/Doxyfile_full)
-configure_file(doc/Doxyfile_xml.in doc/Doxyfile_xml)
+configure_file(docs/Doxyfile.in docs/Doxyfile)
+configure_file(docs/Doxyfile_full.in docs/Doxyfile_full)
+configure_file(docs/Doxyfile_xml.in docs/Doxyfile_xml)
 configure_file(
-  doc/example-gvm-manage-certs.conf.in
-  doc/example-gvm-manage-certs.conf
+  docs/example-gvm-manage-certs.conf.in
+  docs/example-gvm-manage-certs.conf
   @ONLY
 )
 configure_file(VERSION.in VERSION)
@@ -392,7 +392,7 @@ add_subdirectory(config)
 
 ## Documentation
 
-add_subdirectory(doc)
+add_subdirectory(docs)
 
 ## Install
 
@@ -691,12 +691,12 @@ install(
 )
 
 install(
-  FILES ${CMAKE_SOURCE_DIR}/doc/gvm-manage-certs.1
+  FILES ${CMAKE_SOURCE_DIR}/docs/gvm-manage-certs.1
   DESTINATION ${DATADIR}/man/man1
 )
 
 install(
-  FILES ${CMAKE_BINARY_DIR}/doc/example-gvm-manage-certs.conf
+  FILES ${CMAKE_BINARY_DIR}/docs/example-gvm-manage-certs.conf
   DESTINATION ${DATADIR}/doc/gvm/
 )
 
