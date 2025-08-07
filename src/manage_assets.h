@@ -34,4 +34,28 @@ create_asset_host (const char *, const char *, resource_t* );
 int
 create_asset_report (const char *, const char *);
 
+void
+init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
+
+const char*
+host_identifier_iterator_value (iterator_t *);
+
+const char*
+host_identifier_iterator_source_type (iterator_t *);
+
+const char*
+host_identifier_iterator_source_id (iterator_t *);
+
+const char*
+host_identifier_iterator_source_data (iterator_t *);
+
+int
+host_identifier_iterator_source_orphan (iterator_t *);
+
+const char*
+host_identifier_iterator_os_id (iterator_t *);
+
+const char*
+host_identifier_iterator_os_title (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */
