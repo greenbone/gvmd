@@ -2284,30 +2284,6 @@ host_t
 host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
-void
-init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
-
-const char*
-host_identifier_iterator_value (iterator_t *);
-
-const char*
-host_identifier_iterator_source_type (iterator_t *);
-
-const char*
-host_identifier_iterator_source_id (iterator_t *);
-
-const char*
-host_identifier_iterator_source_data (iterator_t *);
-
-int
-host_identifier_iterator_source_orphan (iterator_t *);
-
-const char*
-host_identifier_iterator_os_id (iterator_t *);
-
-const char*
-host_identifier_iterator_os_title (iterator_t *);
-
 int
 init_asset_host_iterator (iterator_t *, const get_data_t *);
 
