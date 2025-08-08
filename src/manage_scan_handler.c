@@ -215,9 +215,12 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 close (pipe_fds[1]);
                 reinit_manage_process ();
 
+                // Reset SIGCHLD handler to default so the process can
+                // use common functions to wait for its own child processes.
                 memset (&action, '\0', sizeof (action));
                 sigemptyset (&action.sa_mask);
                 action.sa_handler = SIG_DFL;
+                action.sa_flags = 0;
                 if (sigaction (SIGCHLD, &action, NULL) == -1)
                   {
                     g_critical ("%s: failed to set SIGCHLD handler: %s",
