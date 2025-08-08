@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_sql.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management library.
  */
 
@@ -37,14 +37,18 @@
 #include "manage_osp.h"
 #include "manage_sql.h"
 #include "manage_alerts.h"
+#include "manage_assets.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
+#include "manage_scan_queue.h"
 #include "manage_sql_alerts.h"
+#include "manage_sql_assets.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_oci_image_targets.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
@@ -53,6 +57,7 @@
 #include "manage_acl.h"
 #include "manage_commands.h"
 #include "manage_authentication.h"
+#include "manage_oci_image_targets.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "utils.h"
@@ -94,6 +99,7 @@
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
 #include "manage_report_configs.h"
+#include "manage_sql_agent_groups.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -187,9 +193,6 @@ stop_task_internal (task_t);
 
 int
 validate_username (const gchar *);
-
-void
-set_task_interrupted (task_t, const gchar *);
 
 
 /* Static headers. */
@@ -285,12 +288,6 @@ report_cache_counts (report_t, int, int, const char*);
 
 static gchar *
 reports_extra_where (int, const char *, const char *);
-
-static int
-report_host_dead (report_host_t);
-
-static int
-report_host_result_count (report_host_t);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -472,22 +469,6 @@ resource_with_name_exists_global (const char *name, const char *type,
   g_free (quoted_name);
   g_free (quoted_type);
   return !!ret;
-}
-
-/**
- * @brief Ensure a string is in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.  Copied into array.
- */
-static void
-array_add_new_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    if (strcmp (g_ptr_array_index (array, index), string) == 0)
-      return;
-  array_add (array, g_strdup (string));
 }
 
 /**
@@ -7361,6 +7342,9 @@ stop_active_tasks ()
   iterator_t tasks;
   get_data_t get;
 
+  /* Clear the scan queue */
+  scan_queue_clear ();
+  
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
@@ -8783,6 +8767,68 @@ set_task_target (task_t task, target_t target)
        task);
 }
 
+#if ENABLE_AGENTS
+/**
+ * @brief Set the agent group of a task, also updating the agent group location.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  agent_group  Agent group.
+ */
+void
+set_task_agent_group_and_location (task_t task, agent_group_t agent_group)
+{
+  sql ("UPDATE tasks SET agent_group = %llu, agent_group_location = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       agent_group,
+       task);
+}
+
+/**
+ * @brief Return whether any task exists for agent groups of a scanner.
+ *
+ * @param[in] scanner  The row ID of the scanner.
+ *
+ * @return 1 if at least one task exists, else 0.
+ */
+int
+agent_group_tasks_exist_by_scanner (scanner_t scanner)
+{
+  return !!sql_int (
+    "SELECT COUNT(*) FROM tasks"
+    " WHERE agent_group IN ("
+    "  SELECT id FROM agent_groups WHERE scanner = %llu)"
+    " AND agent_group_location = "
+    G_STRINGIFY (LOCATION_TABLE)
+    " AND hidden = 0;",
+    scanner);
+}
+/**
+ * @brief Return whether any hidden task exists for agent groups of a scanner.
+ *
+ * @param[in] scanner  The row ID of the scanner.
+ *
+ * @return 1 if at least one task exists, else 0.
+ */
+int
+agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
+{
+  return !!sql_int (
+    "SELECT COUNT(*) FROM tasks "
+    "WHERE hidden != 0 "
+    " AND ("
+    "  (agent_group_location = %d"
+    "   AND agent_group IN ("
+    "    SELECT id FROM agent_groups WHERE scanner = %llu ))"
+    " OR "
+    "  (agent_group_location = %d "
+    "   AND agent_group IN ("
+    "    SELECT id FROM agent_groups_trash WHERE scanner = %llu ))"
+    ");",
+    LOCATION_TABLE, scanner, LOCATION_TRASH, scanner);
+}
+#endif /*ENABLE_AGENTS*/
+
 /**
  * @brief Set the hosts ordering of a task.
  *
@@ -9496,6 +9542,65 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
     }
 
   sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Set task schedule and schedule periods.
+ *
+ * If a valid schedule_id is provided, looks up the schedule and sets it for the task.
+ * If not, falls back to setting schedule_periods if available.
+ *
+ * @param[in,out] task              Task object to update.
+ * @param[in]     schedule_id       UUID of the schedule.
+ * @param[in]     schedule_periods  Optional string representing number of periods.
+ *
+ * @return 0  on success,
+ *         -1 if schedule lookup failed with permission,
+ *         -2 if schedule not found.
+ */
+int
+set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
+                               const gchar *schedule_periods)
+{
+  if (schedule_id)
+    {
+      schedule_t schedule;
+      int periods = schedule_periods ? atoi (schedule_periods) : 0;
+
+      if (find_schedule_with_permission (schedule_id,
+                                         &schedule, "get_schedules"))
+        {
+          return -1;
+        }
+      if (schedule == 0)
+        {
+          return -2;
+        }
+      /** @todo
+       *
+       * This is a contention hole.  Some other process could remove
+       * the schedule at this point.  The variable "schedule" would
+       * still refer to the removed schedule.
+       *
+       * This happens all over the place.  Anywhere that a libmanage
+       * client gets a reference to a resource, in fact.
+       *
+       * Possibly libmanage should lock the db whenever it hands out a
+       * reference, and the client should call something to release
+       * the lock when it's done.
+       *
+       * In many cases, like this one, the client could pass the UUID
+       * directly to libmanage, instead of getting the reference.  In
+       * this case the client would then need something like
+       * set_task_schedule_uuid.
+       */
+      set_task_schedule (task, schedule, periods);
+    }
+  else if (schedule_periods
+           && strlen (schedule_periods))
+    set_task_schedule_periods_id (task,
+                                  atoi (schedule_periods));
   return 0;
 }
 
@@ -11978,6 +12083,25 @@ insert_report_host_detail (report_t report, const char *host,
 #define BUFFER_SIZE (20 * 1048576)  /* 20 MiB */
 
 /**
+ * @brief Set whether processing of a report is required
+ *        and whether to add it to assets.
+ * 
+ * @param[in]  report               The report to set the flags.
+ * @param[in]  processing_required  Whether processing is required.
+ * @param[in]  in_assets            Whether to add to assets.
+ */
+void
+report_set_processing_required (report_t report,
+                                int processing_required, int in_assets)
+{
+  sql ("UPDATE reports SET processing_required = %d, in_assets = %d"
+       " WHERE id = %llu;",
+       processing_required ? 1 : 0,
+       in_assets ? 1 : 0,
+       report);
+}
+
+/**
  * @brief Process imported report.
  * 
  * Adds TLS certificates to the database and creates assets from the report.
@@ -12517,10 +12641,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   sql_commit ();
 
-  sql ("UPDATE reports SET processing_required = 1, in_assets = %d"
-       " WHERE id = %llu;",
-       in_assets_int ? 1 : 0,
-       report);
+  report_set_processing_required (report, 1, in_assets_int);
 
   gvm_close_sentry ();
   cleanup_manage_process (FALSE); //check this
@@ -16012,7 +16133,7 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
  *
  * @return Report host.
  */
-static report_host_t
+report_host_t
 host_iterator_report_host (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -16226,7 +16347,7 @@ report_errors_iterator_result (iterator_t* iterator)
  * @param[in]  report_host  Report host whose details the iterator loops over.
  *                          All report_hosts if NULL.
  */
-static void
+void
 init_report_host_details_iterator (iterator_t* iterator,
                                    report_host_t report_host)
 {
@@ -16259,7 +16380,6 @@ init_report_host_details_iterator (iterator_t* iterator,
  * @return The name of the report host detail.  Caller must use only before
  *         calling cleanup_iterator.
  */
-static
 DEF_ACCESS (report_host_details_iterator_name, 1);
 
 /**
@@ -16270,7 +16390,6 @@ DEF_ACCESS (report_host_details_iterator_name, 1);
  * @return The value of the report host detail.  Caller must use only before
  *         calling cleanup_iterator.
  */
-static
 DEF_ACCESS (report_host_details_iterator_value, 2);
 
 /**
@@ -16292,7 +16411,6 @@ DEF_ACCESS (report_host_details_iterator_source_type, 3);
  * @return The source name of the report host detail.  Caller must use only
  *         before calling cleanup_iterator.
  */
-static
 DEF_ACCESS (report_host_details_iterator_source_name, 4);
 
 /**
@@ -21900,7 +22018,7 @@ check_osp_result_exists (report_t report, task_t task,
  *
  * @return     "1" if osp result already exists, else "0"
  */
-static int
+int
 check_host_detail_exists (report_t report, const char *host, const char *s_type,
                           const char *s_name, const char *s_desc, const char *name,
                           const char *value, char **detail_hash_value,
@@ -23250,6 +23368,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  * @param[in]  schedule_periods  Period of schedule.
  * @param[in]  preferences       Preferences.
  * @param[in]  hosts_ordering    Host scan order.
+ * @param[in]  agent_group_id    Agent group.
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
@@ -23261,6 +23380,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for container tasks only
+ *         18 failed to find agent group
  *         certain fields may be edited, -1 error.
  */
 int
@@ -23273,6 +23393,7 @@ modify_task (const gchar *task_id, const gchar *name,
              const gchar *schedule_periods,
              array_t *preferences,
              const gchar *hosts_ordering,
+             const gchar *agent_group_id,
              gchar **fail_alert_id,
              gchar **fail_group_id)
 {
@@ -23288,7 +23409,7 @@ modify_task (const gchar *task_id, const gchar *name,
   if (task == 0)
     return 1;
 
-  if ((task_target (task) == 0)
+  if ((task_target (task) == 0 && agent_group_id == NULL)
       && (alerts->len || schedule_id))
     return 17;
 
@@ -23455,6 +23576,26 @@ modify_task (const gchar *task_id, const gchar *name,
       else
         set_task_target (task, target);
     }
+#if ENABLE_AGENTS
+  if (agent_group_id) {
+    agent_group_t agent_group;
+
+    agent_group = 0;
+    if ((task_run_status(task) != TASK_STATUS_NEW)
+        && (task_alterable(task) == 0))
+      return 16;
+    else if (find_agent_group_with_permission(agent_group_id,
+                                              &agent_group,
+                                              "get_agent_groups"))
+      return -1;
+    else if (agent_group == 0)
+      return 18;
+    else
+      {
+        set_task_agent_group_and_location (task, agent_group);
+      }
+  }
+#endif
 
   if (preferences)
     switch (set_task_preferences (task, preferences))
@@ -27549,6 +27690,15 @@ delete_credential (const char *credential_id, int ultimate)
            "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_credential,
            credential);
+#if ENABLE_CONTAINER_SCANNING
+      sql ("UPDATE oci_image_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_credential,
+           credential);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       permissions_set_locations ("credential", credential,
                                  trash_credential,
@@ -27729,6 +27879,11 @@ credential_in_use (credential_t credential)
   ret = !!(sql_int ("SELECT count (*) FROM targets_login_data"
                     " WHERE credential = %llu;",
                     credential)
+#if ENABLE_CONTAINER_SCANNING
+           || sql_int ("SELECT count (*) FROM oci_image_targets"
+                       " WHERE credential = %llu;",
+                       credential)
+#endif /* ENABLE_CONTAINER_SCANNING */
            || sql_int ("SELECT count (*) FROM scanners"
                        " WHERE credential = %llu;",
                        credential)
@@ -27769,6 +27924,13 @@ trash_credential_in_use (credential_t credential)
                        " AND credential_location"
                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                        credential)
+#if ENABLE_CONTAINER_SCANNING
+           || sql_int ("SELECT count (*) FROM oci_image_targets_trash"
+                       " WHERE credential = %llu"
+                       " AND credential_location"
+                       "      = " G_STRINGIFY (LOCATION_TRASH) ";",
+                       credential)
+#endif
            || sql_int ("SELECT count (*) FROM alert_method_data_trash"
                        " WHERE (name = 'recipient_credential'"
                        "        OR name = 'scp_credential'"
@@ -28779,6 +28941,83 @@ credential_target_iterator_readable (iterator_t* iterator)
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
 }
+
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Initialise a Credential OCI image target iterator.
+ *
+ * Iterates over all OCI image targets that use the credential.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  credential      Credential.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ */
+void
+init_credential_oci_image_target_iterator (iterator_t* iterator,
+                                           credential_t credential,
+                                           int ascending)
+{
+  gchar *available, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (credential);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_oci_image_targets"));
+  available = acl_where_owned ("oci_image_target", &get, 1, "any",
+                               0, permissions, 0, &with_clause);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT uuid, name, %s FROM oci_image_targets"
+                 " WHERE credential = %llu"
+                 " ORDER BY name %s;",
+                 with_clause ? with_clause : "",
+                 available,
+                 credential,
+                 ascending ? "ASC" : "DESC");
+
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the uuid from an Credential OCI Image Target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Uuid, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_oci_target_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from an Credential OCI Image Target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_oci_target_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+credential_oci_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
+#endif /* ENABLE_CONTAINER_SCANNING */
 
 /**
  * @brief Initialise a Credential scanner iterator.
@@ -32443,6 +32682,15 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       scanner_t trash_scanner;
 
+#if ENABLE_AGENTS
+      // check scanner is in use by agent_group
+      if (agent_group_tasks_exist_by_scanner (scanner))
+        {
+          sql_rollback ();
+          return 1;
+        }
+#endif // ENABLE_AGENTS
+
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -32481,9 +32729,21 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       permissions_set_orphans ("scanner", scanner, LOCATION_TABLE);
       tags_remove_resource ("scanner", scanner, LOCATION_TABLE);
+
+#if ENABLE_AGENTS
+      if (agent_group_hidden_tasks_exist_by_scanner (scanner)
+          || agent_group_tasks_exist_by_scanner (scanner))
+        {
+          sql_rollback ();
+          return 1;
+        }
+#endif // ENABLE_AGENTS
     }
 
 #if ENABLE_AGENTS
+  // Delete agent groups related to the scanner.
+  delete_agent_groups_by_scanner (scanner);
+  // Delete agents related to the scanner.
   delete_agents_by_scanner_and_uuids (scanner, NULL);
 #endif // ENABLE_AGENTS
 
@@ -39248,6 +39508,13 @@ manage_restore (const char *id)
       return 99;
     }
 
+#if ENABLE_AGENTS
+  /* Agent Group. */
+  ret = restore_agent_group (id);
+  if (ret != 2)
+    return ret;
+#endif
+
   /* Port List. */
   ret = restore_port_list (id);
   if (ret != 2)
@@ -39267,6 +39534,13 @@ manage_restore (const char *id)
   ret = restore_ticket (id);
   if (ret != 2)
     return ret;
+
+#if ENABLE_CONTAINER_SCANNING
+  /* OCI Image Targets. */
+  ret = restore_oci_image_target (id);
+  if (ret != 2)
+    return ret;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   /* Config. */
 
@@ -39341,6 +39615,65 @@ manage_restore (const char *id)
       sql_commit ();
       return 0;
     }
+
+#if ENABLE_AGENTS
+  /* Agent Installer. */
+
+  if (find_trash ("agent_installer", id, &resource))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (resource)
+    {
+      agent_installer_t agent_installer;
+
+      agent_installer
+        = sql_int64_0 ("INSERT INTO agent_installers"
+                       " (uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update)"
+                       " SELECT uuid, owner, name, comment,"
+                       "  creation_time, modification_time,"
+                       "  description, content_type, file_extension,"
+                       "  installer_path, version, checksum,"
+                       "  file_size, last_update"
+                       " FROM agent_installers_trash WHERE id = %llu"
+                       " RETURNING id;",
+                       resource);
+
+      sql ("INSERT INTO agent_installer_cpes"
+           " (agent_installer, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl)"
+           " SELECT %llu, criteria,"
+           "  version_start_incl, version_start_excl,"
+           "  version_end_incl, version_end_excl"
+           " FROM agent_installer_cpes_trash WHERE agent_installer = %llu;",
+           agent_installer,
+           resource);
+
+      permissions_set_locations ("agent_installer",
+                                 resource,
+                                 agent_installer,
+                                 LOCATION_TABLE);
+      tags_set_locations ("agent_installer",
+                          resource,
+                          agent_installer,
+                          LOCATION_TABLE);
+
+      sql ("DELETE FROM agent_installer_cpes_trash"
+           " WHERE agent_installer = %llu;",
+          resource);
+      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;", resource);
+
+      sql_commit ();
+      return 0;
+    }
+#endif /* ENABLE_AGENTS */
 
   /* Alert. */
 
@@ -39605,6 +39938,15 @@ manage_restore (const char *id)
            " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
+#if ENABLE_CONTAINER_SCANNING
+      sql ("UPDATE oci_image_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           credential,
+           resource);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       permissions_set_locations ("credential", resource, credential,
                                  LOCATION_TABLE);
@@ -40210,6 +40552,9 @@ manage_empty_trashcan ()
       sql_rollback ();
       return 99;
     }
+#if ENABLE_AGENTS
+  empty_trashcan_agent_groups ();
+#endif
 
   sql ("DELETE FROM nvt_selectors"
        " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
@@ -40237,6 +40582,14 @@ manage_empty_trashcan ()
        "                                    WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM groups_trash" WHERE_OWNER);
+#if ENABLE_AGENTS
+  sql ("DELETE FROM agent_installer_cpes_trash"
+       " WHERE agent_installer IN (SELECT id from agent_installers_trash"
+       "                           WHERE owner = (SELECT id FROM users"
+       "                                          WHERE uuid = '%s'));",
+       current_credentials.uuid);
+  sql ("DELETE FROM agent_installers_trash" WHERE_OWNER);
+#endif /* ENABLE_AGENTS */
   sql ("DELETE FROM alert_condition_data_trash"
        " WHERE alert IN (SELECT id from alerts_trash"
        "                 WHERE owner = (SELECT id FROM users"
@@ -40261,6 +40614,9 @@ manage_empty_trashcan ()
   sql ("DELETE FROM credentials_trash" WHERE_OWNER);
   sql ("DELETE FROM filters_trash" WHERE_OWNER);
   sql ("DELETE FROM notes_trash" WHERE_OWNER);
+#if ENABLE_CONTAINER_SCANNING
+  sql ("DELETE FROM oci_image_targets_trash" WHERE_OWNER);
+#endif /* ENABLE_CONTAINER_SCANNING */
   sql ("DELETE FROM overrides_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions_trash" WHERE_OWNER);
   empty_trashcan_port_lists ();
@@ -40403,87 +40759,13 @@ manage_empty_trashcan ()
  */
 
 /**
- * @brief Return the UUID of the asset associated with a result host.
- *
- * @param[in]  host    Host value from result.
- * @param[in]  result  Result.
- *
- * @return Asset UUID.
- */
-char *
-result_host_asset_id (const char *host, result_t result)
-{
-  gchar *quoted_host;
-  char *asset_id;
-
-  quoted_host = sql_quote (host);
-  asset_id = sql_string ("SELECT uuid FROM hosts"
-                         " WHERE id = (SELECT host FROM host_identifiers"
-                         "             WHERE source_type = 'Report Host'"
-                         "             AND name = 'ip'"
-                         "             AND source_id"
-                         "                 = (SELECT uuid"
-                         "                    FROM reports"
-                         "                    WHERE id = (SELECT report"
-                         "                                FROM results"
-                         "                                WHERE id = %llu))"
-                         "             AND value = '%s'"
-                         "             LIMIT 1);",
-                         result,
-                         quoted_host);
-  g_free (quoted_host);
-  return asset_id;
-}
-
-/**
- * @brief Return the UUID of a host.
- *
- * @param[in]  host  Host.
- *
- * @return Host UUID.
- */
-char*
-host_uuid (resource_t host)
-{
-  return sql_string ("SELECT uuid FROM hosts WHERE id = %llu;",
-                     host);
-}
-
-/**
- * @brief Add a report host.
- *
- * @param[in]  report   UUID of resource.
- * @param[in]  host     Host.
- * @param[in]  start    Start time.
- * @param[in]  end      End time.
- *
- * @return Report host.
- */
-report_host_t
-manage_report_host_add (report_t report, const char *host, time_t start,
-                        time_t end)
-{
-  char *quoted_host = sql_quote (host);
-
-  sql ("INSERT INTO report_hosts"
-       " (report, host, start_time, end_time, current_port, max_port)"
-       " SELECT %llu, '%s', %lld, %lld, 0, 0"
-       " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
-       "                   AND host = '%s');",
-       report, quoted_host, (long long) start, (long long) end, report,
-       quoted_host);
-  g_free (quoted_host);
-  return sql_last_insert_id ();
-}
-
-/**
  * @brief Tests if a report host is marked as dead.
  *
  * @param[in]  report_host  Report host.
  *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
-static int
+int
 report_host_dead (report_host_t report_host)
 {
   return sql_int ("SELECT count(*) != 0 FROM report_host_details"
@@ -40500,7 +40782,7 @@ report_host_dead (report_host_t report_host)
  *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
-static int
+int
 report_host_result_count (report_host_t report_host)
 {
   return sql_int ("SELECT count(*) FROM report_hosts, results"
@@ -40511,19 +40793,6 @@ report_host_result_count (report_host_t report_host)
 }
 
 /**
- * @brief Set end time of a report host.
- *
- * @param[in]  report_host  Report host.
- * @param[in]  end_time     End time.
- */
-void
-report_host_set_end_time (report_host_t report_host, time_t end_time)
-{
-  sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
-       end_time, report_host);
-}
-
-/**
  * @brief Host identifiers for the current scan.
  */
 array_t *identifiers = NULL;
@@ -40531,20 +40800,7 @@ array_t *identifiers = NULL;
 /**
  * @brief Unique hosts listed in host_identifiers.
  */
-static array_t *identifier_hosts = NULL;
-
-/**
- * @brief Host identifier type.
- */
-typedef struct
-{
-  gchar *ip;                ///< IP of host.
-  gchar *name;              ///< Name of identifier, like "hostname".
-  gchar *value;             ///< Value of identifier.
-  gchar *source_type;       ///< Type of identifier source, like "Report Host".
-  gchar *source_id;         ///< ID of source.
-  gchar *source_data;       ///< Extra data for source.
-} identifier_t;
+array_t *identifier_hosts = NULL;
 
 /**
  * @brief Free an identifier.
@@ -41095,194 +41351,6 @@ host_routes_xml (host_t host)
   g_string_append (buffer, "</routes>");
 
   return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Add host details to a report host.
- *
- * @param[in]  report  UUID of resource.
- * @param[in]  ip      Host.
- * @param[in]  entity  XML entity containing details.
- * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
- *
- * @return 0 success, -1 failed to parse XML.
- */
-int
-manage_report_host_details (report_t report, const char *ip,
-                            entity_t entity, GHashTable *hashed_host_details)
-{
-  int in_assets;
-  entities_t details;
-  entity_t detail;
-  char *uuid;
-  char *hash_value;
-
-  in_assets = sql_int ("SELECT not(value = 'no') FROM task_preferences"
-                       " WHERE task = (SELECT task FROM reports"
-                       "                WHERE id = %llu)"
-                       " AND name = 'in_assets';",
-                       report);
-
-  details = entity->entities;
-  if (identifiers == NULL)
-    identifiers = make_array ();
-  if (identifier_hosts == NULL)
-    identifier_hosts = make_array ();
-  uuid = report_uuid (report);
-  while ((detail = first_entity (details)))
-    {
-      if (strcmp (entity_name (detail), "detail") == 0)
-        {
-          entity_t source, source_type, source_name, source_desc, name, value;
-
-          /* Parse host detail and add to report */
-          source = entity_child (detail, "source");
-          if (source == NULL)
-            goto error;
-          source_type = entity_child (source, "type");
-          if (source_type == NULL)
-            goto error;
-          source_name = entity_child (source, "name");
-          if (source_name == NULL)
-            goto error;
-          source_desc = entity_child (source, "description");
-          if (source_desc == NULL)
-            goto error;
-          name = entity_child (detail, "name");
-          if (name == NULL)
-            goto error;
-          value = entity_child (detail, "value");
-          if (value == NULL)
-            goto error;
-
-          if (!check_host_detail_exists (report, ip, entity_text (source_type),
-                                         entity_text (source_name),
-                                         entity_text (source_desc),
-                                         entity_text (name),
-                                         entity_text (value),
-                                         (char**) &hash_value,
-                                         hashed_host_details))
-            {
-              insert_report_host_detail
-               (report, ip, entity_text (source_type), entity_text (source_name),
-                entity_text (source_desc), entity_text (name), entity_text (value),
-                hash_value);
-              g_free (hash_value);
-            }
-          else
-            {
-              g_free (hash_value);
-              details = next_entities (details);
-              continue;
-            }
-
-          /* Only add to assets if "Add to Assets" is set on the task. */
-          if (in_assets)
-            {
-              if (strcmp (entity_text (name), "hostname") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("hostname");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "MAC") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("MAC");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "OS") == 0
-                  && g_str_has_prefix (entity_text (value), "cpe:"))
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("OS");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "ssh-key") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("ssh-key");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-            }
-        }
-      details = next_entities (details);
-    }
-  free (uuid);
-
-  return 0;
-
- error:
-  free (uuid);
-  return -1;
-}
-
-/**
- * @brief Add a host detail to a report host.
- *
- * @param[in]  report  UUID of resource.
- * @param[in]  host    Host.
- * @param[in]  xml     Report host detail XML.
- * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
- *
- * @return 0 success, -1 failed to parse XML, -2 host was NULL.
- */
-int
-manage_report_host_detail (report_t report, const char *host,
-                           const char *xml, GHashTable *hashed_host_details)
-{
-  int ret;
-  entity_t entity;
-
-  if (host == NULL)
-    return -2;
-
-  entity = NULL;
-  if (parse_entity (xml, &entity))
-    return -1;
-
-  ret = manage_report_host_details (report,
-                                    host,
-                                    entity,
-                                    hashed_host_details);
-  free_entity (entity);
-  return ret;
 }
 
 /**
@@ -42168,211 +42236,6 @@ find_host_with_permission (const char* uuid, host_t* host,
                            const char *permission)
 {
   return find_resource_with_permission ("host", uuid, host, permission, 0);
-}
-
-/**
- * @brief Check whether a string is an identifier name.
- *
- * @param[in]  name  Possible identifier name.
- *
- * @return 1 if an identifier name, else 0.
- */
-static int
-identifier_name (const char *name)
-{
-  return (strcmp ("hostname", name) == 0)
-         || (strcmp ("MAC", name) == 0)
-         || (strcmp ("OS", name) == 0)
-         || (strcmp ("ssh-key", name) == 0);
-}
-
-/**
- * @brief Create a host asset.
- *
- * @param[in]  host_name    Host Name.
- * @param[in]  comment      Comment.
- * @param[out] host_return  Created asset.
- *
- * @return 0 success, 1 failed to find report, 2 host not an IP address,
- *         99 permission denied, -1 error.
- */
-int
-create_asset_host (const char *host_name, const char *comment,
-                   resource_t* host_return)
-{
-  int host_type;
-  resource_t host;
-  gchar *quoted_host_name, *quoted_comment;
-
-  if (host_name == NULL)
-    return -1;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_asset") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  host_type = gvm_get_host_type (host_name);
-  if (host_type != HOST_TYPE_IPV4 && host_type != HOST_TYPE_IPV6)
-    {
-      sql_rollback ();
-      return 2;
-    }
-
-  quoted_host_name = sql_quote (host_name);
-  quoted_comment = sql_quote (comment ? comment : "");
-  sql ("INSERT into hosts"
-       " (uuid, owner, name, comment, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '%s',"
-       "  m_now (), m_now ());",
-       current_credentials.uuid,
-       quoted_host_name,
-       quoted_comment);
-  g_free (quoted_comment);
-
-  host = sql_last_insert_id ();
-
-  sql ("INSERT into host_identifiers"
-       " (uuid, host, owner, name, comment, value, source_type, source_id,"
-       "  source_data, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), %llu, (SELECT id FROM users WHERE uuid = '%s'), 'ip',"
-       "  '', '%s', 'User', '%s', '', m_now (), m_now ());",
-       host,
-       current_credentials.uuid,
-       quoted_host_name,
-       current_credentials.uuid);
-
-  g_free (quoted_host_name);
-
-  if (host_return)
-    *host_return = host;
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create all available assets from a report.
- *
- * @param[in]  report_id  UUID of report.
- * @param[in]  term       Filter term, for min_qod and apply_overrides.
- *
- * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
- */
-int
-create_asset_report (const char *report_id, const char *term)
-{
-  resource_t report;
-  iterator_t hosts;
-  gchar *quoted_report_id;
-  int apply_overrides, min_qod;
-
-  if (report_id == NULL)
-    return -1;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_asset") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  report = 0;
-  if (find_report_with_permission (report_id, &report, "get_reports"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (report == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* These are freed by hosts_set_identifiers. */
-  if (identifiers == NULL)
-    identifiers = make_array ();
-  if (identifier_hosts == NULL)
-    identifier_hosts = make_array ();
-
-  quoted_report_id = sql_quote (report_id);
-  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_details WHERE source_id = '%s';",
-       quoted_report_id);
-  g_free (quoted_report_id);
-
-  init_report_host_iterator (&hosts, report, NULL, 0);
-  while (next (&hosts))
-    {
-      const char *host;
-      report_host_t report_host;
-      iterator_t details;
-
-      host = host_iterator_host (&hosts);
-      report_host = host_iterator_report_host (&hosts);
-
-      if (report_host_dead (report_host)
-          || report_host_result_count (report_host) == 0)
-        continue;
-
-      host_notice (host, "ip", host, "Report Host", report_id, 0, 0);
-
-      init_report_host_details_iterator (&details, report_host);
-      while (next (&details))
-        {
-          const char *name;
-
-          name = report_host_details_iterator_name (&details);
-
-          if (identifier_name (name))
-            {
-              const char *value;
-              identifier_t *identifier;
-
-              value = report_host_details_iterator_value (&details);
-
-              if ((strcmp (name, "OS") == 0)
-                  && (g_str_has_prefix (value, "cpe:") == 0))
-                continue;
-
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (host);
-              identifier->name = g_strdup (name);
-              identifier->value = g_strdup (value);
-              identifier->source_id = g_strdup (report_id);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data
-               = g_strdup (report_host_details_iterator_source_name (&details));
-
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (host));
-            }
-        }
-      cleanup_iterator (&details);
-    }
-  cleanup_iterator (&hosts);
-  hosts_set_identifiers (report);
-  apply_overrides = filter_term_apply_overrides (term);
-  min_qod = filter_term_min_qod (term);
-  hosts_set_max_severity (report, &apply_overrides, &min_qod);
-  hosts_set_details (report);
-
-  sql_commit ();
-
-  return 0;
 }
 
 /**
@@ -43527,8 +43390,12 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid)
     {
       /* Filters */
-      if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
+      if (strcmp (uuid, "391fc4f4-9f6c-4f0e-a689-37dd7d70d144") == 0)
+        setting_name = g_strdup ("Agent Groups Filter");
+      else if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
         setting_name = g_strdup ("Agents Filter");
+      else if (strcmp (uuid, "a39a719a-e6bc-4d9f-a1e6-a53e5b014b05") == 0)
+        setting_name = g_strdup ("Agent Installers Filter");
       else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
@@ -43547,6 +43414,10 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Hosts Filter");
       else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
         setting_name = g_strdup ("Notes Filter");
+#if ENABLE_CONTAINER_SCANNING
+      else if (strcmp (uuid, "db61a364-de40-4552-b1bc-a518744f847a") == 0)
+        setting_name = g_strdup ("OCI Image Targets Filter");
+#endif
       else if (strcmp (uuid, "f608c3ec-ce73-4ff6-8e04-7532749783af") == 0)
         setting_name = g_strdup ("Operating Systems Filter");
       else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)
@@ -45539,6 +45410,21 @@ delete_user (const char *user_id_arg, const char *name_arg,
        " (SELECT id FROM targets_trash WHERE owner = %llu);", user);
   sql ("DELETE FROM targets WHERE owner = %llu;", user);
   sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
+
+#if ENABLE_CONTAINER_SCANNING
+  /* OCI Image Targets. */
+  if (user_resources_in_use (user,
+                             "oci_image_targets",
+                             oci_image_target_in_use,
+                             "oci_image_targets_trash",
+                             trash_oci_image_target_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM oci_image_targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM oci_image_targets_trash WHERE owner = %llu;", user);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   /* Delete resources used indirectly by tasks */
 

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts_common.c
+ * @file
  * @brief GVM management layer: Common NVT logic
  *
  * Shared NVT logic for the GVM management layer.

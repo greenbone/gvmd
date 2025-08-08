@@ -4,7 +4,7 @@
  */
 
 /**
- * @file gmp_agents.c
+ * @file
  * @brief GVM GMP layer: Agent management
  *
  * This file contains GMP command implementations for managing agents,
@@ -120,6 +120,9 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
     {
       ret = get_next (&agents, &get_agents_data.get, &first, &count,
                       init_agent_iterator);
+      scanner_t scanner;
+      char *agent_scanner_name, *agent_scanner_uuid;
+
       if (ret == 1)
         break;
       if (ret == -1)
@@ -129,6 +132,9 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
+      scanner = agent_iterator_scanner (&agents);
+      agent_scanner_uuid = scanner_uuid (scanner);
+      agent_scanner_name = scanner_name (scanner);
       SEND_GET_COMMON_NO_TRASH (agent,
                                 &get_agents_data.get,
                                 &agents);
@@ -153,9 +159,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
                                agent_iterator_connection_status (&agents),
                                iso_if_time (agent_iterator_last_update (&agents)),
                                agent_iterator_schedule (&agents),
-                               scanner_uuid (agent_iterator_scanner (&agents)),
-                               scanner_name (agent_iterator_scanner (&agents))
-                               );
+                               agent_scanner_uuid ? agent_scanner_uuid : "",
+                               agent_scanner_name ? agent_scanner_name : "");
 
       // IPs
       agent_ip_data_list_t ip_list = load_agent_ip_addresses (agent_iterator_agent_id (&agents));
@@ -171,6 +176,9 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
       // Close agent
       SEND_TO_CLIENT_OR_FAIL ("</agent>");
       count++;
+
+      g_free(agent_scanner_name);
+      g_free(agent_scanner_uuid);
     }
 
   cleanup_iterator (&agents);
@@ -437,7 +445,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
         log_event_fail ("agents", "Agents", NULL, "modified");
         break;
-
+      case AGENT_RESPONSE_IN_USE_ERROR:
       default:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
         log_event_fail ("agents", "Agents", NULL, "modified");
@@ -697,6 +705,11 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
       case AGENT_RESPONSE_INTERNAL_ERROR:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
         log_event_fail ("agents", "Agents", NULL, "deleted");
+        break;
+
+      case AGENT_RESPONSE_IN_USE_ERROR:
+        SENDF_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Resource is in use"));
+        log_event_fail ("agent", "Agents", NULL, "deleted");
         break;
 
       default:

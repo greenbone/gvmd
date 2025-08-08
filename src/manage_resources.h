@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_resources.h
+ * @file
  * @brief GVM management layer: Generic resource type handling headers.
  *
  * Non-SQL generic resource type handling headers for the GVM management layer.

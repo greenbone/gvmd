@@ -17,7 +17,7 @@
  */
 
 /**
- * @file ipc.c
+ * @file
  * @brief Inter-process communitcation (IPC)
  */
 

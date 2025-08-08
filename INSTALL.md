@@ -9,12 +9,12 @@ install dependent development packages.
 Prerequisites:
 
 * cJSON >= 1.7.14
-* cmake >= 3.0
+* cmake >= 3.5
 * GCC
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * gpgme
-* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.12
+* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.23
 * libical >= 1.0.0
 * libbsd
 * pkg-config

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_secinfo.c
+ * @file
  * @brief GVM management layer: SecInfo
  *
  * The SecInfo parts of the GVM management layer.

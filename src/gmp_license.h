@@ -23,7 +23,7 @@
 
 
 /**
- * @file gmp_tls_certificates.h
+ * @file
  * @brief GVM GMP layer: License information headers
  *
  * Headers for GMP handling of license information.

@@ -17,8 +17,10 @@
  */
 
 /**
- * @file manage_utils.c
+ * @file
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
+ *
+ * Utilities used by the manage library that do not depend on anything.
  */
 
 #include "manage_utils.h"
@@ -42,13 +44,6 @@
  * @brief Number of seconds in a day.
  */
 #define SECS_PER_DAY 86400
-
-/**
- * @file  manage_utils.c
- * @brief The Greenbone Vulnerability Manager management library.
- *
- * Utilities used by the manage library that do not depend on anything.
- */
 
 /**
  * @brief Get the current offset from UTC of a timezone.
@@ -306,6 +301,16 @@ valid_db_resource_type (const char* type)
 {
   if (type == NULL)
     return 0;
+#if ENABLE_AGENTS
+  if(strcasecmp (type, "agent_group") == 0)
+    return 1;
+#endif
+
+#ifdef ENABLE_AGENTS
+  if ((strcasecmp (type, "agent") == 0)
+      || (strcasecmp (type, "agent_installer") == 0))
+    return 1;
+#endif /* ENABLE_AGENTS */
 
   return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)
@@ -320,6 +325,9 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "os") == 0)
          || (strcasecmp (type, "note") == 0)
          || (strcasecmp (type, "nvt") == 0)
+#if ENABLE_CONTAINER_SCANNING
+         || (strcasecmp (type, "oci_image_target") == 0)
+#endif /* ENABLE_CONTAINER_SCANNING */
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "permission") == 0)

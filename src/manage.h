@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: the Manage library.
  */
 
@@ -25,6 +25,7 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_agent_installers.h"
 #include "manage_filter_utils.h"
 #include "manage_resources.h"
 #include "manage_settings.h"
@@ -55,6 +56,7 @@
 
 #if ENABLE_AGENTS
 #include <gvm/agent_controller/agent_controller.h>
+#include "manage_agent_groups.h"
 #include "manage_agents.h"
 #endif
 
@@ -604,6 +606,21 @@ task_target_in_trash (task_t);
 void
 set_task_target (task_t, target_t);
 
+#if ENABLE_AGENTS
+void
+set_task_agent_group_and_location (task_t task, agent_group_t agent_group);
+
+int
+agent_group_tasks_exist_by_scanner (scanner_t scanner);
+
+int
+agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner);
+#endif /* ENABLE_AGENTS */
+
+int
+set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
+                               const gchar *schedule_periods);
+
 void
 set_task_hosts_ordering (task_t, const char *);
 
@@ -776,7 +793,7 @@ int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *,
-             array_t *, const gchar *, gchar **, gchar **);
+             array_t *, const gchar *, const gchar *, gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);
@@ -854,6 +871,9 @@ severity_data_level_counts (const severity_data_t*,
 
 const char*
 run_status_name (task_status_t);
+
+void
+set_task_interrupted (task_t, const gchar *);
 
 int
 start_task (const char *, char**);
@@ -1001,6 +1021,9 @@ report_t
 make_report (task_t, const char *, task_status_t);
 
 void
+manage_queued_task_actions ();
+
+void
 manage_process_report_imports ();
 
 int
@@ -1067,9 +1090,6 @@ void
 insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *, const char *, const char *,
                            const char *);
-
-int
-manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
 
 void
 hosts_set_identifiers (report_t);
@@ -2209,6 +2229,20 @@ credential_target_iterator_name (iterator_t*);
 int
 credential_target_iterator_readable (iterator_t*);
 
+#if ENABLE_CONTAINER_SCANNING
+void
+init_credential_oci_image_target_iterator (iterator_t*, credential_t, int);
+
+const char*
+credential_oci_target_iterator_uuid (iterator_t*);
+
+const char*
+credential_oci_target_iterator_name (iterator_t*);
+
+int
+credential_oci_target_iterator_readable (iterator_t*);
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 void
 init_credential_scanner_iterator (iterator_t*, credential_t, int);
 
@@ -2245,12 +2279,6 @@ credential_encrypted_value (credential_t, const char*);
 
 
 /* Assets. */
-
-char *
-result_host_asset_id (const char *, result_t);
-
-char*
-host_uuid (resource_t);
 
 host_t
 host_notice (const char *, const char *, const char *, const char *,
@@ -2354,12 +2382,6 @@ modify_asset (const char *, const char *);
 
 int
 delete_asset (const char *, const char *, int);
-
-int
-create_asset_report (const char *, const char *);
-
-int
-create_asset_host (const char *, const char *, resource_t* );
 
 int
 add_assets_from_host_in_report (report_t report, const char *host);
@@ -2803,6 +2825,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  * @brief Seconds between calls to manage_schedule.
  */
 #define SCHEDULE_PERIOD 10
+
+/**
+ * @brief Seconds between calls to manage_queued_task_actions.
+ */
+#define QUEUE_PERIOD 5
 
 /**
  * @brief Minimum schedule timeout seconds.
@@ -3421,14 +3448,8 @@ manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
 int
 manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
 
-report_host_t
-manage_report_host_add (report_t, const char *, time_t, time_t);
-
 int
 report_host_noticeable (report_t, const gchar *);
-
-void
-report_host_set_end_time (report_host_t, time_t);
 
 gchar*
 host_routes_xml (host_t);

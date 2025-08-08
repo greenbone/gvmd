@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_agents.h
+ * @file
  * @brief SQL interaction layer for agent data in GVMD.
  *
  * This header defines SQL-related operations for managing agents,
@@ -70,6 +70,9 @@ update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment);
 
 int
 get_scanner_from_agent_uuid(const gchar *agent_uuid, scanner_t *scanner);
+
+int
+agent_id_by_uuid_and_scanner (const gchar *agent_uuid, scanner_t scanner_id, agent_t *agent_id);
 
 #endif //_GVMD_MANAGE_SQL_AGENTS_H
 #endif // ENABLE_AGENTS

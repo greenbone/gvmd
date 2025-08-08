@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_sql_agents.c
+ * @file
  * @brief SQL backend implementation for agent management in GVMD.
  *
  * This file provides the implementation of SQL interactions related to
@@ -572,13 +572,19 @@ agent_writable (agent_t agent)
  * @brief Check if an agent is currently in use.
  *
  * @param agent Resource identifier.
- * @return Always returns 0 (not in use).
+ * @return 1 if the agent is in use, 0 otherwise.
  */
 int
 agent_in_use (agent_t agent)
 {
-  (void)agent;
-  return 0;
+  return !!sql_int (
+    "WITH usage_counts AS ("
+    "  SELECT COUNT(*) AS count FROM agent_group_agents WHERE agent_id = %llu"
+    "  UNION ALL "
+    "  SELECT COUNT(*) AS count FROM agent_group_agents_trash WHERE agent = %llu"
+    ") "
+    "SELECT SUM(count) FROM usage_counts;",
+    agent, agent);
 }
 
 /**
@@ -665,6 +671,87 @@ update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment)
   sql_commit ();
 
   g_string_free (uuid_list, TRUE);
+}
+
+/**
+ * @brief Retrieve the internal row ID of an agent by its UUID and scanner ID.
+ *
+ * @param[in]  agent_uuid   The UUID of the agent.
+ * @param[in]  scanner_id   The expected scanner row ID.
+ * @param[out] agent_id_out Pointer to store the resolved agent ID.
+ *
+ * @return 0 if success,
+ *         1 if agent not found,
+ *         2 if scanner mismatch.
+ */
+int
+agent_id_by_uuid_and_scanner (const gchar *agent_uuid,
+                              scanner_t scanner_id,
+                              agent_t *agent_id_out)
+{
+  g_return_val_if_fail (agent_uuid != NULL, 1);
+  g_return_val_if_fail (agent_id_out != NULL, 1);
+
+  // Get the agent ID with matching scanner
+  agent_t agent_id = sql_int64_0 (
+    "SELECT id FROM agents WHERE uuid = '%s' AND scanner = %llu;",
+    agent_uuid, scanner_id);
+
+  if (agent_id != 0)
+  {
+    *agent_id_out = agent_id;
+    return 0;  // success
+  }
+
+  // Check if agent exists but scanner doesn't match
+  agent_id = sql_int64_0 (
+    "SELECT id FROM agents WHERE uuid = '%s';",
+    agent_uuid);
+
+  if (agent_id != 0)
+    return 2;  // scanner mismatch
+
+  return 1;  // agent not found
+}
+
+/**
+ * @brief Check if any agent in the UUID list is currently in use.
+ *
+ * @param[in] agent_uuids List of agent UUIDs to check.
+ *
+ * @return TRUE if any agent is in use, FALSE otherwise.
+ */
+gboolean
+agents_in_use (agent_uuid_list_t agent_uuids)
+{
+  if (!agent_uuids || agent_uuids->count == 0)
+    return FALSE;
+
+  GString *uuid_filter = g_string_new ("");
+
+  for (int i = 0; i < agent_uuids->count; ++i)
+  {
+    if (i > 0)
+      g_string_append (uuid_filter, ", ");
+    g_string_append_printf (uuid_filter, "'%s'", agent_uuids->agent_uuids[i]);
+  }
+
+  int count = sql_int (
+    "WITH matching_agents AS ("
+    "  SELECT id FROM agents WHERE uuid IN (%s)"
+    ") "
+    "SELECT COUNT(*) FROM ("
+    "  SELECT agent_id AS id FROM agent_group_agents"
+    "  WHERE agent_id IN (SELECT id FROM matching_agents)"
+    "  UNION ALL "
+    "  SELECT agent AS id FROM agent_group_agents_trash"
+    "  WHERE agent IN (SELECT id FROM matching_agents)"
+    ") AS used_agents;",
+    uuid_filter->str);
+
+  g_string_free (uuid_filter, TRUE);
+
+  return count > 0 ? TRUE : FALSE;
 }
 
 #endif // ENABLE_AGENTS

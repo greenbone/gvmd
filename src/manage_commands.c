@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_commands.c
+ * @file
  * @brief GVM management layer: Generic command handling.
  *
  * Non-SQL generic command handling code for the GVM management layer.
@@ -21,6 +21,9 @@
  */
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
+#if ENABLE_AGENTS
+    {"CREATE_AGENT_GROUP", "Create an agent group."},
+#endif
     {"CREATE_ALERT", "Create an alert."},
     {"CREATE_ASSET", "Create an asset."},
     {"CREATE_CONFIG", "Create a config."},
@@ -28,6 +31,9 @@ command_t gmp_commands[]
     {"CREATE_FILTER", "Create a filter."},
     {"CREATE_GROUP", "Create a group."},
     {"CREATE_NOTE", "Create a note."},
+#if ENABLE_CONTAINER_SCANNING
+    {"CREATE_OCI_IMAGE_TARGET", "Create an OCI image target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"CREATE_OVERRIDE", "Create an override."},
     {"CREATE_PERMISSION", "Create a permission."},
     {"CREATE_PORT_LIST", "Create a port list."},
@@ -44,7 +50,11 @@ command_t gmp_commands[]
     {"CREATE_TICKET", "Create a ticket."},
     {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
     {"CREATE_USER", "Create a new user."},
+#if ENABLE_AGENTS
+    {"DELETE_AGENT_GROUP", "Delete an agent group."},
     {"DELETE_AGENTS", "Delete one or more agents."},
+    {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
+#endif /* ENABLE_AGENTS */
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
     {"DELETE_CONFIG", "Delete a config."},
@@ -52,6 +62,9 @@ command_t gmp_commands[]
     {"DELETE_FILTER", "Delete a filter."},
     {"DELETE_GROUP", "Delete a group."},
     {"DELETE_NOTE", "Delete a note."},
+#if ENABLE_CONTAINER_SCANNING
+    {"DELETE_OCI_IMAGE_TARGET", "Delete an OCI image target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"DELETE_OVERRIDE", "Delete an override."},
     {"DELETE_PERMISSION", "Delete a permission."},
     {"DELETE_PORT_LIST", "Delete a port list."},
@@ -70,8 +83,13 @@ command_t gmp_commands[]
     {"DELETE_USER", "Delete an existing user."},
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
-    {"GET_AGGREGATES", "Get aggregates of resources."},
+#if ENABLE_AGENTS
+    {"GET_AGENT_GROUPS", "Get all agent groups."},
     {"GET_AGENTS", "Get all agents."},
+    {"GET_AGENT_INSTALLERS", "Get all agent installers."},
+    {"GET_AGENT_INSTALLER_FILE", "Get an agent installer file."},
+#endif /* ENABLE_AGENTS */
+    {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
     {"GET_CONFIGS", "Get all configs."},
@@ -84,6 +102,9 @@ command_t gmp_commands[]
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
     {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
+#if ENABLE_CONTAINER_SCANNING
+    {"GET_OCI_IMAGE_TARGETS", "Get all OCI image targets."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"GET_OVERRIDES", "Get all overrides."},
     {"GET_PERMISSIONS", "Get all permissions."},
     {"GET_PORT_LISTS", "Get all port lists."},
@@ -106,7 +127,10 @@ command_t gmp_commands[]
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
+#if ENABLE_AGENTS
+    {"MODIFY_AGENT_GROUP", "Modify an agent group."},
     {"MODIFY_AGENTS", "Modify one or more existing agents."},
+#endif /* ENABLE_AGENTS */
     {"MODIFY_ALERT", "Modify an existing alert."},
     {"MODIFY_ASSET", "Modify an existing asset."},
     {"MODIFY_AUTH", "Modify the authentication methods."},
@@ -116,6 +140,9 @@ command_t gmp_commands[]
     {"MODIFY_GROUP", "Modify an existing group."},
     {"MODIFY_LICENSE", "Modify the existing license."},
     {"MODIFY_NOTE", "Modify an existing note."},
+#if ENABLE_CONTAINER_SCANNING
+    {"MODIFY_OCI_IMAGE_TARGET", "Modify an existing OCI image target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"MODIFY_OVERRIDE", "Modify an existing override."},
     {"MODIFY_PERMISSION", "Modify an existing permission."},
     {"MODIFY_PORT_LIST", "Modify an existing port list."},

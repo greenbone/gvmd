@@ -24,6 +24,13 @@ prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
 file=${GVMD_LOG_FILE}
 level=127
 
+[md   scan]
+prepend=%t %s %p
+separator=:
+prepend_time_format=%Y-%m-%d %Hh%M.%S %Z
+file=${GVMD_LOG_FILE}
+level=127
+
 [md  crypt]
 prepend=%t %s %p
 separator=:

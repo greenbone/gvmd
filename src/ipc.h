@@ -17,7 +17,7 @@
  */
 
 /**
- * @file ipc.h
+ * @file
  * @brief Headers for inter-process communitcation (IPC)
  */
 

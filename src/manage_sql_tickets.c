@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_tickets.c
+ * @file
  * @brief GVM management layer: Ticket SQL
  *
  * The Ticket SQL for the GVM management layer.

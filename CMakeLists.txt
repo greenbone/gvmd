@@ -19,7 +19,7 @@ cmake_minimum_required(VERSION 3.5)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 
-project(gvm VERSION 26.0.1 LANGUAGES C)
+project(gvm VERSION 26.1.1 LANGUAGES C)
 
 if(POLICY CMP0005)
   cmake_policy(SET CMP0005 NEW)
@@ -109,13 +109,18 @@ include(CPack)
 
 ## Variables
 
-set(GVMD_DATABASE_VERSION 260)
+set(GVMD_DATABASE_VERSION 262)
 
 set(GVMD_SCAP_DATABASE_VERSION 22)
 
 set(GVMD_CERT_DATABASE_VERSION 8)
 
-set(GMP_VERSION "22.7")
+if(ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
+  # Set a to the next GMP version if unstable features are enabled
+  set(GMP_VERSION "22.8")
+else(ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
+  set(GMP_VERSION "22.7")
+endif(ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
 
 if(SYSCONF_INSTALL_DIR)
   set(SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -255,6 +260,18 @@ if(NOT ENABLE_AGENTS)
 endif(NOT ENABLE_AGENTS)
 add_definitions(-DENABLE_AGENTS=${ENABLE_AGENTS})
 
+if(ENABLE_AGENTS EQUAL 1)
+  set(IF_ENABLE_AGENTS "")
+  set(ENDIF_ENABLE_AGENTS "")
+  set(IF_NOT_ENABLE_AGENTS "<!--")
+  set(ENDIF_NOT_ENABLE_AGENTS "-->")
+elseif(ENABLE_AGENTS EQUAL 0)
+  set(IF_ENABLE_AGENTS "<!--")
+  set(ENDIF_ENABLE_AGENTS "-->")
+  set(IF_NOT_ENABLE_AGENTS "")
+  set(ENDIF_NOT_ENABLE_AGENTS "")
+endif()
+
 if(NOT CVSS3_RATINGS)
   set(CVSS3_RATINGS 0)
 endif(NOT CVSS3_RATINGS)
@@ -277,6 +294,19 @@ if(NOT FEED_VT_METADATA)
 endif(NOT FEED_VT_METADATA)
 add_definitions(-DFEED_VT_METADATA=${FEED_VT_METADATA})
 
+if(NOT ENABLE_CONTAINER_SCANNING)
+  set(ENABLE_CONTAINER_SCANNING 0)
+endif(NOT ENABLE_CONTAINER_SCANNING)
+add_definitions(-DENABLE_CONTAINER_SCANNING=${ENABLE_CONTAINER_SCANNING})
+
+if(ENABLE_CONTAINER_SCANNING EQUAL 1)
+  set(IF_ENABLE_CONTAINER_SCANNNING "")
+  set(ENDIF_ENABLE_CONTAINER_SCANNNING "")
+elseif(ENABLE_CONTAINER_SCANNING EQUAL 0)
+  set(IF_ENABLE_CONTAINER_SCANNNING "<!--")
+  set(ENDIF_ENABLE_CONTAINER_SCANNNING "-->")
+endif()
+
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message("-- Log file: ${GVMD_LOG_FILE}")
 
@@ -285,12 +315,12 @@ message("-- Log file: ${GVMD_LOG_FILE}")
 set(GVMD_VERSION "${PROJECT_VERSION_STRING}")
 
 # Configure Doxyfile with version number
-configure_file(doc/Doxyfile.in doc/Doxyfile)
-configure_file(doc/Doxyfile_full.in doc/Doxyfile_full)
-configure_file(doc/Doxyfile_xml.in doc/Doxyfile_xml)
+configure_file(docs/Doxyfile.in docs/Doxyfile)
+configure_file(docs/Doxyfile_full.in docs/Doxyfile_full)
+configure_file(docs/Doxyfile_xml.in docs/Doxyfile_xml)
 configure_file(
-  doc/example-gvm-manage-certs.conf.in
-  doc/example-gvm-manage-certs.conf
+  docs/example-gvm-manage-certs.conf.in
+  docs/example-gvm-manage-certs.conf
   @ONLY
 )
 configure_file(VERSION.in VERSION)
@@ -362,7 +392,7 @@ add_subdirectory(config)
 
 ## Documentation
 
-add_subdirectory(doc)
+add_subdirectory(docs)
 
 ## Install
 
@@ -661,12 +691,12 @@ install(
 )
 
 install(
-  FILES ${CMAKE_SOURCE_DIR}/doc/gvm-manage-certs.1
+  FILES ${CMAKE_SOURCE_DIR}/docs/gvm-manage-certs.1
   DESTINATION ${DATADIR}/man/man1
 )
 
 install(
-  FILES ${CMAKE_BINARY_DIR}/doc/example-gvm-manage-certs.conf
+  FILES ${CMAKE_BINARY_DIR}/docs/example-gvm-manage-certs.conf
   DESTINATION ${DATADIR}/doc/gvm/
 )
 

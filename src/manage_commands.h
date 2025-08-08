@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_commands.h
+ * @file
  * @brief GVM management layer: Generic command handling headers.
  *
  * Non-SQL generic command handling headers for the GVM management layer.

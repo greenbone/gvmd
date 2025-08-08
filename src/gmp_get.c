@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_get.c
+ * @file
  * @brief GVM GMP layer: GET commands
  *
  * Common GET command code for the GVM GMP layer.

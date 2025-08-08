@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_tickets.c
+ * @file
  * @brief GVM GMP layer: Tickets
  *
  * GMP tickets.

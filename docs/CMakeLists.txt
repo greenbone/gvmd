@@ -142,7 +142,7 @@ else(NOT XSLTPROC_EXECUTABLE)
       -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC &&
       ${XSLTPROC_EXECUTABLE} ./RNC.xsl
       ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml >
-      ${CMAKE_BINARY_DIR}/doc/gmp.rnc\;\"
+      ${CMAKE_CURRENT_BINARY_DIR}/gmp.rnc\;\"
     DEPENDS
       ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
       ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
@@ -157,7 +157,7 @@ else(NOT XSLTPROC_EXECUTABLE)
       -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML &&
       ${XSLTPROC_EXECUTABLE} ./HTML.xsl
       ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml >
-      ${CMAKE_BINARY_DIR}/doc/gmp.html\;\"
+      ${CMAKE_BINARY_DIR}/docs/gmp.html\;\"
     DEPENDS
       ${CMAKE_BINARY_DIR}/src/schema_formats/XML/GMP.xml
       ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate

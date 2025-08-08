@@ -26,7 +26,7 @@ jobs:
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
           - stable
           - oldstable
           - testing
-    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:${{ matrix.container }}
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.container }}
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
@@ -76,7 +76,7 @@ jobs:
         container:
           - stable
           - testing
-    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:${{ matrix.container }}
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.container }}
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
@@ -90,7 +90,7 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container: ${{ vars.SELF_HOSTED_REGISTRY }}/community/gvm-libs:stable
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v4
@@ -111,6 +111,7 @@ jobs:
       - name: Configure and run tests
         run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
       - name: Upload test coverage to Codecov
+        if: github.repository == 'greenbone/gvmd'
         uses: codecov/codecov-action@v5
         with:
           files: build/coverage/coverage.xml

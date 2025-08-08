@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  gmp.c
+ * @file
  * @brief The Greenbone Vulnerability Manager GMP library.
  *
  * This file defines a Greenbone Management Protocol (GMP) library, for
@@ -84,13 +84,16 @@
  */
 
 #include "gmp.h"
+#include "gmp_agent_groups.h"
 #include "gmp_agents.h"
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
+#include "gmp_agent_installers.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
+#include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_configs.h"
 #include "gmp_report_formats.h"
@@ -99,6 +102,7 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_alerts.h"
+#include "manage_assets.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
@@ -1050,6 +1054,7 @@ typedef struct
   char *schedule_id;    ///< ID of task schedule.
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;      ///< ID of task target.
+  char *agent_group_id; ///< ID of task agent group.
   task_t task;          ///< ID of new task.
   char *usage_type;     ///< Usage type ("scan" or "audit")
 } create_task_data_t;
@@ -1090,6 +1095,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->schedule_periods);
   free (data->target_id);
   free (data->usage_type);
+  free (data->agent_group_id);
 
   memset (data, 0, sizeof (create_task_data_t));
 }
@@ -1722,6 +1728,7 @@ typedef struct
   get_data_t get;    ///< Get Args.
   int scanners;      ///< Boolean.  Whether to return scanners using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
+  int oci_image_targets; ///< Boolean.  Whether to return OCI image targets.
 } get_credentials_data_t;
 
 /**
@@ -2957,6 +2964,7 @@ typedef struct
   char *schedule_id;   ///< ID of new schedule for task.
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;     ///< ID of new target for task.
+  char *agent_group_id; ///< ID of new agent group for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -2999,6 +3007,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_periods);
   free (data->target_id);
   free (data->task_id);
+  free (data->agent_group_id);
 
   memset (data, 0, sizeof (modify_task_data_t));
 }
@@ -4082,6 +4091,9 @@ typedef enum
   CLIENT_AUTHENTICATE_CREDENTIALS,
   CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD,
   CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
+#if ENABLE_AGENTS
+  CLIENT_CREATE_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_CREATE_ALERT,
   CLIENT_CREATE_ALERT_ACTIVE,
   CLIENT_CREATE_ALERT_COMMENT,
@@ -4152,6 +4164,7 @@ typedef enum
   CLIENT_CREATE_NOTE_TASK,
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
+  CLIENT_CREATE_OCI_IMAGE_TARGET,
   CLIENT_CREATE_OVERRIDE,
   CLIENT_CREATE_OVERRIDE_ACTIVE,
   CLIENT_CREATE_OVERRIDE_COPY,
@@ -4326,6 +4339,9 @@ typedef enum
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SSH_ELEVATE_CREDENTIAL,
   CLIENT_CREATE_TASK,
+#if ENABLE_AGENTS
+  CLIENT_CREATE_TASK_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_ALTERABLE,
   CLIENT_CREATE_TASK_COMMENT,
@@ -4357,7 +4373,11 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
+#if ENABLE_AGENTS
+  CLIENT_DELETE_AGENT_GROUP,
+  CLIENT_DELETE_AGENT_INSTALLER,
   CLIENT_DELETE_AGENTS,
+#endif /* ENABLE_AGENTS */
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4365,6 +4385,7 @@ typedef enum
   CLIENT_DELETE_FILTER,
   CLIENT_DELETE_GROUP,
   CLIENT_DELETE_NOTE,
+  CLIENT_DELETE_OCI_IMAGE_TARGET,
   CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_PERMISSION,
   CLIENT_DELETE_PORT_LIST,
@@ -4383,7 +4404,12 @@ typedef enum
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
+#if ENABLE_AGENTS
+  CLIENT_GET_AGENT_GROUPS,
+  CLIENT_GET_AGENT_INSTALLER_FILE,
+  CLIENT_GET_AGENT_INSTALLERS,
   CLIENT_GET_AGENTS,
+#endif /* ENABLE_AGENTS */
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4401,6 +4427,7 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
+  CLIENT_GET_OCI_IMAGE_TARGETS,
   CLIENT_GET_OVERRIDES,
   CLIENT_GET_PERMISSIONS,
   CLIENT_GET_PORT_LISTS,
@@ -4426,7 +4453,10 @@ typedef enum
   CLIENT_GET_VULNS,
   CLIENT_HELP,
   CLIENT_LOGOUT,
+#if ENABLE_AGENTS
+  CLIENT_MODIFY_AGENT_GROUP,
   CLIENT_MODIFY_AGENTS,
+#endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -4489,6 +4519,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
   CLIENT_MODIFY_NOTE_NVT,
+  CLIENT_MODIFY_OCI_IMAGE_TARGET,
   CLIENT_MODIFY_OVERRIDE,
   CLIENT_MODIFY_OVERRIDE_ACTIVE,
   CLIENT_MODIFY_OVERRIDE_HOSTS,
@@ -4571,6 +4602,9 @@ typedef enum
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_MODIFY_TASK,
+#if ENABLE_AGENTS
+  CLIENT_MODIFY_TASK_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_TASK_ALERT,
   CLIENT_MODIFY_TASK_ALTERABLE,
   CLIENT_MODIFY_TASK_COMMENT,
@@ -4789,6 +4823,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("CREATE_AGENT_GROUP", element_name) == 0)
+          {
+            create_agent_group_start (gmp_parser, attribute_names,
+                                      attribute_values);
+            set_client_state (CLIENT_CREATE_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("CREATE_ASSET", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET);
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
@@ -4837,6 +4879,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE);
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("CREATE_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            create_oci_image_target_start (gmp_parser, attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_CREATE_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE);
         else if (strcasecmp ("CREATE_PORT_LIST", element_name) == 0)
@@ -4906,6 +4956,38 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("DELETE_AGENT_GROUP", element_name) == 0)
+          {
+            delete_start ("agent_group", "Agent Group",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT_GROUP);
+          }
+        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
+          {
+            delete_start ("agent_installer", "Agent Installer",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT_INSTALLER);
+          }
+        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
+          {
+            delete_agents_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENTS);
+          }
+#endif /* ENABLE_AGENTS */
+        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "alert_id",
+                              &delete_alert_data->alert_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_alert_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_alert_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_ALERT);
+          }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
@@ -4925,24 +5007,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
-          }
-        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
-          {
-            delete_agents_start (gmp_parser, attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_AGENTS);
-          }
-        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "alert_id",
-                              &delete_alert_data->alert_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_alert_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_alert_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_ALERT);
           }
         else if (strcasecmp ("DELETE_CREDENTIAL", element_name) == 0)
           {
@@ -4994,6 +5058,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               delete_note_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_NOTE);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("DELETE_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            delete_start ("oci_image_target", "OCI Image Target",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("DELETE_OVERRIDE", element_name) == 0)
           {
             const gchar* attribute;
@@ -5165,7 +5237,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
 
+#if ENABLE_AGENTS
+        ELSE_GET_START (agent_groups, AGENT_GROUPS)
+
+        ELSE_GET_START (agent_installer_file, AGENT_INSTALLER_FILE)
+
+        ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
+
         ELSE_GET_START (agents, AGENTS)
+#endif /* ENABLE_AGENTS */
 
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
@@ -5255,6 +5335,33 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_AGGREGATES);
           }
+        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            get_data_parse_attributes (&get_alerts_data->get,
+                                       "alert",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_alerts_data->tasks = strcmp (attribute, "0");
+            else
+              get_alerts_data->tasks = 0;
+
+            set_client_state (CLIENT_GET_ALERTS);
+          }
+        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_assets_data->get, "asset",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_assets_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_ASSETS);
+          }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5292,33 +5399,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_CONFIGS);
           }
-        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
-          {
-            const gchar* attribute;
-
-            get_data_parse_attributes (&get_alerts_data->get,
-                                       "alert",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "tasks", &attribute))
-              get_alerts_data->tasks = strcmp (attribute, "0");
-            else
-              get_alerts_data->tasks = 0;
-
-            set_client_state (CLIENT_GET_ALERTS);
-          }
-        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
-          {
-            const gchar* typebuf;
-            get_data_parse_attributes (&get_assets_data->get, "asset",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "type", &typebuf))
-              get_assets_data->type = g_ascii_strdown (typebuf, -1);
-            set_client_state (CLIENT_GET_ASSETS);
-          }
         else if (strcasecmp ("GET_CREDENTIALS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5339,7 +5419,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_credentials_data->targets = strcmp (attribute, "0");
             else
               get_credentials_data->targets = 0;
-
+#if ENABLE_CONTAINER_SCANNING
+            if (find_attribute (attribute_names, attribute_values,
+                                "oci_image_targets", &attribute))
+              get_credentials_data->oci_image_targets = strcmp (attribute, "0");
+            else
+              get_credentials_data->oci_image_targets = 0;
+#endif /* ENABLE_CONTAINER_SCANNING */
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
@@ -5471,6 +5557,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_nvt_families_data->sort_order = 1;
             set_client_state (CLIENT_GET_NVT_FAMILIES);
           }
+#if ENABLE_CONTAINER_SCANNING
+        ELSE_GET_START (oci_image_targets, OCI_IMAGE_TARGETS)
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("GET_OVERRIDES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5871,12 +5960,20 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                           attribute_values);
             set_client_state (CLIENT_LOGOUT);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("MODIFY_AGENT_GROUP", element_name) == 0)
+          {
+              modify_agent_group_start (gmp_parser, attribute_names,
+                                        attribute_values);
+              set_client_state (CLIENT_MODIFY_AGENT_GROUP);
+          }
         else if (strcasecmp ("MODIFY_AGENTS", element_name) == 0)
           {
             modify_agents_start (gmp_parser, attribute_names,
                                  attribute_values);
             set_client_state (CLIENT_MODIFY_AGENTS);
           }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
@@ -5946,6 +6043,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_note_data->note_id);
             set_client_state (CLIENT_MODIFY_NOTE);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("MODIFY_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            modify_oci_image_target_start (gmp_parser,
+                                           attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_MODIFY_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "override_id",
@@ -6218,11 +6324,19 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_READ_OVER;
 
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_GROUP:
+        modify_agent_group_element_start (gmp_parser, element_name,
+                                          attribute_names,
+                                          attribute_values);
+        break;
+
       case CLIENT_MODIFY_AGENTS:
-      modify_agents_element_start (gmp_parser, element_name,
-                                   attribute_names,
-                                   attribute_values);
-      break;
+        modify_agents_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -6787,6 +6901,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_task_data->scanner_id);
             set_client_state (CLIENT_MODIFY_TASK_SCANNER);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
+          {
+             append_attribute (attribute_names, attribute_values, "id",
+                               &modify_task_data->agent_group_id);
+             set_client_state (CLIENT_MODIFY_TASK_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -7000,6 +7122,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                      attribute_values);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_CREATE_AGENT_GROUP:
+        create_agent_group_element_start (gmp_parser, element_name,
+                                          attribute_names,
+                                          attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
+
       case CLIENT_CREATE_ALERT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_ACTIVE);
@@ -7209,6 +7339,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
         ELSE_READ_OVER;
+
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_start (gmp_parser,
+                                               element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
 
       case CLIENT_CREATE_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7830,6 +7967,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_task_data->config_id);
             set_client_state (CLIENT_CREATE_TASK_CONFIG);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->agent_group_id);
+            set_client_state (CLIENT_CREATE_TASK_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -7955,11 +8100,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_read_over (gmp_parser);
         break;
 
-    case CLIENT_DELETE_AGENTS:
-      delete_agents_element_start (gmp_parser, element_name,
-                                   attribute_names,
-                                   attribute_values);
-      break;
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        delete_agents_element_start (gmp_parser, element_name,
+                                    attribute_names,
+                                    attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
@@ -8014,6 +8161,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_NOTE_NVT);
           }
         ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_start (gmp_parser,
+                                               element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
 
       case CLIENT_MODIFY_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -12642,6 +12796,32 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</targets>");
         }
 
+#if ENABLE_CONTAINER_SCANNING
+      if (get_credentials_data->oci_image_targets)
+        {
+          iterator_t oci_image_targets;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<oci_image_targets>");
+          init_credential_oci_image_target_iterator
+            (&oci_image_targets, get_iterator_resource (&credentials), 0);
+          while (next (&oci_image_targets))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<oci_image_target id=\"%s\">"
+                "<name>%s</name>",
+                credential_oci_target_iterator_uuid (&oci_image_targets),
+                credential_oci_target_iterator_name (&oci_image_targets));
+              if (credential_oci_target_iterator_readable (&oci_image_targets))
+                SEND_TO_CLIENT_OR_FAIL ("</oci_image_target>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</oci_image_target>");
+            }
+          cleanup_iterator (&oci_image_targets);
+
+          SEND_TO_CLIENT_OR_FAIL ("</oci_image_targets>");
+        }
+#endif
       SEND_TO_CLIENT_OR_FAIL ("</credential>");
       count++;
     }
@@ -13117,6 +13297,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                            "<name>ENABLE_AGENTS</name>"
                            "</feature>",
                            ENABLE_AGENTS ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>ENABLE_CONTAINER_SCANNING</name>"
+                           "</feature>",
+                           ENABLE_CONTAINER_SCANNING ? 1 : 0);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
@@ -20331,6 +20516,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT_INSTALLER:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
+      case CLIENT_DELETE_AGENT_GROUP:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
+
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
@@ -20416,6 +20613,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (PERMISSION, permission, "Permission");
       CASE_DELETE (PORT_LIST, port_list, "Port list");
       CASE_DELETE (PORT_RANGE, port_range, "Port range");
+
+      case CLIENT_DELETE_OCI_IMAGE_TARGET:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
 
       case CLIENT_DELETE_REPORT:
         if (delete_report_data->report_id)
@@ -20829,7 +21031,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
 
+#if ENABLE_AGENTS
+      CASE_GET_END (AGENT_GROUPS, agent_groups);
+
+      CASE_GET_END (AGENT_INSTALLERS, agent_installers);
+
+      CASE_GET_END (AGENT_INSTALLER_FILE, agent_installer_file);
+
       CASE_GET_END (AGENTS, agents);
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);
@@ -20895,6 +21105,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_NVT_FAMILIES:
         handle_get_nvt_families (gmp_parser, error);
         break;
+
+      CASE_GET_END (OCI_IMAGE_TARGETS, oci_image_targets);
 
       case CLIENT_GET_OVERRIDES:
         handle_get_overrides (gmp_parser, error);
@@ -21240,6 +21452,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         if (create_config_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
+
+#if ENABLE_AGENTS
+      case CLIENT_CREATE_AGENT_GROUP:
+        if (create_agent_group_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_CREATE_ALERT:
         {
@@ -22389,6 +22608,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_NOTE, TASK);
       CLOSE (CLIENT_CREATE_NOTE, TEXT);
       CLOSE (CLIENT_CREATE_NOTE, THREAT);
+
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        if (create_oci_image_target_element_end (gmp_parser,
+                                                 error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
 
       case CLIENT_CREATE_OVERRIDE:
         {
@@ -23824,6 +24050,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           target_t target = 0;
           scanner_t scanner = 0;
           char *tsk_uuid = NULL;
+          gboolean is_agent_task = FALSE;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -23850,7 +24077,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               name = task_name (create_task_data->task);
               comment = task_comment (create_task_data->task);
 
-              if(create_task_data->alterable)
+              if (create_task_data->alterable)
                 alterable = strcmp (create_task_data->alterable, "0") ? 1 : 0;
               else
                 alterable = -1;
@@ -23911,7 +24138,36 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 
           if (create_task_data->scanner_id == NULL)
-            create_task_data->scanner_id = g_strdup (scanner_uuid_default ());
+            {
+              if (create_task_data->agent_group_id)
+                is_agent_task = TRUE;
+              else
+                create_task_data->scanner_id =
+                  g_strdup (scanner_uuid_default ());
+            }
+
+          if (create_task_data->scanner_id != NULL)
+            {
+              if (find_scanner_with_permission (create_task_data->scanner_id,
+                                                &scanner, "get_scanners"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (create_task_data->scanner_id && scanner == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "scanner",
+                                                 create_task_data->scanner_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+
+              scanner_type_t type = scanner_type (scanner);
+              if (type == SCANNER_TYPE_AGENT_CONTROLLER
+                  || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+                is_agent_task = TRUE;
+            }
 
           /* Check permissions. */
 
@@ -23943,15 +24199,68 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->target_id == NULL)
+          if (create_task_data->target_id == NULL && create_task_data->agent_group_id == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "A target is required"));
+                                  "A target or agent group is required"));
               goto create_task_fail;
             }
 
-          if (strcmp (create_task_data->target_id, "0") == 0)
+          if (create_task_data->target_id && create_task_data->agent_group_id)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Only one of target_id or agent_group_id must be provided"));
+              goto create_task_fail;
+            }
+
+#if ENABLE_AGENTS
+          if (is_agent_task)
+            {
+              /* Agent group task */
+              agent_group_t agent_group = 0;
+              scanner_t group_scanner = 0;
+
+              if (find_agent_group_with_permission (
+                    create_task_data->agent_group_id, &agent_group,
+                    "get_agent_groups"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+
+              group_scanner = agent_group_scanner (agent_group);
+              if (group_scanner == 0)
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+
+              if (create_task_data->scanner_id == NULL)
+                {
+                  /* Scanner not specified by client, use the one from agent
+                   * group */
+                  scanner = group_scanner;
+                }
+              else if (scanner != group_scanner)
+                {
+                  /* Scanner specified by client does not match the one from
+                   * agent group */
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+                    "create_task",
+                    "Scanner ID does not match agent group's scanner"));
+                  goto create_task_fail;
+                }
+
+              set_task_agent_group_and_location (create_task_data->task,
+                                                 agent_group);
+            }
+#endif /* ENABLE_AGENTS */
+
+          if (create_task_data->target_id != NULL
+              && strcmp (create_task_data->target_id, "0") == 0
+              && !is_agent_task)
             {
               /* Container task. */
 
@@ -23966,14 +24275,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
-            }
-
-          if (create_task_data->config_id == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "A config is required"));
-              goto create_task_fail;
             }
 
           /* Set any alert. */
@@ -24011,54 +24312,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             set_task_alterable (create_task_data->task, 1);
 
           /* Set any schedule. */
+          int schedule_ret = set_task_schedule_and_periods (
+            create_task_data->task, create_task_data->schedule_id,
+            create_task_data->schedule_periods);
 
-          if (create_task_data->schedule_id)
+          if (schedule_ret == -1)
             {
-              schedule_t schedule;
-              int periods;
-
-              periods = create_task_data->schedule_periods
-                         ? atoi (create_task_data->schedule_periods)
-                         : 0;
-              if (find_schedule_with_permission (create_task_data->schedule_id,
-                                                 &schedule,
-                                                 "get_schedules"))
-                {
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-                  goto create_task_fail;
-                }
-              if (schedule == 0)
-                {
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_task",
-                                      "Schedule must exist"));
-                  goto create_task_fail;
-                }
-              /** @todo
-               *
-               * This is a contention hole.  Some other process could remove
-               * the schedule at this point.  The variable "schedule" would
-               * still refer to the removed schedule.
-               *
-               * This happens all over the place.  Anywhere that a libmanage
-               * client gets a reference to a resource, in fact.
-               *
-               * Possibly libmanage should lock the db whenever it hands out a
-               * reference, and the client should call something to release
-               * the lock when it's done.
-               *
-               * In many cases, like this one, the client could pass the UUID
-               * directly to libmanage, instead of getting the reference.  In
-               * this case the client would then need something like
-               * set_task_schedule_uuid.
-               */
-              set_task_schedule (create_task_data->task, schedule, periods);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              goto create_task_fail;
             }
-          else if (create_task_data->schedule_periods
-                   && strlen (create_task_data->schedule_periods))
-            set_task_schedule_periods_id
-             (create_task_data->task,
-              atoi (create_task_data->schedule_periods));
+          else if (schedule_ret == -2)
+            {
+              SEND_TO_CLIENT_OR_FAIL (
+                XML_ERROR_SYNTAX ("create_task", "Schedule must exist"));
+              goto create_task_fail;
+            }
 
           /* Set any observers. */
 
@@ -24115,23 +24383,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
             }
 
-          if (find_scanner_with_permission (create_task_data->scanner_id,
-                                            &scanner,
-                                            "get_scanners"))
+          if ((scanner == 0) || scanner_type_requires_config (scanner_type (scanner)))
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (create_task_data->scanner_id && scanner == 0)
-            {
-              if (send_find_error_to_client ("create_task", "scanner",
-                                             create_task_data->scanner_id,
-                                             gmp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
-          if ((scanner == 0) || (scanner_type (scanner) != SCANNER_TYPE_CVE))
-            {
+              if (create_task_data->config_id == NULL)
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "A config is required"));
+                  goto create_task_fail;
+                }
+
               if (find_config_with_permission (create_task_data->config_id,
                                                &config,
                                                "get_configs"))
@@ -24156,24 +24417,27 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
             }
-          if (find_target_with_permission (create_task_data->target_id,
-                                           &target,
-                                           "get_targets"))
+
+          if (!is_agent_task)
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (target == 0)
-            {
-              if (send_find_error_to_client ("create_task", "target",
-                                             create_task_data->target_id,
-                                             gmp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
+              if (find_target_with_permission (create_task_data->target_id,
+                                               &target, "get_targets"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (target == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "target",
+                                                 create_task_data->target_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+              set_task_target (create_task_data->task, target);
             }
 
           set_task_config (create_task_data->task, config);
-          set_task_target (create_task_data->task, target);
           set_task_scanner (create_task_data->task, scanner);
           set_task_hosts_ordering (create_task_data->task,
                                    create_task_data->hosts_ordering);
@@ -24235,6 +24499,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, USAGE_TYPE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE_PERIODS);
+#if ENABLE_AGENTS
+      CLOSE (CLIENT_CREATE_TASK, AGENT_GROUP);
+#endif /* ENABLE_AGENTS */
 
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
@@ -24426,10 +24693,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_USER_SOURCES);
         break;
 
-    case CLIENT_DELETE_AGENTS:
-      if (delete_agents_element_end (gmp_parser, error, element_name))
-        set_client_state (CLIENT_AUTHENTIC);
-      break;
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        if (delete_agents_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
@@ -24459,10 +24728,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           break;
         }
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_GROUP:
+        if (modify_agent_group_element_end (gmp_parser, error, element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+        break;
       case CLIENT_MODIFY_AGENTS:
         if (modify_agents_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
+#endif /* ENABLE_AGENTS */
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
@@ -25541,6 +25816,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_NOTE, TEXT);
       CLOSE (CLIENT_MODIFY_NOTE, THREAT);
       CLOSE (CLIENT_MODIFY_NOTE, NVT);
+
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_end (gmp_parser,
+                                             error,
+                                             element_name);
+        break;
 
       case CLIENT_MODIFY_OVERRIDE:
         {
@@ -26753,6 +27034,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       modify_task_data->schedule_periods,
                                       modify_task_data->preferences,
                                       modify_task_data->hosts_ordering,
+                                      modify_task_data->agent_group_id,
                                       &fail_alert_id,
                                       &fail_group_id))
               {
@@ -26907,6 +27189,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
+
+#if ENABLE_AGENTS
+              case 18 :
+                if (send_find_error_to_client ("modify_task", "agent_group",
+                                               modify_task_data->agent_group_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("task", "Task",
+                                modify_task_data->task_id, "modified");
+                break;
+#endif /*ENABLE_AGENTS*/
                 default:
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26936,6 +27232,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE_PERIODS);
       CLOSE (CLIENT_MODIFY_TASK, TARGET);
+#if ENABLE_AGENTS
+      CLOSE (CLIENT_MODIFY_TASK, AGENT_GROUP);
+#endif /* ENABLE_AGENTS */
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
@@ -27921,6 +28220,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENTS:
+        delete_agents_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_CONFIG:
         modify_config_element_text (text, text_len);
@@ -28050,6 +28354,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_USER_SOURCES_SOURCE,
               &modify_user_data->current_source);
 
+#if ENABLE_AGENTS
+      case CLIENT_CREATE_AGENT_GROUP:
+        create_agent_group_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       APPEND (CLIENT_CREATE_ASSET_ASSET_COMMENT,
               &create_asset_data->comment);
@@ -28216,6 +28525,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_NOTE_THREAT,
               &create_note_data->threat);
 
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_CREATE_OVERRIDE_ACTIVE,
               &create_override_data->active);
@@ -28243,7 +28555,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_OVERRIDE_THREAT,
               &create_override_data->threat);
-
 
       APPEND (CLIENT_CREATE_PERMISSION_COMMENT,
               &create_permission_data->comment);
@@ -28601,10 +28912,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
 
-    case CLIENT_DELETE_AGENTS:
-      delete_agents_element_text (text, text_len);
-      break;
-
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
           GList *last = g_list_last (get_aggregates_data->data_columns);
@@ -28628,10 +28935,15 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         get_license_element_text (text, text_len);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_GROUP:
+        modify_agent_group_element_text (text, text_len);
+        break;
 
       case CLIENT_MODIFY_AGENTS:
         modify_agents_element_text (text, text_len);
         break;
+#endif /* ENABLE_AGENTS */
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
               &modify_alert_data->name);
@@ -28732,6 +29044,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_NOTE_NVT,
               &modify_note_data->nvt_oid);
 
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_text (text, text_len);
+        break;
 
       APPEND (CLIENT_MODIFY_OVERRIDE_ACTIVE,
               &modify_override_data->active);

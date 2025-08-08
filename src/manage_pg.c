@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_pg.c
+ * @file
  * @brief GVM management layer: PostgreSQL specific facilities
  *
  * This file contains the parts of the GVM management layer that need
@@ -2247,6 +2247,90 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
        "  ip_address TEXT NOT NULL);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installers"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  description text,"
+       "  content_type text,"
+       "  file_extension text,"
+       "  installer_path text,"
+       "  version text,"
+       "  checksum text,"
+       "  file_size integer,"
+       "  last_update integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_installer integer"
+       "    REFERENCES agent_installers (id) ON DELETE RESTRICT,"
+       "  criteria text,"
+       "  version_start_incl text,"
+       "  version_start_excl text,"
+       "  version_end_incl text,"
+       "  version_end_excl text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installers_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  description text,"
+       "  content_type text,"
+       "  file_extension text,"
+       "  installer_path text,"
+       "  version text,"
+       "  checksum text,"
+       "  file_size integer,"
+       "  last_update integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_installer integer"
+       "    REFERENCES agent_installers_trash (id) ON DELETE RESTRICT,"
+       "  criteria text,"
+       "  version_start_incl text,"
+       "  version_start_excl text,"
+       "  version_end_incl text,"
+       "  version_end_excl text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_groups"
+     " (id SERIAL PRIMARY KEY,"
+     "  uuid TEXT NOT NULL UNIQUE,"
+     "  name TEXT NOT NULL,"
+     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
+     "  comment TEXT,"
+     "  creation_time INTEGER,"
+     "  modification_time INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_group_agents"
+       " (group_id INTEGER NOT NULL REFERENCES agent_groups (id) ON DELETE CASCADE,"
+       "  agent_id INTEGER NOT NULL REFERENCES agents (id) ON DELETE CASCADE,"
+       "  PRIMARY KEY (group_id, agent_id));");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_groups_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_group_agents_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_group integer REFERENCES agent_groups_trash (id) ON DELETE RESTRICT,"
+       "  agent integer REFERENCES agents (id) ON DELETE RESTRICT);");
 #endif /* ENABLE_AGENTS */
 
   sql ("CREATE TABLE IF NOT EXISTS alerts"
@@ -2596,6 +2680,31 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
+#if ENABLE_CONTAINER_SCANNING
+  sql ("CREATE TABLE IF NOT EXISTS oci_image_targets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  image_references text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS oci_image_targets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  image_references text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER,"
+       "  credential_location integer);");
+#endif /* ENABLE_CONTAINER_SCANNING */
+
   sql ("CREATE TABLE IF NOT EXISTS tickets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2705,6 +2814,13 @@ create_tables ()
        "  timestamp bigint,"
        "  tls_versions text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS scan_queue"
+       " (report integer unique,"
+       "  queued_time_secs integer,"
+       "  queued_time_nano integer,"
+       "  handler_pid integer,"
+       "  start_from integer);");
+  
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2843,10 +2959,14 @@ create_tables ()
        "  schedule_next_time integer,"
        "  schedule_periods integer,"
        "  scanner integer," // REFERENCES scanner (id) ON DELETE RESTRICT,"
+       "  agent_group integer," // REFERENCES agent_groups (id) ON DELETE RESTRICT,"
        "  config_location integer,"
        "  target_location integer,"
        "  schedule_location integer,"
        "  scanner_location integer,"
+       "  oci_image_target integer,"
+       "  oci_image_target_location integer,"
+       "  agent_group_location integer,"
        "  upload_result_count integer,"
        "  hosts_ordering text,"
        "  alterable integer,"

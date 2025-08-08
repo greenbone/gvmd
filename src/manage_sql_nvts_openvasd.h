@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_nvts_openvasd.h
+ * @file
  * @brief Manager Manage library: openvasd SQL backend headers.
  */
 

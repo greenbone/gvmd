@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_osp_credentials.c
+ * @file
  * @brief Greenbone Vulnerability Manager OSP-style credentials handling.
  */
 

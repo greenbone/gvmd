@@ -4,7 +4,7 @@
  */
 
 /**
- * @file manage_openvas.h
+ * @file
  * @brief Greenbone Vulnerability Manager OpenVAS scan handling headers.
  * 
  * This contains functions common to setting up OSP and openvasd scans.

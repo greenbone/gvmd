@@ -17,7 +17,7 @@
  */
 
 /*
- * @file sql.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: the SQL library.
  */
 
