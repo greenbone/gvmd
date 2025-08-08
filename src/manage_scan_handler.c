@@ -13,7 +13,9 @@
 #include "manage_sql.h"
 #include "manage_sql_scan_queue.h"
 #include "manage_scan_handler.h"
+#include <gvm/base/gvm_sentry.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/wait.h>
 
 #undef G_LOG_DOMAIN
@@ -192,6 +194,7 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
   int nbytes;
   pid_t child_pid;
   pid_t grandchild_pid;
+  struct sigaction action;
 
   pipe (pipe_fds);
 
@@ -211,6 +214,19 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 // Grandchild
                 close (pipe_fds[1]);
                 reinit_manage_process ();
+
+                memset (&action, '\0', sizeof (action));
+                sigemptyset (&action.sa_mask);
+                action.sa_handler = SIG_DFL;
+                if (sigaction (SIGCHLD, &action, NULL) == -1)
+                  {
+                    g_critical ("%s: failed to set SIGCHLD handler: %s",
+                                __func__,
+                                strerror (errno));
+                    gvm_close_sentry ();
+                    exit (EXIT_FAILURE);
+                  }
+
                 handle_scan_queue_entry (report_id, report, task, owner,
                                          start_from);
                 exit (EXIT_SUCCESS);
