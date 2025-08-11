@@ -8341,6 +8341,45 @@ convert_to_newlines (const char *text)
 }
 
 /**
+ * @brief Removes XML-illegal control characters from a string in place.
+ *
+ * XML 1.0 only allows the following control characters:
+ *   - Horizontal tab (0x09)
+ *   - Line feed (0x0A)
+ *   - Carriage return (0x0D)
+ * All other control characters in the ranges 0x00–0x1F and 0x7F are not allowed.
+ *
+ * @param[in,out] str  Null-terminated UTF-8 string to sanitize. May be NULL.
+ */
+static void
+strip_control_chars (gchar *str)
+{
+  if (!str)
+    return;
+
+  unsigned char *read_ptr  = (unsigned char *) str;  // source pointer
+  unsigned char *write_ptr = (unsigned char *) str;  // destination pointer
+
+  while (*read_ptr)
+    {
+      unsigned char current_char = *read_ptr++;
+
+      // Keep printable characters (>= 0x20) except DEL (0x7F),
+      // and allow TAB, LF, CR explicitly.
+      if ((current_char >= 0x20 && current_char != 0x7F) ||
+          current_char == '\t' ||
+          current_char == '\n' ||
+          current_char == '\r')
+        {
+          *write_ptr++ = current_char;
+        }
+      // else: skip disallowed control character
+    }
+
+  *write_ptr = '\0'; // null-terminate the cleaned string
+}
+
+/**
  * @brief Buffer XML for a single note.
  *
  * @param[in]  buffer                 Buffer into which to buffer note.
@@ -9771,6 +9810,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (descr)
     {
       nl_descr = convert_to_newlines (descr);
+      strip_control_chars (nl_descr);
       nl_descr_escaped = xml_escape_text_truncated (nl_descr,
                                                     TRUNCATE_TEXT_LENGTH,
                                                     TRUNCATE_TEXT_SUFFIX);
@@ -10057,6 +10097,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             delta_descr = result_iterator_descr (delta_results);
             delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                         : NULL;
+            strip_control_chars (nl_descr);
             buffer_diff (buffer, nl_descr, delta_nl_descr);
             g_free (delta_nl_descr);
           }
@@ -10075,6 +10116,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             delta_descr = result_iterator_delta_description (results);
             delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                         : NULL;
+            strip_control_chars (nl_descr);
             buffer_diff (buffer, delta_nl_descr, nl_descr);
             g_free (delta_nl_descr);
           }
