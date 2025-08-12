@@ -825,6 +825,83 @@ hosts_set_identifiers (report_t report)
 }
 
 /**
+ * @brief Set the maximum severity of each host in a scan.
+ *
+ * @param[in]  report         The report associated with the scan.
+ * @param[in]  overrides_arg  Whether override should be applied.
+ * @param[in]  min_qod_arg    Min QOD to use.
+ */
+void
+hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
+{
+  gchar *new_severity_sql;
+  int dynamic_severity, overrides, min_qod;
+
+  if (overrides_arg)
+    overrides = *overrides_arg;
+  else
+    {
+      task_t task;
+      /* Get "Assets Apply Overrides" task preference. */
+      overrides = 1;
+      if (report_task (report, &task) == 0)
+        {
+          char *value;
+          value = task_preference_value (task, "assets_apply_overrides");
+          if (value && (strcmp (value, "yes") == 0))
+            overrides = 1;
+          else
+            overrides = 0;
+          free (value);
+        }
+    }
+
+  if (min_qod_arg)
+    min_qod = *min_qod_arg;
+  else
+    {
+      task_t task;
+      /* Get "Assets Min QOD". */
+      min_qod = MIN_QOD_DEFAULT;
+      if (report_task (report, &task) == 0)
+        {
+          char *value;
+          value = task_preference_value (task, "assets_min_qod");
+          if (value)
+            min_qod = atoi (value);
+          free (value);
+        }
+    }
+
+  dynamic_severity = setting_dynamic_severity_int ();
+  new_severity_sql = new_severity_clause (overrides, dynamic_severity);
+
+  sql ("INSERT INTO host_max_severities"
+       " (host, severity, source_type, source_id, creation_time)"
+       " SELECT asset_host,"
+       "        coalesce ((SELECT max (%s) FROM results"
+       "                   WHERE report = %llu"
+       "                   AND qod >= %i"
+       "                   AND host = (SELECT name FROM hosts"
+       "                               WHERE id = asset_host)),"
+       "                  0.0),"
+       "        'Report',"
+       "        (SELECT uuid FROM reports WHERE id = %llu),"
+       "        m_now ()"
+       " FROM (SELECT host AS asset_host"
+       "       FROM host_identifiers"
+       "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu))"
+       "      AS subquery;",
+       new_severity_sql,
+       report,
+       min_qod,
+       report,
+       report);
+
+  g_free (new_severity_sql);
+}
+
+/**
  * @brief Initialise a host identifier iterator.
  *
  * @param[in]  iterator    Iterator.

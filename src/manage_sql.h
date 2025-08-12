@@ -497,6 +497,9 @@ setting_value_sql (const char *, char **);
 int
 setting_value_int_sql (const char *, int *);
 
+int
+setting_dynamic_severity_int ();
+
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,
                               const gchar *);
@@ -512,6 +515,9 @@ create_view_result_vt_epss ();
 
 int
 config_family_entire_and_growing (config_t, const char*);
+
+gchar *
+new_severity_clause (int, int);
 
 void
 reports_clear_count_cache_dynamic ();
