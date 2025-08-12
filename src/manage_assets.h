@@ -41,6 +41,9 @@ void
 hosts_set_max_severity (report_t, int *, int *);
 
 void
+hosts_set_details (report_t);
+
+void
 init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
 
 const char*

@@ -40790,57 +40790,6 @@ report_host_result_count (report_host_t report_host)
 }
 
 /**
- * @brief Store certain host details in the assets after a scan.
- *
- * @param[in]  report  The report associated with the scan.
- */
-void
-hosts_set_details (report_t report)
-{
-  sql ("INSERT INTO host_details"
-       " (detail_source_type, detail_source_name, detail_source_description,"
-       "  name, value, source_type, source_id, host)"
-       " SELECT source_type,"
-       "        source_name,"
-       "        source_description,"
-       "        name,"
-       "        value,"
-       "        'Report',"
-       "        (SELECT uuid FROM reports WHERE id = %llu),"
-       "        (SELECT host"
-       "         FROM host_identifiers"
-       "         WHERE source_id = (SELECT uuid FROM reports"
-       "                            WHERE id = %llu)"
-       "         AND (SELECT name FROM hosts WHERE id = host)"
-       "             = (SELECT host FROM report_hosts"
-       "                WHERE id = report_host_details.report_host)"
-       "         LIMIT 1)"
-       " FROM report_host_details"
-       " WHERE (SELECT report FROM report_hosts"
-       "        WHERE id = report_host)"
-       "       = %llu"
-       /* Only if the task is included in the assets. */
-       " AND (SELECT value = 'yes' FROM task_preferences"
-       "      WHERE task = (SELECT task FROM reports WHERE id = %llu)"
-       "      AND name = 'in_assets')"
-       /* Ensure that every report host detail has a corresponding host
-        *  in the assets. */
-       " AND EXISTS (SELECT *"
-       "               FROM host_identifiers"
-       "              WHERE source_id = (SELECT uuid FROM reports"
-       "                                 WHERE id = %llu)"
-       "                AND (SELECT name FROM hosts WHERE id = host)"
-       "                      = (SELECT host FROM report_hosts"
-       "                         WHERE id = report_host_details.report_host))"
-       " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
-       report,
-       report,
-       report,
-       report,
-       report);
-}
-
-/**
  * @brief Get XML of a detailed host route.
  *
  * @param[in]  host  The host.
