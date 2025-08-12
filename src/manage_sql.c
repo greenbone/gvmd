@@ -7207,81 +7207,6 @@ clean_auth_cache ()
 }
 
 /**
- * @brief Tries to migrate sensor type scanners to match the relays.
- *
- * @return A string describing the results or NULL on error.
- */
-static gchar *
-manage_migrate_relay_sensors ()
-{
-  iterator_t scanners;
-  int gmp_successes, gmp_failures, osp_failures;
-
-  gmp_successes = gmp_failures = osp_failures = 0;
-
-  if (get_relay_mapper_path () == NULL)
-    {
-      g_warning ("%s: No relay mapper set", __func__);
-      return NULL;
-    }
-
-  init_iterator (&scanners,
-                 "SELECT id, uuid, type, host, port FROM scanners"
-                 " WHERE type = %d",
-                 SCANNER_TYPE_OSP_SENSOR);
-
-  while (next (&scanners))
-    {
-      scanner_type_t type;
-      const char *scanner_id, *host;
-      int port;
-
-      scanner_id = iterator_string (&scanners, 1);
-      type = iterator_int (&scanners, 2);
-      host = iterator_string (&scanners, 3);
-      port = iterator_int (&scanners, 4);
-
-      if (relay_supports_scanner_type (host, port, type) == FALSE)
-        {
-          if (type == SCANNER_TYPE_OSP_SENSOR)
-            {
-              g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
-                         __func__, scanner_id, host, port);
-              osp_failures++;
-            }
-          else
-            g_warning ("%s: Unexpected type for scanner %s: %d",
-                       __func__, scanner_id, type);
-        }
-    }
-  cleanup_iterator (&scanners);
-
-  if (gmp_successes == 0 && gmp_failures == 0 && osp_failures == 0)
-    return g_strdup ("All GMP or OSP sensors up to date.");
-  else
-    {
-      GString *message = g_string_new ("");
-      g_string_append_printf (message,
-                              "%d sensors(s) not matching:",
-                              gmp_successes + gmp_failures + osp_failures);
-      if (gmp_successes)
-        g_string_append_printf (message,
-                                " %d GMP scanner(s) migrated to OSP.",
-                                gmp_successes);
-      if (gmp_failures)
-        g_string_append_printf (message,
-                                " %d GMP scanner(s) not migrated.",
-                                gmp_failures);
-      if (osp_failures)
-        g_string_append_printf (message,
-                                " %d OSP sensor(s) not migrated.",
-                                osp_failures);
-
-      return g_string_free (message, FALSE);
-    }
-}
-
-/**
  * @brief Ensure that the database is in order.
  *
  * Only called by init_manage_internal, and ultimately only by the main process.
@@ -49693,25 +49618,6 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       success_text = g_strdup_printf ("Optimized: Cleaned up encoding"
                                       " of %d TLS certificate(s).",
                                       changes);
-    }
-  else if (strcasecmp (name, "migrate-relay-sensors") == 0)
-    {
-      if (get_relay_mapper_path ())
-        {
-          sql_begin_immediate ();
-
-          success_text = manage_migrate_relay_sensors ();
-
-          sql_commit ();
-        }
-      else
-        {
-          fprintf (stderr,
-                   "No relay mapper found."
-                   " Please check your --relay-mapper option.\n");
-          success_text = NULL;
-          ret = -1;
-        }
     }
   else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
     {
