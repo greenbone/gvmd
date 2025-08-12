@@ -17,6 +17,7 @@
  */
 
 #include "manage_sql_assets.h"
+#include "manage_assets.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
@@ -516,6 +517,311 @@ create_asset_report (const char *report_id, const char *term)
   sql_commit ();
 
   return 0;
+}
+
+/**
+ * @brief Host identifiers for the current scan.
+ */
+array_t *identifiers = NULL;
+
+/**
+ * @brief Unique hosts listed in host_identifiers.
+ */
+array_t *identifier_hosts = NULL;
+
+/**
+ * @brief Free an identifier.
+ *
+ * @param[in]  identifier  Identifier.
+ */
+static void
+identifier_free (identifier_t *identifier)
+{
+  if (identifier)
+    {
+      g_free (identifier->ip);
+      g_free (identifier->name);
+      g_free (identifier->value);
+      g_free (identifier->source_type);
+      g_free (identifier->source_id);
+      g_free (identifier->source_data);
+    }
+}
+
+/**
+ * @brief Setup hosts and their identifiers after a scan, from host details.
+ *
+ * At the end of a scan this revises the decision about which asset host to use
+ * for each host that has identifiers.  The rules for this decision are described
+ * in \ref asset_rules.  (The initial decision is made by \ref host_notice.)
+ *
+ * @param[in]  report  Report that the identifiers come from.
+ */
+void
+hosts_set_identifiers (report_t report)
+{
+  if (identifier_hosts)
+    {
+      int host_index, index;
+      gchar *ip;
+
+      array_terminate (identifiers);
+      array_terminate (identifier_hosts);
+
+      host_index = 0;
+      while ((ip = (gchar*) g_ptr_array_index (identifier_hosts, host_index)))
+        {
+          host_t host, host_new;
+          gchar *quoted_host_name;
+          identifier_t *identifier;
+          GString *select;
+
+          if (report_host_noticeable (report, ip) == 0)
+            {
+              host_index++;
+              continue;
+            }
+
+          quoted_host_name = sql_quote (ip);
+
+          select = g_string_new ("");
+
+          /* Select the most recent host whose identifiers all match the given
+           * identifiers, even if the host has fewer identifiers than given. */
+
+          g_string_append_printf (select,
+                                  "SELECT id FROM hosts"
+                                  " WHERE name = '%s'"
+                                  " AND owner = (SELECT id FROM users"
+                                  "              WHERE uuid = '%s')",
+                                  quoted_host_name,
+                                  current_credentials.uuid);
+
+          index = 0;
+          while ((identifier = (identifier_t*) g_ptr_array_index (identifiers, index)))
+            {
+              gchar *quoted_identifier_name, *quoted_identifier_value;
+
+              if (strcmp (identifier->ip, ip))
+                {
+                  index++;
+                  continue;
+                }
+
+              quoted_identifier_name = sql_quote (identifier->name);
+              quoted_identifier_value = sql_quote (identifier->value);
+
+              g_string_append_printf (select,
+                                      " AND (EXISTS (SELECT * FROM host_identifiers"
+                                      "              WHERE host = hosts.id"
+                                      "              AND owner = (SELECT id FROM users"
+                                      "                           WHERE uuid = '%s')"
+                                      "              AND name = '%s'"
+                                      "              AND value = '%s')"
+                                      "      OR NOT EXISTS (SELECT * FROM host_identifiers"
+                                      "                     WHERE host = hosts.id"
+                                      "                     AND owner = (SELECT id FROM users"
+                                      "                                  WHERE uuid = '%s')"
+                                      "                     AND name = '%s'))",
+                                      current_credentials.uuid,
+                                      quoted_identifier_name,
+                                      quoted_identifier_value,
+                                      current_credentials.uuid,
+                                      quoted_identifier_name);
+
+              g_free (quoted_identifier_name);
+              g_free (quoted_identifier_value);
+
+              index++;
+            }
+
+          g_string_append_printf (select,
+                                  " ORDER BY creation_time DESC LIMIT 1;");
+
+          switch (sql_int64 (&host, select->str))
+            {
+              case 0:
+                break;
+              case 1:        /* Too few rows in result of query. */
+                host = 0;
+                break;
+              default:       /* Programming error. */
+                assert (0);
+              case -1:
+                host = 0;
+                break;
+            }
+
+          g_string_free (select, TRUE);
+
+          if (host == 0)
+            {
+              /* Add the host. */
+
+              sql ("INSERT into hosts"
+                   " (uuid, owner, name, comment, creation_time, modification_time)"
+                   " VALUES"
+                   " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
+                   "  m_now (), m_now ());",
+                   current_credentials.uuid,
+                   quoted_host_name);
+
+              host_new = host = sql_last_insert_id ();
+
+              /* Make sure the Report Host identifiers added when the host was
+               * first noticed now refer to the new host. */
+
+              sql ("UPDATE host_identifiers SET host = %llu"
+                   " WHERE source_id = (SELECT uuid FROM reports"
+                   "                    WHERE id = %llu)"
+                   " AND name = 'ip'"
+                   " AND value = '%s';",
+                   host_new,
+                   report,
+                   quoted_host_name);
+            }
+          else
+            {
+              /* Use the existing host. */
+
+              host_new = 0;
+            }
+
+          /* Add the host identifiers. */
+
+          index = 0;
+          while ((identifier = (identifier_t*) g_ptr_array_index (identifiers,
+                                                                  index)))
+            {
+              gchar *quoted_identifier_name, *quoted_identifier_value;
+              gchar *quoted_source_id, *quoted_source_type, *quoted_source_data;
+
+              if (strcmp (identifier->ip, ip))
+                {
+                  index++;
+                  continue;
+                }
+
+              quoted_identifier_name = sql_quote (identifier->name);
+              quoted_identifier_value = sql_quote (identifier->value);
+              quoted_source_id = sql_quote (identifier->source_id);
+              quoted_source_data = sql_quote (identifier->source_data);
+              quoted_source_type = sql_quote (identifier->source_type);
+
+              if (strcmp (identifier->name, "OS") == 0)
+                {
+                  resource_t os;
+
+                  switch (sql_int64 (&os,
+                                     "SELECT id FROM oss"
+                                     " WHERE name = '%s'"
+                                     " AND owner = (SELECT id FROM users"
+                                     "              WHERE uuid = '%s');",
+                                     quoted_identifier_value,
+                                     current_credentials.uuid))
+                    {
+                      case 0:
+                        break;
+                      default:       /* Programming error. */
+                        assert (0);
+                      case -1:
+                      case 1:        /* Too few rows in result of query. */
+                        sql ("INSERT into oss"
+                             " (uuid, owner, name, comment, creation_time,"
+                             "  modification_time)"
+                             " VALUES"
+                             " (make_uuid (),"
+                             "  (SELECT id FROM users WHERE uuid = '%s'),"
+                             "  '%s', '', m_now (), m_now ());",
+                             current_credentials.uuid,
+                             quoted_identifier_value);
+                        os = sql_last_insert_id ();
+                        break;
+                    }
+
+                  sql ("INSERT into host_oss"
+                       " (uuid, host, owner, name, comment, os, source_type,"
+                       "  source_id, source_data, creation_time, modification_time)"
+                       " VALUES"
+                       " (make_uuid (), %llu,"
+                       "  (SELECT id FROM users WHERE uuid = '%s'),"
+                       "  '%s', '', %llu, '%s', '%s', '%s', m_now (), m_now ());",
+                       host,
+                       current_credentials.uuid,
+                       quoted_identifier_name,
+                       os,
+                       quoted_source_type,
+                       quoted_source_id,
+                       quoted_source_data);
+
+                  if (host_new == 0)
+                    {
+                      sql ("UPDATE hosts"
+                           " SET modification_time = (SELECT modification_time"
+                           "                          FROM host_oss"
+                           "                          WHERE id = %llu)"
+                           " WHERE id = %llu;",
+                           sql_last_insert_id (),
+                           host);
+
+                      sql ("UPDATE oss"
+                           " SET modification_time = (SELECT modification_time"
+                           "                          FROM host_oss"
+                           "                          WHERE id = %llu)"
+                           " WHERE id = %llu;",
+                           sql_last_insert_id (),
+                           os);
+                    }
+                }
+              else
+                {
+                  sql ("INSERT into host_identifiers"
+                       " (uuid, host, owner, name, comment, value, source_type,"
+                       "  source_id, source_data, creation_time, modification_time)"
+                       " VALUES"
+                       " (make_uuid (), %llu,"
+                       "  (SELECT id FROM users WHERE uuid = '%s'),"
+                       "  '%s', '', '%s', '%s', '%s', '%s', m_now (), m_now ());",
+                       host,
+                       current_credentials.uuid,
+                       quoted_identifier_name,
+                       quoted_identifier_value,
+                       quoted_source_type,
+                       quoted_source_id,
+                       quoted_source_data);
+
+                  if (host_new == 0)
+                    sql ("UPDATE hosts"
+                         " SET modification_time = (SELECT modification_time"
+                         "                          FROM host_identifiers"
+                         "                          WHERE id = %llu)"
+                         " WHERE id = %llu;",
+                         sql_last_insert_id (),
+                         host);
+                }
+
+              g_free (quoted_source_type);
+              g_free (quoted_source_id);
+              g_free (quoted_source_data);
+              g_free (quoted_identifier_name);
+              g_free (quoted_identifier_value);
+
+              index++;
+            }
+
+          g_free (quoted_host_name);
+          host_index++;
+        }
+
+      index = 0;
+      while (identifiers && (index < identifiers->len))
+        identifier_free (g_ptr_array_index (identifiers, index++));
+      array_free (identifiers);
+      identifiers = NULL;
+
+      array_free (identifier_hosts);
+      identifier_hosts = NULL;
+    }
 }
 
 /**

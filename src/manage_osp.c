@@ -10,6 +10,7 @@
 
 #include "ipc.h"
 #include "manage_osp.h"
+#include "manage_assets.h"
 #include "manage_scan_queue.h"
 #include "manage_sql.h"
 
