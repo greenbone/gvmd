@@ -1092,9 +1092,6 @@ insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *);
 
 void
-hosts_set_details (report_t report);
-
-void
 clear_duration_schedules (task_t);
 
 void
