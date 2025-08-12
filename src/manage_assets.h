@@ -35,6 +35,9 @@ int
 create_asset_report (const char *, const char *);
 
 void
+hosts_set_identifiers (report_t);
+
+void
 init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
 
 const char*
