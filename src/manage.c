@@ -4246,6 +4246,7 @@ manage_process_report_imports ()
   iterator_t reports;
   report_t report;
   int pid, ret;
+  struct sigaction action;
 
   init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
 
@@ -4288,6 +4289,21 @@ manage_process_report_imports ()
                 g_debug ("%s: Failed to signal reports processing semaphore",
                          __func__);
                 exit (EXIT_SUCCESS);
+              }
+
+            // Reset SIGCHLD handler to default so the process can
+            // use common functions to wait for its own child processes.
+            memset (&action, '\0', sizeof (action));
+            sigemptyset (&action.sa_mask);
+            action.sa_handler = SIG_DFL;
+            action.sa_flags = 0;
+            if (sigaction (SIGCHLD, &action, NULL) == -1)
+              {
+                g_critical ("%s: failed to set SIGCHLD handler: %s",
+                            __func__,
+                            strerror (errno));
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
               }
 
             /* Clean up the process. */
