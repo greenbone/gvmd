@@ -3830,6 +3830,8 @@ generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
  * @param[in]  fallback_format_id       UUID of fallback report format.  Used
  *                                      if both report_format_data_name and
  *                                      report_format_lookup are NULL or fail.
+ * @param[in]  report_config_data_name  Name of alert data of the report config
+ *                                      if one is set.
  * @param[in]  notes_details     Whether to include details of notes in report.
  * @param[in]  overrides_details Whether to include override details in report.
  * @param[out] content              Report content location.
@@ -3851,6 +3853,7 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                           const char *report_format_data_name,
                           const char *report_format_lookup,
                           const char *fallback_format_id,
+                          const char *report_config_data_name,
                           int notes_details, int overrides_details,
                           gchar **content, gsize *content_length,
                           gchar **extension, gchar **content_type,
@@ -3919,8 +3922,8 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
                 }
               return -2;
             }
-          g_free (format_uuid);
         }
+      g_free (format_uuid);
     }
 
   if (report_format_lookup && (report_format == 0))
@@ -3977,15 +3980,54 @@ report_content_for_alert (alert_t alert, report_t report, task_t task,
 
   // Get report config
 
-  if (report_format_is_fallback)
+  if (report_format_is_fallback || report_config_data_name == 0)
     {
       // Config would only be valid for the original report format
+      // and the alert has to define a method data name for it.
       report_config = 0;
     }
   else
     {
-      // TODO: Get report config from alert
-      report_config = 0;
+      char *report_config_id;
+      report_config_id =  alert_data (alert,
+                                      "method",
+                                      report_config_data_name);
+
+      if (report_config_id == NULL
+          || strcmp (report_config_id, "0") == 0
+          || strcmp (report_config_id, "") == 0)
+        {
+          report_config = 0;
+        }
+      else
+        {
+          if (find_resource_with_permission ("report_config",
+                                             report_config_id,
+                                             &report_config,
+                                             "get_report_configs",
+                                             0))
+            {
+              g_warning ("%s: Error getting report config '%s' for %s",
+                         __func__, report_config_id,
+                         alert_method_name (alert_method (alert)));
+              g_free (report_config_id);
+              if (alert_filter_get)
+                {
+                  get_data_reset (alert_filter_get);
+                  g_free (alert_filter_get);
+                }
+              return -2;
+            }
+
+          if (report_config == 0)
+            {
+              g_warning ("%s: Could not find report config '%s' for %s,"
+                         " falling back to default values",
+                         __func__, report_config_id,
+                         alert_method_name (alert_method (alert)));
+            }
+        }
+      g_free (report_config_id);
     }
 
   // Generate report content
@@ -4510,6 +4552,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                            NULL,
                            /* TXT fallback */
                            "a3810a62-1f62-11e1-9219-406186ea4fc5",
+                           "notice_report_config",
                            notes_details, overrides_details,
                            &report_content, &content_length, &extension,
                            NULL, &term, &report_zone, &host_summary,
@@ -4590,6 +4633,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                            NULL,
                            /* TXT fallback */
                            "a3810a62-1f62-11e1-9219-406186ea4fc5",
+                           "notice_attach_config",
                            notes_details, overrides_details,
                            &report_content, &content_length, &extension,
                            &type, &term, &report_zone, &host_summary,
@@ -4915,6 +4959,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    NULL,
                    /* XML fallback. */
                    REPORT_FORMAT_UUID_XML,
+                   "scp_report_config",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL,
@@ -5019,6 +5064,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    NULL,
                    /* XML fallback. */
                    REPORT_FORMAT_UUID_XML,
+                   "send_report_config",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL,
@@ -5110,6 +5156,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    "smb_report_format",
                    NULL,
                    REPORT_FORMAT_UUID_XML, /* XML fallback */
+                   "smb_report_config",
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
@@ -5277,6 +5324,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    NULL,
                    "Sourcefire",
                    NULL,
+                   NULL,
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
@@ -5433,6 +5481,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    NULL, /* Report format not configurable */
                    NULL,
                    REPORT_FORMAT_UUID_XML, /* XML fallback */
+                   NULL,
                    notes_details, overrides_details,
                    &report_content, &content_length, &extension,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
@@ -5492,6 +5541,7 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                    "verinice_server_report_format",
                    "Verinice ISM",
                    NULL,
+                   "verinice_server_report_config",
                    notes_details, overrides_details,
                    &report_content, &content_length, NULL,
                    NULL, NULL, NULL, NULL, &report_format, NULL);
