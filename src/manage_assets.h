@@ -19,6 +19,8 @@
 #ifndef _GVMD_MANAGE_ASSETS_H
 #define _GVMD_MANAGE_ASSETS_H
 
+#include "manage_get.h"
+
 char*
 host_uuid (resource_t);
 
@@ -66,5 +68,8 @@ host_identifier_iterator_os_id (iterator_t *);
 
 const char*
 host_identifier_iterator_os_title (iterator_t *);
+
+int
+init_asset_host_iterator (iterator_t *, const get_data_t *);
 
 #endif /* not _GVMD_MANAGE_ASSETS_H */
