@@ -1187,3 +1187,13 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
   g_free (extra_where);
   return ret;
 }
+
+/**
+ * @brief Get the max severity from an asset host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum severity of the host, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);

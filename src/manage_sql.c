@@ -40985,16 +40985,6 @@ asset_iterator_in_use (iterator_t* iterator)
 }
 
 /**
- * @brief Get the max severity from an asset host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The maximum severity of the host, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Count number of hosts.
  *
  * @param[in]  get  GET params.
