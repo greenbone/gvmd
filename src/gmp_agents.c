@@ -147,7 +147,12 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
                                "<heartbeat_interval>%i</heartbeat_interval>"
                                "<connection_status>%s</connection_status>"
                                "<last_update>%s</last_update>"
-                               "<schedule>%s</schedule>"
+                               "<config>%s</config>"
+                               "<updater_version>%s</updater_version>"
+                               "<agent_version>%s</agent_version>"
+                               "<operating_system>%s</operating_system>"
+                               "<architecture>%s</architecture>"
+                               "<update_to_latest>%i</update_to_latest>"
                                "<scanner id=\"%s\">"
                                "<name>%s</name>"
                                "</scanner>",
@@ -158,7 +163,12 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
                                agent_iterator_heartbeat_interval (&agents),
                                agent_iterator_connection_status (&agents),
                                iso_if_time (agent_iterator_last_update (&agents)),
-                               agent_iterator_schedule (&agents),
+                               agent_iterator_config (&agents),
+                               agent_iterator_updater_version (&agents),
+                               agent_iterator_agent_version (&agents),
+                               agent_iterator_operating_system (&agents),
+                               agent_iterator_architecture (&agents),
+                               agent_iterator_update_to_latest (&agents),
                                agent_scanner_uuid ? agent_scanner_uuid : "",
                                agent_scanner_name ? agent_scanner_name : "");
 
@@ -356,11 +366,6 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
     update->min_interval = atoi (entity_text (e));
   if ((e = entity_child (root, "heartbeat_interval")))
     update->heartbeat_interval = atoi (entity_text (e));
-  if ((e = entity_child (root, "schedule")))
-    {
-      update->schedule_config = agent_controller_config_schedule_new ();
-      update->schedule_config->schedule = g_strdup (entity_text (e));
-    }
   if ((e = entity_child (root, "comment")))
     comment = g_strdup (entity_text (e));
 

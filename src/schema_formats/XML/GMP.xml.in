@@ -9319,7 +9319,7 @@ END:VCALENDAR
       </p>
       <p>
         The response includes detailed information about each agent, including metadata,
-        status, schedule, scanner association, and IP addresses.
+        status, config, scanner association, and IP addresses.
       </p>
     </description>
     <pattern>
@@ -9404,9 +9404,34 @@ END:VCALENDAR
             <summary>Last time the agent was updated</summary>
           </column>
           <column>
-            <name>schedule</name>
+            <name>config</name>
             <type>text</type>
-            <summary>Scheduled update interval</summary>
+            <summary>Agent scan config</summary>
+          </column>
+          <column>
+            <name>updater_version</name>
+            <type>text</type>
+            <summary>Updater version string</summary>
+          </column>
+          <column>
+            <name>agent_version</name>
+            <type>text</type>
+            <summary>Agent version string</summary>
+          </column>
+          <column>
+            <name>operating_system</name>
+            <type>text</type>
+            <summary>Operating system</summary>
+          </column>
+          <column>
+            <name>architecture</name>
+            <type>text</type>
+            <summary>CPU architecture (e.g., amd64)</summary>
+          </column>
+          <column>
+            <name>update_to_latest</name>
+            <type>integer</type>
+            <summary>Update-to-latest flag (1/0)</summary>
           </column>
           <column>
             <name>comment</name>
@@ -9485,6 +9510,11 @@ END:VCALENDAR
           <e>schedule</e>
           <e>scanner</e>
           <any><e>ip</e></any>
+          <e>updater_version</e>
+          <e>agent_version</e>
+          <e>operating_system</e>
+          <e>architecture</e>
+          <e>update_to_latest</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -9600,6 +9630,31 @@ END:VCALENDAR
           <name>ip</name>
           <summary>IP addresses of the agent</summary>
           <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>updater_version</name>
+          <summary>Updater version string (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>agent_version</name>
+          <summary>Agent version string (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>operating_system</name>
+          <summary>Operating system (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>architecture</name>
+          <summary>CPU architecture (e.g., amd64)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>update_to_latest</name>
+          <summary>Flag to update to latest version (1/0)</summary>
+          <pattern><type>integer</type></pattern>
         </ele>
       </ele>
       <ele>
@@ -9730,6 +9785,11 @@ END:VCALENDAR
             <ip>192.168.79.157</ip>
             <ip>fe80::fe3e:acb9:1b5b:27da</ip>
             <ip>192.168.1.11</ip>
+            <updater_version>1.2.3</updater_version>
+            <agent_version>0.9.0</agent_version>
+            <operating_system>Linux</operating_system>
+            <architecture>amd64</architecture>
+            <update_to_latest>0</update_to_latest>
           </agent>
           <filters id="">
             <term>first=1 rows=10 sort=name</term>
@@ -29207,7 +29267,6 @@ END:VCALENDAR
       <o><e>authorized</e></o>
       <o><e>min_interval</e></o>
       <o><e>heartbeat_interval</e></o>
-      <o><e>schedule</e></o>
       <o><e>comment</e></o>
     </pattern>
     <ele>
@@ -29246,12 +29305,6 @@ END:VCALENDAR
       <required>0</required>
     </ele>
     <ele>
-      <name>schedule</name>
-      <summary>Execution schedule string (e.g., "@every 12h")</summary>
-      <pattern>text</pattern>
-      <required>0</required>
-    </ele>
-    <ele>
       <name>comment</name>
       <summary>Optional user-supplied comment</summary>
       <pattern>text</pattern>
@@ -29281,7 +29334,6 @@ END:VCALENDAR
           <authorized>1</authorized>
           <min_interval>1000</min_interval>
           <heartbeat_interval>0</heartbeat_interval>
-          <schedule>@every 12h</schedule>
           <comment>example update</comment>
         </modify_agents>
       </request>

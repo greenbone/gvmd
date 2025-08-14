@@ -23,20 +23,26 @@
 /**
  * @brief Agent iterator columns.
  */
-#define AGENT_ITERATOR_COLUMNS                                               \
-{                                                                            \
-  GET_ITERATOR_COLUMNS     (agents),                                         \
-  { "agent_id",            NULL, KEYWORD_TYPE_STRING  },                     \
-  { "hostname",            NULL, KEYWORD_TYPE_STRING  },                     \
-  { "authorized",          NULL, KEYWORD_TYPE_INTEGER },                     \
-  { "min_interval",        NULL, KEYWORD_TYPE_INTEGER },                     \
-  { "heartbeat_interval",  NULL, KEYWORD_TYPE_INTEGER },                     \
-  { "connection_status",   NULL, KEYWORD_TYPE_STRING  },                     \
-  { "last_update",         NULL, KEYWORD_TYPE_INTEGER },                     \
-  { "schedule",            NULL, KEYWORD_TYPE_STRING  },                     \
-  { "scanner",             NULL, KEYWORD_TYPE_INTEGER },                     \
-  { NULL,                  NULL, KEYWORD_TYPE_UNKNOWN }                      \
-}
+#define AGENT_ITERATOR_COLUMNS                                              \
+  {                                                                         \
+    GET_ITERATOR_COLUMNS (agents), {"agent_id", NULL, KEYWORD_TYPE_STRING}, \
+      {"hostname", NULL, KEYWORD_TYPE_STRING},                              \
+      {"authorized", NULL, KEYWORD_TYPE_INTEGER},                           \
+      {"min_interval", NULL, KEYWORD_TYPE_INTEGER},                         \
+      {"heartbeat_interval", NULL, KEYWORD_TYPE_INTEGER},                   \
+      {"connection_status", NULL, KEYWORD_TYPE_STRING},                     \
+      {"last_update", NULL, KEYWORD_TYPE_INTEGER},                          \
+      {"config", NULL, KEYWORD_TYPE_STRING},                                \
+      {"scanner", NULL, KEYWORD_TYPE_INTEGER},                              \
+      {"updater_version", NULL, KEYWORD_TYPE_STRING},                       \
+      {"agent_version", NULL, KEYWORD_TYPE_STRING},                         \
+      {"operating_system", NULL, KEYWORD_TYPE_STRING},                      \
+      {"architecture", NULL, KEYWORD_TYPE_STRING},                          \
+      {"update_to_latest", NULL, KEYWORD_TYPE_INTEGER},                     \
+    {                                                                       \
+      NULL, NULL, KEYWORD_TYPE_UNKNOWN                                      \
+    }                                                                       \
+  }
 
 /**
  * @brief Filter columns for agent iterator.
@@ -53,12 +59,17 @@
   "heartbeat_interval",                       \
   "connection_status",                        \
   "last_update",                              \
-  "schedule",                                 \
+  "config",                                   \
   "comment",                                  \
   "creation_time",                            \
   "modification_time",                        \
   "owner",                                    \
   "id",                                       \
+  "updater_version",                          \
+  "agent_version",                            \
+  "operating_system",                         \
+  "architecture",                             \
+  "update_to_latest",                         \
   NULL                                        \
 }
 
