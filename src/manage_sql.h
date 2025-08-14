@@ -413,6 +413,12 @@ init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
                    int);
 
 int
+init_get_iterator2 (iterator_t *, const char *, const get_data_t *, column_t *,
+                    column_t *, column_t *, column_t *, const char **, int,
+                    const char *, const char *, const char *, int, int,
+                    const char *);
+
+int
 openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
 
 int

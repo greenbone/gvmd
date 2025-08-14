@@ -1090,3 +1090,100 @@ DEF_ACCESS (host_identifier_iterator_os_id,
  */
 DEF_ACCESS (host_identifier_iterator_os_title,
             GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Extra WHERE clause for host assets.
+ *
+ * @param[in]  filter  Filter term.
+ *
+ * @return WHERE clause.
+ */
+gchar*
+asset_host_extra_where (const char *filter)
+{
+  gchar *ret, *os_id;
+
+  os_id = filter_term_value (filter, "os_id");
+
+  if (os_id)
+    {
+      gchar *quoted_os_id = os_id ? sql_quote (os_id) : NULL;
+      ret = g_strdup_printf (" AND EXISTS"
+                             "  (SELECT * FROM host_oss"
+                             "   WHERE os = (SELECT id FROM oss"
+                             "                WHERE uuid = '%s')"
+                             "     AND host = hosts.id)",
+                             quoted_os_id);
+      g_free (quoted_os_id);
+    }
+  else
+    ret = g_strdup ("");
+
+  g_free (os_id);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise a host iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
+
+  int ret;
+  gchar *filter, *extra_where;
+
+  // Get filter
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        {
+          return 1;
+        }
+    }
+  else
+    filter = NULL;
+
+  extra_where = asset_host_extra_where (filter ? filter : get->filter);
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            where_columns,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            extra_where,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
+  g_free (filter);
+  g_free (extra_where);
+  return ret;
+}

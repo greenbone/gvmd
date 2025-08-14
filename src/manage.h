@@ -2276,9 +2276,6 @@ host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
 int
-init_asset_host_iterator (iterator_t *, const get_data_t *);
-
-int
 init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get);
 
 int
