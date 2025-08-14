@@ -79,10 +79,15 @@ struct agent_data
   time_t creation_time;
   time_t modification_time;
   time_t last_update_agent_control;
-  gchar *schedule;
+  gchar *config;
   gchar *comment;
   user_t owner;
   scanner_t scanner;
+  gchar *updater_version;
+  gchar *agent_version;
+  gchar *operating_system;
+  gchar *architecture;
+  int update_to_latest;
 };
 typedef struct agent_data *agent_data_t;
 
@@ -170,7 +175,7 @@ const gchar *
 agent_iterator_connection_status (iterator_t *iterator);
 
 const gchar *
-agent_iterator_schedule (iterator_t *iterator);
+agent_iterator_config (iterator_t *iterator);
 
 int
 agent_iterator_authorized (iterator_t *iterator);
@@ -186,6 +191,21 @@ agent_iterator_last_update (iterator_t *iterator);
 
 scanner_t
 agent_iterator_scanner (iterator_t *iterator);
+
+const gchar *
+agent_iterator_updater_version (iterator_t *iterator);
+
+const gchar *
+agent_iterator_agent_version (iterator_t *iterator);
+
+const gchar *
+agent_iterator_operating_system (iterator_t *iterator);
+
+const gchar *
+agent_iterator_architecture (iterator_t *iterator);
+
+int
+agent_iterator_update_to_latest (iterator_t *iterator);
 
 int
 agent_count (const get_data_t *get);

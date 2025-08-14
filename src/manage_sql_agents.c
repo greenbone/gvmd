@@ -80,31 +80,47 @@ agent_column_exists (const gchar *column_name, const gchar *value)
 static void
 update_existing_agent (agent_data_t agent)
 {
-   gchar *insert_hostname = sql_insert (agent->hostname);
-   gchar *insert_connection_status = sql_insert (agent->connection_status);
-   gchar *insert_schedule = sql_insert (agent->schedule);
-   gchar *insert_agent_id = sql_insert (agent->agent_id);
+  gchar *insert_hostname = sql_insert (agent->hostname);
+  gchar *insert_connection_status = sql_insert (agent->connection_status);
+  gchar *insert_config = sql_insert (agent->config);
+  gchar *insert_agent_id = sql_insert (agent->agent_id);
+  gchar *insert_updater_version = sql_insert (agent->updater_version);
+  gchar *insert_agent_version = sql_insert (agent->agent_version);
+  gchar *insert_operating_system = sql_insert (agent->operating_system);
+  gchar *insert_architecture = sql_insert (agent->architecture);
 
-   sql ("UPDATE agents SET hostname = %s, authorized = %d, min_interval = %d,"
-        " heartbeat_interval = %d, connection_status = %s, last_update = %ld,"
-        " schedule = %s, owner = %u, modification_time = %ld, scanner = %llu "
-        " WHERE agent_id = %s;",
-        insert_hostname,
-        agent->authorized,
-        agent->min_interval,
-        agent->heartbeat_interval,
-        insert_connection_status,
-        agent->last_update_agent_control,
-        insert_schedule,
-        agent->owner,
-        agent->modification_time,
-        agent->scanner,
-        insert_agent_id);
+  sql ("UPDATE agents SET "
+       " hostname = %s,"
+       " authorized = %d,"
+       " min_interval = %d,"
+       " heartbeat_interval = %d,"
+       " connection_status = %s,"
+       " last_update = %ld,"
+       " config = %s,"
+       " owner = %u,"
+       " modification_time = %ld,"
+       " scanner = %llu,"
+       " updater_version = %s,"
+       " agent_version = %s,"
+       " operating_system = %s,"
+       " architecture = %s,"
+       " update_to_latest = %d"
+       " WHERE agent_id = %s;",
+       insert_hostname, agent->authorized, agent->min_interval,
+       agent->heartbeat_interval, insert_connection_status,
+       agent->last_update_agent_control, insert_config, agent->owner,
+       agent->modification_time, agent->scanner, insert_updater_version,
+       insert_agent_version, insert_operating_system, insert_architecture,
+       agent->update_to_latest, insert_agent_id);
 
   g_free (insert_hostname);
   g_free (insert_connection_status);
-  g_free (insert_schedule);
+  g_free (insert_config);
   g_free (insert_agent_id);
+  g_free (insert_updater_version);
+  g_free (insert_agent_version);
+  g_free (insert_operating_system);
+  g_free (insert_architecture);
 }
 
 /**
@@ -122,14 +138,21 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
       if (agent->uuid == NULL)
         return;
     }
-   gchar *escaped_hostname =  sql_copy_escape (agent->hostname);
-   gchar *escaped_connection_status =  sql_copy_escape (agent->connection_status);
-   gchar *escaped_schedule =  sql_copy_escape (agent->schedule);
-   gchar *escaped_comment =  sql_copy_escape ("");
+
+  gchar *escaped_hostname = sql_copy_escape (agent->hostname);
+  gchar *escaped_connection_status = sql_copy_escape (agent->connection_status);
+  gchar *escaped_config = sql_copy_escape (agent->config);
+  gchar *escaped_comment = sql_copy_escape ("");
+
+  gchar *escaped_updater_version = sql_copy_escape (agent->updater_version);
+  gchar *escaped_agent_version = sql_copy_escape (agent->agent_version);
+  gchar *escaped_operating_system = sql_copy_escape (agent->operating_system);
+  gchar *escaped_architecture = sql_copy_escape (agent->architecture);
 
   db_copy_buffer_append_printf (
     buffer,
-    "%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%ld\t%s\t%u\t%s\t%ld\t%ld\t%llu\n",
+    "%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%ld\t%s\t%u\t%s\t%ld\t%ld\t%llu"
+    "\t%s\t%s\t%s\t%s\t%d\n",
     agent->uuid,
     agent->name,
     agent->agent_id,
@@ -139,18 +162,27 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
     agent->heartbeat_interval,
     escaped_connection_status,
     agent->last_update_agent_control,
-    escaped_schedule,
+    escaped_config,
     agent->owner,
     escaped_comment,
     time (NULL),     // creation time
     agent->modification_time,
-    agent->scanner
+    agent->scanner,
+    escaped_updater_version,
+    escaped_agent_version,
+    escaped_operating_system,
+    escaped_architecture,
+    agent->update_to_latest ? 1 : 0
   );
 
   g_free (escaped_hostname);
   g_free (escaped_connection_status);
-  g_free (escaped_schedule);
+  g_free (escaped_config);
   g_free (escaped_comment);
+  g_free (escaped_updater_version);
+  g_free (escaped_agent_version);
+  g_free (escaped_operating_system);
+  g_free (escaped_architecture);
 }
 
 /**
@@ -258,13 +290,15 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
   int status = 0;
 
   db_copy_buffer_init (
-    &agent_buffer,
-    64 * 1024,
-    "COPY agents (uuid, name, agent_id, hostname, authorized, min_interval, heartbeat_interval,"
-    " connection_status, last_update, schedule, owner, comment, creation_time,"
-    " modification_time, scanner) FROM STDIN;"
-  );
-
+    &agent_buffer, 64 * 1024,
+    "COPY agents ("
+    " uuid, name, agent_id, hostname, authorized, min_interval, "
+    "heartbeat_interval,"
+    " connection_status, last_update, config, owner, comment, creation_time,"
+    " modification_time, scanner, updater_version, agent_version, "
+    "operating_system,"
+    " architecture, update_to_latest"
+    ") FROM STDIN;");
 
   db_copy_buffer_init (
     &ip_buffer,
@@ -522,10 +556,10 @@ agent_iterator_last_update (iterator_t *iterator)
 }
 
 /**
- * @brief Retrieve schedule string of current agent.
+ * @brief Retrieve config string of current agent.
  */
 const char *
-agent_iterator_schedule (iterator_t *iterator)
+agent_iterator_config (iterator_t *iterator)
 {
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
@@ -537,6 +571,51 @@ scanner_t
 agent_iterator_scanner (iterator_t *iterator)
 {
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+}
+
+/**
+ * @brief Retrieve updater version of current agent.
+ */
+const char *
+agent_iterator_updater_version (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+}
+
+/**
+ * @brief Retrieve agent version of current agent.
+ */
+const char *
+agent_iterator_agent_version (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+}
+
+/**
+ * @brief Retrieve operating system of current agent.
+ */
+const char *
+agent_iterator_operating_system (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+}
+
+/**
+ * @brief Retrieve architecture system of current agent.
+ */
+const char *
+agent_iterator_architecture (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+}
+
+/**
+ * @brief Retrieve latest update status of current agent.
+ */
+int
+agent_iterator_update_to_latest (iterator_t *iterator)
+{
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
 }
 
 /**

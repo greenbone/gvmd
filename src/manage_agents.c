@@ -91,11 +91,12 @@ convert_agent_control_list_to_agent_data_list (agent_controller_agent_list_t lis
       dest->heartbeat_interval = src->heartbeat_interval;
       dest->connection_status = g_strdup (src->connection_status);
       dest->last_update_agent_control = src->last_update;
-
-      if (src->schedule_config && src->schedule_config->schedule)
-        dest->schedule = g_strdup (src->schedule_config->schedule);
-      else
-        dest->schedule = g_strdup ("");
+      dest->config = g_strdup (src->config);
+      dest->updater_version = g_strdup (src->updater_version);
+      dest->agent_version = g_strdup (src->agent_version);
+      dest->operating_system = g_strdup (src->operating_system);
+      dest->architecture = g_strdup (src->architecture);
+      dest->update_to_latest = src->update_to_latest;
 
       dest->scanner = scanner;
 
@@ -163,13 +164,12 @@ convert_agent_data_list_to_agent_control_list (agent_data_list_t list,
       dest->heartbeat_interval = src->heartbeat_interval;
       dest->connection_status = g_strdup (src->connection_status);
       dest->last_update = src->last_update_agent_control;
-
-      // Schedule config
-      if (src->schedule && strlen (src->schedule) > 0)
-        {
-          dest->schedule_config = agent_controller_config_schedule_new ();
-          dest->schedule_config->schedule = g_strdup (src->schedule);
-        }
+      dest->config = src->config;
+      dest->updater_version = g_strdup (src->updater_version);
+      dest->agent_version = g_strdup (src->agent_version);
+      dest->operating_system = g_strdup (src->operating_system);
+      dest->architecture = g_strdup (src->architecture);
+      dest->last_update = src->update_to_latest;
 
       // IP addresses
       if (src->ip_addresses && src->ip_addresses->count > 0)
@@ -441,8 +441,20 @@ agent_data_free (agent_data_t data)
   if (data->connection_status)
     g_free (data->connection_status);
 
-  if (data->schedule)
-    g_free (data->schedule);
+  if (data->config)
+    g_free (data->config);
+
+  if (data->updater_version)
+    g_free (data->updater_version);
+
+  if (data->agent_version)
+    g_free (data->agent_version);
+
+  if (data->operating_system)
+    g_free (data->operating_system);
+
+  if (data->architecture)
+    g_free (data->architecture);
 
   if (data->comment)
     g_free (data->comment);
@@ -580,10 +592,15 @@ get_agents_by_scanner_and_uuids (scanner_t scanner,
       agent->heartbeat_interval = agent_iterator_heartbeat_interval (&iterator);
       agent->connection_status = g_strdup (agent_iterator_connection_status (&iterator));
       agent->last_update_agent_control = agent_iterator_last_update (&iterator);
-      agent->schedule = g_strdup (agent_iterator_schedule (&iterator));
+      agent->config = g_strdup (agent_iterator_config (&iterator));
       agent->comment = g_strdup (get_iterator_comment (&iterator));
       agent->creation_time = get_iterator_creation_time (&iterator);
       agent->modification_time = get_iterator_modification_time (&iterator);
+      agent->updater_version = g_strdup (agent_iterator_updater_version (&iterator));
+      agent->agent_version = g_strdup (agent_iterator_agent_version (&iterator));
+      agent->operating_system = g_strdup (agent_iterator_operating_system (&iterator));
+      agent->architecture = g_strdup (agent_iterator_architecture (&iterator));
+      agent->update_to_latest = agent_iterator_update_to_latest (&iterator);
       agent->scanner = scanner;
       agent->owner = get_iterator_owner (&iterator);
       agent->uuid = g_strdup (get_iterator_uuid (&iterator));
