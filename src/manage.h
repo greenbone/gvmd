@@ -2284,9 +2284,6 @@ asset_iterator_writable (iterator_t *);
 int
 asset_iterator_in_use (iterator_t *);
 
-const char*
-asset_host_iterator_severity (iterator_t *);
-
 int
 asset_host_count (const get_data_t *);
 

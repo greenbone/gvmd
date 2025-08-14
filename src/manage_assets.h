@@ -72,4 +72,7 @@ host_identifier_iterator_os_title (iterator_t *);
 int
 init_asset_host_iterator (iterator_t *, const get_data_t *);
 
+const char *
+asset_host_iterator_severity (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */
