@@ -23,122 +23,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-
-/**
- * @brief Delete an agent installer.
- *
- * @param[in]  agent_installer_id  UUID of agent installer.
- * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 99 permission denied, -1 error.
- */
-int
-delete_agent_installer (const char *agent_installer_id, int ultimate)
-{
-  agent_installer_t agent_installer = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_agent_installer") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_resource_with_permission ("agent_installer", agent_installer_id,
-                                     &agent_installer,
-                                     "delete_agent_installer", 0))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (agent_installer == 0)
-    {
-      if (find_trash ("agent_installer", agent_installer_id, &agent_installer))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (agent_installer == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      permissions_set_orphans ("agent_installer", agent_installer, LOCATION_TRASH);
-      tags_remove_resource ("agent_installer", agent_installer, LOCATION_TRASH);
-
-      sql ("DELETE FROM agent_installer_cpes_trash"
-           " WHERE agent_installer = %llu;",
-           agent_installer);
-      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;",
-           agent_installer);
-      sql_commit ();
-      return 0;
-    }
-
-  if (ultimate == 0)
-    {
-      agent_installer_t trash_agent_installer;
-
-      trash_agent_installer
-        = sql_int64_0 ("INSERT INTO agent_installers_trash"
-                       " (uuid, owner, name, comment,"
-                       "  creation_time, modification_time,"
-                       "  description, content_type, file_extension,"
-                       "  installer_path, version, checksum,"
-                       "  file_size, last_update)"
-                       " SELECT uuid, owner, name, comment,"
-                       "  creation_time, modification_time,"
-                       "  description, content_type, file_extension,"
-                       "  installer_path, version, checksum,"
-                       "  file_size, last_update"
-                       " FROM agent_installers WHERE id = %llu"
-                       " RETURNING id;",
-                       agent_installer);
-
-      sql ("INSERT INTO agent_installer_cpes_trash"
-           " (agent_installer, criteria,"
-           "  version_start_incl, version_start_excl,"
-           "  version_end_incl, version_end_excl)"
-           " SELECT %llu, criteria,"
-           "  version_start_incl, version_start_excl,"
-           "  version_end_incl, version_end_excl"
-           " FROM agent_installer_cpes WHERE agent_installer = %llu;",
-           trash_agent_installer,
-           agent_installer);
-
-      permissions_set_locations ("agent_installer",
-                                 agent_installer,
-                                 trash_agent_installer,
-                                 LOCATION_TRASH);
-      tags_set_locations ("agent_installer",
-                          agent_installer,
-                          trash_agent_installer,
-                          LOCATION_TRASH);
-    }
-  else
-    {
-      permissions_set_orphans ("agent_installer", agent_installer,
-                               LOCATION_TABLE);
-      tags_remove_resource ("agent_installer", agent_installer,
-                            LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM agent_installer_cpes WHERE agent_installer = %llu;",
-       agent_installer);
-  sql ("DELETE FROM agent_installers WHERE id = %llu;", agent_installer);
-  sql_commit ();
-  return 0;
-}
-
 /**
  * @brief Get the time agent installers were last updated from the meta table
  *
@@ -357,26 +241,23 @@ create_agent_installer_from_data (agent_installer_data_t *agent_installer_data)
  * @brief Overwrite agent installer data using an agent_installer_data_t.
  *
  * @param[in]  installer  Row-id of the installer to update
- * @param[in]  trash      Whether the installer to update is in the trash
  * @param[in]  agent_installer_data  Structure containing the data
  *
  * @return 0 success, -1 error
  */
 int
 update_agent_installer_from_data (agent_installer_t installer,
-                                  gboolean trash,
                                   agent_installer_data_t *agent_installer_data)
 {
   agent_installer_data_t *data_inserts;
-  g_debug ("updating agent installer %s%s",
-           agent_installer_data->uuid, trash ? " in trashcan" : "");
+  g_debug ("updating agent installer %s", agent_installer_data->uuid);
 
   sql_begin_immediate ();
 
   data_inserts
     = agent_installer_data_copy_as_sql_inserts (agent_installer_data);
 
-  sql ("UPDATE agent_installers%s"
+  sql ("UPDATE agent_installers"
        " SET"
        "   name = %s,"
        "   creation_time = %ld,"
@@ -390,7 +271,6 @@ update_agent_installer_from_data (agent_installer_t installer,
        "   file_size = %d,"
        "   last_update = m_now()"
        " WHERE id = %llu;",
-       trash ? "_trash" : "",
        data_inserts->name,
        data_inserts->creation_time,
        data_inserts->modification_time,
@@ -403,8 +283,7 @@ update_agent_installer_from_data (agent_installer_t installer,
        data_inserts->file_size,
        installer);
 
-  sql ("DELETE FROM agent_installer_cpes%s WHERE agent_installer = %llu;",
-       trash ? "_trash" : "",
+  sql ("DELETE FROM agent_installer_cpes WHERE agent_installer = %llu;",
        installer);
   for (int i = 0; i < data_inserts->cpes->len; i++)
     {
@@ -417,7 +296,6 @@ update_agent_installer_from_data (agent_installer_t installer,
            "  version_end_incl, version_end_excl)"
            " VALUES"
            " (%llu, %s, %s, %s, %s, %s);",
-           trash ? "_trash" : "",
            installer,
            cpe_data->criteria,
            cpe_data->version_start_incl,
@@ -474,45 +352,6 @@ find_agent_installer_no_acl (const char *uuid, agent_installer_t *installer)
   return FALSE;
 }
 
-/**
- * @brief Find a trash agent installer given a UUID.
- *
- * This does not do any permission checks.
- *
- * @param[in]   uuid       UUID of resource.
- * @param[out]  installer  agent installer return, 0 if no such installer.
- *
- * @return FALSE on success (including if no such installer), TRUE on error.
- */
-gboolean
-find_trash_agent_installer_no_acl (const char *uuid,
-                                   agent_installer_t *installer)
-{
-  gchar *quoted_uuid;
-
-  quoted_uuid = sql_quote (uuid);
-  switch (sql_int64 (installer,
-                     "SELECT id FROM agent_installers_trash WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *installer = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-
 /* GET_AGENT_INSTALLERS */
 
 /**
@@ -554,36 +393,6 @@ find_trash_agent_installer_no_acl (const char *uuid,
  }
 
 /**
- * @brief Agent Installer iterator columns for trash case.
- */
-#define AGENT_INSTALLER_ITERATOR_TRASH_COLUMNS                                \
- {                                                                          \
-   { "id", NULL, KEYWORD_TYPE_INTEGER },                                    \
-   { "uuid", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "name", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "comment", NULL, KEYWORD_TYPE_STRING },                                \
-   { "creation_time", NULL, KEYWORD_TYPE_INTEGER },                         \
-   { "modification_time", NULL, KEYWORD_TYPE_INTEGER },                     \
-   { "creation_time", "created", KEYWORD_TYPE_INTEGER },                    \
-   { "modification_time", "modified", KEYWORD_TYPE_INTEGER },               \
-   {                                                                        \
-     "(SELECT name FROM users WHERE users.id = agent_installers_trash.owner)",\
-     "_owner",                                                              \
-     KEYWORD_TYPE_STRING                                                    \
-   },                                                                       \
-   { "owner", NULL, KEYWORD_TYPE_INTEGER },                                 \
-   { "description", NULL, KEYWORD_TYPE_STRING },                            \
-   { "content_type", NULL, KEYWORD_TYPE_STRING },                           \
-   { "file_extension", NULL, KEYWORD_TYPE_STRING },                         \
-   { "installer_path", NULL, KEYWORD_TYPE_STRING },                         \
-   { "version", NULL, KEYWORD_TYPE_STRING },                                \
-   { "checksum", NULL, KEYWORD_TYPE_STRING },                               \
-   { "size", NULL, KEYWORD_TYPE_INTEGER },                                  \
-   { "last_update", NULL, KEYWORD_TYPE_INTEGER },                           \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
- }
-
-/**
  * @brief Count the number of Agent Installers.
  *
  * @param[in]  get  GET params.
@@ -595,8 +404,7 @@ agent_installer_count (const get_data_t *get)
 {
   static const char *filter_columns[] = AGENT_INSTALLER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = AGENT_INSTALLER_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = AGENT_INSTALLER_ITERATOR_TRASH_COLUMNS;
-  return count ("agent_installer", get, columns, trash_columns, filter_columns,
+  return count ("agent_installer", get, columns, NULL, filter_columns,
                 0, 0, 0, TRUE);
 }
 
@@ -604,18 +412,16 @@ agent_installer_count (const get_data_t *get)
  * @brief Gets the row id of an agent installer with a given UUID.
  *
  * @param[in]  agent_installer_id  The UUID of the agent installer.
- * @param[in]  trash               Whether to get the installer from the trash.
  *
  * @return The row id.
  */
 agent_installer_t
-agent_installer_by_uuid (const char *agent_installer_id, int trash)
+agent_installer_by_uuid (const char *agent_installer_id)
 {
   agent_installer_t ret;
   gchar *quoted_agent_installer_id = sql_quote (agent_installer_id);
-  ret = sql_int64_0 ("SELECT id FROM agent_installers%s"
+  ret = sql_int64_0 ("SELECT id FROM agent_installers"
                      " WHERE uuid = '%s'",
-                     trash ? "_trash" : "",
                      quoted_agent_installer_id);
   g_free (quoted_agent_installer_id);
   return ret;
@@ -625,16 +431,14 @@ agent_installer_by_uuid (const char *agent_installer_id, int trash)
  * @brief Gets the last modification time of an agent installer.
  *
  * @param[in]  agent_installer  The id of the agent installer.
- * @param[in]  trash            Whether to get the installer from the trash.
  *
  * @return The last modification time.
  */
 time_t
-agent_installer_modification_time (agent_installer_t agent_installer, int trash)
+agent_installer_modification_time (agent_installer_t agent_installer)
 {
-  return sql_int64_0 ("SELECT modification_time FROM agent_installers%s"
+  return sql_int64_0 ("SELECT modification_time FROM agent_installers"
                       " WHERE id = %llu",
-                      trash ? "_trash" : "",
                       agent_installer);
 }
 
@@ -653,13 +457,12 @@ init_agent_installer_iterator (iterator_t* iterator, get_data_t *get)
 {
   static const char *filter_columns[] = AGENT_INSTALLER_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = AGENT_INSTALLER_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = AGENT_INSTALLER_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "agent_installer",
                             get,
                             columns,
-                            trash_columns,
+                            NULL,
                             filter_columns,
                             0,
                             NULL,

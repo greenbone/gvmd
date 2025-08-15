@@ -282,7 +282,9 @@ type_has_comment (const char *type)
 int
 type_has_trash (const char *type)
 {
-  return strcasecmp (type, "report")
+  return strcasecmp (type, "agent")
+         && strcasecmp (type, "agent_installer")
+         && strcasecmp (type, "report")
          && strcasecmp (type, "result")
          && strcasecmp (type, "info")
          && type_is_info_subtype (type) == 0
