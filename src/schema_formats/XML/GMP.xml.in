@@ -7099,59 +7099,6 @@ END:VCALENDAR
     </example>
   </command>
   <command>
-    <name>delete_agent_installer</name>
-    <summary>Delete an agent installer</summary>
-    <description>
-      <p>
-        The client uses the delete_agent_installer command to delete an existing
-        agent installer.
-      </p>
-      <p>
-        Since this is a destructive command, the client is advised to ask
-        for confirmation from the user before sending this command to the
-        Manager.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>agent_installer_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Delete an agent installer</summary>
-      <request>
-        <delete_agent_installer
-          agent_installer_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </delete_agent_installer>
-      </request>
-      <response>
-        <delete_agent_installer_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>delete_agents</name>
     <summary>Delete agents</summary>
     <description>
