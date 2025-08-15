@@ -1197,3 +1197,140 @@ init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
  *         complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Generate the extra_tables string for an OS iterator.
+ *
+ * @return Newly allocated string.
+ */
+gchar *
+asset_os_iterator_opts_table ()
+{
+  assert (current_credentials.uuid);
+
+  return g_strdup_printf (", (SELECT"
+                          "   (SELECT id FROM users"
+                          "    WHERE users.uuid = '%s')"
+                          "   AS user_id,"
+                          "   'host' AS type)"
+                          "  AS opts",
+                          current_credentials.uuid);
+}
+
+/**
+ * @brief Initialise an OS iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
+{
+  int ret;
+  static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OS_ITERATOR_COLUMNS;
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  gchar *extra_tables;
+
+  extra_tables = asset_os_iterator_opts_table ();
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 where_columns,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 extra_tables,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 0);
+
+  g_free (extra_tables);
+
+  return ret;
+}
+
+/**
+ * @brief Get the title from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The title of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the number of installs from an asset OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of hosts that have the OS.
+ */
+int
+asset_os_iterator_installs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
+ * @brief Get the latest severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the highest severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_highest_severity, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the average severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the number of all installs from an asset OS iterator.
+ *
+ * This includes hosts where the OS is not the best match.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of any hosts that have the OS not only as the best match.
+ */
+int
+asset_os_iterator_all_installs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+}
