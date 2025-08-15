@@ -4375,7 +4375,6 @@ typedef enum
   CLIENT_CREATE_USER_SOURCES_SOURCE,
 #if ENABLE_AGENTS
   CLIENT_DELETE_AGENT_GROUP,
-  CLIENT_DELETE_AGENT_INSTALLER,
   CLIENT_DELETE_AGENTS,
 #endif /* ENABLE_AGENTS */
   CLIENT_DELETE_ALERT,
@@ -4962,12 +4961,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             delete_start ("agent_group", "Agent Group",
                           attribute_names, attribute_values);
             set_client_state (CLIENT_DELETE_AGENT_GROUP);
-          }
-        else if (strcasecmp ("DELETE_AGENT_INSTALLER", element_name) == 0)
-          {
-            delete_start ("agent_installer", "Agent Installer",
-                          attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_AGENT_INSTALLER);
           }
         else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
           {
@@ -20559,11 +20552,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
-      case CLIENT_DELETE_AGENT_INSTALLER:
-        delete_run (gmp_parser, error);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_DELETE_AGENT_GROUP:
         delete_run (gmp_parser, error);
         set_client_state (CLIENT_AUTHENTIC);
