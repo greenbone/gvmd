@@ -2321,21 +2321,6 @@ init_os_host_iterator (iterator_t *, resource_t);
 const char*
 os_host_iterator_severity (iterator_t *);
 
-void
-init_host_detail_iterator (iterator_t *, resource_t);
-
-const char*
-host_detail_iterator_name (iterator_t *);
-
-const char*
-host_detail_iterator_value (iterator_t *);
-
-const char*
-host_detail_iterator_source_type (iterator_t *);
-
-const char*
-host_detail_iterator_source_id (iterator_t *);
-
 int
 modify_asset (const char *, const char *);
 

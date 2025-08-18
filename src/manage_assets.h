@@ -96,4 +96,19 @@ asset_os_iterator_average_severity (iterator_t *);
 int
 asset_os_iterator_all_installs (iterator_t *);
 
+void
+init_host_detail_iterator (iterator_t *, resource_t);
+
+const char*
+host_detail_iterator_name (iterator_t *);
+
+const char*
+host_detail_iterator_value (iterator_t *);
+
+const char*
+host_detail_iterator_source_type (iterator_t *);
+
+const char*
+host_detail_iterator_source_id (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */
