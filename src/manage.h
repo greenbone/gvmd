@@ -2295,9 +2295,6 @@ host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
 int
-init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get);
-
-int
 asset_iterator_writable (iterator_t *);
 
 int
@@ -2305,9 +2302,6 @@ asset_iterator_in_use (iterator_t *);
 
 int
 asset_host_count (const get_data_t *);
-
-int
-init_resource_names_os_iterator (iterator_t *, get_data_t *);
 
 int
 asset_os_count (const get_data_t *);

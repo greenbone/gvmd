@@ -117,4 +117,10 @@ init_os_host_iterator (iterator_t *, resource_t);
 const char*
 os_host_iterator_severity (iterator_t *);
 
+int
+init_resource_names_host_iterator (iterator_t *, get_data_t *);
+
+int
+init_resource_names_os_iterator (iterator_t *, get_data_t *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */
