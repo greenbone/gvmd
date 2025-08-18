@@ -672,6 +672,7 @@ sync_agent_installers_with_feed (gboolean rebuild)
     {
       gvm_json_pull_parser_cleanup (&parser);
       gvm_json_pull_event_cleanup (&event);
+      g_string_free (installers_list_sql, TRUE);
       fclose (stream);
       return -1;
     }
@@ -706,7 +707,9 @@ sync_agent_installers_with_feed (gboolean rebuild)
     }
   else
     g_warning ("%s: No agent installers found in metadata file", __func__);
-  
+
+  g_string_free (installers_list_sql, TRUE);
+
   g_info ("Finished updating agent installers");
   return 0;
 }
