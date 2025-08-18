@@ -2295,12 +2295,6 @@ host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
 int
-asset_iterator_writable (iterator_t *);
-
-int
-asset_iterator_in_use (iterator_t *);
-
-int
 asset_host_count (const get_data_t *);
 
 int
