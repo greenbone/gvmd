@@ -1432,3 +1432,84 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
  *         complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (os_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Initialise a host iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (hosts) };
+  int ret;
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            NULL,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise an OS iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (oss) };
+  int ret;
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 NULL,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 0);
+
+  return ret;
+}
