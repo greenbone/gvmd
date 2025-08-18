@@ -111,4 +111,10 @@ host_detail_iterator_source_type (iterator_t *);
 const char*
 host_detail_iterator_source_id (iterator_t *);
 
+void
+init_os_host_iterator (iterator_t *, resource_t);
+
+const char*
+os_host_iterator_severity (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */
