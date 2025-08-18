@@ -40942,34 +40942,6 @@ host_routes_xml (host_t host)
 }
 
 /**
- * @brief Get the writable status from an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if writable, else 0.
- */
-int
-asset_iterator_writable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT);
-}
-
-/**
- * @brief Get the "in use" status from an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if in use, else 0.
- */
-int
-asset_iterator_in_use (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-}
-
-/**
  * @brief Count number of hosts.
  *
  * @param[in]  get  GET params.
