@@ -41125,68 +41125,6 @@ init_os_host_iterator (iterator_t* iterator, resource_t os)
 DEF_ACCESS (os_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Initialise an asset host detail iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  host        Host.
- */
-void
-init_host_detail_iterator (iterator_t* iterator, resource_t host)
-{
-  assert (host);
-  init_iterator (iterator,
-                 "SELECT sub.id, name, value, source_type, source_id"
-                 " FROM (SELECT max (id) AS id FROM host_details"
-                 "       WHERE host = %llu"
-                 "       GROUP BY name)"
-                 "      AS sub,"
-                 "      host_details"
-                 " WHERE sub.id = host_details.id"
-                 " ORDER BY name ASC;",
-                 host);
-}
-
-/**
- * @brief Get the name from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_name, 1);
-
-/**
- * @brief Get the name from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_value, 2);
-
-/**
- * @brief Get the source type from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source type of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_source_type, 3);
-
-/**
- * @brief Get the source ID from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source ID of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_source_id, 4);
-
-/**
  * @brief Find a host for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of host.
