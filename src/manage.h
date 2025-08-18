@@ -2315,12 +2315,6 @@ asset_os_count (const get_data_t *);
 int
 total_asset_count (const get_data_t *);
 
-void
-init_os_host_iterator (iterator_t *, resource_t);
-
-const char*
-os_host_iterator_severity (iterator_t *);
-
 int
 modify_asset (const char *, const char *);
 

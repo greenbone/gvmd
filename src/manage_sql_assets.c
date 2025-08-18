@@ -1396,3 +1396,39 @@ DEF_ACCESS (host_detail_iterator_source_type, 3);
  *         complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (host_detail_iterator_source_id, 4);
+
+/**
+ * @brief Initialise an OS host iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  os          OS.
+ */
+void
+init_os_host_iterator (iterator_t* iterator, resource_t os)
+{
+  assert (os);
+  init_iterator (iterator,
+                 "SELECT id, uuid, name, comment, creation_time,"
+                 "       modification_time, creation_time,"
+                 "       modification_time, owner, owner,"
+                 "       (SELECT round (CAST (severity AS numeric), 1)"
+                 "        FROM host_max_severities"
+                 "        WHERE host = hosts.id"
+                 "        ORDER by creation_time DESC"
+                 "        LIMIT 1)"
+                 " FROM hosts"
+                 " WHERE id IN (SELECT DISTINCT host FROM host_oss"
+                 "              WHERE os = %llu)"
+                 " ORDER BY modification_time DESC;",
+                 os);
+}
+
+/**
+ * @brief Get the severity from an OS host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS host, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (os_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
