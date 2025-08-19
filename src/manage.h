@@ -2724,12 +2724,6 @@ get_relay_mapper_path ();
 void
 set_relay_mapper_path (const char *);
 
-int
-get_relay_migrate_sensors ();
-
-void
-set_relay_migrate_sensors (int);
-
 gboolean
 relay_supports_scanner_type (const char *, int, scanner_type_t);
 
