@@ -2304,9 +2304,6 @@ int
 total_asset_count (const get_data_t *);
 
 int
-delete_asset (const char *, const char *, int);
-
-int
 add_assets_from_host_in_report (report_t report, const char *host);
 
 
