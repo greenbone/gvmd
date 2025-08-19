@@ -3642,7 +3642,7 @@ resource_uuid (const gchar *type, resource_t resource)
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
-static int
+int
 init_get_iterator2_with (iterator_t* iterator, const char *type,
                          const get_data_t *get, column_t *select_columns,
                          column_t *trash_select_columns,
@@ -3911,7 +3911,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
-static int
+int
 init_get_iterator2 (iterator_t* iterator, const char *type,
                     const get_data_t *get, column_t *select_columns,
                     column_t *trash_select_columns,
@@ -7204,81 +7204,6 @@ clean_auth_cache ()
 }
 
 /**
- * @brief Tries to migrate sensor type scanners to match the relays.
- *
- * @return A string describing the results or NULL on error.
- */
-static gchar *
-manage_migrate_relay_sensors ()
-{
-  iterator_t scanners;
-  int gmp_successes, gmp_failures, osp_failures;
-
-  gmp_successes = gmp_failures = osp_failures = 0;
-
-  if (get_relay_mapper_path () == NULL)
-    {
-      g_warning ("%s: No relay mapper set", __func__);
-      return NULL;
-    }
-
-  init_iterator (&scanners,
-                 "SELECT id, uuid, type, host, port FROM scanners"
-                 " WHERE type = %d",
-                 SCANNER_TYPE_OSP_SENSOR);
-
-  while (next (&scanners))
-    {
-      scanner_type_t type;
-      const char *scanner_id, *host;
-      int port;
-
-      scanner_id = iterator_string (&scanners, 1);
-      type = iterator_int (&scanners, 2);
-      host = iterator_string (&scanners, 3);
-      port = iterator_int (&scanners, 4);
-
-      if (relay_supports_scanner_type (host, port, type) == FALSE)
-        {
-          if (type == SCANNER_TYPE_OSP_SENSOR)
-            {
-              g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
-                         __func__, scanner_id, host, port);
-              osp_failures++;
-            }
-          else
-            g_warning ("%s: Unexpected type for scanner %s: %d",
-                       __func__, scanner_id, type);
-        }
-    }
-  cleanup_iterator (&scanners);
-
-  if (gmp_successes == 0 && gmp_failures == 0 && osp_failures == 0)
-    return g_strdup ("All GMP or OSP sensors up to date.");
-  else
-    {
-      GString *message = g_string_new ("");
-      g_string_append_printf (message,
-                              "%d sensors(s) not matching:",
-                              gmp_successes + gmp_failures + osp_failures);
-      if (gmp_successes)
-        g_string_append_printf (message,
-                                " %d GMP scanner(s) migrated to OSP.",
-                                gmp_successes);
-      if (gmp_failures)
-        g_string_append_printf (message,
-                                " %d GMP scanner(s) not migrated.",
-                                gmp_failures);
-      if (osp_failures)
-        g_string_append_printf (message,
-                                " %d OSP sensor(s) not migrated.",
-                                osp_failures);
-
-      return g_string_free (message, FALSE);
-    }
-}
-
-/**
  * @brief Ensure that the database is in order.
  *
  * Only called by init_manage_internal, and ultimately only by the main process.
@@ -8825,6 +8750,69 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
     LOCATION_TABLE, scanner, LOCATION_TRASH, scanner);
 }
 #endif /*ENABLE_AGENTS*/
+
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Return the OCI image target of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return OCI image target of task.
+ */
+oci_image_target_t
+task_oci_image_target (task_t task)
+{
+  oci_image_target_t oci_image_target = 0;
+  switch (sql_int64 (&oci_image_target,
+                     "SELECT oci_image_target FROM tasks WHERE id = %llu;",
+                     task))
+    {
+      case 0:
+        return oci_image_target;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Return whether the OCI image target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_oci_image_target_in_trash (task_t task)
+{
+  return sql_int ("SELECT oci_image_target_location = " 
+                  G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE id = %llu;",
+                  task);
+}
+
+/**
+ * @brief Set the OCI image target of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  target  Target.
+ */
+void
+set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
+{
+  sql ("UPDATE tasks SET oci_image_target = %llu,"
+       " oci_image_target_location = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       oci_image_target,
+       task);
+}
+
+#endif
 
 /**
  * @brief Set the hosts ordering of a task.
@@ -22570,11 +22558,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
   sql_begin_immediate ();
 
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "config, target, schedule, schedule_periods,"
+                            "config, target, oci_image_target,"
+                            " schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " hosts_ordering, usage_type, alterable",
+                            " oci_image_target_location, hosts_ordering,"
+                            " usage_type, alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -23366,6 +23356,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  * @param[in]  preferences       Preferences.
  * @param[in]  hosts_ordering    Host scan order.
  * @param[in]  agent_group_id    Agent group.
+ * @param[in]  oci_image_target_id  OCI image target.
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
@@ -23377,8 +23368,8 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for container tasks only
- *         18 failed to find agent group
- *         certain fields may be edited, -1 error.
+ *         certain fields may be edited, 18 failed to find agent group,
+           19 failed to find OCI image target, -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -23391,6 +23382,7 @@ modify_task (const gchar *task_id, const gchar *name,
              array_t *preferences,
              const gchar *hosts_ordering,
              const gchar *agent_group_id,
+             const gchar* oci_image_target_id,
              gchar **fail_alert_id,
              gchar **fail_group_id)
 {
@@ -23406,7 +23398,10 @@ modify_task (const gchar *task_id, const gchar *name,
   if (task == 0)
     return 1;
 
-  if ((task_target (task) == 0 && agent_group_id == NULL)
+
+  if ((task_target (task) == 0 
+       && (agent_group_id == NULL)
+       && (oci_image_target_id == NULL))
       && (alerts->len || schedule_id))
     return 17;
 
@@ -23458,7 +23453,9 @@ modify_task (const gchar *task_id, const gchar *name,
   else
     type_of_scanner = scanner_type (scanner);
 
-  if (config_id && (type_of_scanner != SCANNER_TYPE_CVE))
+  if (config_id 
+      && (type_of_scanner != SCANNER_TYPE_CVE)
+      && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE))
     {
       config_t config;
 
@@ -23593,6 +23590,25 @@ modify_task (const gchar *task_id, const gchar *name,
       }
   }
 #endif
+
+#if ENABLE_CONTAINER_SCANNING
+  if (oci_image_target_id)
+    {
+      oci_image_target_t oci_image_target = 0;
+
+      if ((task_run_status (task) != TASK_STATUS_NEW)
+          && (task_alterable (task) == 0))
+        return 16;
+      else if (find_oci_image_target_with_permission (oci_image_target_id,
+                                                      &oci_image_target,
+                                                      "get_oci_image_targets"))
+        return -1;
+      else if (oci_image_target == 0)
+        return 19;
+      else
+        set_task_oci_image_target (task, oci_image_target);
+    }
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   if (preferences)
     switch (set_task_preferences (task, preferences))
@@ -39613,65 +39629,6 @@ manage_restore (const char *id)
       return 0;
     }
 
-#if ENABLE_AGENTS
-  /* Agent Installer. */
-
-  if (find_trash ("agent_installer", id, &resource))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (resource)
-    {
-      agent_installer_t agent_installer;
-
-      agent_installer
-        = sql_int64_0 ("INSERT INTO agent_installers"
-                       " (uuid, owner, name, comment,"
-                       "  creation_time, modification_time,"
-                       "  description, content_type, file_extension,"
-                       "  installer_path, version, checksum,"
-                       "  file_size, last_update)"
-                       " SELECT uuid, owner, name, comment,"
-                       "  creation_time, modification_time,"
-                       "  description, content_type, file_extension,"
-                       "  installer_path, version, checksum,"
-                       "  file_size, last_update"
-                       " FROM agent_installers_trash WHERE id = %llu"
-                       " RETURNING id;",
-                       resource);
-
-      sql ("INSERT INTO agent_installer_cpes"
-           " (agent_installer, criteria,"
-           "  version_start_incl, version_start_excl,"
-           "  version_end_incl, version_end_excl)"
-           " SELECT %llu, criteria,"
-           "  version_start_incl, version_start_excl,"
-           "  version_end_incl, version_end_excl"
-           " FROM agent_installer_cpes_trash WHERE agent_installer = %llu;",
-           agent_installer,
-           resource);
-
-      permissions_set_locations ("agent_installer",
-                                 resource,
-                                 agent_installer,
-                                 LOCATION_TABLE);
-      tags_set_locations ("agent_installer",
-                          resource,
-                          agent_installer,
-                          LOCATION_TABLE);
-
-      sql ("DELETE FROM agent_installer_cpes_trash"
-           " WHERE agent_installer = %llu;",
-          resource);
-      sql ("DELETE FROM agent_installers_trash WHERE id = %llu;", resource);
-
-      sql_commit ();
-      return 0;
-    }
-#endif /* ENABLE_AGENTS */
-
   /* Alert. */
 
   if (find_trash ("alert", id, &resource))
@@ -40579,14 +40536,6 @@ manage_empty_trashcan ()
        "                                    WHERE uuid = '%s'));",
        current_credentials.uuid);
   sql ("DELETE FROM groups_trash" WHERE_OWNER);
-#if ENABLE_AGENTS
-  sql ("DELETE FROM agent_installer_cpes_trash"
-       " WHERE agent_installer IN (SELECT id from agent_installers_trash"
-       "                           WHERE owner = (SELECT id FROM users"
-       "                                          WHERE uuid = '%s'));",
-       current_credentials.uuid);
-  sql ("DELETE FROM agent_installers_trash" WHERE_OWNER);
-#endif /* ENABLE_AGENTS */
   sql ("DELETE FROM alert_condition_data_trash"
        " WHERE alert IN (SELECT id from alerts_trash"
        "                 WHERE owner = (SELECT id FROM users"
@@ -40918,303 +40867,6 @@ host_routes_xml (host_t host)
 }
 
 /**
- * @brief Filter columns for host iterator.
- */
-#define HOST_ITERATOR_FILTER_COLUMNS                                        \
- { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", "hostname", "ip",  \
-   "severity_level", "updated", "best_os_cpe", NULL }
-
-/**
- * @brief Host iterator columns.
- */
-#define HOST_ITERATOR_COLUMNS                                         \
- {                                                                    \
-   GET_ITERATOR_COLUMNS (hosts),                                      \
-   {                                                                  \
-     "1",                                                             \
-     "writable",                                                      \
-     KEYWORD_TYPE_INTEGER                                             \
-   },                                                                 \
-   {                                                                  \
-     "0",                                                             \
-     "in_use",                                                        \
-     KEYWORD_TYPE_INTEGER                                             \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT round (CAST (severity AS numeric), 1)"                  \
-     " FROM host_max_severities"                                      \
-     " WHERE host = hosts.id"                                         \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "severity",                                                      \
-     KEYWORD_TYPE_DOUBLE                                              \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT CASE"                                                   \
-     "        WHEN best_os_text LIKE '%[possible conflict]%'"         \
-     "        THEN best_os_text"                                      \
-     "        WHEN best_os_cpe IS NULL"                               \
-     "        THEN '[unknown]'"                                       \
-     "        ELSE best_os_cpe"                                       \
-     "        END"                                                    \
-     " FROM (SELECT (SELECT value"                                    \
-     "               FROM (SELECT max (id) AS id"                     \
-     "                     FROM host_details"                         \
-     "                     WHERE host = hosts.id"                     \
-     "                     AND name = 'best_os_cpe')"                 \
-     "                     AS sub,"                                   \
-     "                    host_details"                               \
-     "               WHERE sub.id = host_details.id)"                 \
-     "              AS best_os_cpe,"                                  \
-     "              (SELECT value"                                    \
-     "               FROM (SELECT max (id) AS id"                     \
-     "                     FROM host_details"                         \
-     "                     WHERE host = hosts.id"                     \
-     "                     AND name = 'best_os_text')"                \
-     "                     AS sub,"                                   \
-     "                    host_details"                               \
-     "               WHERE sub.id = host_details.id)"                 \
-     "              AS best_os_text)"                                 \
-     "      AS vars)",                                                \
-     "os",                                                            \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT group_concat (name, ', ') FROM oss"                     \
-     "  WHERE id IN (SELECT distinct os FROM host_oss"                \
-     "               WHERE host = hosts.id))",                        \
-     "oss",                                                           \
-     KEYWORD_TYPE_INTEGER                                             \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT value"                                                  \
-     " FROM host_identifiers"                                         \
-     " WHERE host = hosts.id"                                         \
-     " AND name = 'hostname'"                                         \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "hostname",                                                      \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT value"                                                  \
-     " FROM host_identifiers"                                         \
-     " WHERE host = hosts.id"                                         \
-     " AND name = 'ip'"                                               \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "ip",                                                            \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
- }
-
-/**
- * @brief Host iterator WHERE columns.
- */
-#define HOST_ITERATOR_WHERE_COLUMNS                                   \
- {                                                                    \
-   {                                                                  \
-     "(SELECT severity_to_level (CAST (severity AS numeric), 0)"      \
-     " FROM host_max_severities"                                      \
-     " WHERE host = hosts.id"                                         \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "severity_level",                                                \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   {                                                                  \
-     "modification_time", "updated", KEYWORD_TYPE_INTEGER             \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT value"                                                  \
-     "   FROM (SELECT max (id) AS id"                                 \
-     "           FROM host_details"                                   \
-     "          WHERE host = hosts.id"                                \
-     "            AND name = 'best_os_cpe')"                          \
-     "         AS sub, host_details"                                  \
-     "  WHERE sub.id = host_details.id)",                             \
-     "best_os_cpe",                                                   \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
- }
-
-/**
- * @brief Extra WHERE clause for host assets.
- *
- * @param[in]  filter  Filter term.
- *
- * @return WHERE clause.
- */
-static gchar*
-asset_host_extra_where (const char *filter)
-{
-  gchar *ret, *os_id;
-
-  os_id = filter_term_value (filter, "os_id");
-
-  if (os_id)
-    {
-      gchar *quoted_os_id = os_id ? sql_quote (os_id) : NULL;
-      ret = g_strdup_printf (" AND EXISTS"
-                             "  (SELECT * FROM host_oss"
-                             "   WHERE os = (SELECT id FROM oss"
-                             "                WHERE uuid = '%s')"
-                             "     AND host = hosts.id)",
-                             quoted_os_id);
-      g_free (quoted_os_id);
-    }
-  else
-    ret = g_strdup ("");
-
-  g_free (os_id);
-
-  return ret;
-}
-
-/**
- * @brief Initialise a host iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find host, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
-{
-  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = HOST_ITERATOR_COLUMNS;
-  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
-
-  int ret;
-  gchar *filter, *extra_where;
-
-  // Get filter
-  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      if (get->filter_replacement)
-        /* Replace the filter term with one given by the caller.  This is
-         * used by GET_REPORTS to use the default filter with any task (when
-         * given the special value of -3 in filt_id). */
-        filter = g_strdup (get->filter_replacement);
-      else
-        filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        {
-          return 1;
-        }
-    }
-  else
-    filter = NULL;
-
-  extra_where = asset_host_extra_where (filter ? filter : get->filter);
-
-  ret = init_get_iterator2 (iterator,
-                            "host",
-                            get,
-                            /* Columns. */
-                            columns,
-                            /* Columns for trashcan. */
-                            NULL,
-                            /* WHERE Columns. */
-                            where_columns,
-                            /* WHERE Columns for trashcan. */
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            extra_where,
-                            NULL,
-                            TRUE,
-                            FALSE,
-                            NULL);
-
-  g_free (filter);
-  g_free (extra_where);
-  return ret;
-}
-
-/**
- * @brief Initialise a host iterator for GET_RESOURCE_NAMES.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find host, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
-  static column_t columns[] = { GET_ITERATOR_COLUMNS (hosts) };
-  int ret;
-
-  ret = init_get_iterator2 (iterator,
-                            "host",
-                            get,
-                            /* Columns. */
-                            columns,
-                            /* Columns for trashcan. */
-                            NULL,
-                            /* WHERE Columns. */
-                            NULL,
-                            /* WHERE Columns for trashcan. */
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            NULL,
-                            TRUE,
-                            FALSE,
-                            NULL);
-
-  return ret;
-}
-
-/**
- * @brief Get the writable status from an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if writable, else 0.
- */
-int
-asset_iterator_writable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT);
-}
-
-/**
- * @brief Get the "in use" status from an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if in use, else 0.
- */
-int
-asset_iterator_in_use (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-}
-
-/**
- * @brief Get the max severity from an asset host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The maximum severity of the host, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Count number of hosts.
  *
  * @param[in]  get  GET params.
@@ -41229,303 +40881,6 @@ asset_host_count (const get_data_t *get)
   static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
   return count2 ("host", get, columns, NULL, where_columns, NULL,
                  filter_columns, 0, NULL, NULL, NULL, TRUE);
-}
-
-/**
- * @brief Filter columns for os iterator.
- */
-#define OS_ITERATOR_FILTER_COLUMNS                                           \
- { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
-   "highest_severity", "average_severity", "average_severity_score",         \
-   "severity", "all_hosts", NULL }
-
-/**
- * @brief OS iterator columns.
- */
-#define OS_ITERATOR_COLUMNS                                                   \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (oss),                                                \
-   {                                                                          \
-     "0",                                                                     \
-     "writable",                                                              \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT count (*) > 0 FROM host_oss WHERE os = oss.id)",                \
-     "in_use",                                                                \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT coalesce (cpe_title (oss.name), ''))",                          \
-     "title",                                                                 \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT count(*)"                                                       \
-     " FROM (SELECT inner_cpes[1] AS cpe, host"                               \
-     "       FROM (SELECT array_agg (host_details.value"                      \
-     "                               ORDER BY host_details.id DESC)"          \
-     "                    AS inner_cpes,"                                     \
-     "                    host"                                               \
-     "             FROM host_details, hosts"                                  \
-     "             WHERE host_details.name = 'best_os_cpe'"                   \
-     "             AND hosts.id = host_details.host"                          \
-     "             AND (" ACL_USER_MAY_OPTS ("hosts") ")"                     \
-     "             GROUP BY host)"                                            \
-     "            AS host_details_subselect)"                                 \
-     "      AS array_removal_subselect"                                       \
-     " WHERE cpe = oss.name)",                                                \
-     "hosts",                                                                 \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (CAST (severity AS numeric), 1) FROM host_max_severities" \
-     " WHERE host = (SELECT host FROM host_oss"                               \
-     "               WHERE os = oss.id"                                       \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     " ORDER BY creation_time DESC LIMIT 1)",                                 \
-     "latest_severity",                                                       \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (max (CAST (severity AS numeric)), 1)"                    \
-     " FROM host_max_severities"                                              \
-     " WHERE host IN (SELECT DISTINCT host FROM host_oss"                     \
-     "                WHERE os = oss.id))",                                   \
-     "highest_severity",                                                      \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
-     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
-     "               WHERE host = hosts.host"                                 \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     "              AS severity"                                              \
-     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
-     "       AS hosts)"                                                       \
-     " AS severities)",                                                       \
-     "average_severity",                                                      \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT count(DISTINCT host) FROM host_oss WHERE os = oss.id)",         \
-     "all_hosts",                                                             \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief OS iterator optional filtering columns.
- */
-#define OS_ITERATOR_WHERE_COLUMNS                                             \
- {                                                                            \
-   {                                                                          \
-     "(SELECT round (CAST (avg (severity) AS numeric)"                        \
-     "               * (SELECT count (distinct host)"                         \
-     "                  FROM host_oss WHERE os = oss.id), 2)"                 \
-     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
-     "               WHERE host = hosts.host"                                 \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     "              AS severity"                                              \
-     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
-     "       AS hosts)"                                                       \
-     " AS severities)",                                                       \
-     "average_severity_score",                                                \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
-     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
-     "               WHERE host = hosts.host"                                 \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     "              AS severity"                                              \
-     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
-     "       AS hosts)"                                                       \
-     " AS severities)",                                                       \
-     "severity",                                                              \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Generate the extra_tables string for an OS iterator.
- *
- * @return Newly allocated string.
- */
-static gchar *
-asset_os_iterator_opts_table ()
-{
-  assert (current_credentials.uuid);
-
-  return g_strdup_printf (", (SELECT"
-                          "   (SELECT id FROM users"
-                          "    WHERE users.uuid = '%s')"
-                          "   AS user_id,"
-                          "   'host' AS type)"
-                          "  AS opts",
-                          current_credentials.uuid);
-}
-
-/**
- * @brief Initialise an OS iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find os, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
-{
-  int ret;
-  static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = OS_ITERATOR_COLUMNS;
-  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  gchar *extra_tables;
-
-  extra_tables = asset_os_iterator_opts_table ();
-
-  ret = init_get_iterator2_with (iterator,
-                                 "os",
-                                 get,
-                                 /* Columns. */
-                                 columns,
-                                 /* Columns for trashcan. */
-                                 NULL,
-                                 /* WHERE Columns. */
-                                 where_columns,
-                                 /* WHERE Columns for trashcan. */
-                                 NULL,
-                                 filter_columns,
-                                 0,
-                                 extra_tables,
-                                 NULL,
-                                 NULL,
-                                 TRUE,
-                                 FALSE,
-                                 NULL,
-                                 NULL,
-                                 0,
-                                 0);
-
-  g_free (extra_tables);
-
-  return ret;
-}
-
-/**
- * @brief Initialise an OS iterator for GET_RESOURCE_NAMES.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find os, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
-  static column_t columns[] = { GET_ITERATOR_COLUMNS (oss) };
-  int ret;
-
-  ret = init_get_iterator2_with (iterator,
-                                 "os",
-                                 get,
-                                 /* Columns. */
-                                 columns,
-                                 /* Columns for trashcan. */
-                                 NULL,
-                                 /* WHERE Columns. */
-                                 NULL,
-                                 /* WHERE Columns for trashcan. */
-                                 NULL,
-                                 filter_columns,
-                                 0,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 TRUE,
-                                 FALSE,
-                                 NULL,
-                                 NULL,
-                                 0,
-                                 0);
-
-  return ret;
-}
-
-/**
- * @brief Get the title from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The title of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the number of installs from an asset OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Number of hosts that have the OS.
- */
-int
-asset_os_iterator_installs (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-}
-
-/**
- * @brief Get the latest severity from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
- * @brief Get the highest severity from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_highest_severity, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the average severity from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 6);
-
-/**
- * @brief Get the number of all installs from an asset OS iterator.
- *
- * This includes hosts where the OS is not the best match.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Number of any hosts that have the OS not only as the best match.
- */
-int
-asset_os_iterator_all_installs (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -41548,104 +40903,6 @@ asset_os_count (const get_data_t *get)
 
   return ret;
 }
-
-/**
- * @brief Initialise an OS host iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  os          OS.
- */
-void
-init_os_host_iterator (iterator_t* iterator, resource_t os)
-{
-  assert (os);
-  init_iterator (iterator,
-                 "SELECT id, uuid, name, comment, creation_time,"
-                 "       modification_time, creation_time,"
-                 "       modification_time, owner, owner,"
-                 "       (SELECT round (CAST (severity AS numeric), 1)"
-                 "        FROM host_max_severities"
-                 "        WHERE host = hosts.id"
-                 "        ORDER by creation_time DESC"
-                 "        LIMIT 1)"
-                 " FROM hosts"
-                 " WHERE id IN (SELECT DISTINCT host FROM host_oss"
-                 "              WHERE os = %llu)"
-                 " ORDER BY modification_time DESC;",
-                 os);
-}
-
-/**
- * @brief Get the severity from an OS host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS host, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (os_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Initialise an asset host detail iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  host        Host.
- */
-void
-init_host_detail_iterator (iterator_t* iterator, resource_t host)
-{
-  assert (host);
-  init_iterator (iterator,
-                 "SELECT sub.id, name, value, source_type, source_id"
-                 " FROM (SELECT max (id) AS id FROM host_details"
-                 "       WHERE host = %llu"
-                 "       GROUP BY name)"
-                 "      AS sub,"
-                 "      host_details"
-                 " WHERE sub.id = host_details.id"
-                 " ORDER BY name ASC;",
-                 host);
-}
-
-/**
- * @brief Get the name from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_name, 1);
-
-/**
- * @brief Get the name from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_value, 2);
-
-/**
- * @brief Get the source type from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source type of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_source_type, 3);
-
-/**
- * @brief Get the source ID from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source ID of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_source_id, 4);
 
 /**
  * @brief Find a host for a specific permission, given a UUID.
@@ -49257,25 +48514,6 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       success_text = g_strdup_printf ("Optimized: Cleaned up encoding"
                                       " of %d TLS certificate(s).",
                                       changes);
-    }
-  else if (strcasecmp (name, "migrate-relay-sensors") == 0)
-    {
-      if (get_relay_mapper_path ())
-        {
-          sql_begin_immediate ();
-
-          success_text = manage_migrate_relay_sensors ();
-
-          sql_commit ();
-        }
-      else
-        {
-          fprintf (stderr,
-                   "No relay mapper found."
-                   " Please check your --relay-mapper option.\n");
-          success_text = NULL;
-          ret = -1;
-        }
     }
   else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
     {

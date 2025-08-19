@@ -60,9 +60,6 @@ typedef struct {
 void
 agent_installer_cpe_data_free (agent_installer_cpe_data_t *);
 
-int
-delete_agent_installer (const char*, int);
-
 FILE *
 open_agent_installer_file (const char *, gchar **);
 
@@ -92,21 +89,20 @@ void
 manage_sync_agent_installers ();
 
 int
-create_agent_installer_from_data (agent_installer_data_t *agent_installer_data);
+create_agent_installer_from_data (agent_installer_data_t *);
 
 int
 update_agent_installer_from_data (agent_installer_t,
-                                  gboolean,
-                                  agent_installer_data_t *agent_installer_data);
+                                  agent_installer_data_t *);
 
 int
 agent_installer_count (const get_data_t *get);
 
 agent_installer_t
-agent_installer_by_uuid (const char *, int);
+agent_installer_by_uuid (const char *);
 
 time_t
-agent_installer_modification_time (agent_installer_t, int);
+agent_installer_modification_time (agent_installer_t);
 
 int
 init_agent_installer_iterator (iterator_t*, get_data_t*);

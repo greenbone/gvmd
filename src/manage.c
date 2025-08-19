@@ -219,11 +219,6 @@ static int min_mem_feed_update = 0;
 static gchar *relay_mapper_path = NULL;
 
 /**
- * @brief Whether to migrate sensors if relays do not match.
- */
-static int relay_migrate_sensors = 0;
-
-/**
  * @brief Number of minutes before overdue tasks timeout.
  */
 static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
@@ -2337,28 +2332,6 @@ set_relay_mapper_path (const char *new_path)
 {
   g_free (relay_mapper_path);
   relay_mapper_path = new_path ? g_strdup (new_path) : NULL;
-}
-
-/**
- * @brief Gets whether to migrate sensors if relays do not match.
- *
- * @return Whether to migrate sensors if relays do not match.
- */
-int
-get_relay_migrate_sensors ()
-{
-  return relay_migrate_sensors;
-}
-
-/**
- * @brief Sets whether to migrate sensors if relays do not match.
- *
- * @param[in]  new_value  The new value.
- */
-void
-set_relay_migrate_sensors (int new_value)
-{
-  relay_migrate_sensors = new_value;
 }
 
 /**
@@ -7040,10 +7013,6 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
-#if ENABLE_AGENTS
-  if (strcasecmp (type, "agent_installer") == 0)
-    return delete_agent_installer (resource_id, ultimate);
-#endif /* ENABLE_AGENTS */
 #if ENABLE_CONTAINER_SCANNING
   if (strcasecmp (type, "oci_image_target") == 0)
     return delete_oci_image_target (resource_id, ultimate);

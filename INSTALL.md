@@ -424,13 +424,6 @@ supported values for `<name>` are:
   This cleans up TLS certificates where the subject or issuer DN is not
   valid UTF-8.
 
-- `migrate-relay-sensors`
-
-  If relays are active, this can be used to make sure all sensor type
-  scanners have a matching relay, i.e. OSP sensors have an OSP relay
-  and GMP scanners have a GMP relay.
-  GMP scanners are migrated to OSP sensors if an OSP relay is available.
-
 - `rebuild-report-cache`
 
   This clears the cache containing the unfiltered result counts of all reports
