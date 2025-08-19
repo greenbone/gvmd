@@ -1092,15 +1092,6 @@ insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *);
 
 void
-hosts_set_identifiers (report_t);
-
-void
-hosts_set_max_severity (report_t, int*, int*);
-
-void
-hosts_set_details (report_t report);
-
-void
 clear_duration_schedules (task_t);
 
 void
