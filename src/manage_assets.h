@@ -129,4 +129,7 @@ asset_iterator_writable (iterator_t *);
 int
 asset_iterator_in_use (iterator_t *);
 
+int
+modify_asset (const char *, const char *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

@@ -1541,3 +1541,73 @@ asset_iterator_in_use (iterator_t* iterator)
   if (iterator->done) return 0;
   return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
 }
+
+/**
+ * @brief Modify an asset.
+ *
+ * @param[in]   asset_id        UUID of asset.
+ * @param[in]   comment         Comment on asset.
+ *
+ * @return 0 success, 1 failed to find asset, 3 asset_id required,
+ *         99 permission denied, -1 internal error.
+ */
+int
+modify_asset (const char *asset_id, const char *comment)
+{
+  gchar *quoted_asset_id, *quoted_comment;
+  resource_t asset;
+
+  if (asset_id == NULL)
+    return 3;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("modify_asset") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  /* Host. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM hosts WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql_rollback ();
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  quoted_comment = sql_quote (comment ?: "");
+
+  sql ("UPDATE hosts SET"
+       " comment = '%s',"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_comment, asset);
+
+  g_free (quoted_comment);
+
+  sql_commit ();
+
+  return 0;
+}
