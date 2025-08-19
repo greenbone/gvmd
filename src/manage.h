@@ -2304,9 +2304,6 @@ int
 total_asset_count (const get_data_t *);
 
 int
-modify_asset (const char *, const char *);
-
-int
 delete_asset (const char *, const char *, int);
 
 int
