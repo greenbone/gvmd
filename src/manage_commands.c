@@ -53,7 +53,6 @@ command_t gmp_commands[]
 #if ENABLE_AGENTS
     {"DELETE_AGENT_GROUP", "Delete an agent group."},
     {"DELETE_AGENTS", "Delete one or more agents."},
-    {"DELETE_AGENT_INSTALLER", "Delete an agent installer."},
 #endif /* ENABLE_AGENTS */
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},

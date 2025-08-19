@@ -1090,3 +1090,454 @@ DEF_ACCESS (host_identifier_iterator_os_id,
  */
 DEF_ACCESS (host_identifier_iterator_os_title,
             GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Extra WHERE clause for host assets.
+ *
+ * @param[in]  filter  Filter term.
+ *
+ * @return WHERE clause.
+ */
+gchar*
+asset_host_extra_where (const char *filter)
+{
+  gchar *ret, *os_id;
+
+  os_id = filter_term_value (filter, "os_id");
+
+  if (os_id)
+    {
+      gchar *quoted_os_id = os_id ? sql_quote (os_id) : NULL;
+      ret = g_strdup_printf (" AND EXISTS"
+                             "  (SELECT * FROM host_oss"
+                             "   WHERE os = (SELECT id FROM oss"
+                             "                WHERE uuid = '%s')"
+                             "     AND host = hosts.id)",
+                             quoted_os_id);
+      g_free (quoted_os_id);
+    }
+  else
+    ret = g_strdup ("");
+
+  g_free (os_id);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise a host iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
+
+  int ret;
+  gchar *filter, *extra_where;
+
+  // Get filter
+  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        {
+          return 1;
+        }
+    }
+  else
+    filter = NULL;
+
+  extra_where = asset_host_extra_where (filter ? filter : get->filter);
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            where_columns,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            extra_where,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
+  g_free (filter);
+  g_free (extra_where);
+  return ret;
+}
+
+/**
+ * @brief Get the max severity from an asset host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum severity of the host, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Generate the extra_tables string for an OS iterator.
+ *
+ * @return Newly allocated string.
+ */
+gchar *
+asset_os_iterator_opts_table ()
+{
+  assert (current_credentials.uuid);
+
+  return g_strdup_printf (", (SELECT"
+                          "   (SELECT id FROM users"
+                          "    WHERE users.uuid = '%s')"
+                          "   AS user_id,"
+                          "   'host' AS type)"
+                          "  AS opts",
+                          current_credentials.uuid);
+}
+
+/**
+ * @brief Initialise an OS iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
+{
+  int ret;
+  static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OS_ITERATOR_COLUMNS;
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  gchar *extra_tables;
+
+  extra_tables = asset_os_iterator_opts_table ();
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 where_columns,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 extra_tables,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 0);
+
+  g_free (extra_tables);
+
+  return ret;
+}
+
+/**
+ * @brief Get the title from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The title of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the number of installs from an asset OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of hosts that have the OS.
+ */
+int
+asset_os_iterator_installs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
+ * @brief Get the latest severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the highest severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_highest_severity, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the average severity from an OS iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS, or NULL if iteration is
+ *         complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the number of all installs from an asset OS iterator.
+ *
+ * This includes hosts where the OS is not the best match.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Number of any hosts that have the OS not only as the best match.
+ */
+int
+asset_os_iterator_all_installs (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+}
+
+/**
+ * @brief Initialise an asset host detail iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  host        Host.
+ */
+void
+init_host_detail_iterator (iterator_t* iterator, resource_t host)
+{
+  assert (host);
+  init_iterator (iterator,
+                 "SELECT sub.id, name, value, source_type, source_id"
+                 " FROM (SELECT max (id) AS id FROM host_details"
+                 "       WHERE host = %llu"
+                 "       GROUP BY name)"
+                 "      AS sub,"
+                 "      host_details"
+                 " WHERE sub.id = host_details.id"
+                 " ORDER BY name ASC;",
+                 host);
+}
+
+/**
+ * @brief Get the name from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_name, 1);
+
+/**
+ * @brief Get the name from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_value, 2);
+
+/**
+ * @brief Get the source type from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source type of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_source_type, 3);
+
+/**
+ * @brief Get the source ID from an asset host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The source ID of the host detail, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (host_detail_iterator_source_id, 4);
+
+/**
+ * @brief Initialise an OS host iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  os          OS.
+ */
+void
+init_os_host_iterator (iterator_t* iterator, resource_t os)
+{
+  assert (os);
+  init_iterator (iterator,
+                 "SELECT id, uuid, name, comment, creation_time,"
+                 "       modification_time, creation_time,"
+                 "       modification_time, owner, owner,"
+                 "       (SELECT round (CAST (severity AS numeric), 1)"
+                 "        FROM host_max_severities"
+                 "        WHERE host = hosts.id"
+                 "        ORDER by creation_time DESC"
+                 "        LIMIT 1)"
+                 " FROM hosts"
+                 " WHERE id IN (SELECT DISTINCT host FROM host_oss"
+                 "              WHERE os = %llu)"
+                 " ORDER BY modification_time DESC;",
+                 os);
+}
+
+/**
+ * @brief Get the severity from an OS host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the OS host, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (os_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Initialise a host iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find host, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (hosts) };
+  int ret;
+
+  ret = init_get_iterator2 (iterator,
+                            "host",
+                            get,
+                            /* Columns. */
+                            columns,
+                            /* Columns for trashcan. */
+                            NULL,
+                            /* WHERE Columns. */
+                            NULL,
+                            /* WHERE Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL,
+                            TRUE,
+                            FALSE,
+                            NULL);
+
+  return ret;
+}
+
+/**
+ * @brief Initialise an OS iterator for GET_RESOURCE_NAMES.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find os, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
+  static column_t columns[] = { GET_ITERATOR_COLUMNS (oss) };
+  int ret;
+
+  ret = init_get_iterator2_with (iterator,
+                                 "os",
+                                 get,
+                                 /* Columns. */
+                                 columns,
+                                 /* Columns for trashcan. */
+                                 NULL,
+                                 /* WHERE Columns. */
+                                 NULL,
+                                 /* WHERE Columns for trashcan. */
+                                 NULL,
+                                 filter_columns,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 TRUE,
+                                 FALSE,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 0);
+
+  return ret;
+}
+
+/**
+ * @brief Get the writable status from an asset iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if writable, else 0.
+ */
+int
+asset_iterator_writable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT);
+}
+
+/**
+ * @brief Get the "in use" status from an asset iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+asset_iterator_in_use (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+}

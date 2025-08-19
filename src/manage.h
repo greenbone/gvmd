@@ -60,6 +60,10 @@
 #include "manage_agents.h"
 #endif
 
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_oci_image_targets.h"
+#endif
+
 /**
  * @brief OID of ping_host.nasl
  */
@@ -341,7 +345,8 @@ typedef enum scanner_type
   SCANNER_TYPE_AGENT_CONTROLLER = 7,
   SCANNER_TYPE_OPENVASD_SENSOR = 8,
   SCANNER_TYPE_AGENT_CONTROLLER_SENSOR = 9,
-  SCANNER_TYPE_MAX = 10,
+  SCANNER_TYPE_CONTAINER_IMAGE = 10,
+  SCANNER_TYPE_MAX = 11,
 } scanner_type_t;
 
 int
@@ -621,6 +626,19 @@ int
 set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
                                const gchar *schedule_periods);
 
+#if ENABLE_CONTAINER_SCANNING
+
+oci_image_target_t
+task_oci_image_target (task_t);
+
+int
+task_oci_image_target_in_trash (task_t);
+
+void
+set_task_oci_image_target (task_t, oci_image_target_t);
+
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 void
 set_task_hosts_ordering (task_t, const char *);
 
@@ -793,7 +811,8 @@ int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *,
-             array_t *, const gchar *, const gchar *, gchar **, gchar **);
+             array_t *, const gchar *, const gchar *, const gchar *,
+             gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);
@@ -2276,73 +2295,13 @@ host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
 int
-init_asset_host_iterator (iterator_t *, const get_data_t *);
-
-int
-init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get);
-
-int
-asset_iterator_writable (iterator_t *);
-
-int
-asset_iterator_in_use (iterator_t *);
-
-const char*
-asset_host_iterator_severity (iterator_t *);
-
-int
 asset_host_count (const get_data_t *);
-
-int
-init_asset_os_iterator (iterator_t *, const get_data_t *);
-
-int
-init_resource_names_os_iterator (iterator_t *, get_data_t *);
-
-const char*
-asset_os_iterator_title (iterator_t *);
-
-int
-asset_os_iterator_installs (iterator_t *);
-
-const char*
-asset_os_iterator_latest_severity (iterator_t *);
-
-const char*
-asset_os_iterator_highest_severity (iterator_t *);
-
-const char*
-asset_os_iterator_average_severity (iterator_t *);
-
-int
-asset_os_iterator_all_installs (iterator_t *);
 
 int
 asset_os_count (const get_data_t *);
 
 int
 total_asset_count (const get_data_t *);
-
-void
-init_os_host_iterator (iterator_t *, resource_t);
-
-const char*
-os_host_iterator_severity (iterator_t *);
-
-void
-init_host_detail_iterator (iterator_t *, resource_t);
-
-const char*
-host_detail_iterator_name (iterator_t *);
-
-const char*
-host_detail_iterator_value (iterator_t *);
-
-const char*
-host_detail_iterator_source_type (iterator_t *);
-
-const char*
-host_detail_iterator_source_id (iterator_t *);
 
 int
 modify_asset (const char *, const char *);

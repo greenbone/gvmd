@@ -19,6 +19,8 @@
 #ifndef _GVMD_MANAGE_ASSETS_H
 #define _GVMD_MANAGE_ASSETS_H
 
+#include "manage_get.h"
+
 char*
 host_uuid (resource_t);
 
@@ -66,5 +68,65 @@ host_identifier_iterator_os_id (iterator_t *);
 
 const char*
 host_identifier_iterator_os_title (iterator_t *);
+
+int
+init_asset_host_iterator (iterator_t *, const get_data_t *);
+
+const char *
+asset_host_iterator_severity (iterator_t *);
+
+int
+init_asset_os_iterator (iterator_t *, const get_data_t *);
+
+const char*
+asset_os_iterator_title (iterator_t *);
+
+int
+asset_os_iterator_installs (iterator_t *);
+
+const char*
+asset_os_iterator_latest_severity (iterator_t *);
+
+const char*
+asset_os_iterator_highest_severity (iterator_t *);
+
+const char*
+asset_os_iterator_average_severity (iterator_t *);
+
+int
+asset_os_iterator_all_installs (iterator_t *);
+
+void
+init_host_detail_iterator (iterator_t *, resource_t);
+
+const char*
+host_detail_iterator_name (iterator_t *);
+
+const char*
+host_detail_iterator_value (iterator_t *);
+
+const char*
+host_detail_iterator_source_type (iterator_t *);
+
+const char*
+host_detail_iterator_source_id (iterator_t *);
+
+void
+init_os_host_iterator (iterator_t *, resource_t);
+
+const char*
+os_host_iterator_severity (iterator_t *);
+
+int
+init_resource_names_host_iterator (iterator_t *, get_data_t *);
+
+int
+init_resource_names_os_iterator (iterator_t *, get_data_t *);
+
+int
+asset_iterator_writable (iterator_t *);
+
+int
+asset_iterator_in_use (iterator_t *);
 
 #endif /* not _GVMD_MANAGE_ASSETS_H */
