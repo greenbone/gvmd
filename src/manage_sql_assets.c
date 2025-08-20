@@ -1928,3 +1928,20 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
   sql_rollback ();
   return 2;
 }
+
+/**
+ * @brief Tests if a report host is marked as dead.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return 1 if the host is marked as dead, 0 otherwise.
+ */
+int
+report_host_dead (report_host_t report_host)
+{
+  return sql_int ("SELECT count(*) != 0 FROM report_host_details"
+                  " WHERE report_host = %llu"
+                  "   AND name = 'Host dead'"
+                  "   AND value != '0';",
+                  report_host);
+}

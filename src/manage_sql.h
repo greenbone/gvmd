@@ -209,9 +209,6 @@ gchar *
 report_host_best_os_txt (report_host_t);
 
 int
-report_host_dead (report_host_t);
-
-int
 report_host_result_count (report_host_t);
 
 void

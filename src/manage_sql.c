@@ -40705,23 +40705,6 @@ manage_empty_trashcan ()
  */
 
 /**
- * @brief Tests if a report host is marked as dead.
- *
- * @param[in]  report_host  Report host.
- *
- * @return 1 if the host is marked as dead, 0 otherwise.
- */
-int
-report_host_dead (report_host_t report_host)
-{
-  return sql_int ("SELECT count(*) != 0 FROM report_host_details"
-                  " WHERE report_host = %llu"
-                  "   AND name = 'Host dead'"
-                  "   AND value != '0';",
-                  report_host);
-}
-
-/**
  * @brief Counts.
  *
  * @param[in]  report_host  Report host.
