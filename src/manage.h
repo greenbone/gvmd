@@ -3362,9 +3362,6 @@ manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
 int
 manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
 
-int
-report_host_noticeable (report_t, const gchar *);
-
 gchar*
 host_routes_xml (host_t);
 

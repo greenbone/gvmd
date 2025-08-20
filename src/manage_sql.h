@@ -196,18 +196,6 @@ host_nthlast_report_host (const char *, report_host_t *, int);
 report_host_t
 host_iterator_report_host (iterator_t *);
 
-char *
-report_host_ip (const char *);
-
-gchar *
-report_host_hostname (report_host_t);
-
-gchar *
-report_host_best_os_cpe (report_host_t);
-
-gchar *
-report_host_best_os_txt (report_host_t);
-
 int
 report_host_result_count (report_host_t);
 
