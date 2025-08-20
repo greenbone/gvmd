@@ -40600,23 +40600,6 @@ manage_empty_trashcan ()
  */
 
 /**
- * @brief Counts.
- *
- * @param[in]  report_host  Report host.
- *
- * @return 1 if the host is marked as dead, 0 otherwise.
- */
-int
-report_host_result_count (report_host_t report_host)
-{
-  return sql_int ("SELECT count(*) FROM report_hosts, results"
-                  " WHERE report_hosts.id = %llu"
-                  "   AND results.report = report_hosts.report"
-                  "   AND report_hosts.host = results.host;",
-                  report_host);
-}
-
-/**
  * @brief Get XML of a detailed host route.
  *
  * @param[in]  host  The host.
