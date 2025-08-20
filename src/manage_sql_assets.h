@@ -275,9 +275,6 @@ result_host_asset_id (const char *, result_t);
 int
 manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
 
-int
-report_host_dead (report_host_t);
-
 char *
 report_host_ip (const char *);
 
