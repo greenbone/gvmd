@@ -196,9 +196,6 @@ host_nthlast_report_host (const char *, report_host_t *, int);
 report_host_t
 host_iterator_report_host (iterator_t *);
 
-int
-report_host_result_count (report_host_t);
-
 void
 init_report_host_details_iterator (iterator_t *, report_host_t);
 
