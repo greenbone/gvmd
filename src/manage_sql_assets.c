@@ -27,6 +27,9 @@
 #include <gvm/base/hosts.h>
 #include <gvm/util/xmlutils.h>
 
+static int
+report_host_dead (report_host_t);
+
 /**
  * @brief Return the UUID of the asset associated with a result host.
  *
@@ -1954,7 +1957,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
  *
  * @return 1 if the host is marked as dead, 0 otherwise.
  */
-int
+static int
 report_host_dead (report_host_t report_host)
 {
   return sql_int ("SELECT count(*) != 0 FROM report_host_details"
