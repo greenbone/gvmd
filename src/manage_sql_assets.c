@@ -27,6 +27,13 @@
 #include <gvm/base/hosts.h>
 #include <gvm/util/xmlutils.h>
 
+/**
+ * @file
+ * @brief GVM management layer: Asset SQL
+ *
+ * The Asset SQL for the GVM management layer.
+ */
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
