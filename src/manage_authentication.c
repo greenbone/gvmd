@@ -22,6 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 // prefer stack rather than heap so that we use the defaults on usage failure
 // rather than having to check and fail.
 struct PBASettings settings = {{0}, COUNT_DEFAULT, PREFIX_DEFAULT};

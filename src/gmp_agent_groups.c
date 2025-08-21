@@ -17,7 +17,7 @@
 /**
  * @brief GLib log domain.
  */
-#define G_LOG_DOMAIN "md gmp"
+#define G_LOG_DOMAIN "md    gmp"
 
 /* GET_AGENT_GROUPS */
 

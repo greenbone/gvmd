@@ -16,6 +16,13 @@
 #include "manage_commands.h"
 #include "manage_resources.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 /**
  * @brief The GMP command list.
  */

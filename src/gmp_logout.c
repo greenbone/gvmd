@@ -26,6 +26,12 @@
 #include "gmp_logout.h"
 #include "manage.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
+
 /**
  * @brief The logout command.
  */

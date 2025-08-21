@@ -27,6 +27,12 @@
 #include <stdio.h> /* for snprintf */
 #include <stdlib.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md  utils"
+
 /**
  * @brief Initialize Sentry using the current gvmd version and DSN.
  *
