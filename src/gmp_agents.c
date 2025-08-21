@@ -575,8 +575,10 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
 
   if ((e = entity_child (root, "comment")))
     comment = g_strdup (entity_text (e));
+
+  GPtrArray *errs = NULL;
   agent_response_t response =
-    modify_and_resync_agents (agent_uuids, update, comment);
+    modify_and_resync_agents (agent_uuids, update, comment, &errs);
 
   switch (response)
     {
@@ -648,11 +650,32 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         "Synchronization of Agents in Agent-Controller failed"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
+    case AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED:
+      gchar *status_text = concat_error_messages (errs, "; ");
+      if (!status_text)
+        status_text = g_markup_escape_text ("Validation failed for <config>.", -1);
+
+      gchar *xml = g_markup_printf_escaped(
+        "<modify_agents_response status=\""
+        STATUS_ERROR_SYNTAX
+        "\" status_text=\"%s\"/>",
+        status_text ? status_text : "Validation failed for <config>."
+      );
+
+      if (send_to_client(xml, gmp_parser->client_writer, gmp_parser->client_writer_data))
+        error_send_to_client(error);
+
+      g_free(xml);
+      g_free(status_text);
+      if (errs) g_ptr_array_free(errs, TRUE);
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
     case AGENT_RESPONSE_INTERNAL_ERROR:
       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
+
     case AGENT_RESPONSE_IN_USE_ERROR:
     default:
       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));

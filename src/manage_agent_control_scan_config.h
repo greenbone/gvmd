@@ -18,11 +18,12 @@
 #include "manage_agent_common.h"
 
 agent_controller_scan_agent_config_t
-get_agent_control_scan_config (scanner_t scanner);
+get_agent_control_scan_config(scanner_t scanner);
 
 int
-modify_agent_control_scan_config (scanner_t scanner,
-                                  agent_controller_scan_agent_config_t);
+modify_agent_control_scan_config(scanner_t scanner,
+                                 agent_controller_scan_agent_config_t cfg,
+                                 GPtrArray** errors);
 
 #endif //_GVMD_MANAGE_AGENT_SCAN_CONFIG_H
 #endif // ENABLE_AGENTS

@@ -662,7 +662,8 @@ get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
 agent_response_t
 modify_and_resync_agents (agent_uuid_list_t agent_uuids,
                           agent_controller_agent_update_t agent_update,
-                          const gchar *comment)
+                          const gchar *comment,
+                          GPtrArray **errors)
 {
   scanner_t scanner = 0;
   agent_controller_agent_list_t agent_control_list = NULL;
@@ -698,7 +699,16 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
     }
 
   int update_result = agent_controller_update_agents (
-    connector->base, agent_control_list, agent_update);
+  connector->base, agent_control_list, agent_update, errors);
+
+  if (update_result < 0 && errors && *errors && (*errors)->len > 0)
+    {
+      g_warning ("%s: agent_controller_update_agents rejected", __func__);
+      agent_controller_agent_list_free (agent_control_list);
+      gvmd_agent_connector_free (connector);
+      manage_option_cleanup ();
+      return AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED;
+    }
 
   if (update_result < 0)
     {
