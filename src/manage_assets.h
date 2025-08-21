@@ -135,4 +135,10 @@ modify_asset (const char *, const char *);
 int
 delete_asset (const char *, const char *, int);
 
+int
+asset_host_count (const get_data_t *);
+
+int
+asset_os_count (const get_data_t *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

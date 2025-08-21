@@ -390,6 +390,11 @@ count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
 
 int
+count2 (const char *, const get_data_t *, column_t *, column_t *, column_t *,
+        column_t *, const char **, int, const char *, const char *,
+        const char *, int);
+
+int
 init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,
                    column_t *, const char **, int, const char *, const char *,
                    int);
