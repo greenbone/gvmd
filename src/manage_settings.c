@@ -13,6 +13,13 @@
 #include <assert.h>
 #include "manage_settings.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 /**
  * @brief Internal function for getting a setting value as a string.
  *

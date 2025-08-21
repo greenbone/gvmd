@@ -27,6 +27,13 @@
 #include <gvm/base/hosts.h>
 #include <gvm/util/xmlutils.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 static int
 report_host_dead (report_host_t);
 

@@ -34,6 +34,13 @@
 
 #include <string.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 /**
  * @brief Extract data from a SSLDetails:[...] host detail value
  *

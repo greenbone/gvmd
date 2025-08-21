@@ -18,7 +18,7 @@
 #include "manage.h"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "md gmp"
+#define G_LOG_DOMAIN "md    gmp"
 
 /* GET_AGENTS. */
 
