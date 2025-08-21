@@ -260,7 +260,8 @@ modify_agent_control_scan_config_run (gmp_parser_t *gmp_parser, GError **error)
           atoi (entity_text (e) ? entity_text (e) : "0");
     }
 
-  int rc = modify_agent_control_scan_config (scanner, cfg);
+  GPtrArray *errs = NULL;
+  int rc = modify_agent_control_scan_config (scanner, cfg, &errs);
 
   switch (rc)
     {
@@ -293,7 +294,30 @@ modify_agent_control_scan_config_run (gmp_parser_t *gmp_parser, GError **error)
       return;
 
     case -3:
-      /* Controller update rejected/failed (validation/comm error) */
+      gchar *status_text = concat_error_messages (errs, "; ");
+      if (!status_text)
+        status_text = g_markup_escape_text ("Validation failed for <config>.", -1);
+
+      gchar *xml = g_markup_printf_escaped(
+        "<modify_agent_control_scan_config_response status=\""
+        STATUS_ERROR_SYNTAX
+        "\" status_text=\"%s\"/>",
+        status_text ? status_text : "Validation failed for <config>."
+      );
+
+      if (send_to_client(xml, gmp_parser->client_writer, gmp_parser->client_writer_data))
+        error_send_to_client(error);
+
+      g_free(xml);
+      g_free(status_text);
+      if (errs)
+        g_ptr_array_free(errs, TRUE);
+      log_event_fail("agent_control_scan_config", "Agent Control Scan Config",
+                     scanner_uuid, "modified");
+      modify_agent_control_scan_config_reset ();
+      return;
+
+    case -4:
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_UNAVAILABLE ("modify_agent_control_scan_config",
           "Agent-Controller update failed"));

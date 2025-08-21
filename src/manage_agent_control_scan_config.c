@@ -65,33 +65,59 @@ get_agent_control_scan_config (scanner_t scanner)
  *  -1   invalid arguments (either @p scanner == 0 or @p cfg == NULL).
  *  -2   failed to create a connector for @p scanner
  *       (e.g., scanner not found/misconfigured).
- *  -3   Agent Controller update failed (error propagated from
- *       agent_controller_update_scan_agent_config(), e.g., validation or
+ *  -3   Agent Controller update rejected with validation (error propagated from
+ *       agent_controller_update_scan_agent_config(), e.g., validation).
+ *  -4   Agent Controller update failed (error propagated from
+ *       agent_controller_update_scan_agent_config(),
  *       communication failure).
  */
 int
 modify_agent_control_scan_config (scanner_t scanner,
-                                  agent_controller_scan_agent_config_t cfg)
+                                  agent_controller_scan_agent_config_t cfg,
+                                  GPtrArray **errors)
 {
+  int ret = 0;
   gvmd_agent_connector_t connector = NULL;
-  int res = 0;
-  if (!cfg || !scanner)
+
+  /* Avoid returning stale error arrays from previous calls */
+  if (errors)
+    *errors = NULL;
+
+  if (!scanner || !cfg)
     return -1;
 
   connector = gvmd_agent_connector_new_from_scanner (scanner);
   if (!connector)
-    return -2;
-
-  res = agent_controller_update_scan_agent_config (connector->base, cfg);
-  if (res == -1)
     {
-      g_warning ("%s: Failed to update scan agent config", __func__);
-      res = -3;
+      ret = -2;
+      goto cleanup;
     }
 
-  gvmd_agent_connector_free (connector);
-  agent_controller_scan_agent_config_free (cfg);
-  return res;
-}
+  int rc = agent_controller_update_scan_agent_config (
+    connector->base, cfg, errors);
 
+  if (rc == AGENT_RESP_OK)
+    {
+      ret = 0;
+    }
+  else if (errors && *errors && (*errors)->len > 0)
+    {
+      g_warning ("%s: Agent Controller rejected scan-agent-config update",
+                 __func__);
+      ret = -3;
+    }
+  else
+    {
+      g_warning ("%s: Agent Controller update failed (no details)", __func__);
+      ret = -4;
+    }
+
+cleanup:
+  if (connector)
+    gvmd_agent_connector_free (connector);
+
+  agent_controller_scan_agent_config_free (cfg);
+
+  return ret;
+}
 #endif // ENABLE_AGENTS
