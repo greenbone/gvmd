@@ -9384,16 +9384,6 @@ END:VCALENDAR
             <summary>Whether the agent is authorized (1) or not (0)</summary>
           </column>
           <column>
-            <name>min_interval</name>
-            <type>integer</type>
-            <summary>Minimum interval between scans (in seconds)</summary>
-          </column>
-          <column>
-            <name>heartbeat_interval</name>
-            <type>integer</type>
-            <summary>Interval for agent heartbeat (in seconds)</summary>
-          </column>
-          <column>
             <name>connection_status</name>
             <type>text</type>
             <summary>Status of agent connection</summary>
@@ -9404,9 +9394,9 @@ END:VCALENDAR
             <summary>Last time the agent was updated</summary>
           </column>
           <column>
-            <name>config</name>
-            <type>text</type>
-            <summary>Agent scan config</summary>
+            <name>last_updater_heartbeat</name>
+            <type>iso_time</type>
+            <summary>Last heartbeat timestamp received from updater</summary>
           </column>
           <column>
             <name>updater_version</name>
@@ -9503,10 +9493,9 @@ END:VCALENDAR
           <e>hostname</e>
           <e>agent_id</e>
           <e>authorized</e>
-          <e>min_interval</e>
-          <e>heartbeat_interval</e>
           <e>connection_status</e>
           <e>last_update</e>
+          <e>last_updater_heartbeat</e>
           <e>schedule</e>
           <e>scanner</e>
           <any><e>ip</e></any>
@@ -9515,6 +9504,7 @@ END:VCALENDAR
           <e>operating_system</e>
           <e>architecture</e>
           <e>update_to_latest</e>
+          <e>config</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -9586,16 +9576,6 @@ END:VCALENDAR
           <pattern><type>integer</type></pattern>
         </ele>
         <ele>
-          <name>min_interval</name>
-          <summary>Minimum interval in seconds</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-        <ele>
-          <name>heartbeat_interval</name>
-          <summary>Heartbeat interval in seconds</summary>
-          <pattern><type>integer</type></pattern>
-        </ele>
-        <ele>
           <name>connection_status</name>
           <summary>Connection status of the agent</summary>
           <pattern><type>text</type></pattern>
@@ -9603,6 +9583,11 @@ END:VCALENDAR
         <ele>
           <name>last_update</name>
           <summary>Timestamp of last update</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>last_updater_heartbeat</name>
+          <summary>Timestamp of last heartbeat received from updater</summary>
           <pattern><type>iso_time</type></pattern>
         </ele>
         <ele>
@@ -9655,6 +9640,91 @@ END:VCALENDAR
           <name>update_to_latest</name>
           <summary>Flag to update to latest version (1/0)</summary>
           <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>config</name>
+          <summary>Structured agent-controller scan configuration</summary>
+          <pattern>
+            <e>agent_control</e>
+            <e>agent_script_executor</e>
+            <e>heartbeat</e>
+          </pattern>
+          <ele>
+            <name>agent_control</name>
+            <pattern><e>retry</e></pattern>
+            <ele>
+              <name>retry</name>
+              <pattern>
+                <e>attempts</e>
+                <e>delay_in_seconds</e>
+                <e>max_jitter_in_seconds</e>
+              </pattern>
+              <ele>
+                <name>attempts</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>delay_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>max_jitter_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>agent_script_executor</name>
+            <pattern>
+              <e>bulk_size</e>
+              <e>bulk_throttle_time_in_ms</e>
+              <e>indexer_dir_depth</e>
+              <e>period_in_seconds</e>
+              <any><e>scheduler_cron_time</e></any>
+            </pattern>
+            <ele>
+              <name>bulk_size</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>bulk_throttle_time_in_ms</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>indexer_dir_depth</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>period_in_seconds</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>scheduler_cron_time</name>
+              <pattern><any><e>cron</e></any></pattern>
+              <ele>
+                <name>cron</name>
+                <summary>A cron expression defining execution schedule</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>heartbeat</name>
+            <pattern>
+              <e>interval_in_seconds</e>
+              <e>miss_until_inactive</e>
+            </pattern>
+            <ele>
+              <name>interval_in_seconds</name>
+              <summary>Expected heartbeat interval from the updater/agent</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>miss_until_inactive</name>
+              <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -9772,10 +9842,9 @@ END:VCALENDAR
             <hostname>GAT-29</hostname>
             <agent_id>GAT-29-p0MPX0FT</agent_id>
             <authorized>1</authorized>
-            <min_interval>2000</min_interval>
-            <heartbeat_interval>0</heartbeat_interval>
             <connection_status>inactive</connection_status>
             <last_update>2025-05-23T08:25:17Z</last_update>
+            <last_updater_heartbeat>2025-05-23T08:24:59Z</last_updater_heartbeat>
             <schedule>@every 8h</schedule>
             <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
               <name>Agent Controller</name>
@@ -9790,6 +9859,29 @@ END:VCALENDAR
             <operating_system>Linux</operating_system>
             <architecture>amd64</architecture>
             <update_to_latest>0</update_to_latest>
+            <config>
+              <agent_control>
+                <retry>
+                  <attempts>3</attempts>
+                  <delay_in_seconds>10</delay_in_seconds>
+                  <max_jitter_in_seconds>5</max_jitter_in_seconds>
+                </retry>
+              </agent_control>
+              <agent_script_executor>
+                <bulk_size>50</bulk_size>
+                <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
+                <indexer_dir_depth>3</indexer_dir_depth>
+                <period_in_seconds>3600</period_in_seconds>
+                <scheduler_cron_time>
+                  <cron>@every 8h</cron>
+                  <cron>0 0 * * *</cron>
+                </scheduler_cron_time>
+              </agent_script_executor>
+              <heartbeat>
+                <interval_in_seconds>600</interval_in_seconds>
+                <miss_until_inactive>1</miss_until_inactive>
+              </heartbeat>
+            </config>
           </agent>
           <filters id="">
             <term>first=1 rows=10 sort=name</term>
@@ -22723,6 +22815,9 @@ END:VCALENDAR
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
           <o><e>info</e></o>
+        @IF_ENABLE_AGENTS@
+          <o><e>agent_control_config</e></o>
+        @ENDIF_ENABLE_AGENTS@
         </pattern>
         <ele>
           <name>owner</name>
@@ -23046,6 +23141,93 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
+      @IF_ENABLE_AGENTS@
+        <ele>
+          <name>agent_control_config</name>
+          <summary>Structured agent-controller scan configuration</summary>
+          <pattern>
+            <e>agent_control</e>
+            <e>agent_script_executor</e>
+            <e>heartbeat</e>
+          </pattern>
+          <ele>
+            <name>agent_control</name>
+            <pattern><e>retry</e></pattern>
+            <ele>
+              <name>retry</name>
+              <pattern>
+                <e>attempts</e>
+                <e>delay_in_seconds</e>
+                <e>max_jitter_in_seconds</e>
+              </pattern>
+              <ele>
+                <name>attempts</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>delay_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>max_jitter_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>agent_script_executor</name>
+            <pattern>
+              <e>bulk_size</e>
+              <e>bulk_throttle_time_in_ms</e>
+              <e>indexer_dir_depth</e>
+              <e>period_in_seconds</e>
+              <any><e>scheduler_cron_time</e></any>
+            </pattern>
+            <ele>
+              <name>bulk_size</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>bulk_throttle_time_in_ms</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>indexer_dir_depth</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>period_in_seconds</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>scheduler_cron_time</name>
+              <pattern><any><e>cron</e></any></pattern>
+              <ele>
+                <name>cron</name>
+                <summary>A cron expression defining execution schedule</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>heartbeat</name>
+            <pattern>
+              <e>interval_in_seconds</e>
+              <e>miss_until_inactive</e>
+            </pattern>
+            <ele>
+              <name>interval_in_seconds</name>
+              <summary>Expected heartbeat interval from the updater/agent</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>miss_until_inactive</name>
+              <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+      @ENDIF_ENABLE_AGENTS@
       </ele>
       <ele>
         <name>filters</name>
@@ -23194,6 +23376,60 @@ END:VCALENDAR
         </get_scanners_response>
       </response>
     </example>
+  @IF_ENABLE_AGENTS@
+    <example>
+      <summary>Get full details of a single Agent Control scanner</summary>
+      <request>
+        <get_scanners details='1' scanner_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/>
+      </request>
+      <response>
+        <get_scanners_response status="200" status_text="OK">
+          <scanner id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>Default Scanner</name>
+            <comment></comment>
+            <creation_time>2014-01-01T13:57:25+01:00</creation_time>
+            <modification_time>2014-01-18T12:07:36+01:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <host>localhost</host>
+            <port>9391</port>
+            <type>2</type>
+            <ca_pub>...</ca_pub>
+            <key_pub>...</key_pub>
+            <tasks>
+              <task id="813864a9-d3fd-44b3-8717-972bfb01dfc0">
+                <name>Debian desktops</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </scanner>
+          <truncate>...</truncate>
+          <agent_control_config>
+            <agent_control>
+              <retry>
+                <attempts>5</attempts>
+                <delay_in_seconds>60</delay_in_seconds>
+                <max_jitter_in_seconds>10</max_jitter_in_seconds>
+              </retry>
+            </agent_control>
+            <agent_script_executor>
+              <bulk_size>2</bulk_size>
+              <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
+              <indexer_dir_depth>10</indexer_dir_depth>
+              <period_in_seconds>60</period_in_seconds>
+              <scheduler_cron_time is_list="1">
+                <item>0 23 * * *</item>
+              </scheduler_cron_time>
+            </agent_script_executor>
+            <heartbeat>
+              <interval_in_seconds>600</interval_in_seconds>
+              <miss_until_inactive>1</miss_until_inactive>
+            </heartbeat>
+          </agent_control_config>
+        </get_scanners_response>
+      </response>
+    </example>
+  @ENDIF_ENABLE_AGENTS@
   </command>
   <command>
     <name>get_schedules</name>
@@ -29171,6 +29407,136 @@ END:VCALENDAR
   </command>
   @IF_ENABLE_AGENTS@
   <command>
+    <name>modify_agent_control_scan_config</name>
+    <summary>Modify agents</summary>
+    <description>
+      <p>
+        The client uses the <code>modify_agent_control_scan_config</code> command to update the
+        existing agent control scan agent config.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_control_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>config</e></o>
+    </pattern>
+    <ele>
+      <name>config</name>
+      <summary>Structured agent-controller configuration</summary>
+      <pattern>
+        <o><e>agent_control</e></o>
+        <o><e>agent_script_executor</e></o>
+        <o><e>heartbeat</e></o>
+      </pattern>
+      <ele>
+        <name>agent_control</name>
+        <pattern><e>retry</e></pattern>
+        <ele>
+          <name>retry</name>
+          <pattern>
+            <e>attempts</e>
+            <e>delay_in_seconds</e>
+            <e>max_jitter_in_seconds</e>
+          </pattern>
+          <ele><name>attempts</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>delay_in_seconds</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>max_jitter_in_seconds</name><pattern><type>integer</type></pattern></ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agent_script_executor</name>
+        <pattern>
+          <o><e>bulk_size</e></o>
+          <o><e>bulk_throttle_time_in_ms</e></o>
+          <o><e>indexer_dir_depth</e></o>
+          <o><e>period_in_seconds</e></o>
+          <o><e>scheduler_cron_time</e></o>
+        </pattern>
+        <ele><name>bulk_size</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>bulk_throttle_time_in_ms</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>indexer_dir_depth</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>period_in_seconds</name><pattern><type>integer</type></pattern></ele>
+        <ele>
+          <name>scheduler_cron_time</name>
+          <pattern><any><e>item</e></any></pattern>
+          <ele>
+            <name>item</name>
+            <summary>Cron expression</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>heartbeat</name>
+        <summary>Heartbeat cadence and inactivity threshold</summary>
+        <pattern>
+          <o><e>interval_in_seconds</e></o>
+          <o><e>miss_until_inactive</e></o>
+        </pattern>
+        <ele>
+          <name>interval_in_seconds</name>
+          <summary>Expected updater/agent heartbeat interval</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>miss_until_inactive</name>
+          <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify agents</summary>
+      <request>
+        <modify_agent_control_scan_config agent_control_id="fb6451bf-ec5a-45a8-8bab-5cf4b862e51b">
+          <config>
+            <agent_control>
+              <retry>
+                <attempts>6</attempts>
+                <delay_in_seconds>60</delay_in_seconds>
+                <max_jitter_in_seconds>10</max_jitter_in_seconds>
+              </retry>
+            </agent_control>
+            <agent_script_executor>
+              <bulk_size>2</bulk_size>
+              <bulk_throttle_time_in_ms>300</bulk_throttle_time_in_ms>
+              <indexer_dir_depth>100</indexer_dir_depth>
+              <period_in_seconds>1000</period_in_seconds>
+              <scheduler_cron_time>
+                <item>0 */12 * * *</item>
+              </scheduler_cron_time>
+            </agent_script_executor>
+            <heartbeat>
+              <interval_in_seconds>300</interval_in_seconds>
+              <miss_until_inactive>1</miss_until_inactive>
+            </heartbeat>
+          </config>
+          <comment>example update</comment>
+        </modify_agent_control_scan_config>
+      </request>
+      <response>
+        <modify_agent_control_scan_config_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>modify_agent_group</name>
     <summary>Modify an agent group</summary>
     <description>
@@ -29265,8 +29631,7 @@ END:VCALENDAR
     <pattern>
       <e>agents</e>
       <o><e>authorized</e></o>
-      <o><e>min_interval</e></o>
-      <o><e>heartbeat_interval</e></o>
+      <o><e>config</e></o>
       <o><e>comment</e></o>
     </pattern>
     <ele>
@@ -29293,16 +29658,69 @@ END:VCALENDAR
       <required>0</required>
     </ele>
     <ele>
-      <name>min_interval</name>
-      <summary>Minimum interval between two scans</summary>
-      <pattern><t>integer</t></pattern>
-      <required>0</required>
-    </ele>
-    <ele>
-      <name>heartbeat_interval</name>
-      <summary>Expected heartbeat interval</summary>
-      <pattern><t>integer</t></pattern>
-      <required>0</required>
+      <name>config</name>
+      <summary>Structured agent-controller configuration</summary>
+      <pattern>
+        <o><e>agent_control</e></o>
+        <o><e>agent_script_executor</e></o>
+        <o><e>heartbeat</e></o>
+      </pattern>
+      <ele>
+        <name>agent_control</name>
+        <pattern><e>retry</e></pattern>
+        <ele>
+          <name>retry</name>
+          <pattern>
+            <e>attempts</e>
+            <e>delay_in_seconds</e>
+            <e>max_jitter_in_seconds</e>
+          </pattern>
+          <ele><name>attempts</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>delay_in_seconds</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>max_jitter_in_seconds</name><pattern><type>integer</type></pattern></ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agent_script_executor</name>
+        <pattern>
+          <o><e>bulk_size</e></o>
+          <o><e>bulk_throttle_time_in_ms</e></o>
+          <o><e>indexer_dir_depth</e></o>
+          <o><e>period_in_seconds</e></o>
+          <o><e>scheduler_cron_time</e></o>
+        </pattern>
+        <ele><name>bulk_size</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>bulk_throttle_time_in_ms</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>indexer_dir_depth</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>period_in_seconds</name><pattern><type>integer</type></pattern></ele>
+        <ele>
+          <name>scheduler_cron_time</name>
+          <pattern><any><e>item</e></any></pattern>
+          <ele>
+            <name>item</name>
+            <summary>Cron expression</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>heartbeat</name>
+        <summary>Heartbeat cadence and inactivity threshold</summary>
+        <pattern>
+          <o><e>interval_in_seconds</e></o>
+          <o><e>miss_until_inactive</e></o>
+        </pattern>
+        <ele>
+          <name>interval_in_seconds</name>
+          <summary>Expected updater/agent heartbeat interval</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>miss_until_inactive</name>
+          <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>comment</name>
@@ -29332,8 +29750,28 @@ END:VCALENDAR
             <agent id="fb6451bf-ec5a-45a8-8bab-5cf4b862e51b"/>
           </agents>
           <authorized>1</authorized>
-          <min_interval>1000</min_interval>
-          <heartbeat_interval>0</heartbeat_interval>
+          <config>
+            <agent_control>
+              <retry>
+                <attempts>6</attempts>
+                <delay_in_seconds>60</delay_in_seconds>
+                <max_jitter_in_seconds>10</max_jitter_in_seconds>
+              </retry>
+            </agent_control>
+            <agent_script_executor>
+              <bulk_size>2</bulk_size>
+              <bulk_throttle_time_in_ms>300</bulk_throttle_time_in_ms>
+              <indexer_dir_depth>100</indexer_dir_depth>
+              <period_in_seconds>1000</period_in_seconds>
+              <scheduler_cron_time>
+                <item>0 */12 * * *</item>
+              </scheduler_cron_time>
+            </agent_script_executor>
+            <heartbeat>
+              <interval_in_seconds>300</interval_in_seconds>
+              <miss_until_inactive>1</miss_until_inactive>
+            </heartbeat>
+          </config>
           <comment>example update</comment>
         </modify_agents>
       </request>

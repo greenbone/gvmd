@@ -20,23 +20,10 @@
 
 #include "iterator.h"
 #include "manage_agent_common.h"
-#include "manage_get.h"
-#include "manage_resources.h"
 
 #include <agent_controller/agent_controller.h>
 
 typedef resource_t agent_t;
-
-/**
- * @struct gvmd_agent_connector
- * @brief Holds scanner context and base agent controller connection.
- */
-struct gvmd_agent_connector
-{
-  agent_controller_connector_t base; ///< Original gvm-libs connector
-  scanner_t scanner_id;              ///< GVMD-specific scanner id
-};
-typedef struct gvmd_agent_connector *gvmd_agent_connector_t;
 
 /**
  * @struct agent_ip_data
@@ -66,20 +53,19 @@ typedef struct agent_ip_data_list *agent_ip_data_list_t;
 struct agent_data
 {
   agent_t row_id;
-  gchar * uuid;
-  gchar * name;
+  gchar *uuid;
+  gchar *name;
   gchar *agent_id;
   gchar *hostname;
   int authorized;
-  int min_interval;
-  int heartbeat_interval;
   gchar *connection_status;
   agent_ip_data_list_t ip_addresses;
   int ip_address_count;
   time_t creation_time;
   time_t modification_time;
   time_t last_update_agent_control;
-  gchar *config;
+  time_t last_updater_heartbeat;
+  agent_controller_scan_agent_config_t config;
   gchar *comment;
   user_t owner;
   scanner_t scanner;
@@ -102,27 +88,22 @@ struct agent_data_list
 };
 typedef struct agent_data_list *agent_data_list_t;
 
-typedef enum {
-  AGENT_RESPONSE_SUCCESS = 0,                       ///< Success
-  AGENT_RESPONSE_NO_AGENTS_PROVIDED = -1,           ///< No agent UUIDs provided
-  AGENT_RESPONSE_SCANNER_LOOKUP_FAILED = -2,        ///< Scanner lookup failed
-  AGENT_RESPONSE_AGENT_SCANNER_MISMATCH = -3,       ///< Agent list count mismatch (not same scanner)
-  AGENT_RESPONSE_CONNECTOR_CREATION_FAILED = -4,    ///< Failed to create connector
-  AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED = -5,     ///< Failed to update agents
-  AGENT_RESPONSE_CONTROLLER_DELETE_FAILED = -6,     ///< Failed to delete agents
-  AGENT_RESPONSE_SYNC_FAILED = -7,                  ///< Failed during sync
-  AGENT_RESPONSE_INVALID_ARGUMENT = -8,             ///< Failed invalid argument
-  AGENT_RESPONSE_INVALID_AGENT_OWNER = -9,          ///< Failed getting owner UUID
-  AGENT_RESPONSE_AGENT_NOT_FOUND = -10,             ///< Failed getting owner UUID
-  AGENT_RESPONSE_INTERNAL_ERROR = -11,              ///< Internal error
-  AGENT_RESPONSE_IN_USE_ERROR = -12                 ///< Agent is used by an Agent Group
+typedef enum
+{
+  AGENT_RESPONSE_SUCCESS = 0,                ///< Success
+  AGENT_RESPONSE_NO_AGENTS_PROVIDED = -1,    ///< No agent UUIDs provided
+  AGENT_RESPONSE_SCANNER_LOOKUP_FAILED = -2, ///< Scanner lookup failed
+  AGENT_RESPONSE_AGENT_SCANNER_MISMATCH = -3, ///< Agent list count mismatch (not same scanner)
+  AGENT_RESPONSE_CONNECTOR_CREATION_FAILED = -4, ///< Failed to create connector
+  AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED = -5,  ///< Failed to update agents
+  AGENT_RESPONSE_CONTROLLER_DELETE_FAILED = -6,  ///< Failed to delete agents
+  AGENT_RESPONSE_SYNC_FAILED = -7,               ///< Failed during sync
+  AGENT_RESPONSE_INVALID_ARGUMENT = -8,          ///< Failed invalid argument
+  AGENT_RESPONSE_INVALID_AGENT_OWNER = -9,       ///< Failed getting owner UUID
+  AGENT_RESPONSE_AGENT_NOT_FOUND = -10,          ///< Failed getting owner UUID
+  AGENT_RESPONSE_INTERNAL_ERROR = -11,           ///< Internal error
+  AGENT_RESPONSE_IN_USE_ERROR = -12 ///< Agent is used by an Agent Group
 } agent_response_t;
-
-gvmd_agent_connector_t
-gvmd_agent_connector_new_from_scanner (scanner_t scanner);
-
-void
-gvmd_agent_connector_free (gvmd_agent_connector_t conn);
 
 void
 agent_ip_data_list_free (agent_ip_data_list_t ip_list);
@@ -143,8 +124,7 @@ agent_response_t
 sync_agents_from_agent_controller (gvmd_agent_connector_t connector);
 
 agent_response_t
-get_agents_by_scanner_and_uuids (scanner_t scanner,
-                                 agent_uuid_list_t uuid_list,
+get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
                                  agent_data_list_t out_list);
 
 agent_response_t
@@ -180,14 +160,11 @@ agent_iterator_config (iterator_t *iterator);
 int
 agent_iterator_authorized (iterator_t *iterator);
 
-int
-agent_iterator_min_interval (iterator_t *iterator);
-
-int
-agent_iterator_heartbeat_interval (iterator_t *iterator);
-
 time_t
 agent_iterator_last_update (iterator_t *iterator);
+
+time_t
+agent_iterator_last_updater_heartbeat (iterator_t *iterator);
 
 scanner_t
 agent_iterator_scanner (iterator_t *iterator);
@@ -217,7 +194,8 @@ int
 agent_in_use (agent_t agent);
 
 void
-delete_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t agent_uuids);
+delete_agents_by_scanner_and_uuids (scanner_t scanner,
+                                    agent_uuid_list_t agent_uuids);
 
 gboolean
 agents_in_use (agent_uuid_list_t agent_uuids);
