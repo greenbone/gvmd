@@ -14,6 +14,7 @@
  */
 
 #include "gmp_agents.h"
+
 #include "gmp_get.h"
 #include "manage.h"
 
@@ -26,19 +27,23 @@
  * @struct get_agents_t
  * @brief Structure for storing data related to the <get_agents> GMP command.
  *
- * This structure holds generic data needed for handling agent retrieval operations.
+ * This structure holds generic data needed for handling agent retrieval
+ * operations.
  */
 typedef struct
 {
-  get_data_t get; ///< Parameters and context for the get operation (e.g., filters, format).
+  get_data_t get;
 } get_agents_t;
+
 static get_agents_t get_agents_data;
 
 /**
  * @struct modify_agent_data_t
- * @brief Structure for storing context related to the <modify_agents> GMP command.
+ * @brief Structure for storing context related to the <modify_agents> GMP
+ * command.
  *
- * The context is used to accumulate and parse XML input data for modifying agents.
+ * The context is used to accumulate and parse XML input data for modifying
+ * agents.
  */
 typedef struct
 {
@@ -49,7 +54,8 @@ static modify_agent_data_t modify_agent_data;
 
 /**
  * @struct delete_agent_data_t
- * @brief Structure for storing context related to the <delete_agents> GMP command.
+ * @brief Structure for storing context related to the <delete_agents> GMP
+ * command.
  */
 typedef struct
 {
@@ -73,7 +79,8 @@ get_agents_reset ()
  * @brief Initialize the <get_agents> GMP command by parsing attributes.
  *
  * @param[in] attribute_names  Null-terminated array of attribute names.
- * @param[in] attribute_values Null-terminated array of corresponding attribute values.
+ * @param[in] attribute_values Null-terminated array of corresponding attribute
+ * values.
  */
 void
 get_agents_start (const gchar **attribute_names, const gchar **attribute_values)
@@ -95,13 +102,11 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
   iterator_t agents;
   int count = 0, filtered, ret, first;
 
-  ret = init_get ("get_agents",
-                  &get_agents_data.get,
-                  "Agents",
-                  &first);
+  ret = init_get ("get_agents", &get_agents_data.get, "Agents", &first);
   if (ret)
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_agents", "Permission denied"));
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("get_agents", "Permission denied"));
       get_agents_reset ();
       return;
     }
@@ -109,7 +114,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
   ret = init_agent_iterator (&agents, &get_agents_data.get);
   if (ret)
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_agents", "Permission denied"));
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("get_agents", "Permission denied"));
       get_agents_reset ();
       return;
     }
@@ -135,60 +141,142 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
       scanner = agent_iterator_scanner (&agents);
       agent_scanner_uuid = scanner_uuid (scanner);
       agent_scanner_name = scanner_name (scanner);
-      SEND_GET_COMMON_NO_TRASH (agent,
-                                &get_agents_data.get,
-                                &agents);
+      SEND_GET_COMMON_NO_TRASH (agent, &get_agents_data.get, &agents);
 
       // Remaining fields
-      SENDF_TO_CLIENT_OR_FAIL ("<hostname>%s</hostname>"
-                               "<agent_id>%s</agent_id>"
-                               "<authorized>%i</authorized>"
-                               "<min_interval>%i</min_interval>"
-                               "<heartbeat_interval>%i</heartbeat_interval>"
-                               "<connection_status>%s</connection_status>"
-                               "<last_update>%s</last_update>"
-                               "<config>%s</config>"
-                               "<updater_version>%s</updater_version>"
-                               "<agent_version>%s</agent_version>"
-                               "<operating_system>%s</operating_system>"
-                               "<architecture>%s</architecture>"
-                               "<update_to_latest>%i</update_to_latest>"
-                               "<scanner id=\"%s\">"
-                               "<name>%s</name>"
-                               "</scanner>",
-                               agent_iterator_hostname (&agents),
-                               agent_iterator_agent_id (&agents),
-                               agent_iterator_authorized (&agents),
-                               agent_iterator_min_interval (&agents),
-                               agent_iterator_heartbeat_interval (&agents),
-                               agent_iterator_connection_status (&agents),
-                               iso_if_time (agent_iterator_last_update (&agents)),
-                               agent_iterator_config (&agents),
-                               agent_iterator_updater_version (&agents),
-                               agent_iterator_agent_version (&agents),
-                               agent_iterator_operating_system (&agents),
-                               agent_iterator_architecture (&agents),
-                               agent_iterator_update_to_latest (&agents),
-                               agent_scanner_uuid ? agent_scanner_uuid : "",
-                               agent_scanner_name ? agent_scanner_name : "");
+      SENDF_TO_CLIENT_OR_FAIL (
+        "<hostname>%s</hostname>"
+        "<agent_id>%s</agent_id>"
+        "<authorized>%i</authorized>"
+        "<connection_status>%s</connection_status>"
+        "<last_update>%s</last_update>"
+        "<last_updater_heartbeat>%s</last_updater_heartbeat>"
+        "<updater_version>%s</updater_version>"
+        "<agent_version>%s</agent_version>"
+        "<operating_system>%s</operating_system>"
+        "<architecture>%s</architecture>"
+        "<update_to_latest>%i</update_to_latest>"
+        "<scanner id=\"%s\">"
+        "<name>%s</name>"
+        "</scanner>",
+        agent_iterator_hostname (&agents), agent_iterator_agent_id (&agents),
+        agent_iterator_authorized (&agents),
+        agent_iterator_connection_status (&agents),
+        iso_if_time (agent_iterator_last_update (&agents)),
+        iso_if_time (agent_iterator_last_updater_heartbeat (&agents)),
+        agent_iterator_updater_version (&agents),
+        agent_iterator_agent_version (&agents),
+        agent_iterator_operating_system (&agents),
+        agent_iterator_architecture (&agents),
+        agent_iterator_update_to_latest (&agents),
+        agent_scanner_uuid ? agent_scanner_uuid : "",
+        agent_scanner_name ? agent_scanner_name : "");
 
       // IPs
-      agent_ip_data_list_t ip_list = load_agent_ip_addresses (agent_iterator_agent_id (&agents));
+      agent_ip_data_list_t ip_list =
+        load_agent_ip_addresses (agent_iterator_agent_id (&agents));
       if (ip_list)
         {
           for (int i = 0; i < ip_list->count; ++i)
             {
-              SENDF_TO_CLIENT_OR_FAIL ("<ip>%s</ip>", ip_list->items[i]->ip_address);
+              SENDF_TO_CLIENT_OR_FAIL ("<ip>%s</ip>",
+                                       ip_list->items[i]->ip_address);
             }
           agent_ip_data_list_free (ip_list);
+        }
+      const char *cfg_json = agent_iterator_config (&agents);
+
+      if (!cfg_json || !*cfg_json)
+        {
+          SEND_TO_CLIENT_OR_FAIL ("<config/>");
+        }
+      else
+        {
+          agent_controller_scan_agent_config_t cfg =
+            agent_controller_parse_scan_agent_config_string (cfg_json);
+
+          if (!cfg)
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<config/>");
+            }
+          else
+            {
+              SEND_TO_CLIENT_OR_FAIL ("<config>");
+
+              /* agent_control/retry */
+              SEND_TO_CLIENT_OR_FAIL ("<agent_control><retry>");
+              SENDF_TO_CLIENT_OR_FAIL ("<attempts>%d</attempts>",
+                                       cfg->agent_control.retry.attempts);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<delay_in_seconds>%d</delay_in_seconds>",
+                cfg->agent_control.retry.delay_in_seconds);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<max_jitter_in_seconds>%d</max_jitter_in_seconds>",
+                cfg->agent_control.retry.max_jitter_in_seconds);
+              SEND_TO_CLIENT_OR_FAIL ("</retry></agent_control>");
+
+              /* agent_script_executor */
+              SEND_TO_CLIENT_OR_FAIL ("<agent_script_executor>");
+              SENDF_TO_CLIENT_OR_FAIL ("<bulk_size>%d</bulk_size>",
+                                       cfg->agent_script_executor.bulk_size);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<bulk_throttle_time_in_ms>%d</bulk_throttle_time_in_ms>",
+                cfg->agent_script_executor.bulk_throttle_time_in_ms);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<indexer_dir_depth>%d</indexer_dir_depth>",
+                cfg->agent_script_executor.indexer_dir_depth);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<period_in_seconds>%d</period_in_seconds>",
+                cfg->agent_script_executor.period_in_seconds);
+
+              /* scheduler_cron_time list */
+              {
+                GPtrArray *cron =
+                  cfg->agent_script_executor.scheduler_cron_time;
+                if (cron && cron->len > 0)
+                  {
+                    SEND_TO_CLIENT_OR_FAIL (
+                      "<scheduler_cron_time is_list=\"1\">");
+                    for (guint k = 0; k < cron->len; ++k)
+                      {
+                        const char *item = (const char *) cron->pdata[k];
+                        gchar *esc =
+                          g_markup_escape_text (item ? item : "", -1);
+                        SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                        g_free (esc);
+                      }
+                    SEND_TO_CLIENT_OR_FAIL ("</scheduler_cron_time>");
+                  }
+                else
+                  {
+                    SEND_TO_CLIENT_OR_FAIL (
+                      "<scheduler_cron_time is_list=\"0\"/>");
+                  }
+              }
+              SEND_TO_CLIENT_OR_FAIL ("</agent_script_executor>");
+
+              /* heartbeat */
+              SEND_TO_CLIENT_OR_FAIL ("<heartbeat>");
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<interval_in_seconds>%d</interval_in_seconds>",
+                cfg->heartbeat.interval_in_seconds);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<miss_until_inactive>%d</miss_until_inactive>",
+                cfg->heartbeat.miss_until_inactive);
+              SEND_TO_CLIENT_OR_FAIL ("</heartbeat>");
+
+              SEND_TO_CLIENT_OR_FAIL ("</config>");
+
+              agent_controller_scan_agent_config_free (cfg);
+            }
         }
 
       // Close agent
       SEND_TO_CLIENT_OR_FAIL ("</agent>");
       count++;
 
-      g_free(agent_scanner_name);
-      g_free(agent_scanner_uuid);
+      g_free (agent_scanner_name);
+      g_free (agent_scanner_uuid);
     }
 
   cleanup_iterator (&agents);
@@ -197,8 +285,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_END ("agent", &get_agents_data.get, count, filtered);
 
 #else
-  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("get_agents",
-                                                 "Command unavailable"));
+  SEND_TO_CLIENT_OR_FAIL (
+    XML_ERROR_UNAVAILABLE ("get_agents", "Command unavailable"));
 #endif
 
   get_agents_reset ();
@@ -232,14 +320,11 @@ modify_agents_reset ()
  * @param[in] attribute_values  Null-terminated array of attribute values.
  */
 void
-modify_agents_element_start (gmp_parser_t *gmp_parser,
-                             const gchar *name,
+modify_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  xml_handle_start_element (modify_agent_data.context,
-                            name,
-                            attribute_names,
+  xml_handle_start_element (modify_agent_data.context, name, attribute_names,
                             attribute_values);
 }
 
@@ -248,18 +333,18 @@ modify_agents_element_start (gmp_parser_t *gmp_parser,
  *
  * @param[in] gmp_parser        Pointer to the GMP parser instance.
  * @param[in] attribute_names   Null-terminated array of attribute names.
- * @param[in] attribute_values  Null-terminated array of corresponding attribute values.
+ * @param[in] attribute_values  Null-terminated array of corresponding attribute
+ * values.
  */
 void
-modify_agents_start (gmp_parser_t *gmp_parser,
-                     const gchar **attribute_names,
+modify_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values)
 {
   memset (&modify_agent_data, 0, sizeof (modify_agent_data_t));
   modify_agent_data.context = g_malloc0 (sizeof (context_data_t));
 
-  modify_agents_element_start (gmp_parser, "modify_agents",
-                              attribute_names, attribute_values);
+  modify_agents_element_start (gmp_parser, "modify_agents", attribute_names,
+                               attribute_values);
 }
 
 /**
@@ -284,8 +369,7 @@ modify_agents_element_text (const gchar *text, gsize text_len)
  * @return 1 if the command has been fully parsed and executed, 0 otherwise.
  */
 int
-modify_agents_element_end (gmp_parser_t *gmp_parser,
-                           GError **error,
+modify_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
   xml_handle_end_element (modify_agent_data.context, name);
@@ -314,7 +398,8 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t agents_elem = entity_child (root, "agents");
   if (!agents_elem)
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "Missing <agents>"));
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("modify_agents", "Missing <agents>"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       modify_agents_reset ();
       return;
@@ -362,99 +447,217 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t e = NULL;
   if ((e = entity_child (root, "authorized")))
     update->authorized = atoi (entity_text (e));
-  if ((e = entity_child (root, "min_interval")))
-    update->min_interval = atoi (entity_text (e));
-  if ((e = entity_child (root, "heartbeat_interval")))
-    update->heartbeat_interval = atoi (entity_text (e));
+  entity_t cfg_e = entity_child (root, "config");
+
+  if (cfg_e)
+    {
+      agent_controller_scan_agent_config_t cfg =
+        agent_controller_scan_agent_config_new ();
+      if (!cfg)
+        {
+          agent_uuid_list_free (agent_uuids);
+          agent_controller_agent_update_free (update);
+          g_free (comment);
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+          modify_agents_reset ();
+          return;
+        }
+
+      /* <agent_control><retry>...</retry></agent_control> */
+      entity_t ac = entity_child (cfg_e, "agent_control");
+      if (ac)
+        {
+          entity_t retry = entity_child (ac, "retry");
+          if (retry)
+            {
+              /* attempts */
+              e = entity_child (retry, "attempts");
+              if (e)
+                {
+                  const char *t = entity_text (e);
+                  cfg->agent_control.retry.attempts = atoi (t ? t : "0");
+                }
+              /* delay_in_seconds */
+              e = entity_child (retry, "delay_in_seconds");
+              if (e)
+                {
+                  const char *t = entity_text (e);
+                  cfg->agent_control.retry.delay_in_seconds =
+                    atoi (t ? t : "0");
+                }
+              /* max_jitter_in_seconds */
+              e = entity_child (retry, "max_jitter_in_seconds");
+              if (e)
+                {
+                  const char *t = entity_text (e);
+                  cfg->agent_control.retry.max_jitter_in_seconds =
+                    atoi (t ? t : "0");
+                }
+            }
+        }
+
+      /* <agent_script_executor>...</agent_script_executor> */
+      entity_t se = entity_child (cfg_e, "agent_script_executor");
+      if (se)
+        {
+          /* bulk_size */
+          e = entity_child (se, "bulk_size");
+          if (e)
+            {
+              const char *t = entity_text (e);
+              cfg->agent_script_executor.bulk_size = atoi (t ? t : "0");
+            }
+          /* bulk_throttle_time_in_ms */
+          e = entity_child (se, "bulk_throttle_time_in_ms");
+          if (e)
+            {
+              const char *t = entity_text (e);
+              cfg->agent_script_executor.bulk_throttle_time_in_ms =
+                atoi (t ? t : "0");
+            }
+          /* indexer_dir_depth */
+          e = entity_child (se, "indexer_dir_depth");
+          if (e)
+            {
+              const char *t = entity_text (e);
+              cfg->agent_script_executor.indexer_dir_depth = atoi (t ? t : "0");
+            }
+          /* period_in_seconds */
+          e = entity_child (se, "period_in_seconds");
+          if (e)
+            {
+              const char *t = entity_text (e);
+              cfg->agent_script_executor.period_in_seconds = atoi (t ? t : "0");
+            }
+
+          /* <scheduler_cron_time><item>...</item>...</scheduler_cron_time> */
+          entity_t sct = entity_child (se, "scheduler_cron_time");
+          if (sct)
+            {
+              GPtrArray *arr = g_ptr_array_new_with_free_func (g_free);
+              for (GSList *n = sct->entities; n; n = n->next)
+                {
+                  entity_t it = n->data;
+                  if (it && strcmp (entity_name (it), "item") == 0)
+                    {
+                      const gchar *txt = entity_text (it);
+                      g_ptr_array_add (arr, g_strdup (txt ? txt : ""));
+                    }
+                }
+              if (arr->len == 0)
+                g_ptr_array_free (arr, TRUE);
+              else
+                cfg->agent_script_executor.scheduler_cron_time = arr;
+            }
+        }
+
+      /* <heartbeat>...</heartbeat> */
+      entity_t hb = entity_child (cfg_e, "heartbeat");
+      if (hb)
+        {
+          /* interval_in_seconds */
+          e = entity_child (hb, "interval_in_seconds");
+          if (e)
+            {
+              const char *t = entity_text (e);
+              cfg->heartbeat.interval_in_seconds = atoi (t ? t : "0");
+            }
+          /* miss_until_inactive */
+          e = entity_child (hb, "miss_until_inactive");
+          if (e)
+            {
+              const char *t = entity_text (e);
+              cfg->heartbeat.miss_until_inactive = atoi (t ? t : "0");
+            }
+        }
+      update->config = cfg;
+    }
+
   if ((e = entity_child (root, "comment")))
     comment = g_strdup (entity_text (e));
-
-  agent_response_t response = modify_and_resync_agents (agent_uuids, update, comment);
+  agent_response_t response =
+    modify_and_resync_agents (agent_uuids, update, comment);
 
   switch (response)
     {
-      case AGENT_RESPONSE_SUCCESS:
-        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agents"));
-        log_event_plural ("agents", "Agents", NULL, "modified");
-        break;
+    case AGENT_RESPONSE_SUCCESS:
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agents"));
+      log_event_plural ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "No agents provided"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+    case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("modify_agents", "No agents provided"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
-        if (send_find_error_to_client ("modify_agents",
-                                       "scanner",
-                                       NULL,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            modify_agents_reset ();
-            return;
-          }
+    case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
+      if (send_find_error_to_client ("modify_agents", "scanner", NULL,
+                                     gmp_parser))
+        {
+          error_send_to_client (error);
+          modify_agents_reset ();
+          return;
+        }
 
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_AGENT_NOT_FOUND:
-        if (send_find_error_to_client ("modify_agents",
-                                       "agents",
-                                       NULL,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            modify_agents_reset ();
-            return;
-          }
+    case AGENT_RESPONSE_AGENT_NOT_FOUND:
+      if (send_find_error_to_client ("modify_agents", "agents", NULL,
+                                     gmp_parser))
+        {
+          error_send_to_client (error);
+          modify_agents_reset ();
+          return;
+        }
 
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_INVALID_ARGUMENT:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
-        break;
+    case AGENT_RESPONSE_INVALID_ARGUMENT:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      break;
 
-      case AGENT_RESPONSE_INVALID_AGENT_OWNER:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+    case AGENT_RESPONSE_INVALID_AGENT_OWNER:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents", "Agents belong to different scanners"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+    case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+        "modify_agents", "Agents belong to different scanners"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-                                     "modify_agents",
-                                     "Could not connect to Agent-Controller"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
-
-      case AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED:
+    case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-                                   "modify_agents",
-                                   "Updates of Agents in Agent-Controller failed"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+        "modify_agents", "Could not connect to Agent-Controller"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_SYNC_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-                                   "modify_agents",
-                                   "Synchronization of Agents in Agent-Controller failed"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+    case AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+        "modify_agents", "Updates of Agents in Agent-Controller failed"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
 
-      case AGENT_RESPONSE_INTERNAL_ERROR:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
-      case AGENT_RESPONSE_IN_USE_ERROR:
-      default:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
-        log_event_fail ("agents", "Agents", NULL, "modified");
-        break;
+    case AGENT_RESPONSE_SYNC_FAILED:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+        "modify_agents",
+        "Synchronization of Agents in Agent-Controller failed"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
+
+    case AGENT_RESPONSE_INTERNAL_ERROR:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
+    case AGENT_RESPONSE_IN_USE_ERROR:
+    default:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      log_event_fail ("agents", "Agents", NULL, "modified");
+      break;
     }
 
   agent_uuid_list_free (agent_uuids);
@@ -462,8 +665,8 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
   g_free (comment);
 
 #else
-  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("modify_agents",
-                                                 "Command unavailable"));
+  SEND_TO_CLIENT_OR_FAIL (
+    XML_ERROR_UNAVAILABLE ("modify_agents", "Command unavailable"));
 #endif // ENABLE_AGENTS
 
   modify_agents_reset ();
@@ -497,34 +700,32 @@ delete_agent_reset ()
  * @param[in] attribute_values  Null-terminated array of attribute values.
  */
 void
-delete_agents_element_start (gmp_parser_t *gmp_parser,
-                             const gchar *name,
+delete_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
-  xml_handle_start_element (delete_agent_data.context,
-                            name,
-                            attribute_names,
+  xml_handle_start_element (delete_agent_data.context, name, attribute_names,
                             attribute_values);
 }
 
 /**
  * @brief Initialize the <delete_agents> GMP command.
  *
- * @param[in] gmp_parser        Pointer to the GMP parser handling the current session.
+ * @param[in] gmp_parser        Pointer to the GMP parser handling the current
+ * session.
  * @param[in] attribute_names   Null-terminated array of attribute names.
- * @param[in] attribute_values  Null-terminated array of corresponding attribute values.
+ * @param[in] attribute_values  Null-terminated array of corresponding attribute
+ * values.
  */
 void
-delete_agents_start (gmp_parser_t *gmp_parser,
-                     const gchar **attribute_names,
+delete_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values)
 {
   memset (&delete_agent_data, 0, sizeof (delete_agent_data_t));
   delete_agent_data.context = g_malloc0 (sizeof (context_data_t));
 
-  delete_agents_element_start (gmp_parser, "delete_agents",
-                               attribute_names, attribute_values);
+  delete_agents_element_start (gmp_parser, "delete_agents", attribute_names,
+                               attribute_values);
 }
 
 /**
@@ -542,7 +743,8 @@ delete_agents_element_text (const gchar *text, gsize text_len)
 /**
  * @brief Handle the end of an XML element within the <delete_agents> command.
  *
- * @param[in] gmp_parser  Pointer to the GMP parser handling the current session.
+ * @param[in] gmp_parser  Pointer to the GMP parser handling the current
+ * session.
  * @param[in] error       Pointer to a GError to store error details, if any.
  * @param[in] name        Name of the XML element that just ended.
  *
@@ -550,8 +752,7 @@ delete_agents_element_text (const gchar *text, gsize text_len)
  *         0 otherwise.
  */
 int
-delete_agents_element_end (gmp_parser_t *gmp_parser,
-                           GError **error,
+delete_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
   xml_handle_end_element (delete_agent_data.context, name);
@@ -569,7 +770,8 @@ delete_agents_element_end (gmp_parser_t *gmp_parser,
  * @brief Execute the <delete_agents> GMP command.
  *
  * @param[in] gmp_parser Pointer to the GMP parser handling the current session.
- * @param[in] error      Pointer to a GError to store error information, if any occurs.
+ * @param[in] error      Pointer to a GError to store error information, if any
+ * occurs.
  */
 void
 delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
@@ -581,7 +783,8 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t agents_elem = entity_child (root, "agents");
   if (!agents_elem)
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Missing <agents>"));
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("delete_agents", "Missing <agents>"));
       delete_agent_reset ();
       return;
     }
@@ -626,107 +829,101 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
 
   switch (response)
     {
-      case AGENT_RESPONSE_SUCCESS:
-        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agents"));
-        log_event_plural ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_SUCCESS:
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agents"));
+      log_event_plural ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
-        if (send_find_error_to_client ("delete_agents",
-                                       "agents",
-                                       NULL,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            modify_agents_reset ();
-            return;
-          }
+    case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
+      if (send_find_error_to_client ("delete_agents", "agents", NULL,
+                                     gmp_parser))
+        {
+          error_send_to_client (error);
+          modify_agents_reset ();
+          return;
+        }
 
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
-      case AGENT_RESPONSE_AGENT_NOT_FOUND:
-        if (send_find_error_to_client ("modify_agents",
-                                       "agents",
-                                       NULL,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            modify_agents_reset ();
-            return;
-          }
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
+    case AGENT_RESPONSE_AGENT_NOT_FOUND:
+      if (send_find_error_to_client ("modify_agents", "agents", NULL,
+                                     gmp_parser))
+        {
+          error_send_to_client (error);
+          modify_agents_reset ();
+          return;
+        }
 
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
-      case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
-        if (send_find_error_to_client ("delete_agents",
-                                       "scanner",
-                                       NULL,
-                                       gmp_parser))
-          {
-            error_send_to_client (error);
-            modify_agents_reset ();
-            return;
-          }
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
+    case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
+      if (send_find_error_to_client ("delete_agents", "scanner", NULL,
+                                     gmp_parser))
+        {
+          error_send_to_client (error);
+          modify_agents_reset ();
+          return;
+        }
 
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_INVALID_ARGUMENT:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_INVALID_ARGUMENT:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_INVALID_AGENT_OWNER:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_INVALID_AGENT_OWNER:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Agents belong to different scanners"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+        "delete_agents", "Agents belong to different scanners"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-                                   "delete_agents",
-                                   "Could not connect to Agent-Controller"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+        "delete_agents", "Could not connect to Agent-Controller"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-                                 "delete_agents",
-                                 "Deletion of Agents in Agent-Controller failed"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+        "delete_agents", "Deletion of Agents in Agent-Controller failed"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_SYNC_FAILED:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-                                   "delete_agents",
-                                   "Synchronization of Agents in Agent-Controller failed"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_SYNC_FAILED:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+        "delete_agents",
+        "Synchronization of Agents in Agent-Controller failed"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_INTERNAL_ERROR:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_INTERNAL_ERROR:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
 
-      case AGENT_RESPONSE_IN_USE_ERROR:
-        SENDF_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents", "Resource is in use"));
-        log_event_fail ("agent", "Agents", NULL, "deleted");
-        break;
+    case AGENT_RESPONSE_IN_USE_ERROR:
+      SENDF_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("delete_agents", "Resource is in use"));
+      log_event_fail ("agent", "Agents", NULL, "deleted");
+      break;
 
-      default:
-        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
-        log_event_fail ("agents", "Agents", NULL, "deleted");
-        break;
+    default:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      log_event_fail ("agents", "Agents", NULL, "deleted");
+      break;
     }
 
   agent_uuid_list_free (agent_uuids);
 #else
-  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("delete_agents",
-                                                 "Command unavailable"));
+  SEND_TO_CLIENT_OR_FAIL (
+    XML_ERROR_UNAVAILABLE ("delete_agents", "Command unavailable"));
 #endif
   delete_agent_reset ();
 }
