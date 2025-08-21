@@ -4579,7 +4579,7 @@ aggregate_iterator_subgroup_value (iterator_t* iterator)
  *
  * @return Total number of resources in filtered set.
  */
-static int
+int
 count2 (const char *type, const get_data_t *get, column_t *select_columns,
         column_t *trash_select_columns, column_t *where_columns,
         column_t *trash_where_columns, const char **filter_columns,
@@ -40725,44 +40725,6 @@ host_routes_xml (host_t host)
   g_string_append (buffer, "</routes>");
 
   return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Count number of hosts.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of hosts in filtered set.
- */
-int
-asset_host_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = HOST_ITERATOR_COLUMNS;
-  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
-  return count2 ("host", get, columns, NULL, where_columns, NULL,
-                 filter_columns, 0, NULL, NULL, NULL, TRUE);
-}
-
-/**
- * @brief Count number of oss.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of oss in filtered set.
- */
-int
-asset_os_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = OS_ITERATOR_COLUMNS;
-  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  int ret;
-
-  ret = count2 ("os", get, columns, NULL, where_columns, NULL,
-                extra_columns, 0, 0, 0, NULL, TRUE);
-
-  return ret;
 }
 
 /**

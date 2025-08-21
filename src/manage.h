@@ -2295,12 +2295,6 @@ host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
 int
-asset_host_count (const get_data_t *);
-
-int
-asset_os_count (const get_data_t *);
-
-int
 total_asset_count (const get_data_t *);
 
 int

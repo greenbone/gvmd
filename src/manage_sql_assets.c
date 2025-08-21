@@ -2078,3 +2078,41 @@ report_host_noticeable (report_t report, const gchar *host)
          && report_host_dead (report_host) == 0
          && report_host_result_count (report_host) > 0;
 }
+
+/**
+ * @brief Count number of hosts.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of hosts in filtered set.
+ */
+int
+asset_host_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
+  return count2 ("host", get, columns, NULL, where_columns, NULL,
+                 filter_columns, 0, NULL, NULL, NULL, TRUE);
+}
+
+/**
+ * @brief Count number of oss.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of oss in filtered set.
+ */
+int
+asset_os_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OS_ITERATOR_COLUMNS;
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  int ret;
+
+  ret = count2 ("os", get, columns, NULL, where_columns, NULL,
+                extra_columns, 0, 0, 0, NULL, TRUE);
+
+  return ret;
+}
