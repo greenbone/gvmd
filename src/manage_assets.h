@@ -141,4 +141,10 @@ asset_host_count (const get_data_t *);
 int
 asset_os_count (const get_data_t *);
 
+gchar *
+host_routes_xml (host_t);
+
+int
+add_assets_from_host_in_report (report_t, const char *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

@@ -2297,9 +2297,6 @@ host_notice (const char *, const char *, const char *, const char *,
 int
 total_asset_count (const get_data_t *);
 
-int
-add_assets_from_host_in_report (report_t report, const char *host);
-
 
 /* Notes. */
 
@@ -3355,9 +3352,6 @@ manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
 
 int
 manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
-
-gchar*
-host_routes_xml (host_t);
 
 int
 manage_set_password (GSList *, const db_conn_info_t *, const gchar *,

@@ -21,6 +21,7 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
 #include <gvm/base/array.h>
@@ -2191,4 +2192,191 @@ asset_os_count (const get_data_t *get)
                 extra_columns, 0, 0, 0, NULL, TRUE);
 
   return ret;
+}
+
+/**
+ * @brief Get XML of a detailed host route.
+ *
+ * @param[in]  host  The host.
+ *
+ * @return XML.
+ */
+gchar*
+host_routes_xml (host_t host)
+{
+  iterator_t routes;
+  GString* buffer;
+
+  gchar *owned_clause, *with_clause;
+
+  owned_clause = acl_where_owned_for_get ("host", NULL, NULL, &with_clause);
+
+  buffer = g_string_new ("<routes>");
+  init_iterator (&routes,
+                 "SELECT outer_details.value,"
+                 "       outer_details.source_type,"
+                 "       outer_details.source_id,"
+                 "       outer_identifiers.modification_time"
+                 "  FROM host_details AS outer_details"
+                 "  JOIN host_identifiers AS outer_identifiers"
+                 "    ON outer_identifiers.host = outer_details.host"
+                 " WHERE outer_details.host = %llu"
+                 "   AND outer_details.name = 'traceroute'"
+                 "   AND outer_details.source_id = outer_identifiers.source_id"
+                 "   AND outer_identifiers.name='ip'"
+                 "   AND outer_identifiers.modification_time"
+                 "         = (SELECT max (modification_time)"
+                 "              FROM host_identifiers"
+                 "             WHERE host_identifiers.host = %llu"
+                 "               AND host_identifiers.source_id IN"
+                 "                   (SELECT source_id FROM host_details"
+                 "                     WHERE host = %llu"
+                 "                       AND value = outer_details.value)"
+                 "              AND host_identifiers.name='ip')"
+                 " ORDER BY outer_identifiers.modification_time DESC;",
+                 host, host, host);
+
+  while (next (&routes))
+    {
+      const char *traceroute;
+      const char *source_id;
+      time_t modified;
+      gchar **hop_ips, **hop_ip;
+      int distance;
+
+      g_string_append (buffer, "<route>");
+
+      traceroute = iterator_string (&routes, 0);
+      source_id = iterator_string (&routes, 2);
+      modified = iterator_int64 (&routes, 3);
+
+      hop_ips = g_strsplit (traceroute, ",", 0);
+      hop_ip = hop_ips;
+
+      distance = 0;
+
+      while (*hop_ip != NULL) {
+        iterator_t best_host_iterator;
+        const char *best_host_id;
+        int same_source;
+
+        init_iterator (&best_host_iterator,
+                       "%s"
+                       " SELECT hosts.uuid,"
+                       "       (source_id='%s')"
+                       "         AS same_source"
+                       "  FROM hosts, host_identifiers"
+                       " WHERE hosts.id = host_identifiers.host"
+                       "   AND host_identifiers.name = 'ip'"
+                       "   AND host_identifiers.value='%s'"
+                       "   AND %s"
+                       " ORDER BY same_source DESC,"
+                       "          abs(host_identifiers.modification_time"
+                       "              - %llu) ASC"
+                       " LIMIT 1;",
+                       with_clause ? with_clause : "",
+                       source_id,
+                       *hop_ip,
+                       owned_clause,
+                       modified);
+
+        if (next (&best_host_iterator))
+          {
+            best_host_id = iterator_string (&best_host_iterator, 0);
+            same_source = iterator_int (&best_host_iterator, 1);
+          }
+        else
+          {
+            best_host_id = NULL;
+            same_source = 0;
+          }
+
+        g_string_append_printf (buffer,
+                                "<host id=\"%s\""
+                                " distance=\"%d\""
+                                " same_source=\"%d\">"
+                                "<ip>%s</ip>"
+                                "</host>",
+                                best_host_id ? best_host_id : "",
+                                distance,
+                                same_source,
+                                *hop_ip);
+
+        cleanup_iterator (&best_host_iterator);
+
+        distance++;
+        hop_ip++;
+      }
+
+      g_string_append (buffer, "</route>");
+      g_strfreev(hop_ips);
+    }
+
+  g_free (with_clause);
+  g_free (owned_clause);
+
+  cleanup_iterator (&routes);
+
+  g_string_append (buffer, "</routes>");
+
+  return g_string_free (buffer, FALSE);
+}
+
+/**
+ * @brief Generates and adds assets from report host details
+ *
+ * @param[in]  report   The report to get host details from.
+ * @param[in]  host_ip  IP address of the host to get details from.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+add_assets_from_host_in_report (report_t report, const char *host_ip)
+{
+  int ret;
+  gchar *quoted_host;
+  char *report_id;
+  report_host_t report_host = 0;
+
+  /* Get report UUID */
+  report_id = report_uuid (report);
+  if (report_id == NULL)
+    {
+      g_warning ("%s: report %llu not found.",
+                 __func__, report);
+      return -1;
+    }
+
+  /* Find report_host */
+  quoted_host = sql_quote (host_ip);
+  sql_int64 (&report_host,
+             "SELECT id FROM report_hosts"
+             " WHERE host = '%s' AND report = %llu",
+             quoted_host,
+             report);
+  g_free (quoted_host);
+  if (report_host == 0)
+    {
+      g_warning ("%s: report_host for host '%s' and report '%s' not found.",
+                 __func__, host_ip, report_id);
+      free (report_id);
+      return -1;
+    }
+
+  /* Create assets */
+  if (report_host_noticeable (report, host_ip))
+    {
+      host_notice (host_ip, "ip", host_ip, "Report Host", report_id, 1, 1);
+    }
+
+  ret = add_tls_certificates_from_report_host (report_host,
+                                               report_id,
+                                               host_ip);
+  if (ret)
+    {
+      free (report_id);
+      return ret;
+    }
+
+  return 0;
 }
