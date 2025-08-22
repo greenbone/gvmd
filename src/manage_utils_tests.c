@@ -73,6 +73,20 @@ verify_next (time_t next, time_t first, time_t now, int period)
          || next == get_next_time (first, now, 2 * 60, 2);
 }
 
+static GPtrArray *
+make_str_array (const char **vals, size_t n)
+{
+  GPtrArray *a = g_ptr_array_new_with_free_func (g_free);
+  for (size_t i = 0; i < n; ++i)
+    {
+      if (vals[i] == NULL)
+        g_ptr_array_add (a, NULL);
+      else
+        g_ptr_array_add (a, g_strdup (vals[i]));
+    }
+  return a;
+}
+
 Ensure (manage_utils, icalendar_next_time_from_string_utc)
 {
   time_t next, now;
@@ -191,6 +205,106 @@ Ensure (manage_utils, clean_hosts_string_zeroes)
   g_free (clean_str);
 }
 
+/* concat_error_messages tests */
+
+Ensure (manage_utils, concat_error_messages_null_array_returns_null)
+{
+  gchar *s = concat_error_messages (NULL, NULL, "Validation failed for : ");
+  assert_that (s, is_null);
+}
+
+Ensure (manage_utils, concat_error_messages_empty_array_returns_null)
+{
+  GPtrArray *arr = g_ptr_array_new_with_free_func (g_free);
+  gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
+  assert_that (s, is_null);
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_single_item_with_prefix)
+{
+  const char *vals[] = {"attempts must be >= 0"};
+  GPtrArray *arr = make_str_array (vals, 1);
+
+  gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
+  assert_that (s, is_equal_to_string ("Validation failed for : attempts must be >= 0"));
+
+  g_free (s);
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_multiple_default_sep_and_prefix)
+{
+  const char *vals[] = {"period_in_seconds required", "bulk_size must be positive", "cron invalid"};
+  GPtrArray *arr = make_str_array (vals, 3);
+
+  gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
+  assert_that (s, is_equal_to_string (
+      "Validation failed for : period_in_seconds required; bulk_size must be positive; cron invalid"));
+
+  g_free (s);
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_custom_separator)
+{
+  const char *vals[] = {"a", "b", "c"};
+  GPtrArray *arr = make_str_array (vals, 3);
+
+  gchar *s = concat_error_messages (arr, " | ", "Validation failed for : ");
+  assert_that (s, is_equal_to_string ("Validation failed for : a | b | c"));
+
+  g_free (s);
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_skips_null_and_empty)
+{
+  const char *vals[] = {NULL, "", "first", "", "second", NULL};
+  GPtrArray *arr = make_str_array (vals, sizeof (vals) / sizeof (vals[0]));
+
+  gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
+  assert_that (s, is_equal_to_string ("Validation failed for : first; second"));
+
+  g_free (s);
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_all_null_or_empty_returns_null)
+{
+  const char *vals[] = {NULL, "", NULL, ""};
+  GPtrArray *arr = make_str_array (vals, sizeof (vals) / sizeof (vals[0]));
+
+  gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
+  assert_that (s, is_null);
+
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_null_prefix_means_no_prefix)
+{
+  const char *vals[] = {"x", "y"};
+  GPtrArray *arr = make_str_array (vals, 2);
+
+  gchar *s = concat_error_messages (arr, NULL, NULL);
+  assert_that (s, is_equal_to_string ("x; y"));
+
+  g_free (s);
+  g_ptr_array_free (arr, TRUE);
+}
+
+Ensure (manage_utils, concat_error_messages_empty_separator)
+{
+  const char *vals[] = {"aa", "bb", "cc"};
+  GPtrArray *arr = make_str_array (vals, 3);
+
+  gchar *s = concat_error_messages (arr, "", "P: ");
+  assert_that (s, is_equal_to_string ("P: aabbcc"));
+
+  g_free (s);
+  g_ptr_array_free (arr, TRUE);
+}
+
 /* Test suite. */
 
 int
@@ -208,6 +322,16 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_tz);
 
   add_test_with_context (suite, manage_utils, clean_hosts_string_zeroes);
+
+  add_test_with_context (suite, manage_utils, concat_error_messages_null_array_returns_null);
+  add_test_with_context (suite, manage_utils, concat_error_messages_empty_array_returns_null);
+  add_test_with_context (suite, manage_utils, concat_error_messages_single_item_with_prefix);
+  add_test_with_context (suite, manage_utils, concat_error_messages_multiple_default_sep_and_prefix);
+  add_test_with_context (suite, manage_utils, concat_error_messages_custom_separator);
+  add_test_with_context (suite, manage_utils, concat_error_messages_skips_null_and_empty);
+  add_test_with_context (suite, manage_utils, concat_error_messages_all_null_or_empty_returns_null);
+  add_test_with_context (suite, manage_utils, concat_error_messages_null_prefix_means_no_prefix);
+  add_test_with_context (suite, manage_utils, concat_error_messages_empty_separator);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());

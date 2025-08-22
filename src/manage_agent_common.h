@@ -18,6 +18,7 @@
 #include "iterator.h"
 #include "manage_get.h"
 #include "manage_resources.h"
+#include "manage_utils.h"
 
 #include <agent_controller/agent_controller.h>
 #include <glib.h>
@@ -55,9 +56,6 @@ agent_uuid_list_new (int count);
 
 void
 agent_uuid_list_free (agent_uuid_list_t uuid_list);
-
-gchar *
-concat_error_messages (const GPtrArray *errors, const gchar *sep);
 
 #endif // _GVMD_MANAGE_AGENT_COMMON_H
 #endif // ENABLE_AGENTS

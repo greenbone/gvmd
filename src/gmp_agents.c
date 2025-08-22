@@ -15,6 +15,7 @@
 
 #include "gmp_agents.h"
 
+#include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_get.h"
 #include "manage.h"
 
@@ -463,113 +464,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
-      /* <agent_control><retry>...</retry></agent_control> */
-      entity_t ac = entity_child (cfg_e, "agent_control");
-      if (ac)
-        {
-          entity_t retry = entity_child (ac, "retry");
-          if (retry)
-            {
-              /* attempts */
-              e = entity_child (retry, "attempts");
-              if (e)
-                {
-                  const char *t = entity_text (e);
-                  cfg->agent_control.retry.attempts = atoi (t ? t : "0");
-                }
-              /* delay_in_seconds */
-              e = entity_child (retry, "delay_in_seconds");
-              if (e)
-                {
-                  const char *t = entity_text (e);
-                  cfg->agent_control.retry.delay_in_seconds =
-                    atoi (t ? t : "0");
-                }
-              /* max_jitter_in_seconds */
-              e = entity_child (retry, "max_jitter_in_seconds");
-              if (e)
-                {
-                  const char *t = entity_text (e);
-                  cfg->agent_control.retry.max_jitter_in_seconds =
-                    atoi (t ? t : "0");
-                }
-            }
-        }
-
-      /* <agent_script_executor>...</agent_script_executor> */
-      entity_t se = entity_child (cfg_e, "agent_script_executor");
-      if (se)
-        {
-          /* bulk_size */
-          e = entity_child (se, "bulk_size");
-          if (e)
-            {
-              const char *t = entity_text (e);
-              cfg->agent_script_executor.bulk_size = atoi (t ? t : "0");
-            }
-          /* bulk_throttle_time_in_ms */
-          e = entity_child (se, "bulk_throttle_time_in_ms");
-          if (e)
-            {
-              const char *t = entity_text (e);
-              cfg->agent_script_executor.bulk_throttle_time_in_ms =
-                atoi (t ? t : "0");
-            }
-          /* indexer_dir_depth */
-          e = entity_child (se, "indexer_dir_depth");
-          if (e)
-            {
-              const char *t = entity_text (e);
-              cfg->agent_script_executor.indexer_dir_depth = atoi (t ? t : "0");
-            }
-          /* period_in_seconds */
-          e = entity_child (se, "period_in_seconds");
-          if (e)
-            {
-              const char *t = entity_text (e);
-              cfg->agent_script_executor.period_in_seconds = atoi (t ? t : "0");
-            }
-
-          /* <scheduler_cron_time><item>...</item>...</scheduler_cron_time> */
-          entity_t sct = entity_child (se, "scheduler_cron_time");
-          if (sct)
-            {
-              GPtrArray *arr = g_ptr_array_new_with_free_func (g_free);
-              for (GSList *n = sct->entities; n; n = n->next)
-                {
-                  entity_t it = n->data;
-                  if (it && strcmp (entity_name (it), "item") == 0)
-                    {
-                      const gchar *txt = entity_text (it);
-                      g_ptr_array_add (arr, g_strdup (txt ? txt : ""));
-                    }
-                }
-              if (arr->len == 0)
-                g_ptr_array_free (arr, TRUE);
-              else
-                cfg->agent_script_executor.scheduler_cron_time = arr;
-            }
-        }
-
-      /* <heartbeat>...</heartbeat> */
-      entity_t hb = entity_child (cfg_e, "heartbeat");
-      if (hb)
-        {
-          /* interval_in_seconds */
-          e = entity_child (hb, "interval_in_seconds");
-          if (e)
-            {
-              const char *t = entity_text (e);
-              cfg->heartbeat.interval_in_seconds = atoi (t ? t : "0");
-            }
-          /* miss_until_inactive */
-          e = entity_child (hb, "miss_until_inactive");
-          if (e)
-            {
-              const char *t = entity_text (e);
-              cfg->heartbeat.miss_until_inactive = atoi (t ? t : "0");
-            }
-        }
+      build_scan_agent_config_from_entity (cfg_e, cfg);
       update->config = cfg;
     }
 
@@ -651,9 +546,10 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
     case AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED:
-      gchar *status_text = concat_error_messages (errs, "; ");
+      gchar *status_text = concat_error_messages (
+        errs, "; ", "Validation failed for config: ");
       if (!status_text)
-        status_text = g_markup_escape_text ("Validation failed for <config>.", -1);
+        status_text = g_markup_escape_text ("Validation failed for config.", -1);
 
       gchar *xml = g_markup_printf_escaped(
         "<modify_agents_response status=\""

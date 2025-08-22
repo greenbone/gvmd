@@ -1491,3 +1491,51 @@ clean_hosts_string (const char *hosts)
 
   return g_string_free (new_hosts, FALSE);
 }
+
+/**
+ * @brief Join an array of gchar* with a separator, skipping NULL/empty entries.
+ *
+ * @param[in]  errors GPtrArray of gchar* (may be NULL).
+ * @param[in]  sep Separator string, default to "; " if NULL.
+ * @param[in]  prefix Prefix string, default to "" if NULL.
+ *
+ * @return Newly allocated joined string, or NULL if no non-empty entries.
+ *         Caller must g_free().
+ */
+gchar *
+concat_error_messages (const GPtrArray *errors, const gchar *sep, const gchar *prefix)
+{
+  if (!errors || errors->len == 0)
+    return NULL;
+
+  if (prefix == NULL)
+    prefix = "";
+
+  const gchar *use_sep = sep ? sep : "; ";
+
+  GString *gs = NULL;
+
+  for (guint i = 0; i < errors->len; ++i)
+    {
+      const gchar *m = g_ptr_array_index ((GPtrArray *)errors, i);
+      if (!m || !*m)
+        continue;
+
+      if (!gs)
+        {
+          /* first non-empty: start with prefix */
+          gs = g_string_new (prefix);
+          g_string_append (gs, m);
+        }
+      else
+        {
+          g_string_append (gs, use_sep);
+          g_string_append (gs, m);
+        }
+    }
+
+  if (!gs)
+    return NULL;
+
+  return g_string_free (gs, FALSE);
+}

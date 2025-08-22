@@ -14,6 +14,9 @@
 
 #include "gmp_base.h"
 
+#include <agent_controller/agent_controller.h>
+#include <util/xmlutils.h>
+
 /* -------- MODIFY_AGENT_CONTROL_SCAN_CONFIG -------- */
 
 void
@@ -37,5 +40,10 @@ modify_agent_control_scan_config_element_end (gmp_parser_t *gmp_parser,
 
 void
 modify_agent_control_scan_config_run (gmp_parser_t *gmp_parser, GError **error);
+
+int
+build_scan_agent_config_from_entity (
+  entity_t root,
+  agent_controller_scan_agent_config_t out_cfg);
 
 #endif /* _GVMD_GMP_AGENT_CONTROL_SCAN_AGENT_CONFIG_H */
