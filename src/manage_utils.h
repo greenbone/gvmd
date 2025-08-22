@@ -102,6 +102,7 @@ gchar *
 clean_hosts_string (const char *);
 
 gchar *
-concat_error_messages (const GPtrArray *errors, const gchar *sep, const gchar *prefix);
+concat_error_messages (const GPtrArray *errors, const gchar *sep,
+                       const gchar *prefix);
 
 #endif /* not _GVMD_MANAGE_UTILS_H */

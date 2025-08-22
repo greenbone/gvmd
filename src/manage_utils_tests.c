@@ -22,8 +22,12 @@
 #include <cgreen/mocks.h>
 
 Describe (manage_utils);
-BeforeEach (manage_utils) {}
-AfterEach (manage_utils) {}
+BeforeEach (manage_utils)
+{
+}
+AfterEach (manage_utils)
+{
+}
 
 /* add_months */
 
@@ -93,38 +97,34 @@ Ensure (manage_utils, icalendar_next_time_from_string_utc)
 
   /* Start in past. */
   now = time (NULL);
-  next = icalendar_next_time_from_string
-          ("BEGIN:VCALENDAR\n"
-           "VERSION:2.0\n"
-           "BEGIN:VEVENT\n"
-           "DTSTART:20200101T000000Z\n"
-           "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
-           "DURATION:PT0S\n"
-           "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
-           "DTSTAMP:19700101T000000Z\n"
-           "END:VEVENT\n"
-           "END:VCALENDAR\n",
-           now,
-           "UTC",
-           0);
+  next = icalendar_next_time_from_string (
+    "BEGIN:VCALENDAR\n"
+    "VERSION:2.0\n"
+    "BEGIN:VEVENT\n"
+    "DTSTART:20200101T000000Z\n"
+    "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
+    "DURATION:PT0S\n"
+    "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
+    "DTSTAMP:19700101T000000Z\n"
+    "END:VEVENT\n"
+    "END:VCALENDAR\n",
+    now, "UTC", 0);
   assert_that (verify_next (next, EPOCH_2020JAN1_UTC, now, 2 * 60),
                is_equal_to (1));
 
   /* Start in future. */
-  next = icalendar_next_time_from_string
-          ("BEGIN:VCALENDAR\n"
-           "VERSION:2.0\n"
-           "BEGIN:VEVENT\n"
-           "DTSTART:20300101T000000Z\n"
-           "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
-           "DURATION:PT0S\n"
-           "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
-           "DTSTAMP:19700101T000000Z\n"
-           "END:VEVENT\n"
-           "END:VCALENDAR\n",
-           now,
-           "UTC",
-           0);
+  next = icalendar_next_time_from_string (
+    "BEGIN:VCALENDAR\n"
+    "VERSION:2.0\n"
+    "BEGIN:VEVENT\n"
+    "DTSTART:20300101T000000Z\n"
+    "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
+    "DURATION:PT0S\n"
+    "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
+    "DTSTAMP:19700101T000000Z\n"
+    "END:VEVENT\n"
+    "END:VCALENDAR\n",
+    now, "UTC", 0);
   assert_that (next, is_equal_to (EPOCH_2030JAN1_UTC));
 }
 
@@ -134,35 +134,34 @@ Ensure (manage_utils, icalendar_next_time_from_string_tz)
 
   now = time (NULL);
 
-  next = icalendar_next_time_from_string
-          ("BEGIN:VCALENDAR\n"
-           "VERSION:2.0\n"
-           /* Timezone definition. */
-           "BEGIN:VTIMEZONE\n"
-           "TZID:/freeassociation.sourceforge.net/Africa/Harare\n"
-           "X-LIC-LOCATION:Africa/Harare\n"
-           "BEGIN:STANDARD\n"
-           "TZNAME:CAT\n"
-           "DTSTART:19030301T000000\n"
-           "TZOFFSETFROM:+021020\n"
-           "TZOFFSETTO:+0200\n"
-           "END:STANDARD\n"
-           "END:VTIMEZONE\n"
-           /* Event. */
-           "BEGIN:VEVENT\n"
-           "DTSTART;TZID=/freeassociation.sourceforge.net/Africa/Harare:\n"
-           " 20200101T000000\n"
-           "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
-           "DURATION:PT0S\n"
-           "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
-           "DTSTAMP:19700101T000000Z\n"
-           "END:VEVENT\n"
-           "END:VCALENDAR\n",
-           now,
-           "Africa/Harare",
-           0);
+  next = icalendar_next_time_from_string (
+    "BEGIN:VCALENDAR\n"
+    "VERSION:2.0\n"
+    /* Timezone definition. */
+    "BEGIN:VTIMEZONE\n"
+    "TZID:/freeassociation.sourceforge.net/Africa/Harare\n"
+    "X-LIC-LOCATION:Africa/Harare\n"
+    "BEGIN:STANDARD\n"
+    "TZNAME:CAT\n"
+    "DTSTART:19030301T000000\n"
+    "TZOFFSETFROM:+021020\n"
+    "TZOFFSETTO:+0200\n"
+    "END:STANDARD\n"
+    "END:VTIMEZONE\n"
+    /* Event. */
+    "BEGIN:VEVENT\n"
+    "DTSTART;TZID=/freeassociation.sourceforge.net/Africa/Harare:\n"
+    " 20200101T000000\n"
+    "RRULE:FREQ=MINUTELY;INTERVAL=2\n"
+    "DURATION:PT0S\n"
+    "UID:a486116b-8058-4b1e-9fc5-0eeec5948792\n"
+    "DTSTAMP:19700101T000000Z\n"
+    "END:VEVENT\n"
+    "END:VCALENDAR\n",
+    now, "Africa/Harare", 0);
 
-  assert_that (verify_next (next, EPOCH_2020JAN1_HAR, now, 2 * 60), is_equal_to (1));
+  assert_that (verify_next (next, EPOCH_2020JAN1_HAR, now, 2 * 60),
+               is_equal_to (1));
 }
 
 /* Hosts test */
@@ -199,9 +198,8 @@ Ensure (manage_utils, clean_hosts_string_zeroes)
   // List of addresses and ranges
   clean_str = clean_hosts_string ("000.001.002.003,  040.050.060.070-80,"
                                   " 123.012.001.001-123.012.001.010");
-  assert_that (clean_str,
-               is_equal_to_string ("0.1.2.3, 40.50.60.70-80,"
-                                   " 123.12.1.1-123.12.1.10"));
+  assert_that (clean_str, is_equal_to_string ("0.1.2.3, 40.50.60.70-80,"
+                                              " 123.12.1.1-123.12.1.10"));
   g_free (clean_str);
 }
 
@@ -227,7 +225,8 @@ Ensure (manage_utils, concat_error_messages_single_item_with_prefix)
   GPtrArray *arr = make_str_array (vals, 1);
 
   gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
-  assert_that (s, is_equal_to_string ("Validation failed for : attempts must be >= 0"));
+  assert_that (
+    s, is_equal_to_string ("Validation failed for : attempts must be >= 0"));
 
   g_free (s);
   g_ptr_array_free (arr, TRUE);
@@ -235,12 +234,14 @@ Ensure (manage_utils, concat_error_messages_single_item_with_prefix)
 
 Ensure (manage_utils, concat_error_messages_multiple_default_sep_and_prefix)
 {
-  const char *vals[] = {"period_in_seconds required", "bulk_size must be positive", "cron invalid"};
+  const char *vals[] = {"period_in_seconds required",
+                        "bulk_size must be positive", "cron invalid"};
   GPtrArray *arr = make_str_array (vals, 3);
 
   gchar *s = concat_error_messages (arr, NULL, "Validation failed for : ");
   assert_that (s, is_equal_to_string (
-      "Validation failed for : period_in_seconds required; bulk_size must be positive; cron invalid"));
+                    "Validation failed for : period_in_seconds required; "
+                    "bulk_size must be positive; cron invalid"));
 
   g_free (s);
   g_ptr_array_free (arr, TRUE);
@@ -318,20 +319,31 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, add_months_negative_months);
   add_test_with_context (suite, manage_utils, add_months_positive_months);
 
-  add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_utc);
-  add_test_with_context (suite, manage_utils, icalendar_next_time_from_string_tz);
+  add_test_with_context (suite, manage_utils,
+                         icalendar_next_time_from_string_utc);
+  add_test_with_context (suite, manage_utils,
+                         icalendar_next_time_from_string_tz);
 
   add_test_with_context (suite, manage_utils, clean_hosts_string_zeroes);
 
-  add_test_with_context (suite, manage_utils, concat_error_messages_null_array_returns_null);
-  add_test_with_context (suite, manage_utils, concat_error_messages_empty_array_returns_null);
-  add_test_with_context (suite, manage_utils, concat_error_messages_single_item_with_prefix);
-  add_test_with_context (suite, manage_utils, concat_error_messages_multiple_default_sep_and_prefix);
-  add_test_with_context (suite, manage_utils, concat_error_messages_custom_separator);
-  add_test_with_context (suite, manage_utils, concat_error_messages_skips_null_and_empty);
-  add_test_with_context (suite, manage_utils, concat_error_messages_all_null_or_empty_returns_null);
-  add_test_with_context (suite, manage_utils, concat_error_messages_null_prefix_means_no_prefix);
-  add_test_with_context (suite, manage_utils, concat_error_messages_empty_separator);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_null_array_returns_null);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_empty_array_returns_null);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_single_item_with_prefix);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_multiple_default_sep_and_prefix);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_custom_separator);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_skips_null_and_empty);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_all_null_or_empty_returns_null);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_null_prefix_means_no_prefix);
+  add_test_with_context (suite, manage_utils,
+                         concat_error_messages_empty_separator);
 
   if (argc > 1)
     return run_single_test (suite, argv[1], create_text_reporter ());
