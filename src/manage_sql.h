@@ -560,20 +560,6 @@ check_host_detail_exists (report_t, const char *, const char *, const char *,
                           const char *, const char *, const char *, char **,
                           GHashTable *);
 
-// FIX moved here for now, until more code goes to manage*_assets.c
-/**
- * @brief Host identifier type.
- */
-typedef struct
-{
-  gchar *ip;                ///< IP of host.
-  gchar *name;              ///< Name of identifier, like "hostname".
-  gchar *value;             ///< Value of identifier.
-  gchar *source_type;       ///< Type of identifier source, like "Report Host".
-  gchar *source_id;         ///< ID of source.
-  gchar *source_data;       ///< Extra data for source.
-} identifier_t;
-
 #if OPENVASD
 void
 parse_openvasd_report (task_t, report_t, GSList *, time_t, time_t);
