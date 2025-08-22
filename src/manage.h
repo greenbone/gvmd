@@ -2286,13 +2286,6 @@ credential_value (credential_t, const char*);
 gchar*
 credential_encrypted_value (credential_t, const char*);
 
-
-
-/* Assets. */
-
-int
-total_asset_count (const get_data_t *);
-
 
 /* Notes. */
 
