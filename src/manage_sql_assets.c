@@ -111,6 +111,19 @@
  * OS X.     | OS with Name=X.    | No action.
  */
 
+/**
+ * @brief Host identifier type.
+ */
+typedef struct
+{
+  gchar *ip;                ///< IP of host.
+  gchar *name;              ///< Name of identifier, like "hostname".
+  gchar *value;             ///< Value of identifier.
+  gchar *source_type;       ///< Type of identifier source, like "Report Host".
+  gchar *source_id;         ///< ID of source.
+  gchar *source_data;       ///< Extra data for source.
+} identifier_t;
+
 static int
 report_host_dead (report_host_t);
 
