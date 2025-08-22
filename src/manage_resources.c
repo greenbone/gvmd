@@ -12,6 +12,12 @@
 
 #include "manage_resources.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 
 
 /* Resource type information. */

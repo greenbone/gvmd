@@ -17,6 +17,12 @@
 #include "manage_utils.h"
 #include "manage_filter_utils.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md  utils"
+
 /**
  * @brief Internal function for getting a filter term by UUID.
  */

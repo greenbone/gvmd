@@ -196,24 +196,6 @@ host_nthlast_report_host (const char *, report_host_t *, int);
 report_host_t
 host_iterator_report_host (iterator_t *);
 
-char *
-report_host_ip (const char *);
-
-gchar *
-report_host_hostname (report_host_t);
-
-gchar *
-report_host_best_os_cpe (report_host_t);
-
-gchar *
-report_host_best_os_txt (report_host_t);
-
-int
-report_host_dead (report_host_t);
-
-int
-report_host_result_count (report_host_t);
-
 void
 init_report_host_details_iterator (iterator_t *, report_host_t);
 
@@ -406,6 +388,11 @@ nvts_check_time ();
 int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
+
+int
+count2 (const char *, const get_data_t *, column_t *, column_t *, column_t *,
+        column_t *, const char **, int, const char *, const char *,
+        const char *, int);
 
 int
 init_get_iterator (iterator_t*, const char *, const get_data_t *, column_t *,

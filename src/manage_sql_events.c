@@ -30,6 +30,13 @@
 
 #include <gvm/base/array.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 /**
  * @brief Initialise an event alert iterator.
  *

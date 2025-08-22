@@ -129,4 +129,22 @@ asset_iterator_writable (iterator_t *);
 int
 asset_iterator_in_use (iterator_t *);
 
+int
+modify_asset (const char *, const char *);
+
+int
+delete_asset (const char *, const char *, int);
+
+int
+asset_host_count (const get_data_t *);
+
+int
+asset_os_count (const get_data_t *);
+
+gchar *
+host_routes_xml (host_t);
+
+int
+add_assets_from_host_in_report (report_t, const char *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

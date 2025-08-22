@@ -21,11 +21,98 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
 #include <gvm/base/array.h>
 #include <gvm/base/hosts.h>
 #include <gvm/util/xmlutils.h>
+
+/**
+ * @file
+ * @brief GVM management layer: Asset SQL
+ *
+ * The Asset SQL for the GVM management layer.
+ */
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+/**
+ * \page asset_rules Ruleset for updating assets from scan detections
+ *
+ * During a scan various assets are identfied. The findings are by default
+ * used to update the asset database. Since assets may already be present in
+ * the database or even be present with contradictive properties, a ruleset
+ * defines how the asset database is updated upon findings.
+ *
+ * Hosts
+ * -----
+ *
+ * When a host is detected, and there is at least one asset host that has the
+ * same name and owner as the detected host, and whose identifiers all have
+ * the same values as the identifiers of the detected host, then the most
+ * recent such asset host is used. Otherwise a new asset host is created.
+ * Either way the identifiers are added to the asset host. It does not matter
+ * if the asset host has fewer identifiers than detected, as long as the
+ * existing identifiers match.
+ *
+ * At the beginning of a scan, when a host is first detected, the decision
+ * about which asset host to use is made by \ref host_notice.  At the end
+ * of the scan, if the host has identifiers, then this decision is revised
+ * by \ref hosts_set_identifiers to take the identifiers into account.
+ *
+ * Host identifiers can be ip, hostname, MAC, OS or ssh-key.
+ *
+ * This documentation includes some pseudo-code and tabular definition.
+ * Eventually one of them will repalce the other.
+ *
+ * Name    : The assigned name (usually the IP)
+ * IP      : The detected IP
+ * Hostname: The detected Hostname
+ * OS:     : The detected OS
+ *
+ * If IP And Not Hostname:
+ *   If Not Assets.Host(id=Name) And Not Assets.Host(attrib=IP, IP):
+ *     Assets.Host.New(id=Name, ip=IP)
+ *   If Assets.Host(id=Name) == 1:
+ *     Assets.Host.Add(id=Name, ip=IP)
+ *
+ * This pseudo-code is equivalent to the first two rows of:
+ *
+ * Detection                     | Asset State                                                                 |     Asset Update
+ * ----------------------------- | --------------------------------------------------------------------------- | -----------------------------
+ * IP address X.                 | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
+ * IP address X.                 | Host A with Name=X.                                                         | Add ip=X to host A.
+ * IP address X.                 | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
+ * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
+ *
+ * Follow up action: If a MAC, OS or ssh-key was detected, then the respective
+ * identifiers are added to the asset host selected during asset update.
+ *
+ * Operating Systems
+ * -----------------
+ *
+ * If OS:
+ *   If Not Assets.OS(id=OS):
+ *     Assets.OS.New(id=OS)
+ *
+ * This pseudo-code is equivalent to:
+ *
+ * Detection | Asset State        | Asset Update
+ * --------- | ------------------ | ------------------------
+ * OS X.     | No OS with Name=X. | Create OS with Name=X.
+ * OS X.     | OS with Name=X.    | No action.
+ */
+
+static int
+report_host_dead (report_host_t);
 
 /**
  * @brief Return the UUID of the asset associated with a result host.
@@ -103,6 +190,24 @@ manage_report_host_add (report_t report, const char *host, time_t start,
                              report, quoted_host);
   g_free (quoted_host);
   return report_host;
+}
+
+
+/**
+ * @brief Counts.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return 1 if the host is marked as dead, 0 otherwise.
+ */
+static int
+report_host_result_count (report_host_t report_host)
+{
+  return sql_int ("SELECT count(*) FROM report_hosts, results"
+                  " WHERE report_hosts.id = %llu"
+                  "   AND results.report = report_hosts.report"
+                  "   AND report_hosts.host = results.host;",
+                  report_host);
 }
 
 /**
@@ -1540,4 +1645,738 @@ asset_iterator_in_use (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+}
+
+/**
+ * @brief Modify an asset.
+ *
+ * @param[in]   asset_id        UUID of asset.
+ * @param[in]   comment         Comment on asset.
+ *
+ * @return 0 success, 1 failed to find asset, 3 asset_id required,
+ *         99 permission denied, -1 internal error.
+ */
+int
+modify_asset (const char *asset_id, const char *comment)
+{
+  gchar *quoted_asset_id, *quoted_comment;
+  resource_t asset;
+
+  if (asset_id == NULL)
+    return 3;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("modify_asset") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  /* Host. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM hosts WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql_rollback ();
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  quoted_comment = sql_quote (comment ?: "");
+
+  sql ("UPDATE hosts SET"
+       " comment = '%s',"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_comment, asset);
+
+  g_free (quoted_comment);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Find a host for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of host.
+ * @param[out]  host      Host return, 0 if successfully failed to find host.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find host), TRUE on error.
+ */
+static gboolean
+find_host_with_permission (const char* uuid, host_t* host,
+                           const char *permission)
+{
+  return find_resource_with_permission ("host", uuid, host, permission, 0);
+}
+
+/**
+ * @brief Delete all asset that came from a report.
+ *
+ * Assume caller started a transaction.
+ *
+ * @param[in]  report_id  UUID of report.
+ *
+ * @return 0 success, 2 failed to find report, 4 UUID
+ *         required, 99 permission denied, -1 error.
+ */
+static int
+delete_report_assets (const char *report_id)
+{
+  resource_t report;
+  gchar *quoted_report_id;
+
+  report = 0;
+  if (find_report_with_permission (report_id, &report, "delete_report"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (report == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  quoted_report_id = sql_quote (report_id);
+
+  /* Delete the hosts and OSs identified by this report if they were only
+   * identified by this report. */
+
+  sql ("CREATE TEMPORARY TABLE delete_report_assets_hosts (host INTEGER);");
+
+  /* Collect hosts that were only identified by the given source. */
+  sql ("INSERT into delete_report_assets_hosts"
+       " (host)"
+       " SELECT id FROM hosts"
+       " WHERE (EXISTS (SELECT * FROM host_identifiers"
+       "                WHERE host = hosts.id"
+       "                AND source_id = '%s')"
+       "        OR EXISTS (SELECT * FROM host_oss"
+       "                   WHERE host = hosts.id"
+       "                   AND source_id = '%s'))"
+       " AND NOT EXISTS (SELECT * FROM host_identifiers"
+       "                 WHERE host = hosts.id"
+       "                 AND source_id != '%s')"
+       " AND NOT EXISTS (SELECT * FROM host_oss"
+       "                 WHERE host = hosts.id"
+       "                 AND source_id != '%s');",
+      quoted_report_id,
+      quoted_report_id,
+      quoted_report_id,
+      quoted_report_id);
+
+  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
+       quoted_report_id);
+  sql ("DELETE FROM host_details WHERE source_id = '%s';",
+       quoted_report_id);
+
+  g_free (quoted_report_id);
+
+  /* The host may have details from sources that did not identify the host. */
+  sql ("DELETE FROM host_details"
+       " WHERE host in (SELECT host FROM delete_report_assets_hosts);");
+
+  /* The host may have severities from sources that did not identify the
+   * host. */
+  sql ("DELETE FROM host_max_severities"
+       " WHERE host in (SELECT host FROM delete_report_assets_hosts);");
+
+  sql ("DELETE FROM hosts"
+       " WHERE id in (SELECT host FROM delete_report_assets_hosts);");
+
+  sql ("DROP TABLE delete_report_assets_hosts;");
+
+  sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Delete an asset.
+ *
+ * @param[in]  asset_id   UUID of asset.
+ * @param[in]  report_id  UUID of report from which to delete assets.
+ *                        Overridden by asset_id.
+ * @param[in]  dummy      Dummy arg to match other delete functions.
+ *
+ * @return 0 success, 1 asset is in use, 2 failed to find asset, 4 UUID
+ *         required, 99 permission denied, -1 error.
+ */
+int
+delete_asset (const char *asset_id, const char *report_id, int dummy)
+{
+  resource_t asset, parent;
+  gchar *quoted_asset_id, *parent_id;
+
+  asset = parent = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_asset") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (asset_id == NULL)
+    {
+      if (report_id == NULL)
+        {
+          sql_rollback ();
+          return 3;
+        }
+      return delete_report_assets (report_id);
+    }
+
+  /* Host identifier. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM host_identifiers WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql_rollback ();
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      parent_id = sql_string ("SELECT uuid FROM hosts"
+                              " WHERE id = (SELECT host FROM host_identifiers"
+                              "             WHERE id = %llu);",
+                              asset);
+      parent = 0;
+      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+
+      if (parent == 0)
+        {
+          sql_rollback ();
+          return 99;
+        }
+
+      sql ("DELETE FROM host_identifiers WHERE id = %llu;", asset);
+      sql_commit ();
+
+      return 0;
+    }
+
+  /* Host OS. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM host_oss WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql_rollback ();
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      parent_id = sql_string ("SELECT uuid FROM hosts"
+                              " WHERE id = (SELECT host FROM host_oss"
+                              "             WHERE id = %llu);",
+                              asset);
+      parent = 0;
+      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+
+      if (parent == 0)
+        {
+          sql_rollback ();
+          return 99;
+        }
+
+      sql ("DELETE FROM host_oss WHERE id = %llu;", asset);
+      sql_commit ();
+
+      return 0;
+    }
+
+  /* OS. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM oss WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql_rollback ();
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      if (sql_int ("SELECT count (*) FROM host_oss"
+                   " WHERE os = %llu;",
+                   asset))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      sql ("DELETE FROM oss WHERE id = %llu;", asset);
+      permissions_set_orphans ("os", asset, LOCATION_TABLE);
+      tags_remove_resource ("os", asset, LOCATION_TABLE);
+      sql_commit ();
+
+      return 0;
+    }
+
+  /* Host. */
+
+  quoted_asset_id = sql_quote (asset_id);
+  switch (sql_int64 (&asset,
+                     "SELECT id FROM hosts WHERE uuid = '%s';",
+                     quoted_asset_id))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        asset = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_asset_id);
+        sql_rollback ();
+        return -1;
+        break;
+    }
+
+  g_free (quoted_asset_id);
+
+  if (asset)
+    {
+      sql ("DELETE FROM host_identifiers WHERE host = %llu;", asset);
+      sql ("DELETE FROM host_oss WHERE host = %llu;", asset);
+      sql ("DELETE FROM host_max_severities WHERE host = %llu;", asset);
+      sql ("DELETE FROM host_details WHERE host = %llu;", asset);
+      sql ("DELETE FROM hosts WHERE id = %llu;", asset);
+      permissions_set_orphans ("host", asset, LOCATION_TABLE);
+      tags_remove_resource ("host", asset, LOCATION_TABLE);
+      sql_commit ();
+
+      return 0;
+    }
+
+  sql_rollback ();
+  return 2;
+}
+
+/**
+ * @brief Tests if a report host is marked as dead.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return 1 if the host is marked as dead, 0 otherwise.
+ */
+static int
+report_host_dead (report_host_t report_host)
+{
+  return sql_int ("SELECT count(*) != 0 FROM report_host_details"
+                  " WHERE report_host = %llu"
+                  "   AND name = 'Host dead'"
+                  "   AND value != '0';",
+                  report_host);
+}
+
+/**
+ * @brief Get the IP of a host, using the 'hostname' report host details.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  host  Host name or IP.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+gchar*
+report_host_ip (const char *host)
+{
+  gchar *quoted_host, *ret;
+  quoted_host = sql_quote (host);
+  ret = sql_string ("SELECT host FROM report_hosts"
+                    " WHERE id = (SELECT report_host FROM report_host_details"
+                    "             WHERE name = 'hostname'"
+                    "             AND value = '%s'"
+                    "             ORDER BY id DESC LIMIT 1);",
+                    quoted_host);
+  g_free (quoted_host);
+  return ret;
+}
+
+/**
+ * @brief Get the hostname of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated hostname if available, else NULL.
+ */
+gchar*
+report_host_hostname (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'hostname'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
+ * @brief Get the best_os_cpe of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated best_os_cpe if available, else NULL.
+ */
+gchar*
+report_host_best_os_cpe (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'best_os_cpe'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
+ * @brief Get the best_os_txt of a report_host.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Newly allocated best_os_txt if available, else NULL.
+ */
+gchar*
+report_host_best_os_txt (report_host_t report_host)
+{
+  return sql_string ("SELECT value FROM report_host_details"
+                     " WHERE report_host = %llu"
+                     " AND name = 'best_os_txt'"
+                     " ORDER BY id DESC LIMIT 1;",
+                     report_host);
+}
+
+/**
+ * @brief Check if a report host is alive and has at least one result.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  host    Host name or IP.
+ *
+ * @return 0 if dead, else alive.
+ */
+int
+report_host_noticeable (report_t report, const gchar *host)
+{
+  report_host_t report_host = 0;
+
+  sql_int64 (&report_host,
+             "SELECT id FROM report_hosts"
+             " WHERE report = %llu AND host = '%s';",
+             report,
+             host);
+
+  return report_host
+         && report_host_dead (report_host) == 0
+         && report_host_result_count (report_host) > 0;
+}
+
+/**
+ * @brief Count number of hosts.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of hosts in filtered set.
+ */
+int
+asset_host_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = HOST_ITERATOR_COLUMNS;
+  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
+  return count2 ("host", get, columns, NULL, where_columns, NULL,
+                 filter_columns, 0, NULL, NULL, NULL, TRUE);
+}
+
+/**
+ * @brief Count number of oss.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of oss in filtered set.
+ */
+int
+asset_os_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OS_ITERATOR_COLUMNS;
+  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
+  int ret;
+
+  ret = count2 ("os", get, columns, NULL, where_columns, NULL,
+                extra_columns, 0, 0, 0, NULL, TRUE);
+
+  return ret;
+}
+
+/**
+ * @brief Get XML of a detailed host route.
+ *
+ * @param[in]  host  The host.
+ *
+ * @return XML.
+ */
+gchar*
+host_routes_xml (host_t host)
+{
+  iterator_t routes;
+  GString* buffer;
+
+  gchar *owned_clause, *with_clause;
+
+  owned_clause = acl_where_owned_for_get ("host", NULL, NULL, &with_clause);
+
+  buffer = g_string_new ("<routes>");
+  init_iterator (&routes,
+                 "SELECT outer_details.value,"
+                 "       outer_details.source_type,"
+                 "       outer_details.source_id,"
+                 "       outer_identifiers.modification_time"
+                 "  FROM host_details AS outer_details"
+                 "  JOIN host_identifiers AS outer_identifiers"
+                 "    ON outer_identifiers.host = outer_details.host"
+                 " WHERE outer_details.host = %llu"
+                 "   AND outer_details.name = 'traceroute'"
+                 "   AND outer_details.source_id = outer_identifiers.source_id"
+                 "   AND outer_identifiers.name='ip'"
+                 "   AND outer_identifiers.modification_time"
+                 "         = (SELECT max (modification_time)"
+                 "              FROM host_identifiers"
+                 "             WHERE host_identifiers.host = %llu"
+                 "               AND host_identifiers.source_id IN"
+                 "                   (SELECT source_id FROM host_details"
+                 "                     WHERE host = %llu"
+                 "                       AND value = outer_details.value)"
+                 "              AND host_identifiers.name='ip')"
+                 " ORDER BY outer_identifiers.modification_time DESC;",
+                 host, host, host);
+
+  while (next (&routes))
+    {
+      const char *traceroute;
+      const char *source_id;
+      time_t modified;
+      gchar **hop_ips, **hop_ip;
+      int distance;
+
+      g_string_append (buffer, "<route>");
+
+      traceroute = iterator_string (&routes, 0);
+      source_id = iterator_string (&routes, 2);
+      modified = iterator_int64 (&routes, 3);
+
+      hop_ips = g_strsplit (traceroute, ",", 0);
+      hop_ip = hop_ips;
+
+      distance = 0;
+
+      while (*hop_ip != NULL) {
+        iterator_t best_host_iterator;
+        const char *best_host_id;
+        int same_source;
+
+        init_iterator (&best_host_iterator,
+                       "%s"
+                       " SELECT hosts.uuid,"
+                       "       (source_id='%s')"
+                       "         AS same_source"
+                       "  FROM hosts, host_identifiers"
+                       " WHERE hosts.id = host_identifiers.host"
+                       "   AND host_identifiers.name = 'ip'"
+                       "   AND host_identifiers.value='%s'"
+                       "   AND %s"
+                       " ORDER BY same_source DESC,"
+                       "          abs(host_identifiers.modification_time"
+                       "              - %llu) ASC"
+                       " LIMIT 1;",
+                       with_clause ? with_clause : "",
+                       source_id,
+                       *hop_ip,
+                       owned_clause,
+                       modified);
+
+        if (next (&best_host_iterator))
+          {
+            best_host_id = iterator_string (&best_host_iterator, 0);
+            same_source = iterator_int (&best_host_iterator, 1);
+          }
+        else
+          {
+            best_host_id = NULL;
+            same_source = 0;
+          }
+
+        g_string_append_printf (buffer,
+                                "<host id=\"%s\""
+                                " distance=\"%d\""
+                                " same_source=\"%d\">"
+                                "<ip>%s</ip>"
+                                "</host>",
+                                best_host_id ? best_host_id : "",
+                                distance,
+                                same_source,
+                                *hop_ip);
+
+        cleanup_iterator (&best_host_iterator);
+
+        distance++;
+        hop_ip++;
+      }
+
+      g_string_append (buffer, "</route>");
+      g_strfreev(hop_ips);
+    }
+
+  g_free (with_clause);
+  g_free (owned_clause);
+
+  cleanup_iterator (&routes);
+
+  g_string_append (buffer, "</routes>");
+
+  return g_string_free (buffer, FALSE);
+}
+
+/**
+ * @brief Generates and adds assets from report host details
+ *
+ * @param[in]  report   The report to get host details from.
+ * @param[in]  host_ip  IP address of the host to get details from.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+add_assets_from_host_in_report (report_t report, const char *host_ip)
+{
+  int ret;
+  gchar *quoted_host;
+  char *report_id;
+  report_host_t report_host = 0;
+
+  /* Get report UUID */
+  report_id = report_uuid (report);
+  if (report_id == NULL)
+    {
+      g_warning ("%s: report %llu not found.",
+                 __func__, report);
+      return -1;
+    }
+
+  /* Find report_host */
+  quoted_host = sql_quote (host_ip);
+  sql_int64 (&report_host,
+             "SELECT id FROM report_hosts"
+             " WHERE host = '%s' AND report = %llu",
+             quoted_host,
+             report);
+  g_free (quoted_host);
+  if (report_host == 0)
+    {
+      g_warning ("%s: report_host for host '%s' and report '%s' not found.",
+                 __func__, host_ip, report_id);
+      free (report_id);
+      return -1;
+    }
+
+  /* Create assets */
+  if (report_host_noticeable (report, host_ip))
+    {
+      host_notice (host_ip, "ip", host_ip, "Report Host", report_id, 1, 1);
+    }
+
+  ret = add_tls_certificates_from_report_host (report_host,
+                                               report_id,
+                                               host_ip);
+  if (ret)
+    {
+      free (report_id);
+      return ret;
+    }
+
+  return 0;
 }

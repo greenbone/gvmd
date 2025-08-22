@@ -275,6 +275,21 @@ result_host_asset_id (const char *, result_t);
 int
 manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
 
+char *
+report_host_ip (const char *);
+
+gchar *
+report_host_hostname (report_host_t);
+
+gchar *
+report_host_best_os_cpe (report_host_t);
+
+gchar *
+report_host_best_os_txt (report_host_t);
+
+int
+report_host_noticeable (report_t, const gchar *);
+
 gchar*
 asset_host_extra_where (const char *);
 
