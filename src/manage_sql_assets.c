@@ -124,6 +124,16 @@ typedef struct
   gchar *source_data;       ///< Extra data for source.
 } identifier_t;
 
+/**
+ * @brief Host identifiers for the current scan.
+ */
+array_t *identifiers = NULL;
+
+/**
+ * @brief Unique hosts listed in host_identifiers.
+ */
+array_t *identifier_hosts = NULL;
+
 static int
 report_host_dead (report_host_t);
 
@@ -432,14 +442,6 @@ report_host_set_end_time (report_host_t report_host, time_t end_time)
   sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
        end_time, report_host);
 }
-
-// FIX Extern for now, until more code is moved in here.
-extern array_t *
-identifiers;
-
-// FIX Extern for now, until more code is moved in here.
-extern array_t *
-identifier_hosts;
 
 /**
  * @brief Add host details to a report host.
@@ -833,16 +835,6 @@ create_asset_report (const char *report_id, const char *term)
 
   return 0;
 }
-
-/**
- * @brief Host identifiers for the current scan.
- */
-array_t *identifiers = NULL;
-
-/**
- * @brief Unique hosts listed in host_identifiers.
- */
-array_t *identifier_hosts = NULL;
 
 /**
  * @brief Free an identifier.
