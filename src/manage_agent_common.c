@@ -139,43 +139,4 @@ gvmd_agent_connector_free (gvmd_agent_connector_t conn)
   g_free (conn);
 }
 
-/**
- * @brief Join an array of gchar* with a separator, skipping NULL/empty entries.
- *
- * @param[in]  arr  GPtrArray of gchar* (may be NULL).
- * @param[in]  sep  Separator string, default to "; " if NULL.
- *
- * @return Newly allocated joined string, or NULL if no non-empty entries.
- *         Caller must g_free().
- */
-gchar *
-concat_error_messages (const GPtrArray *errors, const gchar *sep)
-{
-  if (!errors || errors->len == 0)
-    return NULL;
-
-  const gchar *use_sep = sep ? sep : "; ";
-  GString *gs = NULL;
-
-  for (guint i = 0; i < errors->len; ++i)
-    {
-      const gchar *m = g_ptr_array_index ((GPtrArray *)errors, i);
-      if (!m || !*m)
-        continue;
-
-      if (!gs)
-        gs = g_string_new (m);
-      else
-        {
-          g_string_append (gs, use_sep);
-          g_string_append (gs, m);
-        }
-    }
-
-  if (!gs)
-    return NULL;
-
-  return g_string_free (gs, FALSE);
-}
-
 #endif // ENABLE_AGENTS
