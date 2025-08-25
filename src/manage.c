@@ -4170,10 +4170,13 @@ manage_sync (sigset_t *sigmask_current,
     }
 
   if (try_gvmd_data_sync
-      && (should_sync_agent_installers ()
-          || should_sync_configs ()
+      && (should_sync_configs ()
           || should_sync_port_lists ()
-          || should_sync_report_formats ()))
+          || should_sync_report_formats ()
+#if ENABLE_AGENTS
+          || should_sync_agent_installers ()
+#endif /* ENABLE_AGENTS */
+          ))
     {
       if (wait_for_mem (check_min_mem_feed_update,
                         mem_wait_retries,

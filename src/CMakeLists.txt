@@ -185,6 +185,18 @@ set(
   manage_oci_image_targets.c
 )
 
+if(NOT ENABLE_AGENTS)
+  list(
+    REMOVE_ITEM
+    ALL_MANAGE_SRC
+    manage_agent_common.c
+    manage_agent_groups.c
+    manage_agents.c
+    manage_agent_installers.c
+    manage_agent_control_scan_config.c
+  )
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
@@ -210,6 +222,16 @@ set(
   manage_sql_oci_image_targets.c
 )
 
+if(NOT ENABLE_AGENTS)
+  list(
+    REMOVE_ITEM
+    ALL_MANAGE_SQL_SRC
+    manage_sql_agent_groups.c
+    manage_sql_agents.c
+    manage_sql_agent_installers.c
+  )
+endif()
+
 set(
   ALL_GMP_SRC
   gmp.c
@@ -230,6 +252,17 @@ set(
   gmp_tls_certificates.c
   gmp_oci_image_targets.c
 )
+
+if(NOT ENABLE_AGENTS)
+  list(
+    REMOVE_ITEM
+    ALL_GMP_SRC
+    gmp_agent_control_scan_agent_config.c
+    gmp_agent_groups.c
+    gmp_agents.c
+    gmp_agent_installers.c
+  )
+endif()
 
 set(ALL_SQL_SRC sql.c sql_pg.c)
 
@@ -288,21 +321,27 @@ add_executable(
 
 add_test(manage-test manage-test)
 
-set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_agent_installers.c)
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql_agent_installers.c)
-add_executable(
-  manage-agent-installers-test
-  EXCLUDE_FROM_ALL
-  manage_agent_installers_tests.c
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
+if(ENABLE_AGENTS)
+  set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+  list(
+    REMOVE_ITEM
+    TEST_TARGET_EXTRA_SRC
+    manage_agent_installers.c
+    manage_sql_agent_installers.c
+  )
+  add_executable(
+    manage-agent-installers-test
+    EXCLUDE_FROM_ALL
+    manage_agent_installers_tests.c
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+    ${TEST_TARGET_EXTRA_SRC}
+  )
 
-add_test(manage-agent-installers-test manage-agent-installers-test)
+  add_test(manage-agent-installers-test manage-agent-installers-test)
+endif()
 
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_oci_image_targets.c)
@@ -364,17 +403,22 @@ add_executable(
 
 add_test(utils-test utils-test)
 
-add_custom_target(
-  tests
-  DEPENDS
-    gmp-tickets-test
-    manage-test
-    manage-agent-installers-test
-    manage-oci-image-targets-test
-    manage-sql-test
-    manage-utils-test
-    utils-test
+set(
+  TEST_DEPENDENCIES
+  gmp-tickets-test
+  manage-test
+  manage-agent-installers-test
+  manage-oci-image-targets-test
+  manage-sql-test
+  manage-utils-test
+  utils-test
 )
+
+if(NOT ENABLE_AGENTS)
+  list(REMOVE_ITEM TEST_DEPENDENCIES manage-agent-installers-test)
+endif()
+
+add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(ENABLE_COVERAGE)
   add_custom_target(
@@ -457,31 +501,33 @@ target_link_libraries(
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
 )
-target_link_libraries(
-  manage-agent-installers-test
-  cgreen
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
+if(ENABLE_AGENTS)
+  target_link_libraries(
+    manage-agent-installers-test
+    cgreen
+    m
+    ${GNUTLS_LDFLAGS}
+    ${GPGME_LDFLAGS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${LINKER_HARDENING_FLAGS}
+    ${LINKER_DEBUG_FLAGS}
+    ${PostgreSQL_LIBRARIES}
+    ${LIBBSD_LDFLAGS}
+    ${CJSON_LDFLAGS}
+    ${GLIB_LDFLAGS}
+    ${GTHREAD_LDFLAGS}
+    ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
+    ${LIBGVM_BASE_LDFLAGS}
+    ${LIBGVM_OPENVASD_LDFLAGS}
+    ${LIBGVM_UTIL_LDFLAGS}
+    ${LIBGVM_OSP_LDFLAGS}
+    ${LIBGVM_GMP_LDFLAGS}
+    ${LIBGVM_HTTP_LDFLAGS}
+    ${LIBICAL_LDFLAGS}
+    ${LINKER_HARDENING_FLAGS}
+    ${OPT_THEIA_TGT}
+  )
+endif()
 target_link_libraries(
   manage-oci-image-targets-test
   cgreen
@@ -622,7 +668,12 @@ target_link_libraries(
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(manage-test PROPERTIES LINKER_LANGUAGE C)
-set_target_properties(manage-agent-installers-test PROPERTIES LINKER_LANGUAGE C)
+if(ENABLE_AGENTS)
+  set_target_properties(
+    manage-agent-installers-test
+    PROPERTIES LINKER_LANGUAGE C
+  )
+endif()
 set_target_properties(
   manage-oci-image-targets-test
   PROPERTIES LINKER_LANGUAGE C
@@ -642,10 +693,12 @@ endif(GVMD_VERSION)
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options(
-    manage-agent-installers-test
-    PUBLIC ${C_FLAGS_DEBUG_GVMD}
-  )
+  if(ENABLE_AGENTS)
+    target_compile_options(
+      manage-agent-installers-test
+      PUBLIC ${C_FLAGS_DEBUG_GVMD}
+    )
+  endif()
   target_compile_options(
     manage-oci-image-targets-test
     PUBLIC ${C_FLAGS_DEBUG_GVMD}
