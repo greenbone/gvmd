@@ -16,6 +16,13 @@
 #include "manage_commands.h"
 #include "manage_resources.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 /**
  * @brief The GMP command list.
  */
@@ -127,6 +134,7 @@ command_t gmp_commands[]
     {"GET_VULNS", "Get all vulnerabilities."},
     {"HELP", "Get this help text."},
 #if ENABLE_AGENTS
+    {"MODIFY_AGENT_CONTROL_SCAN_CONFIG", "Modify an agent control scan agent configuration."},
     {"MODIFY_AGENT_GROUP", "Modify an agent group."},
     {"MODIFY_AGENTS", "Modify one or more existing agents."},
 #endif /* ENABLE_AGENTS */

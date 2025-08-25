@@ -33,6 +33,12 @@
 #include <string.h>
 #include <strings.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
+
 
 /* CREATE_REPORT_FORMAT. */
 

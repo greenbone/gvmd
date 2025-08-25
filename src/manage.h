@@ -56,6 +56,7 @@
 
 #if ENABLE_AGENTS
 #include <gvm/agent_controller/agent_controller.h>
+#include "manage_agent_control_scan_config.h"
 #include "manage_agent_groups.h"
 #include "manage_agents.h"
 #endif
@@ -2295,16 +2296,7 @@ host_notice (const char *, const char *, const char *, const char *,
              const char *, int, int);
 
 int
-asset_host_count (const get_data_t *);
-
-int
-asset_os_count (const get_data_t *);
-
-int
 total_asset_count (const get_data_t *);
-
-int
-add_assets_from_host_in_report (report_t report, const char *host);
 
 
 /* Notes. */
@@ -3361,12 +3353,6 @@ manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
 
 int
 manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
-
-int
-report_host_noticeable (report_t, const gchar *);
-
-gchar*
-host_routes_xml (host_t);
 
 int
 manage_set_password (GSList *, const db_conn_info_t *, const gchar *,

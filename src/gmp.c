@@ -84,6 +84,7 @@
  */
 
 #include "gmp.h"
+#include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_agent_groups.h"
 #include "gmp_agents.h"
 #include "gmp_base.h"
@@ -4610,6 +4611,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_MODIFY_TASK,
 #if ENABLE_AGENTS
+  CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG,
   CLIENT_MODIFY_TASK_AGENT_GROUP,
 #endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_TASK_ALERT,
@@ -5965,6 +5967,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_LOGOUT);
           }
 #if ENABLE_AGENTS
+        else if (strcasecmp ("MODIFY_AGENT_CONTROL_SCAN_CONFIG", element_name)
+                 == 0)
+          {
+            modify_agent_control_scan_config_start (gmp_parser,
+                                                    attribute_names,
+                                                    attribute_values);
+            set_client_state (CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG);
+          }
         else if (strcasecmp ("MODIFY_AGENT_GROUP", element_name) == 0)
           {
               modify_agent_group_start (gmp_parser, attribute_names,
@@ -6329,6 +6339,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
 #if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG:
+        modify_agent_control_scan_config_element_start (
+          gmp_parser, element_name,
+          attribute_names,
+          attribute_values);
+        break;
+
       case CLIENT_MODIFY_AGENT_GROUP:
         modify_agent_group_element_start (gmp_parser, element_name,
                                           attribute_names,
@@ -17477,6 +17494,89 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
               g_free (md5_fingerprint);
               g_free (issuer);
             }
+#if ENABLE_AGENTS
+          int stype = scanner_iterator_type (&scanners);
+          if (stype == SCANNER_TYPE_AGENT_CONTROLLER
+              || stype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+            {
+              scanner_t scanner_id = get_iterator_resource (&scanners);
+              agent_controller_scan_agent_config_t cfg =
+                get_agent_control_scan_config (scanner_id);
+
+              if (!cfg)
+                {
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config/>");
+                }
+              else
+                {
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config>");
+
+                  /* agent_control/retry */
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control><retry>");
+                  SENDF_TO_CLIENT_OR_FAIL ("<attempts>%d</attempts>",
+                                           cfg->agent_control.retry.attempts);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<delay_in_seconds>%d</delay_in_seconds>",
+                    cfg->agent_control.retry.delay_in_seconds);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<max_jitter_in_seconds>%d</max_jitter_in_seconds>",
+                    cfg->agent_control.retry.max_jitter_in_seconds);
+                  SEND_TO_CLIENT_OR_FAIL ("</retry></agent_control>");
+
+                  /* agent_script_executor */
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_script_executor>");
+                  SENDF_TO_CLIENT_OR_FAIL ("<bulk_size>%d</bulk_size>",
+                                           cfg->agent_script_executor.bulk_size)
+                  ;
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<bulk_throttle_time_in_ms>%d</bulk_throttle_time_in_ms>",
+                    cfg->agent_script_executor.bulk_throttle_time_in_ms);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<indexer_dir_depth>%d</indexer_dir_depth>",
+                    cfg->agent_script_executor.indexer_dir_depth);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<period_in_seconds>%d</period_in_seconds>",
+                    cfg->agent_script_executor.period_in_seconds);
+
+                  GPtrArray *cron = cfg->agent_script_executor.
+                                         scheduler_cron_time;
+                  if (cron && cron->len > 0)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (
+                        "<scheduler_cron_time is_list=\"1\">");
+                      for (guint i = 0; i < cron->len; ++i)
+                        {
+                          const char *item = (const char *) cron->pdata[i];
+                          gchar *esc = g_markup_escape_text (
+                            item ? item : "", -1);
+                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                          g_free (esc);
+                        }
+                      SEND_TO_CLIENT_OR_FAIL ("</scheduler_cron_time>");
+                    }
+                  else
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (
+                        "<scheduler_cron_time is_list=\"0\"/>");
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_script_executor>");
+
+                  /* heartbeat */
+                  SEND_TO_CLIENT_OR_FAIL ("<heartbeat>");
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<interval_in_seconds>%d</interval_in_seconds>",
+                    cfg->heartbeat.interval_in_seconds);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<miss_until_inactive>%d</miss_until_inactive>",
+                    cfg->heartbeat.miss_until_inactive);
+                  SEND_TO_CLIENT_OR_FAIL ("</heartbeat>");
+
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_control_config>");
+
+                  agent_controller_scan_agent_config_free (cfg);
+                }
+            }
+#endif
         }
 
       credential_id = credential_uuid (scanner_iterator_credential (&scanners));
@@ -24334,7 +24434,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->target_id == NULL 
+          if (create_task_data->target_id == NULL
               && create_task_data->agent_group_id == NULL
               && create_task_data->oci_image_target_id == NULL)
             {
@@ -24896,6 +24996,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
 #if ENABLE_AGENTS
+    case CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG:
+      if (modify_agent_control_scan_config_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
       case CLIENT_MODIFY_AGENT_GROUP:
         if (modify_agent_group_element_end (gmp_parser, error, element_name))
             set_client_state (CLIENT_AUTHENTIC);
@@ -29120,6 +29224,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
+    case CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG:
+      modify_agent_control_scan_config_element_text (text, text_len);
+      break;
+
       case CLIENT_MODIFY_AGENT_GROUP:
         modify_agent_group_element_text (text, text_len);
         break;

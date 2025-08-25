@@ -2233,15 +2233,19 @@ create_tables ()
        "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  hostname TEXT,"
        "  authorized INTEGER NOT NULL,"
-       "  min_interval INTEGER,"
-       "  heartbeat_interval INTEGER,"
        "  connection_status TEXT,"
        "  last_update INTEGER,"
-       "  schedule TEXT,"
+       "  last_updater_heartbeat INTEGER,"
+       "  config TEXT,"
        "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
        "  comment TEXT,"
        "  creation_time INTEGER,"
-       "  modification_time INTEGER);");
+       "  modification_time INTEGER,"
+       "  updater_version TEXT,"
+       "  agent_version TEXT,"
+       "  operating_system TEXT,"
+       "  architecture TEXT,"
+       "  update_to_latest INTEGER);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
        " (id SERIAL PRIMARY KEY,"

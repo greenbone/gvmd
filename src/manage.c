@@ -61,6 +61,7 @@
 #include "manage_scan_queue.h"
 #include "manage_oci_image_targets.h"
 #include "manage_sql.h"
+#include "manage_sql_assets.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"

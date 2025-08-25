@@ -17,8 +17,7 @@
 /* GET_AGENTS. */
 
 void
-get_agents_start (const gchar **,
-                  const gchar **);
+get_agents_start (const gchar **, const gchar **);
 
 void
 get_agents_run (gmp_parser_t *gmp_parser, GError **error);
@@ -26,22 +25,19 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error);
 /* MODIFY_AGENT. */
 
 void
-modify_agents_element_start (gmp_parser_t *gmp_parser,
-                             const gchar *name,
+modify_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values);
 
 void
-modify_agents_start (gmp_parser_t *gmp_parser,
-                     const gchar **attribute_names,
+modify_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values);
 
 void
 modify_agents_element_text (const gchar *text, gsize text_len);
 
 int
-modify_agents_element_end (gmp_parser_t *gmp_parser,
-                           GError **error,
+modify_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name);
 
 void
@@ -50,22 +46,19 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error);
 /* DELETE_AGENTS. */
 
 void
-delete_agents_element_start (gmp_parser_t *gmp_parser,
-                             const gchar *name,
+delete_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values);
 
 void
-delete_agents_start (gmp_parser_t *gmp_parser,
-                     const gchar **attribute_names,
+delete_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values);
 
 void
 delete_agents_element_text (const gchar *text, gsize text_len);
 
 int
-delete_agents_element_end (gmp_parser_t *gmp_parser,
-                           GError **error,
+delete_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name);
 
 void

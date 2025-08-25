@@ -44,7 +44,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=22.23
+    libgvm_agent_controller>=22.26
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
@@ -159,6 +159,7 @@ set(
   manage_agent_groups.c
   manage_agents.c
   manage_agent_installers.c
+  manage_agent_control_scan_config.c
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -212,6 +213,7 @@ set(
 set(
   ALL_GMP_SRC
   gmp.c
+  gmp_agent_control_scan_agent_config.c
   gmp_agent_groups.c
   gmp_agents.c
   gmp_agent_installers.c
