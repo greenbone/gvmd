@@ -111,6 +111,29 @@
  * OS X.     | OS with Name=X.    | No action.
  */
 
+/**
+ * @brief Host identifier type.
+ */
+typedef struct
+{
+  gchar *ip;                ///< IP of host.
+  gchar *name;              ///< Name of identifier, like "hostname".
+  gchar *value;             ///< Value of identifier.
+  gchar *source_type;       ///< Type of identifier source, like "Report Host".
+  gchar *source_id;         ///< ID of source.
+  gchar *source_data;       ///< Extra data for source.
+} identifier_t;
+
+/**
+ * @brief Host identifiers for the current scan.
+ */
+array_t *identifiers = NULL;
+
+/**
+ * @brief Unique hosts listed in host_identifiers.
+ */
+array_t *identifier_hosts = NULL;
+
 static int
 report_host_dead (report_host_t);
 
@@ -159,6 +182,203 @@ host_uuid (resource_t host)
 {
   return sql_string ("SELECT uuid FROM hosts WHERE id = %llu;",
                      host);
+}
+
+/**
+ * @brief Identify a host, given an identifier.
+ *
+ * Find a host which has an identifier of the same name and value, and
+ * which has no identifiers of the same name and a different value.
+ *
+ * @param[in]  host_name         Host name.
+ * @param[in]  identifier_name   Host identifier name.
+ * @param[in]  identifier_value  Value of host identifier.
+ * @param[in]  source_type       Source of identification: result.
+ * @param[in]  source            Source identifier.
+ *
+ * @return Host if exists, else 0.
+ */
+static host_t
+host_identify (const char *host_name, const char *identifier_name,
+               const char *identifier_value, const char *source_type,
+               const char *source)
+{
+  host_t host = 0;
+  gchar *quoted_host_name, *quoted_identifier_name, *quoted_identifier_value;
+
+  quoted_host_name = sql_quote (host_name);
+  quoted_identifier_name = sql_quote (identifier_name);
+  quoted_identifier_value = sql_quote (identifier_value);
+
+  switch (sql_int64 (&host,
+                     "SELECT hosts.id FROM hosts, host_identifiers"
+                     " WHERE hosts.name = '%s'"
+                     " AND hosts.owner = (SELECT id FROM users"
+                     "                    WHERE uuid = '%s')"
+                     " AND host = hosts.id"
+                     " AND host_identifiers.owner = (SELECT id FROM users"
+                     "                               WHERE uuid = '%s')"
+                     " AND host_identifiers.name = '%s'"
+                     " AND value = '%s';",
+                     quoted_host_name,
+                     current_credentials.uuid,
+                     current_credentials.uuid,
+                     quoted_identifier_name,
+                     quoted_identifier_value))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        host = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        host = 0;
+        break;
+    }
+
+  if (host == 0)
+    switch (sql_int64 (&host,
+                       "SELECT id FROM hosts"
+                       " WHERE name = '%s'"
+                       " AND owner = (SELECT id FROM users"
+                       "              WHERE uuid = '%s')"
+                       " AND NOT EXISTS (SELECT * FROM host_identifiers"
+                       "                 WHERE host = hosts.id"
+                       "                 AND owner = (SELECT id FROM users"
+                       "                              WHERE uuid = '%s')"
+                       "                 AND name = '%s');",
+                       quoted_host_name,
+                       current_credentials.uuid,
+                       current_credentials.uuid,
+                       quoted_identifier_name))
+      {
+        case 0:
+          break;
+        case 1:        /* Too few rows in result of query. */
+          host = 0;
+          break;
+        default:       /* Programming error. */
+          assert (0);
+        case -1:
+          host = 0;
+          break;
+      }
+
+  g_free (quoted_host_name);
+  g_free (quoted_identifier_name);
+  g_free (quoted_identifier_value);
+
+  return host;
+}
+
+/**
+ * @brief Notice a host.
+ *
+ * When a host is detected during a scan, this makes the decision about which
+ * asset host is used for the host, as described in \ref asset_rules.  This
+ * decision is revised at the end of the scan by \ref hosts_set_identifiers if
+ * there are any identifiers for the host.
+ *
+ * @param[in]  host_name         Name of host.
+ * @param[in]  identifier_type   Type of host identifier.
+ * @param[in]  identifier_value  Value of host identifier.
+ * @param[in]  source_type       Type of source identifier
+ * @param[in]  source_id         Source identifier.
+ * @param[in]  check_add_to_assets  Whether to check the 'Add to Assets'
+ *                                  task preference.
+ * @param[in]  check_for_existing_identifier  Whether to check for an existing
+ *                                            identifier like this one.  Used
+ *                                            for slaves, which call this
+ *                                            repeatedly.
+ *
+ * @return Host if existed, else 0.
+ */
+static host_t
+host_notice (const char *host_name, const char *identifier_type,
+             const char *identifier_value, const char *source_type,
+             const char *source_id, int check_add_to_assets,
+             int check_for_existing_identifier)
+{
+  host_t host;
+  gchar *quoted_identifier_value, *quoted_identifier_type, *quoted_source_type;
+  gchar *quoted_source_id;
+
+  /* Only add to assets if "Add to Assets" is set on the task. */
+  if (check_add_to_assets
+      && g_str_has_prefix (source_type, "Report")
+      && sql_int ("SELECT value = 'no' FROM task_preferences"
+                  " WHERE task = (SELECT task FROM reports WHERE uuid = '%s')"
+                  " AND name = 'in_assets';",
+                  source_id))
+    return 0;
+
+  host = host_identify (host_name, identifier_type, identifier_value,
+                        source_type, source_id);
+  if (host == 0)
+    {
+      gchar *quoted_host_name;
+      quoted_host_name = sql_quote (host_name);
+      sql ("INSERT into hosts"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
+           "  m_now (), m_now ());",
+           current_credentials.uuid,
+           quoted_host_name);
+      g_free (quoted_host_name);
+
+      host = sql_last_insert_id ();
+    }
+
+  quoted_identifier_value = sql_quote (identifier_value);
+  quoted_source_id = sql_quote (source_id);
+  quoted_source_type = sql_quote (source_type);
+  quoted_identifier_type = sql_quote (identifier_type);
+
+  if (check_for_existing_identifier
+      && sql_int ("SELECT EXISTS (SELECT * FROM host_identifiers"
+                  "               WHERE host = %llu"
+                  "               AND owner = (SELECT id FROM users WHERE uuid = '%s')"
+                  "               AND name = '%s'"
+                  "               AND value = '%s'"
+                  "               AND source_type = '%s'"
+                  "               AND source_id = '%s');",
+                  host,
+                  current_credentials.uuid,
+                  quoted_identifier_type,
+                  quoted_identifier_value,
+                  quoted_source_type,
+                  quoted_source_id))
+    return 0;
+
+  sql ("INSERT into host_identifiers"
+       " (uuid, host, owner, name, comment, value, source_type, source_id,"
+       "  source_data, creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), %llu, (SELECT id FROM users WHERE uuid = '%s'), '%s',"
+       "  '', '%s', '%s', '%s', '', m_now (), m_now ());",
+       host,
+       current_credentials.uuid,
+       quoted_identifier_type,
+       quoted_identifier_value,
+       quoted_source_type,
+       quoted_source_id);
+
+  sql ("UPDATE hosts SET modification_time = (SELECT modification_time"
+       "                                      FROM host_identifiers"
+       "                                      WHERE id = %llu)"
+       " WHERE id = %llu;",
+       sql_last_insert_id (),
+       host);
+
+  g_free (quoted_identifier_type);
+  g_free (quoted_identifier_value);
+  g_free (quoted_source_id);
+  g_free (quoted_source_type);
+
+  return host;
 }
 
 /**
@@ -222,14 +442,6 @@ report_host_set_end_time (report_host_t report_host, time_t end_time)
   sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
        end_time, report_host);
 }
-
-// FIX Extern for now, until more code is moved in here.
-extern array_t *
-identifiers;
-
-// FIX Extern for now, until more code is moved in here.
-extern array_t *
-identifier_hosts;
 
 /**
  * @brief Add host details to a report host.
@@ -623,16 +835,6 @@ create_asset_report (const char *report_id, const char *term)
 
   return 0;
 }
-
-/**
- * @brief Host identifiers for the current scan.
- */
-array_t *identifiers = NULL;
-
-/**
- * @brief Unique hosts listed in host_identifiers.
- */
-array_t *identifier_hosts = NULL;
 
 /**
  * @brief Free an identifier.
