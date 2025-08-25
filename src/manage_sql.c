@@ -6446,6 +6446,20 @@ check_db_scanners ()
     }
 #endif
 
+#if ENABLE_CONTAINER_SCANNING
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+                SCANNER_UUID_CONTAINER_IMAGE_DEFAULT) == 0)
+    {
+      sql ("INSERT INTO scanners"
+        " (uuid, owner, name, host, port, type, ca_pub, credential,"
+        "  creation_time, modification_time)"
+        " VALUES ('" SCANNER_UUID_CONTAINER_IMAGE_DEFAULT "', NULL, "
+        " 'Container Image', '', 0, %d, NULL, NULL, m_now (),"
+        " m_now ());",
+        SCANNER_TYPE_CONTAINER_IMAGE);
+    }
+#endif
+
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_CVE) == 0)
     sql ("INSERT INTO scanners"
@@ -33804,6 +33818,18 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
 #endif
+#if ENABLE_CONTAINER_SCANNING
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
+    {
+      // Once container scanner is availabe and has version endpoint, replace
+      // this
+      if (version)
+        *version = g_strdup ("TestVersion");
+
+      cleanup_iterator (&scanner);
+      return 0;
+    }
+#endif
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
@@ -33872,6 +33898,9 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
             scanner_type_str = "agent-controller-sensor";
+            break;
+          case SCANNER_TYPE_CONTAINER_IMAGE:
+            scanner_type_str = "container-image";
             break;
           default:
             scanner_type_str = NULL;
