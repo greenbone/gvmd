@@ -84,13 +84,15 @@
  */
 
 #include "gmp.h"
+#if ENABLE_AGENTS
 #include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_agent_groups.h"
 #include "gmp_agents.h"
+#include "gmp_agent_installers.h"
+#endif
 #include "gmp_base.h"
 #include "gmp_delete.h"
 #include "gmp_get.h"
-#include "gmp_agent_installers.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
