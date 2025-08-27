@@ -1132,55 +1132,76 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
+          scanner_type_t sc_type;
           init_sentry ();
+
+          sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+          switch (sc_type)
+          {
+            case SCANNER_TYPE_OPENVAS:
+              {
+                const char *osp_update_socket;
+
+                osp_update_socket = get_osp_vt_update_socket ();
+                if (osp_update_socket)
+                  {
+                    int ret;
+
+                    setproctitle ("OSP: Updating NVT cache");
+                    ret = manage_update_nvt_cache_osp (osp_update_socket);
+                    if (ret == 1)
+                      {
+                        g_message ("Rebuilding all NVTs because of a"
+                                   " hash value mismatch");
+                        ret = update_or_rebuild_nvts (0);
+                        if (ret)
+                          g_warning ("%s: rebuild failed", __func__);
+                        else
+                          g_message ("%s: rebuild successful", __func__);
+                      }
+
+                    gvm_close_sentry ();
+                    exit (ret);
+                  }
+                else
+                  {
+                    g_warning ("%s: No OSP VT update socket set", __func__);
+                    gvm_close_sentry ();
+                    exit (EXIT_FAILURE);
+                  }
+              }
+            case SCANNER_TYPE_OPENVASD:
+              {
 #if OPENVASD
-          int ret;
+                int ret;
 
-          setproctitle ("openvasd: Updating NVT cache");
-          ret = manage_update_nvt_cache_openvasd ();
-          if (ret == 1)
-            {
-              g_message (
-                "Rebuilding all NVTs because of a hash value mismatch");
-              ret = update_or_rebuild_nvts (0);
-              if (ret)
-                g_warning ("%s: rebuild failed", __func__);
-              else
-                g_message ("%s: rebuild successful", __func__);
-            }
+                setproctitle ("openvasd: Updating NVT cache");
+                ret = manage_update_nvt_cache_openvasd ();
+                if (ret == 1)
+                  {
+                    g_message (
+                      "Rebuilding all NVTs because of a hash value mismatch");
+                    ret = update_or_rebuild_nvts (0);
+                    if (ret)
+                      g_warning ("%s: rebuild failed", __func__);
+                    else
+                      g_message ("%s: rebuild successful", __func__);
+                  }
 
-          gvm_close_sentry ();
-          exit (ret);
+                gvm_close_sentry ();
+                exit (ret);
 #else
-          const char *osp_update_socket;
-
-          osp_update_socket = get_osp_vt_update_socket ();
-          if (osp_update_socket)
-            {
-              int ret;
-
-              setproctitle ("OSP: Updating NVT cache");
-              ret = manage_update_nvt_cache_osp (osp_update_socket);
-              if (ret == 1)
-                {
-                  g_message ("Rebuilding all NVTs because of a hash value mismatch");
-                  ret = update_or_rebuild_nvts (0);
-                  if (ret)
-                    g_warning ("%s: rebuild failed", __func__);
-                  else
-                    g_message ("%s: rebuild successful", __func__);
-                }
-
-              gvm_close_sentry ();
-              exit (ret);
-            }
-          else
-            {
-              g_warning ("%s: No OSP VT update socket set", __func__);
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-            }
+                g_critical ("%s: Default scanner is an openvasd one,"
+                            " but gvmd is not built to support this.",
+                            __func__);
+                exit (EXIT_FAILURE);
 #endif
+              }
+            default:
+              g_critical ("%s: scanner type %d is not supported as default",
+                          __func__, sc_type);
+              exit (EXIT_FAILURE);
+          }
         }
     }
 }

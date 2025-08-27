@@ -6422,6 +6422,15 @@ check_db_scanners ()
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
+#if OPENVASD
+      sql ("INSERT INTO scanners"
+           " (uuid, owner, name, host, port, type, ca_pub, credential,"
+           "  creation_time, modification_time)"
+           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
+           " m_now ());",
+           SCANNER_TYPE_OPENVASD);
+#else
       sql ("INSERT INTO scanners"
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
@@ -6430,21 +6439,8 @@ check_db_scanners ()
            " m_now ());",
            OPENVAS_DEFAULT_SOCKET,
            SCANNER_TYPE_OPENVAS);
-    }
-
-#if OPENVASD
-  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
-               SCANNER_UUID_OPENVASD_DEFAULT) == 0)
-    {
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_OPENVASD_DEFAULT "', NULL, 'OpenVASD',"
-           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           SCANNER_TYPE_OPENVASD);
-    }
 #endif
+    }
 
 #if ENABLE_CONTAINER_SCANNING
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
@@ -32012,6 +32008,15 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
                                         0);
 }
 
+scanner_type_t
+get_scanner_type (scanner_t scanner)
+{
+  if (scanner == 0)
+    return SCANNER_TYPE_NONE;
+  return sql_int ("SELECT type FROM scanners WHERE id=%llu", scanner);
+}
+
+
 /**
  * @brief Insert a scanner for create_scanner.
  *
@@ -33786,6 +33791,7 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_OPENVASD:
             scanner_type_str = "openvasd";
+            break;
           case SCANNER_TYPE_OPENVASD_SENSOR:
             scanner_type_str = "openvasd-sensor";
             break;

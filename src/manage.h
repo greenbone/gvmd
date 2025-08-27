@@ -356,6 +356,12 @@ scanner_type_valid (scanner_type_t);
 int
 scanner_type_supports_unix_sockets (scanner_type_t);
 
+scanner_type_t
+get_scanner_type (scanner_t);
+
+scanner_type_t
+get_scanner_type_by_uuid (const char *);
+
 
 /* Resources. */
 
