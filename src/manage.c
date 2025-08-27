@@ -807,6 +807,27 @@ scanner_type_supports_unix_sockets (scanner_type_t scanner_type)
   return 0;
 }
 
+/**
+ * @brief Gets the type of a scanner given its uuid.
+ *
+ * @param[in]  scanner_id  UUID of the scanner
+ *
+ * @return The scanner type or SCANNER_TYPE_NONE if scanner could not be found.
+ */
+scanner_type_t
+get_scanner_type_by_uuid (const char *scanner_id)
+{
+  scanner_t scanner;
+  if (scanner_id == NULL)
+    return SCANNER_TYPE_NONE;
+  if (find_resource_no_acl ("scanner", scanner_id, &scanner))
+    {
+      g_warning ("%s: Error finding scanner %s", __func__, scanner_id);
+      return SCANNER_TYPE_NONE;
+    }
+  return get_scanner_type (scanner);
+}
+
 
 /* Severity related functions. */
 
@@ -6172,7 +6193,6 @@ gvm_get_sync_script_feed_version (const gchar * sync_script,
   return TRUE;
 }
 
-#if OPENVASD == 0
 /**
  * @brief Get VTs feed information from a scanner.
  *
@@ -6227,7 +6247,6 @@ nvts_feed_info_internal (const gchar *update_socket,
 
   return 0;
 }
-#endif
 
 /**
  * @brief Get VTs feed information from the scanner using VT update socket.
@@ -6244,20 +6263,32 @@ int
 nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
                 gchar **feed_home)
 {
+  scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+  switch (sc_type)
+  {
+    case SCANNER_TYPE_OPENVAS:
+      return nvts_feed_info_internal (get_osp_vt_update_socket (),
+                                      vts_version,
+                                      feed_name,
+                                      feed_vendor,
+                                      feed_home);
+    case SCANNER_TYPE_OPENVASD:
 #if OPENVASD == 1
-  return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                                vts_version);
+      return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
+                                                    vts_version);
 #else
-  return nvts_feed_info_internal (get_osp_vt_update_socket (),
-                                  vts_version,
-                                  feed_name,
-                                  feed_vendor,
-                                  feed_home);
-
+      g_critical ("%s: Default scanner is an openvasd one,"
+                  " but gvmd is not built to support this.",
+                  __func__);
+      return -1;
 #endif
+    default:
+      g_critical ("%s: scanner type %d is not supported as default",
+                  __func__, sc_type);
+      return -1;
+  }
 }
 
-#if OPENVASD == 0
 /**
  * @brief Check the VTs feed sync for information using a OSP socket.
  *
@@ -6300,7 +6331,6 @@ nvts_check_feed_internal (const char *update_socket,
 
   return 0;
 }
-#endif
 
 /**
  * @brief Check the VTs feed sync for information using the default OSP socket.
@@ -6316,30 +6346,45 @@ nvts_check_feed (int *lockfile_in_use,
                  int *self_test_exit_error,
                  char **self_test_error_msg)
 {
+  scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+  switch (sc_type)
+  {
+    case SCANNER_TYPE_OPENVAS:
+      return nvts_check_feed_internal (get_osp_vt_update_socket (),
+                                       lockfile_in_use,
+                                       self_test_exit_error,
+                                       self_test_error_msg);
+    case SCANNER_TYPE_OPENVASD:
 #if OPENVASD == 1
-  int ret = 0;
-  char *vts_version = NULL;
+      {
+        int ret = 0;
+        char *vts_version = NULL;
 
-  ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
-                                               &vts_version);
-  self_test_exit_error = 0;
-  *self_test_error_msg = NULL;
-  if (ret == 0 && vts_version)
-    lockfile_in_use = 0;
-  else if (ret == 2)
-    {
-      ret = 0;
-      *lockfile_in_use = 1;
-    }
+        ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
+                                                     &vts_version);
+        self_test_exit_error = 0;
+        *self_test_error_msg = NULL;
+        if (ret == 0 && vts_version)
+          lockfile_in_use = 0;
+        else if (ret == 2)
+          {
+            ret = 0;
+            *lockfile_in_use = 1;
+          }
 
-  return ret;
-
+        return ret;
+      }
 #else
-  return nvts_check_feed_internal (get_osp_vt_update_socket (),
-                                   lockfile_in_use,
-                                   self_test_exit_error,
-                                   self_test_error_msg);
+      g_critical ("%s: Default scanner is an openvasd one,"
+                  " but gvmd is not built to support this.",
+                  __func__);
+      return -1;
 #endif
+    default:
+      g_critical ("%s: scanner type %d is not supported as default",
+                  __func__, sc_type);
+      return -1;
+  }
 }
 
 /**

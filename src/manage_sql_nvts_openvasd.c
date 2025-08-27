@@ -326,7 +326,7 @@ update_scanner_preferences_openvasd (scanner_t scan)
   if (!connector)
     {
       g_warning ("%s: failed to connect to scanner (%s)", __func__,
-                 SCANNER_UUID_OPENVASD_DEFAULT);
+                 SCANNER_UUID_DEFAULT);
       return -1;
     }
 
@@ -411,7 +411,7 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
       = (time_t) sql_int64_0 ("SELECT max(modification_time) FROM nvts");
 
   /* Update NVTs. */
-  if (find_resource_no_acl ("scanner", SCANNER_UUID_OPENVASD_DEFAULT, &scan))
+  if (find_resource_no_acl ("scanner", SCANNER_UUID_DEFAULT, &scan))
     return -1;
   if (scan == 0)
     return -1;
@@ -420,7 +420,7 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
   if (!connector)
     {
       g_warning ("%s: failed to connect to scanner (%s)", __func__,
-                 SCANNER_UUID_OPENVASD_DEFAULT);
+                 SCANNER_UUID_DEFAULT);
       return -1;
     }
 
@@ -517,7 +517,7 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
   if (db_feed_version_out && db_feed_version)
     *db_feed_version_out = g_strdup (db_feed_version);
 
-  nvts_feed_info_internal_from_openvasd (SCANNER_UUID_OPENVASD_DEFAULT,
+  nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
                                          &scanner_feed_version);
 
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);

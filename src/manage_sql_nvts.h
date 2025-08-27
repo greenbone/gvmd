@@ -26,9 +26,8 @@
 
 #if OPENVASD
 #include "manage_sql_nvts_openvasd.h"
-#else
-#include "manage_sql_nvts_osp.h"
 #endif
+#include "manage_sql_nvts_osp.h"
 
 /**
  * @brief Filter columns for NVT info iterator.
