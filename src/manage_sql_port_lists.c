@@ -1826,39 +1826,45 @@ delete_port_range (const char *port_range_id, int dummy)
    GET_ITERATOR_COLUMNS (port_lists),                              \
    {                                                               \
      /* COUNT ALL ports */                                         \
-     "(SELECT"                                                     \
-     " sum ((CASE"                                                 \
-     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
-     "       END)"                                                 \
-     "      - start"                                               \
-     "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists.id)",         \
+     "coalesce ("                                                   \
+     " (SELECT"                                                    \
+     "  sum ((CASE"                                                \
+     "        WHEN \"end\" IS NULL THEN start ELSE \"end\""        \
+     "        END)"                                                \
+     "       - start"                                              \
+     "       + 1)"                                                 \
+     "  FROM port_ranges WHERE port_list = port_lists.id),"        \
+     " 0)",                                                        \
      "total",                                                      \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT TCP ports */                                         \
-     "(SELECT"                                                     \
-     " sum ((CASE"                                                 \
-     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
-     "       END)"                                                 \
-     "      - start"                                               \
-     "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists.id"           \
-     "                  AND   type = 0)",                          \
+     "coalesce ("                                                  \
+     " (SELECT"                                                    \
+     "  sum ((CASE"                                                \
+     "        WHEN \"end\" IS NULL THEN start ELSE \"end\""        \
+     "        END)"                                                \
+     "       - start"                                              \
+     "       + 1)"                                                 \
+     "  FROM port_ranges WHERE port_list = port_lists.id"          \
+     "                   AND   type = 0),"                         \
+     " 0)",                          \
      "tcp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT UDP ports */                                         \
-     "(SELECT"                                                     \
-     " sum ((CASE"                                                 \
-     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
-     "       END)"                                                 \
-     "      - start"                                               \
-     "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists.id"           \
-     "                  AND   type = 1)",                          \
+     "coalesce("                                                   \
+     " (SELECT"                                                    \
+     "  sum ((CASE"                                                \
+     "        WHEN \"end\" IS NULL THEN start ELSE \"end\""        \
+     "        END)"                                                \
+     "       - start"                                              \
+     "       + 1)"                                                 \
+     "  FROM port_ranges WHERE port_list = port_lists.id"          \
+     "                   AND   type = 1),"                         \
+     " 0)",                                                        \
      "udp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
