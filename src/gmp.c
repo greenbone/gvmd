@@ -17300,22 +17300,22 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
               nodes = params;
               while (nodes)
                 {
-                  openvasd_param_t *param = nodes->data;
+                  http_scanner_param_t *param = nodes->data;
                   g_warning("<param><id>%s</id><name>%s</name>"
                     "<default>%s</default><description>%s</description>"
                     "<type>osp_%s</type><mandatory>%d</mandatory></param>",
-                    openvasd_param_id (param), openvasd_param_name(param),
-                    openvasd_param_default (param), openvasd_param_desc (param),
-                    openvasd_param_type (param), openvasd_param_mandatory (param));
+                    http_scanner_param_id (param), http_scanner_param_name (param),
+                    http_scanner_param_default (param), http_scanner_param_desc (param),
+                    http_scanner_param_type (param), http_scanner_param_mandatory (param));
                   SENDF_TO_CLIENT_OR_FAIL
                    ("<param><id>%s</id><name>%s</name>"
                     "<default>%s</default><description>%s</description>"
                     "<type>osp_%s</type><mandatory>%d</mandatory></param>",
-                    openvasd_param_id (param), openvasd_param_name(param),
-                    openvasd_param_default (param), openvasd_param_desc (param),
-                    openvasd_param_type (param), 1);
+                    http_scanner_param_id (param), http_scanner_param_name (param),
+                    http_scanner_param_default (param), http_scanner_param_desc (param),
+                    http_scanner_param_type (param), 1);
 
-                  osp_param_free (nodes->data);
+                  http_scanner_param_free (nodes->data);
                   nodes = nodes->next;
                 }
               SENDF_TO_CLIENT_OR_FAIL ("</params></info>");

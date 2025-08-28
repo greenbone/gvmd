@@ -33303,7 +33303,7 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
                                GSList **params)
 {
   int port;
-  openvasd_connector_t connection;
+  http_scanner_connector_t connection;
   const char *host, *ca_pub, *key_pub, *key_priv, *protocol;
 
   assert (iterator);
@@ -33319,22 +33319,22 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
   else
     protocol = "http";
 
-  connection = openvasd_connector_new ();
+  connection = http_scanner_connector_new ();
 
-  openvasd_connector_builder (connection, OPENVASD_HOST, host);
-  openvasd_connector_builder (connection, OPENVASD_PROTOCOL, protocol);
-  openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
-  openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
-  openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
-  openvasd_connector_builder (connection, OPENVASD_PORT, (void *) &port);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_HOST, host);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_PROTOCOL, protocol);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_CA_CERT, ca_pub);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_KEY, key_priv);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_CERT, key_pub);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_PORT, (void *) &port);
 
   if (!connection)
     return 1;
 
   *desc = g_strdup_printf("openvasd Sensor on %s://%s:%d", protocol, host, port);
-  if (openvasd_parsed_scans_preferences (connection, params) < 0)
+  if (http_scanner_parsed_scans_preferences (connection, params) < 0)
     return 1;
-  openvasd_connector_free (connection);
+  http_scanner_connector_free (connection);
   return 0;
 }
 #endif
@@ -47706,12 +47706,12 @@ cleanup_ids_for_table (const char *table)
  *
  * @return New connection if success, NULL otherwise.
  */
-openvasd_connector_t
+http_scanner_connector_t
 openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
 {
   gboolean has_relay;
   int port;
-  openvasd_connector_t connection;
+  http_scanner_connector_t connection;
   char *host, *ca_pub, *key_pub, *key_priv;
   const char *protocol;
 
@@ -47729,17 +47729,17 @@ openvasd_scanner_connect (scanner_t scanner, const char *scan_id)
   else
     protocol = "http";
 
-  connection = openvasd_connector_new ();
+  connection = http_scanner_connector_new ();
 
-  openvasd_connector_builder (connection, OPENVASD_HOST, host);
-  openvasd_connector_builder (connection, OPENVASD_CA_CERT, ca_pub);
-  openvasd_connector_builder (connection, OPENVASD_KEY, key_priv);
-  openvasd_connector_builder (connection, OPENVASD_CERT, key_pub);
-  openvasd_connector_builder (connection, OPENVASD_PROTOCOL, protocol);
-  openvasd_connector_builder (connection, OPENVASD_PORT, (void *) &port);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_HOST, host);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_CA_CERT, ca_pub);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_KEY, key_priv);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_CERT, key_pub);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_PROTOCOL, protocol);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_PORT, (void *) &port);
 
   if (scan_id && scan_id[0] != '\0')
-    openvasd_connector_builder (connection, OPENVASD_SCAN_ID, scan_id);
+    http_scanner_connector_builder (connection, HTTP_SCANNER_SCAN_ID, scan_id);
 
   g_free (host);
   g_free (ca_pub);
@@ -47792,7 +47792,7 @@ get_openvasd_nvti_qod (const char *nvti_oid)
  */
 static int
 check_openvasd_result_exists (report_t report, task_t task,
-                              openvasd_result_t res, char **entity_hash_value,
+                              http_scanner_result_t res, char **entity_hash_value,
                               GHashTable *hashed_openvasd_results)
 {
   GString *result_string;
@@ -47924,7 +47924,7 @@ struct report_aux {
 };
 
 static void
-add_openvasd_result_to_report (openvasd_result_t res, gpointer *results_aux)
+add_openvasd_result_to_report (http_scanner_result_t res, gpointer *results_aux)
 {
 
   struct report_aux *rep_aux = *results_aux;

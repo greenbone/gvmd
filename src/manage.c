@@ -3038,7 +3038,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             gchar **error)
 {
 #if OPENVASD
-  openvasd_connector_t connector;
+  http_scanner_connector_t connector;
   int err;
   openvasd_get_performance_opts_t opts;
 
@@ -3056,12 +3056,12 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   err = openvasd_parsed_performance (connector, opts, performance_str, error);
   if (err)
     {
-      g_warning ("Error getting OSP performance report: %s", *error);
-      openvasd_connector_free (connector);
+      g_warning ("Error getting openvasd performance report: %s", *error);
+      http_scanner_connector_free (connector);
       return 6;
     }
 
-  openvasd_connector_free (connector);
+  http_scanner_connector_free (connector);
 #else
   osp_connect_data_t *conn_data;
   int return_value;
@@ -7100,8 +7100,8 @@ stop_openvasd_task (task_t task)
   report_t previous_report;
 
   scanner_t scanner;
-  openvasd_resp_t response;
-  openvasd_connector_t connector = NULL;
+  http_scanner_resp_t response;
+  http_scanner_connector_t connector = NULL;
 
   scan_report = task_running_report (task);
   if (!scan_report)
@@ -7127,20 +7127,20 @@ stop_openvasd_task (task_t task)
   current_scanner_task = task;
   global_current_report = task_running_report (task);
   set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
-  response = openvasd_stop_scan (connector);
+  response = http_scanner_stop_scan (connector);
   if (response->code < 0)
     {
       ret = -1;
-      openvasd_response_cleanup (response);
+      http_scanner_response_cleanup (response);
       g_free (scan_id);
       goto end_stop_openvasd;
     }
-  openvasd_response_cleanup (response);
-  response = openvasd_delete_scan (connector);
-  openvasd_response_cleanup (response);
+  http_scanner_response_cleanup (response);
+  response = http_scanner_delete_scan (connector);
+  http_scanner_response_cleanup (response);
   g_free (scan_id);
 end_stop_openvasd:
-  openvasd_connector_free (connector);
+  http_scanner_connector_free (connector);
   set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_STOPPED);
   if (scan_report)
@@ -7169,8 +7169,8 @@ static int
 prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
                                   char **error)
 {
-  openvasd_connector_t connection;
-  openvasd_scan_status_t status;
+  http_scanner_connector_t connection;
+  http_scanner_scan_status_t status;
 
   assert (task);
   assert (scan_id);
@@ -7183,101 +7183,101 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
       *error = g_strdup ("Could not connect to openvasd Scanner");
       return -1;
     }
-  status = openvasd_parsed_scan_status (connection);
+  status = http_scanner_parsed_scan_status (connection);
 
-  if (status->status == OPENVASD_SCAN_STATUS_ERROR)
+  if (status->status == HTTP_SCANNER_SCAN_STATUS_ERROR)
     {
       if (status->response_code == 404)
         {
           g_debug ("%s: Scan %s not found", __func__, scan_id);
-          openvasd_connector_free (connection);
+          http_scanner_connector_free (connection);
           trim_partial_report (global_current_report);
           return 1;
         }
       g_warning ("%s: Error getting status of scan %s: %ld",
                  __func__, scan_id, status->response_code);
-      openvasd_connector_free (connection);
+      http_scanner_connector_free (connection);
       return -1;
     }
-  else if (status->status == OPENVASD_SCAN_STATUS_RUNNING
-           || status->status == OPENVASD_SCAN_STATUS_REQUESTED)
+  else if (status->status == HTTP_SCANNER_SCAN_STATUS_RUNNING
+           || status->status == HTTP_SCANNER_SCAN_STATUS_REQUESTED)
     {
-      openvasd_resp_t response;
+      http_scanner_resp_t response;
 
       g_debug ("%s: Scan %s queued or running", __func__, scan_id);
       /* It would be possible to simply continue getting the results
        * from the scanner, but gvmd may have crashed while receiving
        * or storing the results, so some may be missing. */
-      response = openvasd_stop_scan (connection);
+      response = http_scanner_stop_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to stop old report: %ld",
                                     response->code);
-          openvasd_connector_free (connection);
-          openvasd_response_cleanup (response);
+          http_scanner_connector_free (connection);
+          http_scanner_response_cleanup (response);
           return -1;
         }
-      openvasd_response_cleanup (response);
-      response = openvasd_delete_scan (connection);
+      http_scanner_response_cleanup (response);
+      response = http_scanner_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_cleanup (response);
-          openvasd_connector_free (connection);
+          http_scanner_response_cleanup (response);
+          http_scanner_connector_free (connection);
           return -1;
         }
-      openvasd_response_cleanup (response);
-      openvasd_connector_free (connection);
+      http_scanner_response_cleanup (response);
+      http_scanner_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
     }
-  else if (status->status == OPENVASD_SCAN_STATUS_SUCCEEDED)
+  else if (status->status == HTTP_SCANNER_SCAN_STATUS_SUCCEEDED)
     {
-      openvasd_resp_t response;
+      http_scanner_resp_t response;
 
       /* OSP can't stop an already finished/interrupted scan,
        * but it must be delete to be resumed. */
       g_debug ("%s: Scan %s finished", __func__, scan_id);
-      response = openvasd_delete_scan (connection);
+      response = http_scanner_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_cleanup (response);
-          openvasd_connector_free (connection);
+          http_scanner_response_cleanup (response);
+          http_scanner_connector_free (connection);
           return -1;
         }
-      openvasd_response_cleanup (response);
-      openvasd_connector_free (connection);
+      http_scanner_response_cleanup (response);
+      http_scanner_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
     }
-  else if (status->status == OPENVASD_SCAN_STATUS_STOPPED
-           || status->status == OPENVASD_SCAN_STATUS_FAILED)
+  else if (status->status == HTTP_SCANNER_SCAN_STATUS_STOPPED
+           || status->status == HTTP_SCANNER_SCAN_STATUS_FAILED)
     {
-      openvasd_resp_t response;
+      http_scanner_resp_t response;
 
       g_debug ("%s: Scan %s stopped or interrupted",
                __func__, scan_id);
-      response = openvasd_delete_scan (connection);
+      response = http_scanner_delete_scan (connection);
       if (response->code != 204)
         {
           *error = g_strdup_printf ("Failed to delete old report: %ld",
                              response->code);
-          openvasd_response_cleanup (response);
-          openvasd_connector_free (connection);
+          http_scanner_response_cleanup (response);
+          http_scanner_connector_free (connection);
           return -1;
         }
-      openvasd_response_cleanup (response);
-      openvasd_connector_free (connection);
+      http_scanner_response_cleanup (response);
+      http_scanner_connector_free (connection);
       trim_partial_report (global_current_report);
       return 1;
     }
 
   g_warning ("%s: Unexpected scanner status %d", __func__, status->status);
   *error = g_strdup_printf ("Unexpected scanner status %d", status->status);
-  openvasd_connector_free (connection);
+  http_scanner_connector_free (connection);
 
   return -1;
 }
@@ -7298,7 +7298,7 @@ static int
 launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
                          int from, char **error)
 {
-  openvasd_connector_t connection;
+  http_scanner_connector_t connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
   gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
@@ -7310,7 +7310,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   openvasd_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
-  openvasd_resp_t response;
+  http_scanner_resp_t response;
   int ret, empty;
   config_t config;
   iterator_t scanner_prefs_iter, families, prefs;
@@ -7584,13 +7584,21 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   scan_config =
     openvasd_build_scan_config_json(openvasd_target, scanner_options, vts);
 
-  response = openvasd_start_scan (connection, scan_config);
+  response = http_scanner_create_scan (connection, scan_config, NULL);
+  if (response->code == 201)
+    {
+      http_scanner_response_cleanup (response);
+      response = http_scanner_start_scan (connection);
+    }
+  else
+    g_warning ("%s: Failed to create scan: %ld", __func__, response->code);
+
   openvasd_target_free(openvasd_target);
   // Credentials are freed with target
   g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
   g_hash_table_destroy (scanner_options);
   ret = response->code;
-  openvasd_response_cleanup (response);
+  http_scanner_response_cleanup (response);
 
   return ret;
 }
@@ -7612,8 +7620,8 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
   scanner_t scanner;
   gboolean started, queued_status_updated;
   int retry, connection_retry;
-  openvasd_resp_t response;
-  openvasd_connector_t connector;
+  http_scanner_resp_t response;
+  http_scanner_connector_t connector;
 
   scanner = task_scanner (task);
   connector = openvasd_scanner_connect (scanner, scan_id);
@@ -7636,7 +7644,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
           break;
         }
 
-      progress = openvasd_get_scan_progress (connector);
+      progress = http_scanner_get_scan_progress (connector);
 
       if (progress < 0 || progress > 100)
         {
@@ -7659,14 +7667,14 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
-          response = openvasd_delete_scan(connector);
+          response = http_scanner_delete_scan(connector);
           rc = -1;
           break;
         }
       else
         {
           /* Get the full openvasd report. */
-          progress = openvasd_get_scan_progress (connector);
+          progress = http_scanner_get_scan_progress (connector);
 
           if (progress < 0 || progress > 100)
             {
@@ -7697,13 +7705,14 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
               GSList *results = NULL;
               static unsigned long result_start = 0;
               static unsigned long result_end = -1; // get up to the end
-              openvasd_status_t current_status;
+              http_scanner_status_t current_status;
               time_t start_time, end_time;
-              openvasd_scan_status_t openvasd_scan_status;
+              http_scanner_scan_status_t openvasd_scan_status;
 
               set_report_slave_progress (report, progress);
 
-              openvasd_scan_status = openvasd_parsed_scan_status (connector);
+              openvasd_scan_status
+                = http_scanner_parsed_scan_status (connector);
               start_time = openvasd_scan_status->start_time;
               end_time = openvasd_scan_status->end_time;
               current_status = openvasd_scan_status->status;
@@ -7712,8 +7721,8 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
 
               gvm_sleep (1);
 
-              openvasd_parsed_results (connector, result_start,
-                                       result_end, &results);
+              http_scanner_parsed_results (connector, result_start,
+                                           result_end, &results);
 
               result_start += g_slist_length (results);
 
@@ -7722,9 +7731,9 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
               if (results != NULL)
                 {
                   g_slist_free_full (results,
-                                     (GDestroyNotify) openvasd_result_free);
+                                     (GDestroyNotify) http_scanner_result_free);
                 }
-              if (current_status == OPENVASD_SCAN_STATUS_STORED)
+              if (current_status == HTTP_SCANNER_SCAN_STATUS_STORED)
                 {
                   if (queued_status_updated == FALSE)
                     {
@@ -7734,7 +7743,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                       queued_status_updated = TRUE;
                     }
                 }
-              else if (current_status == OPENVASD_SCAN_STATUS_FAILED)
+              else if (current_status == HTTP_SCANNER_SCAN_STATUS_FAILED)
                 {
                   result_t result = make_osp_result
                     (task, "", "", "",
@@ -7742,12 +7751,12 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                      "Task interrupted unexpectedly", "", "",
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
-                  response = openvasd_delete_scan (connector);
+                  response = http_scanner_delete_scan (connector);
                   rc = -3;
                   break;
                 }
               else if (progress >= 0 && progress < 100
-                  && current_status == OPENVASD_SCAN_STATUS_STOPPED)
+                  && current_status == HTTP_SCANNER_SCAN_STATUS_STOPPED)
                 {
                   if (retry > 0)
                     {
@@ -7764,18 +7773,18 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
                      "Scan stopped unexpectedly by the server", "", "",
                      QOD_DEFAULT, NULL, NULL);
                   report_add_result (report, result);
-                  response = openvasd_delete_scan (connector);
+                  response = http_scanner_delete_scan (connector);
                   rc = -1;
                   break;
                 }
               else if (progress == 100
-                       && current_status == OPENVASD_SCAN_STATUS_SUCCEEDED)
+                       && current_status == HTTP_SCANNER_SCAN_STATUS_SUCCEEDED)
                 {
-                  response = openvasd_delete_scan (connector);
+                  response = http_scanner_delete_scan (connector);
                   rc = response->code;
                   break;
                 }
-              else if (current_status == OPENVASD_SCAN_STATUS_RUNNING
+              else if (current_status == HTTP_SCANNER_SCAN_STATUS_RUNNING
                        && started == FALSE)
                 {
                   set_task_run_status (task, TASK_STATUS_RUNNING);
@@ -7789,8 +7798,8 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
       retry = connection_retry;
       gvm_sleep (5);
     }
-  openvasd_response_cleanup (response);
-  openvasd_connector_free(connector);
+  http_scanner_response_cleanup (response);
+  http_scanner_connector_free (connector);
   return rc;
 }
 
