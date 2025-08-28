@@ -3775,7 +3775,7 @@ set_vt_verification_collation (const char *);
 #if OPENVASD
 
 /* openvasd Connection */
-openvasd_connector_t
+http_scanner_connector_t
 openvasd_scanner_connect (scanner_t, const char *);
 #endif
 

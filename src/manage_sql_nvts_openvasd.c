@@ -158,7 +158,7 @@ move_buffer_data (struct FILESTREAM *filestream){
  * @return 0 success, 1 VT integrity check failed, -1 error
  */
 static int
-update_nvts_from_openvasd_vts (openvasd_connector_t connector,
+update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
                                const gchar *scanner_feed_version,
                                int rebuild)
 {
@@ -181,7 +181,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
   vt_sevs_batch = batch_start (vt_sev_insert_size);
 
   int running = 0;
-  openvasd_resp_t resp;
+  http_scanner_resp_t resp;
   gvm_json_pull_event_t event;
   gvm_json_pull_parser_t parser;
   FILE *stream = NULL;
@@ -191,7 +191,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
   resp = openvasd_get_vt_stream_init (connector);
   if (resp->code < 0)
     {
-      openvasd_response_cleanup (resp);
+      http_scanner_response_cleanup (resp);
       g_warning ("%s: failed to get VTs", __func__);
       return -1;
     }
@@ -217,24 +217,24 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
 
   // First run for initial data in the stream
   running = openvasd_get_vt_stream (connector);
-  fwrite (openvasd_vt_stream_str (connector), 1,
-          openvasd_vt_stream_len (connector), stream);
+  fwrite (http_scanner_stream_str (connector), 1,
+          http_scanner_stream_len (connector), stream);
 
-  openvasd_reset_vt_stream (connector);
+  http_scanner_reset_stream (connector);
   int break_flag = 0;
   while (running)
     {
       size_t non_read_count = 0;
       // Ensure a big chunk of data.
       // Realloc is expensive therefore we realloc with bigger chuncks
-      while (running > 0 && openvasd_vt_stream_len (connector) < GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
+      while (running > 0 && http_scanner_stream_len (connector) < GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
           running = openvasd_get_vt_stream (connector);
 
-      if (openvasd_vt_stream_len (connector) > 0)
+      if (http_scanner_stream_len (connector) > 0)
         {
           move_buffer_data (filestream);
-          fwrite (openvasd_vt_stream_str (connector), 1, openvasd_vt_stream_len (connector), stream);
-          openvasd_reset_vt_stream (connector);
+          fwrite (http_scanner_stream_str (connector), 1, http_scanner_stream_len (connector), stream);
+          http_scanner_reset_stream (connector);
         }
 
       non_read_count = filestream->last_write - filestream->last_read;
@@ -250,7 +250,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
               gvm_json_pull_parser_cleanup (&parser);
               fclose (stream);
               g_free(nvti);
-              openvasd_response_cleanup (resp);
+              http_scanner_response_cleanup (resp);
               sql_rollback ();
               return -1;
             }
@@ -290,7 +290,7 @@ update_nvts_from_openvasd_vts (openvasd_connector_t connector,
   gvm_json_pull_parser_cleanup (&parser);
   fclose (stream);
 
-  openvasd_response_cleanup (resp);
+  http_scanner_response_cleanup (resp);
 
   batch_end (vt_refs_batch);
   batch_end (vt_sevs_batch);
@@ -316,8 +316,8 @@ int
 update_scanner_preferences_openvasd (scanner_t scan)
 {
   int first;
-  openvasd_resp_t resp;
-  openvasd_connector_t connector = NULL;
+  http_scanner_resp_t resp;
+  http_scanner_connector_t connector = NULL;
   GString *prefs_sql;
   GSList *point;
   GSList *scan_prefs = NULL;
@@ -333,15 +333,15 @@ update_scanner_preferences_openvasd (scanner_t scan)
   resp = openvasd_get_vts (connector);
   if (resp->code != 200)
     {
-      openvasd_response_cleanup (resp);
+      http_scanner_response_cleanup (resp);
       g_warning ("%s: failed to get scanner preferences", __func__);
       return -1;
     }
 
-  openvasd_parsed_scans_preferences (connector, &scan_prefs);
+  http_scanner_parsed_scans_preferences (connector, &scan_prefs);
   g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
-  openvasd_response_cleanup (resp);
-  openvasd_connector_free (connector);
+  http_scanner_response_cleanup (resp);
+  http_scanner_connector_free (connector);
 
   point = scan_prefs;
   first = 1;
@@ -350,12 +350,12 @@ update_scanner_preferences_openvasd (scanner_t scan)
                             " VALUES");
   while (point)
     {
-      openvasd_param_t *param;
+      http_scanner_param_t *param;
       gchar *quoted_name, *quoted_value;
 
       param = point->data;
-      quoted_name = sql_quote (openvasd_param_id (param));
-      quoted_value = sql_quote (openvasd_param_default (param));
+      quoted_name = sql_quote (http_scanner_param_id (param));
+      quoted_value = sql_quote (http_scanner_param_default (param));
 
       g_string_append_printf (prefs_sql,
                               "%s ('%s', '%s')",
@@ -367,7 +367,7 @@ update_scanner_preferences_openvasd (scanner_t scan)
       g_free (quoted_name);
       g_free (quoted_value);
     }
-  g_slist_free_full (scan_prefs, (GDestroyNotify) openvasd_param_free);
+  g_slist_free_full (scan_prefs, (GDestroyNotify) http_scanner_param_free);
 
   g_string_append (prefs_sql,
                    " ON CONFLICT (name)"
@@ -396,7 +396,7 @@ int
 update_nvt_cache_openvasd (gchar *db_feed_version,
                            gchar *scanner_feed_version, int rebuild)
 {
-  openvasd_connector_t connector = NULL;
+  http_scanner_connector_t connector = NULL;
   scanner_t scan;
   time_t old_nvts_last_modified;
   int ret;
@@ -426,7 +426,7 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
 
   ret = update_nvts_from_openvasd_vts (connector, scanner_feed_version, rebuild);
 
-  openvasd_connector_free (connector);
+  http_scanner_connector_free (connector);
 
   if (ret)
     return ret;
@@ -456,8 +456,8 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
                                        gchar **vts_version)
 {
   scanner_t scan;
-  openvasd_connector_t connector = NULL;
-  openvasd_resp_t resp = NULL;
+  http_scanner_connector_t connector = NULL;
+  http_scanner_resp_t resp = NULL;
   int ret;
 
   if (find_resource_no_acl ("scanner", scanner_uuid, &scan))
@@ -470,7 +470,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   if (!connector)
     return 1;
 
-  resp = openvasd_get_health_ready (connector);
+  resp = http_scanner_get_health_ready (connector);
   if (resp->code == -1)
     {
       gboolean has_relay = scanner_has_relay (scan);
@@ -487,8 +487,8 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
       ret = 0;
     }
 
-  openvasd_response_cleanup (resp);
-  openvasd_connector_free (connector);
+  http_scanner_response_cleanup (resp);
+  http_scanner_connector_free (connector);
   return ret;
 }
 
