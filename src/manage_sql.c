@@ -41288,6 +41288,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
+      else if (strcmp (uuid, "aaf1b63b-55a6-40ee-ae06-e8e50726f55a") == 0)
+        setting_name = g_strdup ("Audits Filter");
       else if (strcmp (uuid, "45414da7-55f0-44c1-abbb-6b7d1126fbdf") == 0)
         setting_name = g_strdup ("Audit Reports Filter");
       else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
@@ -41313,6 +41315,8 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "ffb16b28-538c-11e3-b8f9-406186ea4fc5") == 0)
         setting_name = g_strdup ("Permissions Filter");
       else if (strcmp (uuid, "7d52d575-baeb-4d98-bb68-e1730dbc6236") == 0)
+        setting_name = g_strdup ("Policies Filter");
+      else if (strcmp (uuid, "a17e1497-b27d-4389-9860-2f3b01dff9b2") == 0)
         setting_name = g_strdup ("Port Lists Filter");
       else if (strcmp (uuid, "48ae588e-9085-41bc-abcb-3d6389cf7237") == 0)
         setting_name = g_strdup ("Reports Filter");
