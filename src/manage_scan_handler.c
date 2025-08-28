@@ -195,8 +195,14 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
   pid_t child_pid;
   pid_t grandchild_pid;
   struct sigaction action;
+  int ret;
 
-  pipe (pipe_fds);
+  if (pipe (pipe_fds))
+    {
+      g_warning ("%s: Failed to create pipe: %s",
+                 __func__, strerror(errno));
+      return -1;
+    }
 
   child_pid = fork();
   (void) handle_scan_queue_entry;
@@ -240,10 +246,20 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 exit (EXIT_FAILURE);
               default:
                 // Child on success
-                write (pipe_fds[1], &grandchild_pid, sizeof(grandchild_pid));
-                close(pipe_fds[1]); // Close output side of pipe
+                ret = write (pipe_fds[1],
+                             &grandchild_pid,
+                             sizeof(grandchild_pid));
+                if (ret)
+                  {
+                    g_warning ("%s: Failed to write PID to pipe: %s",
+                               __func__, strerror(errno));
+                  }
+                close (pipe_fds[1]); // Close output side of pipe
                 sql_close_fork ();
-                exit(EXIT_SUCCESS);
+                if (ret)
+                  exit(EXIT_FAILURE);
+                else
+                  exit(EXIT_SUCCESS);
             }
         }
       case -1:
