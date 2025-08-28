@@ -19997,6 +19997,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_criticals = 0;
+  host_summary_buffer = NULL;
   f_host_ports = NULL;
   f_host_holes = NULL;
   f_host_warnings = NULL;
