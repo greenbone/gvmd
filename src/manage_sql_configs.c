@@ -2454,11 +2454,21 @@ create_config_internal (int check_access, const char *config_id,
 
   assert (current_credentials.uuid);
 
-  if (config_id
-      && (g_regex_match_simple ("^[-0123456789abcdef]{36}$",
+  if (config_id)
+    {
+      if (g_regex_match_simple ("^[-0123456789abcdef]{36}$",
                                 config_id, 0, 0)
-          == FALSE))
-    return -5;
+          == FALSE)
+        return -5;
+
+      if (find_config_no_acl (config_id, config))
+        {
+          g_warning ("%s: Error looking up config '%s'", __func__, config_id);
+          return -1;
+        }
+      if (*config)
+        return 1;
+    }
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
