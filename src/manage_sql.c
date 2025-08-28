@@ -19997,6 +19997,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_criticals = 0;
+  host_summary_buffer = NULL;
   f_host_ports = NULL;
   f_host_holes = NULL;
   f_host_warnings = NULL;
@@ -20595,8 +20596,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
 
   /* Prepare result counts. */
-  int compliance_yes, compliance_no;
-  int compliance_incomplete, compliance_undefined;
+  int compliance_yes = 0, compliance_no = 0;
+  int compliance_incomplete = 0, compliance_undefined = 0;
   int total_compliance_count = 0;
 
   if (strcmp (tsk_usage_type, "audit") == 0)
