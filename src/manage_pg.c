@@ -1070,6 +1070,92 @@ manage_create_sql_functions ()
           " $$ LANGUAGE plpgsql"
           " IMMUTABLE;");
 
+#if ENABLE_AGENTS
+     sql ("CREATE TABLE IF NOT EXISTS agents"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid UUID NOT NULL UNIQUE,"
+       "  name TEXT NOT NULL,"
+       "  agent_id TEXT UNIQUE NOT NULL,"
+       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  hostname TEXT,"
+       "  authorized INTEGER NOT NULL,"
+       "  connection_status TEXT,"
+       "  last_update INTEGER,"
+       "  last_updater_heartbeat INTEGER,"
+       "  config TEXT,"
+       "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
+       "  comment TEXT,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER,"
+       "  updater_version TEXT,"
+       "  agent_version TEXT,"
+       "  operating_system TEXT,"
+       "  architecture TEXT,"
+       "  update_to_latest INTEGER);");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
+       "  ip_address TEXT NOT NULL);");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_installers"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  description text,"
+       "  content_type text,"
+       "  file_extension text,"
+       "  installer_path text,"
+       "  version text,"
+       "  checksum text,"
+       "  file_size integer,"
+       "  last_update integer);");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_installer integer"
+       "    REFERENCES agent_installers (id) ON DELETE RESTRICT,"
+       "  criteria text,"
+       "  version_start_incl text,"
+       "  version_start_excl text,"
+       "  version_end_incl text,"
+       "  version_end_excl text);");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_groups"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid TEXT NOT NULL UNIQUE,"
+       "  name TEXT NOT NULL,"
+       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
+       "  comment TEXT,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER);");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_group_agents"
+       " (group_id INTEGER NOT NULL REFERENCES agent_groups (id) ON DELETE CASCADE,"
+       "  agent_id INTEGER NOT NULL REFERENCES agents (id) ON DELETE CASCADE,"
+       "  PRIMARY KEY (group_id, agent_id));");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_groups_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+     sql ("CREATE TABLE IF NOT EXISTS agent_group_agents_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  agent_group integer REFERENCES agent_groups_trash (id) ON DELETE RESTRICT,"
+       "  agent integer REFERENCES agents (id) ON DELETE RESTRICT);");
+#endif /* ENABLE_AGENTS */
+
  /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
@@ -2223,92 +2309,6 @@ create_tables ()
        "  hash text,"
        "  method integer,"
        "  creation_time integer);");
-
-#if ENABLE_AGENTS
-  sql ("CREATE TABLE IF NOT EXISTS agents"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid UUID NOT NULL UNIQUE,"
-       "  name TEXT NOT NULL,"
-       "  agent_id TEXT UNIQUE NOT NULL,"
-       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
-       "  hostname TEXT,"
-       "  authorized INTEGER NOT NULL,"
-       "  connection_status TEXT,"
-       "  last_update INTEGER,"
-       "  last_updater_heartbeat INTEGER,"
-       "  config TEXT,"
-       "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
-       "  comment TEXT,"
-       "  creation_time INTEGER,"
-       "  modification_time INTEGER,"
-       "  updater_version TEXT,"
-       "  agent_version TEXT,"
-       "  operating_system TEXT,"
-       "  architecture TEXT,"
-       "  update_to_latest INTEGER);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
-       " (id SERIAL PRIMARY KEY,"
-       "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
-       "  ip_address TEXT NOT NULL);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_installers"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
-       "  comment text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  description text,"
-       "  content_type text,"
-       "  file_extension text,"
-       "  installer_path text,"
-       "  version text,"
-       "  checksum text,"
-       "  file_size integer,"
-       "  last_update integer);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes"
-       " (id SERIAL PRIMARY KEY,"
-       "  agent_installer integer"
-       "    REFERENCES agent_installers (id) ON DELETE RESTRICT,"
-       "  criteria text,"
-       "  version_start_incl text,"
-       "  version_start_excl text,"
-       "  version_end_incl text,"
-       "  version_end_excl text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_groups"
-     " (id SERIAL PRIMARY KEY,"
-     "  uuid TEXT NOT NULL UNIQUE,"
-     "  name TEXT NOT NULL,"
-     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
-     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
-     "  comment TEXT,"
-     "  creation_time INTEGER,"
-     "  modification_time INTEGER);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_group_agents"
-       " (group_id INTEGER NOT NULL REFERENCES agent_groups (id) ON DELETE CASCADE,"
-       "  agent_id INTEGER NOT NULL REFERENCES agents (id) ON DELETE CASCADE,"
-       "  PRIMARY KEY (group_id, agent_id));");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_groups_trash"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
-       "  comment text,"
-       "  creation_time integer,"
-       "  modification_time integer);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_group_agents_trash"
-       " (id SERIAL PRIMARY KEY,"
-       "  agent_group integer REFERENCES agent_groups_trash (id) ON DELETE RESTRICT,"
-       "  agent integer REFERENCES agents (id) ON DELETE RESTRICT);");
-#endif /* ENABLE_AGENTS */
 
   sql ("CREATE TABLE IF NOT EXISTS alerts"
        " (id SERIAL PRIMARY KEY,"
