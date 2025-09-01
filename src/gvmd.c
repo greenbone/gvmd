@@ -1135,6 +1135,11 @@ update_nvt_cache_retry ()
           scanner_type_t sc_type;
           init_sentry ();
 
+          /* Re-open DB after fork. */
+
+          reinit_manage_process ();
+          manage_session_init (current_credentials.uuid);
+
           sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
           switch (sc_type)
           {
