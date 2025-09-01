@@ -336,11 +336,6 @@ build_scan_agent_config_from_entity (
         out_cfg->agent_script_executor.indexer_dir_depth =
           atoi (entity_text (e) ? entity_text (e) : "0");
 
-      e = entity_child (se, "period_in_seconds");
-      if (e)
-        out_cfg->agent_script_executor.period_in_seconds =
-          atoi (entity_text (e) ? entity_text (e) : "0");
-
       /* <scheduler_cron_time><item>...</item>... */
       entity_t sct = entity_child (se, "scheduler_cron_time");
       if (sct)
