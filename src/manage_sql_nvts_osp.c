@@ -938,11 +938,6 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
   gchar *db_feed_version, *scanner_feed_version;
   int ret;
 
-  /* Re-open DB after fork. */
-
-  reinit_manage_process ();
-  manage_session_init (current_credentials.uuid);
-
   /* Try update VTs. */
 
   ret = nvts_feed_version_status_internal_osp (update_socket,
