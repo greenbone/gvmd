@@ -112,8 +112,6 @@ copy_agent_controller_scan_agent_config (
     src->agent_script_executor.bulk_throttle_time_in_ms;
   dst->agent_script_executor.indexer_dir_depth =
     src->agent_script_executor.indexer_dir_depth;
-  dst->agent_script_executor.period_in_seconds =
-    src->agent_script_executor.period_in_seconds;
 
   dst->heartbeat.interval_in_seconds = src->heartbeat.interval_in_seconds;
   dst->heartbeat.miss_until_inactive = src->heartbeat.miss_until_inactive;

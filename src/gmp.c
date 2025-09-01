@@ -17536,9 +17536,6 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<indexer_dir_depth>%d</indexer_dir_depth>",
                     cfg->agent_script_executor.indexer_dir_depth);
-                  SENDF_TO_CLIENT_OR_FAIL (
-                    "<period_in_seconds>%d</period_in_seconds>",
-                    cfg->agent_script_executor.period_in_seconds);
 
                   GPtrArray *cron = cfg->agent_script_executor.
                                          scheduler_cron_time;

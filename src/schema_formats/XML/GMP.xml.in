@@ -9679,7 +9679,6 @@ END:VCALENDAR
               <e>bulk_size</e>
               <e>bulk_throttle_time_in_ms</e>
               <e>indexer_dir_depth</e>
-              <e>period_in_seconds</e>
               <any><e>scheduler_cron_time</e></any>
             </pattern>
             <ele>
@@ -9692,10 +9691,6 @@ END:VCALENDAR
             </ele>
             <ele>
               <name>indexer_dir_depth</name>
-              <pattern><type>integer</type></pattern>
-            </ele>
-            <ele>
-              <name>period_in_seconds</name>
               <pattern><type>integer</type></pattern>
             </ele>
             <ele>
@@ -9871,7 +9866,6 @@ END:VCALENDAR
                 <bulk_size>50</bulk_size>
                 <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>3</indexer_dir_depth>
-                <period_in_seconds>3600</period_in_seconds>
                 <scheduler_cron_time>
                   <cron>@every 8h</cron>
                   <cron>0 0 * * *</cron>
@@ -23180,7 +23174,6 @@ END:VCALENDAR
               <e>bulk_size</e>
               <e>bulk_throttle_time_in_ms</e>
               <e>indexer_dir_depth</e>
-              <e>period_in_seconds</e>
               <any><e>scheduler_cron_time</e></any>
             </pattern>
             <ele>
@@ -23193,10 +23186,6 @@ END:VCALENDAR
             </ele>
             <ele>
               <name>indexer_dir_depth</name>
-              <pattern><type>integer</type></pattern>
-            </ele>
-            <ele>
-              <name>period_in_seconds</name>
               <pattern><type>integer</type></pattern>
             </ele>
             <ele>
@@ -23416,7 +23405,6 @@ END:VCALENDAR
               <bulk_size>2</bulk_size>
               <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
               <indexer_dir_depth>10</indexer_dir_depth>
-              <period_in_seconds>60</period_in_seconds>
               <scheduler_cron_time is_list="1">
                 <item>0 23 * * *</item>
               </scheduler_cron_time>
@@ -29452,13 +29440,11 @@ END:VCALENDAR
           <o><e>bulk_size</e></o>
           <o><e>bulk_throttle_time_in_ms</e></o>
           <o><e>indexer_dir_depth</e></o>
-          <o><e>period_in_seconds</e></o>
           <o><e>scheduler_cron_time</e></o>
         </pattern>
         <ele><name>bulk_size</name><pattern><type>integer</type></pattern></ele>
         <ele><name>bulk_throttle_time_in_ms</name><pattern><type>integer</type></pattern></ele>
         <ele><name>indexer_dir_depth</name><pattern><type>integer</type></pattern></ele>
-        <ele><name>period_in_seconds</name><pattern><type>integer</type></pattern></ele>
         <ele>
           <name>scheduler_cron_time</name>
           <pattern><any><e>item</e></any></pattern>
@@ -29518,7 +29504,6 @@ END:VCALENDAR
               <bulk_size>2</bulk_size>
               <bulk_throttle_time_in_ms>300</bulk_throttle_time_in_ms>
               <indexer_dir_depth>100</indexer_dir_depth>
-              <period_in_seconds>1000</period_in_seconds>
               <scheduler_cron_time>
                 <item>0 */12 * * *</item>
               </scheduler_cron_time>
@@ -29686,13 +29671,11 @@ END:VCALENDAR
           <o><e>bulk_size</e></o>
           <o><e>bulk_throttle_time_in_ms</e></o>
           <o><e>indexer_dir_depth</e></o>
-          <o><e>period_in_seconds</e></o>
           <o><e>scheduler_cron_time</e></o>
         </pattern>
         <ele><name>bulk_size</name><pattern><type>integer</type></pattern></ele>
         <ele><name>bulk_throttle_time_in_ms</name><pattern><type>integer</type></pattern></ele>
         <ele><name>indexer_dir_depth</name><pattern><type>integer</type></pattern></ele>
-        <ele><name>period_in_seconds</name><pattern><type>integer</type></pattern></ele>
         <ele>
           <name>scheduler_cron_time</name>
           <pattern><any><e>item</e></any></pattern>
@@ -29762,7 +29745,6 @@ END:VCALENDAR
               <bulk_size>2</bulk_size>
               <bulk_throttle_time_in_ms>300</bulk_throttle_time_in_ms>
               <indexer_dir_depth>100</indexer_dir_depth>
-              <period_in_seconds>1000</period_in_seconds>
               <scheduler_cron_time>
                 <item>0 */12 * * *</item>
               </scheduler_cron_time>
