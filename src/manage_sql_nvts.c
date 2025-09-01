@@ -1750,47 +1750,53 @@ update_scanner_preferences ()
 
   g_info ("%s: Updating scanner preferences", __func__);
 
-  scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);(
+  scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+
   switch (sc_type)
-  {
+    {
     case SCANNER_TYPE_OPENVAS:
-      if (check_osp_vt_update_socket ())
-        {
-          g_warning ("No OSP VT update socket found."
-                    " Use --osp-vt-update or change the 'OpenVAS Default'"
-                    " scanner to use the main ospd-openvas socket.");
-          return -1;
-        }
+      {
+        if (check_osp_vt_update_socket ())
+          {
+            g_warning ("No OSP VT update socket found."
+                       " Use --osp-vt-update or change the 'OpenVAS Default'"
+                       " scanner to use the main ospd-openvas socket.");
+            return -1;
+          }
 
-      const char *osp_update_socket = get_osp_vt_update_socket ();
-      if (osp_update_socket == NULL)
-        {
-          g_warning ("No OSP VT update socket set.");
-          return -1;
-        }
+        const char *osp_update_socket = get_osp_vt_update_socket ();
+        if (osp_update_socket == NULL)
+          {
+            g_warning ("No OSP VT update socket set.");
+            return -1;
+          }
 
-      ret = update_scanner_preferences_osp (osp_update_socket);
-      break;
+        ret = update_scanner_preferences_osp (osp_update_socket);
+        break;
+      }
     case SCANNER_TYPE_OPENVASD:
+      {
 #if OPENVASD
-      scanner_t scanner;
+        scanner_t scanner;
 
-      if (find_resource_no_acl ("scanner", SCANNER_UUID_DEFAULT, &scanner))
-        return -1;
+        if (find_resource_no_acl ("scanner", SCANNER_UUID_DEFAULT, &scanner))
+          return -1;
 
-      ret = update_scanner_preferences_openvasd (scanner);
-      break;
+        ret = update_scanner_preferences_openvasd (scanner);
+        break;
 #else
-      g_critical ("%s: Default scanner is an openvasd one,"
-                  " but gvmd is not built to support this.",
-                  __func__);
-      return -1;
+        g_critical ("%s: Default scanner is an openvasd one,"
+                    " but gvmd is not built to support this.",
+                    __func__);
+        return -1;
 #endif
+      }
+
     default:
       g_critical ("%s: scanner type %d is not supported as default",
                   __func__, sc_type);
       return -1;
-  }
+    }
 
   if (ret)
     {
