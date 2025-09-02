@@ -914,21 +914,6 @@ int
 move_task (const char*, const char*);
 
 
-/* Access control. */
-
-int
-user_may (const char *);
-
-extern int
-user_can_everything (const char *);
-
-extern int
-user_can_super_everyone (const char *);
-
-extern int
-user_has_super (const char *, user_t);
-
-
 /* Results. */
 
 /**
