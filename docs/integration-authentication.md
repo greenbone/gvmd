@@ -5,7 +5,7 @@ The current `gvmd` implementation supports two authentication methods for commun
 ## Supported Methods
 
 - **Certificates (mTLS)**
-- **API Key–like tokens** (`X-API-KEY` or `Authorization: Bearer`)
+- **API Key** (`X-API-KEY`)
 
 ---
 
@@ -39,13 +39,13 @@ gvmd --modify-scanner <scanner_uuid> \
 
 ---
 
-## 2. API Key–like Tokens
+## 2. API Key
 
 This method uses a static token that must be provided with each request.
-Depending on the component, the token is included in the request header as either:
+Depending on the component, the token is included in the request header:
 
-* **HTTP Scanner:** `X-API-KEY: <token>`
-* **Agent Controller:** `Authorization: Bearer <token>`
+* **HTTP Scanner:** `X-API-KEY: <api_key>`
+* **Agent Controller:** `X-API-KEY: <api_key>`
 
 Both behave the same way for authentication/authorization.
 
@@ -72,31 +72,31 @@ X-API-KEY: <your_api_key_here>
 
 ---
 
-### Example: Agent Controller request with Bearer Token
+### Example: Request with API Key
 
 ```c
-if (bearer_token && *bearer_token)
+if (apikey)
   {
-    GString *auth = g_string_new ("Authorization: Bearer ");
-    g_string_append (auth, bearer_token);
+    GString *xapikey = g_string_new ("X-API-KEY: ");
+    g_string_append (xapikey, apikey);
 
-    if (!gvm_http_add_header (headers, auth->str))
-      g_warning ("%s: Failed to set Authorization header", __func__);
+    if (!gvm_http_add_header (headers, xapikey->str))
+      g_warning ("%s: Not possible to set API-KEY", __func__);
 
-    g_string_free (auth, TRUE);
+    g_string_free (xapikey, TRUE);
   }
 ```
 
 HTTP Header example:
 
 ```http
-Authorization: Bearer <your_bearer_token_here>
+X-API-KEY: <your_api_key_here>
 ```
 
 ---
 
 ## Notes
 
-* For the **HTTP Scanner**, both **Certificates (mTLS)** and **API Key** are supported.
-* For the **Agent Controller**, **API Key–like tokens** are currently used (via `Authorization: Bearer`).
+* For the **HTTP Scanner**, **Certificates (mTLS)** is currently supported.
+* For the **Agent Controller**, **Certificates (mTLS)** is currently supported.
 * Authentication modes are configured either via **configuration files** or by passing arguments when starting `gvmd`.
