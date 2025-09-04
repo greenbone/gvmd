@@ -249,7 +249,6 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (stream);
-              g_free(nvti);
               http_scanner_response_cleanup (resp);
               sql_rollback ();
               return -1;
