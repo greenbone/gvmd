@@ -3242,7 +3242,7 @@ gvmd (int argc, char** argv, char *env[])
             type = SCANNER_TYPE_OPENVASD;
           else if (!strcasecmp (scanner_type, "openvasd-sensor"))
             type = SCANNER_TYPE_OPENVASD_SENSOR;
-#ifdef ENABLE_CONTAINER_SCANNING
+#if ENABLE_CONTAINER_SCANNING
           else if (!strcasecmp (scanner_type, "container-image"))
             type = SCANNER_TYPE_CONTAINER_IMAGE;
 #endif
