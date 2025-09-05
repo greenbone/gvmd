@@ -2,10 +2,13 @@ name: Build and Push Container Images
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches:
+      - main
+    tags:
+      - "v*"
   pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       ref-name:
@@ -14,20 +17,212 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.ref-name || github.ref }}
   cancel-in-progress: true
 
+env:
+  IMAGE_URL: ghcr.io/${{ github.repository }}
+
 jobs:
-  build:
+  meta-data:
     if: github.repository == 'greenbone/gvmd'
-    name: Build and Push to Greenbone Registry
-    uses: greenbone/workflows/.github/workflows/container-build-push-2nd-gen.yml@main
-    with:
-      image-url: community/gvmd
-      base-image-label: stable
-      build-args: GVM_LIBS_VERSION=stable
-      image-labels: |
-        org.opencontainers.image.vendor=Greenbone
-        org.opencontainers.image.base.name=greenbone/gvm-libs
-      ref-name: ${{ inputs.ref-name }}
-    secrets: inherit
+    name: Create Image Meta Data
+    runs-on: ubuntu-latest
+    outputs:
+      is-latest-tag: ${{ steps.latest.outputs.is-latest-tag }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+      annotations: ${{ steps.meta.outputs.annotations }}
+      version: ${{ steps.meta.outputs.version }}
+      json: ${{ steps.meta.outputs.json }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ inputs.ref-name || github.ref }}
+
+      - name: Fetch tags
+        run: |
+          git fetch --tags --force
+
+      - name: Determine Build Reference
+        id: properties
+        run: |
+          echo "ref-name=${{ inputs.ref-name || github.ref_name }}" >> $GITHUB_OUTPUT
+
+      - uses: greenbone/actions/is-latest-tag@v3
+        id: latest
+        with:
+          tag-name: ${{ steps.properties.outputs.ref-name }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        with:
+          images: ${{ env.IMAGE_URL }}
+          flavor: latest=false
+          labels: |
+            org.opencontainers.image.vendor=Greenbone
+            org.opencontainers.image.base.name=greenbone/gvm-libs
+          tags: |
+            type=ref,event=pr
+
+            type=raw,value=latest,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=raw,value=stable,enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+
+            type=semver,pattern={{version}},value=${{ steps.properties.outputs.ref-name }},enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=semver,pattern={{major}},value=${{ steps.properties.outputs.ref-name }},enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.properties.outputs.ref-name }},enable=${{ steps.latest.outputs.is-latest-tag == 'true' }}
+
+            type=raw,value=edge,enable={{is_default_branch}}
+
+  build-amd64:
+    if: github.repository == 'greenbone/gvmd'
+    name: Build and Push Container Image (amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ inputs.ref-name || github.ref }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        with:
+          images: ${{ env.IMAGE_URL }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          platforms: linux/amd64
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          context: .
+          file: ./.docker/prod.Dockerfile
+          outputs: type=image,oci-mediatypes=true,name-canonical=true,push-by-digest=true
+          #,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-amd64
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  build-arm64:
+    # don't build arm64 images for every PR
+    if: github.repository == 'greenbone/gvmd' && github.event_name != 'pull_request'
+    name: Build and Push Container Image (arm64)
+    runs-on: self-hosted-generic-arm64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ inputs.ref-name || github.ref }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        with:
+          images: ${{ env.IMAGE_URL }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          platforms: linux/arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          context: .
+          file: ./.docker/prod.Dockerfile
+          outputs: type=image,oci-mediatypes=true,name-canonical=true
+          #,push-by-digest=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-arm64
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  build-multi-arch:
+    if: github.repository == 'greenbone/gvmd'
+    needs:
+      - build-amd64
+      # - build-arm64
+      - meta-data
+    name: Create and Push Multi-Arch Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create --dry-run \
+            -t ${{ join(fromJson(needs.meta-data.outputs.json).tags, ' -t ') }} \
+            --annotation ${{ join(fromJson(needs.meta-data.outputs.json).annotations, ' --annotation ') }} \
+            $(printf '${{ env.IMAGE_URL }}@sha256:%s ' *)
+
+        # $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< '${{ needs.meta-data.outputs.json }}') \
+        # $(jq -cr '.annotations | map("--annotation " + .) | join(" ")' <<< '${{ needs.meta-data.outputs.json }}') \
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.IMAGE_URL }}:${{ needs.meta-data.outputs.version }}
