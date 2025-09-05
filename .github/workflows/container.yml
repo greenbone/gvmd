@@ -2,10 +2,13 @@ name: Build and Push Container Images
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches:
+      - main
+    tags:
+      - "v*"
   pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       ref-name:
@@ -14,20 +17,51 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.ref-name || github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    if: github.repository == 'greenbone/gvmd'
-    name: Build and Push to Greenbone Registry
-    uses: greenbone/workflows/.github/workflows/container-build-push-2nd-gen.yml@main
+    if: ${{ github.repository == 'greenbone/gvmd' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build:
+              name: default
+          - build:
+              name: agents
+              prefix: agents
+              build-args: "FEATURE_TOGGLE=-DENABLE_AGENTS=1"
+    name: Build and Push Container Images (${{ matrix.build.name }})
+    uses: greenbone/workflows/.github/workflows/container-build-push-gea.yml@main
     with:
-      image-url: community/gvmd
-      base-image-label: stable
-      build-args: GVM_LIBS_VERSION=stable
-      image-labels: |
-        org.opencontainers.image.vendor=Greenbone
-        org.opencontainers.image.base.name=greenbone/gvm-libs
+      ref: ${{ inputs.ref-name }}
       ref-name: ${{ inputs.ref-name }}
+      name: ${{ matrix.build.name }}
+      build-args: ${{ matrix.build.build-args }}
+      prefix: ${{ matrix.build.prefix }}
     secrets: inherit
+
+  notify:
+    needs:
+      - build
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.repository == 'greenbone/gvmd' }}
+    uses: greenbone/workflows/.github/workflows/notify-mattermost-2nd-gen.yml@main
+    with:
+      status: ${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}
+    secrets: inherit
+
+  trigger-replication:
+    needs:
+      - build
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.repository == 'greenbone/gvmd' }}
+    runs-on: self-hosted-generic
+    steps:
+      - name: Ensure all tags are replicated on the public registry
+        uses: greenbone/actions/trigger-harbor-replication@v3
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          registry: ${{ vars.GREENBONE_REGISTRY }}
+          token: ${{ secrets.GREENBONE_REGISTRY_TOKEN }}
+          user: ${{ secrets.GREENBONE_REGISTRY_USER }}

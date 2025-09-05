@@ -16,7 +16,7 @@ RUN sh /source/.github/install-dependencies.sh \
     /source/.github/build-dependencies.list \
     && rm -rf /var/lib/apt/lists/*
 
-RUN cmake -DCMAKE_BUILD_TYPE=Release -B/build /source && \
+RUN cmake -DCMAKE_BUILD_TYPE=Release ${FEATURE_TOGGLE} -B/build /source && \
     DESTDIR=/install cmake --build /build -j$(nproc) -- install
 
 FROM registry.community.greenbone.net/community/gvm-libs:${GVM_LIBS_VERSION}
