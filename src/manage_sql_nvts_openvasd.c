@@ -31,6 +31,7 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 
+#include "manage_http_scanner.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_nvts_openvasd.h"
@@ -321,7 +322,7 @@ update_scanner_preferences_openvasd (scanner_t scan)
   GSList *point;
   GSList *scan_prefs = NULL;
 
-  connector = openvasd_scanner_connect (scan, NULL);
+  connector = http_scanner_connect (scan, NULL);
   if (!connector)
     {
       g_warning ("%s: failed to connect to scanner (%s)", __func__,
@@ -415,7 +416,7 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
   if (scan == 0)
     return -1;
 
-  connector = openvasd_scanner_connect (scan, NULL);
+  connector = http_scanner_connect (scan, NULL);
   if (!connector)
     {
       g_warning ("%s: failed to connect to scanner (%s)", __func__,
@@ -465,7 +466,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   if (scan == 0)
     return -1;
 
-  connector = openvasd_scanner_connect (scan, NULL);
+  connector = http_scanner_connect (scan, NULL);
   if (!connector)
     return 1;
 

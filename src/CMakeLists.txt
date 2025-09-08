@@ -31,17 +31,17 @@ pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.28)
 pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.28)
 pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.28)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.28)
-if(OPENVASD)
+
+if(ENABLE_HTTP_SCANNER)
   pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.28)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.28)
+endif(ENABLE_HTTP_SCANNER)
+if(OPENVASD)
   pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.28)
 else(OPENVASD)
   message(STATUS "OPENVASD flag is not enabled")
 endif(OPENVASD)
 if(ENABLE_AGENTS)
-  if(NOT OPENVASD)
-    pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.28)
-  endif(NOT OPENVASD)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
@@ -167,6 +167,7 @@ set(
   manage_filter_utils.c
   manage_commands.c
   manage_get.c
+  manage_http_scanner.c
   manage_license.c
   manage_openvas.c
   manage_osp.c
