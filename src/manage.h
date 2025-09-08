@@ -50,6 +50,10 @@
 #include <gvm/util/authutils.h>
 #include <gvm/osp/osp.h>
 
+#if ENABLE_HTTP_SCANNER
+#include "manage_http_scanner.h"
+#endif
+
 #if OPENVASD
 #include <gvm/openvasd/openvasd.h>
 #endif
@@ -3771,12 +3775,5 @@ get_vt_verification_collation ();
 
 void
 set_vt_verification_collation (const char *);
-
-#if OPENVASD
-
-/* openvasd Connection */
-http_scanner_connector_t
-openvasd_scanner_connect (scanner_t, const char *);
-#endif
 
 #endif /* not _GVMD_MANAGE_H */

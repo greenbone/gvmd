@@ -3042,7 +3042,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
   int err;
   openvasd_get_performance_opts_t opts;
 
-  connector = openvasd_scanner_connect (scanner, NULL);
+  connector = http_scanner_connect (scanner, NULL);
   if (!connector)
     {
       *error = g_strdup ("Could not connect to scanner");
@@ -7117,7 +7117,7 @@ stop_openvasd_task (task_t task)
       goto end_stop_openvasd;
     }
   scanner = task_scanner (task);
-  connector = openvasd_scanner_connect (scanner, scan_id);
+  connector = http_scanner_connect (scanner, scan_id);
   if (!connector)
     {
       ret = -1;
@@ -7177,7 +7177,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   assert (global_current_report);
   assert (error);
 
-  connection = openvasd_scanner_connect (task_scanner (task), scan_id);
+  connection = http_scanner_connect (task_scanner (task), scan_id);
   if (!connection)
     {
       *error = g_strdup ("Could not connect to openvasd Scanner");
@@ -7567,7 +7567,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_hash_table_destroy (vts_hash_table);
 
   /* Start the scan */
-  connection = openvasd_scanner_connect (task_scanner (task), scan_id);
+  connection = http_scanner_connect (task_scanner (task), scan_id);
   if (!connection)
     {
       if (error)
@@ -7624,7 +7624,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
   http_scanner_connector_t connector;
 
   scanner = task_scanner (task);
-  connector = openvasd_scanner_connect (scanner, scan_id);
+  connector = http_scanner_connect (scanner, scan_id);
   response = NULL;
   started = FALSE;
   queued_status_updated = FALSE;
