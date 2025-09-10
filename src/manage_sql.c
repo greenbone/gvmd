@@ -8043,12 +8043,13 @@ auth_cache_insert (const char *username, const char *password, int method)
   char *hash, *quoted_username;
 
   quoted_username = sql_quote (username);
-  hash = manage_authentication_hash(password);
+  hash = manage_authentication_hash (password);
   sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
        " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
   /* Cleanup cache */
   sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - %d",
        get_auth_timeout()*60);
+  g_free (hash);
 }
 
 /**
