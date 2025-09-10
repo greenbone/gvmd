@@ -85,7 +85,7 @@ exit:
  * manage_authentication_setup and the password.
  *
  * @param[in] password - the password to be hashed
- * @return the hash or a NULL pointer on a failure.
+ * @return The hash, or a NULL pointer on failure. Caller must free.
  * */
 char *
 manage_authentication_hash (const char *password)
