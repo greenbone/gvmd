@@ -8760,6 +8760,33 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
     ");",
     LOCATION_TABLE, scanner, LOCATION_TRASH, scanner);
 }
+
+/**
+ * @brief Return the agent_group of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Agent group of task.
+ */
+agent_group_t
+task_agent_group (task_t task)
+{
+  agent_group_t agent_group = 0;
+  switch (sql_int64 (&agent_group,
+                     "SELECT agent_group FROM tasks WHERE id = %llu;",
+                     task))
+    {
+    case 0:
+      return agent_group;
+      break;
+    case 1:        /* Too few rows in result of query. */
+    default:       /* Programming error. */
+      assert (0);
+    case -1:
+      return 0;
+      break;
+    }
+}
 #endif /*ENABLE_AGENTS*/
 
 #if ENABLE_CONTAINER_SCANNING
@@ -47699,7 +47726,7 @@ cleanup_ids_for_table (const char *table)
   return 0;
 }
 
-#if OPENVASD
+#if ENABLE_HTTP_SCANNER
 
 /**
  * @brief Get the QoD value for a given nvti OID.
@@ -47875,8 +47902,16 @@ struct report_aux {
   GHashTable *hash_hostdetails;
 };
 
+/**
+ * @brief Convert and add a single http scanner result to the report structure.
+ *
+ * @param[in]  res            The http scanner result to be processed.
+ * @param[in,out] results_aux Pointer to auxiliary report data,
+ *                            containing the report handle, task reference,
+ *                            results array, and hash maps for deduplication.
+ */
 static void
-add_openvasd_result_to_report (http_scanner_result_t res, gpointer *results_aux)
+add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_aux)
 {
 
   struct report_aux *rep_aux = *results_aux;
@@ -47981,27 +48016,26 @@ add_openvasd_result_to_report (http_scanner_result_t res, gpointer *results_aux)
 }
 
 /**
- * @brief Parse openvasd results.
+ * @brief Parse http scanner results.
  *
  * @param[in]  task        Task.
  * @param[in]  report      Report.
- * @param[in]  results     openvasd results.
+ * @param[in]  results     http scanner results.
  */
 void
-parse_openvasd_report (task_t task, report_t report, GSList *results,
+parse_http_scanner_report (task_t task, report_t report, GSList *results,
                        time_t start_time, time_t end_time)
 {
   char *defs_file = NULL;
   gboolean has_results = FALSE;
   GArray *results_array = NULL;
-  GHashTable *hashed_openvasd_results = NULL;
+  GHashTable *hashed_scanner_results = NULL;
   GHashTable *hashed_host_details = NULL;
   struct report_aux *rep_aux;
 
   assert (task);
   assert (report);
 
-  
   sql_begin_immediate ();
   /* Set the report's start and end times. */
 
@@ -48016,8 +48050,8 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
       sql_commit ();
       return;
     }
- 
-  hashed_openvasd_results = g_hash_table_new_full (g_str_hash,
+
+  hashed_scanner_results = g_hash_table_new_full (g_str_hash,
                                               g_str_equal,
                                               g_free,
                                               NULL);
@@ -48036,10 +48070,10 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
   rep_aux->report = report;
   rep_aux->task = task;
   rep_aux->results_array = results_array;
-  rep_aux->hash_results = hashed_openvasd_results;
+  rep_aux->hash_results = hashed_scanner_results;
   rep_aux->hash_hostdetails = hashed_host_details;
 
-  g_slist_foreach(results, (GFunc) add_openvasd_result_to_report, &rep_aux);
+  g_slist_foreach(results, (GFunc) add_http_scanner_result_to_report, &rep_aux);
 
   if (has_results)
     {
@@ -48052,7 +48086,7 @@ parse_openvasd_report (task_t task, report_t report, GSList *results,
   if (results_array && has_results)
     g_array_free (results_array, TRUE);
 
-  g_hash_table_destroy (hashed_openvasd_results);
+  g_hash_table_destroy (hashed_scanner_results);
   g_hash_table_destroy (hashed_host_details);
   g_free (defs_file);
   g_free (rep_aux);

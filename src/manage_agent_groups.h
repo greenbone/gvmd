@@ -22,8 +22,6 @@
 #include "manage_get.h"
 #include "manage_resources.h"
 
-typedef resource_t agent_group_t;
-
 /**
  * @struct agent_group_data
  * @brief Represents an agent group and its metadata.
