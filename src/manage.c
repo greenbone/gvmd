@@ -2609,7 +2609,6 @@ run_agent_control_task (task_t task, char **report_id);
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
  *         -9 fork failed.
- *         -10 not supported
  */
 static int
 run_task (const char *task_id, char **report_id, int from)
@@ -2663,7 +2662,7 @@ run_task (const char *task_id, char **report_id, int from)
     {
       if (from == 1)
         // Resume task is not supported by agent controller
-        return -10;
+        return 4;
       return run_agent_control_task (task, report_id);
     }
 #endif
@@ -2857,7 +2856,6 @@ stop_task (const char *task_id)
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
  *         -9 fork failed.
- *         -10 not supported
  */
 int
 resume_task (const char *task_id, char **report_id)
@@ -7746,7 +7744,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
               result_start += g_slist_length (results);
 
               parse_http_scanner_report (task, report, results, start_time,
-                                     end_time);
+                                         end_time);
               if (results != NULL)
                 {
                   g_slist_free_full (results,
