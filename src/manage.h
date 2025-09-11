@@ -631,6 +631,10 @@ agent_group_tasks_exist_by_scanner (scanner_t scanner);
 
 int
 agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner);
+
+agent_group_t
+task_agent_group (task_t);
+
 #endif /* ENABLE_AGENTS */
 
 int

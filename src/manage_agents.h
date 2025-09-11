@@ -23,8 +23,6 @@
 
 #include <agent_controller/agent_controller.h>
 
-typedef resource_t agent_t;
-
 /**
  * @struct agent_ip_data
  * @brief Represents a single IP address associated with an agent.
@@ -201,6 +199,11 @@ delete_agents_by_scanner_and_uuids (scanner_t scanner,
 
 gboolean
 agents_in_use (agent_uuid_list_t agent_uuids);
+
+agent_response_t
+get_agent_controller_agents_from_uuids (scanner_t scanner,
+                                        agent_uuid_list_t agent_uuids,
+                                        agent_controller_agent_list_t out_list);
 
 #endif // _GVMD_MANAGE_AGENTS_H
 #endif // ENABLE_AGENTS

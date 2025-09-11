@@ -60,6 +60,43 @@ agent_uuid_list_free (agent_uuid_list_t uuid_list)
 }
 
 /**
+ * @brief Allocate and fill agent_uuid_list_t structure using agent group.
+ *
+ * @param[in] group Agent group row id
+ *
+ * @return A newly allocated filled agent_uuid_list_t,
+ *         or NULL on allocation failure.
+ */
+agent_uuid_list_t
+agent_uuid_list_from_group (agent_group_t group)
+{
+  int count = 0;
+  iterator_t it;
+  init_agent_group_agents_iterator (&it, group);
+  while (next (&it))
+    {
+      const char *uuid = agent_group_agent_iterator_uuid (&it);
+      if (uuid && *uuid) count++;
+    }
+
+  if (count == 0) return NULL;
+
+  agent_uuid_list_t list = agent_uuid_list_new (count);
+  if (!list) return NULL;
+
+  int i = 0;
+  init_agent_group_agents_iterator (&it, group);
+  while (next (&it))
+    {
+      const char *uuid = agent_group_agent_iterator_uuid (&it);
+      if (!uuid || !*uuid) continue;
+      list->agent_uuids[i++] = g_strdup (uuid);
+    }
+
+  return list;
+}
+
+/**
  * @brief Initialize a new GVMD agent connector from a scanner.
  *
  * Builds and configures a connection to the agent controller using

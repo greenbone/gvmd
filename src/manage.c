@@ -2582,6 +2582,12 @@ static int
 run_openvasd_task (task_t task, int from, char **report_id);
 #endif
 
+#if ENABLE_AGENTS
+/* Prototype */
+static int
+run_agent_control_task (task_t task, char **report_id);
+#endif
+
 /**
  * @brief Start or resume a task.
  *
@@ -2603,6 +2609,7 @@ run_openvasd_task (task_t task, int from, char **report_id);
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
  *         -9 fork failed.
+ *         -10 not supported
  */
 static int
 run_task (const char *task_id, char **report_id, int from)
@@ -2648,6 +2655,17 @@ run_task (const char *task_id, char **report_id, int from)
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD
     || scanner_type (scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     return run_openvasd_task (task, from, report_id);
+#endif
+
+#if ENABLE_AGENTS
+  if (scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER
+    || scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    {
+      if (from == 1)
+        // Resume task is not supported by agent controller
+        return -10;
+      return run_agent_control_task (task, report_id);
+    }
 #endif
 
   return -1; // Unknown scanner type
@@ -2839,6 +2857,7 @@ stop_task (const char *task_id)
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
  *         -9 fork failed.
+ *         -10 not supported
  */
 int
 resume_task (const char *task_id, char **report_id)
@@ -7726,7 +7745,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
 
               result_start += g_slist_length (results);
 
-              parse_openvasd_report (task, report, results, start_time,
+              parse_http_scanner_report (task, report, results, start_time,
                                      end_time);
               if (results != NULL)
                 {
@@ -7802,7 +7821,6 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
   http_scanner_connector_free (connector);
   return rc;
 }
-
 
 /**
  * @brief Fork a child to handle an openvasd scan's fetching and inserting.
@@ -7931,7 +7949,6 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
   exit (rc);
 }
 
-
 /**
  * @brief Start a task on an openvasd scanner.
  *
@@ -7971,4 +7988,358 @@ run_openvasd_task (task_t task, int from, char **report_id)
     }
   return 0;
 }
+#endif
+
+#if ENABLE_AGENTS
+
+/**
+ * @brief Handle an agent controller scan, retrieving the scan result.
+ *
+ * @param[in]  task     The task.
+ * @param[in]  report   The report.
+ * @param[in]  scan_id  The UUID of the scan on the scanner.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+handle_agent_controller_scan (task_t task, report_t report, const char *scan_id)
+{
+  scanner_t scanner = 0;
+  http_scanner_connector_t connector = NULL;
+  GSList *results = NULL;
+
+  if (!task || !report || !scan_id || !*scan_id)
+    return -1;
+
+  scanner = task_scanner (task);
+  if (scanner == 0)
+    {
+      result_t r = make_osp_result (
+          task, "", "", "",
+          threat_message_type ("Error"),
+          "Agent Controller: no scanner associated with task", "", "",
+          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, r);
+      return -1;
+    }
+
+  connector = http_scanner_connect (scanner, scan_id);
+  if (!connector)
+    {
+      result_t r = make_osp_result (
+          task, "", "", "",
+          threat_message_type ("Error"),
+          "Agent Controller: failed to connect to scanner", "", "",
+          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, r);
+      return -1;
+    }
+
+  int http_status = http_scanner_parsed_results (connector, 0, 0, &results);
+  if (http_status != 200)
+    {
+      gchar *msg = g_strdup_printf (
+          "Agent Controller: failed to fetch results (HTTP %d)", http_status);
+      result_t r = make_osp_result (
+          task, "", "", "",
+          threat_message_type ("Error"),
+          msg, "", "",
+          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, r);
+      g_free (msg);
+
+      http_scanner_connector_free (connector);
+      return -1;
+    }
+
+  /* Parse and import into the report */
+  // Expect: agent controller results should be the same as openvasd result
+  parse_http_scanner_report (task, report, results, time (NULL), time (NULL));
+
+  if (results)
+    g_slist_free_full (results, (GDestroyNotify) http_scanner_result_free);
+
+  http_scanner_connector_free (connector);
+  return 0;
+}
+
+/**
+ * @brief Launch an agent controller scan for the given task/group.
+ *        Initialize the new report with the scan_id
+ *
+ * @param[in]  task        Task handle for which the scan should be launched.
+ * @param[in]  agent_group Agent group containing the agents to scan.
+ * @param[out] report_id   On success, set to newly allocated report ID string.
+ *                         Caller must free with g_free. Set to NULL on failure.
+ * @param[out] error       On failure, optionally set to a newly allocated error
+ *                         string (caller must g_free). Ignored if NULL.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+launch_agent_control_task (task_t task,
+                           agent_group_t agent_group,
+                           char **report_id,
+                           gchar **error)
+{
+  http_scanner_connector_t connection = NULL;
+  agent_controller_agent_list_t agent_control_list = NULL;
+  agent_uuid_list_t agent_uuids = NULL;
+  http_scanner_resp_t http_scanner_resp = NULL;
+  gchar *payload = NULL;
+  scanner_t scanner = 0;
+  int ret = -1;
+
+  if (report_id) *report_id = NULL;
+
+  // Get scanner
+  scanner = task_scanner (task);
+  if (scanner == 0)
+    {
+      if (error) *error = g_strdup ("Scanner is not found");
+      goto make_report;
+    }
+
+  // Connect HTTP scanner
+  connection = http_scanner_connect (scanner, NULL);
+  if (!connection)
+    {
+      if (error) *error = g_strdup ("Could not connect to Scanner");
+      goto make_report;
+    }
+
+  // Build agent UUID list from group
+  agent_uuids = agent_uuid_list_from_group (agent_group);
+  if (!agent_uuids || agent_uuids->count <= 0)
+    {
+      if (error) *error = g_strdup ("No Agents found");
+      goto make_report;
+    }
+
+  // Map UUIDs to agent controller entries
+  agent_control_list = agent_controller_agent_list_new (agent_uuids->count);
+  if (!agent_control_list)
+    {
+      if (error) *error = g_strdup ("Allocation failure (agent list)");
+      goto make_report;
+    }
+
+  if (get_agent_controller_agents_from_uuids (scanner, agent_uuids, agent_control_list) != 0)
+    {
+      if (error) *error = g_strdup ("Could not get Agents from database");
+      goto make_report;
+    }
+
+  // Build create-scan payload
+  payload = agent_controller_build_create_scan_payload (agent_control_list);
+  if (!payload)
+    {
+      if (error) *error = g_strdup ("Could not create scan payload");
+      goto make_report;
+    }
+
+  // Create scan
+  http_scanner_resp = http_scanner_create_scan (connection, payload, NULL);
+  if (!http_scanner_resp || http_scanner_resp->code != 201)
+    {
+      if (error) *error = g_strdup ("Scanner failed to create the scan");
+      goto make_report;
+    }
+
+  // Extract scan id
+  {
+    gchar *scan_id = agent_controller_get_scan_id (http_scanner_resp->body);
+    if (!scan_id)
+      {
+        if (error) *error = g_strdup ("Could not get scan id from response");
+        goto make_report;
+      }
+
+    if (report_id) *report_id = g_strdup (scan_id);
+    g_free (scan_id);
+  }
+
+  /* success */
+  ret = 0;
+
+make_report:
+  // Always create a report with TASK_STATUS_REQUESTED
+  {
+    int report_resp = create_current_report (task, report_id, TASK_STATUS_REQUESTED);
+    if (report_resp != 0)
+      {
+        if (error && !*error) *error = g_strdup ("Could not create current report");
+        ret = -1;
+      }
+    goto cleanUp;
+  }
+
+cleanUp:
+  if (http_scanner_resp)
+    http_scanner_response_cleanup (http_scanner_resp);
+  if (agent_control_list)
+    agent_controller_agent_list_free (agent_control_list);
+  if (agent_uuids)
+    agent_uuid_list_free (agent_uuids);
+  if (connection)
+    http_scanner_connector_free (connection);
+
+  g_free (payload);
+
+  return ret;
+}
+
+/**
+ * @brief Fork a child to handle an agent controller scan's fetching and inserting.
+ *
+ * @param[in]   task       The task.
+ * @param[in]   agent_group     The Agent group.
+ * @param[out]  report_id_return   UUID of the report.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
+                       char **report_id_return)
+{
+  char *report_id, *error = NULL;
+  int rc;
+
+  assert (task);
+  assert (agent_group);
+
+  if (report_id_return)
+    *report_id_return = NULL;
+
+  current_scanner_task = task;
+  set_task_run_status (task, TASK_STATUS_DONE);
+
+  switch (fork ())
+    {
+      case 0:
+        init_sentry ();
+        break;
+      case -1:
+        /* Parent, failed to fork. */
+        global_current_report = 0;
+        g_warning ("%s: Failed to fork: %s",
+                   __func__,
+                   strerror (errno));
+        set_task_interrupted (task,
+                              "Error forking scan handler."
+                              "  Interrupting scan.");
+        set_report_scan_run_status (global_current_report,
+                                    TASK_STATUS_INTERRUPTED);
+        global_current_report = (report_t) 0;
+        current_scanner_task = 0;
+        return -9;
+      default:
+        /* Parent, successfully forked. */
+        global_current_report = 0;
+        current_scanner_task = 0;
+        return 0;
+    }
+
+  /* Child: Re-open DB after fork and periodically check scan progress.
+   * If progress == 100%: Parse the report results and other info then exit(0).
+   * Else, exit(1) in error cases like connection to scanner failure.
+   */
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+
+  rc = launch_agent_control_task (task, agent_group, &report_id , &error);
+
+  if (rc < 0)
+    {
+      result_t result;
+
+      g_warning ("Agent Controller start_scan %s: %s", report_id, error);
+      result = make_osp_result (task, "", "", "",
+                                threat_message_type ("Error"),
+                                error, "", "", QOD_DEFAULT, NULL, NULL);
+      report_add_result (global_current_report, result);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      set_task_end_time_epoch (task, time (NULL));
+      set_scan_end_time_epoch (global_current_report, time (NULL));
+
+      g_free (error);
+      g_free (report_id);
+      gvm_close_sentry ();
+      exit (-1);
+    }
+
+  setproctitle ("Agent Controller: Handling scan %s", report_id);
+
+  rc = handle_agent_controller_scan (task, global_current_report, report_id);
+  g_free (report_id);
+
+  if (rc >= 0)
+    {
+      set_task_run_status (task, TASK_STATUS_PROCESSING);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_PROCESSING);
+      hosts_set_identifiers (global_current_report);
+      hosts_set_max_severity (global_current_report, NULL, NULL);
+      hosts_set_details (global_current_report);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+    }
+  else if (rc == -1)
+    {
+      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_INTERRUPTED);
+    }
+
+  set_task_end_time_epoch (task, time (NULL));
+  set_scan_end_time_epoch (global_current_report, time (NULL));
+  global_current_report = 0;
+  current_scanner_task = (task_t) 0;
+  gvm_close_sentry ();
+  exit (rc);
+}
+
+/**
+ * @brief Start a task on an agent control scanner.
+ *
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+static int
+run_agent_control_task (task_t task, char **report_id)
+{
+  agent_group_t agent_group;
+
+  agent_group = task_agent_group (task);
+  if (agent_group)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = agent_group_uuid (agent_group);
+      if (find_resource_with_permission ("agent_group", uuid, &found,
+                                         "get_agent_groups", 0))
+        {
+          g_free (uuid);
+          return -1;
+        }
+
+      g_free (uuid);
+
+      if (found == 0)
+        return 99;
+    }
+
+  if (fork_agent_controller_scan_handler (task, agent_group, report_id))
+    {
+      g_warning ("Couldn't fork agent-controller scan handler");
+      return -1;
+    }
+  return 0;
+}
+
 #endif

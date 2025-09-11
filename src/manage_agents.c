@@ -292,7 +292,7 @@ convert_agent_data_list_to_agent_control_list (
  * @return AGENT_RESPONSE_SUCCESS on success, or an appropriate error code on
  * failure.
  */
-static agent_response_t
+agent_response_t
 get_agent_controller_agents_from_uuids (scanner_t scanner,
                                         agent_uuid_list_t agent_uuids,
                                         agent_controller_agent_list_t out_list)

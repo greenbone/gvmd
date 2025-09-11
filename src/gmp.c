@@ -28037,6 +28037,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   resume_task_data->task_id,
                                   "resumed");
                   break;
+                case -10:
+                  SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("resume_task",
+                    "Agent task is not support"
+                    " this process"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                    break;
                 default: /* Programming error. */
                   assert (0);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
