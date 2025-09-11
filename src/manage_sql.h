@@ -560,9 +560,9 @@ check_host_detail_exists (report_t, const char *, const char *, const char *,
                           const char *, const char *, const char *, char **,
                           GHashTable *);
 
-#if OPENVASD
+#if ENABLE_HTTP_SCANNER
 void
-parse_openvasd_report (task_t, report_t, GSList *, time_t, time_t);
+parse_http_scanner_report (task_t, report_t, GSList *, time_t, time_t);
 #endif
 
 #endif /* not _GVMD_MANAGE_SQL_H */

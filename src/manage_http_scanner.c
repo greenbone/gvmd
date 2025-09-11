@@ -72,24 +72,4 @@ http_scanner_connect (scanner_t scanner, const char *scan_id)
   return connection;
 }
 
-/**
- * @brief Assign a scan uuid to an existing HTTP scanner connector.
- *
- * @param[in]  connector   Existing connector instance.
- * @param[in]  scan_id     Scan UUID to set on the connector.
- *
- * @return 0 on success, -1 if the scan ID is invalid.
- */
-int
-http_scanner_set_connector_scan_id (http_scanner_connector_t connector,
-                                    const char *scan_id)
-{
-  if (scan_id && scan_id[0] != '\0')
-    {
-      http_scanner_connector_builder (connector, HTTP_SCANNER_SCAN_ID, scan_id);
-      return 0;
-    }
-  return -1;
-}
-
 #endif

@@ -22,9 +22,5 @@
 http_scanner_connector_t
 http_scanner_connect(scanner_t scanner, const char* scan_id);
 
-int
-http_scanner_set_connector_scan_id (http_scanner_connector_t connector,
-                                    const char *scan_id);
-
 #endif //MANAGE_HTTP_SCANNER_H
 #endif
