@@ -5382,23 +5382,46 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Filter columns for task iterator.
  */
 #if CVSS3_RATINGS == 1
+  #define SEVERITY_FILTER_COLUMNS \
+    "false_positive", "log", "low", "medium", "high", "critical"
+#else
+  #define SEVERITY_FILTER_COLUMNS \
+    "false_positive", "log", "low", "medium", "high"
+#endif
+
+#if ENABLE_AGENTS
+  #define TASK_AGENT_GROUP_FILTER_COLUMNS "agent_group_id", "agent_group",
+#else
+  #define TASK_AGENT_GROUP_FILTER_COLUMNS
+#endif
+
   #define TASK_ITERATOR_FILTER_COLUMNS                                         \
   { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
     "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
-    "first", "last", "false_positive", "log", "low", "medium", "high",         \
-    "critical", "hosts", "result_hosts", "fp_per_host", "log_per_host",        \
-    "low_per_host", "medium_per_host", "high_per_host", "critical_per_host",   \
-    "target", "usage_type", "first_report_created", "last_report_created", NULL }
-#else
-#define TASK_ITERATOR_FILTER_COLUMNS                                          \
- { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
-   "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
-   "first", "last", "false_positive", "log", "low", "medium", "high",         \
-   "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
-   "medium_per_host", "high_per_host", "target", "usage_type",                \
-   "first_report_created", "last_report_created", NULL }
-#endif
+    "first", "last", SEVERITY_FILTER_COLUMNS, "hosts", "result_hosts",         \
+    "fp_per_host", "log_per_host", "low_per_host", "medium_per_host",          \
+    "high_per_host", "critical_per_host", "target", "usage_type",              \
+    "first_report_created", "last_report_created",                             \
+    TASK_AGENT_GROUP_FILTER_COLUMNS                                            \
+    NULL}
 
+#if ENABLE_AGENTS
+  #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
+    ,{                                                                        \
+      "(SELECT uuid FROM agent_groups"                                        \
+      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      "agent_group_id",                                                       \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
+    {                                                                         \
+      "(SELECT name FROM agent_groups"                                        \
+      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      "agent_group",                                                          \
+      KEYWORD_TYPE_STRING                                                     \
+    }
+#else
+   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
+#endif
 /**
  * @brief Task iterator columns.
  */
@@ -5647,7 +5670,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY creation_time DESC LIMIT 1)",                                \
      "last_report_created",                                                  \
      KEYWORD_TYPE_INTEGER                                                    \
-   }
+   } TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #else
 #define TASK_ITERATOR_WHERE_COLUMNS_INNER                                    \
    {                                                                         \
@@ -5834,7 +5857,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY creation_time DESC LIMIT 1)",                                \
      "last_report_created",                                                  \
      KEYWORD_TYPE_INTEGER                                                    \
-   }
+   } TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
 /**
  * @brief Task iterator WHERE columns.
