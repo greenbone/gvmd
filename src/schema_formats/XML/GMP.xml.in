@@ -29513,7 +29513,6 @@ END:VCALENDAR
               <miss_until_inactive>1</miss_until_inactive>
             </heartbeat>
           </config>
-          <comment>example update</comment>
         </modify_agent_control_scan_config>
       </request>
       <response>
