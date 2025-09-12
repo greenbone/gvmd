@@ -5378,9 +5378,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
-/**
- * @brief Filter columns for task iterator.
- */
 #if CVSS3_RATINGS == 1
   #define SEVERITY_FILTER_COLUMNS \
     "false_positive", "log", "low", "medium", "high", "critical"
@@ -5395,14 +5392,17 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_FILTER_COLUMNS
 #endif
 
-  #define TASK_ITERATOR_FILTER_COLUMNS                                         \
-  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
-    "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
-    "first", "last", SEVERITY_FILTER_COLUMNS, "hosts", "result_hosts",         \
-    "fp_per_host", "log_per_host", "low_per_host", "medium_per_host",          \
-    "high_per_host", "critical_per_host", "target", "usage_type",              \
-    "first_report_created", "last_report_created",                             \
-    TASK_AGENT_GROUP_FILTER_COLUMNS                                            \
+/**
+ * @brief Filter columns for task iterator.
+ */
+#define TASK_ITERATOR_FILTER_COLUMNS                                         \
+  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",          \
+    "last_report", "threat", "trend", "severity", "schedule", "next_due",    \
+    "first", "last", SEVERITY_FILTER_COLUMNS, "hosts", "result_hosts",       \
+    "fp_per_host", "log_per_host", "low_per_host", "medium_per_host",        \
+    "high_per_host", "critical_per_host", "target", "usage_type",            \
+    "first_report_created", "last_report_created",                           \
+    TASK_AGENT_GROUP_FILTER_COLUMNS                                          \
     NULL}
 
 #if ENABLE_AGENTS
@@ -5420,8 +5420,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
       KEYWORD_TYPE_STRING                                                     \
     }
 #else
-   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
+  #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
+
 /**
  * @brief Task iterator columns.
  */
@@ -5859,6 +5860,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    } TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
+
 /**
  * @brief Task iterator WHERE columns.
  */
