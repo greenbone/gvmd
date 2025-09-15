@@ -2118,6 +2118,7 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_key_priv = NULL;
   static gchar *scanner_relay_host = NULL;
   static gchar *scanner_relay_port = NULL;
+  static int scanner_no_default_certs = 0;
   static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
   static int affected_products_query_size
@@ -2521,6 +2522,10 @@ gvmd (int argc, char** argv, char *env[])
           " Either 'OpenVAS', 'OSP', 'OSP-Sensor'"
           " or a number as used in GMP.",
           "<scanner-type>" },
+          { "no-default-certs", '\0', 0, G_OPTION_ARG_NONE,
+          &scanner_no_default_certs,
+          "Bypass reading/validating scanner default certificate files for "
+          "--create-scanner.", NULL },
         { "scan-handler-active-time", '\0', 0, G_OPTION_ARG_INT,
           &scan_handler_active_time,
           "Minimum time in seconds which queued scan handlers will keep"
@@ -3195,6 +3200,12 @@ gvmd (int argc, char** argv, char *env[])
         type = SCANNER_TYPE_OPENVASD;
       else if (!strcasecmp (scanner_type, "openvasd-sensor"))
         type = SCANNER_TYPE_OPENVASD_SENSOR;
+#if ENABLE_AGENTS
+      else if (!strcasecmp (scanner_type, "agent-controller"))
+        type = SCANNER_TYPE_AGENT_CONTROLLER;
+      else if (!strcasecmp (scanner_type, "agent-controller-sensor"))
+        type = SCANNER_TYPE_AGENT_CONTROLLER_SENSOR;
+#endif
       else
         {
           type = atoi (scanner_type);
@@ -3210,7 +3221,8 @@ gvmd (int argc, char** argv, char *env[])
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_credential,
                                    scanner_key_pub, scanner_key_priv,
-                                   scanner_relay_host, scanner_relay_port);
+                                   scanner_relay_host, scanner_relay_port,
+                                   scanner_no_default_certs);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -3242,6 +3254,12 @@ gvmd (int argc, char** argv, char *env[])
             type = SCANNER_TYPE_OPENVASD;
           else if (!strcasecmp (scanner_type, "openvasd-sensor"))
             type = SCANNER_TYPE_OPENVASD_SENSOR;
+#if ENABLE_AGENTS
+          else if (!strcasecmp (scanner_type, "agent-controller"))
+            type = SCANNER_TYPE_AGENT_CONTROLLER;
+          else if (!strcasecmp (scanner_type, "agent-controller-sensor"))
+            type = SCANNER_TYPE_AGENT_CONTROLLER_SENSOR;
+#endif
 #if ENABLE_CONTAINER_SCANNING
           else if (!strcasecmp (scanner_type, "container-image"))
             type = SCANNER_TYPE_CONTAINER_IMAGE;

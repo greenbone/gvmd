@@ -2488,7 +2488,7 @@ int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
                        const char *, const char *, const char *,
-                       const char *, const char *);
+                       const char *, const char *, int);
 
 int
 manage_modify_scanner (GSList *, const db_conn_info_t *, const char *,
