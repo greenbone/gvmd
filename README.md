@@ -4,9 +4,6 @@
 
 [![GitHub releases](https://img.shields.io/github/release/greenbone/gvmd.svg)](https://github.com/greenbone/gvmd/releases)
 [![Build and Test](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/greenbone/gvmd/actions/workflows/build-and-test.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/greenbone/gvmd.svg)](https://hub.docker.com/r/greenbone/gvmd/)
-[![Docker Image Size](https://img.shields.io/docker/image-size/greenbone/gvmd.svg?maxAge=2592000)](https://hub.docker.com/r/greenbone/gvmd/)
-[![Twitter Badge](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/openvas)
 
 The Greenbone Vulnerability Manager is the central management service between
 security scanners and the user clients.
@@ -14,8 +11,8 @@ security scanners and the user clients.
 It manages the storage of any vulnerability management configurations and of the
 scan results. Access to data, control commands and workflows is offered via the
 XML-based Greenbone Management Protocol (GMP). Controlling scanners like
-*[OpenVAS](https://github.com/greenbone/openvas-scanner)* is done via the Open Scanner
-Protocol (OSP).
+the [OPENVAS Scanner](https://github.com/greenbone/openvas-scanner)* is done via
+the Open Scanner Protocol (OSP).
 
 - [Releases](#releases)
 - [Installation and Usage](#installation-and-usage)
@@ -68,7 +65,7 @@ is available at <https://www.greenbone.net/en/testnow>.
 ## Support
 
 For any question on the usage of `gvmd` please use the [Greenbone Community
-Portal](https://community.greenbone.net/). If you found a problem with the
+Forum](https://forum.greenbone.net/). If you found a problem with the
 software, please [create an issue](https://github.com/greenbone/gvmd/issues) on
 GitHub. If you are a Greenbone customer you may alternatively or additionally
 forward your issue to the Greenbone Support Portal.
