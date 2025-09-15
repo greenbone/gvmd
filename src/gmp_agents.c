@@ -466,7 +466,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   if ((e = entity_child (root, "comment")))
-    comment = g_strdup (entity_text (e));
+    comment = sql_quote (entity_text (e));
 
   GPtrArray *errs = NULL;
   agent_response_t response =
