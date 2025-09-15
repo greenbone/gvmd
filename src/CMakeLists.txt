@@ -156,11 +156,6 @@ set(
   ALL_MANAGE_SRC
   manage.c
   manage_acl.c
-  manage_agent_common.c
-  manage_agent_groups.c
-  manage_agents.c
-  manage_agent_installers.c
-  manage_agent_control_scan_config.c
   manage_alerts.c
   manage_configs.c
   manage_events.c
@@ -187,9 +182,9 @@ set(
   manage_oci_image_targets.c
 )
 
-if(NOT ENABLE_AGENTS)
+if(ENABLE_AGENTS)
   list(
-    REMOVE_ITEM
+    APPEND
     ALL_MANAGE_SRC
     manage_agent_common.c
     manage_agent_groups.c
@@ -203,9 +198,6 @@ set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
   manage_sql_copy.c
-  manage_sql_agent_groups.c
-  manage_sql_agents.c
-  manage_sql_agent_installers.c
   manage_sql_alerts.c
   manage_sql_assets.c
   manage_sql_events.c
@@ -224,9 +216,9 @@ set(
   manage_sql_oci_image_targets.c
 )
 
-if(NOT ENABLE_AGENTS)
+if(ENABLE_AGENTS)
   list(
-    REMOVE_ITEM
+    APPEND
     ALL_MANAGE_SQL_SRC
     manage_sql_agent_groups.c
     manage_sql_agents.c
@@ -237,10 +229,6 @@ endif()
 set(
   ALL_GMP_SRC
   gmp.c
-  gmp_agent_control_scan_agent_config.c
-  gmp_agent_groups.c
-  gmp_agents.c
-  gmp_agent_installers.c
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
@@ -255,9 +243,9 @@ set(
   gmp_oci_image_targets.c
 )
 
-if(NOT ENABLE_AGENTS)
+if(ENABLE_AGENTS)
   list(
-    REMOVE_ITEM
+    APPEND
     ALL_GMP_SRC
     gmp_agent_control_scan_agent_config.c
     gmp_agent_groups.c
@@ -409,15 +397,14 @@ set(
   TEST_DEPENDENCIES
   gmp-tickets-test
   manage-test
-  manage-agent-installers-test
   manage-oci-image-targets-test
   manage-sql-test
   manage-utils-test
   utils-test
 )
 
-if(NOT ENABLE_AGENTS)
-  list(REMOVE_ITEM TEST_DEPENDENCIES manage-agent-installers-test)
+if(ENABLE_AGENTS)
+  list(APPEND TEST_DEPENDENCIES manage-agent-installers-test)
 endif()
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
