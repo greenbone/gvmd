@@ -66,5 +66,5 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: ${{ vars.GREENBONE_REGISTRY }}
-          token: ${{ secrets.GREENBONE_REGISTRY_TOKEN }}
-          user: ${{ secrets.GREENBONE_REGISTRY_USER }}
+          token: ${{ secrets.GREENBONE_REGISTRY_REPLICATION_TOKEN }}
+          user: ${{ secrets.GREENBONE_REGISTRY_REPLICATION_USER }}
