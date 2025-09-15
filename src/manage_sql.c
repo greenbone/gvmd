@@ -8122,6 +8122,15 @@ authenticate_any_method (const gchar *username, const gchar *password,
   gchar *hash;
 
   sql_begin_immediate ();
+
+  ret = sql_table_lock_wait ("auth_cache", 30000);
+  if (ret != 1)
+    {
+      sql_rollback ();
+      g_warning ("%s: Failed to acquire auth_cache lock", __func__);
+      return -1;
+    }
+
   if (gvm_auth_ldap_enabled ()
       && ldap_auth_enabled ()
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
