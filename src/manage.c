@@ -5520,7 +5520,8 @@ manage_gvmd_data_feed_dirs_exist ()
 {
   return gvm_file_is_readable (GVMD_FEED_DIR)
 #if ENABLE_AGENTS
-         && agent_installers_feed_metadata_file_exists ()
+// TODO: Add this check once the agent installers are added to the feed
+//         && agent_installers_feed_metadata_file_exists ()
 #endif
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
