@@ -2522,7 +2522,7 @@ gvmd (int argc, char** argv, char *env[])
           " Either 'OpenVAS', 'OSP', 'OSP-Sensor'"
           " or a number as used in GMP.",
           "<scanner-type>" },
-          { "no-default-certs", '\0', 0, G_OPTION_ARG_NONE,
+        { "no-default-certs", '\0', 0, G_OPTION_ARG_NONE,
           &scanner_no_default_certs,
           "Bypass reading/validating scanner default certificate files for "
           "--create-scanner.", NULL },
