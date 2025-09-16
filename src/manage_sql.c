@@ -31406,10 +31406,10 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
     }
   ret = create_scanner (name, NULL, host, port, type, &scanner, ca_pub,
                         used_credential_id, relay_host, relay_port);
-  if (ca_pub) g_free (ca_pub);
-  if (key_pub) g_free (key_pub);
-  if (key_priv) g_free (key_priv);
-  if (used_credential_id) g_free (used_credential_id);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  g_free (used_credential_id);
 
   switch (ret)
     {
