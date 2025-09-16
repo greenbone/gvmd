@@ -931,6 +931,7 @@ move_task (const char*, const char*);
   "'AIX Local Security Checks',"                   \
   " 'AlmaLinux Local Security Checks',"            \
   " 'Amazon Linux Local Security Checks',"         \
+  " 'Arch Linux Local Security Checks',"           \
   " 'CentOS Local Security Checks',"               \
   " 'Citrix Xenserver Local Security Checks',"     \
   " 'Debian Local Security Checks',"               \
@@ -967,6 +968,7 @@ move_task (const char*, const char*);
   { "AIX Local Security Checks",                   \
     "AlmaLinux Local Security Checks",             \
     "Amazon Linux Local Security Checks",          \
+    "Arch Linux Local Security Checks",            \
     "CentOS Local Security Checks",                \
     "Debian Local Security Checks",                \
     "Fedora Local Security Checks",                \
