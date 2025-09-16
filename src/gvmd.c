@@ -1611,7 +1611,7 @@ fork_agents_sync ()
 
       default:
         g_debug ("%s: %i forked %i", __func__, getpid (), pid);
-        agent_sync_in_progress = TRUE;
+        agent_sync_in_progress = FALSE;
         if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
           g_warning ("%s: Error resetting signal mask", __func__);
         return 0;
