@@ -428,7 +428,7 @@ get_agent_installer_file_run (gmp_parser_t *gmp_parser, GError **error)
   get.type = "agent_installer";
   get.id = get_agent_installer_file_data.agent_installer_id;
 
-  if (!acl_user_may ("get_agent_installer_file"))
+  if (!acl_user_may ("get_agent_installer"))
     {
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_agent_installer_file",
                               "Permission denied"));
