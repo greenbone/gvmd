@@ -12,6 +12,7 @@
 
 #include "gmp_agent_groups.h"
 #include "manage.h"
+#include "manage_acl.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -79,7 +80,18 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (ret)
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("get_agent_groups", "Permission denied"));
+      switch (ret)
+        {
+        case 99:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_agent_groups",
+                              "Permission denied"));
+          break;
+        default:
+          internal_error_send_to_client (error);
+          get_agent_groups_reset ();
+          return;
+        }
       get_agent_groups_reset ();
       return;
     }
@@ -275,6 +287,14 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   agent_group_data_t group_data;
   agent_uuid_list_t agent_uuids = NULL;
   agent_group_t new_agent_group;
+
+  if (!acl_user_may ("create_agent_group"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_agent_group",
+                              "Permission denied"));
+      create_agent_group_reset ();
+      return;
+    }
 
   root = (entity_t) create_agent_group_data.context->first->data;
 
@@ -572,6 +592,14 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
   entity_t root, name, comment, agents_elem;
   const char *agent_group_uuid, *name_text;
+
+  if (!acl_user_may ("modify_agent_group"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_group",
+                              "Permission denied"));
+      create_agent_group_reset ();
+      return;
+    }
 
   root = (entity_t) modify_agent_group_data.context->first->data;
 

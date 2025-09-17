@@ -18,6 +18,7 @@
 #include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_get.h"
 #include "manage.h"
+#include "manage_acl.h"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "md    gmp"
@@ -106,8 +107,18 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
   ret = init_get ("get_agents", &get_agents_data.get, "Agents", &first);
   if (ret)
     {
-      SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("get_agents", "Permission denied"));
+      switch (ret)
+        {
+        case 99:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("get_agents",
+                              "Permission denied"));
+          break;
+        default:
+          internal_error_send_to_client (error);
+          get_agents_reset ();
+          return;
+        }
       get_agents_reset ();
       return;
     }
@@ -390,6 +401,15 @@ void
 modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
+
+  if (!acl_user_may ("modify_agents"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents",
+                              "Permission denied"));
+      modify_agents_reset ();
+      return;
+    }
+
   entity_t root = (entity_t) modify_agent_data.context->first->data;
 
   // Extract <agents>
@@ -693,6 +713,15 @@ void
 delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
+
+  if (!acl_user_may ("delete_agents"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents",
+                              "Permission denied"));
+      delete_agent_reset ();
+      return;
+    }
+
   entity_t root = (entity_t) delete_agent_data.context->first->data;
 
   // Extract <agents>
