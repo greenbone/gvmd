@@ -10,8 +10,8 @@
  */
 
 #if ENABLE_AGENTS
-
 #include "gmp_agent_control_scan_agent_config.h"
+#include "manage_acl.h"
 #include "manage_agent_control_scan_config.h"
 #include "manage_sql.h"
 
@@ -113,6 +113,14 @@ modify_agent_control_scan_config_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t root = (entity_t) modify_scan_cfg_ctx.ctx->first->data;
 
   scanner_uuid = entity_attribute (root, "agent_control_id");
+
+  if (!acl_user_may ("modify_scanner"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_control_scan_config",
+                              "Permission denied"));
+      modify_agent_control_scan_config_reset ();
+      return;
+    }
 
   if (!scanner_uuid || !is_uuid (scanner_uuid))
     {
