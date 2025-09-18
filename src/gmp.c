@@ -4386,7 +4386,7 @@ typedef enum
   CLIENT_CREATE_USER_SOURCES_SOURCE,
 #if ENABLE_AGENTS
   CLIENT_DELETE_AGENT_GROUP,
-  CLIENT_DELETE_AGENTS,
+  CLIENT_DELETE_AGENT,
 #endif /* ENABLE_AGENTS */
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
@@ -4465,7 +4465,7 @@ typedef enum
   CLIENT_LOGOUT,
 #if ENABLE_AGENTS
   CLIENT_MODIFY_AGENT_GROUP,
-  CLIENT_MODIFY_AGENTS,
+  CLIENT_MODIFY_AGENT,
 #endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
@@ -4977,10 +4977,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                           attribute_names, attribute_values);
             set_client_state (CLIENT_DELETE_AGENT_GROUP);
           }
-        else if (strcasecmp ("DELETE_AGENTS", element_name) == 0)
+        else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
-            delete_agents_start (gmp_parser, attribute_names, attribute_values);
-            set_client_state (CLIENT_DELETE_AGENTS);
+            delete_agent_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT);
           }
 #endif /* ENABLE_AGENTS */
         else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
@@ -5983,11 +5983,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                         attribute_values);
               set_client_state (CLIENT_MODIFY_AGENT_GROUP);
           }
-        else if (strcasecmp ("MODIFY_AGENTS", element_name) == 0)
+        else if (strcasecmp ("MODIFY_AGENT", element_name) == 0)
           {
-            modify_agents_start (gmp_parser, attribute_names,
+            modify_agent_start (gmp_parser, attribute_names,
                                  attribute_values);
-            set_client_state (CLIENT_MODIFY_AGENTS);
+            set_client_state (CLIENT_MODIFY_AGENT);
           }
 #endif /* ENABLE_AGENTS */
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
@@ -6354,8 +6354,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                           attribute_values);
         break;
 
-      case CLIENT_MODIFY_AGENTS:
-        modify_agents_element_start (gmp_parser, element_name,
+      case CLIENT_MODIFY_AGENT:
+        modify_agent_element_start (gmp_parser, element_name,
                                      attribute_names,
                                      attribute_values);
         break;
@@ -8140,8 +8140,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
-      case CLIENT_DELETE_AGENTS:
-        delete_agents_element_start (gmp_parser, element_name,
+      case CLIENT_DELETE_AGENT:
+        delete_agent_element_start (gmp_parser, element_name,
                                     attribute_names,
                                     attribute_values);
         break;
@@ -24960,8 +24960,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
-      case CLIENT_DELETE_AGENTS:
-        if (delete_agents_element_end (gmp_parser, error, element_name))
+      case CLIENT_DELETE_AGENT:
+        if (delete_agent_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif /* ENABLE_AGENTS */
@@ -25003,8 +25003,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         if (modify_agent_group_element_end (gmp_parser, error, element_name))
             set_client_state (CLIENT_AUTHENTIC);
         break;
-      case CLIENT_MODIFY_AGENTS:
-        if (modify_agents_element_end (gmp_parser, error, element_name))
+      case CLIENT_MODIFY_AGENT:
+        if (modify_agent_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif /* ENABLE_AGENTS */
@@ -28508,8 +28508,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AGENTS
-      case CLIENT_DELETE_AGENTS:
-        delete_agents_element_text (text, text_len);
+      case CLIENT_DELETE_AGENT:
+        delete_agent_element_text (text, text_len);
         break;
 #endif /* ENABLE_AGENTS */
 
@@ -29231,8 +29231,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         modify_agent_group_element_text (text, text_len);
         break;
 
-      case CLIENT_MODIFY_AGENTS:
-        modify_agents_element_text (text, text_len);
+      case CLIENT_MODIFY_AGENT:
+        modify_agent_element_text (text, text_len);
         break;
 #endif /* ENABLE_AGENTS */
 
