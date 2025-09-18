@@ -7135,11 +7135,11 @@ END:VCALENDAR
     </example>
   </command>
   <command>
-    <name>delete_agents</name>
+    <name>delete_agent</name>
     <summary>Delete agents</summary>
     <description>
       <p>
-        The client uses the <code>delete_agents</code> command to delete one or more
+        The client uses the <code>delete_agent</code> command to delete one or more
         existing agents.
       </p>
       <p>
@@ -7190,14 +7190,14 @@ END:VCALENDAR
     <example>
       <summary>Delete agents</summary>
       <request>
-        <delete_agents>
+        <delete_agent>
           <agents>
             <agent id="c6f1cdc3-8c2c-4b2e-9f43-139d23c7cfd4" />
           </agents>
-        </delete_agents>
+        </delete_agent>
       </request>
       <response>
-        <delete_agents_response status="200" status_text="OK"/>
+        <delete_agent_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -29599,11 +29599,11 @@ END:VCALENDAR
     </example>
   </command>
   <command>
-    <name>modify_agents</name>
+    <name>modify_agent</name>
     <summary>Modify agents</summary>
     <description>
       <p>
-        The client uses the <code>modify_agents</code> command to update one or more
+        The client uses the <code>modify_agent</code> command to update one or more
         existing agents. The supported fields include authorization, scheduling,
         and operational intervals.
       </p>
@@ -29727,7 +29727,7 @@ END:VCALENDAR
     <example>
       <summary>Modify agents</summary>
       <request>
-        <modify_agents>
+        <modify_agent>
           <agents>
             <agent id="fb6451bf-ec5a-45a8-8bab-5cf4b862e51b"/>
           </agents>
@@ -29754,10 +29754,10 @@ END:VCALENDAR
             </heartbeat>
           </config>
           <comment>example update</comment>
-        </modify_agents>
+        </modify_agent>
       </request>
       <response>
-        <modify_agents_response status="200" status_text="OK"/>
+        <modify_agent_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>

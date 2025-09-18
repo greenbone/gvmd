@@ -25,43 +25,43 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error);
 /* MODIFY_AGENT. */
 
 void
-modify_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+modify_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values);
 
 void
-modify_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
+modify_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values);
 
 void
-modify_agents_element_text (const gchar *text, gsize text_len);
+modify_agent_element_text (const gchar *text, gsize text_len);
 
 int
-modify_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
+modify_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name);
 
 void
-modify_agents_run (gmp_parser_t *gmp_parser, GError **error);
+modify_agent_run (gmp_parser_t *gmp_parser, GError **error);
 
 /* DELETE_AGENTS. */
 
 void
-delete_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+delete_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values);
 
 void
-delete_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
+delete_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values);
 
 void
-delete_agents_element_text (const gchar *text, gsize text_len);
+delete_agent_element_text (const gchar *text, gsize text_len);
 
 int
-delete_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
+delete_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name);
 
 void
-delete_agents_run (gmp_parser_t *gmp_parser, GError **error);
+delete_agent_run (gmp_parser_t *gmp_parser, GError **error);
 
 #endif //_GVMD_GMP_AGENTS_H

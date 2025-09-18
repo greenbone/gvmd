@@ -59,7 +59,7 @@ command_t gmp_commands[]
     {"CREATE_USER", "Create a new user."},
 #if ENABLE_AGENTS
     {"DELETE_AGENT_GROUP", "Delete an agent group."},
-    {"DELETE_AGENTS", "Delete one or more agents."},
+    {"DELETE_AGENT", "Delete one or more agents."},
 #endif /* ENABLE_AGENTS */
     {"DELETE_ALERT", "Delete an alert."},
     {"DELETE_ASSET", "Delete an asset."},
@@ -136,7 +136,7 @@ command_t gmp_commands[]
 #if ENABLE_AGENTS
     {"MODIFY_AGENT_CONTROL_SCAN_CONFIG", "Modify an agent control scan agent configuration."},
     {"MODIFY_AGENT_GROUP", "Modify an agent group."},
-    {"MODIFY_AGENTS", "Modify one or more existing agents."},
+    {"MODIFY_AGENT", "Modify one or more existing agents."},
 #endif /* ENABLE_AGENTS */
     {"MODIFY_ALERT", "Modify an existing alert."},
     {"MODIFY_ASSET", "Modify an existing asset."},

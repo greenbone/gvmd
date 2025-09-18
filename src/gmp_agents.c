@@ -41,7 +41,7 @@ static get_agents_t get_agents_data;
 
 /**
  * @struct modify_agent_data_t
- * @brief Structure for storing context related to the <modify_agents> GMP
+ * @brief Structure for storing context related to the <modify_agent> GMP
  * command.
  *
  * The context is used to accumulate and parse XML input data for modifying
@@ -49,19 +49,19 @@ static get_agents_t get_agents_data;
  */
 typedef struct
 {
-  context_data_t *context; ///< XML parsing context for <modify_agents> input.
+  context_data_t *context; ///< XML parsing context for <modify_agent> input.
 } modify_agent_data_t;
 
 static modify_agent_data_t modify_agent_data;
 
 /**
  * @struct delete_agent_data_t
- * @brief Structure for storing context related to the <delete_agents> GMP
+ * @brief Structure for storing context related to the <delete_agent> GMP
  * command.
  */
 typedef struct
 {
-  context_data_t *context; ///< XML parsing context for <delete_agents> input.
+  context_data_t *context; ///< XML parsing context for <delete_agent> input.
 } delete_agent_data_t;
 
 static delete_agent_data_t delete_agent_data;
@@ -301,14 +301,14 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
   get_agents_reset ();
 }
 
-/* MODIFY_AGENTS. */
+/* MODIFY_AGENT. */
 
 /**
- * @brief Reset the internal state for the <modify_agents> GMP command.
+ * @brief Reset the internal state for the <modify_agent> GMP command.
  *
  */
 static void
-modify_agents_reset ()
+modify_agent_reset ()
 {
   if (modify_agent_data.context && modify_agent_data.context->first)
     {
@@ -321,7 +321,7 @@ modify_agents_reset ()
 }
 
 /**
- * @brief Handle the start of an XML element within the <modify_agents> command.
+ * @brief Handle the start of an XML element within the <modify_agent> command.
  *
  * @param[in] gmp_parser        Pointer to the active GMP parser instance.
  * @param[in] name              Name of the XML element being parsed.
@@ -329,7 +329,7 @@ modify_agents_reset ()
  * @param[in] attribute_values  Null-terminated array of attribute values.
  */
 void
-modify_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+modify_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
@@ -338,7 +338,7 @@ modify_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 }
 
 /**
- * @brief Initialize the <modify_agents> GMP command.
+ * @brief Initialize the <modify_agent> GMP command.
  *
  * @param[in] gmp_parser        Pointer to the GMP parser instance.
  * @param[in] attribute_names   Null-terminated array of attribute names.
@@ -346,30 +346,30 @@ modify_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
  * values.
  */
 void
-modify_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
+modify_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values)
 {
   memset (&modify_agent_data, 0, sizeof (modify_agent_data_t));
   modify_agent_data.context = g_malloc0 (sizeof (context_data_t));
 
-  modify_agents_element_start (gmp_parser, "modify_agents", attribute_names,
+  modify_agent_element_start (gmp_parser, "modify_agent", attribute_names,
                                attribute_values);
 }
 
 /**
- * @brief Handle the text content of an XML element within <modify_agents>.
+ * @brief Handle the text content of an XML element within <modify_agent>.
  *
  * @param[in] text      Pointer to the text content.
  * @param[in] text_len  Length of the text content.
  */
 void
-modify_agents_element_text (const gchar *text, gsize text_len)
+modify_agent_element_text (const gchar *text, gsize text_len)
 {
   xml_handle_text (modify_agent_data.context, text, text_len);
 }
 
 /**
- * @brief Handle the end of an XML element within the <modify_agents> command.
+ * @brief Handle the end of an XML element within the <modify_agent> command.
  *
  * @param gmp_parser  Pointer to the GMP parser handling the current session.
  * @param error       Location to store error information, if any.
@@ -378,35 +378,35 @@ modify_agents_element_text (const gchar *text, gsize text_len)
  * @return 1 if the command has been fully parsed and executed, 0 otherwise.
  */
 int
-modify_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
+modify_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
   xml_handle_end_element (modify_agent_data.context, name);
 
   if (modify_agent_data.context->done)
     {
-      modify_agents_run (gmp_parser, error);
+      modify_agent_run (gmp_parser, error);
       return 1;
     }
   return 0;
 }
 
 /**
- * @brief Execute the <modify_agents> GMP command.
+ * @brief Execute the <modify_agent> GMP command.
  *
  * @param[in] gmp_parser Pointer to the active GMP parser instance.
  * @param[in] error      Location to store error information, if any occurs.
  */
 void
-modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
+modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
 
-  if (!acl_user_may ("modify_agents"))
+  if (!acl_user_may ("modify_agent"))
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agents",
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent",
                               "Permission denied"));
-      modify_agents_reset ();
+      modify_agent_reset ();
       return;
     }
 
@@ -417,9 +417,9 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
   if (!agents_elem)
     {
       SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("modify_agents", "Missing <agents>"));
+        XML_ERROR_SYNTAX ("modify_agent", "Missing <agents>"));
       log_event_fail ("agents", "Agents", NULL, "modified");
-      modify_agents_reset ();
+      modify_agent_reset ();
       return;
     }
 
@@ -443,9 +443,9 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         {
           agent_uuid_list_free (agent_uuids);
           SENDF_TO_CLIENT_OR_FAIL (
-            XML_ERROR_SYNTAX ("modify_agents", "Agent UUID '%s' is invalid"),
+            XML_ERROR_SYNTAX ("modify_agent", "Agent UUID '%s' is invalid"),
             uuid);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
     }
@@ -454,8 +454,8 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
     {
       agent_uuid_list_free (agent_uuids);
       SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("modify_agents", "No agent UUIDs provided"));
-      modify_agents_reset ();
+        XML_ERROR_SYNTAX ("modify_agent", "No agent UUIDs provided"));
+      modify_agent_reset ();
       return;
     }
 
@@ -476,8 +476,8 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
           agent_uuid_list_free (agent_uuids);
           agent_controller_agent_update_free (update);
           g_free (comment);
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
-          modify_agents_reset ();
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
+          modify_agent_reset ();
           return;
         }
 
@@ -495,22 +495,22 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
   switch (response)
     {
     case AGENT_RESPONSE_SUCCESS:
-      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agents"));
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_agent"));
       log_event_plural ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
       SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("modify_agents", "No agents provided"));
+        XML_ERROR_SYNTAX ("modify_agent", "No agents provided"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
-      if (send_find_error_to_client ("modify_agents", "scanner", NULL,
+      if (send_find_error_to_client ("modify_agent", "scanner", NULL,
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
 
@@ -518,11 +518,11 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
       break;
 
     case AGENT_RESPONSE_AGENT_NOT_FOUND:
-      if (send_find_error_to_client ("modify_agents", "agents", NULL,
+      if (send_find_error_to_client ("modify_agent", "agents", NULL,
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
 
@@ -530,35 +530,35 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
       break;
 
     case AGENT_RESPONSE_INVALID_ARGUMENT:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
       break;
 
     case AGENT_RESPONSE_INVALID_AGENT_OWNER:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
-        "modify_agents", "Agents belong to different scanners"));
+        "modify_agent", "Agents belong to different scanners"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-        "modify_agents", "Could not connect to Agent-Controller"));
+        "modify_agent", "Could not connect to Agent-Controller"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-        "modify_agents", "Updates of Agents in Agent-Controller failed"));
+        "modify_agent", "Updates of Agents in Agent-Controller failed"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_SYNC_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-        "modify_agents",
+        "modify_agent",
         "Synchronization of Agents in Agent-Controller failed"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
@@ -569,7 +569,7 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
         status_text = g_markup_escape_text ("Validation failed for config.", -1);
 
       gchar *xml = g_markup_printf_escaped(
-        "<modify_agents_response status=\""
+        "<modify_agent_response status=\""
         STATUS_ERROR_SYNTAX
         "\" status_text=\"%s\"/>",
         status_text ? status_text : "Validation failed for <config>."
@@ -585,13 +585,13 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
       break;
 
     case AGENT_RESPONSE_INTERNAL_ERROR:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
     case AGENT_RESPONSE_IN_USE_ERROR:
     default:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
     }
@@ -602,16 +602,16 @@ modify_agents_run (gmp_parser_t *gmp_parser, GError **error)
 
 #else
   SEND_TO_CLIENT_OR_FAIL (
-    XML_ERROR_UNAVAILABLE ("modify_agents", "Command unavailable"));
+    XML_ERROR_UNAVAILABLE ("modify_agent", "Command unavailable"));
 #endif // ENABLE_AGENTS
 
-  modify_agents_reset ();
+  modify_agent_reset ();
 }
 
-/* DELETE_AGENTS. */
+/* DELETE_AGENT. */
 
 /**
- * @brief Reset the internal state for the <delete_agents> GMP command.
+ * @brief Reset the internal state for the <delete_agent> GMP command.
  *
  */
 static void
@@ -628,7 +628,7 @@ delete_agent_reset ()
 }
 
 /**
- * @brief Handle the start of an XML element within the <delete_agents> command.
+ * @brief Handle the start of an XML element within the <delete_agent> command.
  *
  * @param[in] gmp_parser        Pointer to the active GMP parser instance.
  * @param[in] name              Name of the XML element being parsed.
@@ -636,7 +636,7 @@ delete_agent_reset ()
  * @param[in] attribute_values  Null-terminated array of attribute values.
  */
 void
-delete_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
+delete_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
                              const gchar **attribute_names,
                              const gchar **attribute_values)
 {
@@ -645,7 +645,7 @@ delete_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 }
 
 /**
- * @brief Initialize the <delete_agents> GMP command.
+ * @brief Initialize the <delete_agent> GMP command.
  *
  * @param[in] gmp_parser        Pointer to the GMP parser handling the current
  * session.
@@ -654,48 +654,48 @@ delete_agents_element_start (gmp_parser_t *gmp_parser, const gchar *name,
  * values.
  */
 void
-delete_agents_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
+delete_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
                      const gchar **attribute_values)
 {
   memset (&delete_agent_data, 0, sizeof (delete_agent_data_t));
   delete_agent_data.context = g_malloc0 (sizeof (context_data_t));
 
-  delete_agents_element_start (gmp_parser, "delete_agents", attribute_names,
+  delete_agent_element_start (gmp_parser, "delete_agent", attribute_names,
                                attribute_values);
 }
 
 /**
- * @brief Handle the text content of an XML element within <delete_agents>.
+ * @brief Handle the text content of an XML element within <delete_agent>.
  *
  * @param[in] text      Pointer to the text content.
  * @param[in] text_len  Length of the text content.
  */
 void
-delete_agents_element_text (const gchar *text, gsize text_len)
+delete_agent_element_text (const gchar *text, gsize text_len)
 {
   xml_handle_text (delete_agent_data.context, text, text_len);
 }
 
 /**
- * @brief Handle the end of an XML element within the <delete_agents> command.
+ * @brief Handle the end of an XML element within the <delete_agent> command.
  *
  * @param[in] gmp_parser  Pointer to the GMP parser handling the current
  * session.
  * @param[in] error       Pointer to a GError to store error details, if any.
  * @param[in] name        Name of the XML element that just ended.
  *
- * @return 1 if the full <delete_agents> command has been parsed and executed,
+ * @return 1 if the full <delete_agent> command has been parsed and executed,
  *         0 otherwise.
  */
 int
-delete_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
+delete_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
                            const gchar *name)
 {
   xml_handle_end_element (delete_agent_data.context, name);
 
   if (delete_agent_data.context->done)
     {
-      delete_agents_run (gmp_parser, error);
+      delete_agent_run (gmp_parser, error);
       return 1;
     }
 
@@ -703,20 +703,20 @@ delete_agents_element_end (gmp_parser_t *gmp_parser, GError **error,
 }
 
 /**
- * @brief Execute the <delete_agents> GMP command.
+ * @brief Execute the <delete_agent> GMP command.
  *
  * @param[in] gmp_parser Pointer to the GMP parser handling the current session.
  * @param[in] error      Pointer to a GError to store error information, if any
  * occurs.
  */
 void
-delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
+delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
 
-  if (!acl_user_may ("delete_agents"))
+  if (!acl_user_may ("delete_agent"))
     {
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agents",
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("delete_agent",
                               "Permission denied"));
       delete_agent_reset ();
       return;
@@ -729,7 +729,7 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
   if (!agents_elem)
     {
       SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("delete_agents", "Missing <agents>"));
+        XML_ERROR_SYNTAX ("delete_agent", "Missing <agents>"));
       delete_agent_reset ();
       return;
     }
@@ -754,9 +754,9 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
         {
           agent_uuid_list_free (agent_uuids);
           SENDF_TO_CLIENT_OR_FAIL (
-            XML_ERROR_SYNTAX ("delete_agents", "Agent UUID '%s' is invalid"),
+            XML_ERROR_SYNTAX ("delete_agent", "Agent UUID '%s' is invalid"),
             uuid);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
     }
@@ -765,8 +765,8 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
     {
       agent_uuid_list_free (agent_uuids);
       SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("delete_agents", "No agent UUIDs provided"));
-      modify_agents_reset ();
+        XML_ERROR_SYNTAX ("delete_agent", "No agent UUIDs provided"));
+      modify_agent_reset ();
       return;
     }
 
@@ -775,16 +775,16 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
   switch (response)
     {
     case AGENT_RESPONSE_SUCCESS:
-      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agents"));
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("delete_agent"));
       log_event_plural ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
-      if (send_find_error_to_client ("delete_agents", "agents", NULL,
+      if (send_find_error_to_client ("delete_agent", "agents", NULL,
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
 
@@ -795,18 +795,18 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
 
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
     case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
-      if (send_find_error_to_client ("delete_agents", "scanner", NULL,
+      if (send_find_error_to_client ("delete_agent", "scanner", NULL,
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agents_reset ();
+          modify_agent_reset ();
           return;
         }
 
@@ -814,53 +814,53 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
       break;
 
     case AGENT_RESPONSE_INVALID_ARGUMENT:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_INVALID_AGENT_OWNER:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
-        "delete_agents", "Agents belong to different scanners"));
+        "delete_agent", "Agents belong to different scanners"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-        "delete_agents", "Could not connect to Agent-Controller"));
+        "delete_agent", "Could not connect to Agent-Controller"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-        "delete_agents", "Deletion of Agents in Agent-Controller failed"));
+        "delete_agent", "Deletion of Agents in Agent-Controller failed"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_SYNC_FAILED:
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
-        "delete_agents",
+        "delete_agent",
         "Synchronization of Agents in Agent-Controller failed"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_INTERNAL_ERROR:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
 
     case AGENT_RESPONSE_IN_USE_ERROR:
       SENDF_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("delete_agents", "Resource is in use"));
+        XML_ERROR_SYNTAX ("delete_agent", "Resource is in use"));
       log_event_fail ("agent", "Agents", NULL, "deleted");
       break;
 
     default:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agents"));
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
     }
@@ -868,7 +868,7 @@ delete_agents_run (gmp_parser_t *gmp_parser, GError **error)
   agent_uuid_list_free (agent_uuids);
 #else
   SEND_TO_CLIENT_OR_FAIL (
-    XML_ERROR_UNAVAILABLE ("delete_agents", "Command unavailable"));
+    XML_ERROR_UNAVAILABLE ("delete_agent", "Command unavailable"));
 #endif
   delete_agent_reset ();
 }
