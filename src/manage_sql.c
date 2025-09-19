@@ -8037,21 +8037,22 @@ auth_cache_find (const char *username, const char *password, int method)
     return -1;
 
   // verify for VALID or OUTDATED but don't update
-  ret = manage_authentication_verify(hash, password);
-  switch(ret){
-      case GMA_HASH_INVALID:
-          ret = 1;
-          break;
-       case GMA_HASH_VALID_BUT_DATED:
-          ret = 0;
-          break;
-        case GMA_SUCCESS:
-          ret = 0;
-          break;
-        default:
-          ret = -1;
-          break;
-  }
+  ret = manage_authentication_verify (hash, password);
+  switch (ret)
+    {
+    case GMA_HASH_INVALID:
+      ret = 1;
+      break;
+    case GMA_HASH_VALID_BUT_DATED:
+      ret = 0;
+      break;
+    case GMA_SUCCESS:
+      ret = 0;
+      break;
+    default:
+      ret = -1;
+      break;
+    }
   g_free (hash);
   return ret;
 }
@@ -8205,27 +8206,28 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return 0;
     }
   hash = manage_user_hash (username);
-  ret = manage_authentication_verify(hash, password);
-  switch(ret){
-      case GMA_HASH_INVALID:
-          ret = 1;
-          break;
-       case GMA_HASH_VALID_BUT_DATED:
-          g_free(hash);
-          hash = manage_authentication_hash(password);
-          sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
-               hash, username);
-          auth_cache_insert (username, password, 2);
-          ret = 0;
-          break;
-        case GMA_SUCCESS:
-          auth_cache_insert (username, password, 2);
-          ret = 0;
-          break;
-        default:
-          ret = -1;
-          break;
-  }
+  ret = manage_authentication_verify (hash, password);
+  switch (ret)
+    {
+    case GMA_HASH_INVALID:
+      ret = 1;
+      break;
+    case GMA_HASH_VALID_BUT_DATED:
+      g_free(hash);
+      hash = manage_authentication_hash (password);
+      sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
+           hash, username);
+      auth_cache_insert (username, password, 2);
+      ret = 0;
+      break;
+    case GMA_SUCCESS:
+      auth_cache_insert (username, password, 2);
+      ret = 0;
+      break;
+    default:
+      ret = -1;
+      break;
+    }
 
   if (ret)
     sql_rollback ();

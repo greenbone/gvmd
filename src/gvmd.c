@@ -2030,7 +2030,8 @@ parse_authentication_goption_arg (const gchar *opt, const gchar *arg,
 {
   if (strcmp (opt, "--pepper") == 0)
     {
-      if (manage_authentication_setup(arg, strlen(arg), 0, NULL) != GMA_SUCCESS)
+      if (manage_authentication_setup (arg, strlen (arg), 0, NULL)
+          != GMA_SUCCESS)
         {
           g_set_error (
             err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
@@ -2041,7 +2042,8 @@ parse_authentication_goption_arg (const gchar *opt, const gchar *arg,
     }
   else if (strcmp (opt, "--hashcount") == 0)
     {
-      if (manage_authentication_setup(NULL, 0, strtol(arg, NULL, 0), NULL) != GMA_SUCCESS)
+      if (manage_authentication_setup (NULL, 0, strtol(arg, NULL, 0), NULL)
+          != GMA_SUCCESS)
         {
           g_set_error (
             err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
