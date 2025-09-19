@@ -266,7 +266,7 @@ create_agent_group (agent_group_data_t group_data,
              return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
         }
       /* Verify that the agent is authorized before adding it to the group. */
-      if (!check_agent_is_authorized (uuid, group_data->scanner))
+      if (!agent_authorized (uuid, group_data->scanner))
         {
           return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
         }
@@ -362,7 +362,7 @@ modify_agent_group (agent_group_t agent_group,
         }
 
       /* Verify that the agent is authorized before adding it to the group. */
-      if (!check_agent_is_authorized (uuid, group_data->scanner))
+      if (!agent_authorized (uuid, group_data->scanner))
         {
           return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
         }
