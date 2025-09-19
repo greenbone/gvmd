@@ -28,7 +28,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-
 // prefer stack rather than heap so that we use the defaults on usage failure
 // rather than having to check and fail.
 struct PBASettings settings = {{0}, COUNT_DEFAULT, PREFIX_DEFAULT};
@@ -72,7 +71,7 @@ manage_authentication_setup (const char *pepper, unsigned int pepper_size,
     settings.pepper[i] = tmp->pepper[i];
   settings.count = count > 0 ? tmp->count : settings.count;
   settings.prefix = prefix != NULL ? tmp->prefix : settings.prefix;
-  pba_finalize(tmp);
+  pba_finalize (tmp);
   rc = GMA_SUCCESS;
 
 exit:
@@ -89,7 +88,7 @@ exit:
 char *
 manage_authentication_hash (const char *password)
 {
-    return pba_hash(&settings, password);
+  return pba_hash (&settings, password);
 }
 
 /**
@@ -107,23 +106,23 @@ manage_authentication_hash (const char *password)
 enum manage_authentication_rc
 manage_authentication_verify (const char *hash, const char *password)
 {
-    enum pba_rc pba_rc = pba_verify_hash(&settings, hash, password);
-    enum manage_authentication_rc rc;
-    switch (pba_rc){
-        case VALID:
-            rc = GMA_SUCCESS;
-            break;
-        case INVALID:
-            rc = GMA_HASH_INVALID;
-            break;
-        case UPDATE_RECOMMENDED:
-            rc = GMA_HASH_VALID_BUT_DATED;
-            break;
-        default:
-            rc = GMA_ERR;
-            break;
-
+  enum pba_rc pba_rc = pba_verify_hash (&settings, hash, password);
+  enum manage_authentication_rc rc;
+  switch (pba_rc)
+    {
+    case VALID:
+      rc = GMA_SUCCESS;
+      break;
+    case INVALID:
+      rc = GMA_HASH_INVALID;
+      break;
+    case UPDATE_RECOMMENDED:
+      rc = GMA_HASH_VALID_BUT_DATED;
+      break;
+    default:
+      rc = GMA_ERR;
+      break;
     }
 
-    return rc;
+  return rc;
 }
