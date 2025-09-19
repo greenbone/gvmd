@@ -16,6 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file
+ * @brief GVM management layer: authentication.
+ *
+ * General authentication functions.
+ */
+
 #include "manage_authentication.h"
 #include <gvm/util/passwordbasedauthentication.h>
 
