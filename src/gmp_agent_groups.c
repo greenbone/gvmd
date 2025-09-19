@@ -459,8 +459,14 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       log_event_fail ("create_agent_group", "Agent Group", NULL, "created");
       break;
 
+    case AGENT_GROUP_RESP_AGENT_UNAUTHORIZED:
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("create_agent_group", "Unauthorized Agent"));
+      log_event_fail ("agent_group", "Agent Group", NULL, "created");
+      break;
+
     case AGENT_GROUP_RESP_INTERNAL_ERROR:
-      default:
+    default:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_agent_group"));
         log_event_fail ("agent_group", "Agent Group", NULL, "created");
         break;
@@ -736,6 +742,12 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
             return;
           }
 
+        log_event_fail ("agent_group", "Agent Group", NULL, "modified");
+        break;
+
+      case AGENT_GROUP_RESP_AGENT_UNAUTHORIZED:
+        SEND_TO_CLIENT_OR_FAIL (
+          XML_ERROR_SYNTAX ("modify_agent_group", "Unauthorized Agent"));
         log_event_fail ("agent_group", "Agent Group", NULL, "modified");
         break;
 
