@@ -678,6 +678,13 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
   if (map_response != AGENT_RESPONSE_SUCCESS)
     return map_response;
 
+   /* Prevent unauthorized modification if the agent is currently in use. */
+  if (agents_in_use (agent_uuids) && agent_update->authorized == 0)
+    {
+      g_warning ("%s: Agent is in use by an agent group ", __func__);
+      return AGENT_RESPONSE_IN_USE_ERROR;
+    }
+
   agent_control_list = agent_controller_agent_list_new (agent_uuids->count);
   agent_response_t get_response = get_agent_controller_agents_from_uuids (
     scanner, agent_uuids, agent_control_list);

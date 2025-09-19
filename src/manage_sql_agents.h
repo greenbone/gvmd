@@ -68,5 +68,8 @@ int
 agent_id_by_uuid_and_scanner (const gchar *agent_uuid, scanner_t scanner_id,
                               agent_t *agent_id);
 
+int
+check_agent_is_authorized (const gchar *agent_uuid, scanner_t scanner_id);
+
 #endif //_GVMD_MANAGE_SQL_AGENTS_H
 #endif // ENABLE_AGENTS

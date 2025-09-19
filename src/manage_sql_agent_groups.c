@@ -265,6 +265,11 @@ create_agent_group (agent_group_data_t group_data,
            else if (result == 2)
              return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
         }
+      /* Verify that the agent is authorized before adding it to the group. */
+      if (!check_agent_is_authorized (uuid, group_data->scanner))
+        {
+          return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
+        }
 
       db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", new_agent_group, agent_id);
     }
@@ -341,21 +346,28 @@ modify_agent_group (agent_group_t agent_group,
 
   for (int i = 0; i < agent_uuids->count; ++i)
     {
-    const gchar *uuid = agent_uuids->agent_uuids[i];
-    agent_t agent_id;
-    int result = agent_id_by_uuid_and_scanner (uuid, group_data->scanner, &agent_id);
-    if (result != 0)
-    {
-      db_copy_buffer_cleanup (&buffer);
-      sql_rollback ();
+      const gchar *uuid = agent_uuids->agent_uuids[i];
+      agent_t agent_id;
+      int result = agent_id_by_uuid_and_scanner (
+        uuid, group_data->scanner, &agent_id);
+      if (result != 0)
+        {
+          db_copy_buffer_cleanup (&buffer);
+          sql_rollback ();
 
-      if (result == 1)
-        return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
-      else if (result == 2)
-        return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
-    }
+          if (result == 1)
+            return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
+          else if (result == 2)
+            return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
+        }
 
-     db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", agent_group, agent_id);
+      /* Verify that the agent is authorized before adding it to the group. */
+      if (!check_agent_is_authorized (uuid, group_data->scanner))
+        {
+          return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
+        }
+      db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", agent_group,
+                                    agent_id);
     }
 
   db_copy_buffer_commit (&buffer, TRUE);

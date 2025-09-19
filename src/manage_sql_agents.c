@@ -781,6 +781,32 @@ agent_id_by_uuid_and_scanner (const gchar *agent_uuid, scanner_t scanner_id,
 }
 
 /**
+ * @brief Check if an agent is authorized.
+ *
+ * @param[in] agent_uuid   The UUID of the agent.
+ * @param[in] scanner_id   The scanner row ID.
+ *
+ * @return 0 if the agent is authorized,
+ *        -1 if the agent is not authorized or not found.
+ */
+int
+check_agent_is_authorized (const gchar *agent_uuid, scanner_t scanner_id)
+{
+  g_return_val_if_fail (agent_uuid != NULL, -1);
+
+  // Check if the given agent is authorized
+  int authorized =
+    sql_int ("SELECT authorized FROM agents "
+             "WHERE uuid = '%s' AND scanner = %llu;",
+             agent_uuid, scanner_id);
+
+  if (authorized == 1)
+    return 0; // Authorized
+
+  return -1; // Not authorized
+}
+
+/**
  * @brief Check if any agent in the UUID list is currently in use.
  *
  * @param[in] agent_uuids List of agent UUIDs to check.

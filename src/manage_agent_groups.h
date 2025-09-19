@@ -47,7 +47,8 @@ typedef enum {
     AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH = -4,       ///< Agent list count mismatch (not same scanner)
     AGENT_GROUP_RESP_INVALID_ARGUMENT = -5,             ///< Failed invalid argument
     AGENT_GROUP_RESP_AGENT_NOT_FOUND = -6,              ///< Failed getting agent id
-    AGENT_GROUP_RESP_INTERNAL_ERROR = -7                ///< Internal error
+    AGENT_GROUP_RESP_INTERNAL_ERROR = -7,               ///< Internal error
+    AGENT_GROUP_RESP_AGENT_UNAUTHORIZED = -8            ///< Failed to create group with unauthorized agent
   } agent_group_resp_t;
 
 agent_group_data_t
