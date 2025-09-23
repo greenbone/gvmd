@@ -26,6 +26,7 @@
 #include "gmp_get.h"
 #include "gmp_base.h"
 #include "manage_acl.h"
+#include "manage_filters.h"
 
 #include <stdlib.h>
 #include <string.h>
