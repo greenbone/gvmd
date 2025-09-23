@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Greenbone AG
+/* Copyright (C) 2019-2025 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -16,23 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _GVMD_MANAGE_FILTERS_H
-#define _GVMD_MANAGE_FILTERS_H
+#ifndef _GVMD_MANAGE_SQL_FILTERS_H
+#define _GVMD_MANAGE_SQL_FILTERS_H
 
-#include "manage_resources.h"
+const char *
+get_join (int, int, int);
 
-void
-manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
-
-void
-manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **,
-                               gchar **, int *, int *, int *, int *, gchar **);
-
-gchar *
-manage_clean_filter (const gchar *, int);
-
-gchar *
-manage_clean_filter_remove (const gchar *, const gchar *, int);
-
-#endif /* not _GVMD_MANAGE_FILTERS_H */
+#endif /* not _GVMD_MANAGE_SQL_FILTERS_H */

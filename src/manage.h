@@ -1629,20 +1629,6 @@ prognosis_iterator_description (iterator_t*);
 int
 manage_max_hosts ();
 
-void
-manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
-
-void
-manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **,
-                               gchar **, int *, int *, int *, int *, gchar **);
-
-gchar *
-manage_clean_filter (const gchar *, int);
-
-gchar *
-manage_clean_filter_remove (const gchar *, const gchar *, int);
-
 int
 manage_count_hosts (const char *, const char *);
 
