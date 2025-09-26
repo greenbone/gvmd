@@ -24,6 +24,9 @@ typedef resource_t agent_group_t;
 typedef resource_t alert_t;
 typedef resource_t config_t;
 typedef resource_t credential_t;
+#if ENABLE_CREDENTIAL_STORES
+typedef resource_t credential_store_t;
+#endif
 typedef resource_t filter_t;
 typedef resource_t group_t;
 typedef resource_t host_t;

@@ -13633,6 +13633,534 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+@ENDIF_ENABLE_CREDENTIAL_STORES@
+  <command>
+    <name>get_credential_stores</name>
+    <summary>Get one or many credential stores</summary>
+    <description>
+      The client uses the get_credential_stores command to get
+      information about credential stores, which are interfaces to
+      external services for managing credential information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of credential stores to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_store_id</name>
+        <summary>ID of single credential store to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>version</name>
+            <type>text</type>
+            <summary>The version of the credential store data</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the credential store is active</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>The host address or hostname of the external service</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>credential_store</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>credential_stores</e>
+        <e>credential_store_count</e>
+      </pattern>
+      <ele>
+        <name>credential_store</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <o><e>permissions</e></o>
+          <e>version</e>
+          <e>active</e>
+          <e>host</e>
+          <e>preferences</e>
+          <e>selectors</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the credential store</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the credential store</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the credential store</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the credential store was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the credential store was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether this credential store is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether this credential store is in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the credential store
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the credential store</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>Version of the data format and connector used to query the external credential service</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the credential store is active and can be use in credentials</summary>
+          <pattern>
+            <type>boolean</type>
+          </pattern>
+        </ele>
+        <ele>
+          <name>host</name>
+          <summary>Host address or hostname of the external service</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>preferences</name>
+          <summary>Store specific preferences for querying the external service</summary>
+          <description>
+            Preferences apply to all credentials using the credential store and
+            mostly consist of data used to connect to and authenticate with the
+            credential store like client certificates and private keys.
+          </description>
+          <pattern>
+            <any><e>preference</e></any>
+          </pattern>
+          <ele>
+            <name>preference</name>
+            <pattern>
+              <attrib>
+                <name>secret</name>
+                <type>boolean</type>
+                <summary>Whether the preference is encrypted and its value is not shown in the response</summary>
+              </attrib>
+              <e>name</e>
+              <e>type</e>
+              <e>pattern</e>
+              <o><e>value</e></o>
+              <o><e>default_value</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>Data type of the preference</summary>
+              <pattern>
+                <alts>
+                  <alt>string</alt>
+                  <alt>integer</alt>
+                  <alt>float</alt>
+                  <alt>base64</alt>
+                  <alt>x509_cert</alt>
+                  <alt>x509_cert_chain</alt>
+                  <alt>x509_privkey</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>pattern</name>
+              <summary>Optional regular expression. If given, string values must match</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the preference, hidden if preference is a secret</summary>
+              <description>
+                String, integers and floating point numbers are given as
+                plain text while base64 and the x509 types are Base64 encoded
+                binary data that will be decoded for use and validation.
+              </description>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default_value</name>
+              <summary>
+                Default value of the preference, hidden if preference is
+                a secret
+              </summary>
+              <description>
+                The same encoding rules apply here as for the value.
+                Secrets are empty by default.
+              </description>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>selectors</name>
+          <summary>
+            Credential specific data for selecting a specific credential
+            data set
+          </summary>
+          <pattern>
+            <any><e>selector</e></any>
+          </pattern>
+          <description>
+            Selector values are set individually in each credential using the
+            credential store and are usually unique identifiers of the data
+            in the external service. The credential store defines the names,
+            default values and and supported credential types of selectors.
+          </description>
+          <ele>
+            <name>selector</name>
+            <pattern>
+              <e>name</e>
+              <e>pattern</e>
+              <e>default_value</e>
+              <e>credential_types</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the selector</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>pattern</name>
+              <summary>Optional regular expression. If given, string values must match</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default_value</name>
+              <summary>Default value of the selector</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>credential_types</name>
+              <summary>List of credential types that use the selector</summary>
+              <pattern>
+                <any><e>credential_type</e></any>
+              </pattern>
+              <ele>
+                <name>credential_type</name>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>credential_stores</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First credential store</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of credential stores</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>credential_store_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of credential stores after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of credential stores on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+  </command>
+@ENDIF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>get_features</name>
     <summary>Get a list of optional features</summary>

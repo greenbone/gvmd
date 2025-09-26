@@ -2670,6 +2670,9 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_CONTAINER_SCANNING == 1
       printf ("Container scanning enabled\n");
 #endif
+#if ENABLE_CREDENTIAL_STORES == 1
+      printf ("Credential stores are enabled\n");
+#endif
       printf ("Copyright (C) 2009-2025 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
