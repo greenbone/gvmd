@@ -16223,7 +16223,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
                  " AND NOT name LIKE 'detected_by@%%'"
-                 " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
+                 " UNION SELECT 0, 'Closed CVE', cve, 'gvmd', oid,"
                  "              nvts.name, cvss_base"
                  "       FROM nvts, report_host_details"
                  "       WHERE cve != ''"
@@ -16232,8 +16232,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  "       AND report_host = %llu"
                  "       AND report_host_details.name = 'EXIT_CODE'"
                  "       AND report_host_details.value = 'EXIT_NOTVULN';",
-                 report_host,
-                 report_host);
+                 report_host, report_host);
 }
 
 /**
