@@ -2346,6 +2346,7 @@ create_tables ()
        "  pattern TEXT,"
        "  value TEXT,"
        "  default_value TEXT,"
+       "  passphrase_name TEXT,"
        "  UNIQUE (credential_store, name));");
 
   sql ("CREATE TABLE IF NOT EXISTS credential_store_selectors"

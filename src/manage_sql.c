@@ -5162,19 +5162,31 @@ check_db_cyberark_credential_store (user_t owner)
   new_pref = credential_store_preference_new
                ("client_key",
                 TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY,
-                "", "", "");
+                "", "", "", "passphrase");
   preferences = g_list_append (preferences, new_pref);
 
   new_pref = credential_store_preference_new
                ("client_cert",
-                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT,
-                "", "", "");
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+                "", "", "", NULL);
   preferences = g_list_append (preferences, new_pref);
 
   new_pref = credential_store_preference_new
                ("server_ca_cert",
-                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT_CHAIN,
-                "", "", "");
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_pkcs12_file",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE,
+                "", "", "", "passphrase");
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("passphrase",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_STRING,
+                "", "", "", NULL);
   preferences = g_list_append (preferences, new_pref);
 
   new_selector = credential_store_selector_new

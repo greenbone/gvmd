@@ -79,11 +79,13 @@ send_credential_store_preference (gmp_parser_t *gmp_parser, GError **error,
       "<preference secret=\"%d\">"
       "<name>%s</name>"
       "<type>%s</type>"
-      "<pattern>%s</pattern>",
+      "<pattern>%s</pattern>"
+      "<passphrase_name>%s</passphrase_name>",
       credential_store_preference_iterator_secret (prefs_iterator),
       credential_store_preference_iterator_name (prefs_iterator),
       credential_store_preference_iterator_type_name (prefs_iterator),
-      credential_store_preference_iterator_pattern (prefs_iterator));
+      credential_store_preference_iterator_pattern (prefs_iterator),
+      credential_store_preference_iterator_passphrase_name (prefs_iterator));
 
   if (credential_store_preference_iterator_secret (prefs_iterator) == 0)
     {

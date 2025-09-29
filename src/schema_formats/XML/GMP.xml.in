@@ -13938,6 +13938,7 @@ END:VCALENDAR
               <e>name</e>
               <e>type</e>
               <e>pattern</e>
+              <e>passphrase_name</e>
               <o><e>value</e></o>
               <o><e>default_value</e></o>
             </pattern>
@@ -13955,15 +13956,20 @@ END:VCALENDAR
                   <alt>integer</alt>
                   <alt>float</alt>
                   <alt>base64</alt>
-                  <alt>x509_cert</alt>
-                  <alt>x509_cert_chain</alt>
+                  <alt>x509_certs</alt>
                   <alt>x509_privkey</alt>
+                  <alt>pkcs12_file</alt>
                 </alts>
               </pattern>
             </ele>
             <ele>
               <name>pattern</name>
               <summary>Optional regular expression. If given, string values must match</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>passphrase_name</name>
+              <summary>Optional name of a passphrase preference for private keys</summary>
               <pattern>text</pattern>
             </ele>
             <ele>

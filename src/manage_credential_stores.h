@@ -27,9 +27,9 @@ typedef enum {
   CREDENTIAL_STORE_PREFERENCE_TYPE_INTEGER,
   CREDENTIAL_STORE_PREFERENCE_TYPE_FLOAT,
   CREDENTIAL_STORE_PREFERENCE_TYPE_BASE64,
-  CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT,
-  CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT_CHAIN,
-  CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY
+  CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+  CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY,
+  CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE,
 } credential_store_preference_type_t;
 
 const char *
@@ -51,6 +51,8 @@ typedef struct {
   gchar *value;
   /** Default value of the preference */
   gchar *default_value;
+  /** Optional name of passphrase prefence for encrypted keys */
+  gchar *passphrase_name;
 } credential_store_preference_data_t;
 
 credential_store_preference_data_t *
@@ -59,7 +61,8 @@ credential_store_preference_new (const char *name,
                                  credential_store_preference_type_t type,
                                  const char *pattern,
                                  const char *value,
-                                 const char *default_value);
+                                 const char *default_value,
+                                 const char *passphrase_name);
 
 void
 credential_store_preference_free (credential_store_preference_data_t *preference);
@@ -143,6 +146,8 @@ credential_store_preference_iterator_decrypted_value (iterator_t *iterator);
 const char *
 credential_store_preference_iterator_default_value (iterator_t *iterator);
 
+const char *
+credential_store_preference_iterator_passphrase_name (iterator_t *iterator);
 
 
 void

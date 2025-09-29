@@ -16,6 +16,7 @@
 #include "manage_acl.h"
 #include "manage_sql_credential_stores.h"
 #include <gnutls/x509.h>
+#include <gnutls/pkcs12.h>
 
 /**
  * @brief Count the number of credential stores based on filter criteria.
@@ -101,7 +102,8 @@ init_credential_store_preference_iterator (
     iterator_t *iterator, credential_store_t credential_store)
 {
   init_iterator (iterator,
-                 "SELECT name, secret, type, pattern, value, default_value"
+                 "SELECT name, secret, type, pattern, value, default_value,"
+                 "       passphrase_name"
                  " FROM credential_store_preferences"
                  " WHERE credential_store = %llu"
                  " ORDER BY name",
@@ -124,7 +126,8 @@ credential_store_preference_from_iterator (iterator_t *iterator)
     credential_store_preference_iterator_type (iterator),
     credential_store_preference_iterator_pattern (iterator),
     credential_store_preference_iterator_decrypted_value (iterator),
-    credential_store_preference_iterator_default_value (iterator)
+    credential_store_preference_iterator_default_value (iterator),
+    credential_store_preference_iterator_passphrase_name (iterator)
   );
 }
 
@@ -261,6 +264,16 @@ credential_store_preference_iterator_default_value (iterator_t *iterator)
     return NULL;
   return iterator_string (iterator, 5);
 }
+
+/**
+ * @brief Get the passphrase name from a credential store preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the passphrase preference, or NULL if none is set or
+ *         iteration is complete.
+ */
+DEF_ACCESS (credential_store_preference_iterator_passphrase_name, 6);
 
 /**
  * @brief Initialize an iterator for retrieving credential store selectors.
@@ -482,6 +495,7 @@ get_x509_format_from_data (const char *cert_data, size_t cert_len)
  * @param[in]  name       Name of the preference
  * @param[in]  bin_value  The value as a gnutls datum
  * @param[in]  type       The data type of the value
+ * @param[in]  passphrase Optional passphrase if value is an encrypted key.
  * @param[out] message    Message output in case the the data is invalid.
  *
  * @return TRUE if data is valid, FALSE otherwise.
@@ -491,31 +505,13 @@ credential_store_preference_binary_value_is_valid (
   const char *name,
   gnutls_datum_t *bin_value,
   credential_store_preference_type_t type,
+  const char *passphrase,
   gchar **message)
 {
   int ret;
   switch (type)
   {
-    case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT:
-      {
-        gnutls_x509_crt_t cert;
-        gnutls_x509_crt_fmt_t cert_format;
-
-        cert_format = get_x509_format_from_data ((const char*)bin_value->data,
-                                                bin_value->size);
-        gnutls_x509_crt_init (&cert);
-        ret = gnutls_x509_crt_import (cert, bin_value, cert_format);
-        gnutls_x509_crt_deinit (cert);
-        if (ret != GNUTLS_E_SUCCESS)
-          {
-            *message = g_strdup_printf("'%s' is not a valid x509"
-                                      " certificate: %s",
-                                      name, gnutls_strerror (ret));
-            return FALSE;
-          }
-        return TRUE;
-      }
-    case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT_CHAIN:
+    case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS:
       {
         gnutls_x509_crt_t *certs = NULL;
         unsigned int cert_count = 0;
@@ -541,21 +537,82 @@ credential_store_preference_binary_value_is_valid (
       }
     case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY:
       {
+        gboolean use_passphrase = passphrase && strcmp (passphrase, "")
+                                  ? TRUE : FALSE;
         gnutls_x509_privkey_t key;
         gnutls_x509_crt_fmt_t key_format;
 
         key_format = get_x509_format_from_data ((const char*)bin_value->data,
                                                 bin_value->size);
         gnutls_x509_privkey_init (&key);
-        ret = gnutls_x509_privkey_import (key, bin_value, key_format);
+        if (use_passphrase)
+          ret = gnutls_x509_privkey_import2 (key, bin_value, key_format,
+                                             passphrase, 0);
+        else
+          ret = gnutls_x509_privkey_import (key, bin_value, key_format);
         gnutls_x509_privkey_deinit (key);
-        if (ret != GNUTLS_E_SUCCESS)
+        if (ret == GNUTLS_E_DECRYPTION_FAILED)
+          {
+            *message = g_strdup_printf("Private key '%s'"
+                                       " could not be decrypted",
+                                       name);
+            return FALSE;
+          }
+        else if (ret != GNUTLS_E_SUCCESS)
           {
             *message = g_strdup_printf("'%s' is not a valid x509"
                                         " private key: %s",
                                         name, gnutls_strerror (ret));
             return FALSE;
           }
+      }
+    case CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE:
+      {
+        gboolean use_passphrase = passphrase && strcmp (passphrase, "")
+                                  ? TRUE : FALSE;
+        gnutls_x509_crt_fmt_t key_format;
+        gnutls_pkcs12_t pkcs12;
+        gnutls_x509_privkey_t privkey;
+        gnutls_x509_crt_t *certs = NULL;
+        unsigned int cert_count = 0;
+
+        key_format = get_x509_format_from_data ((const char*)bin_value->data,
+                                                bin_value->size);
+        gnutls_pkcs12_init (&pkcs12);
+        ret = gnutls_pkcs12_import (pkcs12, bin_value, key_format, 0);
+        if (ret != GNUTLS_E_SUCCESS)
+          {
+            *message = g_strdup_printf("'%s' is not a valid PKCS12 file: %s",
+                                        name, gnutls_strerror (ret));
+            gnutls_pkcs12_deinit (pkcs12);
+            return FALSE;
+          }
+
+        gnutls_x509_privkey_init (&privkey);
+        ret = gnutls_pkcs12_simple_parse (pkcs12,
+                                          use_passphrase ? passphrase : NULL,
+                                          &privkey,
+                                          &certs,
+                                          &cert_count,
+                                          NULL,
+                                          NULL,
+                                          NULL,
+                                          0);
+        for (int i = 0; i < cert_count; i++)
+          {
+            gnutls_x509_crt_deinit (certs[i]);
+          }
+        gnutls_x509_privkey_deinit (privkey);
+        gnutls_pkcs12_deinit (pkcs12);
+        
+        if (ret != GNUTLS_E_SUCCESS)
+          {
+            *message = g_strdup_printf("could not get key and certificates"
+                                       " from PKCS12 file '%s': %s",
+                                        name, gnutls_strerror (ret));
+            return FALSE;
+          }
+        return TRUE;
       }
     default:
       return TRUE;
@@ -565,11 +622,12 @@ credential_store_preference_binary_value_is_valid (
 /**
  * @brief Check if a credential store preference value is valid.
  * 
- * @param[in]  name     Name of the preference (for error messages).
- * @param[in]  value    Value to check the validity of.
- * @param[in]  type     Data type of the preference to check.
- * @param[in]  pattern  Pattern for validating string type preferences.
- * @param[out] message  Output of error message if check fails.
+ * @param[in]  name       Name of the preference (for error messages).
+ * @param[in]  value      Value to check the validity of.
+ * @param[in]  type       Data type of the preference to check.
+ * @param[in]  pattern    Pattern for validating string type preferences.
+ * @param[in]  passphrase Passphrase if preference is an encrypted key or NULL.
+ * @param[out] message    Output of error message if check fails.
  *
  * @return TRUE if preference is valid, FALSE if not.
  */
@@ -579,6 +637,7 @@ credential_store_preference_value_valid (const char *name,
                                          credential_store_preference_type_t
                                            type,
                                          const char *pattern,
+                                         const char *passphrase,
                                          gchar **message)
 {
   switch (type)
@@ -639,9 +698,9 @@ credential_store_preference_value_valid (const char *name,
         return TRUE;
       }
     case CREDENTIAL_STORE_PREFERENCE_TYPE_BASE64:
-    case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT:
-    case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERT_CHAIN:
+    case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS:
     case CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY:
+    case CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE:
       {
         int ret;
         gnutls_datum_t encoded, decoded;
@@ -665,8 +724,10 @@ credential_store_preference_value_valid (const char *name,
         ret = credential_store_preference_binary_value_is_valid (name,
                                                                  &decoded,
                                                                  type,
+                                                                 passphrase,
                                                                  message);
         gnutls_free (decoded.data);
+        return ret;
       }
     default:
       *message = g_strdup_printf("internal error: '%s' has unknown or"
@@ -781,7 +842,30 @@ credential_store_update_preferences (GHashTable *preference_values,
                                  (gpointer*) &value))
     {
       credential_store_preference_data_t *preference;
+      const char *passphrase;
       preference = g_hash_table_lookup (old_preferences, name);
+
+      if (preference->passphrase_name
+          && strcmp (preference->passphrase_name, ""))
+        {
+          passphrase = g_hash_table_lookup (preference_values,
+                                            preference->passphrase_name);
+          if (passphrase == NULL)
+            {
+              credential_store_preference_data_t *passphrase_preference
+                = g_hash_table_lookup (old_preferences,
+                                       preference->passphrase_name);
+              if (passphrase_preference
+                  && passphrase_preference->value
+                  && strcmp (passphrase_preference->value, ""))
+                passphrase = passphrase_preference->value;
+              else
+                passphrase = NULL;
+            }
+        }
+      else
+        passphrase = NULL;
+
       if (preference == NULL)
         {
           *message = g_strdup_printf ("'%s' is not a valid preference name"
@@ -796,6 +880,7 @@ credential_store_update_preferences (GHashTable *preference_values,
                                                            value,
                                                            preference->type,
                                                            preference->pattern,
+                                                           passphrase,
                                                            message) == FALSE)
         {
           g_hash_table_destroy (old_preferences);
@@ -987,37 +1072,58 @@ create_or_update_credential_store_base (const char *credential_store_id,
  * @param[in]  credential_store     Rowid of the credential store.
  * @param[in]  new_preference       The new preference data to set
  * @param[in]  old_preference       The old preference data
+ * @param[in]  passphrase           Optional passphrase for encrypted keys.
  */
 static void
 create_or_update_credential_store_preference (
   const char *credential_store_id,
   credential_store_t credential_store,
   credential_store_preference_data_t *new_preference,
-  credential_store_preference_data_t *old_preference)
+  credential_store_preference_data_t *old_preference,
+  const char *passphrase)
 {
   gchar *message = NULL;
   credential_store_preference_data_t *reset_preference = NULL;
   gchar *quoted_name, *quoted_pattern, *quoted_value, *quoted_default_value;
+  gchar *quoted_passphrase_name;
   quoted_name = sql_quote (new_preference->name);
   quoted_pattern = sql_quote (new_preference->pattern);
   quoted_value = sql_quote (new_preference->value);
-  quoted_default_value = sql_quote (new_preference->default_value);
+
+  if (new_preference->secret
+      && new_preference->default_value
+      && strcmp (new_preference->default_value, ""))
+    {
+      g_warning ("%s: Secret '%s' of credential store %s"
+                 " should have no default value",
+                 __func__, new_preference->name, credential_store_id);
+      quoted_default_value = g_strdup ("");
+    }
+  else
+    quoted_default_value = sql_quote (new_preference->default_value);
+
+  quoted_passphrase_name = sql_quote (new_preference->passphrase_name
+                                      ? new_preference->passphrase_name
+                                      : "");
 
   sql ("INSERT INTO credential_store_preferences"
-       " (credential_store, name, secret, type, pattern, value, default_value)"
-       " VALUES (%llu, '%s', %d, %d, '%s', '%s', '%s')"
+       " (credential_store, name, secret, type, pattern, value, default_value,"
+       "  passphrase_name)"
+       " VALUES (%llu, '%s', %d, %d, '%s', '%s', '%s', '%s')"
        " ON CONFLICT (credential_store, name) DO UPDATE"
        " SET secret = EXCLUDED.secret,"
        "     type = EXCLUDED.type,"
        "     pattern = EXCLUDED.pattern,"
-       "     default_value = EXCLUDED.default_value",
+       "     default_value = EXCLUDED.default_value,"
+       "     passphrase_name = EXCLUDED.passphrase_name",
        credential_store,
        quoted_name,
        new_preference->secret,
        new_preference->type,
        quoted_pattern,
        quoted_default_value,
-       quoted_default_value);
+       quoted_default_value,
+       quoted_passphrase_name);
 
   g_free (quoted_name);
   g_free (quoted_pattern);
@@ -1031,6 +1137,7 @@ create_or_update_credential_store_preference (
                                                old_preference->value,
                                                new_preference->type,
                                                new_preference->pattern,
+                                               passphrase,
                                                &message)
       == FALSE)
     {
@@ -1172,15 +1279,33 @@ create_or_update_credential_store (const char *credential_store_id,
   while (current_list_item)
     {
       credential_store_preference_data_t *new_preference, *old_preference;
+      const char *passphrase;
 
       new_preference = current_list_item->data;
       old_preference = g_hash_table_lookup (old_preferences,
                                             new_preference->name);
 
+      if (new_preference->passphrase_name
+          && strcmp (new_preference->passphrase_name, ""))
+        {
+          // New secrets should be empty by default, so only old preferences
+          // have to be checked for an existing passphrase.
+          credential_store_preference_data_t *passphrase_preference
+            = g_hash_table_lookup (old_preferences,
+                                   new_preference->passphrase_name);
+          if (passphrase_preference)
+            passphrase = passphrase_preference->value;
+          else
+            passphrase = NULL;
+        }
+      else
+        passphrase = NULL;
+
       create_or_update_credential_store_preference (credential_store_id,
                                                     credential_store,
                                                     new_preference,
-                                                    old_preference);
+                                                    old_preference,
+                                                    passphrase);
 
       current_list_item = current_list_item->next;
     }
