@@ -565,4 +565,7 @@ void
 parse_http_scanner_report (task_t, report_t, GSList *, time_t, time_t);
 #endif
 
+int
+vector_find_filter (const gchar **, const gchar *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

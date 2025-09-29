@@ -22,4 +22,7 @@
 const char *
 get_join (int, int, int);
 
+gchar *
+columns_select_column (column_t *, column_t *, const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_FILTERS_H */
