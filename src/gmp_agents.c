@@ -584,12 +584,13 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
-    case AGENT_RESPONSE_INTERNAL_ERROR:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
+    case AGENT_RESPONSE_IN_USE_ERROR:
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+        "modify_agent", "Resource is in use"));
       log_event_fail ("agents", "Agents", NULL, "modified");
       break;
 
-    case AGENT_RESPONSE_IN_USE_ERROR:
+    case AGENT_RESPONSE_INTERNAL_ERROR:
     default:
       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
       log_event_fail ("agents", "Agents", NULL, "modified");

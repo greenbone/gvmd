@@ -4763,7 +4763,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
     "first", "last", SEVERITY_FILTER_COLUMNS, "hosts", "result_hosts",       \
     "fp_per_host", "log_per_host", "low_per_host", "medium_per_host",        \
     "high_per_host", "critical_per_host", "target", "usage_type",            \
-    "first_report_created", "last_report_created",                           \
+    "first_report_created", "last_report_created", "scanner_type",           \
     TASK_AGENT_GROUP_FILTER_COLUMNS                                          \
     NULL}
 
@@ -5219,6 +5219,11 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " AND scan_run_status = 1"                                              \
      " ORDER BY creation_time DESC LIMIT 1)",                                \
      "last_report_created",                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT type FROM scanners WHERE scanners.id = tasks.scanner)",        \
+     "scanner_type",                                                         \
      KEYWORD_TYPE_INTEGER                                                    \
    } TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
