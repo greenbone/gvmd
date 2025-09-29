@@ -20,6 +20,9 @@
 #include "manage.h"
 #include "manage_filter_utils.h"
 #include "manage_settings.h"
+#include "manage_sql.h"
+
+#include <ctype.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -674,4 +677,1461 @@ columns_build_select (column_t *select_columns)
       return g_string_free (select, FALSE);
     }
   return g_strdup ("''");
+}
+
+/**
+ * @brief Get the column expression for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  filter_column   Filter column.
+ * @param[out] type            Type of returned column.
+ *
+ * @return Column for the SELECT statement.
+ */
+static gchar *
+columns_select_column_single (column_t *select_columns,
+                              const char *filter_column,
+                              keyword_type_t* type)
+{
+  column_t *columns;
+  if (type)
+    *type = KEYWORD_TYPE_UNKNOWN;
+  if (select_columns == NULL)
+    return NULL;
+  columns = select_columns;
+  while ((*columns).select)
+    {
+      if ((*columns).filter
+          && strcmp ((*columns).filter, filter_column) == 0)
+        {
+          if (type)
+            *type = (*columns).type;
+          return (*columns).select;
+        }
+      if ((*columns).filter
+          && *((*columns).filter)
+          && *((*columns).filter) == '_'
+          && strcmp (((*columns).filter) + 1, filter_column) == 0)
+        {
+          if (type)
+            *type = (*columns).type;
+          return (*columns).select;
+        }
+      columns++;
+    }
+  columns = select_columns;
+  while ((*columns).select)
+    {
+      if (strcmp ((*columns).select, filter_column) == 0)
+        {
+          if (type)
+            *type = (*columns).type;
+          return (*columns).select;
+        }
+      columns++;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the selection term for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   WHERE "columns".
+ * @param[in]  filter_column   Filter column.
+ *
+ * @return Column for the SELECT statement.
+ */
+gchar *
+columns_select_column (column_t *select_columns,
+                       column_t *where_columns,
+                       const char *filter_column)
+{
+  gchar *column;
+  column = columns_select_column_single (select_columns, filter_column, NULL);
+  if (column)
+    return column;
+  return columns_select_column_single (where_columns, filter_column, NULL);
+}
+
+/**
+ * @brief Get the selection term for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   WHERE "columns".
+ * @param[in]  filter_column   Filter column.
+ * @param[out] type            Type of the returned column.
+ *
+ * @return Column for the SELECT statement.
+ */
+static gchar *
+columns_select_column_with_type (column_t *select_columns,
+                                 column_t *where_columns,
+                                 const char *filter_column,
+                                 keyword_type_t* type)
+{
+  gchar *column;
+  column = columns_select_column_single (select_columns, filter_column, type);
+  if (column)
+    return column;
+  return columns_select_column_single (where_columns, filter_column, type);
+}
+
+/**
+ * @brief Check whether a keyword applies to a column.
+ *
+ * @param[in]  keyword  Keyword.
+ * @param[in]  column   Column.
+ *
+ * @return 1 if applies, else 0.
+ */
+static int
+keyword_applies_to_column (keyword_t *keyword, const char* column)
+{
+  if ((strcmp (column, "threat") == 0)
+      && (strstr ("None", keyword->string) == NULL)
+      && (strstr ("False Positive", keyword->string) == NULL)
+      && (strstr ("Error", keyword->string) == NULL)
+      && (strstr ("Alarm", keyword->string) == NULL)
+#if CVSS3_RATINGS == 1
+      && (strstr ("Critical", keyword->string) == NULL)
+#endif
+      && (strstr ("High", keyword->string) == NULL)
+      && (strstr ("Medium", keyword->string) == NULL)
+      && (strstr ("Low", keyword->string) == NULL)
+      && (strstr ("Log", keyword->string) == NULL))
+    return 0;
+  if ((strcmp (column, "trend") == 0)
+      && (strstr ("more", keyword->string) == NULL)
+      && (strstr ("less", keyword->string) == NULL)
+      && (strstr ("up", keyword->string) == NULL)
+      && (strstr ("down", keyword->string) == NULL)
+      && (strstr ("same", keyword->string) == NULL))
+    return 0;
+  if ((strcmp (column, "status") == 0)
+      && (strstr ("Delete Requested", keyword->string) == NULL)
+      && (strstr ("Ultimate Delete Requested", keyword->string) == NULL)
+      && (strstr ("Done", keyword->string) == NULL)
+      && (strstr ("New", keyword->string) == NULL)
+      && (strstr ("Running", keyword->string) == NULL)
+      && (strstr ("Queued", keyword->string) == NULL)
+      && (strstr ("Stop Requested", keyword->string) == NULL)
+      && (strstr ("Stopped", keyword->string) == NULL)
+      && (strstr ("Interrupted", keyword->string) == NULL)
+      && (strstr ("Processing", keyword->string) == NULL))
+    return 0;
+  return 1;
+}
+
+/**
+ * @brief Append parts for a "tag" keyword to a filter clause.
+ *
+ * @param[in,out] clause      Buffer for the filter clause to append to.
+ * @param[in]  keyword        The keyword to create the filter clause part for.
+ * @param[in]  type           The resource type.
+ * @param[in]  first_keyword  Whether keyword is first.
+ * @param[in]  last_was_and   Whether last keyword was "and".
+ * @param[in]  last_was_not   Whether last keyword was "not".
+ */
+static void
+filter_clause_append_tag (GString *clause, keyword_t *keyword,
+                          const char *type, int first_keyword,
+                          int last_was_and, int last_was_not)
+{
+  gchar *quoted_keyword;
+  gchar **tag_split, *tag_name, *tag_value;
+  int value_given;
+
+  quoted_keyword = sql_quote (keyword->string);
+  tag_split = g_strsplit (quoted_keyword, "=", 2);
+  tag_name = g_strdup (tag_split[0] ? tag_split[0] : "");
+
+  if (tag_split[0] && tag_split[1])
+    {
+      tag_value = g_strdup (tag_split[1]);
+      value_given = 1;
+    }
+  else
+    {
+      tag_value = g_strdup ("");
+      value_given = 0;
+    }
+
+  if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
+      || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
+      || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+    {
+      g_string_append_printf
+         (clause,
+          "%s"
+          "(EXISTS"
+          "  (SELECT * FROM tags"
+          "   WHERE tags.name = '%s'"
+          "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
+          "   AND EXISTS (SELECT * FROM tag_resources"
+          "                WHERE tag_resources.resource_uuid"
+          "                        = %ss.uuid"
+          "                  AND tag_resources.resource_type"
+          "                        = '%s'"
+          "                  AND tag = tags.id)"
+          "   %s%s%s))",
+          get_join (first_keyword, last_was_and,
+                    last_was_not),
+          tag_name,
+          type,
+          type,
+          (value_given
+            ? "AND tags.value = '"
+            : ""),
+          value_given ? tag_value : "",
+          (value_given
+            ? "'"
+            : ""));
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+    {
+      g_string_append_printf
+         (clause,
+          "%s"
+          "(EXISTS"
+          "  (SELECT * FROM tags"
+          "   WHERE tags.name %s '%%%%%s%%%%'"
+          "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
+          "   AND EXISTS (SELECT * FROM tag_resources"
+          "                WHERE tag_resources.resource_uuid"
+          "                        = %ss.uuid"
+          "                  AND tag_resources.resource_type"
+          "                        = '%s'"
+          "                  AND tag = tags.id)"
+          "   AND tags.value %s '%%%%%s%%%%'))",
+          get_join (first_keyword, last_was_and,
+                    last_was_not),
+          sql_ilike_op (),
+          tag_name,
+          type,
+          type,
+          sql_ilike_op (),
+          tag_value);
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+    {
+      g_string_append_printf
+         (clause,
+          "%s"
+          "(EXISTS"
+          "  (SELECT * FROM tags"
+          "   WHERE tags.name %s '%s'"
+          "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
+          "   AND EXISTS (SELECT * FROM tag_resources"
+          "                WHERE tag_resources.resource_uuid"
+          "                        = %ss.uuid"
+          "                  AND tag_resources.resource_type"
+          "                        = '%s'"
+          "                  AND tag = tags.id)"
+          "   AND tags.value"
+          "       %s '%s'))",
+          get_join (first_keyword, last_was_and,
+                    last_was_not),
+          sql_regexp_op (),
+          tag_name,
+          type,
+          type,
+          sql_regexp_op (),
+          tag_value);
+    }
+
+  g_free (quoted_keyword);
+  g_strfreev(tag_split);
+  g_free(tag_name);
+  g_free(tag_value);
+}
+
+/**
+ * @brief Append parts for a "tag_id" keyword to a filter clause.
+ *
+ * @param[in,out] clause      Buffer for the filter clause to append to.
+ * @param[in]  keyword        The keyword to create the filter clause part for.
+ * @param[in]  type           The resource type.
+ * @param[in]  first_keyword  Whether keyword is first.
+ * @param[in]  last_was_and   Whether last keyword was "and".
+ * @param[in]  last_was_not   Whether last keyword was "not".
+ */
+static void
+filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
+                             const char *type, int first_keyword,
+                             int last_was_and, int last_was_not)
+{
+  gchar *quoted_keyword;
+
+  quoted_keyword = sql_quote (keyword->string);
+
+  if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
+      || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
+      || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+    {
+      g_string_append_printf
+         (clause,
+          "%s"
+          "(EXISTS"
+          "  (SELECT * FROM tags"
+          "   WHERE tags.uuid = '%s'"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
+          "   AND EXISTS (SELECT * FROM tag_resources"
+          "                WHERE tag_resources.resource_uuid"
+          "                        = %ss.uuid"
+          "                  AND tag_resources.resource_type"
+          "                        = '%s'"
+          "                  AND tag = tags.id)))",
+          get_join (first_keyword, last_was_and,
+                    last_was_not),
+          quoted_keyword,
+          type,
+          type);
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+    {
+      g_string_append_printf
+         (clause,
+          "%s"
+          "(EXISTS"
+          "  (SELECT * FROM tags"
+          "   WHERE tags.uuid %s '%%%%%s%%%%'"
+          "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
+          "   AND EXISTS (SELECT * FROM tag_resources"
+          "                WHERE tag_resources.resource_uuid"
+          "                        = %ss.uuid"
+          "                  AND tag_resources.resource_type"
+          "                        = '%s'"
+          "                  AND tag = tags.id)))",
+          get_join (first_keyword, last_was_and,
+                    last_was_not),
+          sql_ilike_op (),
+          quoted_keyword,
+          type,
+          type);
+    }
+  else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+    {
+      g_string_append_printf
+         (clause,
+          "%s"
+          "(EXISTS"
+          "  (SELECT * FROM tags"
+          "   WHERE tags.uuid %s '%s'"
+          "   AND tags.active != 0"
+          "   AND user_has_access_uuid (CAST ('tag' AS text),"
+          "                             CAST (tags.uuid AS text),"
+          "                             CAST ('get_tags' AS text),"
+          "                             0)"
+          "   AND EXISTS (SELECT * FROM tag_resources"
+          "                WHERE tag_resources.resource_uuid"
+          "                        = %ss.uuid"
+          "                  AND tag_resources.resource_type"
+          "                        = '%s'"
+          "                  AND tag = tags.id)))",
+          get_join (first_keyword, last_was_and,
+                    last_was_not),
+          sql_regexp_op (),
+          quoted_keyword,
+          type,
+          type);
+    }
+
+  g_free (quoted_keyword);
+}
+
+/**
+ * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
+ *
+ * @param[in]  type     Resource type.
+ * @param[in]  filter   Filter term.
+ * @param[in]  filter_columns  Filter columns.
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
+ * @param[in]  trash           Whether the trash table is being queried.
+ * @param[in]  ignore_max_rows_per_page Whether to ignore "Max Rows Per Page".
+ * @param[out] order_return  If given then order clause.
+ * @param[out] first_return  If given then first row.
+ * @param[out] max_return    If given then max rows.
+ * @param[out] permissions   When given then permissions string vector.
+ * @param[out] owner_filter  When given then value of owner keyword.
+ *
+ * @return WHERE clause for filter if one is required, else NULL.
+ */
+gchar *
+filter_clause (const char* type, const char* filter,
+               const char **filter_columns, column_t *select_columns,
+               column_t *where_columns, int trash,
+               int ignore_max_rows_per_page,
+               gchar **order_return, int *first_return, int *max_return,
+               array_t **permissions, gchar **owner_filter)
+{
+  GString *clause, *order;
+  keyword_t **point;
+  int first_keyword, first_order, last_was_and, last_was_not, last_was_re, skip;
+  array_t *split;
+
+  if (filter == NULL)
+    filter = "";
+
+  while (*filter && isspace (*filter)) filter++;
+
+  if (permissions)
+    *permissions = make_array ();
+
+  if (owner_filter)
+    *owner_filter = NULL;
+
+  /* Add SQL to the clause for each keyword or phrase. */
+
+  if (max_return)
+    *max_return = -2;
+
+  clause = g_string_new ("");
+  order = g_string_new ("");
+  /* NB This may add terms that are missing, like "sort". */
+  split = split_filter (filter);
+  point = (keyword_t**) split->pdata;
+  first_keyword = 1;
+  last_was_and = 0;
+  last_was_not = 0;
+  last_was_re = 0;
+  first_order = 1;
+  while (*point)
+    {
+      gchar *quoted_keyword;
+      int index;
+      keyword_t *keyword;
+
+      skip = 0;
+
+      keyword = *point;
+
+      if ((keyword->column == NULL)
+          && (strlen (keyword->string) == 0))
+        {
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "or") == 0))
+        {
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "and") == 0))
+        {
+          last_was_and = 1;
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "not") == 0))
+        {
+          last_was_not = 1;
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "re") == 0))
+        {
+          last_was_re = 1;
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "regexp") == 0))
+        {
+          last_was_re = 1;
+          point++;
+          continue;
+        }
+
+      /* Check for ordering parts, like sort=name or sort-reverse=string. */
+
+      if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
+        {
+          if (vector_find_filter (filter_columns, keyword->string) == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (first_order)
+            {
+              if ((strcmp (type, "report") == 0)
+                  && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "              WHERE tasks.id = task)"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (scan_run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " ASC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN target = 0"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp"
+                  "                   FROM reports"
+                  "                   WHERE task = tasks.id"
+                  "                   ORDER BY creation_time DESC LIMIT 1)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " ASC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "threat") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_threat (%s) ASC",
+                                          column);
+                }
+              else if (strcmp (keyword->string, "severity") == 0
+                       || strcmp (keyword->string, "original_severity") == 0
+                       || strcmp (keyword->string, "cvss") == 0
+                       || strcmp (keyword->string, "cvss_base") == 0
+                       || strcmp (keyword->string, "max_cvss") == 0
+                       || strcmp (keyword->string, "fp_per_host") == 0
+                       || strcmp (keyword->string, "log_per_host") == 0
+                       || strcmp (keyword->string, "low_per_host") == 0
+                       || strcmp (keyword->string, "medium_per_host") == 0
+                       || strcmp (keyword->string, "high_per_host") == 0
+#if CVSS3_RATINGS == 1
+                       || strcmp (keyword->string, "critical_per_host") == 0
+#endif
+                       )
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  g_string_append_printf (order,
+                                          " ORDER BY CASE CAST (%s AS text)"
+                                          " WHEN '' THEN '-Infinity'::real"
+                                          " ELSE coalesce(%s::real,"
+                                          "               '-Infinity'::real)"
+                                          " END ASC",
+                                          column,
+                                          column);
+                }
+              else if (strcmp (keyword->string, "roles") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY"
+                                          " CASE WHEN %s %s 'Admin.*'"
+                                          " THEN '0' || %s"
+                                          " ELSE '1' || %s END ASC",
+                                          column,
+                                          sql_regexp_op (),
+                                          column,
+                                          column);
+                }
+              else if ((strcmp (keyword->string, "created") == 0)
+                       || (strcmp (keyword->string, "modified") == 0)
+                       || (strcmp (keyword->string, "published") == 0)
+                       || (strcmp (keyword->string, "qod") == 0)
+                       || (strcmp (keyword->string, "cves") == 0)
+#if CVSS3_RATINGS == 1
+                       || (strcmp (keyword->string, "critical") == 0)
+#endif
+                       || (strcmp (keyword->string, "high") == 0)
+                       || (strcmp (keyword->string, "medium") == 0)
+                       || (strcmp (keyword->string, "low") == 0)
+                       || (strcmp (keyword->string, "log") == 0)
+                       || (strcmp (keyword->string, "false_positive") == 0)
+                       || (strcmp (keyword->string, "hosts") == 0)
+                       || (strcmp (keyword->string, "result_hosts") == 0)
+                       || (strcmp (keyword->string, "results") == 0)
+                       || (strcmp (keyword->string, "latest_severity") == 0)
+                       || (strcmp (keyword->string, "highest_severity") == 0)
+                       || (strcmp (keyword->string, "average_severity") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY %s ASC",
+                                          column);
+                }
+              else if ((strcmp (keyword->string, "ips") == 0)
+                       || (strcmp (keyword->string, "total") == 0)
+                       || (strcmp (keyword->string, "tcp") == 0)
+                       || (strcmp (keyword->string, "udp") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY CAST (%s AS INTEGER) ASC",
+                                          column);
+                }
+              else if (strcmp (keyword->string, "ip") == 0
+                       || strcmp (keyword->string, "host") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_inet (%s) ASC",
+                                          column);
+                }
+              else if ((strcmp (type, "note")
+                        && strcmp (type, "override"))
+                       || (strcmp (keyword->string, "nvt")
+                           && strcmp (keyword->string, "name")))
+                {
+                  gchar *column;
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
+                  assert (column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) ASC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) ASC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) ASC",
+                                            column);
+                }
+              else
+                /* Special case for notes text sorting. */
+                g_string_append_printf (order,
+                                        " ORDER BY nvt ASC,"
+                                        "          lower (%ss%s.text) ASC",
+                                        type,
+                                        trash ? "_trash" : "");
+              first_order = 0;
+            }
+          else
+            /* To help the client split_filter restricts the filter to one
+             * sorting term, preventing this from happening. */
+            g_string_append_printf (order, ", %s ASC",
+                                    keyword->string);
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "sort-reverse") == 0))
+        {
+          if (vector_find_filter (filter_columns, keyword->string) == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (first_order)
+            {
+              if ((strcmp (type, "report") == 0)
+                  && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "              WHERE tasks.id = task)"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (scan_run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " DESC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf
+                 (order,
+                  " ORDER BY"
+                  "  (CASE WHEN target = 0"
+                  "    THEN 'Container'"
+                  "    ELSE run_status_name (run_status)"
+                  "         || (SELECT CAST (temp / 100 AS text)"
+                  "                    || CAST (temp / 10 AS text)"
+                  "                    || CAST (temp %% 10 as text)"
+                  "             FROM (SELECT report_progress (id) AS temp"
+                  "                   FROM reports"
+                  "                   WHERE task = tasks.id"
+                  "                   ORDER BY creation_time DESC LIMIT 1)"
+                  "                  AS temp_sub)"
+                  "    END)"
+                  " DESC");
+              else if ((strcmp (type, "task") == 0)
+                       && (strcmp (keyword->string, "threat") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_threat (%s) DESC",
+                                          column);
+                }
+              else if (strcmp (keyword->string, "severity") == 0
+                       || strcmp (keyword->string, "original_severity") == 0
+                       || strcmp (keyword->string, "cvss") == 0
+                       || strcmp (keyword->string, "cvss_base") == 0
+                       || strcmp (keyword->string, "max_cvss") == 0
+                       || strcmp (keyword->string, "fp_per_host") == 0
+                       || strcmp (keyword->string, "log_per_host") == 0
+                       || strcmp (keyword->string, "low_per_host") == 0
+                       || strcmp (keyword->string, "medium_per_host") == 0
+                       || strcmp (keyword->string, "high_per_host") == 0
+#if CVSS3_RATINGS == 1
+                       || strcmp (keyword->string, "critical_per_host") == 0
+#endif
+                      )
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  g_string_append_printf (order,
+                                          " ORDER BY CASE CAST (%s AS text)"
+                                          " WHEN '' THEN '-Infinity'::real"
+                                          " ELSE coalesce(%s::real,"
+                                          "               '-Infinity'::real)"
+                                          " END DESC",
+                                          column,
+                                          column);
+                }
+              else if (strcmp (keyword->string, "roles") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY"
+                                          " CASE WHEN %s %s 'Admin.*'"
+                                          " THEN '0' || %s"
+                                          " ELSE '1' || %s END DESC",
+                                          column,
+                                          sql_regexp_op (),
+                                          column,
+                                          column);
+                }
+              else if ((strcmp (keyword->string, "created") == 0)
+                       || (strcmp (keyword->string, "modified") == 0)
+                       || (strcmp (keyword->string, "published") == 0)
+                       || (strcmp (keyword->string, "qod") == 0)
+                       || (strcmp (keyword->string, "cves") == 0)
+#if CVSS3_RATINGS == 1
+                       || (strcmp (keyword->string, "critical") == 0)
+#endif
+                       || (strcmp (keyword->string, "high") == 0)
+                       || (strcmp (keyword->string, "medium") == 0)
+                       || (strcmp (keyword->string, "low") == 0)
+                       || (strcmp (keyword->string, "log") == 0)
+                       || (strcmp (keyword->string, "false_positive") == 0)
+                       || (strcmp (keyword->string, "hosts") == 0)
+                       || (strcmp (keyword->string, "result_hosts") == 0)
+                       || (strcmp (keyword->string, "results") == 0)
+                       || (strcmp (keyword->string, "latest_severity") == 0)
+                       || (strcmp (keyword->string, "highest_severity") == 0)
+                       || (strcmp (keyword->string, "average_severity") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY %s DESC",
+                                          column);
+                }
+              else if ((strcmp (keyword->string, "ips") == 0)
+                       || (strcmp (keyword->string, "total") == 0)
+                       || (strcmp (keyword->string, "tcp") == 0)
+                       || (strcmp (keyword->string, "udp") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY CAST (%s AS INTEGER) DESC",
+                                          column);
+                }
+              else if (strcmp (keyword->string, "ip") == 0
+                       || strcmp (keyword->string, "host") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  where_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_inet (%s) DESC",
+                                          column);
+                }
+              else if ((strcmp (type, "note")
+                        && strcmp (type, "override"))
+                       || (strcmp (keyword->string, "nvt")
+                           && strcmp (keyword->string, "name")))
+                {
+                  gchar *column;
+                  keyword_type_t column_type;
+                  column = columns_select_column_with_type (select_columns,
+                                                            where_columns,
+                                                            keyword->string,
+                                                            &column_type);
+                  assert (column);
+                  if (column_type == KEYWORD_TYPE_INTEGER)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS bigint) DESC",
+                                            column);
+                  else if (column_type == KEYWORD_TYPE_DOUBLE)
+                    g_string_append_printf (order,
+                                            " ORDER BY"
+                                            " cast (%s AS real) DESC",
+                                            column);
+                  else
+                    g_string_append_printf (order, " ORDER BY lower (%s) DESC",
+                                            column);
+                }
+              else
+                /* Special case for notes text sorting. */
+                g_string_append_printf (order,
+                                        " ORDER BY nvt DESC,"
+                                        "          lower (%ss%s.text) DESC",
+                                        type,
+                                        trash ? "_trash" : "");
+              first_order = 0;
+            }
+          else
+            /* To help the client split_filter restricts the filter to one
+             * sorting term, preventing this from happening. */
+            g_string_append_printf (order, ", %s DESC",
+                                    keyword->string);
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "first") == 0))
+        {
+          if (first_return)
+            {
+              /* Subtract 1 to switch from 1 to 0 indexing. */
+              *first_return = atoi (keyword->string) - 1;
+              if (*first_return < 0)
+                *first_return = 0;
+            }
+
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "rows") == 0))
+        {
+          if (max_return)
+            *max_return = atoi (keyword->string);
+
+          point++;
+          continue;
+        }
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "permission") == 0))
+        {
+          if (permissions)
+            array_add (*permissions, g_strdup (keyword->string));
+
+          point++;
+          continue;
+        }
+      /* Add tag criteria to clause: tag name with optional value */
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "tag") == 0))
+        {
+          quoted_keyword = NULL;
+
+          filter_clause_append_tag (clause, keyword, type,
+                                    first_keyword, last_was_and, last_was_not);
+
+          first_keyword = 0;
+          last_was_and = 0;
+          last_was_not = 0;
+
+          point++;
+          continue;
+        }
+      /* Add criteria for tag_id to clause */
+      else if (keyword->column
+               && (strcasecmp (keyword->column, "tag_id") == 0))
+        {
+          quoted_keyword = NULL;
+
+          filter_clause_append_tag_id (clause, keyword, type, first_keyword,
+                                       last_was_and, last_was_not);
+
+          first_keyword = 0;
+          last_was_and = 0;
+          last_was_not = 0;
+
+          point++;
+          continue;
+        }
+
+      /* Add SQL to the clause for each column name. */
+
+      quoted_keyword = NULL;
+
+      if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
+        {
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          if (keyword->column
+              && (strlen (keyword->column) > 3)
+              && (strcmp (keyword->column + strlen (keyword->column) - 3, "_id")
+                  == 0)
+              && strcasecmp (keyword->column, "nvt_id")
+              /* Tickets have a custom result_id column. */
+              && strcasecmp (keyword->column, "result_id"))
+            {
+              gchar *type_term;
+
+              type_term = g_strndup (keyword->column,
+                                     strlen (keyword->column) - 3);
+              if (valid_type (type_term) == 0)
+                {
+                  g_free (type_term);
+                  last_was_and = 0;
+                  last_was_not = 0;
+                  point++;
+                  continue;
+                }
+
+              quoted_keyword = sql_quote (keyword->string);
+              if (strcmp (quoted_keyword, ""))
+                g_string_append_printf (clause,
+                                        "%s(((SELECT id FROM %ss"
+                                        "     WHERE %ss.uuid = '%s')"
+                                        "     = %ss.%s"
+                                        "     OR %ss.%s IS NULL"
+                                        "     OR %ss.%s = 0)",
+                                        get_join (first_keyword,
+                                                  last_was_and,
+                                                  last_was_not),
+                                        type_term,
+                                        type_term,
+                                        quoted_keyword,
+                                        type,
+                                        type_term,
+                                        type,
+                                        type_term,
+                                        type,
+                                        type_term);
+              else
+                g_string_append_printf (clause,
+                                        "%s((%ss.%s IS NULL"
+                                        "   OR %ss.%s = 0)",
+                                        get_join (first_keyword,
+                                                  last_was_and,
+                                                  last_was_not),
+                                        type,
+                                        type_term,
+                                        type,
+                                        type_term);
+
+              g_free (type_term);
+            }
+          else if (keyword->column && strcmp (keyword->column, "owner"))
+            {
+              gchar *column;
+              keyword_type_t column_type;
+              quoted_keyword = sql_quote (keyword->string);
+              column = columns_select_column_with_type (select_columns,
+                                                        where_columns,
+                                                        keyword->column,
+                                                        &column_type);
+              assert (column);
+              if (keyword->type == KEYWORD_TYPE_INTEGER
+                  && (column_type == KEYWORD_TYPE_INTEGER
+                      || column_type == KEYWORD_TYPE_DOUBLE))
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS NUMERIC) = %i",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        column,
+                                        keyword->integer_value);
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                   && (column_type == KEYWORD_TYPE_DOUBLE
+                       || column_type == KEYWORD_TYPE_INTEGER))
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS REAL)"
+                                        " = CAST (%f AS REAL)",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        column,
+                                        keyword->double_value);
+              else if (strcmp (quoted_keyword, ""))
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS TEXT) = '%s'",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        column,
+                                        quoted_keyword);
+              else
+                g_string_append_printf (clause,
+                                        "%s((%s IS NULL OR CAST (%s AS TEXT) = '%s')",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        column,
+                                        column,
+                                        quoted_keyword);
+            }
+          else
+            {
+              /* Skip term.  Owner filtering is done via where_owned. */
+              skip = 1;
+              if (owner_filter && (*owner_filter == NULL))
+                *owner_filter = g_strdup (keyword->string);
+            }
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
+        {
+          gchar *column;
+
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          column = columns_select_column (select_columns,
+                                          where_columns,
+                                          keyword->column);
+          assert (column);
+          g_string_append_printf (clause,
+                                  "%s(CAST (%s AS TEXT) %s '%%%%%s%%%%'",
+                                  get_join (first_keyword, last_was_and,
+                                            last_was_not),
+                                  column,
+                                  sql_ilike_op (),
+                                  quoted_keyword);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
+        {
+          gchar *column;
+          keyword_type_t column_type;
+
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          column = columns_select_column_with_type (select_columns,
+                                                    where_columns,
+                                                    keyword->column,
+                                                    &column_type);
+          assert (column);
+          if (keyword->type == KEYWORD_TYPE_INTEGER
+              && (column_type == KEYWORD_TYPE_INTEGER
+                  || column_type == KEYWORD_TYPE_DOUBLE))
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS NUMERIC) > %i",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    column,
+                                    keyword->integer_value);
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                   && (column_type == KEYWORD_TYPE_DOUBLE
+                       || column_type == KEYWORD_TYPE_INTEGER))
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS REAL)"
+                                    " > CAST (%f AS REAL)",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    column,
+                                    keyword->double_value);
+          else
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS TEXT) > '%s'",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    column,
+                                    quoted_keyword);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
+        {
+          gchar *column;
+          keyword_type_t column_type;
+
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          column = columns_select_column_with_type (select_columns,
+                                                    where_columns,
+                                                    keyword->column,
+                                                    &column_type);
+          assert (column);
+          if (keyword->type == KEYWORD_TYPE_INTEGER
+              && (column_type == KEYWORD_TYPE_INTEGER
+                  || column_type == KEYWORD_TYPE_DOUBLE))
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS NUMERIC) < %i",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    column,
+                                    keyword->integer_value);
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                   && (column_type == KEYWORD_TYPE_DOUBLE
+                       || column_type == KEYWORD_TYPE_INTEGER))
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS REAL)"
+                                    " < CAST (%f AS REAL)",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    column,
+                                    keyword->double_value);
+          else
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS TEXT) < '%s'",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    column,
+                                    quoted_keyword);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+        {
+          gchar *column;
+
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          column = columns_select_column (select_columns,
+                                          where_columns,
+                                          keyword->column);
+          assert (column);
+          g_string_append_printf (clause,
+                                  "%s(CAST (%s AS TEXT) %s '%s'",
+                                  get_join (first_keyword, last_was_and,
+                                            last_was_not),
+                                  column,
+                                  sql_regexp_op (),
+                                  quoted_keyword);
+        }
+      else if (keyword->equal)
+        {
+          const char *filter_column;
+
+          /* Keyword like "=example". */
+
+          g_string_append_printf (clause,
+                                  "%s(",
+                                  (first_keyword
+                                    ? ""
+                                    : (last_was_and ? " AND " : " OR ")));
+
+          quoted_keyword = sql_quote (keyword->string);
+          if (last_was_not)
+            for (index = 0;
+                 (filter_column = filter_columns[index]) != NULL;
+                 index++)
+              {
+                gchar *select_column;
+                keyword_type_t column_type;
+
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 &column_type);
+                assert (select_column);
+
+                if (keyword->type == KEYWORD_TYPE_INTEGER
+                    && (column_type == KEYWORD_TYPE_INTEGER
+                        || column_type == KEYWORD_TYPE_DOUBLE))
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS NUMERIC)"
+                                          "    != %i)",
+                                          (index ? " AND " : ""),
+                                          select_column,
+                                          select_column,
+                                          keyword->integer_value);
+                else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                         && (column_type == KEYWORD_TYPE_DOUBLE
+                             || column_type == KEYWORD_TYPE_INTEGER))
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS REAL)"
+                                          "    != CAST (%f AS REAL))",
+                                          (index ? " AND " : ""),
+                                          select_column,
+                                          select_column,
+                                          keyword->double_value);
+                else
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS TEXT)"
+                                          "    != '%s')",
+                                          (index ? " AND " : ""),
+                                          select_column,
+                                          select_column,
+                                          quoted_keyword);
+              }
+          else
+            for (index = 0;
+                 (filter_column = filter_columns[index]) != NULL;
+                 index++)
+              {
+                gchar *select_column;
+                keyword_type_t column_type;
+
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 &column_type);
+                assert (select_column);
+
+                if (keyword->type == KEYWORD_TYPE_INTEGER
+                    && (column_type == KEYWORD_TYPE_INTEGER
+                        || column_type == KEYWORD_TYPE_DOUBLE))
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS NUMERIC)"
+                                          " = %i",
+                                          (index ? " OR " : ""),
+                                          select_column,
+                                          keyword->integer_value);
+                else if (keyword->type == KEYWORD_TYPE_DOUBLE
+                         && (column_type == KEYWORD_TYPE_DOUBLE
+                             || column_type == KEYWORD_TYPE_INTEGER))
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS REAL)"
+                                          " = CAST (%f AS REAL)",
+                                          (index ? " OR " : ""),
+                                          select_column,
+                                          keyword->double_value);
+                else
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS TEXT)"
+                                          " = '%s'",
+                                          (index ? " OR " : ""),
+                                          select_column,
+                                          quoted_keyword);
+              }
+        }
+      else
+        {
+          const char *filter_column;
+
+          g_string_append_printf (clause,
+                                  "%s(",
+                                  (first_keyword
+                                    ? ""
+                                    : (last_was_and ? " AND " : " OR ")));
+
+          quoted_keyword = sql_quote (keyword->string);
+          if (last_was_not)
+            for (index = 0;
+                 (filter_column = filter_columns[index]) != NULL;
+                 index++)
+              {
+                gchar *select_column;
+                keyword_type_t column_type;
+                int column_type_matches = 0;
+
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 &column_type);
+
+                if (column_type != KEYWORD_TYPE_INTEGER
+                    && column_type != KEYWORD_TYPE_DOUBLE)
+                  column_type_matches = 1;
+
+                if (keyword_applies_to_column (keyword, filter_column)
+                    && select_column && column_type_matches)
+                  {
+                    if (last_was_re)
+                      g_string_append_printf (clause,
+                                              "%s"
+                                              "(%s IS NULL"
+                                              " OR NOT (CAST (%s AS TEXT)"
+                                              "         %s '%s'))",
+                                              (index ? " AND " : ""),
+                                              select_column,
+                                              select_column,
+                                              sql_regexp_op (),
+                                              quoted_keyword);
+                    else
+                      g_string_append_printf (clause,
+                                              "%s"
+                                              "(%s IS NULL"
+                                              " OR CAST (%s AS TEXT)"
+                                              "    NOT %s '%%%s%%')",
+                                              (index ? " AND " : ""),
+                                              select_column,
+                                              select_column,
+                                              sql_ilike_op (),
+                                              quoted_keyword);
+                  }
+                else
+                  g_string_append_printf (clause,
+                                          "%s t ()",
+                                          (index ? " AND " : ""));
+              }
+          else
+            for (index = 0;
+                 (filter_column = filter_columns[index]) != NULL;
+                 index++)
+              {
+                gchar *select_column;
+                keyword_type_t column_type;
+                int column_type_matches = 0;
+
+                select_column = columns_select_column_with_type (select_columns,
+                                                                 where_columns,
+                                                                 filter_column,
+                                                                 &column_type);
+                if (column_type != KEYWORD_TYPE_INTEGER
+                    && column_type != KEYWORD_TYPE_DOUBLE)
+                  column_type_matches = 1;
+
+                if (keyword_applies_to_column (keyword, filter_column)
+                    && select_column && column_type_matches)
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS TEXT)"
+                                          " %s '%s%s%s'",
+                                          (index ? " OR " : ""),
+                                          select_column,
+                                          last_was_re
+                                           ? sql_regexp_op ()
+                                           : sql_ilike_op (),
+                                          last_was_re ? "" : "%%",
+                                          quoted_keyword,
+                                          last_was_re ? "" : "%%");
+                else
+                  g_string_append_printf (clause,
+                                          "%snot t ()",
+                                          (index ? " OR " : ""));
+              }
+        }
+
+      if (skip == 0)
+        {
+          g_string_append (clause, ")");
+          first_keyword = 0;
+          last_was_and = 0;
+          last_was_not = 0;
+          last_was_re = 0;
+        }
+      g_free (quoted_keyword);
+      point++;
+    }
+  filter_free (split);
+
+  if (order_return)
+    *order_return = g_string_free (order, FALSE);
+  else
+    g_string_free (order, TRUE);
+
+  if (max_return)
+    {
+      if (*max_return == -2)
+        setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max_return);
+      else if (*max_return < 1)
+        *max_return = -1;
+
+      *max_return = manage_max_rows (*max_return, ignore_max_rows_per_page);
+    }
+
+  if (strlen (clause->str))
+    return g_string_free (clause, FALSE);
+  g_string_free (clause, TRUE);
+  return NULL;
 }
