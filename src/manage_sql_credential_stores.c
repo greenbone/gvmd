@@ -18,6 +18,12 @@
 #include <gnutls/x509.h>
 #include <gnutls/pkcs12.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Count the number of credential stores based on filter criteria.
  *
