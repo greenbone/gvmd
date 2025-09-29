@@ -2994,85 +2994,6 @@ int
 modify_role (const char *, const char *, const char *, const char *);
 
 
-/* Filters. */
-
-/**
- * @brief filt_id value to use term or built-in default filter.
- */
-#define FILT_ID_NONE "0"
-
-/**
- * @brief filt_id value to use the filter in the user setting if possible.
- */
-#define FILT_ID_USER_SETTING "-2"
-
-gboolean
-find_filter (const char*, filter_t*);
-
-gboolean
-find_filter_with_permission (const char*, filter_t*, const char*);
-
-char*
-filter_uuid (filter_t);
-
-char*
-trash_filter_uuid (filter_t);
-
-char*
-filter_name (filter_t);
-
-char*
-trash_filter_name (filter_t);
-
-int
-create_filter (const char*, const char*, const char*, const char*, filter_t*);
-
-int
-copy_filter (const char*, const char*, const char*, filter_t*);
-
-int
-delete_filter (const char *, int);
-
-int
-trash_filter_in_use (filter_t);
-
-int
-filter_in_use (filter_t);
-
-int
-trash_filter_writable (filter_t);
-
-int
-filter_writable (filter_t);
-
-int
-filter_count (const get_data_t*);
-
-int
-init_filter_iterator (iterator_t*, get_data_t*);
-
-const char*
-filter_iterator_type (iterator_t*);
-
-const char*
-filter_iterator_term (iterator_t*);
-
-void
-init_filter_alert_iterator (iterator_t*, filter_t);
-
-const char*
-filter_alert_iterator_name (iterator_t*);
-
-const char*
-filter_alert_iterator_uuid (iterator_t*);
-
-int
-filter_alert_iterator_readable (iterator_t*);
-
-int
-modify_filter (const char*, const char*, const char*, const char*, const char*);
-
-
 /* Schema. */
 
 int

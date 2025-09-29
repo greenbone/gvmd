@@ -20,6 +20,7 @@
 #include "manage_assets.h"
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_filters.h"
 #include "manage_sql.h"
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
