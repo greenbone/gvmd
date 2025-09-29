@@ -25,6 +25,7 @@
 
 #include "manage_alerts.h"
 #include "debug_utils.h"
+#include "manage_filters.h"
 #include "manage_report_formats.h"
 #include "manage_sql.h"
 #include "manage_sql_alerts.h"

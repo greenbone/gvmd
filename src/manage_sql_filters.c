@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "manage_filters.h"
+#include "manage_sql_filters.h"
 #include "manage.h"
+#include "manage_acl.h"
 #include "manage_filter_utils.h"
 #include "manage_settings.h"
 #include "manage_sql.h"
@@ -2134,4 +2135,805 @@ filter_clause (const char* type, const char* filter,
     return g_string_free (clause, FALSE);
   g_string_free (clause, TRUE);
   return NULL;
+}
+
+/**
+ * @brief Find a filter for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of filter.
+ * @param[out]  filter      Filter return, 0 if successfully failed to find
+ *                          filter.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find filter), TRUE on error.
+ */
+gboolean
+find_filter_with_permission (const char* uuid, filter_t* filter,
+                             const char *permission)
+{
+  return find_resource_with_permission ("filter", uuid, filter, permission, 0);
+}
+
+/**
+ * @brief Return the UUID of a filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+filter_uuid (filter_t filter)
+{
+  return sql_string ("SELECT uuid FROM filters WHERE id = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Return the UUID of a trashcan filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+trash_filter_uuid (filter_t filter)
+{
+  return sql_string ("SELECT uuid FROM filters_trash WHERE id = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Return the name of a filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return name of filter.
+ */
+char*
+filter_name (filter_t filter)
+{
+  return sql_string ("SELECT name FROM filters WHERE id = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Return the name of a trashcan filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return name of filter.
+ */
+char*
+trash_filter_name (filter_t filter)
+{
+  return sql_string ("SELECT name FROM filters_trash WHERE id = %llu;",
+                     filter);
+}
+
+/**
+ * @brief Return the term of a filter.
+ *
+ * @param[in]  uuid  Filter UUID.
+ *
+ * @return Newly allocated term if available, else NULL.
+ */
+gchar*
+filter_term_sql (const char *uuid)
+{
+  gchar *quoted_uuid, *ret;
+  quoted_uuid = sql_quote (uuid);
+  ret = sql_string ("SELECT term FROM filters WHERE uuid = '%s';",
+                    quoted_uuid);
+  g_free (quoted_uuid);
+  return ret;
+}
+
+/**
+ * @brief Create a filter.
+ *
+ * @param[in]   name            Name of filter.
+ * @param[in]   comment         Comment on filter.
+ * @param[in]   type            Type of resource.
+ * @param[in]   term            Filter term.
+ * @param[out]  filter          Created filter.
+ *
+ * @return 0 success, 1 filter exists already, 2 error in type, 99 permission
+ *         denied.
+ */
+int
+create_filter (const char *name, const char *comment, const char *type,
+               const char *term, filter_t* filter)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_term, *clean_term;
+  const char *db_type;
+
+  assert (current_credentials.uuid);
+
+  if (type && strlen (type))
+    {
+      db_type = type_db_name (type);
+      if ((db_type == NULL || !valid_type (db_type)) && !valid_subtype (type))
+      {
+        return 2;
+      }
+      type = valid_subtype (type) ? type : db_type;
+    }
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("create_filter") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (resource_with_name_exists (name, "filter", 0))
+    {
+      sql_rollback ();
+      return 1;
+    }
+  quoted_name = sql_quote (name ?: "");
+
+  clean_term = manage_clean_filter (term ? term : "",
+                                    0 /* ignore_max_rows_per_page */);
+  quoted_term = sql_quote (clean_term);
+  g_free (clean_term);
+
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment);
+      sql ("INSERT INTO filters"
+           " (uuid, name, owner, comment, type, term, creation_time,"
+           "  modification_time)"
+           " VALUES (make_uuid (), '%s',"
+           " (SELECT id FROM users WHERE users.uuid = '%s'),"
+           " '%s', %s%s%s, '%s', m_now (), m_now ());",
+           quoted_name,
+           current_credentials.uuid,
+           quoted_comment,
+           type ? "lower ('" : "",
+           type ? type : "''",
+           type ? "')" : "",
+           quoted_term);
+      g_free (quoted_comment);
+    }
+  else
+    sql ("INSERT INTO filters"
+         " (uuid, name, owner, comment, type, term, creation_time,"
+         "  modification_time)"
+         " VALUES (make_uuid (), '%s',"
+         " (SELECT id FROM users WHERE users.uuid = '%s'),"
+         " '', %s%s%s, '%s', m_now (), m_now ());",
+         quoted_name,
+         current_credentials.uuid,
+         type ? "lower ('" : "",
+         type ? type : "''",
+         type ? "')" : "",
+         quoted_term);
+
+  if (filter)
+    *filter = sql_last_insert_id ();
+
+  g_free (quoted_name);
+  g_free (quoted_term);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Create a filter from an existing filter.
+ *
+ * @param[in]  name        Name of new filter.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new filter.  NULL to copy from existing.
+ * @param[in]  filter_id   UUID of existing filter.
+ * @param[out] new_filter  New filter.
+ *
+ * @return 0 success, 1 filter exists already, 2 failed to find existing
+ *         filter, -1 error.
+ */
+int
+copy_filter (const char* name, const char* comment, const char *filter_id,
+             filter_t* new_filter)
+{
+  return copy_resource ("filter", name, comment, filter_id, "term, type",
+                        1, new_filter, NULL);
+}
+
+/**
+ * @brief Delete a filter.
+ *
+ * @param[in]  filter_id  UUID of filter.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because a task refers to the filter, 2 failed
+ *         to find filter, 99 permission denied, -1 error.
+ */
+int
+delete_filter (const char *filter_id, int ultimate)
+{
+  gchar *quoted_filter_id;
+  filter_t filter = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_filter") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (find_filter_with_permission (filter_id, &filter, "delete_filter"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (filter == 0)
+    {
+      if (find_trash ("filter", filter_id, &filter))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (filter == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      /* Check if it's in use by an alert in the trashcan. */
+      if (sql_int ("SELECT count(*) FROM alerts_trash"
+                   " WHERE filter = %llu"
+                   " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+                   filter))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      /* Check if it's in use by the condition of an alert in the trashcan. */
+      if (sql_int ("SELECT count(*) FROM alert_condition_data_trash"
+                   " WHERE name = 'filter_id'"
+                   " AND data = (SELECT uuid FROM filters_trash"
+                   "             WHERE id = %llu)"
+                   " AND (SELECT condition = %i OR condition = %i"
+                   "      FROM alerts_trash WHERE id = alert);",
+                   filter,
+                   ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                   ALERT_CONDITION_FILTER_COUNT_CHANGED))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      permissions_set_orphans ("filter", filter, LOCATION_TRASH);
+      tags_remove_resource ("filter", filter, LOCATION_TRASH);
+
+      sql ("DELETE FROM filters_trash WHERE id = %llu;", filter);
+      sql_commit ();
+      return 0;
+    }
+
+  /* Check if it's in use by an alert. */
+  if (sql_int ("SELECT count(*) FROM alerts"
+               " WHERE filter = %llu;",
+               filter))
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  /* Check if it's in use by the condition of an alert. */
+  if (sql_int ("SELECT count(*) FROM alert_condition_data"
+               " WHERE name = 'filter_id'"
+               " AND data = (SELECT uuid FROM filters"
+               "             WHERE id = %llu)"
+               " AND (SELECT condition = %i OR condition = %i"
+               "      FROM alerts WHERE id = alert);",
+               filter,
+               ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+               ALERT_CONDITION_FILTER_COUNT_CHANGED))
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  if (ultimate)
+    {
+      /* Check if it's in use by the condition of an alert in the trashcan. */
+      if (sql_int ("SELECT count(*) FROM alert_condition_data_trash"
+                   " WHERE name = 'filter_id'"
+                   " AND data = (SELECT uuid FROM filters"
+                   "             WHERE id = %llu)"
+                   " AND (SELECT condition = %i OR condition = %i"
+                   "      FROM alerts_trash WHERE id = alert);",
+                   filter,
+                   ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                   ALERT_CONDITION_FILTER_COUNT_CHANGED))
+        {
+          sql_rollback ();
+          return 1;
+        }
+    }
+
+  quoted_filter_id = sql_quote (filter_id);
+  sql ("DELETE FROM settings WHERE name %s '%% Filter' AND value = '%s';",
+       sql_ilike_op (),
+       quoted_filter_id);
+  g_free (quoted_filter_id);
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO filters_trash"
+           " (uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, type, term, creation_time,"
+           "  modification_time"
+           " FROM filters WHERE id = %llu;",
+           filter);
+
+      /* Update the location of the filter in any trashcan alerts. */
+      sql ("UPDATE alerts_trash"
+           " SET filter = %llu,"
+           "     filter_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE filter = %llu"
+           " AND filter_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           sql_last_insert_id (),
+           filter);
+
+      permissions_set_locations ("filter", filter,
+                                 sql_last_insert_id (),
+                                 LOCATION_TRASH);
+      tags_set_locations ("filter", filter,
+                          sql_last_insert_id (),
+                          LOCATION_TRASH);
+    }
+  else
+    {
+      permissions_set_orphans ("filter", filter, LOCATION_TABLE);
+      tags_remove_resource ("filter", filter, LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM filters WHERE id = %llu;", filter);
+
+  sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Check whether a filter is in use.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+filter_in_use (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    /* Filter applied to results passed to alert's "generate". */
+                    " WHERE filter = %llu"
+                    /* Filter applied to check alert condition. */
+                    "   OR (EXISTS (SELECT * FROM alert_condition_data"
+                    "             WHERE name = 'filter_id'"
+                    "             AND data = (SELECT uuid FROM filters"
+                    "                          WHERE id = %llu)"
+                    "             AND alert = alerts.id)"
+                    "       AND (condition = %i OR condition = %i))",
+                    filter,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
+}
+
+/**
+ * @brief Check whether a filter is in use for the output of any alert.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+filter_in_use_for_output (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE filter = %llu;",
+                    filter);
+}
+
+/**
+ * @brief Check whether a filter is in use by any result alert conditions.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+filter_in_use_for_result_event (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE event = %llu"
+                    " AND (EXISTS (SELECT * FROM alert_condition_data"
+                    "              WHERE name = 'filter_id'"
+                    "              AND data = (SELECT uuid FROM filters"
+                    "                          WHERE id = %llu)"
+                    "              AND alert = alerts.id)"
+                    " AND (condition = %i OR condition = %i))",
+                    EVENT_TASK_RUN_STATUS_CHANGED,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
+}
+
+/**
+ * @brief Check whether a filter is in use by any secinfo alert conditions.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+static int
+filter_in_use_for_secinfo_event (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts"
+                    " WHERE (event = %llu OR event = %llu)"
+                    " AND (EXISTS (SELECT * FROM alert_condition_data"
+                    "              WHERE name = 'filter_id'"
+                    "              AND data = (SELECT uuid FROM filters"
+                    "                          WHERE id = %llu)"
+                    "              AND alert = alerts.id)"
+                    " AND (condition = %i OR condition = %i))",
+                    EVENT_NEW_SECINFO,
+                    EVENT_UPDATED_SECINFO,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
+}
+
+/**
+ * @brief Check whether a trashcan filter is in use.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_filter_in_use (filter_t filter)
+{
+  return !!sql_int ("SELECT count (*) FROM alerts_trash"
+                    " WHERE (filter = %llu"
+                    "        AND filter_location = "
+                                    G_STRINGIFY (LOCATION_TRASH) ")"
+                    "   OR (EXISTS (SELECT *"
+                    "               FROM alert_condition_data_trash"
+                    "               WHERE name = 'filter_id'"
+                    "                 AND data = (SELECT uuid"
+                    "                             FROM filters_trash"
+                    "                             WHERE id = %llu)"
+                    "                 AND alert = alerts_trash.id)"
+                    "       AND (condition = %i OR condition = %i))",
+                    filter,
+                    filter,
+                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
+}
+
+/**
+ * @brief Check whether a filter is writable.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+filter_writable (filter_t filter)
+{
+  return 1;
+}
+
+/**
+ * @brief Check whether a trashcan filter is writable.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_filter_writable (filter_t filter)
+{
+  return 1;
+}
+
+/**
+ * @brief Count number of filters.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of filters in filtered set.
+ */
+int
+filter_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = FILTER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = FILTER_ITERATOR_TRASH_COLUMNS;
+  return count ("filter", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Initialise a filter iterator, including observed filters.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find filter, 2 failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_filter_iterator (iterator_t* iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = FILTER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = FILTER_ITERATOR_TRASH_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "filter",
+                            get,
+                            columns,
+                            trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the type from a filter iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the filter, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.  "" for any type.
+ */
+const char*
+filter_iterator_type (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get the term from a filter iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The term of the filter, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Initialise a filter alert iterator.
+ *
+ * Iterates over all alerts that use the filter.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  filter     Filter.
+ */
+void
+init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
+{
+  gchar *available, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (filter);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_alerts"));
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions, 0,
+                               &with_clause);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT name, uuid, %s FROM alerts"
+                 " WHERE filter = %llu"
+                 " OR (EXISTS (SELECT * FROM alert_condition_data"
+                 "             WHERE name = 'filter_id'"
+                 "             AND data = (SELECT uuid FROM filters"
+                 "                         WHERE id = %llu)"
+                 "             AND alert = alerts.id)"
+                 "     AND (condition = %i OR condition = %i))"
+                 " ORDER BY name ASC;",
+                 with_clause ? with_clause : "",
+                 available,
+                 filter,
+                 filter,
+                 ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
+                 ALERT_CONDITION_FILTER_COUNT_CHANGED);
+
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the name from a filter_alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The name of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_alert_iterator_name, 0);
+
+/**
+ * @brief Get the UUID from a filter_alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the host, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (filter_alert_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+filter_alert_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
+
+/**
+ * @brief Modify a filter.
+ *
+ * @param[in]   filter_id       UUID of filter.
+ * @param[in]   name            Name of filter.
+ * @param[in]   comment         Comment on filter.
+ * @param[in]   term            Filter term.
+ * @param[in]   type            Type of filter.
+ *
+ * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
+ *         3 error in type name, 4 filter_id required, 5 filter is in use so
+ *         type must be "result", 6 filter is in use so type must be "info",
+ *         99 permission denied, -1 internal error.
+ */
+int
+modify_filter (const char *filter_id, const char *name, const char *comment,
+               const char *term, const char *type)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
+  char *t_name, *t_comment, *t_term, *t_type;
+  filter_t filter;
+  const char *db_type;
+
+  if (filter_id == NULL)
+    return 4;
+
+  sql_begin_immediate ();
+
+  filter = 0;
+  if (find_filter_with_permission (filter_id, &filter, "modify_filter"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (filter == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  db_type = type_db_name (type);
+  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type)))
+    {
+      if (!valid_subtype (type))
+        {
+          sql_rollback ();
+          return 3;
+        }
+    }
+
+  if (type)
+    {
+      type = valid_subtype (type) ? type : db_type;
+    }
+
+  assert (current_credentials.uuid);
+
+  if (acl_user_may ("modify_filter") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  /* If the filter is linked to an alert, check that the type is valid. */
+
+  if ((filter_in_use_for_output (filter)
+       || filter_in_use_for_result_event (filter))
+      && type
+      && strcasecmp (type, "result"))
+    {
+      sql_rollback ();
+      return 5;
+    }
+
+  if (filter_in_use_for_secinfo_event (filter)
+      && type
+      && strcasecmp (type, "info"))
+    {
+      sql_rollback ();
+      return 6;
+    }
+
+  /* Check whether a filter with the same name exists already. */
+  if (name)
+    {
+      if (resource_with_name_exists (name, "filter", filter))
+        {
+          sql_rollback ();
+          return 2;
+        }
+    }
+
+  quoted_name = sql_quote(name ?: "");
+  clean_term = manage_clean_filter (term ? term : "",
+                                    0 /* ignore_max_rows_per_page */);
+  quoted_term = sql_quote (clean_term);
+  g_free (clean_term);
+  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_type = sql_quote (type ? type : "");
+
+  t_name = name ? g_strdup_printf (", name = '%s'", quoted_name) :
+                  g_strdup ("");
+  t_comment = comment ? g_strdup_printf (", comment = '%s'", quoted_comment) :
+                        g_strdup ("");
+  t_term = term ? g_strdup_printf (", term = '%s'", quoted_term) :
+                  g_strdup ("");
+  t_type = type ? g_strdup_printf (", type = lower ('%s')", quoted_type) :
+                  g_strdup ("");
+
+  sql ("UPDATE filters SET"
+       " modification_time = m_now ()"
+       " %s%s%s%s"
+       " WHERE id = %llu;",
+       t_name,
+       t_comment,
+       t_term,
+       t_type,
+       filter);
+
+  g_free (t_name);
+  g_free (t_comment);
+  g_free (t_term);
+  g_free (t_type);
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_term);
+  g_free (quoted_type);
+
+  sql_commit ();
+
+  return 0;
 }
