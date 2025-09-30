@@ -282,27 +282,6 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 
 ## Program
 
-set(TEST_TARGET_EXTRA_SRC ${ALL_MISC_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC utils.c)
-add_executable(
-  utils-test
-  EXCLUDE_FROM_ALL
-  utils_tests.c
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-manage-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
-
-add_test(utils-test utils-test)
-
-set(
-  TEST_DEPENDENCIES
-  manage-utils-test
-  utils-test
-)
-
 if(ENABLE_COVERAGE)
   add_custom_target(
     coverage-html
@@ -337,32 +316,6 @@ add_executable(
 
 target_link_libraries(
   gvmd
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
-target_link_libraries(
-  utils-test
-  cgreen
   m
   ${GNUTLS_LDFLAGS}
   ${GPGME_LDFLAGS}
@@ -524,6 +477,15 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(utils "${ALL_OBJECTS}" "${ALL_MISC_SRC}")
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
