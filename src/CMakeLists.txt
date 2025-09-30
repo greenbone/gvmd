@@ -282,21 +282,6 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 
 ## Program
 
-set(TEST_TARGET_EXTRA_SRC ${ALL_GMP_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC gmp_tickets.c)
-add_executable(
-  gmp-tickets-test
-  EXCLUDE_FROM_ALL
-  gmp_tickets_tests.c
-  $<TARGET_OBJECTS:all-manage-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
-
-add_test(gmp-tickets-test gmp-tickets-test)
-
 set(TEST_TARGET_EXTRA_SRC ${ALL_MISC_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC utils.c)
 add_executable(
@@ -314,7 +299,6 @@ add_test(utils-test utils-test)
 
 set(
   TEST_DEPENDENCIES
-  gmp-tickets-test
   manage-utils-test
   utils-test
 )
@@ -353,32 +337,6 @@ add_executable(
 
 target_link_libraries(
   gvmd
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
-target_link_libraries(
-  gmp-tickets-test
-  cgreen
   m
   ${GNUTLS_LDFLAGS}
   ${GPGME_LDFLAGS}
@@ -498,6 +456,15 @@ endmacro()
 
 set(
   ALL_OBJECTS
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+
+set(
+  ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
   $<TARGET_OBJECTS:all-manage-sql-obj>
   $<TARGET_OBJECTS:all-misc-obj>
@@ -560,8 +527,6 @@ add_unit_test(manage-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
-set_target_properties(gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
-
 if(DEBUG_FUNCTION_NAMES)
   add_definitions(-DDEBUG_FUNCTION_NAMES)
 endif(DEBUG_FUNCTION_NAMES)
@@ -572,7 +537,6 @@ endif(GVMD_VERSION)
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options(gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
 
   # If we got GIT_REVISION at configure time,
   # assume we can get it at build time as well
