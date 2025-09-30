@@ -282,21 +282,6 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 
 ## Program
 
-set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SQL_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_sql.c)
-add_executable(
-  manage-sql-test
-  EXCLUDE_FROM_ALL
-  manage_sql_tests.c
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-manage-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
-
-add_test(manage-sql-test manage-sql-test)
-
 set(TEST_TARGET_EXTRA_SRC ${ALL_GMP_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC gmp_tickets.c)
 add_executable(
@@ -330,7 +315,6 @@ add_test(utils-test utils-test)
 set(
   TEST_DEPENDENCIES
   gmp-tickets-test
-  manage-sql-test
   manage-utils-test
   utils-test
 )
@@ -369,32 +353,6 @@ add_executable(
 
 target_link_libraries(
   gvmd
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
-target_link_libraries(
-  manage-sql-test
-  cgreen
   m
   ${GNUTLS_LDFLAGS}
   ${GPGME_LDFLAGS}
@@ -585,6 +543,15 @@ add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
   $<TARGET_OBJECTS:all-manage-sql-obj>
   $<TARGET_OBJECTS:all-misc-obj>
   $<TARGET_OBJECTS:all-sql-obj>
@@ -593,7 +560,6 @@ add_unit_test(manage-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
-set_target_properties(manage-sql-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
 
 if(DEBUG_FUNCTION_NAMES)
@@ -606,7 +572,6 @@ endif(GVMD_VERSION)
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options(manage-sql-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
 
   # If we got GIT_REVISION at configure time,
