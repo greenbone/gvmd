@@ -283,21 +283,6 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 ## Program
 
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_utils.c)
-add_executable(
-  manage-utils-test
-  EXCLUDE_FROM_ALL
-  manage_utils_tests.c
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
-
-add_test(manage-utils-test manage-utils-test)
-
-set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_oci_image_targets.c)
 add_executable(
   manage-oci-image-targets-test
@@ -476,32 +461,6 @@ target_link_libraries(
   ${OPT_THEIA_TGT}
 )
 target_link_libraries(
-  manage-utils-test
-  cgreen
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
-target_link_libraries(
   gmp-tickets-test
   cgreen
   m
@@ -632,6 +591,7 @@ if(ENABLE_AGENTS)
   add_unit_test(manage-agent-installers manage_sql_agent_installers.c)
 endif()
 add_unit_test(manage-filter-utils)
+add_unit_test(manage-utils)
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
@@ -640,7 +600,6 @@ set_target_properties(
   PROPERTIES LINKER_LANGUAGE C
 )
 set_target_properties(manage-sql-test PROPERTIES LINKER_LANGUAGE C)
-set_target_properties(manage-utils-test PROPERTIES LINKER_LANGUAGE C)
 set_target_properties(gmp-tickets-test PROPERTIES LINKER_LANGUAGE C)
 
 if(DEBUG_FUNCTION_NAMES)
@@ -658,7 +617,6 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
     PUBLIC ${C_FLAGS_DEBUG_GVMD}
   )
   target_compile_options(manage-sql-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options(manage-utils-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   target_compile_options(gmp-tickets-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
 
   # If we got GIT_REVISION at configure time,
