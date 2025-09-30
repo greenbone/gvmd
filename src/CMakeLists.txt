@@ -485,7 +485,7 @@ target_link_libraries(
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 
-macro(add_unit_test _baseName _objects)
+macro(add_unit_test _baseName _objects _extraSource)
   string(REPLACE "-" "_" _testSource "${_baseName}")
   # manage_filter_utils.c
   set(_source "${_testSource}.c")
@@ -495,11 +495,8 @@ macro(add_unit_test _baseName _objects)
   set(_testName "${_baseName}-test")
 
   list(APPEND TEST_DEPENDENCIES ${_testName})
-  set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+  set(TEST_TARGET_EXTRA_SRC ${_extraSource})
   list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC ${_source})
-  foreach(_extraArg ${ARGN})
-    list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC ${_extraArg})
-  endforeach(_extraArg ${ARGN})
 
   add_executable(
     ${_testName}
@@ -548,7 +545,7 @@ set(
   $<TARGET_OBJECTS:all-misc-obj>
   $<TARGET_OBJECTS:all-sql-obj>
 )
-add_unit_test(manage "${ALL_OBJECTS}")
+add_unit_test(manage "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
 if(ENABLE_AGENTS)
   set(
@@ -558,10 +555,12 @@ if(ENABLE_AGENTS)
     $<TARGET_OBJECTS:all-misc-obj>
     $<TARGET_OBJECTS:all-sql-obj>
   )
+  set(EXTRA_SRC ${ALL_MANAGE_SRC})
+  list(REMOVE_ITEM EXTRA_SRC manage_sql_agent_installers.c)
   add_unit_test(
     manage-agent-installers
     "${ALL_OBJECTS}"
-    manage_sql_agent_installers.c
+    "${EXTRA_SRC}"
   )
 endif()
 
@@ -572,7 +571,7 @@ set(
   $<TARGET_OBJECTS:all-misc-obj>
   $<TARGET_OBJECTS:all-sql-obj>
 )
-add_unit_test(manage-filter-utils "${ALL_OBJECTS}")
+add_unit_test(manage-filter-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
 set(
   ALL_OBJECTS
@@ -581,7 +580,7 @@ set(
   $<TARGET_OBJECTS:all-misc-obj>
   $<TARGET_OBJECTS:all-sql-obj>
 )
-add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}")
+add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
 set(
   ALL_OBJECTS
@@ -590,7 +589,7 @@ set(
   $<TARGET_OBJECTS:all-misc-obj>
   $<TARGET_OBJECTS:all-sql-obj>
 )
-add_unit_test(manage-utils "${ALL_OBJECTS}")
+add_unit_test(manage-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
