@@ -283,21 +283,6 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 ## Program
 
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_filter_utils.c)
-add_executable(
-  manage-filter-utils-test
-  EXCLUDE_FROM_ALL
-  manage_filter_utils_tests.c
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
-
-add_test(manage-filter-utils-test manage-filter-utils-test)
-
-set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_utils.c)
 add_executable(
   manage-utils-test
@@ -412,7 +397,6 @@ add_test(utils-test utils-test)
 set(
   TEST_DEPENDENCIES
   gmp-tickets-test
-  manage-filter-utils-test
   manage-test
   manage-oci-image-targets-test
   manage-sql-test
@@ -423,8 +407,6 @@ set(
 if(ENABLE_AGENTS)
   list(APPEND TEST_DEPENDENCIES manage-agent-installers-test)
 endif()
-
-add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(ENABLE_COVERAGE)
   add_custom_target(
@@ -537,32 +519,6 @@ if(ENABLE_AGENTS)
     ${OPT_THEIA_TGT}
   )
 endif()
-target_link_libraries(
-  manage-filter-utils-test
-  cgreen
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
 target_link_libraries(
   manage-oci-image-targets-test
   cgreen
@@ -714,7 +670,68 @@ if(ENABLE_AGENTS)
     PROPERTIES LINKER_LANGUAGE C
   )
 endif()
-set_target_properties(manage-filter-utils-test PROPERTIES LINKER_LANGUAGE C)
+
+macro(add_unit_test _baseName)
+  string(REPLACE "-" "_" _testSource "${_baseName}")
+  # manage_filter_utils.c
+  set(_source "${_testSource}.c")
+  # manage_filter_utils_tests.c
+  set(_testSource "${_testSource}_tests.c")
+  # manage-filter-utils-test
+  set(_testName "${_baseName}-test")
+
+  list(APPEND TEST_DEPENDENCIES ${_testName})
+  set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
+  list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC ${_source})
+  add_executable(
+    ${_testName}
+    EXCLUDE_FROM_ALL
+    ${_testSource}
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+    ${TEST_TARGET_EXTRA_SRC}
+  )
+  add_test(${_testName} ${_testName})
+  target_link_libraries(
+    ${_testName}
+    cgreen
+    m
+    ${GNUTLS_LDFLAGS}
+    ${GPGME_LDFLAGS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${LINKER_HARDENING_FLAGS}
+    ${LINKER_DEBUG_FLAGS}
+    ${PostgreSQL_LIBRARIES}
+    ${LIBBSD_LDFLAGS}
+    ${CJSON_LDFLAGS}
+    ${GLIB_LDFLAGS}
+    ${GTHREAD_LDFLAGS}
+    ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
+    ${LIBGVM_BASE_LDFLAGS}
+    ${LIBGVM_UTIL_LDFLAGS}
+    ${LIBGVM_OSP_LDFLAGS}
+    ${LIBGVM_OPENVASD_LDFLAGS}
+    ${LIBGVM_GMP_LDFLAGS}
+    ${LIBGVM_HTTP_LDFLAGS}
+    ${LIBGVM_HTTP_SCANNER_LDFLAGS}
+    ${LIBICAL_LDFLAGS}
+    ${LINKER_HARDENING_FLAGS}
+    ${OPT_THEIA_TGT}
+  )
+  set_target_properties(${_testName} PROPERTIES LINKER_LANGUAGE C)
+  if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+    target_compile_options(${_testName} PUBLIC ${C_FLAGS_DEBUG_GVMD})
+  endif(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+endmacro()
+
+add_unit_test(
+  manage-filter-utils
+)
+
+add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
+
 set_target_properties(
   manage-oci-image-targets-test
   PROPERTIES LINKER_LANGUAGE C
