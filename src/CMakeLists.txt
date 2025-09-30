@@ -297,28 +297,6 @@ add_executable(
 
 add_test(manage-utils-test manage-utils-test)
 
-if(ENABLE_AGENTS)
-  set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
-  list(
-    REMOVE_ITEM
-    TEST_TARGET_EXTRA_SRC
-    manage_agent_installers.c
-    manage_sql_agent_installers.c
-  )
-  add_executable(
-    manage-agent-installers-test
-    EXCLUDE_FROM_ALL
-    manage_agent_installers_tests.c
-    $<TARGET_OBJECTS:all-gmp-obj>
-    $<TARGET_OBJECTS:all-manage-sql-obj>
-    $<TARGET_OBJECTS:all-misc-obj>
-    $<TARGET_OBJECTS:all-sql-obj>
-    ${TEST_TARGET_EXTRA_SRC}
-  )
-
-  add_test(manage-agent-installers-test manage-agent-installers-test)
-endif()
-
 set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
 list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage_oci_image_targets.c)
 add_executable(
@@ -388,10 +366,6 @@ set(
   utils-test
 )
 
-if(ENABLE_AGENTS)
-  list(APPEND TEST_DEPENDENCIES manage-agent-installers-test)
-endif()
-
 if(ENABLE_COVERAGE)
   add_custom_target(
     coverage-html
@@ -449,34 +423,6 @@ target_link_libraries(
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
 )
-if(ENABLE_AGENTS)
-  target_link_libraries(
-    manage-agent-installers-test
-    cgreen
-    m
-    ${GNUTLS_LDFLAGS}
-    ${GPGME_LDFLAGS}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${LINKER_HARDENING_FLAGS}
-    ${LINKER_DEBUG_FLAGS}
-    ${PostgreSQL_LIBRARIES}
-    ${LIBBSD_LDFLAGS}
-    ${CJSON_LDFLAGS}
-    ${GLIB_LDFLAGS}
-    ${GTHREAD_LDFLAGS}
-    ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-    ${LIBGVM_BASE_LDFLAGS}
-    ${LIBGVM_OPENVASD_LDFLAGS}
-    ${LIBGVM_UTIL_LDFLAGS}
-    ${LIBGVM_OSP_LDFLAGS}
-    ${LIBGVM_GMP_LDFLAGS}
-    ${LIBGVM_HTTP_LDFLAGS}
-    ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-    ${LIBICAL_LDFLAGS}
-    ${LINKER_HARDENING_FLAGS}
-    ${OPT_THEIA_TGT}
-  )
-endif()
 target_link_libraries(
   manage-oci-image-targets-test
   cgreen
@@ -621,12 +567,6 @@ target_link_libraries(
 )
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
-if(ENABLE_AGENTS)
-  set_target_properties(
-    manage-agent-installers-test
-    PROPERTIES LINKER_LANGUAGE C
-  )
-endif()
 
 macro(add_unit_test _baseName)
   string(REPLACE "-" "_" _testSource "${_baseName}")
@@ -640,6 +580,10 @@ macro(add_unit_test _baseName)
   list(APPEND TEST_DEPENDENCIES ${_testName})
   set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
   list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC ${_source})
+  foreach(_extraArg ${ARGN})
+    list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC ${_extraArg})
+  endforeach(_extraArg ${ARGN})
+
   add_executable(
     ${_testName}
     EXCLUDE_FROM_ALL
@@ -684,6 +628,9 @@ macro(add_unit_test _baseName)
 endmacro()
 
 add_unit_test(manage)
+if(ENABLE_AGENTS)
+  add_unit_test(manage-agent-installers manage_sql_agent_installers.c)
+endif()
 add_unit_test(manage-filter-utils)
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
@@ -706,12 +653,6 @@ endif(GVMD_VERSION)
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  if(ENABLE_AGENTS)
-    target_compile_options(
-      manage-agent-installers-test
-      PUBLIC ${C_FLAGS_DEBUG_GVMD}
-    )
-  endif()
   target_compile_options(
     manage-oci-image-targets-test
     PUBLIC ${C_FLAGS_DEBUG_GVMD}
