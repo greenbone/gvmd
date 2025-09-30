@@ -9804,13 +9804,13 @@ insert_report_host_detail (report_t report, const char *host,
   char *quoted_source_desc, *quoted_name, *quoted_value;
   char *quoted_hash_value;
 
-  quoted_host = sql_quote (host);
-  quoted_source_type = sql_quote (s_type);
-  quoted_source_name = sql_quote (s_name);
-  quoted_source_desc = sql_quote (s_desc);
-  quoted_name = sql_quote (name);
-  quoted_value = sql_quote (value);
-  quoted_hash_value = sql_quote(hash_value ?: "");
+  quoted_host = sql_quote (host ? host : "");
+  quoted_source_type = sql_quote (s_type ? s_type : "");
+  quoted_source_name = sql_quote (s_name ? s_name : "");
+  quoted_source_desc = sql_quote (s_desc ? s_desc : "");
+  quoted_name = sql_quote (name ? name : "");
+  quoted_value = sql_quote (value ? value : "");
+  quoted_hash_value = sql_quote (hash_value ? hash_value : "");
   sql ("INSERT INTO report_host_details"
        " (report_host, source_type, source_name, source_description,"
        "  name, value, hash_value)"
