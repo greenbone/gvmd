@@ -485,7 +485,7 @@ target_link_libraries(
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 
-macro(add_unit_test _baseName)
+macro(add_unit_test _baseName _objects)
   string(REPLACE "-" "_" _testSource "${_baseName}")
   # manage_filter_utils.c
   set(_source "${_testSource}.c")
@@ -505,10 +505,7 @@ macro(add_unit_test _baseName)
     ${_testName}
     EXCLUDE_FROM_ALL
     ${_testSource}
-    $<TARGET_OBJECTS:all-gmp-obj>
-    $<TARGET_OBJECTS:all-manage-sql-obj>
-    $<TARGET_OBJECTS:all-misc-obj>
-    $<TARGET_OBJECTS:all-sql-obj>
+    ${_objects}
     ${TEST_TARGET_EXTRA_SRC}
   )
   add_test(${_testName} ${_testName})
@@ -544,13 +541,56 @@ macro(add_unit_test _baseName)
   endif(NOT CMAKE_BUILD_TYPE MATCHES "Release")
 endmacro()
 
-add_unit_test(manage)
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage "${ALL_OBJECTS}")
+
 if(ENABLE_AGENTS)
-  add_unit_test(manage-agent-installers manage_sql_agent_installers.c)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(
+    manage-agent-installers
+    "${ALL_OBJECTS}"
+    manage_sql_agent_installers.c
+  )
 endif()
-add_unit_test(manage-filter-utils)
-add_unit_test(manage-oci-image-targets)
-add_unit_test(manage-utils)
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage-filter-utils "${ALL_OBJECTS}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage-utils "${ALL_OBJECTS}")
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
