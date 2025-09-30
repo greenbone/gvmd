@@ -297,21 +297,6 @@ add_executable(
 
 add_test(manage-utils-test manage-utils-test)
 
-set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
-list(REMOVE_ITEM TEST_TARGET_EXTRA_SRC manage.c)
-add_executable(
-  manage-test
-  EXCLUDE_FROM_ALL
-  manage_tests.c
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-  ${TEST_TARGET_EXTRA_SRC}
-)
-
-add_test(manage-test manage-test)
-
 if(ENABLE_AGENTS)
   set(TEST_TARGET_EXTRA_SRC ${ALL_MANAGE_SRC})
   list(
@@ -397,7 +382,6 @@ add_test(utils-test utils-test)
 set(
   TEST_DEPENDENCIES
   gmp-tickets-test
-  manage-test
   manage-oci-image-targets-test
   manage-sql-test
   manage-utils-test
@@ -458,32 +442,6 @@ target_link_libraries(
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}
   ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_GMP_LDFLAGS}
-  ${LIBGVM_HTTP_LDFLAGS}
-  ${LIBGVM_HTTP_SCANNER_LDFLAGS}
-  ${LIBICAL_LDFLAGS}
-  ${LINKER_HARDENING_FLAGS}
-  ${OPT_THEIA_TGT}
-)
-target_link_libraries(
-  manage-test
-  cgreen
-  m
-  ${GNUTLS_LDFLAGS}
-  ${GPGME_LDFLAGS}
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${LINKER_HARDENING_FLAGS}
-  ${LINKER_DEBUG_FLAGS}
-  ${PostgreSQL_LIBRARIES}
-  ${LIBBSD_LDFLAGS}
-  ${CJSON_LDFLAGS}
-  ${GLIB_LDFLAGS}
-  ${GTHREAD_LDFLAGS}
-  ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
-  ${LIBGVM_BASE_LDFLAGS}
-  ${LIBGVM_OPENVASD_LDFLAGS}
-  ${LIBGVM_UTIL_LDFLAGS}
-  ${LIBGVM_OSP_LDFLAGS}
   ${LIBGVM_GMP_LDFLAGS}
   ${LIBGVM_HTTP_LDFLAGS}
   ${LIBGVM_HTTP_SCANNER_LDFLAGS}
@@ -663,7 +621,6 @@ target_link_libraries(
 )
 
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
-set_target_properties(manage-test PROPERTIES LINKER_LANGUAGE C)
 if(ENABLE_AGENTS)
   set_target_properties(
     manage-agent-installers-test
@@ -726,9 +683,8 @@ macro(add_unit_test _baseName)
   endif(NOT CMAKE_BUILD_TYPE MATCHES "Release")
 endmacro()
 
-add_unit_test(
-  manage-filter-utils
-)
+add_unit_test(manage)
+add_unit_test(manage-filter-utils)
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
@@ -750,7 +706,6 @@ endif(GVMD_VERSION)
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   target_compile_options(gvmd PUBLIC ${C_FLAGS_DEBUG_GVMD})
-  target_compile_options(manage-test PUBLIC ${C_FLAGS_DEBUG_GVMD})
   if(ENABLE_AGENTS)
     target_compile_options(
       manage-agent-installers-test
