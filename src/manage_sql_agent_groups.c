@@ -124,8 +124,8 @@ agent_group_count (const get_data_t *get)
   static column_t columns[] = AGENT_GROUP_ITERATOR_COLUMNS;
   static column_t trash_columns[] = AGENT_GROUP_ITERATOR_TRASH_COLUMNS;
   const char *join_clause = " LEFT JOIN"
-                            " (SELECT id as scanner_id, name AS scanner_name, uuid AS scanner_uuid FROM scanners )"
-                            " ON scanner_id = scanner";
+                            " (SELECT id as scanner_id, name AS scanner_name, uuid AS scanner_uuid FROM scanners) AS scanner_data"
+                            " ON scanner_data.scanner_id = scanner";
 
   return count ("agent_group", get, columns, trash_columns, extra_columns, 0, join_clause, 0, TRUE);
 }
@@ -145,8 +145,8 @@ init_agent_group_iterator (iterator_t *iterator, get_data_t *get)
   static column_t columns[] = AGENT_GROUP_ITERATOR_COLUMNS;
   static column_t trash_columns[] = AGENT_GROUP_ITERATOR_TRASH_COLUMNS;
   const char *join_clause = " LEFT JOIN"
-                            " (SELECT id as scanner_id, name AS scanner_name, uuid AS scanner_uuid FROM scanners )"
-                            " ON scanner_id = scanner";
+                            " (SELECT id as scanner_id, name AS scanner_name, uuid AS scanner_uuid FROM scanners) AS scanner_data"
+                            " ON scanner_data.scanner_id = scanner";
 
   return init_get_iterator (iterator, "agent_group", get, columns, trash_columns, filter_columns, 0,
                             join_clause, NULL, TRUE);
