@@ -10,6 +10,8 @@
  * General management of OCI Image Targets.
  */
 
+#if ENABLE_CONTAINER_SCANNING
+
 #include "manage_oci_image_targets.h"
 #include "manage_sql.h"
 
@@ -261,3 +263,5 @@ validate_oci_image_references (const char *image_refs_input,
   g_strfreev (parts);
   return TRUE;
 }
+
+#endif //ENABLE_CONTAINER_SCANNING

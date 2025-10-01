@@ -4382,8 +4382,8 @@ check_db_scanners ()
         " (uuid, owner, name, host, port, type, ca_pub, credential,"
         "  creation_time, modification_time)"
         " VALUES ('" SCANNER_UUID_CONTAINER_IMAGE_DEFAULT "', NULL, "
-        " 'Container Image', '', 0, %d, NULL, NULL, m_now (),"
-        " m_now ());",
+        " 'Container Image Default', 'localhost', 3000, %d, NULL, NULL,"
+        " m_now (), m_now ());",
         SCANNER_TYPE_CONTAINER_IMAGE);
     }
 #endif
@@ -8508,7 +8508,7 @@ qod_from_type (const char *qod_type)
  *
  * @return A severity string, NULL if unknown type or no nvt id for Alarm type.
  */
-static char *
+char *
 nvt_severity (const char *nvt_id, const char *type)
 {
   char *severity = NULL;
@@ -44943,8 +44943,8 @@ cleanup_ids_for_table (const char *table)
  * @return The QoD value as an integer (1–100), or
  *         QOD_DEFAULT if unavailable or invalid.
  */
-static int
-get_openvasd_nvti_qod (const char *nvti_oid)
+int
+get_http_scanner_nvti_qod (const char *nvti_oid)
 {
   int qod = QOD_DEFAULT;
 
@@ -44967,7 +44967,7 @@ get_openvasd_nvti_qod (const char *nvti_oid)
 
 /**
  * @brief Generate the hash value for the fields of the result and
- * check if openvasd result for report already exists
+ * check if HTTP scanner result for report already exists
  *
  * @param[in]  report      Report.
  * @param[in]  task        Task.
@@ -44976,10 +44976,12 @@ get_openvasd_nvti_qod (const char *nvti_oid)
  *
  * @return     "1" if openvasd result already exists, else "0"
  */
-static int
-check_openvasd_result_exists (report_t report, task_t task,
-                              http_scanner_result_t res, char **entity_hash_value,
-                              GHashTable *hashed_openvasd_results)
+int
+check_http_scanner_result_exists (report_t report,
+                                  task_t task,
+                                  http_scanner_result_t res,
+                                  char **entity_hash_value,
+                                  GHashTable *hashed_results)
 {
   GString *result_string;
   int return_value = 0;
@@ -44992,13 +44994,13 @@ check_openvasd_result_exists (report_t report, task_t task,
                           res->type, res->message, res->port);
 
  *entity_hash_value = get_md5_hash_from_string (result_string->str);
-  if (g_hash_table_contains (hashed_openvasd_results, *entity_hash_value))
+  if (g_hash_table_contains (hashed_results, *entity_hash_value))
     {
       return_value = 1;
     }
   else
     {
-      g_hash_table_insert (hashed_openvasd_results,
+      g_hash_table_insert (hashed_results,
                            g_strdup(*entity_hash_value),
                            GINT_TO_POINTER(1));
       if (sql_int ("SELECT EXISTS"
@@ -45011,7 +45013,7 @@ check_openvasd_result_exists (report_t report, task_t task,
           gchar *quoted_desc, *quoted_type, *quoted_host;
           gchar *quoted_hostname, *quoted_port, *quoted_path;
           double severity_double = 0.0;
-          int qod_int = get_openvasd_nvti_qod (res->oid);
+          int qod_int = get_http_scanner_nvti_qod (res->oid);
 
           host = res->ip_address;
           hostname = res->hostname;
@@ -45080,34 +45082,25 @@ check_openvasd_result_exists (report_t report, task_t task,
 }
 
 /**
- * @brief Convert openvasd result types to OSP result types.
+ * @brief Convert HTTP scanner result types to OSP result types.
  *
- * @param openvasd_type The openvasd type as a string.
+ * @param http_scanner_type The HTTP scanner type as a string.
  *
  * @return A new string with the corresponding OSP type.
  */
-static char *
-convert_openvasd_type_to_osp_type (const char *openvasd_type)
+char *
+convert_http_scanner_type_to_osp_type (const char *http_scanner_type)
 {
-  if (g_strcmp0 (openvasd_type, "alarm") == 0)
+  if (g_strcmp0 (http_scanner_type, "alarm") == 0)
     return g_strdup ("Alarm");
-  else if (g_strcmp0 (openvasd_type, "error") == 0)
+  else if (g_strcmp0 (http_scanner_type, "error") == 0)
     return g_strdup ("Error Message");
-  else if (g_strcmp0 (openvasd_type, "log") == 0
-           || g_strcmp0 (openvasd_type, "host_detail") == 0)
+  else if (g_strcmp0 (http_scanner_type, "log") == 0
+           || g_strcmp0 (http_scanner_type, "host_detail") == 0)
     return g_strdup ("Log Message");
 
-  return g_strdup (openvasd_type);
+  return g_strdup (http_scanner_type);
 }
-
-/* Struct to be sent as user data to the GFunc for adding results */
-struct report_aux {
-  GArray *results_array;
-  report_t report;
-  task_t task;
-  GHashTable *hash_results;
-  GHashTable *hash_hostdetails;
-};
 
 /**
  * @brief Convert and add a single http scanner result to the report structure.
@@ -45128,7 +45121,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
   int qod_int;
 
-  type = convert_openvasd_type_to_osp_type (res->type);
+  type = convert_http_scanner_type_to_osp_type (res->type);
   name = NULL;
   severity = NULL;
   test_id = res->oid;
@@ -45174,7 +45167,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
       nvt_id = g_strdup (name);
       desc = res->message;
     }
-  qod_int = get_openvasd_nvti_qod (test_id);
+  qod_int = get_http_scanner_nvti_qod (test_id);
   if (port && strcmp (port, "general/Host_Details") == 0)
     {
       /* TODO: This should probably be handled by the "Host Detail"
@@ -45197,8 +45190,8 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   else
     {
       char *hash_value;
-      if (!check_openvasd_result_exists (rep_aux->report, rep_aux->task, res,
-                                        &hash_value, rep_aux->hash_results))
+      if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task, res,
+                                             &hash_value, rep_aux->hash_results))
         {
           result = make_osp_result (rep_aux->task,
                                     host ?: "",
