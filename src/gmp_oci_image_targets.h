@@ -9,6 +9,9 @@
  *
  * Headers for GMP handlers for OCI image target commands.
  */
+
+#if ENABLE_CONTAINER_SCANNING
+
 #ifndef _GVMD_GMP_OCI_IMAGE_TARGETS_H
 #define _GVMD_GMP_OCI_IMAGE_TARGETS_H
 
@@ -72,3 +75,5 @@ void
 modify_oci_image_target_run (gmp_parser_t *, GError **);
 
 #endif //_GVMD_GMP_OCI_IMAGE_TARGETS_H
+
+#endif //ENABLE_CONTAINER_SCANNING

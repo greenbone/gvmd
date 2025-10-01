@@ -50,6 +50,15 @@ if(ENABLE_AGENTS)
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
 endif(ENABLE_AGENTS)
+if(ENABLE_CONTAINER_SCANNING)
+  pkg_check_modules(
+    LIBGVM_CONTAINER_IMAGE_SCANNER
+    REQUIRED
+    libgvm_container_image_scanner>=22.28
+  )
+else(ENABLE_CONTAINER_SCANNING)
+  message(STATUS "ENABLE_CONTAINER_SCANNING flag is not enabled")
+endif(ENABLE_CONTAINER_SCANNING)
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
@@ -180,6 +189,7 @@ set(
   manage_scan_handler.c
   manage_scan_queue.c
   manage_oci_image_targets.c
+  manage_container_image_scanner.c
 )
 
 if(ENABLE_AGENTS)
@@ -335,6 +345,7 @@ target_link_libraries(
   ${LIBGVM_GMP_LDFLAGS}
   ${LIBGVM_HTTP_LDFLAGS}
   ${LIBGVM_HTTP_SCANNER_LDFLAGS}
+  ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
@@ -397,6 +408,7 @@ macro(add_unit_test _baseName _objects _extraSource)
     ${LIBGVM_GMP_LDFLAGS}
     ${LIBGVM_HTTP_LDFLAGS}
     ${LIBGVM_HTTP_SCANNER_LDFLAGS}
+    ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
     ${LIBICAL_LDFLAGS}
     ${LINKER_HARDENING_FLAGS}
     ${OPT_THEIA_TGT}

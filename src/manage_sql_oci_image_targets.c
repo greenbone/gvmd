@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#if ENABLE_CONTAINER_SCANNING
+
 #include "debug_utils.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage_oci_image_targets.h"
@@ -803,6 +805,21 @@ trash_oci_image_target_comment (oci_image_target_t oci_image_target)
 }
 
 /**
+ * @brief Return the image references of an OCI image target.
+ *
+ * @param[in]  oci_image_target  OCI Image Target.
+ *
+ * @return Newly allocated comma separated list of image references
+ *         if available, else NULL.
+ */
+char*
+oci_image_target_image_referenes (oci_image_target_t oci_image_target)
+{
+  return sql_string ("SELECT image_references FROM oci_image_targets"
+                     " WHERE id = %llu;", oci_image_target);
+}
+
+/**
  * @brief Return whether a trashcan oci_image_target is readable.
  *
  * @param[in]  oci_image_target  OCI image target.
@@ -860,6 +877,26 @@ trash_oci_image_target_in_use (oci_image_target_t oci_image_target)
                     " AND oci_image_target_location = " 
                     G_STRINGIFY (LOCATION_TRASH),
                     oci_image_target);
+}
+
+/**
+ * @brief Get a credential from an OCI target.
+ *
+ * @param[in]  oci_image_target  The OCI image target.
+ *
+ * @return  The credential, or 0 if none or error.
+ */
+credential_t
+oci_image_target_credential (oci_image_target_t oci_image_target)
+{
+  credential_t credential;
+
+  if (oci_image_target == 0)
+    return 0;
+
+  credential = sql_int64_0 ("SELECT credential FROM oci_image_targets"
+                            " WHERE id = %llu;", oci_image_target);
+  return credential;
 }
 
 /**
@@ -934,3 +971,5 @@ oci_image_target_task_iterator_readable (iterator_t* iterator)
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
 }
+
+#endif //ENABLE_CONTAINER_SCANNING
