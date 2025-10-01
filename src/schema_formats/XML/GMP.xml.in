@@ -9695,9 +9695,9 @@ END:VCALENDAR
             </ele>
             <ele>
               <name>scheduler_cron_time</name>
-              <pattern><any><e>cron</e></any></pattern>
+              <pattern><any><e>item</e></any></pattern>
               <ele>
-                <name>cron</name>
+                <name>item</name>
                 <summary>A cron expression defining execution schedule</summary>
                 <pattern><type>text</type></pattern>
               </ele>
@@ -9867,8 +9867,7 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>3</indexer_dir_depth>
                 <scheduler_cron_time>
-                  <cron>@every 8h</cron>
-                  <cron>0 0 * * *</cron>
+                  <item>0 0 * * *</item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -23190,9 +23189,9 @@ END:VCALENDAR
             </ele>
             <ele>
               <name>scheduler_cron_time</name>
-              <pattern><any><e>cron</e></any></pattern>
+              <pattern><any><e>item</e></any></pattern>
               <ele>
-                <name>cron</name>
+                <name>item</name>
                 <summary>A cron expression defining execution schedule</summary>
                 <pattern><type>text</type></pattern>
               </ele>
