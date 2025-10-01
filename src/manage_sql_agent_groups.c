@@ -947,7 +947,7 @@ trash_agent_group_readable (agent_group_t agent_group)
 
   if (agent_group == 0)
     return 0;
-  uuid = agent_group_uuid (agent_group);
+  uuid = trash_agent_group_uuid (agent_group);
   if (find_trash ("agent_group", uuid, &found))
     {
       g_free (uuid);
