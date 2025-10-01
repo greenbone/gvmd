@@ -7602,7 +7602,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   scan_config =
     openvasd_build_scan_config_json(openvasd_target, scanner_options, vts);
 
-  response = http_scanner_create_scan (connection, scan_config, NULL);
+  response = http_scanner_create_scan (connection, scan_config);
   if (response->code == 201)
     {
       http_scanner_response_cleanup (response);
@@ -8138,7 +8138,7 @@ launch_agent_control_task (task_t task,
     }
 
   // Create scan
-  http_scanner_resp = http_scanner_create_scan (connection, payload, NULL);
+  http_scanner_resp = http_scanner_create_scan (connection, payload);
   if (!http_scanner_resp || http_scanner_resp->code != 201)
     {
       if (error) *error = g_strdup ("Scanner failed to create the scan");
