@@ -8138,7 +8138,7 @@ launch_agent_control_task (task_t task,
     }
 
   // Create scan
-  http_scanner_resp = http_scanner_create_scan (connection, payload);
+  http_scanner_resp = http_scanner_create_scan (connection, payload, NULL);
   if (!http_scanner_resp || http_scanner_resp->code != 201)
     {
       if (error) *error = g_strdup ("Scanner failed to create the scan");
