@@ -19502,65 +19502,43 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 #endif
 #if ENABLE_AGENTS
-          agent_group_t agent_group;
-          int agent_group_in_trash, agent_group_available;
-          char *task_agent_group_uuid = NULL, *task_agent_group_name = NULL;
-          gchar *task_agent_group_name_escaped = NULL;
+          agent_group_t agent_group = 0;
+          int agent_group_readable = 0;
+          char *task_agent_group_uuid = NULL;
+          char *task_agent_group_name = NULL;
+          agent_group =task_agent_group (index); /* row id or 0 */
+          int agent_group_in_trash = task_agent_group_in_trash (index);
 
-          agent_group = task_agent_group (index); /* 0 if none */
-          agent_group_in_trash = task_agent_group_in_trash (index);
-
-          if (agent_group || agent_group_in_trash)
+          if (agent_group)
             {
-              agent_group_available = 1;
-
               if (agent_group_in_trash)
                 {
                   task_agent_group_uuid = trash_agent_group_uuid (agent_group);
                   task_agent_group_name = trash_agent_group_name (agent_group);
-                  agent_group_available = trash_agent_group_readable (
+                  agent_group_readable = trash_agent_group_readable (
                     agent_group);
-                }
-              else if (agent_group)
-                {
-                  agent_group_t found;
-                  task_agent_group_uuid = agent_group_uuid (agent_group);
-                  task_agent_group_name = agent_group_name (agent_group);
-
-                  if (find_agent_group_with_permission (task_agent_group_uuid,
-                    &found,
-                    "get_agent_groups"))
-                    g_error (
-                    "%s: GET_TASKS: error finding task agent group, aborting",
-                    __func__);
-
-                  agent_group_available = (found > 0);
                 }
               else
                 {
-                  task_agent_group_uuid = NULL;
-                  task_agent_group_name = NULL;
+                  task_agent_group_uuid = agent_group_uuid (agent_group);
+                  task_agent_group_name = agent_group_name (agent_group);
+                  agent_group_readable = trash_agent_group_readable (
+                    agent_group);
                 }
 
-              task_agent_group_name_escaped =
-                task_agent_group_name
-                  ? g_markup_escape_text (task_agent_group_name, -1)
-                  : NULL;
-
-              agent_group_xml = g_strdup_printf (
+              agent_group_xml = g_markup_printf_escaped (
                 "<agent_group id=\"%s\">"
                 "<name>%s</name>"
                 "<trash>%i</trash>"
                 "%s"
                 "</agent_group>",
                 task_agent_group_uuid ? : "",
-                task_agent_group_name_escaped ? : "",
+                task_agent_group_name ? : "",
                 agent_group_in_trash,
-                agent_group_available ? "" : "<permissions/>");
+                agent_group_readable ? "" : "<permissions/>");
 
-              free (task_agent_group_name);
               free (task_agent_group_uuid);
-              g_free (task_agent_group_name_escaped);
+              free (task_agent_group_name);
             }
 #endif /* ENABLE_AGENT_GROUPS */
 
