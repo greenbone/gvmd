@@ -6730,6 +6730,22 @@ task_agent_group (task_t task)
       break;
     }
 }
+
+/**
+ * @brief Return whether the agent group target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_agent_group_in_trash (task_t task)
+{
+  return sql_int ("SELECT agent_group_location = "
+                  G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE id = %llu;",
+                  task);
+}
 #endif /*ENABLE_AGENTS*/
 
 #if ENABLE_CONTAINER_SCANNING

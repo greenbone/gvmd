@@ -25806,6 +25806,9 @@ END:VCALENDAR
               @IF_ENABLE_CONTAINER_SCANNNING@
               <o><e>oci_image_target</e></o>
               @ENDIF_ENABLE_CONTAINER_SCANNNING@
+              @IF_ENABLE_AGENTS@
+              <o><e>agent_group</e></o>
+              @ENDIF_ENABLE_AGENTS@
               <e>hosts_ordering</e>
               <e>scanner</e>
               <e>alert</e>
@@ -26053,6 +26056,38 @@ END:VCALENDAR
           </ele>
         </ele>
         @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_AGENTS@
+        <ele>
+          <name>agent_group</name>
+          <summary>The Agent Group used by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+              <summary>ID of Agent Group</summary>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the Agent Group target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the target</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        @ENDIF_ENABLE_AGENTS@
         <ele>
           <name>hosts_ordering</name>
           <summary>The order hosts are scanned in</summary>

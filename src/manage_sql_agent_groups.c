@@ -702,6 +702,21 @@ agent_group_uuid (agent_group_t group_id)
   return sql_string ("SELECT uuid FROM agent_groups WHERE id = %llu;", group_id);
 }
 
+
+/**
+ * @brief Return the name of an agent group.
+ *
+ * @param[in]  group_id  Agent group ID.
+ *
+ * @return Newly allocated name  if found, else NULL.
+ */
+char *
+agent_group_name (agent_group_t group_id)
+{
+  g_return_val_if_fail (group_id, NULL);
+  return sql_string ("SELECT name FROM agent_groups WHERE id = %llu;", group_id);
+}
+
 /**
  * @brief Return the row_id of an agent group.
  *
@@ -881,6 +896,65 @@ agent_group_scanner (agent_group_t agent_group)
 {
   return sql_int64_0 ("SELECT scanner FROM agent_groups WHERE id = %llu;",
                       agent_group);
+}
+
+/**
+ * @brief Return the UUID of a trashed agent group.
+ *
+ * @param[in]  agent_group  Row id in agent_groups_trash.
+ *
+ * @return Newly allocated string (caller must g_free) or NULL if not found.
+ */
+char *
+trash_agent_group_uuid (agent_group_t agent_group)
+{
+  if (!agent_group)
+    return NULL;
+
+  return sql_string ("SELECT uuid FROM agent_groups_trash WHERE id = %llu;",
+                     agent_group);
+}
+
+/**
+ * @brief Return the name of a trashed agent group.
+ *
+ * @param[in]  agent_group  Row id in agent_groups_trash.
+ *
+ * @return Newly allocated string (caller must g_free) or NULL if not found.
+ */
+char *
+trash_agent_group_name (agent_group_t agent_group)
+{
+  if (!agent_group)
+    return NULL;
+
+  return sql_string ("SELECT name FROM agent_groups_trash WHERE id = %llu;",
+                     agent_group);
+}
+
+/**
+ * @brief Return whether a trashcan agent_group is readable.
+ *
+ * @param[in]  agent_group  Row id in agent_groups_trash.
+ *
+ * @return 1 if readable, 0 otherwise.
+ */
+int
+trash_agent_group_readable (agent_group_t agent_group)
+{
+  char *uuid;
+  agent_group_t found = 0;
+
+  if (agent_group == 0)
+    return 0;
+  uuid = agent_group_uuid (agent_group);
+  if (find_trash ("agent_group", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
 }
 
 #endif // ENABLE_AGENTS

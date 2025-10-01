@@ -19104,6 +19104,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
       gchar *assets_min_qod;
       gchar *oci_image_target_xml = NULL;
+      gchar *agent_group_xml = NULL;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -19500,6 +19501,69 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               g_free (task_oci_image_target_name_escaped);
             }
 #endif
+#if ENABLE_AGENTS
+          agent_group_t agent_group;
+          int agent_group_in_trash, agent_group_available;
+          char *task_agent_group_uuid = NULL, *task_agent_group_name = NULL;
+          gchar *task_agent_group_name_escaped = NULL;
+
+          agent_group = task_agent_group (index); /* 0 if none */
+          agent_group_in_trash = task_agent_group_in_trash (index);
+
+          if (agent_group || agent_group_in_trash)
+            {
+              agent_group_available = 1;
+
+              if (agent_group_in_trash)
+                {
+                  task_agent_group_uuid = trash_agent_group_uuid (agent_group);
+                  task_agent_group_name = trash_agent_group_name (agent_group);
+                  agent_group_available = trash_agent_group_readable (
+                    agent_group);
+                }
+              else if (agent_group)
+                {
+                  agent_group_t found;
+                  task_agent_group_uuid = agent_group_uuid (agent_group);
+                  task_agent_group_name = agent_group_name (agent_group);
+
+                  if (find_agent_group_with_permission (task_agent_group_uuid,
+                    &found,
+                    "get_agent_groups"))
+                    g_error (
+                    "%s: GET_TASKS: error finding task agent group, aborting",
+                    __func__);
+
+                  agent_group_available = (found > 0);
+                }
+              else
+                {
+                  task_agent_group_uuid = NULL;
+                  task_agent_group_name = NULL;
+                }
+
+              task_agent_group_name_escaped =
+                task_agent_group_name
+                  ? g_markup_escape_text (task_agent_group_name, -1)
+                  : NULL;
+
+              agent_group_xml = g_strdup_printf (
+                "<agent_group id=\"%s\">"
+                "<name>%s</name>"
+                "<trash>%i</trash>"
+                "%s"
+                "</agent_group>",
+                task_agent_group_uuid ? : "",
+                task_agent_group_name_escaped ? : "",
+                agent_group_in_trash,
+                agent_group_available ? "" : "<permissions/>");
+
+              free (task_agent_group_name);
+              free (task_agent_group_uuid);
+              g_free (task_agent_group_name_escaped);
+            }
+#endif /* ENABLE_AGENT_GROUPS */
+
           config_available = 1;
           if (task_config_in_trash (index))
             config_available = trash_config_readable_uuid (config_uuid);
@@ -19575,6 +19639,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_CONTAINER_SCANNING
                        "%s"
 #endif
+#if ENABLE_AGENTS
+                       "%s"
+#endif
                        "<hosts_ordering>%s</hosts_ordering>"
                        "<scanner id='%s'>"
                        "<name>%s</name>"
@@ -19604,6 +19671,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        target_available ? "" : "<permissions/>",
 #if ENABLE_CONTAINER_SCANNING
                        oci_image_target_xml ?: "",
+#endif
+#if ENABLE_AGENTS
+                       agent_group_xml ?: "",
 #endif
                        task_iterator_hosts_ordering (&tasks)
                         ? task_iterator_hosts_ordering (&tasks)
@@ -19652,6 +19722,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               g_free (response);
               g_free (oci_image_target_xml);
+              g_free (agent_group_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
               cleanup_iterator (&tasks);
@@ -19659,6 +19730,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
           g_free (response);
           g_free (oci_image_target_xml);
+          g_free (agent_group_xml);
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<observers>%s",
