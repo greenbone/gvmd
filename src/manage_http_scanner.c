@@ -327,7 +327,8 @@ handle_http_scanner_scan (http_scanner_connector_t connector,
                       queued_status_updated = TRUE;
                     }
                 }
-              else if (current_status == HTTP_SCANNER_SCAN_STATUS_FAILED)
+              else if (current_status == HTTP_SCANNER_SCAN_STATUS_FAILED
+                       || current_status == HTTP_SCANNER_SCAN_STATUS_ERROR)
                 {
                   result_t result = make_osp_result
                     (task, "", "", "",
