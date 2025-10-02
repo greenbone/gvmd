@@ -859,6 +859,54 @@ trash_agent_group_in_use (agent_group_t agent_group)
 }
 
 /**
+ * @brief Return whether an agent_group is readable.
+ *
+ * @param[in]  agent_group  Row id in agent_groups table.
+ *
+ * @return 1 if readable, 0 otherwise.
+ */
+int
+agent_group_readable (agent_group_t agent_group)
+{
+  char *uuid;
+  agent_group_t found = 0;
+
+  if (agent_group == 0)
+    return 0;
+  uuid = agent_group_uuid (agent_group);
+  if (uuid == NULL)
+    return 0;
+  find_agent_group_with_permission (uuid, &found, "get_agent_groups");
+  g_free (uuid);
+  return found > 0;;
+}
+
+/**
+ * @brief Return whether a trashcan agent_group is readable.
+ *
+ * @param[in]  agent_group  Row id in agent_groups_trash.
+ *
+ * @return 1 if readable, 0 otherwise.
+ */
+int
+trash_agent_group_readable (agent_group_t agent_group)
+{
+  char *uuid;
+  agent_group_t found = 0;
+
+  if (agent_group == 0)
+    return 0;
+  uuid = trash_agent_group_uuid (agent_group);
+  if (find_trash ("agent_group", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
+}
+
+/**
  * @brief Return whether a agent_group is writable.
  *
  * @param[in]  agent_group  Agent Group row id.
@@ -930,54 +978,6 @@ trash_agent_group_name (agent_group_t agent_group)
 
   return sql_string ("SELECT name FROM agent_groups_trash WHERE id = %llu;",
                      agent_group);
-}
-
-/**
- * @brief Return whether a trashcan agent_group is readable.
- *
- * @param[in]  agent_group  Row id in agent_groups_trash.
- *
- * @return 1 if readable, 0 otherwise.
- */
-int
-trash_agent_group_readable (agent_group_t agent_group)
-{
-  char *uuid;
-  agent_group_t found = 0;
-
-  if (agent_group == 0)
-    return 0;
-  uuid = trash_agent_group_uuid (agent_group);
-  if (find_trash ("agent_group", uuid, &found))
-    {
-      g_free (uuid);
-      return 0;
-    }
-  g_free (uuid);
-  return found > 0;
-}
-
-/**
- * @brief Return whether an agent_group is readable.
- *
- * @param[in]  agent_group  Row id in agent_groups table.
- *
- * @return 1 if readable, 0 otherwise.
- */
-int
-agent_group_readable (agent_group_t agent_group)
-{
-  char *uuid;
-  agent_group_t found = 0;
-
-  if (agent_group == 0)
-    return 0;
-  uuid = agent_group_uuid (agent_group);
-  if (uuid == NULL)
-    return 0;
-  find_agent_group_with_permission (uuid, &found, "get_agent_groups");
-  g_free (uuid);
-  return found > 0;;
 }
 
 #endif // ENABLE_AGENTS

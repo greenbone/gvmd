@@ -106,6 +106,12 @@ int
 trash_agent_group_in_use (agent_group_t);
 
 int
+agent_group_readable (agent_group_t agent_group);
+
+int
+trash_agent_group_readable (agent_group_t agent_group);
+
+int
 agent_group_writable (agent_group_t);
 
 int
@@ -136,12 +142,6 @@ trash_agent_group_uuid (agent_group_t agent_group);
 
 char *
 trash_agent_group_name (agent_group_t agent_group);
-
-int
-trash_agent_group_readable (agent_group_t agent_group);
-
-int
-agent_group_readable (agent_group_t agent_group);
 
 #endif // _GVMD_MANAGE_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS
