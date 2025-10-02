@@ -514,7 +514,7 @@ fork_container_image_scan_handler (task_t task,
   int rc;
 
   assert (task);
-  assert (target);
+  assert (oci_image_target);
 
   if (report_id_return)
     *report_id_return = NULL;
