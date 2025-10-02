@@ -957,4 +957,27 @@ trash_agent_group_readable (agent_group_t agent_group)
   return found > 0;
 }
 
+/**
+ * @brief Return whether an agent_group is readable.
+ *
+ * @param[in]  agent_group  Row id in agent_groups table.
+ *
+ * @return 1 if readable, 0 otherwise.
+ */
+int
+agent_group_readable (agent_group_t agent_group)
+{
+  char *uuid;
+  agent_group_t found = 0;
+
+  if (agent_group == 0)
+    return 0;
+  uuid = agent_group_uuid (agent_group);
+  if (uuid == NULL)
+    return 0;
+  find_agent_group_with_permission (uuid, &found, "get_agent_groups");
+  g_free (uuid);
+  return found > 0;;
+}
+
 #endif // ENABLE_AGENTS

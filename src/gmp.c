@@ -19503,7 +19503,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #endif
 #if ENABLE_AGENTS
           agent_group_t agent_group = 0;
-          int trash_group_readable = 0;
+          int group_readable = 0;
           char *task_agent_group_uuid = NULL;
           char *task_agent_group_name = NULL;
           agent_group =task_agent_group (index); /* row id or 0 */
@@ -19515,15 +19515,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 {
                   task_agent_group_uuid = trash_agent_group_uuid (agent_group);
                   task_agent_group_name = trash_agent_group_name (agent_group);
-                  trash_group_readable = trash_agent_group_readable (
+                  group_readable = trash_agent_group_readable (
                     agent_group);
                 }
               else
                 {
                   task_agent_group_uuid = agent_group_uuid (agent_group);
                   task_agent_group_name = agent_group_name (agent_group);
-                  trash_group_readable = trash_agent_group_readable (
-                    agent_group);
+                  group_readable = agent_group_readable (agent_group);
                 }
 
               agent_group_xml = g_markup_printf_escaped (
@@ -19535,7 +19534,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 task_agent_group_uuid ? : "",
                 task_agent_group_name ? : "",
                 agent_group_in_trash,
-                trash_group_readable ? "" : "<permissions/>");
+                group_readable ? "" : "<permissions/>");
 
               free (task_agent_group_uuid);
               free (task_agent_group_name);
