@@ -10,6 +10,8 @@
  * GMP handlers for OCI Image Targets
  */
 
+#if ENABLE_CONTAINER_SCANNING
+
 #include "gmp_oci_image_targets.h"
 #include "manage_oci_image_targets.h"
 #include "gmp_base.h"
@@ -801,3 +803,5 @@ get_oci_image_targets_run (gmp_parser_t *gmp_parser, GError **error)
 
   get_oci_image_targets_reset ();
 }
+
+#endif //ENABLE_CONTAINER_SCANNING

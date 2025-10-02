@@ -10,6 +10,8 @@
  * General management headers of OCI Image Targets.
  */
 
+#if ENABLE_CONTAINER_SCANNING
+
 #ifndef _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
 #define _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
 
@@ -111,3 +113,5 @@ int
 oci_image_target_task_iterator_readable (iterator_t*);
 
 #endif /* _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */
+
+#endif /* ENABLE_CONTAINER_SCANNING */

@@ -23,10 +23,20 @@
  * SQL OCI image targets code for the GVM management layer.
  */
 
+#if ENABLE_CONTAINER_SCANNING
+
 #ifndef _GVMD_MANAGE_SQL_OCI_IMAGE_TARGETS_H
 #define _GVMD_MANAGE_SQL_OCI_IMAGE_TARGETS_H
 
 #include "manage.h"
 #include "manage_sql.h"
 
+char*
+oci_image_target_image_referenes (oci_image_target_t);
+
+credential_t
+oci_image_target_credential (oci_image_target_t);
+
 #endif /* not _GVMD_MANAGE_SQL_OCI_IMAGE_TARGETS_H */
+
+#endif /* ENABLE_CONTAINER_SCANNING */
