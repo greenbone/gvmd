@@ -3978,10 +3978,30 @@ manage_db_add_constraints (const gchar *name)
 }
 
 /**
+ * @brief Create the indexes for the CPEs table in the scap schema.
+ */
+void
+create_indexes_scap_cpe ()
+{
+  sql ("CREATE UNIQUE INDEX cpe_idx"
+       " ON scap.cpes (name);");
+  sql ("CREATE INDEX cpes_by_creation_time_idx"
+       " ON scap.cpes (creation_time);");
+  sql ("CREATE INDEX cpes_by_modification_time_idx"
+       " ON scap.cpes (modification_time);");
+  sql ("CREATE INDEX cpes_by_severity"
+       " ON scap.cpes (severity);");
+  sql ("CREATE INDEX cpes_by_uuid"
+       " ON scap.cpes (uuid);");
+  sql ("CREATE INDEX cpes_by_cpe_name_id"
+       " ON scap.cpes(cpe_name_id);");
+}
+
+/**
  * @brief Create the indexes for the CPEs table in the scap2 schema.
  */
 void
-create_indexes_cpe ()
+create_indexes_scap2_cpe ()
 {
   sql ("CREATE UNIQUE INDEX cpe_idx"
        " ON scap2.cpes (name);");
@@ -4001,7 +4021,7 @@ create_indexes_cpe ()
  * @brief Remove the indexes for the CPEs table in the scap2 schema.
  */
 void
-drop_indexes_cpe ()
+drop_indexes_scap2_cpe ()
 {
   sql ("DROP INDEX IF EXISTS scap2.cpe_idx");
   sql ("DROP INDEX IF EXISTS scap2.cpes_by_creation_time_idx");
@@ -4012,10 +4032,32 @@ drop_indexes_cpe ()
 }
 
 /**
+ * @brief Create the indexes for the CVEs tables in the scap schema.
+ */
+void
+create_indexes_scap_cve ()
+{
+  sql ("CREATE UNIQUE INDEX cve_idx"
+       " ON scap.cves (name);");
+  sql ("CREATE INDEX cves_by_creation_time_idx"
+       " ON scap.cves (creation_time);");
+  sql ("CREATE INDEX cves_by_modification_time_idx"
+       " ON scap.cves (modification_time);");
+  sql ("CREATE INDEX cves_by_severity"
+       " ON scap.cves (severity);");
+
+  sql ("CREATE INDEX cpe_match_nodes_by_root_id"
+       " ON scap.cpe_match_nodes(root_id);");
+
+  sql ("CREATE INDEX cpe_nodes_match_criteria_by_node_id"
+       " ON scap.cpe_nodes_match_criteria(node_id);");
+}
+
+/**
  * @brief Create the indexes for the CVEs tables in the scap2 schema.
  */
 void
-create_indexes_cve ()
+create_indexes_scap2_cve ()
 {
   sql ("CREATE UNIQUE INDEX cve_idx"
        " ON scap2.cves (name);");
@@ -4037,7 +4079,7 @@ create_indexes_cve ()
  * @brief Remove the indexes for the CVEs tables in the scap2 schema.
  */
 void
-drop_indexes_cve ()
+drop_indexes_scap2_cve ()
 {
   sql ("DROP INDEX IF EXISTS scap2.cve_idx");
   sql ("DROP INDEX IF EXISTS scap2.cves_by_creation_time_idx");
@@ -4059,11 +4101,11 @@ drop_indexes_cve ()
 int
 manage_db_init_indexes (const gchar *name)
 {
-  if (strcasecmp (name, "scap") == 0)
+  if (strcasecmp (name, "scap2") == 0)
     {
-      create_indexes_cpe ();
+      create_indexes_scap2_cpe ();
 
-      create_indexes_cve ();
+      create_indexes_scap2_cve ();
 
       sql ("CREATE INDEX afp_cpe_idx"
            " ON scap2.affected_products (cpe);");
@@ -4072,6 +4114,24 @@ manage_db_init_indexes (const gchar *name)
 
       sql ("CREATE INDEX epss_scores_by_cve"
            " ON scap2.epss_scores (cve);");
+    }
+  else if (strcasecmp (name, "scap") == 0)
+    {
+      g_info("Creating indexes for SCAP");
+
+      create_indexes_scap_cpe ();
+
+      create_indexes_scap_cve ();
+
+      sql ("CREATE INDEX afp_cpe_idx"
+           " ON scap.affected_products (cpe);");
+      sql ("CREATE INDEX afp_cve_idx"
+           " ON scap.affected_products (cve);");
+
+      sql ("CREATE INDEX epss_scores_by_cve"
+           " ON scap.epss_scores (cve);");
+
+      g_info("Done creating indexes for SCAP");
     }
   else
     {

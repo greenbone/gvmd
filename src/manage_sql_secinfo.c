@@ -2633,7 +2633,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
       return -1;
     }
 
-  drop_indexes_cpe ();
+  drop_indexes_scap2_cpe ();
 
   cpe_rowid = 0;
   sql_begin_immediate ();
@@ -2734,7 +2734,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
-  create_indexes_cpe ();
+  create_indexes_scap2_cpe ();
 
   // Reset and insert refs
   g_info ("Updating CPE refs...");
@@ -4798,7 +4798,7 @@ update_cve_json (const gchar *cve_path,
         }
       gvm_json_pull_parser_next (&parser, &event);
       sql_begin_immediate ();
-      drop_indexes_cve ();
+      drop_indexes_scap2_cve ();
       if (secinfo_fast_init)
         {
           init_cve_copy_buffers (&cves_copy_buffer,
@@ -4891,7 +4891,7 @@ update_cve_json (const gchar *cve_path,
               return -1;
             }
         }
-      create_indexes_cve ();
+      create_indexes_scap2_cve ();
 
       sql ("SELECT setval('scap2.cves_id_seq', max(id))"
            " FROM scap2.cves;");
@@ -6598,9 +6598,11 @@ update_cert_data ()
 
 /**
  * @brief Finish scap update.
+ *
+ * param[in]  create_indexes  Whether to create indexes after replacing scap db.
  */
 static void
-update_scap_end ()
+update_scap_end (gboolean create_indexes)
 {
   g_debug ("%s: update timestamp", __func__);
 
@@ -6615,6 +6617,17 @@ update_scap_end ()
       sql ("ALTER SCHEMA scap RENAME TO scap3;");
       sql ("ALTER SCHEMA scap2 RENAME TO scap;");
       sql ("DROP SCHEMA scap3 CASCADE;");
+
+      if (create_indexes)
+        {
+          g_debug ("%s: add indexes", __func__);
+
+          if (manage_db_init_indexes ("scap"))
+            {
+              g_warning ("%s: could not initialize SCAP indexes", __func__);
+            }
+        }
+
       /* View 'vulns' contains references into the SCAP schema, so it is
        * removed by the CASCADE. */
       create_view_vulns ();
@@ -6668,7 +6681,7 @@ abort_scap_update ()
         {
           g_warning ("%s: could not reset scap2 schema, db init failed", __func__);
         }
-      else if (manage_db_init_indexes ("scap"))
+      else if (manage_db_init_indexes ("scap2"))
         {
           g_warning ("%s: could not reset scap2 schema, init indexes failed", __func__);
         }
@@ -6736,7 +6749,7 @@ try_load_csv ()
       g_debug ("%s: add indexes", __func__);
       setproctitle ("Syncing SCAP: Adding indexes");
 
-      if (manage_db_init_indexes ("scap"))
+      if (manage_db_init_indexes ("scap2"))
         {
           g_warning ("%s: could not initialize SCAP indexes", __func__);
           return -1;
@@ -6751,7 +6764,7 @@ try_load_csv ()
           return -1;
         }
 
-      update_scap_end ();
+      update_scap_end (FALSE);
       return 0;
     }
   return 1;
@@ -6823,16 +6836,10 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
-  /* Add the indexes and constraints. */
+  /* Add the constraints. */
 
-  g_debug ("%s: add indexes", __func__);
-  setproctitle ("Syncing SCAP: Adding indexes");
-
-  if (manage_db_init_indexes ("scap"))
-    {
-      g_warning ("%s: could not initialize SCAP indexes", __func__);
-      return -1;
-    }
+  g_debug ("%s: add constraints", __func__);
+  setproctitle ("Syncing SCAP: Adding constraints");
 
   if (manage_db_add_constraints ("scap"))
     {
@@ -6906,7 +6913,7 @@ update_scap (gboolean reset_scap_db)
 
   update_scap_placeholders ();
 
-  update_scap_end ();
+  update_scap_end (TRUE);
   return 0;
 }
 

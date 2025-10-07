@@ -537,17 +537,22 @@ int
 cleanup_ids_for_table (const char *);
 
 void
-
-create_indexes_cpe ();
-
-void
-drop_indexes_cpe ();
+create_indexes_scap_cpe ();
 
 void
-create_indexes_cve ();
+create_indexes_scap2_cpe ();
 
 void
-drop_indexes_cve ();
+drop_indexes_scap2_cpe ();
+
+void
+create_indexes_scap_cve ();
+
+void
+create_indexes_scap2_cve ();
+
+void
+drop_indexes_scap2_cve ();
 
 void
 report_set_processing_required (report_t, int, int);
