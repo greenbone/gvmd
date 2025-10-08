@@ -198,6 +198,7 @@ if(ENABLE_CREDENTIAL_STORES)
   list(
     APPEND
     ALL_MANAGE_SRC
+    manage_credential_store_cyberark.c
     manage_credential_stores.c
   )
 endif()

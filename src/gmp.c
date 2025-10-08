@@ -4672,6 +4672,7 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ALERT,
+  CLIENT_VERIFY_CREDENTIAL_STORE,
   CLIENT_VERIFY_REPORT_FORMAT,
   CLIENT_VERIFY_SCANNER,
 } client_state_t;
@@ -6225,6 +6226,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               "alert_id",
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
+          }
+        else if (strcasecmp ("VERIFY_CREDENTIAL_STORE", element_name) == 0)
+          {
+            verify_credential_store_start (gmp_parser,
+                                           attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_VERIFY_CREDENTIAL_STORE);
           }
         else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
           {
@@ -28458,6 +28466,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+
+      case CLIENT_VERIFY_CREDENTIAL_STORE:
+        {
+          verify_credential_store_run (gmp_parser, error);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
 
       case CLIENT_VERIFY_REPORT_FORMAT:
         if (verify_report_format_data->report_format_id)

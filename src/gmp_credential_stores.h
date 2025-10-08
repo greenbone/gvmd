@@ -63,4 +63,13 @@ int
 modify_credential_store_element_end (gmp_parser_t *, GError **,
                                      const gchar *);
 
+void
+verify_credential_store_start (gmp_parser_t *gmp_parser,
+                               const gchar **attribute_names,
+                               const gchar **attribute_values);
+
+void
+verify_credential_store_run (gmp_parser_t *, GError **);
+
+
 #endif /* _GVMD_GMP_CREDENTIAL_STORES_H */

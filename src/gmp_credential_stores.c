@@ -441,7 +441,7 @@ credential_store_preferences_from_entity (entity_t prefs_list_entity)
 }
 
 /**
- * @brief Run the get_credential_stores command.
+ * @brief Run the modify_credential_store command.
  *
  * @param[in] gmp_parser  Active GMP parser instance.
  * @param[in] error       the errors, if any.
@@ -498,8 +498,6 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
             error_send_to_client (error);
             return;
           }
-        log_event_fail ("credential_store", "Credential Store",
-                        credential_store_id, "modified");
         break;
       case MODIFY_CREDENTIAL_STORE_INVALID_HOST:
         if (message)
@@ -557,4 +555,121 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 #endif
 
   modify_credential_store_reset ();
+}
+
+/* VERIFY_credential_store */
+
+/**
+ * @struct verify_credential_store_data_t
+ * @brief Parser callback struct type for verify_credential_store command
+ */
+typedef struct
+{
+  context_data_t *context;
+  gchar *credential_store_id;
+} verify_credential_store_data_t;
+
+/**
+ * @brief Parser callback data for verify_credential_store.
+ */
+static verify_credential_store_data_t verify_credential_store_data;
+
+/**
+ * @brief Reset the parser callback data for verify_credential_store.
+ */
+static void
+verify_credential_store_reset ()
+{
+  if (verify_credential_store_data.context
+      && verify_credential_store_data.context->first)
+    {
+      free_entity (verify_credential_store_data.context->first->data);
+      g_slist_free_1 (verify_credential_store_data.context->first);
+    }
+
+  g_free (verify_credential_store_data.context);
+  g_free (verify_credential_store_data.credential_store_id);
+  memset (&verify_credential_store_data, 0, sizeof (verify_credential_store_data_t));
+}
+
+/**
+ * @brief Handle the root element start of the verify_credential_store command.
+ *
+ * @param[in] gmp_parser        Active GMP parser instance.
+ * @param[in] attribute_names   Null-terminated array of attribute names.
+ * @param[in] attribute_values  Null-terminated array of attribute names.
+ */
+void
+verify_credential_store_start (gmp_parser_t *gmp_parser,
+                               const gchar **attribute_names,
+                               const gchar **attribute_values)
+{
+  const char *attribute = NULL;
+  memset (&verify_credential_store_data,
+          0, sizeof (verify_credential_store_data_t));
+  verify_credential_store_data.context = g_malloc0 (sizeof (context_data_t));
+
+  find_attribute (attribute_names, attribute_values,
+                  "credential_store_id",
+                  &attribute);
+  verify_credential_store_data.credential_store_id 
+    = attribute ? g_strdup (attribute) : NULL;
+}
+
+/**
+ * @brief Run the modify_credential_store command.
+ *
+ * @param[in] gmp_parser  Active GMP parser instance.
+ * @param[in] error       the errors, if any.
+ */
+void
+verify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
+{
+#if ENABLE_CREDENTIAL_STORES
+  const char *credential_store_id
+    = verify_credential_store_data.credential_store_id;
+  gchar *message = NULL;
+  switch (verify_credential_store (credential_store_id, &message))
+    {
+      case VERIFY_CREDENTIAL_STORE_OK:
+        SEND_TO_CLIENT_OR_FAIL (XML_OK ("verify_credential_store"));
+        break;
+      case VERIFY_CREDENTIAL_STORE_MISSING_ID:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("verify_credential_store",
+                             "The credential_store_id attribute is required"));
+        break;
+      case VERIFY_CREDENTIAL_STORE_NOT_FOUND:
+        if (send_find_error_to_client ("verify_credential_store",
+                                       "Credential Store",
+                                       credential_store_id,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        break;
+      case VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED:
+        if (message)
+          SENDF_TO_CLIENT_OR_FAIL
+            (XML_ERROR_UNAVAILABLE ("verify_credential_store",
+                                    "Connection failed: %s"), message);
+        else
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_UNAVAILABLE ("verify_credential_store",
+                                    "Connection failed"));
+        break;
+      case VERIFY_CREDENTIAL_STORE_PERMISSION_DENIED:
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("verify_credential_store",
+                             "Permission denied"));
+        break;
+      default: 
+        SEND_TO_CLIENT_OR_FAIL
+          (XML_INTERNAL_ERROR ("verify_credential_store"));
+    }
+    
+  g_free (message);
+  verify_credential_store_reset ();
+#endif /* ENABLE_CREDENTIAL_STORES */
 }

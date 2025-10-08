@@ -15,6 +15,7 @@
 
 #include "manage_get.h"
 #include "manage_resources.h"
+#include <gnutls/gnutls.h>
 
 #define CREDENTIAL_STORE_UUID_CYBERARK "94e74cbe-0504-4ab1-b96f-0739f786f57c"
 
@@ -65,7 +66,12 @@ credential_store_preference_new (const char *name,
                                  const char *passphrase_name);
 
 void
-credential_store_preference_free (credential_store_preference_data_t *preference);
+credential_store_preference_free
+  (credential_store_preference_data_t *preference);
+
+gboolean
+credential_store_preference_is_set
+  (credential_store_preference_data_t *preference);
 
 
 /**
@@ -202,6 +208,16 @@ trash_credential_store_in_use (credential_store_t);
 int
 credential_store_writable (credential_store_t);
 
+gboolean
+credential_store_active (credential_store_t);
+
+char *
+credential_store_host (credential_store_t);
+
+char *
+credential_store_path (credential_store_t);
+
+
 /**
  * @brief Enumeration of modify_credential_store return codes.
  */
@@ -233,5 +249,55 @@ create_or_update_credential_store (const char *credential_store_id,
                                    GList *preferences,
                                    GList *selectors,
                                    user_t owner);
+
+/**
+ * @brief Enumeration of verify_credential_store return codes.
+ */
+typedef enum {
+  VERIFY_CREDENTIAL_STORE_OK = 0,
+  VERIFY_CREDENTIAL_STORE_MISSING_ID,
+  VERIFY_CREDENTIAL_STORE_NOT_FOUND,
+  VERIFY_CREDENTIAL_STORE_CONNECTOR_ERROR,
+  VERIFY_CREDENTIAL_STORE_HOST_ERROR,
+  VERIFY_CREDENTIAL_STORE_PATH_ERROR,
+  VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR,
+  VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED,
+  VERIFY_CREDENTIAL_STORE_PERMISSION_DENIED = 99,
+  VERIFY_CREDENTIAL_STORE_INTERNAL_ERROR = -1
+} verify_credential_store_return_t;
+
+/**
+ * @brief Function type for verifying a credential store.
+ */
+typedef
+int (*credential_store_verify_func_t) (const char*, const char*,
+                                       GHashTable*, gchar **);
+
+verify_credential_store_return_t
+verify_credential_store (const char *credential_store_id,
+                         gchar **message);
+
+int
+eval_pkcs12_credential_store_preference (credential_store_preference_data_t
+                                          *preference,
+                                         const char *passphrase,
+                                         gchar **privkey_out,
+                                         gchar **cert_chain_out,
+                                         gchar **extra_certs_out,
+                                         gchar **crl_out,
+                                         gchar **message);
+
+int
+eval_privkey_credential_store_preference (credential_store_preference_data_t
+                                           *preference,
+                                          const char *passphrase,
+                                          gchar **privkey_out,
+                                          gchar **message);
+
+int
+eval_certs_credential_store_preference (credential_store_preference_data_t
+                                          *preference,
+                                        gchar **certs_out,
+                                        gchar **message);
 
 #endif /* _GVMD_MANAGE_CREDENTIAL_STORES_H */

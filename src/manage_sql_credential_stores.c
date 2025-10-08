@@ -14,9 +14,11 @@
 
 #include "gmp_base.h" // for log_event
 #include "manage_acl.h"
+#include "manage_credential_store_cyberark.h"
 #include "manage_sql_credential_stores.h"
 #include <gnutls/x509.h>
 #include <gnutls/pkcs12.h>
+#include <gvm/util/tlsutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -464,6 +466,49 @@ credential_store_writable (credential_store_t credential_store)
 }
 
 /**
+ * @brief Get the "active" status of a credential store.
+ * 
+ * @param[in]  credential_store  The credential store to check.
+ * 
+ * @return TRUE if active, FALSE if not.
+ */
+gboolean
+credential_store_active (credential_store_t credential_store)
+{
+  return sql_int ("SELECT active FROM credential_stores WHERE id = %llu",
+                  credential_store);
+}
+
+/**
+ * @brief Get the host of a credential store.
+ * 
+ * @param[in]  credential_store  The credential store to check.
+ * 
+ * @return The host of the credential store. Caller must freed.
+ */
+char *
+credential_store_host (credential_store_t credential_store)
+{
+  return sql_string ("SELECT host FROM credential_stores WHERE id = %llu",
+                     credential_store);
+}
+
+/**
+ * @brief Get the path of a credential store.
+ * 
+ * @param[in]  credential_store  The credential store to check.
+ * 
+ * @return The path of the credential store. Caller must freed.
+ */
+char *
+credential_store_path (credential_store_t credential_store)
+{
+  return sql_string ("SELECT path FROM credential_stores WHERE id = %llu",
+                     credential_store);
+}
+
+
+/**
  * @brief Check if a host is valid for a credential store type.
  *
  * @param[in]  host                 The host string to check.
@@ -511,24 +556,6 @@ credential_store_path_valid (const char *path,
 
 
 /**
- * @brief Try to determine the format (DER or PEM) of a x509 certificate.
- *
- * @param[in]  cert_data  The certificate data.
- * @param[in]  cert_len   Length of the certificate data.
- *
- * @return The GnuTLS x509 certificate type.
- */
-static gnutls_x509_crt_fmt_t
-get_x509_format_from_data (const char *cert_data, size_t cert_len)
-{
-  static const gchar* begin_str = "-----BEGIN ";
-  if (g_strstr_len (cert_data, cert_len, begin_str))
-    return GNUTLS_X509_FMT_PEM;
-  else
-    return GNUTLS_X509_FMT_DER;
-}
-
-/**
  * @brief Check if binary data of a credential store preference value is valid.
  * 
  * @param[in]  name       Name of the preference
@@ -556,8 +583,8 @@ credential_store_preference_binary_value_is_valid (
         unsigned int cert_count = 0;
         gnutls_x509_crt_fmt_t cert_format;
 
-        cert_format = get_x509_format_from_data ((const char*)bin_value->data,
-                                                bin_value->size);
+        cert_format = gvm_x509_format_from_data ((const char*)bin_value->data,
+                                                 bin_value->size);
         ret = gnutls_x509_crt_list_import2 (&certs, &cert_count,
                                             bin_value, cert_format, 0);
         for (int i = 0; i < cert_count; i++)
@@ -581,7 +608,7 @@ credential_store_preference_binary_value_is_valid (
         gnutls_x509_privkey_t key;
         gnutls_x509_crt_fmt_t key_format;
 
-        key_format = get_x509_format_from_data ((const char*)bin_value->data,
+        key_format = gvm_x509_format_from_data ((const char*)bin_value->data,
                                                 bin_value->size);
         gnutls_x509_privkey_init (&key);
         if (use_passphrase)
@@ -615,7 +642,7 @@ credential_store_preference_binary_value_is_valid (
         gnutls_x509_crt_t *certs = NULL;
         unsigned int cert_count = 0;
 
-        key_format = get_x509_format_from_data ((const char*)bin_value->data,
+        key_format = gvm_x509_format_from_data ((const char*)bin_value->data,
                                                 bin_value->size);
         gnutls_pkcs12_init (&pkcs12);
         ret = gnutls_pkcs12_import (pkcs12, bin_value, key_format, 0);
@@ -894,9 +921,7 @@ credential_store_update_preferences (GHashTable *preference_values,
               credential_store_preference_data_t *passphrase_preference
                 = g_hash_table_lookup (old_preferences,
                                        preference->passphrase_name);
-              if (passphrase_preference
-                  && passphrase_preference->value
-                  && strcmp (passphrase_preference->value, ""))
+              if (credential_store_preference_is_set (passphrase_preference))
                 passphrase = passphrase_preference->value;
               else
                 passphrase = NULL;
@@ -1399,4 +1424,66 @@ create_or_update_credential_store (const char *credential_store_id,
              created ? "created" : "modified");
 
   return 0;
+}
+
+/**
+ * @brief Verifies the connection of a credential store.
+ * 
+ * @param[in]  credential_store_id  The UUID of the credential store to verify.
+ * @param[out] message              Error message output.
+ * 
+ * @return A verify_credential_store_return_t return code.
+ */
+verify_credential_store_return_t
+verify_credential_store (const char *credential_store_id,
+                         gchar **message)
+{
+  credential_store_t credential_store;
+  gchar *host, *path;
+  credential_store_verify_func_t verify_func;
+  GHashTable *preferences;
+  int ret;
+
+  if (credential_store_id == NULL || strcmp (credential_store_id, "") == 0)
+    return VERIFY_CREDENTIAL_STORE_MISSING_ID;
+  
+  if (acl_user_may ("verify_credential_store") == 0)
+    {
+      return VERIFY_CREDENTIAL_STORE_PERMISSION_DENIED;
+    }
+
+  if (find_resource_with_permission ("credential_store",
+                                     credential_store_id,
+                                     &credential_store,
+                                     "get_credential_stores",
+                                     0))
+    {
+      g_warning ("%s: Error getting credential store '%s'",
+                 __func__, credential_store_id);
+      return VERIFY_CREDENTIAL_STORE_INTERNAL_ERROR;
+    }
+
+  if (credential_store == 0)
+    return VERIFY_CREDENTIAL_STORE_NOT_FOUND;
+
+  if (strcmp (credential_store_id, CREDENTIAL_STORE_UUID_CYBERARK) == 0)
+    verify_func = verify_cyberark_credential_store;
+  else
+    {
+      g_warning ("%s: Error getting connector for credential store '%s'",
+                 __func__, credential_store_id);
+      return VERIFY_CREDENTIAL_STORE_CONNECTOR_ERROR;
+    }
+
+  host = credential_store_host (credential_store);
+  path = credential_store_path (credential_store);
+  preferences = credential_store_get_preferences_hashtable (credential_store);
+
+  ret = verify_func (host, path, preferences, message);
+
+  free (host);
+  g_hash_table_destroy (preferences);
+
+  return ret ? VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED
+             : VERIFY_CREDENTIAL_STORE_OK;
 }

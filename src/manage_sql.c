@@ -5160,6 +5160,12 @@ check_db_cyberark_credential_store (user_t owner)
     return;
 
   new_pref = credential_store_preference_new
+               ("app_id",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_STRING,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
                ("client_key",
                 TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY,
                 "", "", "", "passphrase");
