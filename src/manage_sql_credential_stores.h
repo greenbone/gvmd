@@ -26,6 +26,7 @@
   GET_ITERATOR_FILTER_COLUMNS,              \
   "active",                                 \
   "host",                                   \
+  "path",                                   \
   "version",                                \
   NULL                                      \
 }
@@ -39,6 +40,7 @@
   { "version", NULL, KEYWORD_TYPE_STRING },                   \
   { "active", NULL, KEYWORD_TYPE_INTEGER },                   \
   { "host", NULL, KEYWORD_TYPE_STRING },                      \
+  { "path", NULL, KEYWORD_TYPE_STRING },                      \
   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                        \
 }
 

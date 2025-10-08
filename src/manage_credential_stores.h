@@ -114,6 +114,8 @@ credential_store_iterator_active (iterator_t *iterator);
 const char*
 credential_store_iterator_host (iterator_t *iterator);
 
+const char*
+credential_store_iterator_path (iterator_t *iterator);
 
 void
 init_credential_store_preference_iterator (
@@ -208,6 +210,7 @@ typedef enum {
   MODIFY_CREDENTIAL_STORE_MISSING_ID,
   MODIFY_CREDENTIAL_STORE_NOT_FOUND,
   MODIFY_CREDENTIAL_STORE_INVALID_HOST,
+  MODIFY_CREDENTIAL_STORE_INVALID_PATH,
   MODIFY_CREDENTIAL_STORE_INVALID_PREFERENCE,
   MODIFY_CREDENTIAL_STORE_PERMISSION_DENIED = 99,
   MODIFY_CREDENTIAL_STORE_INTERNAL_ERROR = -1
@@ -217,6 +220,7 @@ modify_credential_store_return_t
 modify_credential_store (const char *credential_store_id,
                          const char *active,
                          const char *host,
+                         const char *path,
                          GHashTable *preference_values,
                          gchar **message);
 
@@ -224,6 +228,7 @@ int
 create_or_update_credential_store (const char *credential_store_id,
                                    const char *name,
                                    const char *host,
+                                   const char *path,
                                    const char *version,
                                    GList *preferences,
                                    GList *selectors,

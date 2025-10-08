@@ -236,10 +236,12 @@ get_credential_stores_run (gmp_parser_t *gmp_parser, GError **error)
         "<version>%s</version>"
         "<active>%d</active>"
         "<host>%s</host>"
+        "<path>%s</path>"
         "<preferences>",
         credential_store_iterator_version (&credential_stores),
         credential_store_iterator_active (&credential_stores),
-        credential_store_iterator_host (&credential_stores));
+        credential_store_iterator_host (&credential_stores),
+        credential_store_iterator_path (&credential_stores));
       
       init_credential_store_preference_iterator (
         &prefs, get_iterator_resource (&credential_stores)
@@ -449,7 +451,7 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_CREDENTIAL_STORES
   entity_t entity, child_entity;
-  const char *credential_store_id, *active, *host;
+  const char *credential_store_id, *active, *host, *path;
   modify_credential_store_return_t ret;
   gchar *message;
 
@@ -462,12 +464,16 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
   child_entity = entity_child (entity, "host");
   host = child_entity ? entity_text (child_entity) : NULL;
 
+  child_entity = entity_child (entity, "path");
+  path = child_entity ? entity_text (child_entity) : NULL;
+
   child_entity = entity_child (entity, "preferences");
   GHashTable *preferences = credential_store_preferences_from_entity (child_entity);
 
   ret = modify_credential_store (credential_store_id,
                                  active,
                                  host,
+                                 path,
                                  preferences,
                                  &message);
   g_hash_table_destroy (preferences);
@@ -504,6 +510,18 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL
             (XML_ERROR_SYNTAX ("modify_credential_store",
                                "Invalid host"));
+        log_event_fail ("credential_store", "Credential Store",
+                        credential_store_id, "modified");
+        break;
+      case MODIFY_CREDENTIAL_STORE_INVALID_PATH:
+        if (message)
+          SENDF_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_credential_store",
+                               "Invalid path: %s"), message);
+        else
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_credential_store",
+                               "Invalid path"));
         log_event_fail ("credential_store", "Credential Store",
                         credential_store_id, "modified");
         break;

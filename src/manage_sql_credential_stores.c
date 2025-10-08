@@ -98,6 +98,15 @@ credential_store_iterator_active (iterator_t *iterator)
 DEF_ACCESS (credential_store_iterator_host, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
+ * @brief Get the path from a credential store iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Path, or NULL if iteration is complete.
+ */
+DEF_ACCESS (credential_store_iterator_path, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
  * @brief Initialize an iterator for retrieving credential store preferences.
  *
  * @param[in,out] iterator  Pointer to the iterator to initialize.
@@ -476,6 +485,30 @@ credential_store_host_valid (const char *host,
     }
   return TRUE;
 }
+
+/**
+ * @brief Check if a path is valid for a credential store type.
+ *
+ * @param[in]  path                 The path string to check.
+ * @param[in]  credential_store_id  The credential type to check.
+ * @param[out] message              Output of error message if check fails.
+ *
+ * @return TRUE if path is valid, FALSE if not.
+ */
+static gboolean
+credential_store_path_valid (const char *path,
+                             const char *credential_store_id,
+                             gchar **message)
+{
+  if (strcmp (path, "") == 0)
+    {
+      sql_rollback ();
+      *message = g_strdup ("path must not be empty");
+      return FALSE;
+    }
+  return TRUE;
+}
+
 
 /**
  * @brief Try to determine the format (DER or PEM) of a x509 certificate.
@@ -911,6 +944,7 @@ credential_store_update_preferences (GHashTable *preference_values,
  * @param[in]  credential_store_id  UUID of the credential store to modify.
  * @param[in]  active       Active status to set or NULL to keep old one.
  * @param[in]  host         Host to set or NULL to keep old one.
+ * @param[in]  path         Path to set or NULL to keep old one.
  * @param[in]  preference_values  Preference values to set.
  * @param[out] message      Output for error message.
  */
@@ -918,6 +952,7 @@ modify_credential_store_return_t
 modify_credential_store (const char *credential_store_id,
                          const char *active,
                          const char *host,
+                         const char *path,
                          GHashTable *preference_values,
                          gchar **message)
 {
@@ -966,6 +1001,21 @@ modify_credential_store (const char *credential_store_id,
       g_free (quoted_host);
     }
 
+  if (path)
+    {
+      gchar *quoted_path;
+      if (credential_store_path_valid (path, credential_store_id, message)
+          == FALSE)
+        {
+          sql_rollback ();
+          return MODIFY_CREDENTIAL_STORE_INVALID_PATH;
+        }
+      quoted_path = sql_quote (path);
+      sql ("UPDATE credential_stores SET path = '%s' WHERE id = %llu",
+           quoted_path, credential_store);
+      g_free (quoted_path);
+    }
+
   if (active)
     {
       sql ("UPDATE credential_stores SET active = %d WHERE id = %llu",
@@ -996,12 +1046,21 @@ modify_credential_store (const char *credential_store_id,
  * longer valid.
  *
  * @param[in]  credential_store_id  UUID of the credential store
- * @param[in]  name   Name of the credential host
+ * @param[in]  name     Name of the credential store
+ * @param[in]  host     Default host of the credential store
+ * @param[in]  path     Default path of the credential store
+ * @param[in]  version  Version of the credential store
+ * @param[in]  owner    Owner if credential store is created
+ * @param[out] credential_store   Output of the credential store row id
+ * @param[out] created            Output if credential store was created
+ *
+ * @return 0 success, -1 failure.
  */
 static int
 create_or_update_credential_store_base (const char *credential_store_id,
                                         const char *name,
                                         const char *host,
+                                        const char *path,
                                         const char *version,
                                         user_t owner,
                                         credential_store_t *credential_store,
@@ -1021,32 +1080,35 @@ create_or_update_credential_store_base (const char *credential_store_id,
     {
       *created = TRUE;
       gchar *quoted_credential_store_id, *quoted_name, *quoted_version;
-      gchar *quoted_host;
+      gchar *quoted_host, *quoted_path;
       quoted_credential_store_id = sql_quote (credential_store_id);
       quoted_name = sql_quote (name);
       quoted_version = sql_quote (version);
       quoted_host = sql_quote (host);
+      quoted_path = sql_quote (path);
 
       sql_int64 (credential_store,
                  "INSERT INTO credential_stores"
                  " (uuid, owner, name, comment, version"
                  "  creation_time, modification_time,"
-                 "  active, host)"
+                 "  active, host, path)"
                  " VALUES"
                  " ('%s', %llu, '%s', '', '%s'"
                  "  m_now (), m_now (),"
-                 "  0, '%s')"
+                 "  0, '%s', '%s')"
                  " RETURNING id;",
                  quoted_credential_store_id,
                  owner,
                  quoted_name,
                  quoted_version,
-                 quoted_host);
+                 quoted_host,
+                 quoted_path);
 
       g_free (quoted_credential_store_id);
       g_free (quoted_name);
       g_free (quoted_version);
       g_free (quoted_host);
+      g_free (quoted_path);
     }
   else
     {
@@ -1242,6 +1304,7 @@ create_or_update_credential_store_selector (credential_store_t
  * @param[in]  credential_store_id  UUID of the credential store
  * @param[in]  name     Name of the credential store
  * @param[in]  host     Default host of the credential store
+ * @param[in]  path     Default path of the credential store
  * @param[in]  version  Version of the credential store
  * @param[in]  preferences  List of preferences of the credential store
  * @param[in]  selectors    List of selectors of the credential store
@@ -1253,6 +1316,7 @@ int
 create_or_update_credential_store (const char *credential_store_id,
                                    const char *name,
                                    const char *host,
+                                   const char *path,
                                    const char *version,
                                    GList *preferences,
                                    GList *selectors,
@@ -1269,6 +1333,7 @@ create_or_update_credential_store (const char *credential_store_id,
   if (create_or_update_credential_store_base (credential_store_id,
                                               name,
                                               host,
+                                              path,
                                               version,
                                               owner,
                                               &credential_store,

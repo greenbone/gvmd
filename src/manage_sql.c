@@ -5197,7 +5197,8 @@ check_db_cyberark_credential_store (user_t owner)
   create_or_update_credential_store (CREDENTIAL_STORE_UUID_CYBERARK,
                                      "CyberArk",
                                      "localhost",
-                                     "1",
+                                     "api",
+                                     current_version,
                                      preferences,
                                      selectors,
                                      owner);

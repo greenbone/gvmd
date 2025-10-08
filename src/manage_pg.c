@@ -2334,7 +2334,8 @@ create_tables ()
        "  modification_time INTEGER,"
        "  version TEXT,"
        "  active INTEGER,"
-       "  host TEXT);");
+       "  host TEXT,"
+       "  path TEXT);");
 
   sql ("CREATE TABLE IF NOT EXISTS credential_store_preferences"
        " (id SERIAL PRIMARY KEY,"

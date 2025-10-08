@@ -13788,6 +13788,7 @@ END:VCALENDAR
           <e>version</e>
           <e>active</e>
           <e>host</e>
+          <e>path</e>
           <e>preferences</e>
           <e>selectors</e>
         </pattern>
@@ -13914,6 +13915,11 @@ END:VCALENDAR
         <ele>
           <name>host</name>
           <summary>Host address or hostname of the external service</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>path</name>
+          <summary>Path of the external service</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
