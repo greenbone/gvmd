@@ -718,6 +718,20 @@ agent_group_name (agent_group_t group_id)
 }
 
 /**
+ * @brief Return the comment of an agent group.
+ *
+ * @param[in]  group_id  Agent group ID.
+ *
+ * @return Newly allocated comment  if found, else NULL.
+ */
+char *
+agent_group_comment (agent_group_t group_id)
+{
+  g_return_val_if_fail (group_id, NULL);
+  return sql_string ("SELECT comment FROM agent_groups WHERE id = %llu;", group_id);
+}
+
+/**
  * @brief Return the row_id of an agent group.
  *
  * @param[in]  group_uuid  Agent group UUID.
@@ -977,6 +991,23 @@ trash_agent_group_name (agent_group_t agent_group)
     return NULL;
 
   return sql_string ("SELECT name FROM agent_groups_trash WHERE id = %llu;",
+                     agent_group);
+}
+
+/**
+ * @brief Return the comment of a trashed agent group.
+ *
+ * @param[in]  agent_group  Row id in agent_groups_trash.
+ *
+ * @return Newly allocated comment (caller must g_free) or NULL if not found.
+ */
+char *
+trash_agent_group_comment (agent_group_t agent_group)
+{
+  if (!agent_group)
+    return NULL;
+
+  return sql_string ("SELECT comment FROM agent_groups_trash WHERE id = %llu;",
                      agent_group);
 }
 
