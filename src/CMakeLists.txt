@@ -237,11 +237,7 @@ if(ENABLE_AGENTS)
 endif()
 
 if(ENABLE_CREDENTIAL_STORES)
-  list(
-    APPEND
-    ALL_MANAGE_SQL_SRC
-    manage_sql_credential_stores.c
-  )
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_credential_stores.c)
 endif()
 
 set(
@@ -273,11 +269,7 @@ if(ENABLE_AGENTS)
 endif()
 
 if(ENABLE_CREDENTIAL_STORES)
-  list(
-    APPEND
-    ALL_GMP_SRC
-    gmp_credential_stores.c
-  )
+  list(APPEND ALL_GMP_SRC gmp_credential_stores.c)
 endif()
 
 set(ALL_SQL_SRC sql.c sql_pg.c)
