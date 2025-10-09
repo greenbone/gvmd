@@ -22,5 +22,15 @@
 http_scanner_connector_t
 http_scanner_connect(scanner_t scanner, const char* scan_id);
 
+int
+prepare_http_scanner_scan_for_resume (http_scanner_connector_t,
+                                      char **);
+
+int
+handle_http_scanner_scan (http_scanner_connector_t,
+                          task_t, report_t,
+                          void (*)
+                            (task_t, report_t, GSList *, time_t, time_t));
+
 #endif //MANAGE_HTTP_SCANNER_H
 #endif

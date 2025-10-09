@@ -67,6 +67,7 @@
 
 #if ENABLE_CONTAINER_SCANNING
 #include "manage_oci_image_targets.h"
+#include "manage_container_image_scanner.h"
 #endif
 
 /**
