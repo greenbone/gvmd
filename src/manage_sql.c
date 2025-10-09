@@ -18265,23 +18265,62 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "<trash>%i</trash>"
              "<name>%s</name>"
              "<comment>%s</comment>"
-             "</target>"
-             "<progress>%s</progress>",
+             "</target>",
              tsk_uuid,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
              task_target_in_trash (task),
              task_target_name ? task_target_name : "",
-             task_target_comment ? task_target_comment : "",
-             progress_xml);
-      g_free (progress_xml);
+             task_target_comment ? task_target_comment : "");
+
       free (comment);
       free (tsk_name);
       free (tsk_uuid);
       free (task_target_uuid);
       free (task_target_name);
       free (task_target_comment);
+
+#if ENABLE_AGENTS
+      agent_group_t agent_group = task_agent_group (task);
+      if (agent_group)
+        {
+          char *ag_uuid, *ag_name, *ag_comment;
+          int in_trash;
+
+          in_trash = task_agent_group_in_trash (task);
+
+          ag_uuid = in_trash
+                      ? trash_agent_group_uuid (agent_group)
+                      : agent_group_uuid (agent_group);
+          ag_name = in_trash
+                      ? trash_agent_group_name (agent_group)
+                      : agent_group_name (agent_group);
+          ag_comment = in_trash
+                         ? trash_agent_group_comment (agent_group)
+                         : agent_group_comment (agent_group);
+
+          PRINT (out,
+                 "<agent_group id=\"%s\">"
+                 "<trash>%i</trash>"
+                 "<name>%s</name>"
+                 "<comment>%s</comment>"
+                 "</agent_group>",
+                 ag_uuid ? ag_uuid : "",
+                 in_trash,
+                 ag_name ? ag_name : "",
+                 ag_comment ? ag_comment : "");
+
+          g_free (ag_uuid);
+          g_free (ag_name);
+          g_free (ag_comment);
+
+          progress_xml = g_strdup_printf ("%i", 100);
+        }
+#endif /* ENABLE_AGENTS */
+      PRINT (out, "<progress>%s</progress>", progress_xml);
+
+      g_free (progress_xml);
 
       if (task_tag_count)
         {
