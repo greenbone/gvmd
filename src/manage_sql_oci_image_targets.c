@@ -813,7 +813,7 @@ trash_oci_image_target_comment (oci_image_target_t oci_image_target)
  *         if available, else NULL.
  */
 char*
-oci_image_target_image_referenes (oci_image_target_t oci_image_target)
+oci_image_target_image_references (oci_image_target_t oci_image_target)
 {
   return sql_string ("SELECT image_references FROM oci_image_targets"
                      " WHERE id = %llu;", oci_image_target);
