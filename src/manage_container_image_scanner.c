@@ -371,7 +371,7 @@ launch_container_image_task (task_t task,
     }
 
   oci_image_references_str
-    = oci_image_target_image_referenes (oci_image_target);
+    = oci_image_target_image_references (oci_image_target);
 
   container_image_target 
       = container_image_target_new (scan_id, oci_image_references_str);
