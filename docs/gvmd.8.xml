@@ -526,11 +526,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </optdesc>
     </option>
     <option>
-      <p><opt>--secinfo-fast_init=<arg>NUMBER</arg></opt></p>
+      <p><opt>--secinfo-fast-init=<arg>NUMBER</arg></opt></p>
       <optdesc>
         <p>Whether to prefer faster SQL with less checks for non-incremental
            SecInfo updates. 0 to use statements with more checks, 1 to use
            faster statements, default: 1</p>
+      </optdesc>
+    </option>
+    <option>
+      <p><opt>--secinfo-update-strategy=<arg>NUMBER</arg></opt></p>
+      <optdesc>
+        <p>
+          The strategy how to handle SecInfo updates:
+          0 (default) = keep old schemas and replace them at the end,
+          1 = drop old schemas at update start, swap them in at the end.
+        </p>
       </optdesc>
     </option>
     <option>

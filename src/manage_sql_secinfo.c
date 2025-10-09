@@ -83,6 +83,12 @@ static int affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
 
 /**
+ * @brief Strategy how to handle SecInfo updates.
+ */
+static secinfo_update_strategy_t secinfo_update_strategy
+  = SECINFO_UPDATE_STRATEGY_DEFAULT;
+
+/**
  * @brief Whether to prefer faster SQL with less checks for non-incremental
  *        SecInfo updates.
  */
@@ -6615,13 +6621,14 @@ update_scap_end ()
       sql ("ALTER SCHEMA scap RENAME TO scap3;");
       sql ("ALTER SCHEMA scap2 RENAME TO scap;");
       sql ("DROP SCHEMA scap3 CASCADE;");
-      /* View 'vulns' contains references into the SCAP schema, so it is
-       * removed by the CASCADE. */
-      create_view_vulns ();
-      create_view_result_vt_epss ();
     }
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+
+  /* View 'vulns' contains references into the SCAP schema, so it is
+   * removed by the CASCADE. */
+  create_view_vulns ();
+  create_view_result_vt_epss ();
 
   /* Update CERT data that depends on SCAP. */
 
@@ -6808,6 +6815,13 @@ update_scap (gboolean reset_scap_db)
               return -1;
             }
         }
+    }
+
+  /* Drop old SCAP schema if that is part of the update strategy */
+  if (secinfo_update_strategy == SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
+    {
+      g_info ("%s: Removing old SCAP database schema...", __func__);
+      sql ("DROP SCHEMA scap CASCADE;");
     }
 
   /* If there's CSV in the feed, just load it. */
@@ -7050,6 +7064,20 @@ set_secinfo_commit_size (int new_commit_size)
     secinfo_commit_size = 0;
   else
     secinfo_commit_size = new_commit_size;
+}
+
+/**
+ * @brief Set the SecInfo update strategy.
+ *
+ * @param new_strategy The new SecInfo update strategy.
+ */
+void
+set_secinfo_update_strategy (int new_strategy)
+{
+  if (new_strategy < 0 || new_strategy > SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
+    secinfo_update_strategy = SECINFO_UPDATE_STRATEGY_DEFAULT;
+  else
+    secinfo_update_strategy = new_strategy;
 }
 
 /**
