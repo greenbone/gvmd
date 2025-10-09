@@ -174,6 +174,14 @@
  */
 #define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 46
 
+/* Struct to be sent as user data to the GFunc for adding results */
+struct report_aux {
+  GArray *results_array;
+  report_t report;
+  task_t task;
+  GHashTable *hash_results;
+  GHashTable *hash_hostdetails;
+};
 
 /* Variables */
 
@@ -387,6 +395,9 @@ scap_check_time ();
 int
 nvts_check_time ();
 
+char *
+nvt_severity (const char *, const char *);
+
 int
 count (const char *, const get_data_t *, column_t *, column_t *, const char **,
        int, const char *, const char *, int);
@@ -563,6 +574,16 @@ check_host_detail_exists (report_t, const char *, const char *, const char *,
 #if ENABLE_HTTP_SCANNER
 void
 parse_http_scanner_report (task_t, report_t, GSList *, time_t, time_t);
+
+int
+check_http_scanner_result_exists (report_t, task_t, http_scanner_result_t,
+                                  char **, GHashTable *);
+
+int
+get_http_scanner_nvti_qod (const char *);
+
+char *
+convert_http_scanner_type_to_osp_type (const char *);
 #endif
 
 int
