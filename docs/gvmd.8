@@ -223,8 +223,11 @@ Time out tasks that are more than TIME minutes overdue. -1 to disable, 0 for min
 \fB--secinfo-commit-size=\fINUMBER\fB\f1
 During CERT and SCAP sync, commit updates to the database every NUMBER items, 0 for unlimited.
 .TP
-\fB--secinfo-fast_init=\fINUMBER\fB\f1
+\fB--secinfo-fast-init=\fINUMBER\fB\f1
 Whether to prefer faster SQL with less checks for non-incremental SecInfo updates. 0 to use statements with more checks, 1 to use faster statements, default: 1
+.TP
+\fB--secinfo-update-strategy=\fINUMBER\fB\f1
+The strategy how to handle SecInfo updates: 0 (default) = keep old schemas and replace them at the end, 1 = drop old schemas at update start, swap them in at the end. 
 .TP
 \fB-c, --unix-socket=\fIFILENAME\fB\f1
 Listen on UNIX socket at FILENAME.
