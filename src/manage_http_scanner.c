@@ -291,17 +291,17 @@ handle_http_scanner_scan (http_scanner_connector_t connector,
               static unsigned long result_end = -1; // get up to the end
               http_scanner_status_t current_status;
               time_t start_time, end_time;
-              http_scanner_scan_status_t openvasd_scan_status;
+              http_scanner_scan_status_t scan_status;
 
               set_report_slave_progress (report, progress);
 
-              openvasd_scan_status
+              scan_status
                 = http_scanner_parsed_scan_status (connector);
-              start_time = openvasd_scan_status->start_time;
-              end_time = openvasd_scan_status->end_time;
-              current_status = openvasd_scan_status->status;
-              progress = openvasd_scan_status->progress;
-              g_free (openvasd_scan_status);
+              start_time = scan_status->start_time;
+              end_time = scan_status->end_time;
+              current_status = scan_status->status;
+              progress = scan_status->progress;
+              g_free (scan_status);
 
               gvm_sleep (1);
 

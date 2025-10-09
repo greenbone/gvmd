@@ -32,7 +32,7 @@
 #include "manage_sql.h"
 
 char*
-oci_image_target_image_referenes (oci_image_target_t);
+oci_image_target_image_references (oci_image_target_t);
 
 credential_t
 oci_image_target_credential (oci_image_target_t);

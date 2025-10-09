@@ -623,7 +623,7 @@ fork_container_image_scan_handler (task_t task,
 }
 
 /**
- * @brief Start a task on a conainter image scanner.
+ * @brief Start a task on a container image scanner.
  *
  * @param[in]   task       The task.
  * @param[in]   from       0 start from beginning, 1 continue from stopped,
@@ -648,6 +648,7 @@ run_container_image_task (task_t task, int from, char **report_id)
                                                  &found,
                                                  "get_oci_image_targets"))
         {
+          g_warning ("%s: Failed to find OCI image target %s", __func__, uuid);
           g_free (uuid);
           return -1;
         }
@@ -698,6 +699,8 @@ stop_container_image_task (task_t task)
   if (!scan_id)
     {
       ret = -1;
+      g_warning ("%s: Failed to get scan ID from report %lld",
+                 __func__, scan_report);
       goto end_stop_openvasd;
     }
   scanner = task_scanner (task);
