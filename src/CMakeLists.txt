@@ -204,6 +204,15 @@ if(ENABLE_AGENTS)
   )
 endif()
 
+if(ENABLE_CREDENTIAL_STORES)
+  list(
+    APPEND
+    ALL_MANAGE_SRC
+    manage_credential_store_cyberark.c
+    manage_credential_stores.c
+  )
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
@@ -237,6 +246,10 @@ if(ENABLE_AGENTS)
   )
 endif()
 
+if(ENABLE_CREDENTIAL_STORES)
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_credential_stores.c)
+endif()
+
 set(
   ALL_GMP_SRC
   gmp.c
@@ -263,6 +276,10 @@ if(ENABLE_AGENTS)
     gmp_agents.c
     gmp_agent_installers.c
   )
+endif()
+
+if(ENABLE_CREDENTIAL_STORES)
+  list(APPEND ALL_GMP_SRC gmp_credential_stores.c)
 endif()
 
 set(ALL_SQL_SRC sql.c sql_pg.c)
