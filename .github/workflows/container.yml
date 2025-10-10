@@ -33,6 +33,10 @@ jobs:
               name: agents
               prefix: agents
               build-args: "FEATURE_TOGGLE=-DENABLE_AGENTS=1"
+          - build:
+              name: container scanning
+              prefix: container-scanning
+              build-args: "FEATURE_TOGGLE=-DOPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
     name: Build and Push Container Images (${{ matrix.build.name }})
     uses: greenbone/workflows/.github/workflows/container-build-push-gea.yml@main
     with:
