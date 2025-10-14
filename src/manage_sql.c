@@ -44990,8 +44990,9 @@ check_http_scanner_result_exists (report_t report,
                           "hostname:%s\n"
                           "type:%s\n"
                           "description:%s\n"
-                          "port:%s",res->ip_address, res->hostname,
-                          res->type, res->message, res->port);
+                          "port:%s\n"
+                          "oid:%s",res->ip_address, res->hostname,
+                          res->type, res->message, res->port, res->oid);
 
  *entity_hash_value = get_md5_hash_from_string (result_string->str);
   if (g_hash_table_contains (hashed_results, *entity_hash_value))
