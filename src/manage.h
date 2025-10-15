@@ -894,15 +894,9 @@ severity_data_add (severity_data_t*, double);
 void
 severity_data_add_count (severity_data_t*, double, int);
 
-#if CVSS3_RATINGS == 1
 void
 severity_data_level_counts (const severity_data_t*,
                             int*, int*, int*, int*, int*, int*, int*);
-#else
-void
-severity_data_level_counts (const severity_data_t*,
-                            int*, int*, int*, int*, int*, int*);
-#endif
 
 
 /* General task facilities. */
@@ -1154,7 +1148,6 @@ int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
 
-#if CVSS3_RATINGS == 1
 int
 report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
                int, int);
@@ -1162,15 +1155,6 @@ report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
 int
 report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
                   const get_data_t*, const char*);
-#else
-int
-report_counts (const char*, int*, int*, int*, int*, int*, double*,
-               int, int);
-
-int
-report_counts_id (report_t, int*, int*, int*, int*, int*, double*,
-                  const get_data_t*, const char*);
-#endif
 
 int
 report_counts_id_no_filt (report_t, int*, int*, int*, int*, int*, int*,

@@ -202,10 +202,8 @@ level_min_severity (const char *level)
     return SEVERITY_FP;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-#if CVSS3_RATINGS == 1
   else if (strcasecmp (level, "critical") == 0)
     return 9.0;
-#endif
   else if (strcasecmp (level, "high") == 0)
     return 7.0;
   else if (strcasecmp (level, "medium") == 0)
@@ -235,15 +233,10 @@ level_max_severity (const char *level)
     return SEVERITY_FP;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-#if CVSS3_RATINGS == 1
   else if (strcasecmp (level, "critical") == 0)
     return 10.0;
   else if (strcasecmp (level, "high") == 0)
     return 8.9;
-#else
-  else if (strcasecmp (level, "high") == 0)
-    return 10.0;
-#endif
   else if (strcasecmp (level, "medium") == 0)
     return 6.9;
   else if (strcasecmp (level, "low") == 0)

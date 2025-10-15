@@ -175,15 +175,11 @@ condition_met (task_t task, report_t report, alert_t alert,
               memset (&get, 0, sizeof (get_data_t));
               get.type = "result";
               get.filt_id = filter_id;
-#if CVSS3_RATINGS == 1
+
               report_counts_id (last_report, &criticals, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
-#else
-              report_counts_id (last_report, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity,
-                                &get, NULL);
-#endif
+
               db_count = criticals + holes + infos + logs + warnings
                          + false_positives;
 
@@ -236,15 +232,11 @@ condition_met (task_t task, report_t report, alert_t alert,
               get_data_t get;
               get.type = "result";
               get.filt_id = filter_id;
-#if CVSS3_RATINGS == 1
+
               report_counts_id (last_report, &criticals, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
                                 &get, NULL);
-#else
-              report_counts_id (last_report, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity,
-                                &get, NULL);
-#endif
+
               last_count = criticals + holes + infos + logs + warnings
                             + false_positives;
 
@@ -255,15 +247,11 @@ condition_met (task_t task, report_t report, alert_t alert,
               if (second_last_report)
                 {
                   int cmp, second_last_count;
-#if CVSS3_RATINGS == 1
+
                   report_counts_id (second_last_report, &criticals, &holes, &infos,
                                     &logs, &warnings, &false_positives,
                                     &severity, &get, NULL);
-#else
-                  report_counts_id (second_last_report, &holes, &infos,
-                                    &logs, &warnings, &false_positives,
-                                    &severity, &get, NULL);
-#endif
+
                   second_last_count = criticals + holes + infos + logs + warnings
                                       + false_positives;
 

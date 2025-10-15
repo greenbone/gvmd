@@ -2666,9 +2666,6 @@ gvmd (int argc, char** argv, char *env[])
 #if OPENVASD == 1
       printf ("OpenVASD is enabled\n");
 #endif
-#if CVSS3_RATINGS == 1
-      printf ("CVSS3 severity ratings enabled\n");
-#endif
 #if FEED_VT_METADATA == 1
       printf ("Feed VT metadata enabled\n");
 #endif

@@ -115,7 +115,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </description>
     <pattern>text</pattern>
   </type>
-  @IF_CVSS3_RATINGS@
   <type>
     <name>levels</name>
     <summary>A string selecting severity levels that may include the characters c, h, m, l, g and f</summary>
@@ -126,19 +125,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </description>
     <pattern>xsd:token { pattern = "c?h?m?l?g?f?" }</pattern>
   </type>
-  @ENDIF_CVSS3_RATINGS@
-  @IF_NOT_CVSS3_RATINGS@
-  <type>
-    <name>levels</name>
-    <summary>A string selecting severity levels that may include the characters h, m, l, g and f</summary>
-    <description>
-      The meanings of the letters for each level are: "h" for "high",
-      "m" for "medium", "l" for "low", "g" for "log" and
-      "f" for "false positive". 
-    </description>
-    <pattern>xsd:token { pattern = "h?m?l?g?f?" }</pattern>
-  </type>
-  @ENDIF_NOT_CVSS3_RATINGS@
   <type>
     <name>name</name>
     <summary>A name</summary>
@@ -2256,9 +2242,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Level filter</summary>
           <pattern>
             <alts>
-              @IF_CVSS3_RATINGS@
               <alt>Critical</alt>
-              @ENDIF_CVSS3_RATINGS@
               <alt>High</alt>
               <alt>Medium</alt>
               <alt>Low</alt>
@@ -2394,22 +2378,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           text
           <e>full</e>
           <e>filtered</e>
-          @IF_CVSS3_RATINGS@
           <e>critical</e>
-          @ENDIF_CVSS3_RATINGS@
           <e>hole</e>
-          @IF_CVSS3_RATINGS@
           <e>high</e>
-          @ENDIF_CVSS3_RATINGS@
           <e>info</e>
-          @IF_CVSS3_RATINGS@
           <e>low</e>
-          @ENDIF_CVSS3_RATINGS@
           <e>log</e>
           <e>warning</e>
-          @IF_CVSS3_RATINGS@
           <e>medium</e>
-          @ENDIF_CVSS3_RATINGS@
         </pattern>
         <ele>
           <name>full</name>
@@ -2421,7 +2397,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Number of results after filtering</summary>
           <pattern><t>integer</t></pattern>
         </ele>
-        @IF_CVSS3_RATINGS@
         <ele>
           <name>critical</name>
           <summary>
@@ -2442,14 +2417,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @ENDIF_CVSS3_RATINGS@
         <ele>
           <name>hole</name>
           <summary>
             Number of "hole" results (threat level High)
-            @IF_CVSS3_RATINGS@
             ,will be deprecated. Use high instead
-            @ENDIF_CVSS3_RATINGS@
           </summary>
           <pattern>
             <e>full</e>
@@ -2466,7 +2438,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @IF_CVSS3_RATINGS@
         <ele>
           <name>high</name>
           <summary>
@@ -2487,14 +2458,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @ENDIF_CVSS3_RATINGS@
         <ele>
           <name>info</name>
           <summary>
             Number of "info" results (threat level Low)
-            @IF_CVSS3_RATINGS@
             ,will be deprecated. Use low instead
-            @ENDIF_CVSS3_RATINGS@
           </summary>
           <pattern>
             <e>full</e>
@@ -2511,7 +2479,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @IF_CVSS3_RATINGS@
         <ele>
           <name>low</name>
           <summary>
@@ -2532,7 +2499,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @ENDIF_CVSS3_RATINGS@
         <ele>
           <name>log</name>
           <summary>
@@ -2557,9 +2523,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>warning</name>
           <summary>
             Number of "warning" results (threat level Medium)
-            @IF_CVSS3_RATINGS@
             ,will be deprecated. Use medium instead
-            @ENDIF_CVSS3_RATINGS@
           </summary>
           <pattern>
             <e>full</e>
@@ -2576,7 +2540,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @IF_CVSS3_RATINGS@
         <ele>
           <name>medium</name>
           <summary>
@@ -2597,7 +2560,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
         </ele>
-        @ENDIF_CVSS3_RATINGS@
       </ele>
       <ele>
         <name>compliance_count</name>
@@ -3052,22 +3014,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary></summary>
           <pattern>
             <e>page</e>
-            @IF_CVSS3_RATINGS@
             <e>critical</e>
-            @ENDIF_CVSS3_RATINGS@
             <e>hole</e>
-            @IF_CVSS3_RATINGS@
             <e>high</e>
-            @ENDIF_CVSS3_RATINGS@
             <e>info</e>
-            @IF_CVSS3_RATINGS@
             <e>low</e>
-            @ENDIF_CVSS3_RATINGS@
             <e>log</e>
             <e>warning</e>
-            @IF_CVSS3_RATINGS@
             <e>medium</e>
-            @ENDIF_CVSS3_RATINGS@
             <e>false_positive</e>
           </pattern>
           <ele>
@@ -3075,7 +3029,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <summary>Total number of results for current host on current page</summary>
             <pattern><t>integer</t></pattern>
           </ele>
-          @IF_CVSS3_RATINGS@
           <ele>
             <name>critical</name>
             <summary>
@@ -3090,14 +3043,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @ENDIF_CVSS3_RATINGS@
           <ele>
             <name>hole</name>
             <summary>
               Number of "hole" results (level "High")
-              @IF_CVSS3_RATINGS@
               ,will be deprecated. Use high instead
-              @ENDIF_CVSS3_RATINGS@
             </summary>
             <pattern>
               <e>page</e>
@@ -3108,7 +3058,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @IF_CVSS3_RATINGS@
           <ele>
             <name>high</name>
             <summary>
@@ -3123,14 +3072,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @ENDIF_CVSS3_RATINGS@
           <ele>
             <name>warning</name>
             <summary>
               Number of "warning" results (level "Medium")
-              @IF_CVSS3_RATINGS@
               ,will be deprecated. Use medium instead
-              @ENDIF_CVSS3_RATINGS@
             </summary>
             <pattern>
               <e>page</e>
@@ -3141,7 +3087,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @IF_CVSS3_RATINGS@
           <ele>
             <name>medium</name>
             <summary>
@@ -3156,14 +3101,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @ENDIF_CVSS3_RATINGS@
           <ele>
             <name>info</name>
             <summary>
               Number of "info" results (level "Low")
-              @IF_CVSS3_RATINGS@
               ,will be deprecated. Use low instead
-              @ENDIF_CVSS3_RATINGS@
             </summary>
             <pattern>
               <e>page</e>
@@ -3174,7 +3116,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @IF_CVSS3_RATINGS@
           <ele>
             <name>low</name>
             <summary>Number of "low" results (level "Low")</summary>
@@ -3187,7 +3128,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
-          @ENDIF_CVSS3_RATINGS@
           <ele>
             <name>log</name>
             <summary>Number of "log" results</summary>
@@ -21016,13 +20956,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Number of high severity results</summary>
           </column>
-          @IF_CVSS3_RATINGS@
           <column>
             <name>critical</name>
             <type>integer</type>
             <summary>Number of critical severity results</summary>
           </column>
-          @ENDIF_CVSS3_RATINGS@
           <column>
             <name>hosts</name>
             <type>integer</type>
@@ -21058,13 +20996,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Number of high severity results per host with results</summary>
           </column>
-          @IF_CVSS3_RATINGS@
           <column>
             <name>critical_per_host</name>
             <type>integer</type>
             <summary>Number of critical severity results per host with results</summary>
           </column>
-          @ENDIF_CVSS3_RATINGS@
           <column>
             <name>start_time</name>
             <type>iso_time</type>
@@ -21372,9 +21308,7 @@ END:VCALENDAR
               </sort>
               <filters id="0">
                 <term>first=1 rows=-1 sort=name</term>
-                @IF_CVSS3_RATINGS@
                 <filter>Critical</filter>
-                @ENDIF_CVSS3_RATINGS@
                 <filter>High</filter>
                 <filter>Medium</filter>
                 <filter>Low</filter>
@@ -21419,7 +21353,6 @@ END:VCALENDAR
               <result_count>
                 <full>10</full>
                 <filtered>10</filtered>
-                @IF_CVSS3_RATINGS@
                 <critical>
                   <full>0</full>
                   <filtered>0</filtered>
@@ -21452,25 +21385,6 @@ END:VCALENDAR
                   <full>3</full>
                   <filtered>3</filtered>
                 </medium>
-                @ENDIF_CVSS3_RATINGS@
-                @IF_NOT_CVSS3_RATINGS@
-                <hole>
-                  <full>0</full>
-                  <filtered>0</filtered>
-                </hole>
-                <info>
-                  <full>7</full>
-                  <filtered>7</filtered>
-                </info>
-                <log>
-                  <full>0</full>
-                  <filtered>0</filtered>
-                </log>
-                <warning>
-                  <full>3</full>
-                  <filtered>3</filtered>
-                </warning>
-                @ENDIF_NOT_CVSS3_RATINGS@
               </result_count>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
@@ -25647,13 +25561,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Number of high severity results</summary>
           </column>
-          @IF_CVSS3_RATINGS@
           <column>
             <name>critical</name>
             <type>integer</type>
             <summary>Number of critical severity results</summary>
           </column>
-          @ENDIF_CVSS3_RATINGS@
           <column>
             <name>hosts</name>
             <type>integer</type>
@@ -25689,13 +25601,11 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Number of high severity results per host with results</summary>
           </column>
-          @IF_CVSS3_RATINGS@
           <column>
             <name>critical_per_host</name>
             <type>integer</type>
             <summary>Number of critical severity results per host with results</summary>
           </column>
-          @ENDIF_CVSS3_RATINGS@
           <column>
             <name>target</name>
             <type>name</type>
@@ -26311,7 +26221,6 @@ END:VCALENDAR
               <pattern>
                 <e>false_positive</e>
                 <e>log</e>
-                @IF_CVSS3_RATINGS@
                 <e>info</e>
                 <e>low</e>
                 <e>warning</e>
@@ -26319,12 +26228,6 @@ END:VCALENDAR
                 <e>hole</e>
                 <e>high</e>
                 <e>critical</e>
-                @ENDIF_CVSS3_RATINGS@
-                @IF_NOT_CVSS3_RATINGS@
-                <e>info</e>
-                <e>warning</e>
-                <e>hole</e>
-                @ENDIF_NOT_CVSS3_RATINGS@
               </pattern>
               <ele>
                 <name>false_positive</name>
@@ -26337,37 +26240,26 @@ END:VCALENDAR
               <ele>
                 <name>info</name>
                 <pattern><t>integer</t></pattern>
-                @IF_CVSS3_RATINGS@
                 <summary>This will be deprecated. Use low instead</summary>
-                @ENDIF_CVSS3_RATINGS@
               </ele>
-              @IF_CVSS3_RATINGS@
               <ele>
                 <name>low</name>
                 <pattern><t>integer</t></pattern>
               </ele>
-              @ENDIF_CVSS3_RATINGS@
               <ele>
                 <name>warning</name>
                 <pattern><t>integer</t></pattern>
-                @IF_CVSS3_RATINGS@
                 <summary>This will be deprecated. Use medium instead</summary>
-                @ENDIF_CVSS3_RATINGS@
               </ele>
-              @IF_CVSS3_RATINGS@
               <ele>
                 <name>medium</name>
                 <pattern><t>integer</t></pattern>
               </ele>
-              @ENDIF_CVSS3_RATINGS@
               <ele>
                 <name>hole</name>
                 <pattern><t>integer</t></pattern>
-                @IF_CVSS3_RATINGS@
                 <summary>This will be deprecated. Use high instead</summary>
-                @ENDIF_CVSS3_RATINGS@
               </ele>
-              @IF_CVSS3_RATINGS@
               <ele>
                 <name>high</name>
                 <pattern><t>integer</t></pattern>
@@ -26376,7 +26268,6 @@ END:VCALENDAR
                 <name>critical</name>
                 <pattern><t>integer</t></pattern>
               </ele>
-              @ENDIF_CVSS3_RATINGS@
             </ele>
             <ele>
               <name>severity</name>
@@ -26609,7 +26500,6 @@ END:VCALENDAR
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
-                  @IF_CVSS3_RATINGS@
                   <critical>0</critical>
                   <hole>0</hole>
                   <high>0</high>
@@ -26618,13 +26508,6 @@ END:VCALENDAR
                   <log>0</log>
                   <warning>3</warning>
                   <medium>3</medium>
-                  @ENDIF_CVSS3_RATINGS@
-                  @IF_NOT_CVSS3_RATINGS@
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <medium>3</medium>
-                  @ENDIF_NOT_CVSS3_RATINGS@
                 </result_count>
                 <severity>5.0</severity>
               </report>
@@ -26696,7 +26579,6 @@ END:VCALENDAR
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
-                  @IF_CVSS3_RATINGS@
                   <critical>0</critical>
                   <hole>0</hole>
                   <high>0</high>
@@ -26705,13 +26587,6 @@ END:VCALENDAR
                   <log>0</log>
                   <warning>3</warning>
                   <medium>3</medium>
-                  @ENDIF_CVSS3_RATINGS@
-                  @IF_NOT_CVSS3_RATINGS@
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <medium>3</medium>
-                  @ENDIF_NOT_CVSS3_RATINGS@
                 </result_count>
                 <severity>5.0</severity>
               </report>
@@ -26724,7 +26599,6 @@ END:VCALENDAR
                 <timestamp>Mon Feb  1 18:51:38 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
-                  @IF_CVSS3_RATINGS@
                   <critical>0</critical>
                   <hole>0</hole>
                   <high>0</high>
@@ -26733,20 +26607,12 @@ END:VCALENDAR
                   <log>0</log>
                   <warning>3</warning>
                   <medium>3</medium>
-                  @ENDIF_CVSS3_RATINGS@
-                  @IF_NOT_CVSS3_RATINGS@
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <medium>3</medium>
-                  @ENDIF_NOT_CVSS3_RATINGS@
                 </result_count>
               </report>
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
-                  @IF_CVSS3_RATINGS@
                   <critical>0</critical>
                   <hole>0</hole>
                   <high>0</high>
@@ -26755,13 +26621,6 @@ END:VCALENDAR
                   <log>0</log>
                   <warning>3</warning>
                   <medium>3</medium>
-                  @ENDIF_CVSS3_RATINGS@
-                  @IF_NOT_CVSS3_RATINGS@
-                  <hole>0</hole>
-                  <info>7</info>
-                  <log>0</log>
-                  <medium>3</medium>
-                  @ENDIF_NOT_CVSS3_RATINGS@
                 </result_count>
                 <severity>5.0</severity>
               </report>
@@ -26852,7 +26711,6 @@ END:VCALENDAR
                 <scan_start>2019-04-24T14:26:01+02:00</scan_start>
                 <scan_end>2019-04-24T14:50:59+02:00</scan_end>
                 <result_count>
-                  @IF_CVSS3_RATINGS@
                   <critical>0</critical>
                   <hole>1</hole>
                   <high>1</high>
@@ -26862,14 +26720,6 @@ END:VCALENDAR
                   <warning>8</warning>
                   <medium>8</medium>
                   <false_positive>0</false_positive>
-                  @ENDIF_CVSS3_RATINGS@
-                  @IF_NOT_CVSS3_RATINGS@
-                  <hole>1</hole>
-                  <info>0</info>
-                  <log>77</log>
-                  <medium>8</medium>
-                  <false_positive>0</false_positive>
-                  @ENDIF_NOT_CVSS3_RATINGS@
                 </result_count>
                 <severity>9.0</severity>
               </report>
