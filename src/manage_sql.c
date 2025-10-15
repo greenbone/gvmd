@@ -18315,6 +18315,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (ag_name);
           g_free (ag_comment);
 
+          g_free (progress_xml);
           progress_xml = g_strdup_printf ("%i", 100);
         }
 #endif /* ENABLE_AGENTS */
