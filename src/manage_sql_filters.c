@@ -794,9 +794,7 @@ keyword_applies_to_column (keyword_t *keyword, const char* column)
       && (strstr ("False Positive", keyword->string) == NULL)
       && (strstr ("Error", keyword->string) == NULL)
       && (strstr ("Alarm", keyword->string) == NULL)
-#if CVSS3_RATINGS == 1
       && (strstr ("Critical", keyword->string) == NULL)
-#endif
       && (strstr ("High", keyword->string) == NULL)
       && (strstr ("Medium", keyword->string) == NULL)
       && (strstr ("Low", keyword->string) == NULL)
@@ -1241,9 +1239,7 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "low_per_host") == 0
                        || strcmp (keyword->string, "medium_per_host") == 0
                        || strcmp (keyword->string, "high_per_host") == 0
-#if CVSS3_RATINGS == 1
                        || strcmp (keyword->string, "critical_per_host") == 0
-#endif
                        )
                 {
                   gchar *column;
@@ -1281,9 +1277,7 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "published") == 0)
                        || (strcmp (keyword->string, "qod") == 0)
                        || (strcmp (keyword->string, "cves") == 0)
-#if CVSS3_RATINGS == 1
                        || (strcmp (keyword->string, "critical") == 0)
-#endif
                        || (strcmp (keyword->string, "high") == 0)
                        || (strcmp (keyword->string, "medium") == 0)
                        || (strcmp (keyword->string, "low") == 0)
@@ -1441,9 +1435,7 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "low_per_host") == 0
                        || strcmp (keyword->string, "medium_per_host") == 0
                        || strcmp (keyword->string, "high_per_host") == 0
-#if CVSS3_RATINGS == 1
                        || strcmp (keyword->string, "critical_per_host") == 0
-#endif
                       )
                 {
                   gchar *column;
@@ -1481,9 +1473,7 @@ filter_clause (const char* type, const char* filter,
                        || (strcmp (keyword->string, "published") == 0)
                        || (strcmp (keyword->string, "qod") == 0)
                        || (strcmp (keyword->string, "cves") == 0)
-#if CVSS3_RATINGS == 1
                        || (strcmp (keyword->string, "critical") == 0)
-#endif
                        || (strcmp (keyword->string, "high") == 0)
                        || (strcmp (keyword->string, "medium") == 0)
                        || (strcmp (keyword->string, "low") == 0)
