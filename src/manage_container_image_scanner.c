@@ -126,13 +126,12 @@ add_container_image_scan_result (http_scanner_result_t res,
 
   struct report_aux *rep_aux = *results_aux;
   result_t result;
-  char *type, *severity, *host, *hostname, *test_id;
-  char *port = NULL, *path = NULL;
-  char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
+  char *type, *host, *hostname, *test_id;
+  char *port = NULL, *desc = NULL;
+  char *nvt_id = NULL, *severity_str = NULL;
   int qod_int;
 
   type = convert_http_scanner_type_to_osp_type (res->type);
-  severity = NULL;
   test_id = res->oid;
   host = res->ip_address;
   hostname = res->hostname;
@@ -154,9 +153,9 @@ add_container_image_scan_result (http_scanner_result_t res,
                                 type ?: "",
                                 desc ?: "",
                                 port ?: "",
-                                severity_str ?: severity,
+                                severity_str ?: NULL,
                                 qod_int,
-                                path ?: "",
+                                NULL,
                                 hash_value);
       g_array_append_val (rep_aux->results_array, result);
     }

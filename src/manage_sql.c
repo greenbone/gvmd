@@ -44456,27 +44456,24 @@ check_http_scanner_result_exists (report_t report,
                    report, *entity_hash_value))
         {
           const char *desc, *type, *severity = NULL, *host;
-          const char *hostname, *port = NULL, *path = NULL;
+          const char *hostname, *port = NULL;
           gchar *quoted_desc, *quoted_type, *quoted_host;
-          gchar *quoted_hostname, *quoted_port, *quoted_path;
+          gchar *quoted_hostname, *quoted_port;
           double severity_double = 0.0;
           int qod_int = get_http_scanner_nvti_qod (res->oid);
 
           host = res->ip_address;
           hostname = res->hostname;
-          type = res->type;
+          type = convert_http_scanner_type_to_osp_type(res->type);
           desc = res->message;
+          severity = nvt_severity (res->oid, type);
+          port = res->port;
 
-          if (!severity || !strcmp (severity, ""))
+          if (!severity)
             {
-              if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
-                severity_double = SEVERITY_ERROR;
-              else
-                {
-                  g_debug ("%s: Result without severity", __func__);
-                  g_string_free (result_string, TRUE);
-                  return 0;
-                }
+              g_debug ("%s: Result without severity", __func__);
+              g_string_free (result_string, TRUE);
+              return 0;
             }
           else
             {
@@ -44488,21 +44485,20 @@ check_http_scanner_result_exists (report_t report,
           quoted_type = sql_quote (type ?: "");
           quoted_desc = sql_quote (desc ?: "");
           quoted_port = sql_quote (port ?: "");
-          quoted_path = sql_quote (path ?: "");
 
           if (sql_int ("SELECT EXISTS"
                        " (SELECT * FROM results"
                        "   WHERE report = %llu and hash_value = '%s'"
                        "    and host = '%s' and hostname = '%s'"
                        "    and type = '%s' and description = '%s'"
-                       "    and port = '%s' and severity = %1.1f"
-                       "    and qod = %d and path = '%s'"
+                       "    and port = '%s' and severity = %1.1f::real"
+                       "    and qod = %d"
                        " );",
                        report, *entity_hash_value,
                        quoted_host, quoted_hostname,
                        quoted_type, quoted_desc,
                        quoted_port, severity_double,
-                       qod_int, quoted_path))
+                       qod_int))
             {
               g_info ("Captured duplicate result, report: %llu hash_value: %s",
                       report, *entity_hash_value);
@@ -44515,7 +44511,6 @@ check_http_scanner_result_exists (report_t report,
           g_free (quoted_type);
           g_free (quoted_desc);
           g_free (quoted_port);
-          g_free (quoted_path);
         }
     }
   if (return_value)
