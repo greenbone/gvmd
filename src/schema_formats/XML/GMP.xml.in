@@ -34232,4 +34232,16 @@ END:VCALENDAR
     <version>8.0</version>
   </deprecation>
 
+  <deprecation>
+    <command>GET_REPORTS, GET_TASKS</command>
+    <summary>Now the CVSS3 rating is included instead of the deprecated CVSS2 rating.</summary>
+    <version>8.0</version>
+    <description>
+      <p>
+          The commands GET_REPORTS and GET_TASKS as well as the element
+          report and the data type levels now include the CVSS3 rating.
+      </p>
+    </description>
+  </deprecation>
+
 </protocol>
