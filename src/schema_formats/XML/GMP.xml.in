@@ -7024,7 +7024,7 @@ END:VCALENDAR
     <summary>Delete an agent group</summary>
     <description>
       <p>
-        The client uses the <code>delete_agent_group</code> command to delete an
+        The client uses the delete_agent_group command to delete an
         existing agent group.
       </p>
       <p>
@@ -7033,7 +7033,7 @@ END:VCALENDAR
         Manager.
       </p>
       <p>
-        If <code>ultimate</code> is set to 1, the agent group is permanently deleted.
+        If ultimate is set to 1, the agent group is permanently deleted.
         If set to 0, the group is moved to the trashcan and can be restored later.
       </p>
     </description>
@@ -7079,7 +7079,7 @@ END:VCALENDAR
     <summary>Delete agents</summary>
     <description>
       <p>
-        The client uses the <code>delete_agent</code> command to delete one or more
+        The client uses the delete_agent command to delete one or more
         existing agents.
       </p>
       <p>
@@ -8471,7 +8471,7 @@ END:VCALENDAR
     <summary>Get agent groups</summary>
     <description>
       <p>
-        The client uses the <code>get_agent_groups</code> command to retrieve a list of agent groups.
+        The client uses the get_agent_groups command to retrieve a list of agent groups.
       </p>
     </description>
     <pattern>
@@ -9255,7 +9255,7 @@ END:VCALENDAR
     <summary>Get agents</summary>
     <description>
       <p>
-        The client uses the <code>get_agents</code> command to retrieve a list of registered agents.
+        The client uses the get_agents command to retrieve a list of registered agents.
       </p>
       <p>
         The response includes detailed information about each agent, including metadata,
@@ -29283,7 +29283,7 @@ END:VCALENDAR
     <summary>Modify agents</summary>
     <description>
       <p>
-        The client uses the <code>modify_agent_control_scan_config</code> command to update the
+        The client uses the modify_agent_control_scan_config command to update the
         existing agent control scan agent config.
       </p>
     </description>
@@ -29409,7 +29409,7 @@ END:VCALENDAR
     <summary>Modify an agent group</summary>
     <description>
       <p>
-        The <code>agent_group_id</code> attribute is required to identify which group
+        The agent_group_id attribute is required to identify which group
         should be modified.
       </p>
     </description>
@@ -29487,7 +29487,7 @@ END:VCALENDAR
     <summary>Modify agents</summary>
     <description>
       <p>
-        The client uses the <code>modify_agent</code> command to update one or more
+        The client uses the modify_agent command to update one or more
         existing agents. The supported fields include authorization, scheduling,
         and operational intervals.
       </p>
