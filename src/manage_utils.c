@@ -302,6 +302,11 @@ valid_db_resource_type (const char *type)
     return 1;
 #endif /* ENABLE_AGENTS */
 
+#ifdef ENABLE_CREDENTIAL_STORES
+  if (strcasecmp (type, "credential_store") == 0)
+    return 1;
+#endif /* ENABLE_CREDENTIAL_STORES */
+
   return (strcasecmp (type, "alert") == 0) || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "cpe") == 0)
          || (strcasecmp (type, "credential") == 0)
