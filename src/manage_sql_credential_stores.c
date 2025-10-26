@@ -1114,11 +1114,11 @@ create_or_update_credential_store_base (const char *credential_store_id,
 
       sql_int64 (credential_store,
                  "INSERT INTO credential_stores"
-                 " (uuid, owner, name, comment, version"
+                 " (uuid, owner, name, comment, version,"
                  "  creation_time, modification_time,"
                  "  active, host, path)"
                  " VALUES"
-                 " ('%s', %llu, '%s', '', '%s'"
+                 " ('%s', %llu, '%s', '', '%s',"
                  "  m_now (), m_now (),"
                  "  0, '%s', '%s')"
                  " RETURNING id;",
