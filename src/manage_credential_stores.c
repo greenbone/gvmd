@@ -388,3 +388,14 @@ eval_certs_credential_store_preference (credential_store_preference_data_t
 
   return 0;
 }
+
+/**
+ * @brief Get the default credential store UUID.
+ *
+ * @return The default credential store UUID.
+ */
+const char *
+get_default_credential_store_id ()
+{
+  return CREDENTIAL_STORE_UUID_CYBERARK;
+}

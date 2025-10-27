@@ -1487,3 +1487,42 @@ verify_credential_store (const char *credential_store_id,
   return ret ? VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED
              : VERIFY_CREDENTIAL_STORE_OK;
 }
+
+/**
+ * @brief Find a credential store given a UUID.
+ *
+ * This does not do any permission checks.
+ *
+ * @param[in]   uuid              UUID of the credential store.
+ * @param[out]  credential_store  Credential store return,
+ *                                 0 if no such credential store.
+ *
+ * @return FALSE on success (including if no such store), TRUE on error.
+ */
+gboolean
+find_credential_store_no_acl (const char *uuid,
+                              credential_store_t *credential_store)
+{
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  switch (sql_int64 (credential_store,
+                     "SELECT id FROM credential_stores WHERE uuid = '%s';",
+                     quoted_uuid))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *credential_store = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
