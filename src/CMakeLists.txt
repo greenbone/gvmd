@@ -51,11 +51,7 @@ else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
 endif(ENABLE_AGENTS)
 if(ENABLE_CREDENTIAL_STORES)
-  pkg_check_modules(
-    LIBGVM_CYBERARK
-    REQUIRED
-    libgvm_cyberark>=22.28
-  )
+  pkg_check_modules(LIBGVM_CYBERARK REQUIRED libgvm_cyberark>=22.28)
 else(ENABLE_CREDENTIAL_STORES)
   message(STATUS "ENABLE_CREDENTIAL_STORES flag is not enabled")
 endif(ENABLE_CREDENTIAL_STORES)
