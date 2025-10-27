@@ -49,15 +49,30 @@ jobs:
           retention-days: 7
 
   build-gvmd:
-    name: Build gvmd
+    name: Build gvmd (${{ matrix.build.name }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        container:
-          - stable
-          - oldstable
-          - testing
-    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.container }}
+        include:
+          - build:
+              name: stable
+              container: stable
+          - build:
+              name: oldstable
+              container: oldstable
+          - build:
+              name: testing
+              container: testing
+          - build:
+              name: "with openvasd"
+              container: stable
+              flags: "-DOPENVASD=1"
+          - build:
+              name: "with container scanning"
+              container: stable
+              flags: "-DOPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
+    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.build.container }}
     steps:
       - uses: actions/checkout@v5
       - name: Install build dependencies
@@ -65,26 +80,7 @@ jobs:
       - name: Configure and compile gvmd
         run: |
           rm -rf .git
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j $(nproc) -- install
-
-  build-gvmd-with-openvasd:
-    name: Build gvmd with openvasd
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        container:
-          - stable
-          - testing
-    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.container }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install build dependencies
-        run: sh .github/install-dependencies.sh .github/build-dependencies.list
-      - name: Configure and compile gvmd
-        run: |
-          rm -rf .git
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENVASD=1
+          cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.build.flags || '' }}
           cmake --build build -j $(nproc) -- install
 
   test-units:

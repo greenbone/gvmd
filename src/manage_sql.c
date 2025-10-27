@@ -248,17 +248,10 @@ role_is_predefined (role_t);
 static int
 role_is_predefined_id (const char *);
 
-#if CVSS3_RATINGS == 1
 static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
-#else
-static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *,
-                       double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, double *);
-#endif
 
 static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
@@ -3283,13 +3276,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
-#if CVSS3_RATINGS == 1
-  #define SEVERITY_FILTER_COLUMNS \
-    "false_positive", "log", "low", "medium", "high", "critical"
-#else
-  #define SEVERITY_FILTER_COLUMNS \
-    "false_positive", "log", "low", "medium", "high"
-#endif
+#define SEVERITY_FILTER_COLUMNS \
+  "false_positive", "log", "low", "medium", "high", "critical"
 
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_FILTER_COLUMNS "agent_group_id", "agent_group",
@@ -3370,7 +3358,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Task iterator WHERE columns.
  */
-#if CVSS3_RATINGS == 1
 #define TASK_ITERATOR_WHERE_COLUMNS_INNER                                    \
    {                                                                         \
      "task_threat_level (id, opts.override, opts.min_qod)",                  \
@@ -3577,199 +3564,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "last_report_created",                                                  \
      KEYWORD_TYPE_INTEGER                                                    \
    } TASK_AGENT_GROUP_ITERATOR_COLUMNS
-#else
-#define TASK_ITERATOR_WHERE_COLUMNS_INNER                                    \
-   {                                                                         \
-     "task_threat_level (id, opts.override, opts.min_qod)",                  \
-     "threat",                                                               \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   {                                                                         \
-     "task_trend (id, opts.override, opts.min_qod)",                         \
-     "trend",                                                                \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   {                                                                         \
-     "task_severity (id, opts.override, opts.min_qod)",                      \
-     "severity",                                                             \
-     KEYWORD_TYPE_DOUBLE                                                     \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT schedules.name FROM schedules"                                 \
-     " WHERE schedules.id = tasks.schedule)",                                \
-     "schedule",                                                             \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   {                                                                         \
-     "(CASE WHEN schedule_next_time IS NULL"                                 \
-     " THEN -1"                                                              \
-     " WHEN schedule_next_time = 0 AND tasks.schedule > 0"                   \
-     " THEN (SELECT first_time"                                              \
-     "       FROM schedules"                                                 \
-     "       WHERE schedules.id = tasks.schedule)"                           \
-     " ELSE schedule_next_time"                                              \
-     " END)",                                                                \
-     "next_due",                                                             \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
-     /* TODO 1 == TASK_STATUS_DONE */                                        \
-     " AND scan_run_status = 1"                                              \
-     " ORDER BY creation_time ASC LIMIT 1)",                                 \
-     "first",                                                                \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
-     /* TODO 1 == TASK_STATUS_DONE */                                        \
-     " AND scan_run_status = 1"                                              \
-     " ORDER BY creation_time DESC LIMIT 1)",                                \
-     "last",                                                                 \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_severity_count (task_last_report (id),"                        \
-     "                        opts.override, opts.min_qod,"                  \
-     "                        'False Positive')"                             \
-     " END",                                                                 \
-     "false_positive",                                                       \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_severity_count (task_last_report (id),"                        \
-     "                        opts.override, opts.min_qod, 'Log')"           \
-     " END",                                                                 \
-     "log",                                                                  \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_severity_count (task_last_report (id),"                        \
-     "                        opts.override, opts.min_qod, 'Low')"           \
-     " END",                                                                 \
-     "low",                                                                  \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_severity_count (task_last_report (id),"                        \
-     "                        opts.override, opts.min_qod, 'Medium')"        \
-     " END",                                                                 \
-     "medium",                                                               \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_severity_count (task_last_report (id),"                        \
-     "                        opts.override, opts.min_qod, 'High')"          \
-     " END",                                                                 \
-     "high",                                                                 \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_host_count (task_last_report (id))"                            \
-     " END",                                                                 \
-     "hosts",                                                                \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " report_result_host_count (task_last_report (id), opts.min_qod)"       \
-     " END",                                                                 \
-     "result_hosts",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " coalesce (report_severity_count (task_last_report (id),"              \
-     "                                 opts.override, opts.min_qod,"         \
-     "                                 'False Positive') * 1.0"              \
-     "            / nullif (report_result_host_count (task_last_report (id),"\
-     "                                                opts.min_qod), 0),"    \
-     "          0)"                                                          \
-     " END",                                                                 \
-     "fp_per_host",                                                          \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " coalesce (report_severity_count (task_last_report (id),"              \
-     "                                 opts.override, opts.min_qod,"         \
-     "                                 'Log') * 1.0"                         \
-     "            / nullif (report_result_host_count (task_last_report (id),"\
-     "                                                opts.min_qod), 0),"    \
-     "          0)"                                                          \
-     " END",                                                                 \
-     "log_per_host",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " coalesce (report_severity_count (task_last_report (id),"              \
-     "                                 opts.override, opts.min_qod,"         \
-     "                                 'Low') * 1.0"                         \
-     "            / nullif (report_result_host_count (task_last_report (id),"\
-     "                                                opts.min_qod), 0),"    \
-     "          0)"                                                          \
-     " END",                                                                 \
-     "low_per_host",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " coalesce (report_severity_count (task_last_report (id),"              \
-     "                                 opts.override, opts.min_qod,"         \
-     "                                 'Medium') * 1.0"                      \
-     "            / nullif (report_result_host_count (task_last_report (id),"\
-     "                                                opts.min_qod), 0),"    \
-     "          0)"                                                          \
-     " END",                                                                 \
-     "medium_per_host",                                                      \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
-     " coalesce (report_severity_count (task_last_report (id),"              \
-     "                                 opts.override, opts.min_qod,"         \
-     "                                 'High') * 1.0"                        \
-     "            / nullif (report_result_host_count (task_last_report (id),"\
-     "                                                opts.min_qod), 0),"    \
-     "          0)"                                                          \
-     " END",                                                                 \
-     "high_per_host",                                                        \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT name FROM targets WHERE id = target)",                         \
-     "target",                                                               \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
-     /* TODO 1 == TASK_STATUS_DONE */                                        \
-     " AND scan_run_status = 1"                                              \
-     " ORDER BY creation_time ASC LIMIT 1)",                                 \
-     "first_report_created",                                                 \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT creation_time FROM reports WHERE task = tasks.id"              \
-     /* TODO 1 == TASK_STATUS_DONE */                                        \
-     " AND scan_run_status = 1"                                              \
-     " ORDER BY creation_time DESC LIMIT 1)",                                \
-     "last_report_created",                                                  \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT type FROM scanners WHERE scanners.id = tasks.scanner)",        \
-     "scanner_type",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   } TASK_AGENT_GROUP_ITERATOR_COLUMNS
-#endif
 
 /**
  * @brief Task iterator WHERE columns.
@@ -4385,8 +4179,8 @@ check_db_scanners ()
         " (uuid, owner, name, host, port, type, ca_pub, credential,"
         "  creation_time, modification_time)"
         " VALUES ('" SCANNER_UUID_CONTAINER_IMAGE_DEFAULT "', NULL, "
-        " 'Container Image', '', 0, %d, NULL, NULL, m_now (),"
-        " m_now ());",
+        " 'Container Image Default', 'localhost', 3000, %d, NULL, NULL,"
+        " m_now (), m_now ());",
         SCANNER_TYPE_CONTAINER_IMAGE);
     }
 #endif
@@ -8630,7 +8424,7 @@ qod_from_type (const char *qod_type)
  *
  * @return A severity string, NULL if unknown type or no nvt id for Alarm type.
  */
-static char *
+char *
 nvt_severity (const char *nvt_id, const char *type)
 {
   char *severity = NULL;
@@ -9786,14 +9580,10 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                "   AND min_qod = %d",
                report, user, override, min_qod);
         }
-#if CVSS3_RATINGS == 1
+
       int criticals;
       report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                         &false_positives, &severity, get, NULL);
-#else
-      report_counts_id (report, &holes, &infos, &logs, &warnings,
-                        &false_positives, &severity, get, NULL);
-#endif
 
       get_data_reset (get);
       g_free (get);
@@ -10877,7 +10667,6 @@ report_add_results_array (report_t report, GArray *results)
 /**
  * @brief Filter columns for report iterator.
  */
-#if CVSS3_RATINGS == 1
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "creation_time",       \
    "date", "status", "task", "severity", "false_positive", "log", "low",       \
@@ -10886,16 +10675,7 @@ report_add_results_array (report_t report, GArray *results)
    "critical_per_host", "duration", "duration_per_host", "start_time",         \
    "end_time", "scan_start", "scan_end", "compliance_yes", "compliance_no",    \
    "compliance_incomplete", "compliant", NULL }
-#else
-#define REPORT_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "creation_time",       \
-   "date", "status", "task", "severity", "false_positive", "log", "low",       \
-   "medium", "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",   \
-   "low_per_host", "medium_per_host", "high_per_host", "duration",             \
-   "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
-   "compliance_yes", "compliance_no", "compliance_incomplete",                 \
-   "compliant", NULL }
-#endif
+
 /**
  * @brief Report iterator columns.
  */
@@ -10921,7 +10701,6 @@ report_add_results_array (report_t report, GArray *results)
 /**
  * @brief Report iterator columns.
  */
-#if CVSS3_RATINGS == 1
 #define REPORT_ITERATOR_WHERE_COLUMNS                                        \
  {                                                                           \
    { "run_status_name (scan_run_status)", "status", KEYWORD_TYPE_STRING },   \
@@ -11068,141 +10847,7 @@ report_add_results_array (report_t report, GArray *results)
    },                                                                        \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
-#else
-#define REPORT_ITERATOR_WHERE_COLUMNS                                        \
- {                                                                           \
-   { "run_status_name (scan_run_status)", "status", KEYWORD_TYPE_STRING },   \
-   {                                                                         \
-     "(SELECT uuid FROM tasks WHERE tasks.id = task)",                       \
-     "task_id",                                                              \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   { "creation_time", "date", KEYWORD_TYPE_INTEGER },                        \
-   { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
-   {                                                                         \
-     "report_severity (id, opts.override, opts.min_qod)",                    \
-     "severity",                                                             \
-     KEYWORD_TYPE_DOUBLE                                                     \
-   },                                                                        \
-   {                                                                         \
-     "report_severity_count (id, opts.override, opts.min_qod,"               \
-     "                       'False Positive')",                             \
-     "false_positive",                                                       \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_severity_count (id, opts.override, opts.min_qod, 'Log')",       \
-     "log",                                                                  \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_severity_count (id, opts.override, opts.min_qod, 'Low')",       \
-     "low",                                                                  \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_severity_count (id, opts.override, opts.min_qod, 'Medium')",    \
-     "medium",                                                               \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_severity_count (id, opts.override, opts.min_qod, 'High')",      \
-     "high",                                                                 \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(SELECT name FROM users WHERE users.id = reports.owner)",              \
-     "_owner",                                                               \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   {                                                                         \
-     "report_host_count (id)",                                               \
-     "hosts",                                                                \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_result_host_count (id, opts.min_qod)",                          \
-     "result_hosts",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
-     "                                 'False Positive') * 1.0"              \
-     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
-     "          0)",                                                         \
-     "fp_per_host",                                                          \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
-     "                                 'Log') * 1.0"                         \
-     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
-     "          0)",                                                         \
-     "log_per_host",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
-     "                                 'Low') * 1.0"                         \
-     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
-     "          0)",                                                         \
-     "low_per_host",                                                         \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
-     "                                 'Medium') * 1.0"                      \
-     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
-     "          0)",                                                         \
-     "medium_per_host",                                                      \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
-     "                                 'High') * 1.0"                        \
-     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
-     "          0)",                                                         \
-     "high_per_host",                                                        \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(CASE WHEN (start_time IS NULL or end_time IS NULL)"                   \
-     " THEN NULL ELSE end_time - start_time END)",                           \
-     "duration",                                                             \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "(CASE WHEN (start_time IS NULL or end_time IS NULL"                    \
-     "            or report_result_host_count (id, opts.min_qod) = 0)"       \
-     " THEN NULL"                                                            \
-     " ELSE (end_time - start_time)"                                         \
-     "        / report_result_host_count (id, opts.min_qod) END)",           \
-     "duration_per_host",                                                    \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_compliance_count (id, 'YES')",                                  \
-     "compliance_yes",                                                       \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_compliance_count (id, 'NO')",                                   \
-     "compliance_no",                                                        \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_compliance_count (id, 'INCOMPLETE')",                           \
-     "compliance_incomplete",                                                \
-     KEYWORD_TYPE_INTEGER                                                    \
-   },                                                                        \
-   {                                                                         \
-     "report_compliance_status (id)",                                        \
-     "compliant",                                                            \
-     KEYWORD_TYPE_STRING                                                     \
-   },                                                                        \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
- }
-#endif
+
 /**
  * @brief Generate the extra_tables string for a report iterator.
  *
@@ -11533,13 +11178,11 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append_printf (levels_sql, " AND severity_in_levels (%s", new_severity_sql);
 
-#if CVSS3_RATINGS == 1
   if (strchr (levels, 'c'))
     {
       g_string_append (levels_sql, ", 'critical'");
       count++;
     }
-#endif
   if (strchr (levels, 'h'))
     {
       g_string_append (levels_sql, ", 'high'");
@@ -11574,11 +11217,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append (levels_sql, ")");
 
-#if CVSS3_RATINGS == 1
   if (count == 6)
-#else
-  if (count == 5)
-#endif
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -12272,11 +11911,8 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod = filter_term_min_qod (filter);
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
-#if CVSS3_RATINGS == 1
     levels = g_strdup ("chmlgdf");
-#else
-    levels = g_strdup ("hmlgdf");
-#endif
+
   compliance_levels = filter_term_value (filter, "compliance_levels");
 
   // Build clause fragments
@@ -14864,7 +14500,6 @@ report_severity_data (report_t report, const char *host,
  *
  * @param[in]   report_id    ID of report.
  * @param[out]  criticals    Number of critical messages.
- *                           Only if CVSS3_RATINGS is enabled.
  * @param[out]  holes        Number of hole messages.
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
@@ -14878,9 +14513,7 @@ report_severity_data (report_t report, const char *host,
  */
 int
 report_counts (const char* report_id,
-#if CVSS3_RATINGS == 1
                int* criticals,
-#endif
                int* holes,
                int* infos,
                int* logs,
@@ -14898,13 +14531,8 @@ report_counts (const char* report_id,
   // TODO Check if report was found.
 
   get = report_results_get_data (1, -1, override, min_qod);
-#if CVSS3_RATINGS == 1
   ret = report_counts_id (report, criticals, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
-#else
-  ret = report_counts_id (report, holes, infos, logs, warnings,
-                          false_positives, severity, get, NULL);
-#endif
   get_data_reset (get);
   free (get);
   return ret;
@@ -15075,7 +14703,6 @@ cache_report_counts (report_t report, int override, int min_qod,
  *
  * @param[in]   report    Report.
  * @param[out]  criticals Number of critical messages.
- *                        Only if CVSS3_RATINGS is enabled.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -15085,7 +14712,6 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @param[in]   get       Get data.
  * @param[in]   host      Host to which to limit the count.
  * @param[out]  filtered_criticals Number of critical messages after filtering.
- *                                 Only if CVSS3_RATINGS is enabled.
  * @param[out]  filtered_holes     Number of hole messages after filtering.
  * @param[out]  filtered_infos     Number of info messages after filtering.
  * @param[out]  filtered_logs      Number of log messages after filtering.
@@ -15098,9 +14724,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  */
 static int
 report_counts_id_full (report_t report,
-#if CVSS3_RATINGS == 1
                        int* criticals,
-#endif
                        int* holes,
                        int* infos,
                        int* logs,
@@ -15109,9 +14733,7 @@ report_counts_id_full (report_t report,
                        double* severity,
                        const get_data_t* get,
                        const char* host,
-#if CVSS3_RATINGS == 1
                        int* filtered_criticals,
-#endif
                        int* filtered_holes,
                        int* filtered_infos,
                        int* filtered_logs,
@@ -15125,19 +14747,13 @@ report_counts_id_full (report_t report,
   int filter_cacheable, unfiltered_requested, filtered_requested, cache_exists;
   int override, min_qod_int;
   severity_data_t severity_data, filtered_severity_data;
-#if CVSS3_RATINGS == 1
+
   unfiltered_requested = (criticals || holes || warnings || infos || logs || false_positives
                           || severity);
   filtered_requested = (filtered_criticals || filtered_holes || filtered_warnings
                         || filtered_infos  || filtered_logs
                         || filtered_false_positives || filtered_severity);
-#else
-  unfiltered_requested = (holes || warnings || infos || logs || false_positives
-                          || severity);
-  filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
-                        || filtered_logs || filtered_false_positives
-                        || filtered_severity);
-#endif
+
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
     g_warning ("%s: called by NULL or dummy user", __func__);
@@ -15229,7 +14845,6 @@ report_counts_id_full (report_t report,
                               ? &filtered_severity_data : NULL);
     }
 
-#if CVSS3_RATINGS == 1
   severity_data_level_counts (&severity_data,
                               NULL, false_positives,
                               logs, infos, warnings, holes, criticals);
@@ -15237,15 +14852,6 @@ report_counts_id_full (report_t report,
                               NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
                               filtered_warnings, filtered_holes, filtered_criticals);
-#else
-  severity_data_level_counts (&severity_data,
-                              NULL, false_positives,
-                              logs, infos, warnings, holes);
-  severity_data_level_counts (&filtered_severity_data,
-                              NULL, filtered_false_positives,
-                              filtered_logs, filtered_infos,
-                              filtered_warnings, filtered_holes);
-#endif
 
   if (severity)
     *severity = severity_data.max;
@@ -15416,7 +15022,6 @@ report_compliance_counts (report_t report,
  *
  * @param[in]   report    Report.
  * @param[out]  criticals Number of critical messages.
- *                        Only if CVSS3_RATINGS is enabled.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -15430,9 +15035,7 @@ report_compliance_counts (report_t report,
  */
 int
 report_counts_id (report_t report,
-#if CVSS3_RATINGS == 1
                   int* criticals,
-#endif
                   int* holes,
                   int* infos,
                   int* logs,
@@ -15443,15 +15046,11 @@ report_counts_id (report_t report,
                   const char *host)
 {
   int ret;
-#if CVSS3_RATINGS == 1
+
   ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
                                get, host, criticals, holes, infos, logs,
                                warnings, false_positives, severity);
-#else
-  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL,
-                               get, host, holes, infos, logs, warnings,
-                               false_positives, severity);
-#endif
+
   return ret;
 }
 
@@ -15493,13 +15092,10 @@ report_severity (report_t report, int overrides, int min_qod)
     {
       g_debug ("%s: could not get max from cache", __func__);
       get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
-#if CVSS3_RATINGS == 1
+
       report_counts_id (report, NULL, NULL, NULL, NULL,
                         NULL, NULL, &severity, get, NULL);
-#else
-      report_counts_id (report, NULL, NULL, NULL, NULL,
-                        NULL, &severity, get, NULL);
-#endif
+
       get_data_reset (get);
       free (get);
     }
@@ -17214,7 +16810,6 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  host_summary_buffer      Host sumary buffer.
  * @param[in]  f_host_ports             Hashtable for host ports.
  * @param[in]  f_host_criticals         Hashtable for host criticals.
- *                                      Only available if CVSS3_RATINGS is enabled.
  * @param[in]  f_host_holes             Hashtable for host holes.
  * @param[in]  f_host_warnings          Hashtable for host host warnings.
  * @param[in]  f_host_infos             Hashtable for host infos.
@@ -17235,9 +16830,7 @@ print_report_host_xml (FILE *stream,
                        int lean,
                        GString *host_summary_buffer,
                        GHashTable *f_host_ports,
-#if CVSS3_RATINGS == 1
                        GHashTable *f_host_criticals,
-#endif
                        GHashTable *f_host_holes,
                        GHashTable *f_host_warnings,
                        GHashTable *f_host_infos,
@@ -17325,11 +16918,9 @@ print_report_host_xml (FILE *stream,
       int logs_count, false_positives_count;
       int criticals_count = 0;
 
-#if CVSS3_RATINGS == 1
       criticals_count
         = GPOINTER_TO_INT
             (g_hash_table_lookup ( f_host_criticals, current_host));
-#endif
       holes_count
         = GPOINTER_TO_INT
             (g_hash_table_lookup ( f_host_holes, current_host));
@@ -17353,9 +16944,7 @@ print_report_host_xml (FILE *stream,
             "<port_count><page>%d</page></port_count>"
             "<result_count>"
             "<page>%d</page>"
-#if CVSS3_RATINGS == 1
             "<critical><page>%d</page></critical>"
-#endif
             "<hole deprecated='1'><page>%d</page></hole>"
             "<high><page>%d</page></high>"
             "<warning deprecated='1'><page>%d</page></warning>"
@@ -17372,9 +16961,7 @@ print_report_host_xml (FILE *stream,
             ports_count,
             (criticals_count + holes_count + warnings_count + infos_count
               + logs_count + false_positives_count),
-#if CVSS3_RATINGS == 1
             criticals_count,
-#endif
             holes_count,
             holes_count,
             warnings_count,
@@ -17621,9 +17208,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @param[in]  orig_filtered_result_count  Result count.
  * @param[in]  filtered_result_count       Result count.
  * @param[in]  orig_f_criticals            Result count.
- *                                         Only available if CVSS3_RATINGS is enabled.
  * @param[in]  f_criticals                 Result count.
- *                                         Only available if CVSS3_RATINGS is enabled.
  * @param[in]  orig_f_infos                Result count.
  * @param[in]  f_holes                     Result count.
  * @param[in]  orig_f_infos                Result count.
@@ -17652,9 +17237,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         const char *sort_field, int result_hosts_only,
                         int *orig_filtered_result_count,
                         int *filtered_result_count,
-#if CVSS3_RATINGS == 1
                         int *orig_f_criticals, int *f_criticals,
-#endif
                         int *orig_f_holes, int *f_holes,
                         int *orig_f_infos, int *f_infos,
                         int *orig_f_logs, int *f_logs,
@@ -17668,9 +17251,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
   GString *buffer = g_string_new ("");
   GTree *ports;
   *orig_f_holes = *f_holes;
-#if CVSS3_RATINGS == 1
   *orig_f_criticals = *f_criticals;
-#endif
   *orig_f_infos = *f_infos;
   *orig_f_logs = *f_logs;
   *orig_f_warnings = *f_warnings;
@@ -17719,13 +17300,11 @@ print_report_delta_xml (FILE *out, iterator_t *results,
         level = result_iterator_level (results);
         (*orig_filtered_result_count)++;
         (*filtered_result_count)++;
-#if CVSS3_RATINGS == 1
         if (strcmp (level, "Critical") == 0)
           {
             (*orig_f_criticals)++;
             (*f_criticals)++;
           }
-#endif
         if (strcmp (level, "High") == 0)
           {
             (*orig_f_holes)++;
@@ -17882,9 +17461,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable *f_host_logs, *f_host_false_positives;
   GHashTable *f_host_compliant, *f_host_notcompliant;
   GHashTable  *f_host_incomplete, *f_host_undefined;
-  #if CVSS3_RATINGS == 1
   GHashTable *f_host_criticals = NULL;
-  #endif
   task_status_t run_status;
   gchar *tsk_usage_type = NULL;
   int f_compliance_yes, f_compliance_no;
@@ -17985,11 +17562,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
 
-  #if CVSS3_RATINGS == 1
   levels = levels ? levels : g_strdup ("chmlgdf");
-  #else
-  levels = levels ? levels : g_strdup ("hmlgdf");
-  #endif
 
   if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
     {
@@ -18110,17 +17683,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               get_data_t *all_results_get;
 
               all_results_get = report_results_get_data (1, -1, 0, 0);
-#if CVSS3_RATINGS == 1
+
               report_counts_id (report, &total_criticals, &total_holes,
                                 &total_infos, &total_logs, &total_warnings,
                                 &total_false_positives, NULL, all_results_get,
                                 NULL);
-#else
-              report_counts_id (report, &total_holes, &total_infos,
-                                &total_logs, &total_warnings,
-                                &total_false_positives, NULL, all_results_get,
-                                NULL);
-#endif
+
               total_result_count = total_criticals + total_holes + total_infos
                                   + total_logs + total_warnings
                                   + total_false_positives;
@@ -18141,13 +17709,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               /* Beware, we're using the full variables temporarily here, but
               * report_counts_id counts the filtered results. */
-#if CVSS3_RATINGS == 1
               report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                                 &false_positives, NULL, get, NULL);
-#else
-              report_counts_id (report, &holes, &infos, &logs, &warnings,
-                                &false_positives, NULL, get, NULL);
-#endif
 
               filtered_result_count = criticals + holes + infos + logs + warnings
                                       + false_positives;
@@ -18217,10 +17780,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-#if CVSS3_RATINGS == 1
       if (strchr (levels, 'c'))
         g_string_append (filters_extra_buffer, "<filter>Critical</filter>");
-#endif
       if (strchr (levels, 'h'))
         g_string_append (filters_extra_buffer, "<filter>High</filter>");
       if (strchr (levels, 'm'))
@@ -18437,6 +17998,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (ag_name);
           g_free (ag_comment);
 
+          g_free (progress_xml);
           progress_xml = g_strdup_printf ("%i", 100);
         }
 #endif /* ENABLE_AGENTS */
@@ -18576,38 +18138,24 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-    if (count_filtered)
-      {
-        /* We're getting all the filtered results, so we can count them as we
-        * print them, to save time. */
-#if CVSS3_RATINGS == 1
-        report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                               &warnings, &false_positives, &severity,
-                               get, NULL, NULL, NULL, NULL, NULL,
-                               NULL, NULL, NULL);
-#else
-        report_counts_id_full (report, &holes, &infos, &logs,
-                               &warnings, &false_positives, &severity,
-                               get, NULL, NULL, NULL, NULL, NULL,
-                               NULL, NULL);
-#endif
+      if (count_filtered)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+          * print them, to save time. */
+          report_counts_id_full (report, &criticals, &holes, &infos, &logs,
+                                 &warnings, &false_positives, &severity,
+                                 get, NULL, NULL, NULL, NULL, NULL,
+                                 NULL, NULL, NULL);
 
-        f_criticals = f_holes = f_infos = f_logs = f_warnings = 0;
-        f_false_positives = f_severity = 0;
-      }
+          f_criticals = f_holes = f_infos = f_logs = f_warnings = 0;
+          f_false_positives = f_severity = 0;
+        }
     else
-#if CVSS3_RATINGS == 1
       report_counts_id_full (report, &criticals, &holes, &infos, &logs,
                              &warnings, &false_positives, &severity,
                              get, NULL,
                              &f_criticals, &f_holes, &f_infos, &f_logs,
                              &f_warnings, &f_false_positives, &f_severity);
-#else
-      report_counts_id_full (report, &holes, &infos, &logs,
-                             &warnings, &false_positives, &severity,
-                             get, NULL, &f_holes, &f_infos, &f_logs,
-                             &f_warnings, &f_false_positives, &f_severity);
-#endif
     }
 
   /* Results. */
@@ -18671,10 +18219,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-#if CVSS3_RATINGS == 1
       f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
                                             g_free, NULL);
-#endif
       f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                             g_free, NULL);
       f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -18689,7 +18235,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta && get->details)
     {
-#if CVSS3_RATINGS == 1
       if (print_report_delta_xml (out, &results, delta_states,
                                   ignore_pagination ? 0 : first_result,
                                   ignore_pagination ? -1 : max_results,
@@ -18712,29 +18257,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   &f_compliance_undefined,
                                   &f_compliance_count,
                                   result_hosts))
-#else
-      if (print_report_delta_xml (out, &results, delta_states,
-                                  ignore_pagination ? 0 : first_result,
-                                  ignore_pagination ? -1 : max_results,
-                                  task, notes,
-                                  notes_details, overrides,
-                                  overrides_details, sort_order,
-                                  sort_field, result_hosts_only,
-                                  &orig_filtered_result_count,
-                                  &filtered_result_count,
-                                  &orig_f_holes, &f_holes,
-                                  &orig_f_infos, &f_infos,
-                                  &orig_f_logs, &f_logs,
-                                  &orig_f_warnings, &f_warnings,
-                                  &orig_f_false_positives,
-                                  &f_false_positives,
-                                  &f_compliance_yes,
-                                  &f_compliance_no,
-                                  &f_compliance_incomplete,
-                                  &f_compliance_undefined,
-                                  &f_compliance_count,
-                                  result_hosts))
-#endif
+
         goto failed_delta_report;
     }
   else if (get->details)
@@ -18832,14 +18355,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                   if (count_filtered)
                     f_logs++;
                 }
-#if CVSS3_RATINGS == 1
               else if (strcasecmp (level, "critical") == 0)
                 {
                   f_host_result_counts = f_host_criticals;
                   if (count_filtered)
                     f_criticals++;
                 }
-#endif
               else if (strcasecmp (level, "high") == 0)
                 {
                   f_host_result_counts = f_host_holes;
@@ -18954,9 +18475,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         PRINT (out,
               "<result_count>"
               "<filtered>%i</filtered>"
-#if CVSS3_RATINGS == 1
               "<critical><filtered>%i</filtered></critical>"
-#endif
               "<hole deprecated='1'><filtered>%i</filtered></hole>"
               "<high><filtered>%i</filtered></high>"
               "<info deprecated='1'><filtered>%i</filtered></info>"
@@ -18969,9 +18488,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               "</false_positive>"
               "</result_count>",
               orig_filtered_result_count,
-#if CVSS3_RATINGS == 1
               (strchr (levels, 'c') ? orig_f_criticals : 0),
-#endif
               (strchr (levels, 'h') ? orig_f_holes : 0),
               (strchr (levels, 'h') ? orig_f_holes : 0),
               (strchr (levels, 'l') ? orig_f_infos : 0),
@@ -18991,12 +18508,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "%i"
                 "<full>%i</full>"
                 "<filtered>%i</filtered>"
-#if CVSS3_RATINGS == 1
                 "<critical>"
                 "<full>%i</full>"
                 "<filtered>%i</filtered>"
                 "</critical>"
-#endif
                 "<hole deprecated='1'><full>%i</full><filtered>%i</filtered></hole>"
                 "<high><full>%i</full><filtered>%i</filtered></high>"
                 "<info deprecated='1'><full>%i</full><filtered>%i</filtered></info>"
@@ -19012,10 +18527,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 total_result_count,
                 total_result_count,
                 filtered_result_count,
-#if CVSS3_RATINGS == 1
                 criticals,
                 (strchr (levels, 'c') ? f_criticals : 0),
-#endif
                 holes,
                 (strchr (levels, 'h') ? f_holes : 0),
                 holes,
@@ -19066,7 +18579,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           present = next (&hosts);
           if (present)
             {
-#if CVSS3_RATINGS == 1
               if (print_report_host_xml (out,
                                          &hosts,
                                          result_host,
@@ -19084,24 +18596,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                          f_host_notcompliant,
                                          f_host_incomplete,
                                          f_host_undefined))
-#else
-              if (print_report_host_xml (out,
-                                         &hosts,
-                                         result_host,
-                                         tsk_usage_type,
-                                         lean,
-                                         host_summary_buffer,
-                                         f_host_ports,
-                                         f_host_holes,
-                                         f_host_warnings,
-                                         f_host_infos,
-                                         f_host_logs,
-                                         f_host_false_positives,
-                                         f_host_compliant,
-                                         f_host_notcompliant,
-                                         f_host_incomplete,
-                                         f_host_undefined))
-#endif
                 {
                   goto failed_print_report_host;
                 }
@@ -19115,7 +18609,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
-#if CVSS3_RATINGS == 1
           if (print_report_host_xml (out,
                                      &hosts,
                                      NULL,
@@ -19133,24 +18626,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      f_host_notcompliant,
                                      f_host_incomplete,
                                      f_host_undefined))
-#else
-           if (print_report_host_xml (out,
-                                      &hosts,
-                                      NULL,
-                                      tsk_usage_type,
-                                      lean,
-                                      host_summary_buffer,
-                                      f_host_ports,
-                                      f_host_holes,
-                                      f_host_warnings,
-                                      f_host_infos,
-                                      f_host_logs,
-                                      f_host_false_positives,
-                                      f_host_compliant,
-                                      f_host_notcompliant,
-                                      f_host_incomplete,
-                                      f_host_undefined))
-#endif
+
             goto failed_print_report_host;
         }
       cleanup_iterator (&hosts);
@@ -19164,9 +18640,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-#if CVSS3_RATINGS == 1
       g_hash_table_destroy (f_host_criticals);
-#endif
       g_hash_table_destroy (f_host_holes);
       g_hash_table_destroy (f_host_warnings);
       g_hash_table_destroy (f_host_infos);
@@ -19294,9 +18768,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       }
     else
       {
-#if CVSS3_RATINGS == 1
         g_hash_table_destroy (f_host_criticals);
-#endif
         g_hash_table_destroy (f_host_holes);
         g_hash_table_destroy (f_host_warnings);
         g_hash_table_destroy (f_host_infos);
@@ -27057,9 +26529,7 @@ create_note (const char* active, const char* nvt, const char* text,
     return -1;
 
   if (threat
-#if CVSS3_RATINGS == 1
       && strcmp (threat, "Critical")
-#endif
       && strcmp (threat, "High")
       && strcmp (threat, "Medium")
       && strcmp (threat, "Low")
@@ -27084,10 +26554,8 @@ create_note (const char* active, const char* nvt, const char* text,
     {
       if (strcmp (threat, "Alarm") == 0)
         severity_dbl = 0.1;
-#if CVSS3_RATINGS == 1
       else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
-#endif
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "Medium") == 0)
@@ -27323,9 +26791,7 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
     return 4;
 
   if (threat
-#if CVSS3_RATINGS == 1
       && strcmp (threat, "Critical")
-#endif
       && strcmp (threat, "High")
       && strcmp (threat, "Medium")
       && strcmp (threat, "Low")
@@ -27355,10 +26821,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
     {
       if (strcmp (threat, "Alarm") == 0)
         severity_dbl = 0.1;
-#if CVSS3_RATINGS == 1
       else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
-#endif
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "Medium") == 0)
@@ -28066,9 +27530,7 @@ create_override (const char* active, const char* nvt, const char* text,
     return 2;
 
   if (threat
-#if CVSS3_RATINGS == 1
       && strcmp (threat, "Critical")
-#endif
       && strcmp (threat, "High")
       && strcmp (threat, "Medium")
       && strcmp (threat, "Low")
@@ -28078,9 +27540,7 @@ create_override (const char* active, const char* nvt, const char* text,
     return -1;
 
   if (new_threat
-#if CVSS3_RATINGS == 1
       && strcmp (new_threat, "Critical")
-#endif
       && strcmp (new_threat, "High")
       && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low")
@@ -28103,10 +27563,8 @@ create_override (const char* active, const char* nvt, const char* text,
     {
       if (strcmp (threat, "Alarm") == 0)
         severity_dbl = 0.1;
-#if CVSS3_RATINGS == 1
       else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
-#endif
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "Medium") == 0)
@@ -28139,15 +27597,10 @@ create_override (const char* active, const char* nvt, const char* text,
     {
       if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
-#if CVSS3_RATINGS == 1
       else if (strcmp (new_threat, "Critical") == 0)
         new_severity_dbl = 10.0;
       else if (strcmp (new_threat, "High") == 0)
         new_severity_dbl = 8.9;
-#else
-      else if (strcmp (new_threat, "High") == 0)
-        new_severity_dbl = 10.0;
-#endif
       else if (strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
       else if (strcmp (new_threat, "Low") == 0)
@@ -28464,10 +27917,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (strcmp (threat, "Alarm") == 0)
         severity_dbl = 0.1;
-#if CVSS3_RATINGS == 1
       else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
-#endif
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "Medium") == 0)
@@ -28500,15 +27951,10 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
-#if CVSS3_RATINGS == 1
       else if (strcmp (new_threat, "Critical") == 0)
         new_severity_dbl = 10.0;
       else if (strcmp (new_threat, "High") == 0)
         new_severity_dbl = 8.9;
-#else
-      else if (strcmp (new_threat, "High") == 0)
-        new_severity_dbl = 10.0;
-#endif
       else if (strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
       else if (strcmp (new_threat, "Low") == 0)
@@ -45065,8 +44511,8 @@ cleanup_ids_for_table (const char *table)
  * @return The QoD value as an integer (1–100), or
  *         QOD_DEFAULT if unavailable or invalid.
  */
-static int
-get_openvasd_nvti_qod (const char *nvti_oid)
+int
+get_http_scanner_nvti_qod (const char *nvti_oid)
 {
   int qod = QOD_DEFAULT;
 
@@ -45089,7 +44535,7 @@ get_openvasd_nvti_qod (const char *nvti_oid)
 
 /**
  * @brief Generate the hash value for the fields of the result and
- * check if openvasd result for report already exists
+ * check if HTTP scanner result for report already exists
  *
  * @param[in]  report      Report.
  * @param[in]  task        Task.
@@ -45098,10 +44544,12 @@ get_openvasd_nvti_qod (const char *nvti_oid)
  *
  * @return     "1" if openvasd result already exists, else "0"
  */
-static int
-check_openvasd_result_exists (report_t report, task_t task,
-                              http_scanner_result_t res, char **entity_hash_value,
-                              GHashTable *hashed_openvasd_results)
+int
+check_http_scanner_result_exists (report_t report,
+                                  task_t task,
+                                  http_scanner_result_t res,
+                                  char **entity_hash_value,
+                                  GHashTable *hashed_results)
 {
   GString *result_string;
   int return_value = 0;
@@ -45110,17 +44558,18 @@ check_openvasd_result_exists (report_t report, task_t task,
                           "hostname:%s\n"
                           "type:%s\n"
                           "description:%s\n"
-                          "port:%s",res->ip_address, res->hostname,
-                          res->type, res->message, res->port);
+                          "port:%s\n"
+                          "oid:%s",res->ip_address, res->hostname,
+                          res->type, res->message, res->port, res->oid);
 
  *entity_hash_value = get_md5_hash_from_string (result_string->str);
-  if (g_hash_table_contains (hashed_openvasd_results, *entity_hash_value))
+  if (g_hash_table_contains (hashed_results, *entity_hash_value))
     {
       return_value = 1;
     }
   else
     {
-      g_hash_table_insert (hashed_openvasd_results,
+      g_hash_table_insert (hashed_results,
                            g_strdup(*entity_hash_value),
                            GINT_TO_POINTER(1));
       if (sql_int ("SELECT EXISTS"
@@ -45129,27 +44578,24 @@ check_openvasd_result_exists (report_t report, task_t task,
                    report, *entity_hash_value))
         {
           const char *desc, *type, *severity = NULL, *host;
-          const char *hostname, *port = NULL, *path = NULL;
+          const char *hostname, *port = NULL;
           gchar *quoted_desc, *quoted_type, *quoted_host;
-          gchar *quoted_hostname, *quoted_port, *quoted_path;
+          gchar *quoted_hostname, *quoted_port;
           double severity_double = 0.0;
-          int qod_int = get_openvasd_nvti_qod (res->oid);
+          int qod_int = get_http_scanner_nvti_qod (res->oid);
 
           host = res->ip_address;
           hostname = res->hostname;
-          type = res->type;
+          type = convert_http_scanner_type_to_osp_type(res->type);
           desc = res->message;
+          severity = nvt_severity (res->oid, type);
+          port = res->port;
 
-          if (!severity || !strcmp (severity, ""))
+          if (!severity)
             {
-              if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
-                severity_double = SEVERITY_ERROR;
-              else
-                {
-                  g_debug ("%s: Result without severity", __func__);
-                  g_string_free (result_string, TRUE);
-                  return 0;
-                }
+              g_debug ("%s: Result without severity", __func__);
+              g_string_free (result_string, TRUE);
+              return 0;
             }
           else
             {
@@ -45161,21 +44607,20 @@ check_openvasd_result_exists (report_t report, task_t task,
           quoted_type = sql_quote (type ?: "");
           quoted_desc = sql_quote (desc ?: "");
           quoted_port = sql_quote (port ?: "");
-          quoted_path = sql_quote (path ?: "");
 
           if (sql_int ("SELECT EXISTS"
                        " (SELECT * FROM results"
                        "   WHERE report = %llu and hash_value = '%s'"
                        "    and host = '%s' and hostname = '%s'"
                        "    and type = '%s' and description = '%s'"
-                       "    and port = '%s' and severity = %1.1f"
-                       "    and qod = %d and path = '%s'"
+                       "    and port = '%s' and severity = %1.1f::real"
+                       "    and qod = %d"
                        " );",
                        report, *entity_hash_value,
                        quoted_host, quoted_hostname,
                        quoted_type, quoted_desc,
                        quoted_port, severity_double,
-                       qod_int, quoted_path))
+                       qod_int))
             {
               g_info ("Captured duplicate result, report: %llu hash_value: %s",
                       report, *entity_hash_value);
@@ -45188,7 +44633,6 @@ check_openvasd_result_exists (report_t report, task_t task,
           g_free (quoted_type);
           g_free (quoted_desc);
           g_free (quoted_port);
-          g_free (quoted_path);
         }
     }
   if (return_value)
@@ -45202,34 +44646,25 @@ check_openvasd_result_exists (report_t report, task_t task,
 }
 
 /**
- * @brief Convert openvasd result types to OSP result types.
+ * @brief Convert HTTP scanner result types to OSP result types.
  *
- * @param openvasd_type The openvasd type as a string.
+ * @param http_scanner_type The HTTP scanner type as a string.
  *
  * @return A new string with the corresponding OSP type.
  */
-static char *
-convert_openvasd_type_to_osp_type (const char *openvasd_type)
+char *
+convert_http_scanner_type_to_osp_type (const char *http_scanner_type)
 {
-  if (g_strcmp0 (openvasd_type, "alarm") == 0)
+  if (g_strcmp0 (http_scanner_type, "alarm") == 0)
     return g_strdup ("Alarm");
-  else if (g_strcmp0 (openvasd_type, "error") == 0)
+  else if (g_strcmp0 (http_scanner_type, "error") == 0)
     return g_strdup ("Error Message");
-  else if (g_strcmp0 (openvasd_type, "log") == 0
-           || g_strcmp0 (openvasd_type, "host_detail") == 0)
+  else if (g_strcmp0 (http_scanner_type, "log") == 0
+           || g_strcmp0 (http_scanner_type, "host_detail") == 0)
     return g_strdup ("Log Message");
 
-  return g_strdup (openvasd_type);
+  return g_strdup (http_scanner_type);
 }
-
-/* Struct to be sent as user data to the GFunc for adding results */
-struct report_aux {
-  GArray *results_array;
-  report_t report;
-  task_t task;
-  GHashTable *hash_results;
-  GHashTable *hash_hostdetails;
-};
 
 /**
  * @brief Convert and add a single http scanner result to the report structure.
@@ -45250,7 +44685,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
   int qod_int;
 
-  type = convert_openvasd_type_to_osp_type (res->type);
+  type = convert_http_scanner_type_to_osp_type (res->type);
   name = NULL;
   severity = NULL;
   test_id = res->oid;
@@ -45296,7 +44731,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
       nvt_id = g_strdup (name);
       desc = res->message;
     }
-  qod_int = get_openvasd_nvti_qod (test_id);
+  qod_int = get_http_scanner_nvti_qod (test_id);
   if (port && strcmp (port, "general/Host_Details") == 0)
     {
       /* TODO: This should probably be handled by the "Host Detail"
@@ -45319,8 +44754,8 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   else
     {
       char *hash_value;
-      if (!check_openvasd_result_exists (rep_aux->report, rep_aux->task, res,
-                                        &hash_value, rep_aux->hash_results))
+      if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task, res,
+                                             &hash_value, rep_aux->hash_results))
         {
           result = make_osp_result (rep_aux->task,
                                     host ?: "",

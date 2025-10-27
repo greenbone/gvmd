@@ -7410,12 +7410,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
         ELSE_READ_OVER;
 
+#if ENABLE_CONTAINER_SCANNING
       case CLIENT_CREATE_OCI_IMAGE_TARGET:
         create_oci_image_target_element_start (gmp_parser,
                                                element_name,
                                                attribute_names,
                                                attribute_values);
         break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_CREATE_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8240,12 +8242,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_READ_OVER;
 
+#if ENABLE_CONTAINER_SCANNING
       case CLIENT_MODIFY_OCI_IMAGE_TARGET:
         modify_oci_image_target_element_start (gmp_parser,
                                                element_name,
                                                attribute_names,
                                                attribute_values);
         break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_MODIFY_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -13399,11 +13403,6 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>CVSS3_RATINGS</name>"
-                           "</feature>",
-                           CVSS3_RATINGS ? 1 : 0);
-
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
                            "<name>OPENVASD</name>"
                            "</feature>",
                            OPENVASD ? 1 : 0);
@@ -15639,11 +15638,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
             overrides,
             min_qod,
-#if CVSS3_RATINGS == 1
             levels ? levels : "chmlgdf",
-#else
-            levels ? levels : "hmlgdf",
-#endif
             compliance_levels ? compliance_levels : "yniu");
       g_free (compliance_levels);
 
@@ -19134,9 +19129,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       int target_in_trash, scanner_in_trash;
       int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
-#if CVSS3_RATINGS == 1
       int criticals = 0, criticals_2 = 0;
-#endif
       int false_positives = 0, task_scanner_type;
       int target_available, config_available;
       int scanner_available;
@@ -19244,17 +19237,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           if (first_report_id && (get_tasks_data->get.trash == 0))
             {
               // TODO Could skip this count for tasks page.
-#if CVSS3_RATINGS == 1
               if (report_counts (first_report_id,
                                  &criticals_2, &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
                                  &severity_2, apply_overrides, min_qod))
-#else
-              if (report_counts (first_report_id,
-                                 &holes_2, &infos_2, &logs,
-                                 &warnings_2, &false_positives,
-                                 &severity_2, apply_overrides, min_qod))
-#endif
                   g_error ("%s: GET_TASKS: error getting counts for"
                           " first report, aborting",
                           __func__);
@@ -19267,19 +19253,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 * doing the count again. */
               if (((first_report_id == NULL)
                   || (strcmp (second_last_report_id, first_report_id)))
-#if CVSS3_RATINGS == 1
                   && report_counts (second_last_report_id,
                                     &criticals_2, &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
                                     apply_overrides, min_qod)
-#else
-                  && report_counts (second_last_report_id,
-                                    &holes_2, &infos_2,
-                                    &logs, &warnings_2,
-                                    &false_positives, &severity_2,
-                                    apply_overrides, min_qod)
-#endif
                  )
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
@@ -19329,7 +19307,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                       && strcmp (last_report_id,
                                 second_last_report_id)))
                 {
-#if CVSS3_RATINGS == 1
                   if (report_counts
                       (last_report_id,
                         &criticals, &holes, &infos, &logs,
@@ -19338,22 +19315,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                     g_error ("%s: GET_TASKS: error getting counts for"
                              " last report, aborting",
                              __func__);
-#else
-                  if (report_counts
-                      (last_report_id,
-                        &holes, &infos, &logs,
-                        &warnings, &false_positives, &severity,
-                        apply_overrides, min_qod))
-                    g_error ("%s: GET_TASKS: error getting counts for"
-                             " last report, aborting",
-                             __func__);
-#endif
                 }
               else
                 {
-#if CVSS3_RATINGS == 1
                   criticals = criticals_2;
-#endif
                   holes = holes_2;
                   infos = infos_2;
                   warnings = warnings_2;
@@ -19407,9 +19372,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        "<scan_start>%s</scan_start>"
                                        "<scan_end>%s</scan_end>"
                                        "<result_count>"
-#if CVSS3_RATINGS == 1
                                        "<critical>%i</critical>"
-#endif
                                        "<hole deprecated='1'>%i</hole>"
                                        "<high>%i</high>"
                                        "<info deprecated='1'>%i</info>"
@@ -19430,9 +19393,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        timestamp,
                                        scan_start,
                                        scan_end,
-#if CVSS3_RATINGS == 1
                                        criticals,
-#endif
                                        holes,
                                        holes,
                                        infos,
@@ -19707,19 +19668,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        progress_xml,
                        task_iterator_total_reports (&tasks),
                        task_iterator_finished_reports (&tasks),
-#if CVSS3_RATINGS == 1
                        get_tasks_data->get.trash
                         ? ""
                         : task_iterator_trend_counts
                            (&tasks, criticals, holes, warnings, infos, severity,
                             criticals_2, holes_2, warnings_2, infos_2, severity_2),
-#else
-                       get_tasks_data->get.trash
-                        ? ""
-                        : task_iterator_trend_counts
-                           (&tasks, 0, holes, warnings, infos, severity,
-                            0, holes_2, warnings_2, infos_2, severity_2),
-#endif
                        task_schedule_xml,
                        current_report,
                        last_report);
@@ -20581,7 +20534,6 @@ gmp_xml_handle_result ()
         {
           create_report_data->result_severity = strdup ("");
         }
-#if CVSS3_RATINGS == 1
       else if (strcasecmp (create_report_data->result_threat, "Critical") == 0)
         {
           create_report_data->result_severity = strdup ("10.0");
@@ -20590,12 +20542,6 @@ gmp_xml_handle_result ()
         {
           create_report_data->result_severity = strdup ("8.9");
         }
-#else
-      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
-        {
-          create_report_data->result_severity = strdup ("10.0");
-        }
-#endif
       else if (strcasecmp (create_report_data->result_threat, "Medium") == 0)
         {
           create_report_data->result_severity = strdup ("5.0");
@@ -21432,7 +21378,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_nvt_families (gmp_parser, error);
         break;
 
+#if ENABLE_CONTAINER_SCANNING
       CASE_GET_END (OCI_IMAGE_TARGETS, oci_image_targets);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_GET_OVERRIDES:
         handle_get_overrides (gmp_parser, error);
@@ -22935,12 +22883,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_NOTE, TEXT);
       CLOSE (CLIENT_CREATE_NOTE, THREAT);
 
+#if ENABLE_CONTAINER_SCANNING
       case CLIENT_CREATE_OCI_IMAGE_TARGET:
         if (create_oci_image_target_element_end (gmp_parser,
                                                  error,
                                                  element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
+#endif //ENABLE_CONTAINER_SCANNING
 
       case CLIENT_CREATE_OVERRIDE:
         {
@@ -26192,11 +26142,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_NOTE, THREAT);
       CLOSE (CLIENT_MODIFY_NOTE, NVT);
 
+#if ENABLE_CONTAINER_SCANNING
       case CLIENT_MODIFY_OCI_IMAGE_TARGET:
         modify_oci_image_target_element_end (gmp_parser,
                                              error,
                                              element_name);
         break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_MODIFY_OVERRIDE:
         {
@@ -28929,9 +28881,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_NOTE_THREAT,
               &create_note_data->threat);
 
+#if ENABLE_CONTAINER_SCANNING
       case CLIENT_CREATE_OCI_IMAGE_TARGET:
         create_oci_image_target_element_text (text, text_len);
         break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       APPEND (CLIENT_CREATE_OVERRIDE_ACTIVE,
               &create_override_data->active);
@@ -29452,9 +29406,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_NOTE_NVT,
               &modify_note_data->nvt_oid);
 
+#if ENABLE_CONTAINER_SCANNING
       case CLIENT_MODIFY_OCI_IMAGE_TARGET:
         modify_oci_image_target_element_text (text, text_len);
         break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       APPEND (CLIENT_MODIFY_OVERRIDE_ACTIVE,
               &modify_override_data->active);

@@ -37,6 +37,10 @@
 #include "manage_sql_nvts_openvasd.h"
 #include "sql.h"
 
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_container_image_scanner.h"
+#endif
+
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/vtparser.h>
 
@@ -342,6 +346,23 @@ update_scanner_preferences_openvasd (scanner_t scan)
   g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
   http_scanner_response_cleanup (resp);
   http_scanner_connector_free (connector);
+
+#if ENABLE_CONTAINER_SCANNING
+
+  connector = container_image_scanner_connect (scan, NULL);
+  if (!connector)
+    {
+      g_warning ("%s: failed to get preferences from container image scanner",
+                 __func__);
+      return -1;
+    }
+
+  http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+  g_debug ("There are %d scan preferences for container image scanner",
+           g_slist_length (scan_prefs));
+  http_scanner_connector_free (connector);
+
+#endif
 
   point = scan_prefs;
   first = 1;

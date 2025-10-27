@@ -19,7 +19,7 @@ cmake_minimum_required(VERSION 3.5)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 
-project(gvm VERSION 26.3.1 LANGUAGES C)
+project(gvm VERSION 26.5.1 LANGUAGES C)
 
 if(POLICY CMP0005)
   cmake_policy(SET CMP0005 NEW)
@@ -270,23 +270,6 @@ elseif(ENABLE_AGENTS EQUAL 0)
   set(ENDIF_ENABLE_AGENTS "-->")
   set(IF_NOT_ENABLE_AGENTS "")
   set(ENDIF_NOT_ENABLE_AGENTS "")
-endif()
-
-if(NOT CVSS3_RATINGS)
-  set(CVSS3_RATINGS 0)
-endif(NOT CVSS3_RATINGS)
-add_definitions(-DCVSS3_RATINGS=${CVSS3_RATINGS})
-
-if(CVSS3_RATINGS EQUAL 1)
-  set(IF_CVSS3_RATINGS "")
-  set(ENDIF_CVSS3_RATINGS "")
-  set(IF_NOT_CVSS3_RATINGS "<!--")
-  set(ENDIF_NOT_CVSS3_RATINGS "-->")
-elseif(CVSS3_RATINGS EQUAL 0)
-  set(IF_CVSS3_RATINGS "<!--")
-  set(ENDIF_CVSS3_RATINGS "-->")
-  set(IF_NOT_CVSS3_RATINGS "")
-  set(ENDIF_NOT_CVSS3_RATINGS "")
 endif()
 
 if(NOT FEED_VT_METADATA)

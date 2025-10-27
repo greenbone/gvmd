@@ -2127,6 +2127,7 @@ gvmd (int argc, char** argv, char *env[])
     = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
   static int secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+  static int secinfo_update_strategy = 0;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -2559,6 +2560,13 @@ gvmd (int argc, char** argv, char *env[])
           " 0 to use statements with more checks, 1 to use faster statements,"
           " default: "
           G_STRINGIFY (SECINFO_FAST_INIT_DEFAULT), "<number>" },
+        { "secinfo-update-strategy", '\0', 0, G_OPTION_ARG_INT,
+          &secinfo_update_strategy,
+          "The strategy how to handle SecInfo updates:"
+          " 0 (default) = keep old schemas and replace them at the end,"
+          " 1 = drop old schemas at update start, swap them in at the end.",
+          "<number>"
+          },
         { "set-encryption-key", '\0', 0, G_OPTION_ARG_STRING,
           &set_encryption_key,
           "Set the encryption key with the given UID as the new default"
@@ -2658,9 +2666,6 @@ gvmd (int argc, char** argv, char *env[])
 #if OPENVASD == 1
       printf ("OpenVASD is enabled\n");
 #endif
-#if CVSS3_RATINGS == 1
-      printf ("CVSS3 severity ratings enabled\n");
-#endif
 #if FEED_VT_METADATA == 1
       printf ("Feed VT metadata enabled\n");
 #endif
@@ -2717,6 +2722,8 @@ gvmd (int argc, char** argv, char *env[])
   set_affected_products_query_size (affected_products_query_size);
 
   set_secinfo_commit_size (secinfo_commit_size);
+
+  set_secinfo_update_strategy (secinfo_update_strategy);
 
   set_vt_ref_insert_size (vt_ref_insert_size);
 

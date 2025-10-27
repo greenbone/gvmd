@@ -27,17 +27,17 @@ find_package(Threads)
 ## might occur.
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
-pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.28)
-pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.28)
-pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.28)
-pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.28)
+pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.29)
+pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.29)
+pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.29)
+pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.29)
 
 if(ENABLE_HTTP_SCANNER)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.28)
-  pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.28)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.29)
+  pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.29)
 endif(ENABLE_HTTP_SCANNER)
 if(OPENVASD)
-  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.28)
+  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.29)
 else(OPENVASD)
   message(STATUS "OPENVASD flag is not enabled")
 endif(OPENVASD)
@@ -45,7 +45,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=22.28
+    libgvm_agent_controller>=22.29
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
@@ -59,6 +59,15 @@ if(ENABLE_CREDENTIAL_STORES)
 else(ENABLE_CREDENTIAL_STORES)
   message(STATUS "ENABLE_CREDENTIAL_STORES flag is not enabled")
 endif(ENABLE_CREDENTIAL_STORES)
+if(ENABLE_CONTAINER_SCANNING)
+  pkg_check_modules(
+    LIBGVM_CONTAINER_IMAGE_SCANNER
+    REQUIRED
+    libgvm_container_image_scanner>=22.29
+  )
+else(ENABLE_CONTAINER_SCANNING)
+  message(STATUS "ENABLE_CONTAINER_SCANNING flag is not enabled")
+endif(ENABLE_CONTAINER_SCANNING)
 
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
@@ -190,6 +199,7 @@ set(
   manage_scan_handler.c
   manage_scan_queue.c
   manage_oci_image_targets.c
+  manage_container_image_scanner.c
 )
 
 if(ENABLE_AGENTS)
@@ -363,6 +373,7 @@ target_link_libraries(
   ${LIBGVM_HTTP_LDFLAGS}
   ${LIBGVM_HTTP_SCANNER_LDFLAGS}
   ${LIBGVM_CYBERARK_LDFLAGS}
+  ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
@@ -426,6 +437,7 @@ macro(add_unit_test _baseName _objects _extraSource)
     ${LIBGVM_HTTP_LDFLAGS}
     ${LIBGVM_HTTP_SCANNER_LDFLAGS}
     ${LIBGVM_CYBERARK_LDFLAGS}
+    ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
     ${LIBICAL_LDFLAGS}
     ${LINKER_HARDENING_FLAGS}
     ${OPT_THEIA_TGT}
@@ -480,14 +492,16 @@ set(
 )
 add_unit_test(manage-filter-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
-set(
-  ALL_OBJECTS
-  $<TARGET_OBJECTS:all-gmp-obj>
-  $<TARGET_OBJECTS:all-manage-sql-obj>
-  $<TARGET_OBJECTS:all-misc-obj>
-  $<TARGET_OBJECTS:all-sql-obj>
-)
-add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+if(ENABLE_CONTAINER_SCANNING)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+endif()
 
 set(
   ALL_OBJECTS
