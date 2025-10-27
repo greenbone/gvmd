@@ -6227,6 +6227,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
           }
+#if ENABLE_CREDENTIAL_STORES
         else if (strcasecmp ("VERIFY_CREDENTIAL_STORE", element_name) == 0)
           {
             verify_credential_store_start (gmp_parser,
@@ -6234,6 +6235,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                            attribute_values);
             set_client_state (CLIENT_VERIFY_CREDENTIAL_STORE);
           }
+#endif
         else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "report_format_id",
@@ -28466,14 +28468,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
+#if ENABLE_CREDENTIAL_STORES
       case CLIENT_VERIFY_CREDENTIAL_STORE:
         {
           verify_credential_store_run (gmp_parser, error);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
+#endif
       case CLIENT_VERIFY_REPORT_FORMAT:
         if (verify_report_format_data->report_format_id)
           {
