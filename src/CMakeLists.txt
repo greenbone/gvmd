@@ -50,6 +50,16 @@ if(ENABLE_AGENTS)
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
 endif(ENABLE_AGENTS)
+if(ENABLE_CREDENTIAL_STORES)
+  pkg_check_modules(
+    LIBGVM_CYBERARK
+    REQUIRED
+    libgvm_cyberark>=22.28
+  )
+else(ENABLE_CREDENTIAL_STORES)
+  message(STATUS "ENABLE_CREDENTIAL_STORES flag is not enabled")
+endif(ENABLE_CREDENTIAL_STORES)
+
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
@@ -352,6 +362,7 @@ target_link_libraries(
   ${LIBGVM_GMP_LDFLAGS}
   ${LIBGVM_HTTP_LDFLAGS}
   ${LIBGVM_HTTP_SCANNER_LDFLAGS}
+  ${LIBGVM_CYBERARK_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
@@ -414,6 +425,7 @@ macro(add_unit_test _baseName _objects _extraSource)
     ${LIBGVM_GMP_LDFLAGS}
     ${LIBGVM_HTTP_LDFLAGS}
     ${LIBGVM_HTTP_SCANNER_LDFLAGS}
+    ${LIBGVM_CYBERARK_LDFLAGS}
     ${LIBICAL_LDFLAGS}
     ${LINKER_HARDENING_FLAGS}
     ${OPT_THEIA_TGT}

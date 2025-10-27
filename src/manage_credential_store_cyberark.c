@@ -16,6 +16,7 @@
 #include <gvm/http/httputils.h>
 #include <gvm/util/tlsutils.h>
 #include <gnutls/gnutls.h>
+#include <gvm/cyberark/cyberark.h>
 
 static verify_credential_store_return_t
 verify_and_prepare_cyberark_connection_data (const char *host,
@@ -142,6 +143,16 @@ verify_and_prepare_cyberark_connection_data (const char *host,
   return VERIFY_CREDENTIAL_STORE_OK;
 }
 
+/**
+ * @brief Verifies the connection of a CyberArk credential store.
+ *
+ * @param[in]  host         The host of the CyberArk credential store.
+ * @param[in]  path         The path of the CyberArk credential store.
+ * @param[in]  preferences  The preferences of the CyberArk credential store.
+ * @param[out] message      Error message output.
+ *
+ * @return A verify_credential_store_return_t return code.
+ */
 verify_credential_store_return_t
 verify_cyberark_credential_store (const char *host,
                                   const char *path,
@@ -150,9 +161,9 @@ verify_cyberark_credential_store (const char *host,
 {
   const char *app_id;
   gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
-  verify_credential_store_return_t ret;
+  verify_credential_store_return_t rc;
 
-  ret = verify_and_prepare_cyberark_connection_data (host,
+  rc = verify_and_prepare_cyberark_connection_data (host,
                                                      path,
                                                      preferences,
                                                      &app_id,
@@ -160,15 +171,47 @@ verify_cyberark_credential_store (const char *host,
                                                      &client_cert_pem,
                                                      &server_ca_cert_pem,
                                                      message);
-  if (ret)
+  if (rc)
     {
       g_free (client_key_pem);
       g_free (client_cert_pem);
       g_free (server_ca_cert_pem);
-      return ret;
+      return rc;
     }
 
-  // TODO: Send HTTP request to API and check response
+  cyberark_connector_t connector = cyberark_connector_new();
+
+  cyberark_connector_builder (connector, CYBERARK_HOST, host);
+  cyberark_connector_builder (connector, CYBERARK_PATH, path);
+  cyberark_connector_builder (connector, CYBERARK_CA_CERT, server_ca_cert_pem);
+  cyberark_connector_builder (connector, CYBERARK_KEY, client_key_pem);
+  cyberark_connector_builder (connector, CYBERARK_CERT, client_cert_pem);
+  cyberark_connector_builder (connector, CYBERARK_PROTOCOL, "https");
+  cyberark_connector_builder (connector, CYBERARK_APP_ID, app_id);
+
+  int ret = cyberark_verify_connection (connector,
+                                        "dummy-safe",
+                                        NULL,
+                                        "dummy-object");
+
+  if (ret < 0)
+    {
+      cyberark_connector_free (connector);
+      g_free (client_key_pem);
+      g_free (client_cert_pem);
+      g_free (server_ca_cert_pem);
+      return VERIFY_CREDENTIAL_STORE_INTERNAL_ERROR;
+    }
+  else if (ret > 0)
+    {
+      cyberark_connector_free (connector);
+      g_free (client_key_pem);
+      g_free (client_cert_pem);
+      g_free (server_ca_cert_pem);
+      return VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED;
+    }
+
+  cyberark_connector_free (connector);
 
   g_free (client_key_pem);
   g_free (client_cert_pem);
