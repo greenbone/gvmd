@@ -299,6 +299,40 @@ get_bool_string (const char *preference_value)
 }
 
 /*
+* @brief Get the value of a named scanner preference from a list of preferences.
+*
+* @param[in]  name        The name of the scanner preferences.
+* @param[in]  scan_prefs  The list of preferences.
+*
+* @return     The value of the preference.
+*/
+static char *
+get_preference_from_list (char *name, GSList *scan_prefs)
+{
+  char *value = NULL;
+  GSList *point = scan_prefs;
+
+  while (point)
+    {
+      http_scanner_param_t *param;
+      char *p_name;
+
+      param = point->data;
+      p_name = g_strdup (http_scanner_param_id (param));
+
+      if (p_name && strcmp (p_name, name) == 0)
+        {
+          value = g_strdup (http_scanner_param_default (param));
+          g_free (p_name);
+          break;
+        }
+      g_free (p_name);
+      point = g_slist_next (point);
+    }
+  return value;
+}
+
+/*
 * @brief Add container image scan preferences to the scanner options.
 *        Task preferences override default scanner preferences.
 *
@@ -306,9 +340,12 @@ get_bool_string (const char *preference_value)
 * @param[in]  task             The task.
 *
 */
-void
-add_container_image_scan_preferences (GHashTable *scanner_options, task_t task)
+static void
+add_container_image_scan_preferences (http_scanner_connector_t connector,
+                                      GHashTable *scanner_options,
+                                      task_t task)
 {
+  GSList *scan_prefs = NULL;
   gchar *accept_invalid_certs, *registry_allow_insecure;
 
   accept_invalid_certs = task_preference_value (task, "accept_invalid_certs");
@@ -323,6 +360,25 @@ add_container_image_scan_preferences (GHashTable *scanner_options, task_t task)
     g_hash_table_insert (scanner_options, g_strdup ("registry_allow_insecure"),
                          get_bool_string (registry_allow_insecure));
 
+  http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+
+  if (scan_prefs && !accept_invalid_certs)
+    {
+      accept_invalid_certs = get_preference_from_list ("accept_invalid_certs", scan_prefs);
+      if (accept_invalid_certs)
+        g_hash_table_insert (scanner_options, g_strdup ("accept_invalid_certs"),
+                             get_bool_string(accept_invalid_certs));
+    }
+
+  if (scan_prefs && !registry_allow_insecure)
+    {
+      registry_allow_insecure = get_preference_from_list ("registry_allow_insecure", scan_prefs);
+      if (registry_allow_insecure)
+        g_hash_table_insert (scanner_options, g_strdup ("registry_allow_insecure"),
+                             get_bool_string(registry_allow_insecure));
+    }
+
+  g_slist_free_full (scan_prefs, (GDestroyNotify) http_scanner_param_free);
   g_free (accept_invalid_certs);
   g_free (registry_allow_insecure);
 }
@@ -403,9 +459,6 @@ launch_container_image_task (task_t task,
     g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
                          hosts_ordering);
 
-  /* Setup container image scanner preferences */
-  add_container_image_scan_preferences (scanner_options, task);
-
   connection = container_image_scanner_connect (task_scanner (task), scan_id);
   if (!connection)
     {
@@ -415,6 +468,9 @@ launch_container_image_task (task_t task,
       g_hash_table_destroy (scanner_options);
       return -1;
     }
+
+  /* Setup container image scanner preferences */
+  add_container_image_scan_preferences (connection, scanner_options, task);
 
   gchar *scan_config = NULL;
   scan_config =
