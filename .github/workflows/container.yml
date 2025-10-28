@@ -37,6 +37,10 @@ jobs:
               name: container scanning
               prefix: container-scanning
               build-args: "FEATURE_TOGGLE=-DOPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
+          - build:
+              name: credential stores
+              prefix: credential-stores
+              build-args: "FEATURE_TOGGLE= -DENABLE_CREDENTIAL_STORES=1"
     name: Build and Push Container Images (${{ matrix.build.name }})
     uses: greenbone/workflows/.github/workflows/container-build-push-gea.yml@main
     with:
