@@ -91,6 +91,9 @@
 #include "gmp_agent_installers.h"
 #endif
 #include "gmp_base.h"
+#if ENABLE_CREDENTIAL_STORES
+#include "gmp_credential_stores.h"
+#endif
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
@@ -4429,6 +4432,9 @@ typedef enum
   CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_GET_CREDENTIAL_STORES,
+#endif
   CLIENT_GET_FEATURES,
   CLIENT_GET_FEEDS,
   CLIENT_GET_FILTERS,
@@ -4510,6 +4516,9 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
   CLIENT_MODIFY_CREDENTIAL_REALM,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_MODIFY_CREDENTIAL_STORE,
+#endif
   CLIENT_MODIFY_FILTER,
   CLIENT_MODIFY_FILTER_COMMENT,
   CLIENT_MODIFY_FILTER_NAME,
@@ -4663,6 +4672,9 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ALERT,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_VERIFY_CREDENTIAL_STORE,
+#endif
   CLIENT_VERIFY_REPORT_FORMAT,
   CLIENT_VERIFY_SCANNER,
 } client_state_t;
@@ -5439,6 +5451,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
           }
+#if ENABLE_CREDENTIAL_STORES
+        ELSE_GET_START (credential_stores, CREDENTIAL_STORES)
+#endif /* ENABLE_CREDENTIAL_STORES */
         else if (strcasecmp ("GET_FEATURES", element_name) == 0)
           {
             set_client_state (CLIENT_GET_FEATURES);
@@ -6028,6 +6043,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_credential_data->credential_id);
             set_client_state (CLIENT_MODIFY_CREDENTIAL);
           }
+#if ENABLE_CREDENTIAL_STORES
+        else if (strcasecmp ("MODIFY_CREDENTIAL_STORE", element_name) == 0)
+          {
+            modify_credential_store_start (gmp_parser, attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_STORE);
+          }
+#endif
         else if (strcasecmp ("MODIFY_FILTER", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "filter_id",
@@ -6206,6 +6229,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
           }
+#if ENABLE_CREDENTIAL_STORES
+        else if (strcasecmp ("VERIFY_CREDENTIAL_STORE", element_name) == 0)
+          {
+            verify_credential_store_start (gmp_parser,
+                                           attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_VERIFY_CREDENTIAL_STORE);
+          }
+#endif
         else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "report_format_id",
@@ -6557,6 +6589,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD);
           }
         ELSE_READ_OVER;
+
+#if ENABLE_CREDENTIAL_STORES
+      case CLIENT_MODIFY_CREDENTIAL_STORE:
+        modify_credential_store_element_start (gmp_parser, element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
+#endif
 
       case CLIENT_MODIFY_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -13383,6 +13423,11 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                            "<name>ENABLE_CONTAINER_SCANNING</name>"
                            "</feature>",
                            ENABLE_CONTAINER_SCANNING ? 1 : 0);
+
+  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
+                           "<name>ENABLE_CREDENTIAL_STORES</name>"
+                           "</feature>",
+                           ENABLE_CREDENTIAL_STORES ? 1 : 0);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
@@ -21290,6 +21335,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_credentials (gmp_parser, error);
         break;
 
+#if ENABLE_CREDENTIAL_STORES
+      CASE_GET_END (CREDENTIAL_STORES, credential_stores);
+#endif
+
       case CLIENT_GET_FEATURES:
         handle_get_features (gmp_parser, error);
         break;
@@ -25805,6 +25854,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, REALM);
 
+#if ENABLE_CREDENTIAL_STORES
+      case CLIENT_MODIFY_CREDENTIAL_STORE:
+        if (modify_credential_store_element_end (gmp_parser, error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif
+
       case CLIENT_MODIFY_FILTER:
         {
           switch (modify_filter
@@ -28365,7 +28422,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
+#if ENABLE_CREDENTIAL_STORES
+      case CLIENT_VERIFY_CREDENTIAL_STORE:
+        {
+          verify_credential_store_run (gmp_parser, error);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+#endif
       case CLIENT_VERIFY_REPORT_FORMAT:
         if (verify_report_format_data->report_format_id)
           {
@@ -28568,6 +28632,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_REALM,
               &modify_credential_data->realm);
 
+#if ENABLE_CREDENTIAL_STORES
+      case CLIENT_MODIFY_CREDENTIAL_STORE:
+        modify_credential_store_element_text (text, text_len);
+        break;
+#endif
 
       case CLIENT_MODIFY_REPORT_CONFIG:
         modify_report_config_element_text (text, text_len);

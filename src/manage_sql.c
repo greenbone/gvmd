@@ -41,6 +41,9 @@
 #include "manage_filters.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#if ENABLE_CREDENTIAL_STORES
+#include "manage_sql_credential_stores.h"
+#endif
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -4930,6 +4933,124 @@ check_db_roles ()
          " m_now (), m_now ());");
 }
 
+#if ENABLE_CREDENTIAL_STORES
+/**
+ * @brief Create or update the CyberArk credential store if needed.
+ *
+ * @param owner  The owner if the credential store is newly created.
+ */
+static void
+check_db_cyberark_credential_store (user_t owner)
+{
+  const char *current_version = "0.1";
+  credential_store_preference_data_t *new_pref;
+  credential_store_selector_data_t *new_selector;
+  GList *preferences = NULL, *selectors = NULL;
+
+  if (sql_int ("SELECT count(*) FROM credential_stores"
+               " WHERE uuid = '%s' AND version = '%s'",
+               CREDENTIAL_STORE_UUID_CYBERARK,
+               current_version))
+    return;
+
+  new_pref = credential_store_preference_new
+               ("app_id",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_STRING,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_key",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY,
+                "", "", "", "passphrase");
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_cert",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("server_ca_cert",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_pkcs12_file",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE,
+                "", "", "", "passphrase");
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("passphrase",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_STRING,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_selector = credential_store_selector_new
+                  ("username_password_object", "", "", 0);
+  credential_store_selector_add_credential_type (new_selector, "cs-up");
+  selectors = g_list_append (selectors, new_selector);
+
+  create_or_update_credential_store (CREDENTIAL_STORE_UUID_CYBERARK,
+                                     "CyberArk",
+                                     "localhost",
+                                     "api",
+                                     current_version,
+                                     preferences,
+                                     selectors,
+                                     owner);
+
+  g_list_free_full (preferences,
+                    (GDestroyNotify) credential_store_preference_free);
+  g_list_free_full (selectors,
+                    (GDestroyNotify) credential_store_selector_free);
+}
+#endif
+
+/**
+ * @brief Ensure the predefined credential stores exists.
+ */
+static void
+check_db_credential_stores ()
+{
+#if ENABLE_CREDENTIAL_STORES
+  gchar *feed_owner_uuid;
+  user_t owner = 0;
+  char *old_user_uuid, *old_username;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
+
+  if (feed_owner_uuid != NULL && strlen (feed_owner_uuid) > 0)
+    {
+      gchar *quoted_user_id = sql_quote (feed_owner_uuid);
+      owner = sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s'",
+                           quoted_user_id);
+      g_free (quoted_user_id);
+    }
+  if (owner == 0)
+    {
+      g_message ("%s: No feed owner set, skipping credential store creation",
+               __func__);
+      return;
+    }
+
+  old_user_uuid = current_credentials.uuid;
+  old_username = current_credentials.username;
+  current_credentials.uuid = feed_owner_uuid;
+  current_credentials.username = user_name (feed_owner_uuid);
+
+  check_db_cyberark_credential_store (owner);
+
+  current_credentials.uuid = old_user_uuid;
+  current_credentials.username = old_username;
+  g_free (feed_owner_uuid);
+  
+#endif /* ENABLE_CREDENTIAL_STORES */
+}
+
 /**
  * @brief Cleanup the auth_cache table.
  */
@@ -4978,6 +5099,7 @@ check_db (int check_encryption_key, int avoid_db_check_inserts)
     {
       check_db_permissions ();
       check_db_settings ();
+      check_db_credential_stores ();
     }
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
