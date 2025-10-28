@@ -3017,15 +3017,15 @@ credential_full_type (const char* abbreviation)
   else if (strcasecmp (abbreviation, "cc") == 0)
     return "client certificate";
 #if ENABLE_CREDENTIAL_STORES
-  else if (strcmp (abbreviation, "cs_krb5") ==0)
+  else if (strcasecmp (abbreviation, "cs_krb5") ==0)
     return "Credential store Kerberos 5";
-  else if (strcmp (abbreviation, "cs_pw") == 0)
+  else if (strcasecmp (abbreviation, "cs_pw") == 0)
     return "Credential store password only";
-  else if (strcmp (abbreviation, "cs_snmp") == 0)
+  else if (strcasecmp (abbreviation, "cs_snmp") == 0)
     return "Credential store SNMP";
-  else if (strcmp (abbreviation, "cs_up") == 0)
+  else if (strcasecmp (abbreviation, "cs_up") == 0)
     return "Credential store username + password";
-  else if (strcmp (abbreviation, "cs_usk") == 0)
+  else if (strcasecmp (abbreviation, "cs_usk") == 0)
     return "Credential store username + SSH key";
 #endif
   else if (strcasecmp (abbreviation, "krb5") == 0)
