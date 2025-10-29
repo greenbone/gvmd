@@ -318,15 +318,13 @@ get_preference_from_list (char *name, GSList *scan_prefs)
       char *p_name;
 
       param = point->data;
-      p_name = g_strdup (http_scanner_param_id (param));
+      p_name = http_scanner_param_id (param);
 
       if (p_name && strcmp (p_name, name) == 0)
         {
           value = g_strdup (http_scanner_param_default (param));
-          g_free (p_name);
           break;
         }
-      g_free (p_name);
       point = g_slist_next (point);
     }
   return value;
@@ -367,7 +365,7 @@ add_container_image_scan_preferences (http_scanner_connector_t connector,
       accept_invalid_certs = get_preference_from_list ("accept_invalid_certs", scan_prefs);
       if (accept_invalid_certs)
         g_hash_table_insert (scanner_options, g_strdup ("accept_invalid_certs"),
-                             get_bool_string(accept_invalid_certs));
+                             get_bool_string (accept_invalid_certs));
     }
 
   if (scan_prefs && !registry_allow_insecure)
@@ -375,7 +373,7 @@ add_container_image_scan_preferences (http_scanner_connector_t connector,
       registry_allow_insecure = get_preference_from_list ("registry_allow_insecure", scan_prefs);
       if (registry_allow_insecure)
         g_hash_table_insert (scanner_options, g_strdup ("registry_allow_insecure"),
-                             get_bool_string(registry_allow_insecure));
+                             get_bool_string (registry_allow_insecure));
     }
 
   g_slist_free_full (scan_prefs, (GDestroyNotify) http_scanner_param_free);
