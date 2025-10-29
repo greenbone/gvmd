@@ -13,7 +13,6 @@
 #include "manage_credential_stores.h"
 #include "manage_credential_store_cyberark.h"
 #include <gvm/util/fileutils.h>
-#include <gvm/http/httputils.h>
 #include <gvm/util/tlsutils.h>
 #include <gnutls/gnutls.h>
 #include <gvm/cyberark/cyberark.h>
