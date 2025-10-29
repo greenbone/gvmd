@@ -2269,6 +2269,48 @@ create_tables ()
        "  type TEXT,"
        "  value TEXT);");
 
+#if ENABLE_CREDENTIAL_STORES
+  sql ("CREATE TABLE IF NOT EXISTS credential_stores"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid TEXT UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name TEXT NOT NULL,"
+       "  comment TEXT,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER,"
+       "  version TEXT,"
+       "  active INTEGER,"
+       "  host TEXT,"
+       "  path TEXT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_store_preferences"
+       " (id SERIAL PRIMARY KEY,"
+       "  credential_store INTEGER"
+       "    REFERENCES credential_stores (id) ON DELETE RESTRICT,"
+       "  name TEXT,"
+       "  secret INTEGER,"
+       "  type INTEGER,"
+       "  pattern TEXT,"
+       "  value TEXT,"
+       "  default_value TEXT,"
+       "  passphrase_name TEXT,"
+       "  UNIQUE (credential_store, name));");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_store_selectors"
+       " (id SERIAL PRIMARY KEY,"
+       "  credential_store INTEGER"
+       "    REFERENCES credential_stores (id) ON DELETE RESTRICT,"
+       "  name TEXT,"
+       "  pattern TEXT,"
+       "  default_value TEXT,"
+       "  UNIQUE (credential_store, name));");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_store_selector_types"
+       " (selector INTEGER"
+       "    REFERENCES credential_store_selectors (id) ON DELETE RESTRICT,"
+       "  credential_type TEXT);");
+#endif
+
   sql ("CREATE TABLE IF NOT EXISTS deprecated_feed_data"
        " (id SERIAL PRIMARY KEY,"
        "  type TEXT,"
