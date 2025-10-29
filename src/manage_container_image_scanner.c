@@ -306,10 +306,10 @@ get_bool_string (const char *preference_value)
 *
 * @return     The value of the preference.
 */
-static char *
+static gchar *
 get_preference_from_list (char *name, GSList *scan_prefs)
 {
-  char *value = NULL;
+  gchar *value = NULL;
   GSList *point = scan_prefs;
 
   while (point)
@@ -337,14 +337,16 @@ get_preference_from_list (char *name, GSList *scan_prefs)
 * @param[in]  scanner_options  The scanner preferences table to add to.
 * @param[in]  task             The task.
 *
+* @return     0 on success, -1 if error.
 */
-static void
+static int
 add_container_image_scan_preferences (http_scanner_connector_t connector,
                                       GHashTable *scanner_options,
                                       task_t task)
 {
   GSList *scan_prefs = NULL;
   gchar *accept_invalid_certs, *registry_allow_insecure;
+  int err = 0;
 
   accept_invalid_certs = task_preference_value (task, "accept_invalid_certs");
 
@@ -358,7 +360,18 @@ add_container_image_scan_preferences (http_scanner_connector_t connector,
     g_hash_table_insert (scanner_options, g_strdup ("registry_allow_insecure"),
                          get_bool_string (registry_allow_insecure));
 
-  http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+
+  if (!accept_invalid_certs || !registry_allow_insecure)
+    err = http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+
+  if (err < 0)
+    {
+      if (scan_prefs)
+        g_slist_free_full (scan_prefs, (GDestroyNotify) http_scanner_param_free);
+      g_free (accept_invalid_certs);
+      g_free (registry_allow_insecure);
+      return err;
+    };
 
   if (scan_prefs && !accept_invalid_certs)
     {
@@ -379,6 +392,8 @@ add_container_image_scan_preferences (http_scanner_connector_t connector,
   g_slist_free_full (scan_prefs, (GDestroyNotify) http_scanner_param_free);
   g_free (accept_invalid_certs);
   g_free (registry_allow_insecure);
+
+  return err;
 }
 
 /**
@@ -468,7 +483,16 @@ launch_container_image_task (task_t task,
     }
 
   /* Setup container image scanner preferences */
-  add_container_image_scan_preferences (connection, scanner_options, task);
+  if (add_container_image_scan_preferences (connection,
+                                            scanner_options,
+                                            task) < 0)
+    {
+      if (error)
+        *error = g_strdup ("Could not get scan preferences from scanner");
+      container_image_target_free (container_image_target);
+      g_hash_table_destroy (scanner_options);
+      return -1;
+    }
 
   gchar *scan_config = NULL;
   scan_config =
