@@ -911,6 +911,16 @@ credential_store_update_preferences (GHashTable *preference_values,
       const char *passphrase;
       preference = g_hash_table_lookup (old_preferences, name);
 
+      if (preference == NULL)
+        {
+          *message = g_strdup_printf ("'%s' is not a valid preference name"
+                                      " for this credential store",
+                                      name);
+          g_hash_table_destroy (old_preferences);
+          lsc_crypt_release (crypt_ctx);
+          return -1;
+        }
+
       if (preference->passphrase_name
           && strcmp (preference->passphrase_name, ""))
         {
@@ -930,22 +940,13 @@ credential_store_update_preferences (GHashTable *preference_values,
       else
         passphrase = NULL;
 
-      if (preference == NULL)
-        {
-          *message = g_strdup_printf ("'%s' is not a valid preference name"
-                                      " for this credential store",
-                                      name);
-          g_hash_table_destroy (old_preferences);
-          lsc_crypt_release (crypt_ctx);
-          return -1;
-        }
-      else if (value != NULL
-               && credential_store_preference_value_valid (name,
-                                                           value,
-                                                           preference->type,
-                                                           preference->pattern,
-                                                           passphrase,
-                                                           message) == FALSE)
+      if (value != NULL 
+            && credential_store_preference_value_valid (name,
+                                                        value,
+                                                        preference->type,
+                                                        preference->pattern,
+                                                        passphrase,
+                                                        message) == FALSE)
         {
           g_hash_table_destroy (old_preferences);
           lsc_crypt_release (crypt_ctx);
