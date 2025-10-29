@@ -17405,6 +17405,45 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 }
 
 /**
+ * @brief Ensure a filter string has min_qod and apply_overrides.
+ *
+ * @param[in]  clean  Filter string.
+ *
+ * @return clean, which may have been reallocated.
+ */
+static gchar *
+ensure_term_has_qod_and_overrides (gchar *clean)
+{
+  gchar *term_value;
+
+  term_value = filter_term_value (clean, "min_qod");
+  if (term_value == NULL)
+    {
+      gchar *new_filter;
+      new_filter = g_strdup_printf ("min_qod=%i %s",
+                                    MIN_QOD_DEFAULT,
+                                    clean);
+      g_free (clean);
+      clean = new_filter;
+    }
+  g_free (term_value);
+
+  term_value = filter_term_value (clean, "apply_overrides");
+  if (term_value == NULL)
+    {
+      gchar *new_filter;
+      new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                    APPLY_OVERRIDES_DEFAULT,
+                                    clean);
+      g_free (clean);
+      clean = new_filter;
+    }
+  g_free (term_value);
+
+  return clean;
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17455,7 +17494,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *tz, *zone;
   char *old_tz_override;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
-  gchar *term_value;
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
@@ -17727,32 +17765,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                 : (get->filter ? get->filter : ""),
                                get->ignore_max_rows_per_page);
 
-  term_value = filter_term_value (clean, "min_qod");
-  if (term_value == NULL)
-    {
-      gchar *new_filter;
-      new_filter = g_strdup_printf ("min_qod=%i %s",
-                                    MIN_QOD_DEFAULT,
-                                    clean);
-      g_free (clean);
-      clean = new_filter;
-    }
-  g_free (term_value);
-
-  term_value = filter_term_value (clean, "apply_overrides");
-  if (term_value == NULL)
-    {
-      gchar *new_filter;
-      new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                    APPLY_OVERRIDES_DEFAULT,
-                                    clean);
-      g_free (clean);
-      clean = new_filter;
-    }
-  g_free (term_value);
-
   g_free (term);
-  term = clean;
+  term = ensure_term_has_qod_and_overrides (clean);
 
   if (filter_term_return)
     *filter_term_return = g_strdup (term);
