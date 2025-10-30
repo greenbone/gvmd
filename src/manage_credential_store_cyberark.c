@@ -10,24 +10,21 @@
  * Management headers of the CyberArk credential store.
  */
 
-#include "manage_credential_stores.h"
 #include "manage_credential_store_cyberark.h"
 #include "manage_sql.h"
 #include "manage_sql_credential_stores.h"
-#include <gvm/util/fileutils.h>
-#include <gvm/util/tlsutils.h>
+#include "manage_credential_stores.h"
+
 #include <gnutls/gnutls.h>
 #include <gvm/cyberark/cyberark.h>
+#include <gvm/util/fileutils.h>
+#include <gvm/util/tlsutils.h>
 
 static verify_credential_store_return_t
-verify_and_prepare_cyberark_connection_data (const char *host,
-                                             const char *path,
-                                             GHashTable *preferences,
-                                             const char **app_id,
-                                             gchar **client_key_pem,
-                                             gchar **client_cert_pem,
-                                             gchar **server_ca_cert_pem,
-                                             gchar **message)
+verify_and_prepare_cyberark_connection_data (
+  const char *host, const char *path, GHashTable *preferences,
+  const char **app_id, gchar **client_key_pem, gchar **client_cert_pem,
+  gchar **server_ca_cert_pem, gchar **message)
 {
   credential_store_preference_data_t *app_id_preference;
   credential_store_preference_data_t *pkcs12_preference;
@@ -59,22 +56,17 @@ verify_and_prepare_cyberark_connection_data (const char *host,
       const char *passphrase;
       int ret;
 
-      passphrase_preference 
-        = g_hash_table_lookup (preferences,
-                               pkcs12_preference->passphrase_name);
+      passphrase_preference =
+        g_hash_table_lookup (preferences, pkcs12_preference->passphrase_name);
       if (credential_store_preference_is_set (passphrase_preference))
         passphrase = passphrase_preference->value;
       else
         passphrase = NULL;
 
-      gchar* extra;
-      ret = eval_pkcs12_credential_store_preference (pkcs12_preference,
-                                                     passphrase,
-                                                     client_key_pem,
-                                                     client_cert_pem,
-                                                     &extra,
-                                                     NULL,
-                                                     message);
+      gchar *extra;
+      ret = eval_pkcs12_credential_store_preference (
+        pkcs12_preference, passphrase, client_key_pem, client_cert_pem, &extra,
+        NULL, message);
 
       if (ret)
         return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
@@ -99,25 +91,21 @@ verify_and_prepare_cyberark_connection_data (const char *host,
           return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
         }
 
-      passphrase_preference 
-        = g_hash_table_lookup (preferences,
-                               key_preference->passphrase_name);
+      passphrase_preference =
+        g_hash_table_lookup (preferences, key_preference->passphrase_name);
       if (credential_store_preference_is_set (passphrase_preference))
         passphrase = passphrase_preference->value;
       else
         passphrase = NULL;
 
-      ret = eval_privkey_credential_store_preference (key_preference,
-                                                      passphrase,
-                                                      client_key_pem,
-                                                      message);
+      ret = eval_privkey_credential_store_preference (
+        key_preference, passphrase, client_key_pem, message);
 
       if (ret)
         return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
 
       ret = eval_certs_credential_store_preference (cert_preference,
-                                                    client_cert_pem,
-                                                    message);
+                                                    client_cert_pem, message);
 
       if (ret)
         return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
@@ -128,9 +116,8 @@ verify_and_prepare_cyberark_connection_data (const char *host,
     {
       int ret;
 
-      ret = eval_certs_credential_store_preference (ca_cert_preference,
-                                                    server_ca_cert_pem,
-                                                    message);
+      ret = eval_certs_credential_store_preference (
+        ca_cert_preference, server_ca_cert_pem, message);
 
       if (ret)
         {
@@ -152,23 +139,16 @@ verify_and_prepare_cyberark_connection_data (const char *host,
  * @return A verify_credential_store_return_t return code.
  */
 verify_credential_store_return_t
-verify_cyberark_credential_store (const char *host,
-                                  const char *path,
-                                  GHashTable *preferences,
-                                  gchar **message)
+verify_cyberark_credential_store (const char *host, const char *path,
+                                  GHashTable *preferences, gchar **message)
 {
   const char *app_id;
   gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
   verify_credential_store_return_t rc;
 
-  rc = verify_and_prepare_cyberark_connection_data (host,
-                                                     path,
-                                                     preferences,
-                                                     &app_id,
-                                                     &client_key_pem,
-                                                     &client_cert_pem,
-                                                     &server_ca_cert_pem,
-                                                     message);
+  rc = verify_and_prepare_cyberark_connection_data (
+    host, path, preferences, &app_id, &client_key_pem, &client_cert_pem,
+    &server_ca_cert_pem, message);
   if (rc)
     {
       g_free (client_key_pem);
@@ -177,7 +157,7 @@ verify_cyberark_credential_store (const char *host,
       return rc;
     }
 
-  cyberark_connector_t connector = cyberark_connector_new();
+  cyberark_connector_t connector = cyberark_connector_new ();
 
   cyberark_connector_builder (connector, CYBERARK_HOST, host);
   cyberark_connector_builder (connector, CYBERARK_PATH, path);
@@ -187,10 +167,8 @@ verify_cyberark_credential_store (const char *host,
   cyberark_connector_builder (connector, CYBERARK_PROTOCOL, "https");
   cyberark_connector_builder (connector, CYBERARK_APP_ID, app_id);
 
-  int ret = cyberark_verify_connection (connector,
-                                        "dummy-safe",
-                                        NULL,
-                                        "dummy-object");
+  int ret =
+    cyberark_verify_connection (connector, "dummy-safe", NULL, "dummy-object");
 
   if (ret < 0)
     {
