@@ -20,5 +20,12 @@ verify_cyberark_credential_store (const char *host,
                                   const char *path,
                                   GHashTable *preferences,
                                   gchar **message);
+int
+cyberark_login_password_credential_data (const char *,
+                                         const char *,
+                                         const char *,
+                                         gchar **,
+                                         gchar **);
+
 
 #endif /* _GVMD_MANAGE_CREDENTIAL_STORE_CYBERARK_H */

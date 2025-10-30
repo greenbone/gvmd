@@ -630,14 +630,26 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_targets = g_slist_append (NULL, osp_target);
 
   ssh_credential = target_osp_ssh_credential (target);
+#if ENABLE_CREDENTIAL_STORES
+  if (ssh_credential == NULL)
+    ssh_credential = target_osp_ssh_cs_credential (target);
+#endif
   if (ssh_credential)
     osp_target_add_credential (osp_target, ssh_credential);
 
   smb_credential = target_osp_smb_credential (target);
+#if ENABLE_CREDENTIAL_STORES
+  if (smb_credential == NULL)
+    smb_credential = target_osp_smb_cs_credential (target);
+#endif
   if (smb_credential)
     osp_target_add_credential (osp_target, smb_credential);
 
   esxi_credential = target_osp_esxi_credential (target);
+#if ENABLE_CREDENTIAL_STORES
+  if (esxi_credential == NULL)
+    esxi_credential = target_osp_esxi_cs_credential (target);
+#endif
   if (esxi_credential)
     osp_target_add_credential (osp_target, esxi_credential);
 

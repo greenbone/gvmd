@@ -48,4 +48,7 @@ gboolean
 find_credential_store_no_acl (const char *,
                               credential_store_t *);
 
+GHashTable*
+credential_store_get_preferences_hashtable (credential_store_t);
+
 #endif /* _GVMD_MANAGE_SQL_CREDENTIAL_STORES_H */

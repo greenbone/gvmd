@@ -21630,7 +21630,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_credential)
     {
       gchar *type = credential_type (ssh_credential);
-      if (strcmp (type, "usk") && strcmp (type, "up"))
+      if (strcmp (type, "usk") && strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_usk") && strcmp (type, "cs_up")
+#endif
+          )
         {
           sql_rollback ();
           g_free (quoted_ssh_port);
@@ -21648,7 +21652,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_elevate_credential)
     {
       gchar *type = credential_type (ssh_elevate_credential);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up") 
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_up")
+#endif
+         )
         {
           sql_rollback ();
           return 9;
@@ -21664,7 +21672,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (smb_credential)
     {
       gchar *type = credential_type (smb_credential);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_up")
+#endif
+         )
         {
           sql_rollback ();
           return 10;
@@ -21680,7 +21692,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (esxi_credential)
     {
       gchar *type = credential_type (esxi_credential);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_up")
+#endif
+        )
         {
           sql_rollback ();
           return 11;
@@ -21696,7 +21712,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (snmp_credential)
     {
       gchar *type = credential_type (snmp_credential);
-      if (strcmp (type, "snmp"))
+      if (strcmp (type, "snmp")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_snmp")
+#endif
+         )
         {
           sql_rollback ();
           return 12;
@@ -22142,7 +22162,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             port_int = 22;
 
           type = credential_type (ssh_credential);
-          if (strcmp (type, "up") && strcmp (type, "usk"))
+          if (strcmp (type, "up") && strcmp (type, "usk")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up") && strcmp (type, "cs_usk")
+#endif
+          )
             {
               sql_rollback ();
               return 18;
@@ -22182,7 +22206,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (ssh_elevate_credential);
-          if (strcmp (type, "up"))
+          if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up")
+#endif
+            )
             {
               sql_rollback ();
               return 23;
@@ -22222,7 +22250,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (smb_credential);
-          if (strcmp (type, "up"))
+          if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up")
+#endif
+             )
             {
               sql_rollback ();
               return 19;
@@ -22266,7 +22298,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (esxi_credential);
-          if (strcmp (type, "up"))
+          if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up")
+#endif
+             )
             {
               sql_rollback ();
               return 20;
@@ -22308,7 +22344,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (snmp_credential);
-          if (strcmp (type, "snmp"))
+          if (strcmp (type, "snmp")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_snmp")
+#endif
+             )
             {
               sql_rollback ();
               return 21;
