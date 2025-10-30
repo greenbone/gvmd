@@ -96,7 +96,6 @@ verify_and_prepare_cyberark_connection_data (const char *host,
                                " or both 'client_key' and 'client_cert'"
                                " are required");
 
-          g_free (server_ca_cert_pem);
           return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
         }
 
