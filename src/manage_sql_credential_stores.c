@@ -631,6 +631,7 @@ credential_store_preference_binary_value_is_valid (
                                         name, gnutls_strerror (ret));
             return FALSE;
           }
+        return TRUE;
       }
     case CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE:
       {
