@@ -849,7 +849,7 @@ credential_store_set_preference (credential_store_t credential_store,
  *
  * @return  The hashtable of preferences.
  */
-static GHashTable*
+GHashTable*
 credential_store_get_preferences_hashtable (credential_store_t credential_store)
 {
   GHashTable *preferences;

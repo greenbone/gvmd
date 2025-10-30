@@ -16,12 +16,26 @@
 #include <gvm/osp/osp.h>
 #include <glib.h>
 #include "manage_resources.h"
+#if ENABLE_CREDENTIAL_STORES
+#include "manage_credential_store_cyberark.h"
+#endif
 
 void
 add_user_scan_preferences (GHashTable *);
 
 osp_credential_t *
 target_osp_ssh_credential (target_t);
+
+#if ENABLE_CREDENTIAL_STORES
+osp_credential_t *
+target_osp_ssh_cs_credential (target_t);
+
+osp_credential_t *
+target_osp_smb_cs_credential (target_t);
+
+osp_credential_t *
+target_osp_esxi_cs_credential (target_t);
+#endif
 
 osp_credential_t *
 target_osp_smb_credential (target_t);

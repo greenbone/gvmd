@@ -12,6 +12,8 @@
 
 #include "manage_credential_stores.h"
 #include "manage_credential_store_cyberark.h"
+#include "manage_sql.h"
+#include "manage_sql_credential_stores.h"
 #include <gvm/util/fileutils.h>
 #include <gvm/util/tlsutils.h>
 #include <gnutls/gnutls.h>
@@ -217,4 +219,119 @@ verify_cyberark_credential_store (const char *host,
   g_free (server_ca_cert_pem);
 
   return VERIFY_CREDENTIAL_STORE_OK;
+}
+
+/**
+ * @brief Retrieves login and password from CyberArk credential store.
+ *
+ * @param[in]  cred_store_uuid  The UUID of the credential store.
+ * @param[in]  vault_id         The vault ID in CyberArk.
+ * @param[in]  host_identifier  The host identifier in CyberArk.
+ * @param[out] login            The retrieved login.
+ * @param[out] password         The retrieved password.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+cyberark_login_password_credential_data (const gchar* cred_store_uuid,
+                                         const gchar* vault_id,
+                                         const gchar* host_identifier,
+                                         gchar **login,
+                                         gchar **password)
+{
+  credential_store_t credential_store;
+  GHashTable *preferences;
+  const char *host, *path;
+  const char *app_id;
+  gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
+  cyberark_connector_t connector;
+  gchar *message = NULL;
+  int ret;
+
+  if (find_resource_with_permission ("credential_store",
+                                     cred_store_uuid,
+                                     &credential_store,
+                                     "get_credential_stores",
+                                     0))
+    {
+      g_warning ("%s: Error getting credential store '%s'",
+                 __func__, cred_store_uuid);
+      return -1;
+    }
+  if (credential_store == 0)
+    {
+      g_warning ("%s: Credential store '%s' not found",
+                 __func__, cred_store_uuid);
+      return -1;
+    }
+  host = credential_store_host (credential_store);
+  path = credential_store_path (credential_store);
+  preferences = credential_store_get_preferences_hashtable (credential_store);
+
+  ret = verify_and_prepare_cyberark_connection_data (host,
+                                                     path,
+                                                     preferences,
+                                                     &app_id,
+                                                     &client_key_pem,
+                                                     &client_cert_pem,
+                                                     &server_ca_cert_pem,
+                                                     &message);
+  if (ret)
+    {
+      g_warning ("%s: Error preparing connection data for"
+                 " credential store '%s'",
+                 __func__, cred_store_uuid);
+      return -1;
+    }
+
+  connector = cyberark_connector_new();
+
+  cyberark_connector_builder (connector, CYBERARK_HOST, host);
+  cyberark_connector_builder (connector, CYBERARK_PATH, path);
+  cyberark_connector_builder (connector, CYBERARK_CA_CERT, server_ca_cert_pem);
+  cyberark_connector_builder (connector, CYBERARK_KEY, client_key_pem);
+  cyberark_connector_builder (connector, CYBERARK_CERT, client_cert_pem);
+  cyberark_connector_builder (connector, CYBERARK_PROTOCOL, "https");
+  cyberark_connector_builder (connector, CYBERARK_APP_ID, app_id);
+
+  cyberark_object_t credential_object = cyberark_get_object (connector,
+                                                             vault_id,
+                                                             NULL,
+                                                             host_identifier);
+
+  if (credential_object == NULL)
+    {
+      cyberark_connector_free (connector);
+      g_hash_table_destroy (preferences);
+      g_free (client_key_pem);
+      g_free (client_cert_pem);
+      g_free (server_ca_cert_pem);
+      g_warning ("%s: Error getting credential object from"
+                 " CyberArk credential store '%s'",
+                 __func__, cred_store_uuid);
+      return -1;
+    }
+
+  if (login)
+    *login = g_strdup (credential_object->username);
+
+  if (password)
+    *password = g_strdup (credential_object->content);
+
+  cyberark_object_free (credential_object);
+
+  cyberark_connector_free (connector);
+  g_hash_table_destroy (preferences);
+  g_free (client_key_pem);
+  g_free (client_cert_pem);
+  g_free (server_ca_cert_pem);
+
+  if (ret)
+    {
+      g_warning ("%s: Error getting credential from CyberArk"
+                 " credential store '%s'",
+                 __func__, cred_store_uuid);
+      return -1;
+    }
+  return 0;
 }
