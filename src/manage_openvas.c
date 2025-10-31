@@ -298,6 +298,7 @@ target_osp_ssh_cs_credential (target_t target)
                       "CyberArk credential store '%s'.",
                       __func__, cred_store_uuid);
           cleanup_iterator (&iter);
+          osp_credential_free (osp_credential);
           return NULL;
         }
       auth_data_login = login;
@@ -333,7 +334,7 @@ target_osp_ssh_cs_credential (target_t target)
             {
               g_warning ("%s: SSH Elevate Credential not found.", __func__);
               cleanup_iterator (&ssh_elevate_iter);
-              osp_credential_free(osp_credential);
+              osp_credential_free (osp_credential);
               return NULL;
             }
           elevate_type = credential_iterator_type (&ssh_elevate_iter);
@@ -341,20 +342,20 @@ target_osp_ssh_cs_credential (target_t target)
             {
               g_warning ("%s: SSH Elevate Credential not of type cs_up", __func__);
               cleanup_iterator (&ssh_elevate_iter);
-              osp_credential_free(osp_credential);
+              osp_credential_free (osp_credential);
               return NULL;
             }
 
-          const char *cred_store_uuid
+          const char *cred_store_uuid_elevate
             = credential_iterator_credential_store_uuid (&iter);
-          const char *vault_id
+          const char *vault_id_elevate
             = credential_iterator_vault_id (&iter);
-          const char *host_identifier
+          const char *host_identifier_elevate
             = credential_iterator_host_identifier (&iter);
 
-          if (cyberark_login_password_credential_data (cred_store_uuid,
-                                                       vault_id,
-                                                       host_identifier,
+          if (cyberark_login_password_credential_data (cred_store_uuid_elevate,
+                                                       vault_id_elevate,
+                                                       host_identifier_elevate,
                                                        &login,
                                                        &password))
             {
