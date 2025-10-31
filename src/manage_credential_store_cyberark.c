@@ -135,8 +135,6 @@ verify_and_prepare_cyberark_connection_data (const char *host,
 
       if (ret)
         {
-          g_free (client_key_pem);
-          g_free (client_cert_pem);
           return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
         }
     }
@@ -241,7 +239,7 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
 {
   credential_store_t credential_store;
   GHashTable *preferences;
-  const char *host, *path;
+  gchar *host, *path;
   const char *app_id;
   gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
   cyberark_connector_t connector;
@@ -279,8 +277,16 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
   if (ret)
     {
       g_warning ("%s: Error preparing connection data for"
-                 " credential store '%s'",
-                 __func__, cred_store_uuid);
+                 " credential store '%s': %s",
+                 __func__, cred_store_uuid,
+                 message ? message : "unknown error");
+      g_free (client_key_pem);
+      g_free (client_cert_pem);
+      g_free (server_ca_cert_pem);
+      g_free (host);
+      g_free (path);
+      g_free (message);
+      g_hash_table_destroy (preferences);
       return -1;
     }
 
@@ -306,6 +312,8 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
       g_free (client_key_pem);
       g_free (client_cert_pem);
       g_free (server_ca_cert_pem);
+      g_free (host);
+      g_free (path);
       g_warning ("%s: Error getting credential object from"
                  " CyberArk credential store '%s'",
                  __func__, cred_store_uuid);
@@ -325,6 +333,8 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
   g_free (client_key_pem);
   g_free (client_cert_pem);
   g_free (server_ca_cert_pem);
+  g_free (host);
+  g_free (path);
 
   if (ret)
     {
