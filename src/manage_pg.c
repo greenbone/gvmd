@@ -2281,7 +2281,8 @@ create_tables ()
        "  version TEXT,"
        "  active INTEGER,"
        "  host TEXT,"
-       "  path TEXT);");
+       "  path TEXT,"
+       "  port INTEGER);");
 
   sql ("CREATE TABLE IF NOT EXISTS credential_store_preferences"
        " (id SERIAL PRIMARY KEY,"

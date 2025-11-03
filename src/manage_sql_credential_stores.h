@@ -27,6 +27,7 @@
   "active",                                 \
   "host",                                   \
   "path",                                   \
+  "port",                                   \
   "version",                                \
   NULL                                      \
 }
@@ -41,6 +42,7 @@
   { "active", NULL, KEYWORD_TYPE_INTEGER },                   \
   { "host", NULL, KEYWORD_TYPE_STRING },                      \
   { "path", NULL, KEYWORD_TYPE_STRING },                      \
+  { "port", NULL, KEYWORD_TYPE_INTEGER },                     \
   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                        \
 }
 

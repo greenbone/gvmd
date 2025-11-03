@@ -21,10 +21,15 @@
 #include <gvm/util/tlsutils.h>
 
 static verify_credential_store_return_t
-verify_and_prepare_cyberark_connection_data (
-  const char *host, const char *path, GHashTable *preferences,
-  const char **app_id, gchar **client_key_pem, gchar **client_cert_pem,
-  gchar **server_ca_cert_pem, gchar **message)
+verify_and_prepare_cyberark_connection_data (const char *host,
+                                             const char *path,
+                                             int port,
+                                             GHashTable *preferences,
+                                             const char **app_id,
+                                             gchar **client_key_pem,
+                                             gchar **client_cert_pem,
+                                             gchar **server_ca_cert_pem,
+                                             gchar **message)
 {
   credential_store_preference_data_t *app_id_preference;
   credential_store_preference_data_t *pkcs12_preference;
@@ -40,6 +45,11 @@ verify_and_prepare_cyberark_connection_data (
     {
       *message = g_strdup ("path must not be empty");
       return VERIFY_CREDENTIAL_STORE_PATH_ERROR;
+    }
+  if (port != -1 && (port <= 0 || port > 65535))
+    {
+      *message = g_strdup ("port must be between 1 and 65535");
+      return VERIFY_CREDENTIAL_STORE_PORT_ERORR;
     }
   app_id_preference = g_hash_table_lookup (preferences, "app_id");
   if (credential_store_preference_is_set (app_id_preference) == FALSE)
@@ -133,22 +143,32 @@ verify_and_prepare_cyberark_connection_data (
  *
  * @param[in]  host         The host of the CyberArk credential store.
  * @param[in]  path         The path of the CyberArk credential store.
+ * @param[in]  port         The port of the CyberArk credential store.
  * @param[in]  preferences  The preferences of the CyberArk credential store.
  * @param[out] message      Error message output.
  *
  * @return A verify_credential_store_return_t return code.
  */
 verify_credential_store_return_t
-verify_cyberark_credential_store (const char *host, const char *path,
-                                  GHashTable *preferences, gchar **message)
+verify_cyberark_credential_store (const char *host,
+                                  const char *path,
+                                  int port,
+                                  GHashTable *preferences,
+                                  gchar **message)
 {
   const char *app_id;
   gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
   verify_credential_store_return_t rc;
 
-  rc = verify_and_prepare_cyberark_connection_data (
-    host, path, preferences, &app_id, &client_key_pem, &client_cert_pem,
-    &server_ca_cert_pem, message);
+  rc = verify_and_prepare_cyberark_connection_data (host,
+                                                    path,
+                                                    port,
+                                                    preferences,
+                                                    &app_id,
+                                                    &client_key_pem,
+                                                    &client_cert_pem,
+                                                    &server_ca_cert_pem,
+                                                    message);
   if (rc)
     {
       g_free (client_key_pem);
@@ -166,6 +186,8 @@ verify_cyberark_credential_store (const char *host, const char *path,
   cyberark_connector_builder (connector, CYBERARK_CERT, client_cert_pem);
   cyberark_connector_builder (connector, CYBERARK_PROTOCOL, "https");
   cyberark_connector_builder (connector, CYBERARK_APP_ID, app_id);
+  if (port > 0)
+    cyberark_connector_builder (connector, CYBERARK_PORT, (void *) &port);
 
   int ret =
     cyberark_verify_connection (connector, "dummy-safe", NULL, "dummy-object");
@@ -218,6 +240,7 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
   GHashTable *preferences;
   gchar *host, *path;
   const char *app_id;
+  int port;
   gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
   cyberark_connector_t connector;
   gchar *message = NULL;
@@ -241,10 +264,12 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
     }
   host = credential_store_host (credential_store);
   path = credential_store_path (credential_store);
+  port = credential_store_port (credential_store);
   preferences = credential_store_get_preferences_hashtable (credential_store);
 
   ret = verify_and_prepare_cyberark_connection_data (host,
                                                      path,
+                                                     port,
                                                      preferences,
                                                      &app_id,
                                                      &client_key_pem,
@@ -276,6 +301,8 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
   cyberark_connector_builder (connector, CYBERARK_CERT, client_cert_pem);
   cyberark_connector_builder (connector, CYBERARK_PROTOCOL, "https");
   cyberark_connector_builder (connector, CYBERARK_APP_ID, app_id);
+  if (port > 0)
+    cyberark_connector_builder (connector, CYBERARK_PORT, (void *) &port);
 
   cyberark_object_t credential_object = cyberark_get_object (connector,
                                                              vault_id,

@@ -123,6 +123,9 @@ credential_store_iterator_host (iterator_t *iterator);
 const char*
 credential_store_iterator_path (iterator_t *iterator);
 
+int
+credential_store_iterator_port (iterator_t* iterator);
+
 void
 init_credential_store_preference_iterator (
     iterator_t *iterator, credential_store_t credential_store);
@@ -217,6 +220,8 @@ credential_store_host (credential_store_t);
 char *
 credential_store_path (credential_store_t);
 
+int
+credential_store_port (credential_store_t);
 
 /**
  * @brief Enumeration of modify_credential_store return codes.
@@ -227,6 +232,7 @@ typedef enum {
   MODIFY_CREDENTIAL_STORE_NOT_FOUND,
   MODIFY_CREDENTIAL_STORE_INVALID_HOST,
   MODIFY_CREDENTIAL_STORE_INVALID_PATH,
+  MODIFY_CREDENTIAL_STORE_INVALID_PORT,
   MODIFY_CREDENTIAL_STORE_INVALID_PREFERENCE,
   MODIFY_CREDENTIAL_STORE_PERMISSION_DENIED = 99,
   MODIFY_CREDENTIAL_STORE_INTERNAL_ERROR = -1
@@ -237,6 +243,8 @@ modify_credential_store (const char *credential_store_id,
                          const char *active,
                          const char *host,
                          const char *path,
+                         const char *port,
+                         const char *comment,
                          GHashTable *preference_values,
                          gchar **message);
 
@@ -260,6 +268,7 @@ typedef enum {
   VERIFY_CREDENTIAL_STORE_CONNECTOR_ERROR,
   VERIFY_CREDENTIAL_STORE_HOST_ERROR,
   VERIFY_CREDENTIAL_STORE_PATH_ERROR,
+  VERIFY_CREDENTIAL_STORE_PORT_ERORR,
   VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR,
   VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED,
   VERIFY_CREDENTIAL_STORE_PERMISSION_DENIED = 99,
@@ -270,7 +279,7 @@ typedef enum {
  * @brief Function type for verifying a credential store.
  */
 typedef
-int (*credential_store_verify_func_t) (const char*, const char*,
+int (*credential_store_verify_func_t) (const char*, const char*, int,
                                        GHashTable*, gchar **);
 
 verify_credential_store_return_t
