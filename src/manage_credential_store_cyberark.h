@@ -18,6 +18,7 @@
 verify_credential_store_return_t
 verify_cyberark_credential_store (const char *host,
                                   const char *path,
+                                  int port,
                                   GHashTable *preferences,
                                   gchar **message);
 int

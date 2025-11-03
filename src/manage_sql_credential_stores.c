@@ -109,6 +109,22 @@ DEF_ACCESS (credential_store_iterator_host, GET_ITERATOR_COLUMN_COUNT + 2);
 DEF_ACCESS (credential_store_iterator_path, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
+ * @brief Get the port from a credential store iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port, 0 if not set or -1 if iteration is complete.
+ */
+int
+credential_store_iterator_port (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+  return ret;
+}
+
+/**
  * @brief Initialize an iterator for retrieving credential store preferences.
  *
  * @param[in,out] iterator  Pointer to the iterator to initialize.
@@ -505,6 +521,27 @@ credential_store_path (credential_store_t credential_store)
 {
   return sql_string ("SELECT path FROM credential_stores WHERE id = %llu",
                      credential_store);
+}
+
+/**
+ * @brief Return the port of a credential store.
+ *
+ * @param[in]  credential_store  Credential store.
+ *
+ * @return Credential store port, -1 if not found;
+ */
+int
+credential_store_port (credential_store_t credential_store)
+{
+  int port;
+  char *str;
+  str = sql_string ("SELECT port FROM credential_stores WHERE id = %llu;",
+                    credential_store);
+  if (!str)
+    return -1;
+  port = atoi (str);
+  g_free (str);
+  return port;
 }
 
 
@@ -972,6 +1009,8 @@ credential_store_update_preferences (GHashTable *preference_values,
  * @param[in]  active       Active status to set or NULL to keep old one.
  * @param[in]  host         Host to set or NULL to keep old one.
  * @param[in]  path         Path to set or NULL to keep old one.
+ * @param[in]  port         Port to set or NULL to keep old one.
+ * @param[in]  comment      Comment to set or NULL to keep old one.
  * @param[in]  preference_values  Preference values to set.
  * @param[out] message      Output for error message.
  */
@@ -980,6 +1019,8 @@ modify_credential_store (const char *credential_store_id,
                          const char *active,
                          const char *host,
                          const char *path,
+                         const char *port,
+                         const char *comment,
                          GHashTable *preference_values,
                          gchar **message)
 {
@@ -1028,6 +1069,26 @@ modify_credential_store (const char *credential_store_id,
       g_free (quoted_host);
     }
 
+  if (port)
+    {
+      if (strcmp (port, "") == 0)
+        {
+          sql ("UPDATE credential_stores SET port = NULL WHERE id = %llu",
+               credential_store);
+        }
+      else
+        {
+          int iport = strtol (port, NULL, 10);
+          if (iport <= 0 || iport > 65535)
+            {
+              sql_rollback ();
+              return MODIFY_CREDENTIAL_STORE_INVALID_PORT;
+            }
+          sql ("UPDATE credential_stores SET port = '%d' WHERE id = %llu",
+               iport, credential_store);
+        }
+    }
+
   if (path)
     {
       gchar *quoted_path;
@@ -1041,6 +1102,14 @@ modify_credential_store (const char *credential_store_id,
       sql ("UPDATE credential_stores SET path = '%s' WHERE id = %llu",
            quoted_path, credential_store);
       g_free (quoted_path);
+    }
+
+  if (comment)
+    {
+      gchar *quoted_comment = sql_quote (comment);
+      sql ("UPDATE credential_stores SET comment = '%s' WHERE id = %llu",
+           quoted_comment, credential_store);
+      g_free (quoted_comment);
     }
 
   if (active)
@@ -1442,6 +1511,7 @@ verify_credential_store (const char *credential_store_id,
 {
   credential_store_t credential_store;
   gchar *host, *path;
+  int port;
   credential_store_verify_func_t verify_func;
   GHashTable *preferences;
   int ret;
@@ -1479,9 +1549,10 @@ verify_credential_store (const char *credential_store_id,
 
   host = credential_store_host (credential_store);
   path = credential_store_path (credential_store);
+  port = credential_store_port (credential_store);
   preferences = credential_store_get_preferences_hashtable (credential_store);
 
-  ret = verify_func (host, path, preferences, message);
+  ret = verify_func (host, path, port, preferences, message);
 
   free (host);
   g_hash_table_destroy (preferences);

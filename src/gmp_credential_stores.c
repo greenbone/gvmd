@@ -232,16 +232,24 @@ get_credential_stores_run (gmp_parser_t *gmp_parser, GError **error)
                                 &get_credential_stores_data.get,
                                 &credential_stores);
 
+      int port = credential_store_iterator_port (&credential_stores);
+
+      gchar *port_str = port > 0 ? g_strdup_printf ("%d", port) : g_strdup ("");
+
       SENDF_TO_CLIENT_OR_FAIL (
         "<version>%s</version>"
         "<active>%d</active>"
         "<host>%s</host>"
         "<path>%s</path>"
+        "<port>%s</port>"
         "<preferences>",
         credential_store_iterator_version (&credential_stores),
         credential_store_iterator_active (&credential_stores),
         credential_store_iterator_host (&credential_stores),
-        credential_store_iterator_path (&credential_stores));
+        credential_store_iterator_path (&credential_stores),
+        port_str);
+
+      g_free (port_str);
       
       init_credential_store_preference_iterator (
         &prefs, get_iterator_resource (&credential_stores)
@@ -451,7 +459,7 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_CREDENTIAL_STORES
   entity_t entity, child_entity;
-  const char *credential_store_id, *active, *host, *path;
+  const char *credential_store_id, *active, *host, *path, *port, *comment;
   modify_credential_store_return_t ret;
   gchar *message;
 
@@ -467,6 +475,12 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
   child_entity = entity_child (entity, "path");
   path = child_entity ? entity_text (child_entity) : NULL;
 
+  child_entity = entity_child (entity, "port");
+  port = child_entity ? entity_text (child_entity) : NULL;
+
+  child_entity = entity_child (entity, "comment");
+  comment = child_entity ? entity_text (child_entity) : NULL;
+
   child_entity = entity_child (entity, "preferences");
   GHashTable *preferences = credential_store_preferences_from_entity (child_entity);
 
@@ -474,6 +488,8 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
                                  active,
                                  host,
                                  path,
+                                 port,
+                                 comment,
                                  preferences,
                                  &message);
   g_hash_table_destroy (preferences);
@@ -520,6 +536,18 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL
             (XML_ERROR_SYNTAX ("modify_credential_store",
                                "Invalid path"));
+        log_event_fail ("credential_store", "Credential Store",
+                        credential_store_id, "modified");
+        break;
+      case MODIFY_CREDENTIAL_STORE_INVALID_PORT:
+        if (message)
+          SENDF_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_credential_store",
+                               "Invalid port: %s"), message);
+        else
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("modify_credential_store",
+                               "Invalid port"));
         log_event_fail ("credential_store", "Credential Store",
                         credential_store_id, "modified");
         break;
