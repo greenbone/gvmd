@@ -30765,7 +30765,7 @@ init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
 
   init_iterator (iterator,
                  "%s"
-                 " SELECT id, uuid, name, %s FROM tasks"
+                 " SELECT id, uuid, name, usage_type, %s FROM tasks"
                  " WHERE scanner = %llu AND hidden = 0"
                  " ORDER BY name ASC;",
                  with_clause ? with_clause : "",
@@ -30795,6 +30795,15 @@ DEF_ACCESS (scanner_task_iterator_uuid, 1);
 DEF_ACCESS (scanner_task_iterator_name, 2);
 
 /**
+ * @brief Get the usage type from a scanner task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_task_iterator_usage_type, 3);
+
+/**
  * @brief Get the read permission status from a GET iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -30805,7 +30814,7 @@ int
 scanner_task_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, 3);
+  return iterator_int (iterator, 4);
 }
 
 /**

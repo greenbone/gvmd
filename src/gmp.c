@@ -17759,11 +17759,13 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                 /* Only show tasks the user may see. */
                 continue;
 
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<task id=\"%s\">"
-                "<name>%s</name>",
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<task id=\"%s\">"
+                "<name>%s</name>"
+                "<usage_type>%s</usage_type>",
                 scanner_task_iterator_uuid (&tasks),
-                scanner_task_iterator_name (&tasks));
+                scanner_task_iterator_name (&tasks),
+                scanner_task_iterator_usage_type (&tasks));
 
               if (scanner_task_iterator_readable (&tasks))
                 SEND_TO_CLIENT_OR_FAIL ("</task>");
