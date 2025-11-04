@@ -2815,18 +2815,7 @@ create_tables ()
     "  installer_path text,"
     "  version text,"
     "  checksum text,"
-    "  file_size integer,"
     "  last_update integer);");
-
-  sql ("CREATE TABLE IF NOT EXISTS agent_installer_cpes"
-    " (id SERIAL PRIMARY KEY,"
-    "  agent_installer integer"
-    "    REFERENCES agent_installers (id) ON DELETE RESTRICT,"
-    "  criteria text,"
-    "  version_start_incl text,"
-    "  version_start_excl text,"
-    "  version_end_incl text,"
-    "  version_end_excl text);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_groups"
     " (id SERIAL PRIMARY KEY,"

@@ -13,6 +13,7 @@
 #include "gmp_base.h"
 #include "manage_agent_installers.h"
 #include "manage_sql_agent_installers.h"
+
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/fileutils.h>
 #include <glib/gstdio.h>
@@ -41,23 +42,6 @@ agent_installer_data_free (agent_installer_data_t *data)
   g_free (data->installer_path);
   g_free (data->version);
   g_free (data->checksum);
-  g_ptr_array_free (data->cpes, TRUE);
-  g_free (data);
-}
-
-/**
- * @brief Free a agent_installer_cpe_data_t structure and its fields.
- *
- * @param[in] data  The data structure to free.
- */
-void
-agent_installer_cpe_data_free (agent_installer_cpe_data_t *data)
-{
-  g_free (data->criteria);
-  g_free (data->version_start_incl);
-  g_free (data->version_start_excl);
-  g_free (data->version_end_incl);
-  g_free (data->version_end_excl);
   g_free (data);
 }
 
@@ -102,7 +86,6 @@ open_agent_installer_file (const char *installer_path, gchar **message)
       g_free (canonical_feed_path);
       g_free (full_installer_path);
       g_free (canonical_installer_path);
-
       return NULL;
     }
 
@@ -111,6 +94,7 @@ open_agent_installer_file (const char *installer_path, gchar **message)
 
   file = fopen (canonical_installer_path, "rb");
   g_free (canonical_installer_path);
+
   if (file == NULL)
     {
       if (message)
@@ -186,7 +170,6 @@ agent_installer_stream_is_valid (FILE *stream,
  *
  * @param[in]  installer_path     Path of the installer file to check.
  * @param[in]  expected_checksum  The expected checksum.
- * @param[in]  expected_size      The expected file size.
  * @param[out] message            Optional result message output.
  *
  * @return TRUE if file is valid, FALSE otherwise.
@@ -194,7 +177,6 @@ agent_installer_stream_is_valid (FILE *stream,
 gboolean
 agent_installer_file_is_valid (const char *installer_path,
                                const char *expected_checksum,
-                               int expected_size,
                                gchar **message)
 {
   FILE *file;
@@ -202,7 +184,6 @@ agent_installer_file_is_valid (const char *installer_path,
   gvm_stream_validator_return_t validator_return;
 
   validator_return = gvm_stream_validator_new (expected_checksum,
-                                               expected_size,
                                                &validator);
   if (validator_return)
     {
@@ -234,7 +215,6 @@ agent_installer_file_is_valid (const char *installer_path,
     *message = g_strdup ("valid");
   return TRUE;
 }
-
 
 /* Agent installer feed sync */
 
@@ -343,40 +323,6 @@ agent_installers_json_skip_to_installers (gvm_json_pull_parser_t *parser,
   return 0;
 }
 
-/**
- * @brief Extracts data of a agent installer CPE entry from JSON
- *
- * The struct will reference the strings from the cJSON object, so
- *  they will only be valid until the cJSON object is freed and the
- *  struct should *not* be freed with agent_installer_cpe_data_free.
- *
- * @param[in]  json   The JSON object to get data from.
- * @param[out] data   The data structure to add the data to.
- *
- * @return 0 success, -1 error
- */
-static int
-get_agent_installer_cpe_data_from_json (cJSON *json,
-                                        agent_installer_cpe_data_t *data)
-{
-  memset (data, 0, sizeof(agent_installer_cpe_data_t));
-
-  data->criteria = gvm_json_obj_str (json, "criteria");
-  if (data->criteria == NULL)
-    {
-      g_warning ("%s: CPE field '%s' is missing or not a string",
-                 __func__, "criteria");
-      return -1;
-    }
-
-  data->version_start_incl = gvm_json_obj_str (json, "versionStartIncluding");
-  data->version_start_excl = gvm_json_obj_str (json, "versionStartExcluding");
-  data->version_end_incl = gvm_json_obj_str (json, "versionEndIncluding");
-  data->version_end_excl = gvm_json_obj_str (json, "versionEndExcluding");
-
-  return 0;
-}
-
 #define GET_AGENT_INSTALLER_JSON_STR(struct_field, json_field)          \
   data->struct_field = gvm_json_obj_str (json, json_field);             \
   if (data->struct_field == NULL)                                       \
@@ -403,7 +349,6 @@ static int
 get_agent_installer_data_from_json (cJSON *json,
                                     agent_installer_data_t *data)
 {
-  cJSON *cpes, *cpe_json;
   const char *creation_time_str, *modification_time_str;
 
   memset (data, 0, sizeof(agent_installer_data_t));
@@ -411,19 +356,11 @@ get_agent_installer_data_from_json (cJSON *json,
   GET_AGENT_INSTALLER_JSON_STR (uuid, "uuid");
   GET_AGENT_INSTALLER_JSON_STR (name, "name");
   GET_AGENT_INSTALLER_JSON_STR (description, "description");
-  GET_AGENT_INSTALLER_JSON_STR (content_type, "contentType");
-  GET_AGENT_INSTALLER_JSON_STR (file_extension, "fileExtension");
-  GET_AGENT_INSTALLER_JSON_STR (installer_path, "installerPath");
+  GET_AGENT_INSTALLER_JSON_STR (content_type, "content_type");
+  GET_AGENT_INSTALLER_JSON_STR (file_extension, "file_extension");
+  GET_AGENT_INSTALLER_JSON_STR (installer_path, "installer_path");
   GET_AGENT_INSTALLER_JSON_STR (version, "version");
   GET_AGENT_INSTALLER_JSON_STR (checksum, "checksum");
-
-  data->file_size = gvm_json_obj_int (json, "fileSize");
-  if (data->file_size <= 0)
-    {
-      g_warning ("%s: Field '%s' is missing or not a positive integer",
-                 __func__, "fileSize");
-      return -1;
-    }
 
   creation_time_str = gvm_json_obj_str (json, "created");
   if (creation_time_str == NULL)
@@ -440,41 +377,19 @@ get_agent_installer_data_from_json (cJSON *json,
       return -1;
     }
 
-  modification_time_str = gvm_json_obj_str (json, "lastModified");
+  modification_time_str = gvm_json_obj_str (json, "last_modified");
   if (modification_time_str == NULL)
     {
       g_warning ("%s: Field '%s' is missing or not a string",
-                 __func__, "lastModified");
+                 __func__, "last_modified");
       return -1;
     }
   data->modification_time = parse_iso_time (modification_time_str);
   if (data->modification_time == 0)
     {
       g_warning ("%s: Field '%s' is not a valid ISO date-time",
-                 __func__, "lastModified");
+                 __func__, "last_modified");
       return -1;
-    }
-
-  cpes = cJSON_GetObjectItemCaseSensitive (json, "cpes");
-  if (! cJSON_IsArray(cpes))
-    {
-      g_warning ("%s: Field '%s' is missing or not an array",
-                 __func__, "cpes");
-      return -1;
-    }
-
-  data->cpes = g_ptr_array_new_full (0, g_free);
-  cJSON_ArrayForEach (cpe_json, cpes)
-    {
-      agent_installer_cpe_data_t *cpe_data;
-      cpe_data = g_malloc0 (sizeof (agent_installer_cpe_data_t));
-      if (get_agent_installer_cpe_data_from_json (cpe_json, cpe_data))
-        {
-          g_free (cpe_data);
-          g_ptr_array_free (data->cpes, TRUE);
-          return -1;
-        }
-      g_ptr_array_add (data->cpes, cpe_data);
     }
 
   return 0;
@@ -533,8 +448,6 @@ agent_installers_json_handle_entry (cJSON *entry, gboolean rebuild,
                           installers_list_sql->len ? ", " : "",
                           quoted_uuid);
   g_free (quoted_uuid);
-
-  g_ptr_array_free (data.cpes, TRUE);
   return ret ? -1 : 0;
 }
 
@@ -680,33 +593,6 @@ sync_agent_installers_with_feed (gboolean rebuild)
   gvm_json_pull_parser_cleanup (&parser);
   gvm_json_pull_event_cleanup (&event);
   fclose (stream);
-
-  if (installers_list_sql->len)
-    {
-      iterator_t deleted_installers;
-
-      sql_begin_immediate ();
-
-      sql ("DELETE FROM agent_installer_cpes WHERE agent_installer NOT IN"
-          " (SELECT id FROM agent_installers WHERE uuid IN (%s));",
-          installers_list_sql->str);
-
-      init_iterator (&deleted_installers,
-                     "DELETE FROM agent_installers WHERE uuid NOT IN (%s)"
-                     " RETURNING uuid;",
-                     installers_list_sql->str);
-      while (next (&deleted_installers))
-        {
-          log_event ("agent_installer", "Agent Installer",
-                     iterator_string (&deleted_installers, 0),
-                     "deleted");
-        }
-      cleanup_iterator (&deleted_installers);
-  
-      sql_commit ();
-    }
-  else
-    g_warning ("%s: No agent installers found in metadata file", __func__);
 
   g_string_free (installers_list_sql, TRUE);
 

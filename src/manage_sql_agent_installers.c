@@ -48,28 +48,6 @@ update_meta_agent_installers_last_update ()
 }
 
 /**
- * @brief Copies agent installer CPE data, applying sql_insert to all strings.
- *
- * @param[in]  data  The agent installer CPE data to copy.
- *
- * @return The modified copy of the agent installer CPE data.
- */
-static agent_installer_cpe_data_t*
-agent_installer_cpe_data_copy_as_sql_inserts (agent_installer_cpe_data_t *data)
-{
-  agent_installer_cpe_data_t *new_data;
-  new_data = g_malloc0 (sizeof (agent_installer_cpe_data_t));
-
-  new_data->criteria = sql_insert (data->criteria);
-  new_data->version_start_incl = sql_insert (data->version_start_incl);
-  new_data->version_start_excl = sql_insert (data->version_start_excl);
-  new_data->version_end_incl = sql_insert (data->version_end_incl);
-  new_data->version_end_excl = sql_insert (data->version_end_excl);
-
-  return new_data;
-}
-
-/**
  * @brief Copies agent installer data, applying sql_insert to all strings.
  *
  * The data should be freed with agent_installer_data_free after use.
@@ -92,19 +70,8 @@ agent_installer_data_copy_as_sql_inserts (agent_installer_data_t *data)
   new_data->installer_path = sql_insert (data->installer_path);
   new_data->version = sql_insert (data->version);
   new_data->checksum = sql_insert (data->checksum);
-  new_data->file_size = data->file_size;
   new_data->creation_time = data->creation_time;
   new_data->modification_time = data->modification_time;
-
-  new_data->cpes
-    = g_ptr_array_new_full (0, (GDestroyNotify) agent_installer_cpe_data_free);
-
-  for (int i = 0; i < data->cpes->len; i++)
-    {
-      agent_installer_cpe_data_t *cpe_data_copy
-        = agent_installer_cpe_data_copy_as_sql_inserts (data->cpes->pdata[i]);
-      g_ptr_array_add (new_data->cpes, cpe_data_copy);
-    }
 
   return new_data;
 }
@@ -167,7 +134,6 @@ create_agent_installer_from_data (agent_installer_data_t *agent_installer_data)
 {
   user_t owner;
   agent_installer_data_t *data_inserts;
-  agent_installer_t installer;
 
   owner = sql_int64_0 ("SELECT id FROM users WHERE users.uuid = '%s'",
                        current_credentials.uuid);
@@ -178,50 +144,30 @@ create_agent_installer_from_data (agent_installer_data_t *agent_installer_data)
   data_inserts
     = agent_installer_data_copy_as_sql_inserts (agent_installer_data);
 
-  installer = sql_int64_0 ("INSERT INTO agent_installers"
-                           " (uuid, name, owner,"
-                           "  creation_time, modification_time,"
-                           "  description, content_type, file_extension,"
-                           "  installer_path, version, checksum, file_size,"
-                           "  last_update)"
-                           " VALUES"
-                           " (%s, %s, %llu,"
-                           "  %ld, %ld,"
-                           "  %s, %s, %s,"
-                           "  %s, %s, %s, %d,"
-                           "  m_now())"
-                           " RETURNING id;",
-                           data_inserts->uuid,
-                           data_inserts->name,
-                           owner,
-                           data_inserts->creation_time,
-                           data_inserts->modification_time,
-                           data_inserts->description,
-                           data_inserts->content_type,
-                           data_inserts->file_extension,
-                           data_inserts->installer_path,
-                           data_inserts->version,
-                           data_inserts->checksum,
-                           data_inserts->file_size);
-
-  for (int i = 0; i < data_inserts->cpes->len; i++)
-    {
-      agent_installer_cpe_data_t *cpe_data;
-      cpe_data = g_ptr_array_index (data_inserts->cpes, i);
-
-      sql ("INSERT INTO agent_installer_cpes"
-           " (agent_installer, criteria,"
-           "  version_start_incl, version_start_excl,"
-           "  version_end_incl, version_end_excl)"
-           " VALUES"
-           " (%llu, %s, %s, %s, %s, %s);",
-           installer,
-           cpe_data->criteria,
-           cpe_data->version_start_incl,
-           cpe_data->version_start_excl,
-           cpe_data->version_end_incl,
-           cpe_data->version_end_excl);
-    }
+  sql_int64_0 ("INSERT INTO agent_installers"
+               " (uuid, name, owner,"
+               "  creation_time, modification_time,"
+               "  description, content_type, file_extension,"
+               "  installer_path, version, checksum,"
+               "  last_update)"
+               " VALUES"
+               " (%s, %s, %llu,"
+               "  %ld, %ld,"
+               "  %s, %s, %s,"
+               "  %s, %s, %s,"
+               "  m_now())"
+               " RETURNING id;",
+               data_inserts->uuid,
+               data_inserts->name,
+               owner,
+               data_inserts->creation_time,
+               data_inserts->modification_time,
+               data_inserts->description,
+               data_inserts->content_type,
+               data_inserts->file_extension,
+               data_inserts->installer_path,
+               data_inserts->version,
+               data_inserts->checksum);
 
   sql_commit ();
 
@@ -269,7 +215,6 @@ update_agent_installer_from_data (agent_installer_t installer,
        "   installer_path = %s,"
        "   version = %s,"
        "   checksum = %s,"
-       "   file_size = %d,"
        "   last_update = m_now()"
        " WHERE id = %llu;",
        data_inserts->name,
@@ -281,29 +226,7 @@ update_agent_installer_from_data (agent_installer_t installer,
        data_inserts->installer_path,
        data_inserts->version,
        data_inserts->checksum,
-       data_inserts->file_size,
        installer);
-
-  sql ("DELETE FROM agent_installer_cpes WHERE agent_installer = %llu;",
-       installer);
-  for (int i = 0; i < data_inserts->cpes->len; i++)
-    {
-      agent_installer_cpe_data_t *cpe_data;
-      cpe_data = g_ptr_array_index (data_inserts->cpes, i);
-
-      sql ("INSERT INTO agent_installer_cpes%s"
-           " (agent_installer, criteria,"
-           "  version_start_incl, version_start_excl,"
-           "  version_end_incl, version_end_excl)"
-           " VALUES"
-           " (%llu, %s, %s, %s, %s, %s);",
-           installer,
-           cpe_data->criteria,
-           cpe_data->version_start_incl,
-           cpe_data->version_start_excl,
-           cpe_data->version_end_incl,
-           cpe_data->version_end_excl);
-    }
 
   sql_commit ();
 
@@ -500,21 +423,6 @@ DEF_ACCESS (agent_installer_iterator_checksum,
             GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
- * @brief Get the file size from an agent installer iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The file size of the agent installer.
- *         Caller must only use before calling cleanup_iterator.
- */
-int
-agent_installer_iterator_file_size (iterator_t *iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator,  GET_ITERATOR_COLUMN_COUNT + 6);
-}
-
-/**
  * @brief Get the last update time from an agent installer iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -526,84 +434,8 @@ time_t
 agent_installer_iterator_last_update (iterator_t *iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator,  GET_ITERATOR_COLUMN_COUNT + 7);
+  return iterator_int64 (iterator,  GET_ITERATOR_COLUMN_COUNT + 6);
 }
-
-/**
- * @brief Initialise a Agent Installer CPE iterator.
- *
- * @param[in]  iterator         Iterator.
- * @param[in]  agent_installer  Agent installer to get CPEs of.
- * @param[in]  trash            Whether to get CPEs from an installer in trash.
- */
-void
-init_agent_installer_cpe_iterator (iterator_t* iterator,
-                                  agent_installer_t agent_installer,
-                                  int trash)
-{
-  init_iterator (iterator,
-                 "SELECT criteria,"
-                 " version_start_incl, version_start_excl,"
-                 " version_end_incl, version_end_excl"
-                 " FROM agent_installer_cpes%s"
-                 " WHERE agent_installer = %llu",
-                 trash ? "_trash" : "",
-                 agent_installer);
-}
-
-/**
- * @brief Get the criteria from an agent installer CPE iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The criteria of the agent installer CPE.
- *         Caller must only use before calling cleanup_iterator.
- */
-DEF_ACCESS (agent_installer_cpe_iterator_criteria, 0);
-
-/**
- * @brief Get the inclusive version range start from an agent installer CPE
- * iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The inclusive version range start of the agent installer CPE.
- *         Caller must only use before calling cleanup_iterator.
- */
-DEF_ACCESS (agent_installer_cpe_iterator_version_start_incl, 1);
-
-/**
- * @brief Get the exclusive version range start from an agent installer CPE
- * iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The exclusive version range start of the agent installer CPE.
- *         Caller must only use before calling cleanup_iterator.
- */
-DEF_ACCESS (agent_installer_cpe_iterator_version_start_excl, 2);
-
-/**
- * @brief Get the inclusive version range end from an agent installer CPE
- * iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The exclusive version range end of the agent installer CPE.
- *         Caller must only use before calling cleanup_iterator.
- */
-DEF_ACCESS (agent_installer_cpe_iterator_version_end_incl, 3);
-
-/**
- * @brief Get the inclusive version range end from an agent installer CPE
- * iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The exclusive version range end of the agent installer CPE.
- *         Caller must only use before calling cleanup_iterator.
- */
-DEF_ACCESS (agent_installer_cpe_iterator_version_end_excl, 4);
 
 /**
  * @brief Return whether an agent installer is in use.

@@ -8808,10 +8808,8 @@ END:VCALENDAR
           <e>file_extension</e>
           <e>version</e>
           <e>checksum</e>
-          <e>file_size</e>
           <e>last_update</e>
           <o><e>file_validity</e></o>
-          <e>cpes</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8958,50 +8956,6 @@ END:VCALENDAR
           <name>file_validity</name>
           <summary>Text indicating if the installer file is valid</summary>
           <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>cpes</name>
-          <summary>
-            List of operating systems the installer is intended for as CPE matches
-          </summary>
-          <pattern>
-            <any><e>cpe</e></any>
-          </pattern>
-          <ele>
-            <name>criteria</name>
-            <summary>A base CPE ID for the match criteria</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>version_start_including</name>
-            <summary>From version (including)</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>version_start_excluding</name>
-            <summary>From version (excluding)</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>version_end_including</name>
-            <summary>Up to version (including)</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
-          <ele>
-            <name>version_end_excluding</name>
-            <summary>Up to version (exluding)</summary>
-            <pattern>
-              text
-            </pattern>
-          </ele>
         </ele>
       </ele>
       <ele>
@@ -9151,16 +9105,8 @@ END:VCALENDAR
             <file_extension>zip</file_extension>
             <version>1.3.0</version>
             <checksum>sha256:3bbd04dd65dbb8b3f272bd8013d0d4b12fe54be30bb81f3e5df66306fe0fa0d3</checksum>
-            <file_size>21567890</file_size>
             <last_update>2025-05-06T11:12:57Z</last_update>
             <file_validity>valid</file_validity>
-            <cpes>
-              <cpe>
-                <criteria>cpe:2.3:o:microsoft:windows:*:*:*:*:*:*:*:*</criteria>
-                <version_start_excl>11.10.0</version_start_excl>
-                <version_end_incl>11.10.5</version_end_incl>
-              </cpe>
-            </cpes>
           </agent_installer>
         </get_agent_installers_response>
       </response>

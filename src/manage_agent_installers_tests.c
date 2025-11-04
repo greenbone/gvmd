@@ -36,7 +36,6 @@ Ensure (manage_agent_installers, accepts_valid_installer_file)
 
   assert_true (agent_installer_file_is_valid ("test.txt",
                                               VALID_DATA_HASH,
-                                              strlen (VALID_DATA),
                                               &message));
   assert_string_equal (message, "valid");
 
@@ -61,7 +60,6 @@ Ensure (manage_agent_installers, rejects_invalid_installer_file)
 
   assert_false (agent_installer_file_is_valid ("test.txt",
                                                VALID_DATA_HASH,
-                                               strlen (INVALID_DATA),
                                                &message));
   assert_string_equal (message, "file validation failed: hash does not match");
 
@@ -86,7 +84,6 @@ Ensure (manage_agent_installers, rejects_invalid_installer_paths)
 
   assert_false (agent_installer_file_is_valid ("../abc/test.txt",
                                                VALID_DATA_HASH,
-                                               strlen (VALID_DATA),
                                                &message));
   assert_string_equal (message,
                        "invalid installer path: '../abc/test.txt'"
@@ -94,7 +91,6 @@ Ensure (manage_agent_installers, rejects_invalid_installer_paths)
 
   assert_false (agent_installer_file_is_valid ("does-not-exist.txt",
                                                VALID_DATA_HASH,
-                                               strlen (VALID_DATA),
                                                &message));
   assert_string_equal (message,
                        "error opening installer file:"
@@ -121,7 +117,6 @@ Ensure (manage_agent_installers, rejects_invalid_checksum)
 
   assert_false (agent_installer_file_is_valid ("test.txt",
                                                "not-a-valid-checksum",
-                                               strlen (VALID_DATA),
                                                &message));
   assert_string_equal (message,
                        "error in expected checksum: invalid hash syntax");
@@ -148,10 +143,9 @@ Ensure (manage_agent_installers, rejects_too_long_file)
 
   assert_false (agent_installer_file_is_valid ("test.txt",
                                                VALID_DATA_HASH,
-                                               strlen (VALID_DATA),
                                                &message));
   assert_string_equal (message,
-                       "file validation failed: too long");
+                       "file validation failed: hash does not match");
 
   g_free (message);
   gvm_file_remove_recurse (tmp_dir);

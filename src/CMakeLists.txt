@@ -28,7 +28,7 @@ find_package(Threads)
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
 pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.30)
-pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.30)
+pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.31)
 pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.30)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
