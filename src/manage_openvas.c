@@ -278,7 +278,10 @@ target_osp_ssh_cs_credential (target_t target)
         }
 
       ssh_port = target_ssh_port (target);
-      osp_credential = osp_credential_new (type, "ssh", ssh_port);
+      const char *osp_credential_type
+        = strcmp (type, "cs_up") == 0 ? "up" : "usk";
+      osp_credential = osp_credential_new (osp_credential_type, "ssh",
+                                           ssh_port);
       free (ssh_port);
 
       const char *cred_store_uuid
