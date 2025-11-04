@@ -356,9 +356,9 @@ get_agent_installer_data_from_json (cJSON *json,
   GET_AGENT_INSTALLER_JSON_STR (uuid, "uuid");
   GET_AGENT_INSTALLER_JSON_STR (name, "name");
   GET_AGENT_INSTALLER_JSON_STR (description, "description");
-  GET_AGENT_INSTALLER_JSON_STR (content_type, "content_type");
-  GET_AGENT_INSTALLER_JSON_STR (file_extension, "file_extension");
-  GET_AGENT_INSTALLER_JSON_STR (installer_path, "installer_path");
+  GET_AGENT_INSTALLER_JSON_STR (content_type, "contentType");
+  GET_AGENT_INSTALLER_JSON_STR (file_extension, "fileExtension");
+  GET_AGENT_INSTALLER_JSON_STR (installer_path, "installerPath");
   GET_AGENT_INSTALLER_JSON_STR (version, "version");
   GET_AGENT_INSTALLER_JSON_STR (checksum, "checksum");
 
@@ -377,18 +377,18 @@ get_agent_installer_data_from_json (cJSON *json,
       return -1;
     }
 
-  modification_time_str = gvm_json_obj_str (json, "last_modified");
+  modification_time_str = gvm_json_obj_str (json, "lastModified");
   if (modification_time_str == NULL)
     {
       g_warning ("%s: Field '%s' is missing or not a string",
-                 __func__, "last_modified");
+                 __func__, "lastModified");
       return -1;
     }
   data->modification_time = parse_iso_time (modification_time_str);
   if (data->modification_time == 0)
     {
       g_warning ("%s: Field '%s' is not a valid ISO date-time",
-                 __func__, "last_modified");
+                 __func__, "lastModified");
       return -1;
     }
 
