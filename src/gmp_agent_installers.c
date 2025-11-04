@@ -165,14 +165,12 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
         "<content_type>%s</content_type>"
         "<file_extension>%s</file_extension>"
         "<version>%s</version>"
-        "<checksum>%s</checksum>"
-        "<file_size>%d</file_size>",
+        "<checksum>%s</checksum>",
         agent_installer_iterator_description (&agent_installers),
         agent_installer_iterator_content_type (&agent_installers),
         agent_installer_iterator_file_extension (&agent_installers),
         agent_installer_iterator_version (&agent_installers),
-        agent_installer_iterator_checksum (&agent_installers),
-        agent_installer_iterator_file_size (&agent_installers)
+        agent_installer_iterator_checksum (&agent_installers)
       );
 
       last_update 
@@ -183,12 +181,10 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
       if (get_agent_installers_data.get.details)
         {
           gchar *file_validity;
-          iterator_t cpes_iterator;
           
           agent_installer_file_is_valid (
               agent_installer_iterator_installer_path (&agent_installers),
               agent_installer_iterator_checksum (&agent_installers),
-              agent_installer_iterator_file_size (&agent_installers),
               &file_validity
             );
 
@@ -197,61 +193,6 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
             file_validity
           );
           g_free (file_validity);
-
-          init_agent_installer_cpe_iterator (
-            &cpes_iterator,
-            get_iterator_resource (&agent_installers),
-            get_agent_installers_data.get.trash);
-
-          SENDF_TO_CLIENT_OR_FAIL ("<cpes>");
-          while (next (&cpes_iterator))
-            {
-              const char *version_start_incl, *version_start_excl;
-              const char *version_end_incl, *version_end_excl;
-
-              version_start_incl
-                = agent_installer_cpe_iterator_version_start_incl (
-                    &cpes_iterator);
-              version_start_excl
-                = agent_installer_cpe_iterator_version_start_excl (
-                    &cpes_iterator);
-              version_end_incl
-                = agent_installer_cpe_iterator_version_end_incl (
-                    &cpes_iterator);
-              version_end_excl
-                = agent_installer_cpe_iterator_version_end_excl (
-                                    &cpes_iterator);
-
-              SENDF_TO_CLIENT_OR_FAIL (
-                "<cpe>"
-                "<criteria>%s</criteria>",
-                agent_installer_cpe_iterator_criteria (&cpes_iterator)
-              );
-              
-              if (version_start_incl)
-                SENDF_TO_CLIENT_OR_FAIL (
-                  "<version_start_incl>%s</version_start_incl>",
-                  version_start_incl);
-
-              if (version_start_excl)
-                SENDF_TO_CLIENT_OR_FAIL (
-                  "<version_start_excl>%s</version_start_excl>",
-                  version_start_excl);
-
-              if (version_end_incl)
-                SENDF_TO_CLIENT_OR_FAIL (
-                  "<version_end_incl>%s</version_end_incl>",
-                  version_end_incl);
-
-              if (version_end_excl)
-                SENDF_TO_CLIENT_OR_FAIL (
-                  "<version_end_excl>%s</version_end_excl>",
-                  version_end_excl);
-
-              SENDF_TO_CLIENT_OR_FAIL ("</cpe>");
-            }
-          SENDF_TO_CLIENT_OR_FAIL ("</cpes>");
-          cleanup_iterator (&cpes_iterator);
         }
 
       SENDF_TO_CLIENT_OR_FAIL ("</agent_installer>");
@@ -461,7 +402,6 @@ get_agent_installer_file_run (gmp_parser_t *gmp_parser, GError **error)
 
   validator_return
     = gvm_stream_validator_new (agent_installer_iterator_checksum (&iterator),
-                                agent_installer_iterator_file_size (&iterator),
                                 &validator);
   if (validator_return)
     {

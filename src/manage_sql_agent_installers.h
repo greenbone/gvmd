@@ -21,7 +21,7 @@
  */
 #define AGENT_INSTALLER_ITERATOR_FILTER_COLUMNS                             \
  { GET_ITERATOR_FILTER_COLUMNS, "description", "content_type",              \
-   "file_extension", "version", "file_size", "last_update",                 \
+   "file_extension", "version", "last_update",                              \
    NULL }
 
 /**
@@ -49,7 +49,6 @@
    { "installer_path", NULL, KEYWORD_TYPE_STRING },                         \
    { "version", NULL, KEYWORD_TYPE_STRING },                                \
    { "checksum", NULL, KEYWORD_TYPE_STRING },                               \
-   { "file_size", NULL, KEYWORD_TYPE_INTEGER },                             \
    { "last_update", NULL, KEYWORD_TYPE_INTEGER },                           \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
