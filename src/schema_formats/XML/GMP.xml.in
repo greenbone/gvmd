@@ -23445,12 +23445,23 @@ END:VCALENDAR
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <e>usage_type</e>
               <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>usage_type</name>
+              <summary>The usage type of the task</summary>
+              <pattern>
+                <alts>
+                  <alt>scan</alt>
+                  <alt>policy</alt>
+                </alts>
+              </pattern>
             </ele>
             <ele>
               <name>permissions</name>
@@ -23756,6 +23767,7 @@ END:VCALENDAR
             <tasks>
               <task id="813864a9-d3fd-44b3-8717-972bfb01dfc0">
                 <name>Debian desktops</name>
+                <usage_type>scan</usage_type>
               </task>
               <truncated>...</truncated>
             </tasks>
