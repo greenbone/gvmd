@@ -177,23 +177,6 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
         = agent_installer_iterator_last_update (&agent_installers);
       SENDF_TO_CLIENT_OR_FAIL ("<last_update>%s</last_update>",
                                iso_if_time (last_update));
-      
-      if (get_agent_installers_data.get.details)
-        {
-          gchar *file_validity;
-          
-          agent_installer_file_is_valid (
-              agent_installer_iterator_installer_path (&agent_installers),
-              agent_installer_iterator_checksum (&agent_installers),
-              &file_validity
-            );
-
-          SENDF_TO_CLIENT_OR_FAIL (
-            "<file_validity>%s</file_validity>",
-            file_validity
-          );
-          g_free (file_validity);
-        }
 
       SENDF_TO_CLIENT_OR_FAIL ("</agent_installer>");
 
