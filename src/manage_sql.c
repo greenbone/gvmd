@@ -3316,6 +3316,18 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
 
+#if ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
+  #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL AND oci_image_target IS NULL)"
+#elif ENABLE_AGENTS && !ENABLE_CONTAINER_SCANNING
+  #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL)"
+#elif !ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
+  #define TASK_NO_TARGET_CTX "(target IS NULL AND oci_image_target IS NULL)"
+#else
+  #define TASK_NO_TARGET_CTX "(target IS NULL)"
+#endif
+
+#define TASK_SEV_CASE_GUARD "(" TASK_NO_TARGET_CTX " OR opts.ignore_severity != 0)"
+
 /**
  * @brief Task iterator columns.
  */
@@ -3409,7 +3421,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod,"                  \
      "                        'False Positive')"                             \
@@ -3418,7 +3430,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Log')"           \
      " END",                                                                 \
@@ -3426,7 +3438,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Low')"           \
      " END",                                                                 \
@@ -3434,7 +3446,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Medium')"        \
      " END",                                                                 \
@@ -3442,7 +3454,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'High')"          \
      " END",                                                                 \
@@ -3450,7 +3462,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Critical')"      \
      " END",                                                                 \
@@ -3458,21 +3470,21 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_host_count (task_last_report (id))"                            \
      " END",                                                                 \
      "hosts",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_result_host_count (task_last_report (id), opts.min_qod)"       \
      " END",                                                                 \
      "result_hosts",                                                         \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'False Positive') * 1.0"              \
@@ -3484,7 +3496,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Log') * 1.0"                         \
@@ -3496,7 +3508,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Low') * 1.0"                         \
@@ -3508,7 +3520,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Medium') * 1.0"                      \
@@ -3520,7 +3532,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'High') * 1.0"                        \
@@ -3532,7 +3544,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Critical') * 1.0"                    \
@@ -3562,6 +3574,11 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " AND scan_run_status = 1"                                              \
      " ORDER BY creation_time DESC LIMIT 1)",                                \
      "last_report_created",                                                  \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT type FROM scanners WHERE scanners.id = tasks.scanner)",        \
+     "scanner_type",                                                         \
      KEYWORD_TYPE_INTEGER                                                    \
    } TASK_AGENT_GROUP_ITERATOR_COLUMNS
 

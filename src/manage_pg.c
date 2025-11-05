@@ -1426,7 +1426,13 @@ manage_create_sql_functions ()
                " RETURNS double precision AS $$"
                /* Calculate the severity of a task. */
                "  SELECT CASE"
-               "         WHEN (SELECT target = 0"
+               "         WHEN (SELECT target = 0 "
+#if ENABLE_AGENTS
+               "               AND agent_group = 0 "
+#endif // ENABLE_AGENTS
+#if ENABLE_CONTAINER_SCANNING
+               "               AND oci_image_target = 0 "
+#endif // ENABLE_CONTAINER_SCANNING
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
