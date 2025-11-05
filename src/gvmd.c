@@ -1654,11 +1654,12 @@ fork_agents_sync ()
 /**
  * @brief Periodic timestamps for background jobs in the main loop.
  */
-typedef struct {
-  time_t last_schedule;      ///< Last time the scheduler management was executed.
-  time_t last_feed_sync;     ///< Last time the feed sync was executed.
-  time_t last_queue;         ///< Last time queued task actions were executed.
-  time_t last_agents_sync;   ///< Last time the agents sync was executed.
+typedef struct
+{
+  time_t last_schedule;    ///< Last time the scheduler management was executed.
+  time_t last_feed_sync;   ///< Last time the feed sync was executed.
+  time_t last_queue;       ///< Last time queued task actions were executed.
+  time_t last_agents_sync; ///< Last time the agents sync was executed.
 } periodic_times_t;
 
 /**
@@ -1683,7 +1684,7 @@ time_to_run (time_t last, time_t period, time_t now)
  * @param[in]  now   Current time (epoch seconds).
  */
 static void
-set_now (time_t *last, time_t now)
+set_last_run_time (time_t *last, time_t now)
 {
   *last = now;
 }
@@ -1692,14 +1693,14 @@ set_now (time_t *last, time_t now)
  * @brief Run scheduler management if due; updates last timestamp only on work.
  *
  * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
- * @param[in]     now Current time (epoch seconds).
  *
  * @return void. On fatal error, exits the process.
  */
 static void
-run_schedule (periodic_times_t *t, time_t now)
+run_schedule (periodic_times_t *t)
 {
-  if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, now))
+  time_t start = time (NULL);
+  if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, start))
     return;
 
   int rc = manage_schedule (fork_connection_for_scheduler,
@@ -1708,11 +1709,14 @@ run_schedule (periodic_times_t *t, time_t now)
   switch (rc)
     {
     case 0:
-      set_now (&t->last_schedule, now);
-      g_debug ("%s: last_schedule_time: %li", __func__, t->last_schedule);
-      break;
+      {
+        time_t end = time (NULL);
+        set_last_run_time (&t->last_schedule, end);
+        g_debug ("%s: last_schedule_time: %li", __func__, t->last_schedule);
+        break;
+      }
     case 1:
-      /* lock not acquired keep last_schedule unchanged */
+      /* lock not acquired or nothing to do; keep last_schedule unchanged */
       break;
     default:
       gvm_close_sentry ();
@@ -1724,51 +1728,48 @@ run_schedule (periodic_times_t *t, time_t now)
  * @brief Run feed sync if due; updates last timestamp when executed.
  *
  * @param[in,out] t   Periodic timestamps; updates t->last_feed_sync on run.
- * @param[in]     now Current time (epoch seconds).
  */
 static void
-run_feed_sync (periodic_times_t *t, time_t now)
+run_feed_sync (periodic_times_t *t)
 {
+  time_t now = time (NULL);
   if (!time_to_run (t->last_feed_sync, SCHEDULE_PERIOD, now))
     return;
-
   fork_feed_sync ();
-  set_now (&t->last_feed_sync, now);
+  set_last_run_time (&t->last_feed_sync, time (NULL));
 }
 
 /**
  * @brief Run queued task actions if due; updates last timestamp when executed.
  *
  * @param[in,out] t   Periodic timestamps; updates t->last_queue on run.
- * @param[in]     now Current time (epoch seconds).
  */
 static void
-run_queue (periodic_times_t *t, time_t now)
+run_queue (periodic_times_t *t)
 {
+  time_t now = time (NULL);
   if (!time_to_run (t->last_queue, QUEUE_PERIOD, now))
     return;
-
   fork_queued_task_actions ();
-  set_now (&t->last_queue, now);
+  set_last_run_time (&t->last_queue, time (NULL));
 }
 
 /**
  * @brief Run agents sync if due (guarded by ENABLE_AGENTS); updates last on run.
  *
  * @param[in,out] t   Periodic timestamps; updates t->last_agents_sync on run.
- * @param[in]     now Current time (epoch seconds).
  */
 static void
-run_agents_sync (periodic_times_t *t, time_t now)
+run_agents_sync (periodic_times_t *t)
 {
 #if ENABLE_AGENTS
+  time_t now = time (NULL);
   if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
     return;
-
   fork_agents_sync ();
-  set_now (&t->last_agents_sync, now);
+  set_last_run_time (&t->last_agents_sync, time (NULL));
 #else
-  (void)t; (void)now;
+  (void)t;
 #endif
 }
 
@@ -1776,15 +1777,14 @@ run_agents_sync (periodic_times_t *t, time_t now)
  * @brief Execute all periodic jobs in order.
  *
  * @param[in,out] t   Periodic timestamps for all jobs; updated for jobs that run.
- * @param[in]     now Current time (epoch seconds).
  */
 static void
-run_periodic_block (periodic_times_t *t, time_t now)
+run_periodic_block (periodic_times_t *t)
 {
-  run_schedule (t, now);
-  run_feed_sync (t, now);
-  run_agents_sync (t, now);
-  run_queue (t, now);
+  run_schedule (t);
+  run_feed_sync (t);
+  run_agents_sync (t);
+  run_queue (t);
 }
 
 /**
@@ -1830,7 +1830,7 @@ serve_and_schedule ()
       fd_set readfds, exceptfds;
       struct timespec timeout;
 
-      run_periodic_block (&times, time (NULL));
+      run_periodic_block (&times);
 
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
@@ -1895,7 +1895,7 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      run_periodic_block (&times, time (NULL));
+      run_periodic_block (&times);
 
       if (termination_signal)
         {
