@@ -8809,7 +8809,6 @@ END:VCALENDAR
           <e>version</e>
           <e>checksum</e>
           <e>last_update</e>
-          <o><e>file_validity</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8951,11 +8950,6 @@ END:VCALENDAR
           <name>last_update</name>
           <summary>Time the agent installer was last updated from the feed</summary>
           <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>file_validity</name>
-          <summary>Text indicating if the installer file is valid</summary>
-          <pattern>text</pattern>
         </ele>
       </ele>
       <ele>
