@@ -2746,6 +2746,13 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define SCHEDULE_TIMEOUT_DEFAULT 60
 
+#if ENABLE_AGENTS
+  /**
+  * @brief Seconds between calls to fork_agents_sync.
+  */
+  #define AGENT_SYNC_SCHEDULE_PERIOD 300 /* every 5 minutes */
+#endif
+
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
 

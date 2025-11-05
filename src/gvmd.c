@@ -222,10 +222,10 @@ FILE* log_stream = NULL;
 #endif
 
 #if ENABLE_AGENTS
-static gint64  s_agent_log_next = 0;   /* next time logging is allowed */
-static gboolean s_agent_log_token = FALSE; /* copied to child at fork */
+  static gint64  s_agent_log_next = 0;   /* next time logging is allowed */
+  static gboolean s_agent_log_token = FALSE; /* copied to child at fork */
 
-#define AGENT_SYNC_WARN_INTERVAL_SEC 300 /* every 5 minutes */
+  #define AGENT_SYNC_WARN_INTERVAL_SEC 600 /* every 10 minutes */
 #endif
 
 /**
@@ -1652,23 +1652,161 @@ fork_agents_sync ()
 #endif //ENABLE_AGENTS
 
 /**
+ * @brief Periodic timestamps for background jobs in the main loop.
+ */
+typedef struct {
+  time_t last_schedule;      ///< Last time the scheduler management was executed.
+  time_t last_feed_sync;     ///< Last time the feed sync was executed.
+  time_t last_queue;         ///< Last time queued task actions were executed.
+  time_t last_agents_sync;   ///< Last time the agents sync was executed.
+} periodic_times_t;
+
+/**
+ * @brief Return non-zero if @p period seconds have elapsed since @p last.
+ *
+ * @param[in] last    Previous run time (epoch seconds).
+ * @param[in] period  Minimum period in seconds.
+ * @param[in] now     Current time (epoch seconds).
+ *
+ * @return Non-zero if due, 0 otherwise.
+ */
+static int
+time_to_run (time_t last, time_t period, time_t now)
+{
+  return (now - last) >= period;
+}
+
+/**
+ * @brief Set a last-run timestamp to @p now.
+ *
+ * @param[out] last  Pointer to last-run timestamp to update.
+ * @param[in]  now   Current time (epoch seconds).
+ */
+static void
+set_now (time_t *last, time_t now)
+{
+  *last = now;
+}
+
+/**
+ * @brief Run scheduler management if due; updates last timestamp only on work.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ * @param[in]     now Current time (epoch seconds).
+ *
+ * @return void. On fatal error, exits the process.
+ */
+static void
+run_schedule (periodic_times_t *t, time_t now)
+{
+  if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, now))
+    return;
+
+  int rc = manage_schedule (fork_connection_for_scheduler,
+                            scheduling_enabled,
+                            sigmask_normal);
+  switch (rc)
+    {
+    case 0:
+      set_now (&t->last_schedule, now);
+      g_debug ("%s: last_schedule_time: %li", __func__, t->last_schedule);
+      break;
+    case 1:
+      /* lock not acquired keep last_schedule unchanged */
+      break;
+    default:
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
+}
+
+/**
+ * @brief Run feed sync if due; updates last timestamp when executed.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_feed_sync on run.
+ * @param[in]     now Current time (epoch seconds).
+ */
+static void
+run_feed_sync (periodic_times_t *t, time_t now)
+{
+  if (!time_to_run (t->last_feed_sync, SCHEDULE_PERIOD, now))
+    return;
+
+  fork_feed_sync ();
+  set_now (&t->last_feed_sync, now);
+}
+
+/**
+ * @brief Run queued task actions if due; updates last timestamp when executed.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_queue on run.
+ * @param[in]     now Current time (epoch seconds).
+ */
+static void
+run_queue (periodic_times_t *t, time_t now)
+{
+  if (!time_to_run (t->last_queue, QUEUE_PERIOD, now))
+    return;
+
+  fork_queued_task_actions ();
+  set_now (&t->last_queue, now);
+}
+
+/**
+ * @brief Run agents sync if due (guarded by ENABLE_AGENTS); updates last on run.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_agents_sync on run.
+ * @param[in]     now Current time (epoch seconds).
+ */
+static void
+run_agents_sync (periodic_times_t *t, time_t now)
+{
+#if ENABLE_AGENTS
+  if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
+    return;
+
+  fork_agents_sync ();
+  set_now (&t->last_agents_sync, now);
+#else
+  (void)t; (void)now;
+#endif
+}
+
+/**
+ * @brief Execute all periodic jobs in order.
+ *
+ * @param[in,out] t   Periodic timestamps for all jobs; updated for jobs that run.
+ * @param[in]     now Current time (epoch seconds).
+ */
+static void
+run_periodic_block (periodic_times_t *t, time_t now)
+{
+  run_schedule (t, now);
+  run_feed_sync (t, now);
+  run_agents_sync (t, now);
+  run_queue (t, now);
+}
+
+/**
  * @brief Serve incoming connections, scheduling periodically.
  *
  * Enter an infinite loop, waiting for connections and passing the work to
- * `accept_and_maybe_fork'.
+ * `accept_and_maybe_fork`.
  *
  * Periodically, call the manage scheduler to start and stop scheduled tasks.
  */
 static void
 serve_and_schedule ()
 {
-  time_t last_schedule_time, last_sync_time, last_queue_time;
+  periodic_times_t times = {
+    .last_schedule = 0,
+    .last_feed_sync = 0,
+    .last_queue = 0,
+    .last_agents_sync = 0,
+  };
+
   sigset_t sigmask_all;
   static sigset_t sigmask_current;
-
-  last_schedule_time = 0;
-  last_sync_time = 0;
-  last_queue_time = 0;
 
   if (sigfillset (&sigmask_all))
     {
@@ -1683,17 +1821,22 @@ serve_and_schedule ()
       exit (EXIT_FAILURE);
     }
   sigmask_normal = &sigmask_current;
+
   g_info ("gvmd is ready to accept GMP connections");
+
   while (1)
     {
       int ret, nfds;
       fd_set readfds, exceptfds;
       struct timespec timeout;
 
+      run_periodic_block (&times, time (NULL));
+
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
       if (manager_socket_2 > -1)
         FD_SET (manager_socket_2, &readfds);
+
       FD_ZERO (&exceptfds);
       FD_SET (manager_socket, &exceptfds);
       if (manager_socket_2 > -1)
@@ -1714,42 +1857,11 @@ serve_and_schedule ()
           raise (termination_signal);
         }
 
-      if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
-        switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled,
-                                 sigmask_normal))
-          {
-            case 0:
-              last_schedule_time = time (NULL);
-              g_debug ("%s: last_schedule_time: %li",
-                       __func__, last_schedule_time);
-              break;
-            case 1:
-              break;
-            default:
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-          }
-
-      if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
-        {
-          fork_feed_sync ();
-#if ENABLE_AGENTS
-          fork_agents_sync ();
-#endif
-          last_sync_time = time (NULL);
-        }
-      if ((time (NULL) - last_queue_time) >= QUEUE_PERIOD)
-        {
-          fork_queued_task_actions ();
-          last_queue_time = time (NULL);
-        }
-
       timeout.tv_sec = QUEUE_PERIOD;
       timeout.tv_nsec = 0;
+
       ret = pselect (nfds, &readfds, NULL, &exceptfds, &timeout,
                      sigmask_normal);
-
       if (ret == -1)
         {
           /* Error occurred while selecting socket. */
@@ -1783,35 +1895,7 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
-        switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled, sigmask_normal))
-          {
-            case 0:
-              last_schedule_time = time (NULL);
-              g_debug ("%s: last_schedule_time 2: %li",
-                       __func__, last_schedule_time);
-              break;
-            case 1:
-              break;
-            default:
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-          }
-
-      if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
-        {
-          fork_feed_sync ();
-#if ENABLE_AGENTS
-          fork_agents_sync ();
-#endif
-          last_sync_time = time (NULL);
-        }
-      if ((time (NULL) - last_queue_time) >= QUEUE_PERIOD)
-        {
-          fork_queued_task_actions ();
-          last_queue_time = time (NULL);
-        }
+      run_periodic_block (&times, time (NULL));
 
       if (termination_signal)
         {
