@@ -221,6 +221,13 @@ static int manager_socket_2 = -1;
 FILE* log_stream = NULL;
 #endif
 
+#if ENABLE_AGENTS
+static gint64  s_agent_log_next = 0;   /* next time logging is allowed */
+static gboolean s_agent_log_token = FALSE; /* copied to child at fork */
+
+#define AGENT_SYNC_WARN_INTERVAL_SEC 300 /* every 5 minutes */
+#endif
+
 /**
  * @brief Whether to use TLS for client connections.
  */
@@ -1545,6 +1552,19 @@ fork_agents_sync ()
       return -1;
     }
 
+  /* Decide in the parent if this child is allowed to log a warning */
+  const gint64 now = g_get_monotonic_time ();
+  if (now >= s_agent_log_next)
+    {
+      s_agent_log_token = TRUE;
+      s_agent_log_next = now + (gint64) AGENT_SYNC_WARN_INTERVAL_SEC *
+                         G_USEC_PER_SEC;
+    }
+  else
+    {
+      s_agent_log_token = FALSE;
+    }
+
   pid = fork_with_handlers ();
   switch (pid)
     {
@@ -1589,7 +1609,19 @@ fork_agents_sync ()
                     gvmd_agent_connector_new_from_scanner (scanner);
 
                   if (connector && connector->base)
-                    sync_agents_from_agent_controller (connector);
+                    {
+                      agent_response_t response =
+                        sync_agents_from_agent_controller (connector);
+
+                      if (response != AGENT_RESPONSE_SUCCESS &&
+                          s_agent_log_token)
+                        {
+                          g_warning ("%s: Synchronizing agent data failed.",
+                                     __func__);
+                          /* Set token false so we do not double-log inside this child */
+                          s_agent_log_token = FALSE;
+                        }
+                    }
 
                   gvmd_agent_connector_free (connector);
                 }
