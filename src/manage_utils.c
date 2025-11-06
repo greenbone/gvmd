@@ -1158,6 +1158,8 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   rdates_time = icalendar_next_time_from_rdates (rdates, reference_time, tz,
                                                  periods_offset);
 
+  icalrecur_iterator_free (recur_iter);
+
   // Select appropriate time as the RRULE time, compare it to the RDATEs time
   //  and return the appropriate time.
   if (periods_offset == -1)
