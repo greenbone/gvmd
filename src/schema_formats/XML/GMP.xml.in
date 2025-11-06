@@ -8808,7 +8808,6 @@ END:VCALENDAR
           <e>file_extension</e>
           <e>version</e>
           <e>checksum</e>
-          <e>last_update</e>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8945,11 +8944,6 @@ END:VCALENDAR
           <name>file_size</name>
           <summary>File size of the agent installer</summary>
           <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>last_update</name>
-          <summary>Time the agent installer was last updated from the feed</summary>
-          <pattern><t>iso_time</t></pattern>
         </ele>
       </ele>
       <ele>
@@ -9099,8 +9093,6 @@ END:VCALENDAR
             <file_extension>zip</file_extension>
             <version>1.3.0</version>
             <checksum>sha256:3bbd04dd65dbb8b3f272bd8013d0d4b12fe54be30bb81f3e5df66306fe0fa0d3</checksum>
-            <last_update>2025-05-06T11:12:57Z</last_update>
-            <file_validity>valid</file_validity>
           </agent_installer>
         </get_agent_installers_response>
       </response>

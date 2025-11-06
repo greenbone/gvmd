@@ -2820,8 +2820,7 @@ create_tables ()
     "  file_extension text,"
     "  installer_path text,"
     "  version text,"
-    "  checksum text,"
-    "  last_update integer);");
+    "  checksum text);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_groups"
     " (id SERIAL PRIMARY KEY,"

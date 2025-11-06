@@ -143,7 +143,6 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START ("agent_installer");
   while (1)
     {
-      time_t last_update;
       ret = get_next (&agent_installers, &get_agent_installers_data.get, &first,
                       &count, init_agent_installer_iterator);
       if (ret == 1)
@@ -172,11 +171,6 @@ get_agent_installers_run (gmp_parser_t *gmp_parser, GError **error)
         agent_installer_iterator_version (&agent_installers),
         agent_installer_iterator_checksum (&agent_installers)
       );
-
-      last_update 
-        = agent_installer_iterator_last_update (&agent_installers);
-      SENDF_TO_CLIENT_OR_FAIL ("<last_update>%s</last_update>",
-                               iso_if_time (last_update));
 
       SENDF_TO_CLIENT_OR_FAIL ("</agent_installer>");
 

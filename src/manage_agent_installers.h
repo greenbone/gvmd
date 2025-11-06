@@ -111,9 +111,6 @@ agent_installer_iterator_version (iterator_t*);
 const char *
 agent_installer_iterator_checksum (iterator_t*);
 
-time_t
-agent_installer_iterator_last_update (iterator_t*);
-
 int
 agent_installer_in_use (agent_installer_t);
 
