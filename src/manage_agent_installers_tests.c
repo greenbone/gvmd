@@ -42,6 +42,7 @@ Ensure (manage_agent_installers, accepts_valid_installer_file)
   g_free (message);
   gvm_file_remove_recurse (tmp_dir);
   g_free (tmp_dir);
+  g_free (full_path);
 }
 
 Ensure (manage_agent_installers, rejects_invalid_installer_file)
@@ -65,6 +66,7 @@ Ensure (manage_agent_installers, rejects_invalid_installer_file)
 
   g_free (message);
   gvm_file_remove_recurse (tmp_dir);
+  g_free (full_path);
   g_free (tmp_dir);
 }
 
@@ -88,6 +90,8 @@ Ensure (manage_agent_installers, rejects_invalid_installer_paths)
   assert_string_equal (message,
                        "invalid installer path: '../abc/test.txt'"
                        " is outside feed directory");
+  g_free (message);
+  message = NULL;
 
   assert_false (agent_installer_file_is_valid ("does-not-exist.txt",
                                                VALID_DATA_HASH,
@@ -98,6 +102,7 @@ Ensure (manage_agent_installers, rejects_invalid_installer_paths)
 
   g_free (message);
   gvm_file_remove_recurse (tmp_dir);
+  g_free (full_path);
   g_free (tmp_dir);
 }
 
@@ -123,6 +128,7 @@ Ensure (manage_agent_installers, rejects_invalid_checksum)
 
   g_free (message);
   gvm_file_remove_recurse (tmp_dir);
+  g_free (full_path);
   g_free (tmp_dir);
 }
 
@@ -149,6 +155,7 @@ Ensure (manage_agent_installers, rejects_too_long_file)
 
   g_free (message);
   gvm_file_remove_recurse (tmp_dir);
+  g_free (full_path);
   g_free (tmp_dir);
 }
 
