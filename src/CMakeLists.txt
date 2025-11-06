@@ -462,8 +462,12 @@ if(ENABLE_CREDENTIAL_STORES)
   list(REMOVE_ITEM EXTRA_SRC gmp_credential_stores.c)
   add_unit_test(gmp-credential-stores "${ALL_OBJECTS}" "${EXTRA_SRC}")
   # Add linker wrap flag for acl_user_may to avoid multiple definition error
-  set_target_properties(gmp-credential-stores-test PROPERTIES
-    LINK_FLAGS "-Wl,-wrap,acl_user_may,-wrap,find_resource_with_permission,-wrap,sql_begin_immediate,-wrap,sql_rollback,-wrap,find_resource_with_permission,-wrap,sql_string")
+  set_target_properties(
+    gmp-credential-stores-test
+    PROPERTIES
+      LINK_FLAGS
+        "-Wl,-wrap,acl_user_may,-wrap,find_resource_with_permission,-wrap,sql_begin_immediate,-wrap,sql_rollback,-wrap,find_resource_with_permission,-wrap,sql_string"
+  )
 endif()
 
 set(
