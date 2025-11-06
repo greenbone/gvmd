@@ -492,7 +492,8 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
                                  comment,
                                  preferences,
                                  &message);
-  g_hash_table_destroy (preferences);
+  if (preferences)
+    g_hash_table_destroy (preferences);
   switch (ret)
     {
       case MODIFY_CREDENTIAL_STORE_OK:
