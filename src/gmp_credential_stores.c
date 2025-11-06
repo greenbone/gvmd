@@ -576,6 +576,7 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("credential_store", "Credential Store",
                         credential_store_id, "modified");
     }
+  g_free (message);
 
 #else
   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("modify_credential_store",
