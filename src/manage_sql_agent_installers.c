@@ -148,14 +148,12 @@ create_agent_installer_from_data (agent_installer_data_t *agent_installer_data)
                " (uuid, name, owner,"
                "  creation_time, modification_time,"
                "  description, content_type, file_extension,"
-               "  installer_path, version, checksum,"
-               "  last_update)"
+               "  installer_path, version, checksum)"
                " VALUES"
                " (%s, %s, %llu,"
                "  %ld, %ld,"
                "  %s, %s, %s,"
-               "  %s, %s, %s,"
-               "  m_now())"
+               "  %s, %s, %s)"
                " RETURNING id;",
                data_inserts->uuid,
                data_inserts->name,
@@ -214,8 +212,7 @@ update_agent_installer_from_data (agent_installer_t installer,
        "   file_extension = %s,"
        "   installer_path = %s,"
        "   version = %s,"
-       "   checksum = %s,"
-       "   last_update = m_now()"
+       "   checksum = %s"
        " WHERE id = %llu;",
        data_inserts->name,
        data_inserts->creation_time,
@@ -421,21 +418,6 @@ DEF_ACCESS (agent_installer_iterator_version,
  */
 DEF_ACCESS (agent_installer_iterator_checksum,
             GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the last update time from an agent installer iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The last update time of the agent installer.
- *         Caller must only use before calling cleanup_iterator.
- */
-time_t
-agent_installer_iterator_last_update (iterator_t *iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator,  GET_ITERATOR_COLUMN_COUNT + 6);
-}
 
 /**
  * @brief Return whether an agent installer is in use.
