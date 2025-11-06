@@ -409,7 +409,14 @@ macro(add_unit_test _baseName _objects _extraSource)
     ${_objects}
     ${TEST_TARGET_EXTRA_SRC}
   )
+  target_compile_options(${_testName} PRIVATE "-fsanitize=address")
+  target_link_options(${_testName} PRIVATE "-fsanitize=address")
   add_test(${_testName} ${_testName})
+  set_tests_properties(
+    ${_testName}
+    PROPERTIES
+      ENVIRONMENT "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1:abort_on_error=1"
+  )
   target_link_libraries(
     ${_testName}
     cgreen
