@@ -38264,14 +38264,16 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (uuid)
     {
       /* Filters */
-      if (strcmp (uuid, "391fc4f4-9f6c-4f0e-a689-37dd7d70d144") == 0)
+      if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
+        setting_name = g_strdup ("Alerts Filter");
+#if ENABLE_AGENTS
+      else if (strcmp (uuid, "391fc4f4-9f6c-4f0e-a689-37dd7d70d144") == 0)
         setting_name = g_strdup ("Agent Groups Filter");
       else if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
         setting_name = g_strdup ("Agents Filter");
       else if (strcmp (uuid, "a39a719a-e6bc-4d9f-a1e6-a53e5b014b05") == 0)
         setting_name = g_strdup ("Agent Installers Filter");
-      else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
-        setting_name = g_strdup ("Alerts Filter");
+#endif
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
       else if (strcmp (uuid, "aaf1b63b-55a6-40ee-ae06-e8e50726f55a") == 0)
