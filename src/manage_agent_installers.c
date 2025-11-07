@@ -473,9 +473,7 @@ agent_installers_json_handle_list_items (gvm_json_pull_parser_t *parser,
               cJSON_Delete (entry);
               return -1;
             }
-          else if (agent_installers_json_handle_entry (entry,
-                                                       rebuild,
-                                                       installers_list_sql)) {
+          else if (agent_installers_json_handle_entry (entry, rebuild)) {
             cJSON_Delete (entry);
             return -1;
           }
