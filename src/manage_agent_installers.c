@@ -403,21 +403,16 @@ get_agent_installer_data_from_json (cJSON *json,
  *
  * @param[in]  entry    The JSON object to process.
  * @param[in]  rebuild  Whether to also update installers with old timestamps.
- * @param[in,out] installers_list_sql  String buffer for a list of UUIDs
- *                                     of installers in the feed in SQL-quoted
- *                                     form.
  *
  * @return 0 success, -1 error.
  */
 static int
-agent_installers_json_handle_entry (cJSON *entry, gboolean rebuild,
-                                    GString *installers_list_sql)
+agent_installers_json_handle_entry (cJSON *entry, gboolean rebuild)
 {
   agent_installer_data_t data;
   agent_installer_t agent_installer;
   time_t db_modification_time = 0;
   int ret = 0;
-  gchar *quoted_uuid;
 
   memset (&data, 0, sizeof (data));
   if (get_agent_installer_data_from_json (entry, &data))
@@ -442,12 +437,6 @@ agent_installers_json_handle_entry (cJSON *entry, gboolean rebuild,
   else
     g_debug ("%s: skipping agent installer %s", __func__, data.uuid);
 
-  quoted_uuid = sql_quote (data.uuid);
-  g_string_append_printf (installers_list_sql,
-                          "%s'%s'",
-                          installers_list_sql->len ? ", " : "",
-                          quoted_uuid);
-  g_free (quoted_uuid);
   return ret ? -1 : 0;
 }
 
@@ -459,17 +448,13 @@ agent_installers_json_handle_entry (cJSON *entry, gboolean rebuild,
  * @param[in]  parser   The JSON parser.
  * @param[in]  parser   The JSON parser event data structure.
  * @param[in]  rebuild  Whether to also update installers with old timestamps.
- * @param[in,out] installers_list_sql  String buffer for a list of UUIDs
- *                                     of installers in the feed in SQL-quoted
- *                                     form.
  *
  * @return 0 success, -1 error.
  */
 static int
 agent_installers_json_handle_list_items (gvm_json_pull_parser_t *parser,
                                          gvm_json_pull_event_t *event,
-                                         gboolean rebuild,
-                                         GString *installers_list_sql)
+                                         gboolean rebuild)
 {
   gvm_json_pull_parser_next (parser, event);
   while (event->type != GVM_JSON_PULL_EVENT_ARRAY_END)
@@ -527,7 +512,6 @@ sync_agent_installers_with_feed (gboolean rebuild)
   gchar *feed_owner_uuid, *feed_owner_name;
   gvm_json_pull_parser_t parser;
   gvm_json_pull_event_t event;
-  GString *installers_list_sql;
 
   g_info ("Updating agent installers%s", rebuild ? " (rebuild)" : "");
   update_meta_agent_installers_last_update ();
@@ -578,14 +562,10 @@ sync_agent_installers_with_feed (gboolean rebuild)
       return -1;
     }
 
-  installers_list_sql = g_string_new ("");
-
-  if (agent_installers_json_handle_list_items (&parser, &event, rebuild,
-                                               installers_list_sql))
+  if (agent_installers_json_handle_list_items (&parser, &event, rebuild))
     {
       gvm_json_pull_parser_cleanup (&parser);
       gvm_json_pull_event_cleanup (&event);
-      g_string_free (installers_list_sql, TRUE);
       fclose (stream);
       return -1;
     }
@@ -593,8 +573,6 @@ sync_agent_installers_with_feed (gboolean rebuild)
   gvm_json_pull_parser_cleanup (&parser);
   gvm_json_pull_event_cleanup (&event);
   fclose (stream);
-
-  g_string_free (installers_list_sql, TRUE);
 
   g_info ("Finished updating agent installers");
   return 0;
