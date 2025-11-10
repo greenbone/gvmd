@@ -7337,16 +7337,16 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_free (clean_finished_hosts_str);
   openvasd_targets = g_slist_append (NULL, openvasd_target);
 
-  ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential (target);
+  ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
   if (ssh_credential)
     openvasd_target_add_credential (openvasd_target, ssh_credential);
 
-  smb_credential = (openvasd_credential_t *) target_osp_smb_credential (target);
+  smb_credential = (openvasd_credential_t *) target_osp_smb_credential_db (target);
   if (smb_credential)
     openvasd_target_add_credential (openvasd_target, smb_credential);
 
   esxi_credential =
-    (openvasd_credential_t *) target_osp_esxi_credential (target);
+    (openvasd_credential_t *) target_osp_esxi_credential_db (target);
   if (esxi_credential)
     openvasd_target_add_credential (openvasd_target, esxi_credential);
 

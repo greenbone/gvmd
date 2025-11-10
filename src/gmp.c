@@ -19211,6 +19211,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *in_assets, *max_checks, *max_hosts;
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
       gchar *assets_min_qod, *accept_invalid_certs, *registry_allow_insecure;
+      gchar *cs_allow_failed_retrieval;
       gchar *oci_image_target_xml = NULL;
       gchar *agent_group_xml = NULL;
 
@@ -19863,6 +19864,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           auto_delete_data = task_preference_value (index, "auto_delete_data");
           accept_invalid_certs = task_preference_value (index, "accept_invalid_certs");
           registry_allow_insecure = task_preference_value (index, "registry_allow_insecure");
+          cs_allow_failed_retrieval = task_preference_value (index, "cs_allow_failed_retrieval");
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<preferences>"
@@ -19924,6 +19926,15 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             "<value>%s</value>"
             "</preference>"
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_CREDENTIAL_STORES
+            "<preference>"
+            "<name>"
+            "Allow Failed Credential Store Retrieval"
+            "</name>"
+            "<scanner_name>cs_allow_failed_retrieval</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+#endif /* ENABLE_CREDENTIAL_STORES */
             "<preference>"
             "<name>"
             "Auto Delete Reports Data"
@@ -19945,6 +19956,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             accept_invalid_certs ? accept_invalid_certs : "0",
             registry_allow_insecure ? registry_allow_insecure : "0",
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_CREDENTIAL_STORES
+            cs_allow_failed_retrieval ? cs_allow_failed_retrieval : "0",
+#endif /* ENABLE_CREDENTIAL_STORES */
             auto_delete_data ? auto_delete_data : "0");
 
           g_free (assets_apply_overrides);
@@ -19956,6 +19970,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (auto_delete_data);
           g_free (accept_invalid_certs);
           g_free (registry_allow_insecure);
+          g_free (cs_allow_failed_retrieval);
         }
 
       count++;

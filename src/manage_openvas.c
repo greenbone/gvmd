@@ -56,7 +56,7 @@ add_user_scan_preferences (GHashTable *scanner_options)
  * @return  Pointer to a newly allocated osp_credential_t
  */
 osp_credential_t *
-target_osp_ssh_credential (target_t target)
+target_osp_ssh_credential_db (target_t target)
 {
   credential_t credential, ssh_elevate_credential;
   credential = target_ssh_credential (target);
@@ -152,7 +152,7 @@ target_osp_ssh_credential (target_t target)
  * @return  Pointer to a newly allocated osp_credential_t
  */
 osp_credential_t *
-target_osp_smb_credential (target_t target)
+target_osp_smb_credential_db (target_t target)
 {
   credential_t credential;
   credential = target_smb_credential (target);
@@ -196,7 +196,7 @@ target_osp_smb_credential (target_t target)
  * @return  Pointer to a newly allocated osp_credential_t
  */
 osp_credential_t *
-target_osp_esxi_credential (target_t target)
+target_osp_esxi_credential_db (target_t target)
 {
   credential_t credential;
   credential = target_esxi_credential (target);
@@ -235,16 +235,174 @@ target_osp_esxi_credential (target_t target)
 
 #if ENABLE_CREDENTIAL_STORES
 /**
- * @brief Get the SSH credential of a target from a credential store 
+ * @brief Set SSH credential authentication data from credential store
+ *
+ * @param[in]  iter            Credential iterator
+ * @param[in]  osp_credential  OSP credential to set data on
+ * @param[in]  elevate         Whether to set elevate (priv_) data
+ *
+ * @return 0 on success, 1 on error
+*/
+static int
+set_auth_data_ssh_from_credential_store (iterator_t *iter,
+                                         osp_credential_t *osp_credential,
+                                         int elevate)
+{
+  gchar *login, *password;
+  const char *cred_store_uuid
+    = credential_iterator_credential_store_uuid (iter);
+  const char *vault_id
+    = credential_iterator_vault_id (iter);
+  const char *host_identifier
+    = credential_iterator_host_identifier (iter);
+
+  if (cyberark_login_password_credential_data (cred_store_uuid,
+                                               vault_id,
+                                               host_identifier,
+                                               &login,
+                                               &password))
+    {
+      g_warning ("%s: Error retrieving credentials from "
+                 "CyberArk credential store '%s'.",
+                  __func__, cred_store_uuid);
+      return 1;
+    }
+
+  if (!elevate)
+    {
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    login);
+      if (strcmp (credential_iterator_type (iter), "cs_usk") == 0)
+        {
+          gchar *base64 = g_base64_encode ((guchar *) password,
+                                           strlen (password));
+          osp_credential_set_auth_data (osp_credential,
+                                        "private", base64);
+          g_free (base64);
+        }
+      else
+        osp_credential_set_auth_data (osp_credential,
+                                      "password",
+                                      password);
+    }
+  else
+    {
+      osp_credential_set_auth_data (osp_credential,
+                                    "priv_username",
+                                    login);
+      osp_credential_set_auth_data (osp_credential,
+                                    "priv_password",
+                                    password);
+    }
+
+  g_free (login);
+  g_free (password);
+  return 0;
+}
+
+/**
+ * @brief Set SSH credential authentication data from database
+ *
+ * @param[in]  iter            Credential iterator
+ * @param[in]  osp_credential  OSP credential to set data on
+ * @param[in]  elevate         Whether to set elevate (priv_) data
+ *
+*/
+static void
+set_auth_data_ssh_from_db (iterator_t *iter,
+                           osp_credential_t *osp_credential,
+                           int elevate)
+{
+  if (!elevate)
+    {
+      osp_credential_set_auth_data (osp_credential,
+                                    "username",
+                                    credential_iterator_login (iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "password",
+                                    credential_iterator_password (iter));
+    }
+  else
+    {
+      osp_credential_set_auth_data (osp_credential,
+                                    "priv_username",
+                                    credential_iterator_login (iter));
+      osp_credential_set_auth_data (osp_credential,
+                                    "priv_password",
+                                    credential_iterator_password (iter));
+    }
+
+  if (strcmp (credential_iterator_type (iter), "usk") == 0)
+    {
+      const char *private_key = credential_iterator_private_key (iter);
+      gchar *base64 = g_base64_encode ((guchar *) private_key,
+                                        strlen (private_key));
+      osp_credential_set_auth_data (osp_credential,
+                                    "private", base64);
+      g_free (base64);
+    }
+}
+
+/**
+ * @brief Set credential authentication data from credential store
+ *
+ * @param[in]  iter            Credential iterator
+ * @param[in]  osp_credential  OSP credential to set data on
+ *
+ * @return 0 on success, 1 on error
+*/
+static int
+set_auth_data_up_from_credential_store (iterator_t *iter,
+                                        osp_credential_t *osp_credential)
+{
+  gchar *login, *password;
+  const char *cred_store_uuid
+    = credential_iterator_credential_store_uuid (iter);
+  const char *vault_id
+    = credential_iterator_vault_id (iter);
+  const char *host_identifier
+    = credential_iterator_host_identifier (iter);
+
+  if (cyberark_login_password_credential_data (cred_store_uuid,
+                                               vault_id,
+                                               host_identifier,
+                                               &login,
+                                               &password))
+    {
+      g_warning ("%s: Error retrieving credentials from "
+                 "CyberArk credential store '%s'.",
+                  __func__, cred_store_uuid);
+      return 1;
+    }
+
+  osp_credential_set_auth_data (osp_credential, "username", login);
+  osp_credential_set_auth_data (osp_credential, "password", password);
+
+  g_free (login);
+  g_free (password);
+  return 0;
+}
+
+/**
+ * @brief Get the SSH credential of a target from database or credential store
  *        as an osp_credential_t
  *
- * @param[in]  target  The target to get the credential from.
+ * @param[in]  target          The target to get the credential from.
+ * @param[out] ssh_credential  Pointer to store the resulting credential.
+ *                             Has to be freed by the caller.
  *
- * @return  Pointer to a newly allocated osp_credential_t
+ * @return 0 on success, 1 on missing credential or invalid type,
+ *         -1 on error retrieving from credential store.
  */
-osp_credential_t *
-target_osp_ssh_cs_credential (target_t target)
+int
+target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
 {
+  if (!ssh_credential)
+    return 1;
+
+  *ssh_credential = NULL;
+
   credential_t credential, ssh_elevate_credential;
   credential = target_ssh_credential (target);
   ssh_elevate_credential = target_ssh_elevate_credential (target);
@@ -255,10 +413,6 @@ target_osp_ssh_cs_credential (target_t target)
       const char *type;
       char *ssh_port;
       osp_credential_t *osp_credential;
-      const char *auth_data_login, *auth_data_password, *private_key;
-      gchar *login, *password;
-
-      auth_data_login = auth_data_password = private_key = NULL;
 
       init_credential_iterator_one (&iter, credential);
 
@@ -266,68 +420,40 @@ target_osp_ssh_cs_credential (target_t target)
         {
           g_warning ("%s: SSH Credential not found.", __func__);
           cleanup_iterator (&iter);
-          return NULL;
+          return 1;
         }
       type = credential_iterator_type (&iter);
-      if (strcmp (type, "cs_up") && strcmp (type, "cs_usk"))
+      ssh_port = target_ssh_port (target);
+
+      if (strcmp (type, "up") == 0 || strcmp (type, "usk") == 0)
+        {
+          osp_credential = osp_credential_new (type, "ssh", ssh_port);
+          set_auth_data_ssh_from_db (&iter, osp_credential, 0);
+        }
+      else if (strcmp (type, "cs_up") == 0 || strcmp (type, "cs_usk") == 0)
+        {
+          const char *osp_type = (strcmp (type, "cs_up") == 0) ? "up" : "usk";
+          osp_credential = osp_credential_new (osp_type, "ssh", ssh_port);
+          if (set_auth_data_ssh_from_credential_store (&iter,
+                                                       osp_credential, 0))
+            {
+              cleanup_iterator (&iter);
+              osp_credential_free (osp_credential);
+              free (ssh_port);
+              return -1;
+            }
+        }
+      else
         {
           g_warning ("%s: SSH Credential not a user/pass pair"
                      " or user/ssh key.", __func__);
           cleanup_iterator (&iter);
-          return NULL;
+          free (ssh_port);
+          return 1;
         }
 
-      ssh_port = target_ssh_port (target);
-      const char *osp_credential_type
-        = strcmp (type, "cs_up") == 0 ? "up" : "usk";
-      osp_credential = osp_credential_new (osp_credential_type, "ssh",
-                                           ssh_port);
       free (ssh_port);
-
-      const char *cred_store_uuid
-        = credential_iterator_credential_store_uuid (&iter);
-      const char *vault_id
-        = credential_iterator_vault_id (&iter);
-      const char *host_identifier
-        = credential_iterator_host_identifier (&iter);
-
-      if (cyberark_login_password_credential_data (cred_store_uuid,
-                                                   vault_id,
-                                                   host_identifier,
-                                                   &login,
-                                                   &password))
-        {
-          g_warning ("%s: Error retrieving credentials from "
-                      "CyberArk credential store '%s'.",
-                      __func__, cred_store_uuid);
-          cleanup_iterator (&iter);
-          osp_credential_free (osp_credential);
-          return NULL;
-        }
-      auth_data_login = login;
-      if (strcmp (type, "cs_usk") == 0)
-        private_key = password;
-      else
-        auth_data_password = password;
-
-      osp_credential_set_auth_data (osp_credential,
-                                    "username",
-                                    auth_data_login);
-      if (auth_data_password)
-        osp_credential_set_auth_data (osp_credential,
-                                      "password",
-                                      auth_data_password);
-      if (private_key)
-        {
-          gchar *base64 = g_base64_encode ((guchar *) private_key,
-                                           strlen (private_key));
-          osp_credential_set_auth_data (osp_credential,
-                                        "private",
-                                        base64);
-          g_free (base64);
-        }
-
-      if(ssh_elevate_credential)
+      if (ssh_elevate_credential)
         {
           const char *elevate_type;
 
@@ -338,123 +464,104 @@ target_osp_ssh_cs_credential (target_t target)
               g_warning ("%s: SSH Elevate Credential not found.", __func__);
               cleanup_iterator (&ssh_elevate_iter);
               osp_credential_free (osp_credential);
-              return NULL;
+              return 1;
             }
           elevate_type = credential_iterator_type (&ssh_elevate_iter);
-          if (strcmp (elevate_type, "cs_up"))
+          if (strcmp (elevate_type, "up") == 0)
             {
-              g_warning ("%s: SSH Elevate Credential not of type cs_up", __func__);
+              set_auth_data_ssh_from_db (&ssh_elevate_iter, osp_credential, 1);
+            }
+          else if (strcmp (elevate_type, "cs_up") == 0)
+            {
+              if (set_auth_data_ssh_from_credential_store (&ssh_elevate_iter,
+                                                           osp_credential, 1))
+                {
+                  cleanup_iterator (&ssh_elevate_iter);
+                  osp_credential_free (osp_credential);
+                  return -1;
+                }
+            }
+          else
+            {
+              g_warning ("%s: SSH Elevate Credential not of type up or cs_up", __func__);
               cleanup_iterator (&ssh_elevate_iter);
               osp_credential_free (osp_credential);
-              return NULL;
+              return 1;
             }
-
-          const char *cred_store_uuid_elevate
-            = credential_iterator_credential_store_uuid (&iter);
-          const char *vault_id_elevate
-            = credential_iterator_vault_id (&iter);
-          const char *host_identifier_elevate
-            = credential_iterator_host_identifier (&iter);
-
-          if (cyberark_login_password_credential_data (cred_store_uuid_elevate,
-                                                       vault_id_elevate,
-                                                       host_identifier_elevate,
-                                                       &login,
-                                                       &password))
-            {
-              g_warning ("%s: Error retrieving credentials from "
-                          "CyberArk credential store '%s'.",
-                          __func__, cred_store_uuid);
-              cleanup_iterator (&iter);
-              return NULL;
-            }
-          auth_data_login = login;
-          auth_data_password = password;
-
-          osp_credential_set_auth_data (osp_credential,
-                                        "priv_username",
-                                        auth_data_login);
-          osp_credential_set_auth_data (osp_credential,
-                                        "priv_password",
-                                        auth_data_password);
           cleanup_iterator (&ssh_elevate_iter);
         }
-
       cleanup_iterator (&iter);
-      g_free (login);
-      g_free (password);
-      return osp_credential;
+      *ssh_credential = osp_credential;
     }
-  return NULL;
+  return 0;
 }
 
 /**
- * @brief Get the SMB credential of a target from credential store as an osp_credential_t
+ * @brief Get the SMB credential of a target from from database
+ *        or credential store as an osp_credential_t
  *
  * @param[in]  target  The target to get the credential from.
+ * @param[out] smb_credential  Pointer to store the resulting credential.
+ *                             Has to be freed by the caller.
  *
- * @return  Pointer to a newly allocated osp_credential_t
+ * @return 0 on success, 1 on missing credential or invalid type,
+ *         -1 on error retrieving from credential store.
  */
-osp_credential_t *
-target_osp_smb_cs_credential (target_t target)
+int
+target_osp_smb_credential (target_t target, osp_credential_t **smb_credential)
 {
+  if (!smb_credential)
+   return 1;
+
+  *smb_credential = NULL;
+
   credential_t credential;
   credential = target_smb_credential (target);
+
   if (credential)
     {
       iterator_t iter;
       osp_credential_t *osp_credential;
-      const char *auth_data_login, *auth_data_password;
 
       init_credential_iterator_one (&iter, credential);
       if (!next (&iter))
         {
           g_warning ("%s: SMB Credential not found.", __func__);
           cleanup_iterator (&iter);
-          return NULL;
+          return 1;
         }
+      osp_credential = osp_credential_new ("up", "smb", NULL);
       const char *type = credential_iterator_type (&iter);
-      if (strcmp (type, "cs_up")
-         )
+      if (strcmp (type, "up") == 0)
+        {
+          osp_credential_set_auth_data (osp_credential,
+                                        "username",
+                                        credential_iterator_login (&iter));
+          osp_credential_set_auth_data (osp_credential,
+                                        "password",
+                                        credential_iterator_password (&iter));
+        }
+      else if (strcmp (type, "cs_up") == 0)
+        {
+          if (set_auth_data_up_from_credential_store (&iter, osp_credential))
+            {
+              cleanup_iterator (&iter);
+              osp_credential_free (osp_credential);
+              return -1;
+            }
+        }
+      else
         {
           g_warning ("%s: SMB Credential not a user/pass pair.", __func__);
           cleanup_iterator (&iter);
-          return NULL;
+          osp_credential_free (osp_credential);
+          return 1;
         }
-
-      const char *cred_store_uuid
-        = credential_iterator_credential_store_uuid (&iter);
-      const char *vault_id
-        = credential_iterator_vault_id (&iter);
-      const char *host_identifier
-        = credential_iterator_host_identifier (&iter);
-
-      gchar *login, *password;
-      if (cyberark_login_password_credential_data (cred_store_uuid,
-                                                   vault_id,
-                                                   host_identifier,
-                                                   &login,
-                                                   &password))
-        {
-          g_warning ("%s: Error retrieving credentials from "
-                      "CyberArk credential store '%s'.",
-                      __func__, cred_store_uuid);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      auth_data_login = login;
-      auth_data_password = password;
-
-      osp_credential = osp_credential_new ("up", "smb", NULL);
-      osp_credential_set_auth_data (osp_credential, "username", auth_data_login);
-      osp_credential_set_auth_data (osp_credential, "password", auth_data_password);
 
       cleanup_iterator (&iter);
-      g_free (login);
-      g_free (password);
-      return osp_credential;
+      *smb_credential = osp_credential;
     }
-  return NULL;
+  return 0;
 }
 
 /**
@@ -464,72 +571,65 @@ target_osp_smb_cs_credential (target_t target)
  *
  * @return  Pointer to a newly allocated osp_credential_t
  */
-osp_credential_t *
-target_osp_esxi_cs_credential (target_t target)
+int
+target_osp_esxi_credential (target_t target,
+                            osp_credential_t **esxi_credential)
 {
+  if (!esxi_credential)
+    return 1;
+
+  *esxi_credential = NULL;
+
   credential_t credential;
   credential = target_esxi_credential (target);
   if (credential)
     {
       iterator_t iter;
       osp_credential_t *osp_credential;
-      const char *auth_data_login, *auth_data_password;
+      const char *type;
 
       init_credential_iterator_one (&iter, credential);
       if (!next (&iter))
         {
           g_warning ("%s: ESXi Credential not found.", __func__);
           cleanup_iterator (&iter);
-          return NULL;
+          return 1;
         }
-      const char *type = credential_iterator_type (&iter);
-      if (strcmp (type, "cs_up"))
+      type = credential_iterator_type (&iter);
+      osp_credential = osp_credential_new ("up", "esxi", NULL);
+
+      if (strcmp (type, "up") == 0)
+        {
+          osp_credential_set_auth_data (osp_credential,
+                                        "username",
+                                        credential_iterator_login (&iter));
+          osp_credential_set_auth_data (osp_credential,
+                                        "password",
+                                        credential_iterator_password (&iter));
+        }
+      else if (strcmp (type, "cs_up") == 0)
+        {
+          if (set_auth_data_up_from_credential_store (&iter, osp_credential))
+            {
+              cleanup_iterator (&iter);
+              osp_credential_free (osp_credential);
+              return -1;
+            }
+        }
+      else
         {
           g_warning ("%s: ESXi Credential not a user/pass pair.",
                      __func__);
           cleanup_iterator (&iter);
-          return NULL;
+          osp_credential_free (osp_credential);
+          return 1;
         }
-
-      const char *cred_store_uuid
-        = credential_iterator_credential_store_uuid (&iter);
-      const char *vault_id
-        = credential_iterator_vault_id (&iter);
-      const char *host_identifier
-        = credential_iterator_host_identifier (&iter);
-
-      gchar *login, *password;
-      if (cyberark_login_password_credential_data (cred_store_uuid,
-                                                   vault_id,
-                                                   host_identifier,
-                                                   &login,
-                                                   &password))
-        {
-          g_warning ("%s: Error retrieving credentials from "
-                      "CyberArk credential store '%s'.",
-                      __func__, cred_store_uuid);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      auth_data_login = login;
-      auth_data_password = password;
-
-      osp_credential = osp_credential_new ("up", "esxi", NULL);
-      osp_credential_set_auth_data (osp_credential,
-                                    "username",
-                                    auth_data_login);
-      osp_credential_set_auth_data (osp_credential,
-                                    "password",
-                                    auth_data_password);
 
       cleanup_iterator (&iter);
-      g_free (login);
-      g_free (password);
-      return osp_credential;
+      *esxi_credential = osp_credential;
     }
-  return NULL;
+  return 0;
 }
-
 #endif
 
 /**

@@ -23,25 +23,26 @@
 void
 add_user_scan_preferences (GHashTable *);
 
-osp_credential_t *
-target_osp_ssh_credential (target_t);
-
 #if ENABLE_CREDENTIAL_STORES
+int
+target_osp_ssh_credential (target_t, osp_credential_t **);
+
+int
+target_osp_smb_credential (target_t, osp_credential_t **);
+
+int
+target_osp_esxi_credential (target_t, osp_credential_t **);
+
+#else
 osp_credential_t *
-target_osp_ssh_cs_credential (target_t);
+target_osp_ssh_credential_db (target_t);
 
 osp_credential_t *
-target_osp_smb_cs_credential (target_t);
+target_osp_smb_credential_db (target_t);
 
 osp_credential_t *
-target_osp_esxi_cs_credential (target_t);
+target_osp_esxi_credential_db (target_t);
 #endif
-
-osp_credential_t *
-target_osp_smb_credential (target_t);
-
-osp_credential_t *
-target_osp_esxi_credential (target_t);
 
 osp_credential_t *
 target_osp_snmp_credential (target_t);
