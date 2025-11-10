@@ -340,12 +340,5 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
   g_free (host);
   g_free (path);
 
-  if (ret)
-    {
-      g_warning ("%s: Error getting credential from CyberArk"
-                 " credential store '%s'",
-                 __func__, cred_store_uuid);
-      return -1;
-    }
   return 0;
 }

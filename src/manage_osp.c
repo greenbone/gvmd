@@ -629,27 +629,57 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   g_free (clean_finished_hosts_str);
   osp_targets = g_slist_append (NULL, osp_target);
 
-  ssh_credential = target_osp_ssh_credential (target);
 #if ENABLE_CREDENTIAL_STORES
-  if (ssh_credential == NULL)
-    ssh_credential = target_osp_ssh_cs_credential (target);
+  int failed_cs_retrieval = 0;
+  long long int allow_failed_retrieval_int = 0;
+  gchar *allow_failed_retrieval;
+
+  allow_failed_retrieval = task_preference_value (task,
+                                                  "cs_allow_failed_retrieval");
+  if (allow_failed_retrieval)
+    allow_failed_retrieval_int = strtol (allow_failed_retrieval, NULL, 10);
+  g_free (allow_failed_retrieval);
+
+  if (target_osp_ssh_credential (target, &ssh_credential) < 0)
+    {
+      g_warning ("%s: Error retrieving ssh credential.", __func__);
+      failed_cs_retrieval = 1;
+    }
+
+  if (target_osp_smb_credential (target, &smb_credential) < 0)
+    {
+      g_warning ("%s: Error retrieving smb credential.", __func__);
+      failed_cs_retrieval = 1;
+    }
+
+  if (target_osp_esxi_credential (target, &esxi_credential) < 0)
+    {
+      g_warning ("%s: Error retrieving esxi credential.", __func__);
+      failed_cs_retrieval = 1;
+    }
+
+  if (failed_cs_retrieval && (allow_failed_retrieval_int == 0))
+    {
+      // credentials are not yet added to target, so freed separately
+      osp_credential_free (ssh_credential);
+      osp_credential_free (smb_credential);
+      osp_credential_free (esxi_credential);
+      g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
+      if (error)
+        *error = g_strdup ("Failed to retrieve credentials "
+                           "from credential store.");
+      return -1;
+    }
+#else
+  ssh_credential = target_osp_ssh_credential_db (target);
+  smb_credential = target_osp_smb_credential_db (target);
+  esxi_credential = target_osp_esxi_credential_db (target);
 #endif
+
   if (ssh_credential)
     osp_target_add_credential (osp_target, ssh_credential);
-
-  smb_credential = target_osp_smb_credential (target);
-#if ENABLE_CREDENTIAL_STORES
-  if (smb_credential == NULL)
-    smb_credential = target_osp_smb_cs_credential (target);
-#endif
   if (smb_credential)
     osp_target_add_credential (osp_target, smb_credential);
-
-  esxi_credential = target_osp_esxi_credential (target);
-#if ENABLE_CREDENTIAL_STORES
-  if (esxi_credential == NULL)
-    esxi_credential = target_osp_esxi_cs_credential (target);
-#endif
   if (esxi_credential)
     osp_target_add_credential (osp_target, esxi_credential);
 
