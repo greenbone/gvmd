@@ -290,9 +290,11 @@ prepare_container_image_scan_for_resume (task_t task, const char *scan_id,
 char *
 get_bool_string (const char *preference_value)
 {
-  if (strcmp (preference_value, "no") == 0)
+  if (strcmp (preference_value, "no") == 0
+      || strcmp (preference_value, "0") == 0)
     return g_strdup("false");
-  else if (strcmp (preference_value, "yes") == 0)
+  else if (strcmp (preference_value, "yes") == 0
+           || strcmp (preference_value, "1") == 0)
     return g_strdup("true");
   else
     return g_strdup (preference_value);
