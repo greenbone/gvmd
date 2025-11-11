@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <name>alive_test</name>
     <summary>An alive test</summary>
     <pattern>
-      xsd:token { pattern = "ICMP, TCP-ACK Service &amp; ARP Ping|TCP-ACK Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP-ACK Service Ping|ARP Ping|TCP-ACK Service Ping|TCP-SYN Service Ping|ICMP Ping|Consider Alive|Scan Config Default" }
+      xsd:token { pattern = "ICMP Ping|TCP-ACK Service Ping|TCP-SYN Service Ping|ARP Ping|Consider Alive|Scan Config Default" }
     </pattern>
   </type>
   <type>
@@ -6298,8 +6298,18 @@ END:VCALENDAR
       <name>alive_tests</name>
       <summary>Which alive tests to use</summary>
       <pattern>
-        <t>alive_test</t>
+        <any><e>alive_test</e></any>
       </pattern>
+      <ele>
+        <name>alive_test</name>
+        <summary>
+          A single alive test to use.
+          "Scan Config Default" and "Consider Alive" can only be used alone
+        </summary>
+        <pattern>
+          <t>alive_test</t>
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>allow_simultaneous_ips</name>
@@ -25603,8 +25613,17 @@ END:VCALENDAR
           <name>alive_tests</name>
           <summary>Which alive tests to use</summary>
           <pattern>
-            <t>alive_test</t>
+            <any><e>alive_test</e></any>
           </pattern>
+          <ele>
+            <name>alive_test</name>
+            <summary>
+              A single alive test to use
+            </summary>
+            <pattern>
+              <t>alive_test</t>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>reverse_lookup_only</name>
@@ -32333,8 +32352,18 @@ END:VCALENDAR
       <name>alive_tests</name>
       <summary>Which alive tests to use</summary>
       <pattern>
-        <t>alive_test</t>
+        <any><e>alive_test</e></any>
       </pattern>
+      <ele>
+        <name>alive_test</name>
+        <summary>
+          A single alive test to use.
+          "Scan Config Default" and "Consider Alive" can only be used alone
+        </summary>
+        <pattern>
+          <t>alive_test</t>
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>reverse_lookup_only</name>

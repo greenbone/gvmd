@@ -955,7 +955,8 @@ create_schedule_data_reset (create_schedule_data_t *data)
  */
 typedef struct
 {
-  char *alive_tests;                ///< Alive tests.
+  GPtrArray *alive_tests;           ///< Alive tests list.
+  char *alive_test;                 ///< Current alive tests list item.
   char *allow_simultaneous_ips;     ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *asset_hosts_filter;         ///< Asset hosts.
   char *comment;                    ///< Comment.
@@ -988,7 +989,9 @@ typedef struct
 static void
 create_target_data_reset (create_target_data_t *data)
 {
-  free (data->alive_tests);
+  if (data->alive_tests)
+    g_ptr_array_free (data->alive_tests, TRUE);
+  free (data->alive_test);
   free (data->allow_simultaneous_ips);
   free (data->asset_hosts_filter);
   free (data->comment);
@@ -2908,7 +2911,8 @@ modify_setting_data_reset (modify_setting_data_t *data)
  */
 typedef struct
 {
-  char *alive_tests;                 ///< Alive tests.
+  GPtrArray *alive_tests;            ///< Alive tests list.
+  char *alive_test;                  ///< Current Alive tests list item.
   char *allow_simultaneous_ips;      ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *comment;                     ///< Comment.
   char *exclude_hosts;               ///< Hosts to exclude from set.
@@ -2939,7 +2943,9 @@ typedef struct
 static void
 modify_target_data_reset (modify_target_data_t *data)
 {
-  free (data->alive_tests);
+  if (data->alive_tests)
+    g_ptr_array_free (data->alive_tests, TRUE);
+  free (data->alive_test);
   free (data->allow_simultaneous_ips);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
@@ -4345,6 +4351,7 @@ typedef enum
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
+  CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST,
   CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_CREATE_TARGET_ASSET_HOSTS,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
@@ -4622,6 +4629,7 @@ typedef enum
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
+  CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST,
   CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_ESXI_CREDENTIAL,
@@ -4974,6 +4982,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
+            create_target_data->alive_tests
+              = g_ptr_array_new_null_terminated (0, free, TRUE);
             gvm_append_string (&create_target_data->comment, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
@@ -6174,6 +6184,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "target_id",
                               &modify_target_data->target_id);
+            modify_target_data->alive_tests
+              = g_ptr_array_new_null_terminated (0, free, TRUE);
             set_client_state (CLIENT_MODIFY_TARGET);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
@@ -6971,6 +6983,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_target_data->name, "");
             set_client_state (CLIENT_MODIFY_TARGET_NAME);
           }
+        ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_TARGET_ALIVE_TESTS:
+        if (strcasecmp ("ALIVE_TEST", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST);
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TARGET_SSH_CREDENTIAL:
@@ -8049,6 +8066,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_target_data->name, "");
             set_client_state (CLIENT_CREATE_TARGET_NAME);
           }
+        ELSE_READ_OVER;
+
+      case CLIENT_CREATE_TARGET_ALIVE_TESTS:
+        if (strcasecmp ("ALIVE_TEST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST);
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_TARGET_SSH_CREDENTIAL:
@@ -18589,6 +18611,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
           const char *reverse_lookup_unify, *allow_simultaneous_ips;
+          int alive_tests;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
           credential_t ssh_elevate_credential, krb5_credential;
@@ -18934,14 +18957,38 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                    "<reverse_lookup_unify>"
                                    "%s"
                                    "</reverse_lookup_unify>"
-                                   "<alive_tests>%s</alive_tests>"
                                    "<allow_simultaneous_ips>"
                                    "%s"
-                                   "</allow_simultaneous_ips>",
+                                   "</allow_simultaneous_ips>"
+                                   "<alive_tests>",
                                    reverse_lookup_only,
                                    reverse_lookup_unify,
-                                   target_iterator_alive_tests (&targets),
                                    allow_simultaneous_ips);
+
+          alive_tests = target_iterator_alive_tests (&targets);
+          if (alive_tests == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                                    "Scan Config Default"
+                                    "</alive_test>");
+          else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
+            SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                                    "Consider Alive"
+                                    "</alive_test>");
+          else {
+            if (alive_tests & ALIVE_TEST_ARP)
+              SEND_TO_CLIENT_OR_FAIL ("<alive_test>ARP Ping</alive_test>");
+            if (alive_tests & ALIVE_TEST_ICMP)
+              SEND_TO_CLIENT_OR_FAIL ("<alive_test>ICMP Ping</alive_test>");
+            if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
+              SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                                      "TCP-ACK Service Ping"
+                                      "</alive_test>");
+            if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
+              SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                                      "TCP-SYN Service Ping"
+                                      "</alive_test>");
+          }
+          SEND_TO_CLIENT_OR_FAIL ("</alive_tests>");
 
           if (get_targets_data->get.details)
             SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
@@ -24446,6 +24493,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_CREATE_TARGET, ALIVE_TESTS);
+      case CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST:
+        g_ptr_array_add (create_target_data->alive_tests,
+                         g_strstrip (create_target_data->alive_test));
+        create_target_data->alive_test = NULL;
+        set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS);
+        break;
       CLOSE (CLIENT_CREATE_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
@@ -27418,6 +27471,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_MODIFY_TARGET, ALIVE_TESTS);
+      case CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST:
+        g_ptr_array_add (modify_target_data->alive_tests,
+                         g_strstrip (modify_target_data->alive_test));
+        modify_target_data->alive_test = NULL;
+        set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
+        break;
       CLOSE (CLIENT_MODIFY_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
@@ -29390,8 +29449,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
               &create_target_data->reverse_lookup_unify);
 
-      APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS,
-              &create_target_data->alive_tests);
+      APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST,
+              &create_target_data->alive_test);
 
       APPEND (CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
               &create_target_data->allow_simultaneous_ips);
@@ -29735,8 +29794,8 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
               &modify_target_data->reverse_lookup_unify);
 
-      APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS,
-              &modify_target_data->alive_tests);
+      APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST,
+              &modify_target_data->alive_test);
 
       APPEND (CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
               &modify_target_data->allow_simultaneous_ips);
