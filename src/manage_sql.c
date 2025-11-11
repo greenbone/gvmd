@@ -21314,41 +21314,47 @@ validate_results_port (const char *port)
 }
 
 /**
- * @brief Convert alive test name to alive test bitfield.
+ * @brief Convert alive test array to alive test bitfield.
  *
- * @param[in]  alive_tests  Name of alive test.
+ * @param[in]  alive_tests NULL-terminated array of alive tests.
  *
- * @return Alive test, or -1 on error.
+ * @return Alive test bitfield, or -1 on error.
  */
 static int
-alive_test_from_string (const char* alive_tests)
+alive_test_from_array (GPtrArray *alive_tests)
 {
-  alive_test_t alive_test;
-  if (alive_tests == NULL
-      || strcmp (alive_tests, "") == 0
-      || strcmp (alive_tests, "Scan Config Default") == 0)
-    alive_test = 0;
-  else if (strcmp (alive_tests, "ICMP, TCP-ACK Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP-ACK Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & TCP-ACK Service Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_TCP_ACK_SERVICE;
-  else if (strcmp (alive_tests, "ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP-ACK Service Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_ACK_SERVICE;
-  else if (strcmp (alive_tests, "TCP-SYN Service Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SYN_SERVICE;
-  else if (strcmp (alive_tests, "ICMP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP;
-  else if (strcmp (alive_tests, "Consider Alive") == 0)
-    alive_test = ALIVE_TEST_CONSIDER_ALIVE;
-  else
-    return -1;
-  return alive_test;
+  alive_test_t alive_test_bitfield = 0;
+
+  if (alive_tests->len == 0)
+    return 0;
+
+  for (int i = 0; i < alive_tests->len; i++)
+    {
+      const char *item = g_ptr_array_index (alive_tests, i);
+      if (strcasecmp (item, "Scan Config Default") == 0)
+        return 0;
+      else if (strcasecmp (item, "Consider Alive") == 0)
+        return ALIVE_TEST_CONSIDER_ALIVE;
+      else if (strcasecmp (item, "ARP") == 0
+          || strcasecmp (item, "ARP Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_ARP;
+      else if (strcmp (item, "ICMP") == 0
+                || strcmp (item, "ICMP Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_ICMP;
+      else if (strcmp (item, "TCP-ACK Service") == 0
+                || strcmp (item, "TCP-ACK Service Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_TCP_ACK_SERVICE;
+      else if (strcmp (item, "TCP-SYN Service") == 0
+                || strcmp (item, "TCP-SYN Service Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_TCP_SYN_SERVICE;
+      else
+        {
+          g_debug ("%s: Invalid alive_tests item: %s", __func__, item);
+          alive_test_bitfield = -1;
+          break;
+        }
+    }
+  return alive_test_bitfield;
 }
 
 /**
@@ -21504,7 +21510,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   snmp_credential SNMP credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests.
+ * @param[in]   alive_tests     Alive tests array.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
  * @param[out]  target          Created target.
  *
@@ -21529,7 +21535,8 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t esxi_credential, credential_t snmp_credential,
                credential_t krb5_credential,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *reverse_lookup_unify,
+               GPtrArray *alive_tests,
                const char *allow_simultaneous_ips,
                target_t* target)
 {
@@ -21548,7 +21555,10 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_port && validate_port (ssh_port))
     return 5;
 
-  alive_test = alive_test_from_string (alive_tests);
+  if (alive_tests && alive_tests->len)
+    alive_test = alive_test_from_array (alive_tests);
+  else
+    alive_test = 0;
   if (alive_test <= -1)
     return 7;
 
@@ -22029,7 +22039,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   krb5_credential_id  Kerberos 5 credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests.
+ * @param[in]   alive_tests         Alive tests array.
  * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -22059,7 +22069,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *esxi_credential_id, const char* snmp_credential_id,
                const char *krb5_credential_id,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *reverse_lookup_unify,
+               GPtrArray *alive_tests,
                const char *allow_simultaneous_ips)
 {
   target_t target;
@@ -22154,11 +22165,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  if (alive_tests)
+  if (alive_tests && alive_tests->len)
     {
       int alive_test;
 
-      alive_test = alive_test_from_string (alive_tests);
+      alive_test = alive_test_from_array (alive_tests);
       if (alive_test <= -1)
         {
           sql_rollback ();
@@ -23040,43 +23051,12 @@ DEF_ACCESS (target_iterator_reverse_lookup_only,
 DEF_ACCESS (target_iterator_reverse_lookup_unify,
             GET_ITERATOR_COLUMN_COUNT + 12);
 
-/**
- * @brief Get the alive test description from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Reverse lookup unify of the target or NULL if iteration is complete.
- */
-const char*
+int
 target_iterator_alive_tests (iterator_t* iterator)
 {
-  int tests;
-  if (iterator->done) return "";
-  tests = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
-  if ((tests & ALIVE_TEST_TCP_ACK_SERVICE)
-      && (tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_ARP))
-    return "ICMP, TCP-ACK Service & ARP Ping";
-  if ((tests & ALIVE_TEST_TCP_ACK_SERVICE)
-      && (tests & ALIVE_TEST_ARP))
-    return "TCP-ACK Service & ARP Ping";
-  if ((tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_ARP))
-    return "ICMP & ARP Ping";
-  if ((tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_TCP_ACK_SERVICE))
-    return "ICMP & TCP-ACK Service Ping";
-  if (tests & ALIVE_TEST_ARP)
-    return "ARP Ping";
-  if (tests & ALIVE_TEST_TCP_ACK_SERVICE)
-    return "TCP-ACK Service Ping";
-  if (tests & ALIVE_TEST_TCP_SYN_SERVICE)
-    return "TCP-SYN Service Ping";
-  if (tests & ALIVE_TEST_ICMP)
-    return "ICMP Ping";
-  if (tests & ALIVE_TEST_CONSIDER_ALIVE)
-    return "Consider Alive";
-  return "Scan Config Default";
+  if (iterator->done)
+    return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
 }
 
 /**

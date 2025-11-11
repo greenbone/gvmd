@@ -1628,7 +1628,8 @@ create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, credential_t,
                const char *,
                credential_t, credential_t, credential_t, credential_t,
-               const char *, const char *, const char *, const char *,
+               const char *, const char *,
+               GPtrArray *, const char *,
                target_t*);
 
 int
@@ -1638,7 +1639,7 @@ int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*, const char*);
+               GPtrArray *, const char*);
 
 int
 delete_target (const char*, int);
@@ -1721,7 +1722,7 @@ target_iterator_port_list_name (iterator_t*);
 int
 target_iterator_port_list_trash (iterator_t*);
 
-const char*
+int
 target_iterator_alive_tests (iterator_t*);
 
 char*
