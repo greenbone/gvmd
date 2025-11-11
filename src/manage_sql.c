@@ -18049,6 +18049,42 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           progress_xml = g_strdup_printf ("%i", 100);
         }
 #endif /* ENABLE_AGENTS */
+
+#if ENABLE_CONTAINER_SCANNING
+      oci_image_target_t oci_image_target = task_oci_image_target (task);
+      if (oci_image_target)
+        {
+          char *oci_uuid, *oci_name, *oci_comment;
+          int in_trash;
+
+          in_trash = task_oci_image_target_in_trash (task);
+
+          oci_uuid = in_trash
+                       ? trash_oci_image_target_uuid (oci_image_target)
+                       : oci_image_target_uuid (oci_image_target);
+          oci_name = in_trash
+                       ? trash_oci_image_target_name (oci_image_target)
+                       : oci_image_target_name (oci_image_target);
+          oci_comment = in_trash
+                          ? trash_oci_image_target_comment (oci_image_target)
+                          : oci_image_target_comment (oci_image_target);
+
+          PRINT (out,
+                 "<oci_image_target id=\"%s\">"
+                 "<trash>%i</trash>"
+                 "<name>%s</name>"
+                 "<comment>%s</comment>"
+                 "</oci_image_target>",
+                 oci_uuid ? oci_uuid : "",
+                 in_trash,
+                 oci_name ? oci_name : "",
+                 oci_comment ? oci_comment : "");
+
+          g_free (oci_uuid);
+          g_free (oci_name);
+          g_free (oci_comment);
+        }
+#endif /* ENABLE_CONTAINER_SCANNING */
       PRINT (out, "<progress>%s</progress>", progress_xml);
 
       g_free (progress_xml);
