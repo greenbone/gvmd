@@ -19210,7 +19210,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       iterator_t alerts, groups, roles;
       gchar *in_assets, *max_checks, *max_hosts;
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
-      gchar *assets_min_qod;
+      gchar *assets_min_qod, *accept_invalid_certs, *registry_allow_insecure;
       gchar *oci_image_target_xml = NULL;
       gchar *agent_group_xml = NULL;
 
@@ -19861,6 +19861,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           max_hosts = task_preference_value (index, "max_hosts");
           auto_delete = task_preference_value (index, "auto_delete");
           auto_delete_data = task_preference_value (index, "auto_delete_data");
+          accept_invalid_certs = task_preference_value (index, "accept_invalid_certs");
+          registry_allow_insecure = task_preference_value (index, "registry_allow_insecure");
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<preferences>"
@@ -19906,6 +19908,22 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             "<scanner_name>auto_delete</scanner_name>"
             "<value>%s</value>"
             "</preference>"
+#if ENABLE_CONTAINER_SCANNING
+            "<preference>"
+            "<name>"
+            "Accept Invalid Certificates"
+            "</name>"
+            "<scanner_name>accept_invalid_certs</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Allow Insecure Docker Registries"
+            "</name>"
+            "<scanner_name>registry_allow_insecure</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+#endif /* ENABLE_CONTAINER_SCANNING */
             "<preference>"
             "<name>"
             "Auto Delete Reports Data"
@@ -19923,6 +19941,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               ? assets_min_qod
               : G_STRINGIFY (MIN_QOD_DEFAULT),
             auto_delete ? auto_delete : "0",
+#if ENABLE_CONTAINER_SCANNING
+            accept_invalid_certs ? accept_invalid_certs : "0",
+            registry_allow_insecure ? registry_allow_insecure : "0",
+#endif /* ENABLE_CONTAINER_SCANNING */
             auto_delete_data ? auto_delete_data : "0");
 
           g_free (assets_apply_overrides);
@@ -19932,6 +19954,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (max_hosts);
           g_free (auto_delete);
           g_free (auto_delete_data);
+          g_free (accept_invalid_certs);
+          g_free (registry_allow_insecure);
         }
 
       count++;
