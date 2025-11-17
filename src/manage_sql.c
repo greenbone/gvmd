@@ -21358,6 +21358,44 @@ alive_test_from_array (GPtrArray *alive_tests)
 }
 
 /**
+ * @brief Convert legacy alive test name string to alive test bitfield.
+ *
+ * @param[in]  alive_tests  Name of alive test.
+ *
+ * @return Alive test, or -1 on error.
+ */
+static int
+alive_test_from_string (const char* alive_tests)
+{
+  alive_test_t alive_test;
+  if (alive_tests == NULL
+      || strcmp (alive_tests, "") == 0
+      || strcmp (alive_tests, "Scan Config Default") == 0)
+    alive_test = 0;
+  else if (strcmp (alive_tests, "ICMP, TCP-ACK Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP-ACK Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP & TCP-ACK Service Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_TCP_ACK_SERVICE;
+  else if (strcmp (alive_tests, "ARP Ping") == 0)
+    alive_test = ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP-ACK Service Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_ACK_SERVICE;
+  else if (strcmp (alive_tests, "TCP-SYN Service Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SYN_SERVICE;
+  else if (strcmp (alive_tests, "ICMP Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP;
+  else if (strcmp (alive_tests, "Consider Alive") == 0)
+    alive_test = ALIVE_TEST_CONSIDER_ALIVE;
+  else
+    return -1;
+  return alive_test;
+}
+
+/**
  * @brief Set login data for a target.
  *
  * @param[in]  target         The target.
@@ -21511,6 +21549,7 @@ target_login_port (target_t target, const char* type)
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests array.
+ * @param[in]   alive_test_str  Legacy alive tests string.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
  * @param[out]  target          Created target.
  *
@@ -21523,6 +21562,7 @@ target_login_port (target_t target, const char* type)
  *         14 SSH elevate credential without an SSH credential,
  *         15 elevate credential must be different from the SSH credential,
  *         16 invalid Kerberos 5 credential type,
+ *         30 cannot use both alive_tests string and sub-elements,
  *         99 permission denied, -1 error.
  */
 int
@@ -21537,6 +21577,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify,
                GPtrArray *alive_tests,
+               const char *alive_test_str,
                const char *allow_simultaneous_ips,
                target_t* target)
 {
@@ -21555,8 +21596,13 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_port && validate_port (ssh_port))
     return 5;
 
-  if (alive_tests && alive_tests->len)
+  if (alive_tests && alive_tests->len
+      && alive_test_str && strlen (alive_test_str))
+    return 30;
+  else if (alive_tests && alive_tests->len)
     alive_test = alive_test_from_array (alive_tests);
+  else if (alive_test_str && strlen (alive_test_str))
+    alive_test = alive_test_from_string (alive_test_str);
   else
     alive_test = 0;
   if (alive_test <= -1)
@@ -22058,6 +22104,7 @@ delete_target (const char *target_id, int ultimate)
  *         26 failed to find Kerberos 5 credential,
  *         27 invalid Kerberos 5 credential type,
  *         28 cannot use both SMB and Kerberos 5 credential,
+ *         30 cannot use both alive_tests string and sub-elements,
  *         99 permission denied, -1 error.
  */
 int
@@ -22071,6 +22118,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *reverse_lookup_only,
                const char *reverse_lookup_unify,
                GPtrArray *alive_tests,
+               const char *alive_test_str,
                const char *allow_simultaneous_ips)
 {
   target_t target;
@@ -22165,11 +22213,31 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  if (alive_tests && alive_tests->len)
+  if (alive_tests && alive_tests->len
+      && alive_test_str && strlen (alive_test_str))
+    return 30;
+  else if (alive_tests && alive_tests->len)
     {
       int alive_test;
 
       alive_test = alive_test_from_array (alive_tests);
+      if (alive_test <= -1)
+        {
+          sql_rollback ();
+          return 10;
+        }
+      sql ("UPDATE targets SET"
+           " alive_test = '%i',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           alive_test,
+           target);
+    }
+  else if (alive_test_str && strlen (alive_test_str))
+    {
+      int alive_test;
+
+      alive_test = alive_test_from_string (alive_test_str);
       if (alive_test <= -1)
         {
           sql_rollback ();

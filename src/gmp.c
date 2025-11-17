@@ -956,6 +956,7 @@ create_schedule_data_reset (create_schedule_data_t *data)
 typedef struct
 {
   GPtrArray *alive_tests;           ///< Alive tests list.
+  char *alive_tests_str;            ///< Alive tests string.
   char *alive_test;                 ///< Current alive tests list item.
   char *allow_simultaneous_ips;     ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *asset_hosts_filter;         ///< Asset hosts.
@@ -992,6 +993,7 @@ create_target_data_reset (create_target_data_t *data)
   if (data->alive_tests)
     g_ptr_array_free (data->alive_tests, TRUE);
   free (data->alive_test);
+  free (data->alive_tests_str);
   free (data->allow_simultaneous_ips);
   free (data->asset_hosts_filter);
   free (data->comment);
@@ -2913,6 +2915,7 @@ typedef struct
 {
   GPtrArray *alive_tests;            ///< Alive tests list.
   char *alive_test;                  ///< Current Alive tests list item.
+  char *alive_tests_str;             ///< Alive tests string.
   char *allow_simultaneous_ips;      ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *comment;                     ///< Comment.
   char *exclude_hosts;               ///< Hosts to exclude from set.
@@ -2946,6 +2949,7 @@ modify_target_data_reset (modify_target_data_t *data)
   if (data->alive_tests)
     g_ptr_array_free (data->alive_tests, TRUE);
   free (data->alive_test);
+  free (data->alive_tests_str);
   free (data->allow_simultaneous_ips);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
@@ -18548,6 +18552,88 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Send a legacy-style alive tests string to the client.
+ *
+ * @param[in]  alive_tests  The alive tests bitfield.
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+send_alive_tests_str (int alive_tests,
+                      gmp_parser_t *gmp_parser,
+                      GError **error)
+{
+  if (alive_tests == 0)
+    SEND_TO_CLIENT_OR_FAIL ("Scan Config Default");
+  else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
+    SEND_TO_CLIENT_OR_FAIL ("Consider Alive");
+  else
+    {
+      GPtrArray *tests = g_ptr_array_new ();
+      GString *tests_string = g_string_new ("");
+
+      if (alive_tests & ALIVE_TEST_ICMP)
+        g_ptr_array_add (tests, "ICMP");
+      if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
+        g_ptr_array_add (tests, "TCP-ACK Service");
+      if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
+        g_ptr_array_add (tests, "TCP-SYN Service");
+      if (alive_tests & ALIVE_TEST_ARP)
+        g_ptr_array_add (tests, "ARP");
+
+      for (int i = 0; i < tests->len; i++)
+        {
+          const char *part = g_ptr_array_index (tests, i);
+          if (i == 0)
+            buffer_xml_append_printf (tests_string, "%s", part);
+          else if (i >= tests->len - 1)
+            buffer_xml_append_printf (tests_string, " &amp; %s", part);
+          else
+            buffer_xml_append_printf (tests_string, ", %s", part);
+        }
+      g_string_append (tests_string, " Ping");
+      SEND_TO_CLIENT_OR_FAIL (tests_string->str);
+      g_string_free (tests_string, TRUE);
+    }
+}
+
+/**
+ * @brief Send the sub-elements of the alive_tests element inside a target.
+ *
+ * @param[in]  alive_tests  The alive tests bitfield.
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+send_alive_tests_subelems (int alive_tests,
+                           gmp_parser_t *gmp_parser,
+                           GError **error)
+{
+  if (alive_tests == 0)
+    SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                            "Scan Config Default"
+                            "</alive_test>");
+  else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
+    SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                            "Consider Alive"
+                            "</alive_test>");
+  else {
+    if (alive_tests & ALIVE_TEST_ARP)
+      SEND_TO_CLIENT_OR_FAIL ("<alive_test>ARP Ping</alive_test>");
+    if (alive_tests & ALIVE_TEST_ICMP)
+      SEND_TO_CLIENT_OR_FAIL ("<alive_test>ICMP Ping</alive_test>");
+    if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
+      SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                              "TCP-ACK Service Ping"
+                              "</alive_test>");
+    if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
+      SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
+                              "TCP-SYN Service Ping"
+                              "</alive_test>");
+  }
+}
+
+/**
  * @brief Handle end of GET_TARGETS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -18966,28 +19052,9 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                                    allow_simultaneous_ips);
 
           alive_tests = target_iterator_alive_tests (&targets);
-          if (alive_tests == 0)
-            SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                                    "Scan Config Default"
-                                    "</alive_test>");
-          else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
-            SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                                    "Consider Alive"
-                                    "</alive_test>");
-          else {
-            if (alive_tests & ALIVE_TEST_ARP)
-              SEND_TO_CLIENT_OR_FAIL ("<alive_test>ARP Ping</alive_test>");
-            if (alive_tests & ALIVE_TEST_ICMP)
-              SEND_TO_CLIENT_OR_FAIL ("<alive_test>ICMP Ping</alive_test>");
-            if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
-              SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                                      "TCP-ACK Service Ping"
-                                      "</alive_test>");
-            if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
-              SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                                      "TCP-SYN Service Ping"
-                                      "</alive_test>");
-          }
+
+          send_alive_tests_str (alive_tests, gmp_parser, error);
+          send_alive_tests_subelems (alive_tests, gmp_parser, error);
           SEND_TO_CLIENT_OR_FAIL ("</alive_tests>");
 
           if (get_targets_data->get.details)
@@ -24347,6 +24414,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
+                         create_target_data->alive_tests_str
+                          ? g_strstrip (create_target_data->alive_tests_str)
+                          : NULL,
                          create_target_data->allow_simultaneous_ips,
                          &new_target))
             {
@@ -24458,6 +24528,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_target",
                                     "Kerberos 5 credential must be of type"
                                     " 'krb5'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
+              case 30:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "ALIVE_TESTS can contain either a string"
+                                    " or sub-elements, but not both."));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
               case 99:
@@ -27162,6 +27239,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests,
+                         modify_target_data->alive_tests_str
+                          ? g_strstrip (modify_target_data->alive_tests_str)
+                          : NULL,
                          modify_target_data->allow_simultaneous_ips))
             {
               case 1:
@@ -27436,6 +27516,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " Kerberos 5 credential"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id, "modified");
+                break;
+              case 30:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "ALIVE_TESTS can contain either a string"
+                                    " or sub-elements, but not both."));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
@@ -29449,6 +29538,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
               &create_target_data->reverse_lookup_unify);
 
+      APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS,
+              &create_target_data->alive_tests_str);
+
       APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST,
               &create_target_data->alive_test);
 
@@ -29793,6 +29885,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
               &modify_target_data->reverse_lookup_unify);
+
+      APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS,
+              &modify_target_data->alive_tests_str);
 
       APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST,
               &modify_target_data->alive_test);
