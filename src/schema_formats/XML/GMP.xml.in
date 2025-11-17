@@ -6300,6 +6300,11 @@ END:VCALENDAR
       <pattern>
         <any><e>alive_test</e></any>
       </pattern>
+      <description>
+        Instead of the sub-elements a string representation of the
+        old predefined alive test selections can be used, but this is
+        deprecated.
+      </description>
       <ele>
         <name>alive_test</name>
         <summary>
@@ -25612,6 +25617,10 @@ END:VCALENDAR
         <ele>
           <name>alive_tests</name>
           <summary>Which alive tests to use</summary>
+          <description>
+            A string representation in the format of the old predefined
+            alive test selections is also included, but its use is deprecated.
+          </description>
           <pattern>
             <any><e>alive_test</e></any>
           </pattern>
@@ -32351,6 +32360,11 @@ END:VCALENDAR
     <ele>
       <name>alive_tests</name>
       <summary>Which alive tests to use</summary>
+      <description>
+        Instead of the sub-elements a string representation of the
+        old predefined alive test selections can be used, but this is
+        deprecated.
+      </description>
       <pattern>
         <any><e>alive_test</e></any>
       </pattern>
