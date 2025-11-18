@@ -23119,6 +23119,13 @@ DEF_ACCESS (target_iterator_reverse_lookup_only,
 DEF_ACCESS (target_iterator_reverse_lookup_unify,
             GET_ITERATOR_COLUMN_COUNT + 12);
 
+/**
+ * @brief Get the alive_tests value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Alive_tests of the target or -1 if iteration is complete.
+ */
 int
 target_iterator_alive_tests (iterator_t* iterator)
 {

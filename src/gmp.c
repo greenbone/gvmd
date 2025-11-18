@@ -24602,7 +24602,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, ALIVE_TESTS);
       case CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST:
         g_ptr_array_add (create_target_data->alive_tests,
-                         g_strstrip (create_target_data->alive_test));
+                         create_target_data->alive_test
+                          ? g_strstrip (create_target_data->alive_test)
+                          : strdup (""));
         create_target_data->alive_test = NULL;
         set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS);
         break;
@@ -27592,7 +27594,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, ALIVE_TESTS);
       case CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST:
         g_ptr_array_add (modify_target_data->alive_tests,
-                         g_strstrip (modify_target_data->alive_test));
+                         modify_target_data->alive_test
+                          ? g_strstrip (modify_target_data->alive_test)
+                          : strdup (""));
         modify_target_data->alive_test = NULL;
         set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
         break;
