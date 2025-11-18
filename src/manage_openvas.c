@@ -17,6 +17,14 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+#if ENABLE_CREDENTIAL_STORES
+static const target_osp_credential_getter_t target_osp_credential_getters[] = {
+  target_osp_ssh_credential,
+  target_osp_smb_credential,
+  target_osp_esxi_credential
+};
+#endif
+
 /**
  * @brief Add OSP preferences for limiting hosts for users.
  *
@@ -262,9 +270,9 @@ set_auth_data_ssh_from_credential_store (iterator_t *iter,
                                                &login,
                                                &password))
     {
-      g_warning ("%s: Error retrieving credentials from "
-                 "CyberArk credential store '%s'.",
-                  __func__, cred_store_uuid);
+      g_debug ("%s: Error retrieving credentials from "
+               "CyberArk credential store '%s'.",
+               __func__, cred_store_uuid);
       return 1;
     }
 
@@ -370,9 +378,9 @@ set_auth_data_up_from_credential_store (iterator_t *iter,
                                                &login,
                                                &password))
     {
-      g_warning ("%s: Error retrieving credentials from "
-                 "CyberArk credential store '%s'.",
-                  __func__, cred_store_uuid);
+      g_debug ("%s: Error retrieving credentials from "
+               "CyberArk credential store '%s'.",
+               __func__, cred_store_uuid);
       return 1;
     }
 
@@ -392,14 +400,13 @@ set_auth_data_up_from_credential_store (iterator_t *iter,
  * @param[out] ssh_credential  Pointer to store the resulting credential.
  *                             Has to be freed by the caller.
  *
- * @return 0 on success, 1 on missing credential or invalid type,
- *         -1 on error retrieving from credential store.
+ * @return A target_osp_credential_return_t return code.
  */
-int
+target_osp_credential_return_t
 target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
 {
   if (!ssh_credential)
-    return 1;
+    return TARGET_OSP_MISSING_CREDENTIAL;
 
   *ssh_credential = NULL;
 
@@ -420,7 +427,7 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
         {
           g_warning ("%s: SSH Credential not found.", __func__);
           cleanup_iterator (&iter);
-          return 1;
+          return TARGET_OSP_INTERNAL_ERROR;
         }
       type = credential_iterator_type (&iter);
       ssh_port = target_ssh_port (target);
@@ -440,7 +447,9 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
               cleanup_iterator (&iter);
               osp_credential_free (osp_credential);
               free (ssh_port);
-              return -1;
+              g_warning ("%s: Failed to retrieve SSH credential"
+                         " from credential store.", __func__);
+              return TARGET_OSP_FAILED_CS_RETRIEVAL;
             }
         }
       else
@@ -449,7 +458,7 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
                      " or user/ssh key.", __func__);
           cleanup_iterator (&iter);
           free (ssh_port);
-          return 1;
+          return TARGET_OSP_CREDENTIAL_TYPE_MISMATCH;
         }
 
       free (ssh_port);
@@ -464,7 +473,7 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
               g_warning ("%s: SSH Elevate Credential not found.", __func__);
               cleanup_iterator (&ssh_elevate_iter);
               osp_credential_free (osp_credential);
-              return 1;
+              return TARGET_OSP_INTERNAL_ERROR;
             }
           elevate_type = credential_iterator_type (&ssh_elevate_iter);
           if (strcmp (elevate_type, "up") == 0)
@@ -478,7 +487,9 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
                 {
                   cleanup_iterator (&ssh_elevate_iter);
                   osp_credential_free (osp_credential);
-                  return -1;
+                  g_warning ("%s: Failed to retrieve SSH elevate"
+                             " credential from credential store.", __func__);
+                  return TARGET_OSP_FAILED_CS_RETRIEVAL;
                 }
             }
           else
@@ -486,14 +497,15 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
               g_warning ("%s: SSH Elevate Credential not of type up or cs_up", __func__);
               cleanup_iterator (&ssh_elevate_iter);
               osp_credential_free (osp_credential);
-              return 1;
+              return TARGET_OSP_CREDENTIAL_TYPE_MISMATCH;
             }
           cleanup_iterator (&ssh_elevate_iter);
         }
       cleanup_iterator (&iter);
       *ssh_credential = osp_credential;
+      return TARGET_OSP_CREDENTIAL_OK;
     }
-  return 0;
+  return TARGET_OSP_CREDENTIAL_NOT_FOUND;
 }
 
 /**
@@ -504,14 +516,13 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
  * @param[out] smb_credential  Pointer to store the resulting credential.
  *                             Has to be freed by the caller.
  *
- * @return 0 on success, 1 on missing credential or invalid type,
- *         -1 on error retrieving from credential store.
+ * @return A target_osp_credential_return_t return code.
  */
-int
+target_osp_credential_return_t
 target_osp_smb_credential (target_t target, osp_credential_t **smb_credential)
 {
   if (!smb_credential)
-   return 1;
+   return TARGET_OSP_MISSING_CREDENTIAL;
 
   *smb_credential = NULL;
 
@@ -528,7 +539,7 @@ target_osp_smb_credential (target_t target, osp_credential_t **smb_credential)
         {
           g_warning ("%s: SMB Credential not found.", __func__);
           cleanup_iterator (&iter);
-          return 1;
+          return TARGET_OSP_INTERNAL_ERROR;
         }
       osp_credential = osp_credential_new ("up", "smb", NULL);
       const char *type = credential_iterator_type (&iter);
@@ -547,7 +558,9 @@ target_osp_smb_credential (target_t target, osp_credential_t **smb_credential)
             {
               cleanup_iterator (&iter);
               osp_credential_free (osp_credential);
-              return -1;
+              g_warning ("%s: Failed to retrieve SMB credential"
+                         " from credential store.", __func__);
+              return TARGET_OSP_FAILED_CS_RETRIEVAL;
             }
         }
       else
@@ -555,28 +568,29 @@ target_osp_smb_credential (target_t target, osp_credential_t **smb_credential)
           g_warning ("%s: SMB Credential not a user/pass pair.", __func__);
           cleanup_iterator (&iter);
           osp_credential_free (osp_credential);
-          return 1;
+          return TARGET_OSP_CREDENTIAL_TYPE_MISMATCH;
         }
 
       cleanup_iterator (&iter);
       *smb_credential = osp_credential;
+      return TARGET_OSP_CREDENTIAL_OK;
     }
-  return 0;
+  return TARGET_OSP_CREDENTIAL_NOT_FOUND;
 }
 
 /**
- * @brief Get the SMB credential of a target as an osp_credential_t
+ * @brief Get the ESXi credential of a target as an osp_credential_t
  *
  * @param[in]  target  The target to get the credential from.
  *
- * @return  Pointer to a newly allocated osp_credential_t
+ * @return A target_osp_credential_return_t return code.
  */
-int
+target_osp_credential_return_t
 target_osp_esxi_credential (target_t target,
                             osp_credential_t **esxi_credential)
 {
   if (!esxi_credential)
-    return 1;
+    return TARGET_OSP_MISSING_CREDENTIAL;
 
   *esxi_credential = NULL;
 
@@ -593,7 +607,7 @@ target_osp_esxi_credential (target_t target,
         {
           g_warning ("%s: ESXi Credential not found.", __func__);
           cleanup_iterator (&iter);
-          return 1;
+          return TARGET_OSP_INTERNAL_ERROR;
         }
       type = credential_iterator_type (&iter);
       osp_credential = osp_credential_new ("up", "esxi", NULL);
@@ -613,7 +627,9 @@ target_osp_esxi_credential (target_t target,
             {
               cleanup_iterator (&iter);
               osp_credential_free (osp_credential);
-              return -1;
+              g_warning ("%s: Failed to retrieve ESXi credential"
+                         " from credential store.", __func__);
+              return TARGET_OSP_FAILED_CS_RETRIEVAL;
             }
         }
       else
@@ -622,14 +638,94 @@ target_osp_esxi_credential (target_t target,
                      __func__);
           cleanup_iterator (&iter);
           osp_credential_free (osp_credential);
-          return 1;
+          return TARGET_OSP_CREDENTIAL_TYPE_MISMATCH;
         }
 
       cleanup_iterator (&iter);
       *esxi_credential = osp_credential;
+      return TARGET_OSP_CREDENTIAL_OK;
+    }
+  return TARGET_OSP_CREDENTIAL_NOT_FOUND;
+}
+
+/**
+ * @brief Add OSP credentials to an OSP target from database or
+ *        credential store.
+ *
+ * @param[in]  osp_target  The OSP target to add credentials to.
+ * @param[in]  target      The target to get the credentials from.
+ * @param[in]  task        The task for which the OSP target is created.
+ * @param[out] error       Pointer to store error message on failure.
+ *                         Has to be freed by the caller.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+target_osp_add_credentials (osp_target_t *osp_target,
+                            target_t target,
+                            task_t task,
+                            char **error)
+{
+  if (!osp_target)
+    {
+      if (error)
+        *error = g_strdup ("OSP target is NULL.");
+      return -1;
+    }
+
+  long long int allow_failed_retrieval_int = 0;
+  gchar *allow_failed_retrieval = task_preference_value (task,
+                                                  "cs_allow_failed_retrieval");
+  if (allow_failed_retrieval)
+    allow_failed_retrieval_int = strtol (allow_failed_retrieval, NULL, 10);
+  g_free (allow_failed_retrieval);
+
+  for (size_t i = 0;
+       i < sizeof (target_osp_credential_getters)
+           / sizeof (target_osp_credential_getters[0]);
+       i++)
+    {
+      target_osp_credential_return_t cred_ret;
+      osp_credential_t *credential = NULL;
+
+      cred_ret = target_osp_credential_getters[i] (target, &credential);
+
+      switch (cred_ret)
+        {
+          case TARGET_OSP_CREDENTIAL_OK:
+            break;
+          case TARGET_OSP_CREDENTIAL_NOT_FOUND:
+            continue;
+          case TARGET_OSP_CREDENTIAL_TYPE_MISMATCH:
+            g_warning ("%s: Credential type mismatch.", __func__);
+            continue;
+          case TARGET_OSP_FAILED_CS_RETRIEVAL:
+             if (allow_failed_retrieval_int == 0)
+               {
+                if (error)
+                   *error = g_strdup ("Failed to retrieve credentials"
+                                      " from credential store.");
+                 return -1;
+               }
+              g_debug ("%s: Failed to retrieve credentials"
+                       " from credential store, but allowed to continue.",
+                       __func__);
+              continue;
+          case TARGET_OSP_INTERNAL_ERROR:
+          case TARGET_OSP_MISSING_CREDENTIAL:
+          default:
+            if (error)
+              *error = g_strdup ("Internal error retrieving credential.");
+            return -1;
+        }
+
+      if (credential)
+         osp_target_add_credential (osp_target, credential);
+
     }
   return 0;
 }
+
 #endif
 
 /**

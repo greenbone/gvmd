@@ -24,13 +24,29 @@ void
 add_user_scan_preferences (GHashTable *);
 
 #if ENABLE_CREDENTIAL_STORES
+
+typedef enum {
+  TARGET_OSP_INTERNAL_ERROR = -1,
+  TARGET_OSP_CREDENTIAL_OK = 0,
+  TARGET_OSP_MISSING_CREDENTIAL,
+  TARGET_OSP_CREDENTIAL_NOT_FOUND,
+  TARGET_OSP_CREDENTIAL_TYPE_MISMATCH,
+  TARGET_OSP_FAILED_CS_RETRIEVAL,
+} target_osp_credential_return_t;
+
+typedef target_osp_credential_return_t
+(*target_osp_credential_getter_t)(target_t, osp_credential_t **);
+
 int
+target_osp_add_credentials (osp_target_t *, target_t, task_t, char **);
+
+target_osp_credential_return_t
 target_osp_ssh_credential (target_t, osp_credential_t **);
 
-int
+target_osp_credential_return_t
 target_osp_smb_credential (target_t, osp_credential_t **);
 
-int
+target_osp_credential_return_t
 target_osp_esxi_credential (target_t, osp_credential_t **);
 
 #else
