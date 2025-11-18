@@ -20,6 +20,12 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/tlsutils.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 static verify_credential_store_return_t
 verify_and_prepare_cyberark_connection_data (const char *host,
                                              const char *path,
@@ -252,14 +258,14 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
                                      "get_credential_stores",
                                      0))
     {
-      g_warning ("%s: Error getting credential store '%s'",
-                 __func__, cred_store_uuid);
+      g_debug ("%s: Error getting credential store '%s'",
+               __func__, cred_store_uuid);
       return -1;
     }
   if (credential_store == 0)
     {
-      g_warning ("%s: Credential store '%s' not found",
-                 __func__, cred_store_uuid);
+      g_debug ("%s: Credential store '%s' not found",
+               __func__, cred_store_uuid);
       return -1;
     }
   host = credential_store_host (credential_store);
@@ -278,10 +284,10 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
                                                      &message);
   if (ret)
     {
-      g_warning ("%s: Error preparing connection data for"
-                 " credential store '%s': %s",
-                 __func__, cred_store_uuid,
-                 message ? message : "unknown error");
+      g_debug ("%s: Error preparing connection data for"
+               " credential store '%s': %s",
+               __func__, cred_store_uuid,
+               message ? message : "unknown error");
       g_free (client_key_pem);
       g_free (client_cert_pem);
       g_free (server_ca_cert_pem);
@@ -318,7 +324,7 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
       g_free (server_ca_cert_pem);
       g_free (host);
       g_free (path);
-      g_warning ("%s: Error getting credential object from"
+      g_debug ("%s: Error getting credential object from"
                  " CyberArk credential store '%s'",
                  __func__, cred_store_uuid);
       return -1;

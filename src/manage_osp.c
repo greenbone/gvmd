@@ -552,7 +552,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
-  osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
   osp_credential_t *snmp_credential, *krb5_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
@@ -630,51 +629,23 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_targets = g_slist_append (NULL, osp_target);
 
 #if ENABLE_CREDENTIAL_STORES
-  int failed_cs_retrieval = 0;
-  long long int allow_failed_retrieval_int = 0;
-  gchar *allow_failed_retrieval;
 
-  allow_failed_retrieval = task_preference_value (task,
-                                                  "cs_allow_failed_retrieval");
-  if (allow_failed_retrieval)
-    allow_failed_retrieval_int = strtol (allow_failed_retrieval, NULL, 10);
-  g_free (allow_failed_retrieval);
-
-  if (target_osp_ssh_credential (target, &ssh_credential) < 0)
+  if (target_osp_add_credentials (osp_target, target, task, error))
     {
-      g_warning ("%s: Error retrieving ssh credential.", __func__);
-      failed_cs_retrieval = 1;
-    }
-
-  if (target_osp_smb_credential (target, &smb_credential) < 0)
-    {
-      g_warning ("%s: Error retrieving smb credential.", __func__);
-      failed_cs_retrieval = 1;
-    }
-
-  if (target_osp_esxi_credential (target, &esxi_credential) < 0)
-    {
-      g_warning ("%s: Error retrieving esxi credential.", __func__);
-      failed_cs_retrieval = 1;
-    }
-
-  if (failed_cs_retrieval && (allow_failed_retrieval_int == 0))
-    {
-      // credentials are not yet added to target, so freed separately
-      osp_credential_free (ssh_credential);
-      osp_credential_free (smb_credential);
-      osp_credential_free (esxi_credential);
+      if (error && *error)
+        g_warning ("%s: Error adding credentials to OSP target: %s",
+                   __func__, *error);
       g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
-      if (error)
-        *error = g_strdup ("Failed to retrieve credentials "
-                           "from credential store.");
       return -1;
     }
+
 #else
+
+  osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+
   ssh_credential = target_osp_ssh_credential_db (target);
   smb_credential = target_osp_smb_credential_db (target);
   esxi_credential = target_osp_esxi_credential_db (target);
-#endif
 
   if (ssh_credential)
     osp_target_add_credential (osp_target, ssh_credential);
@@ -682,6 +653,8 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     osp_target_add_credential (osp_target, smb_credential);
   if (esxi_credential)
     osp_target_add_credential (osp_target, esxi_credential);
+
+#endif
 
   snmp_credential = target_osp_snmp_credential (target);
   if (snmp_credential)
