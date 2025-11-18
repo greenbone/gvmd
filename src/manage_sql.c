@@ -21332,9 +21332,15 @@ alive_test_from_array (GPtrArray *alive_tests)
     {
       const char *item = g_ptr_array_index (alive_tests, i);
       if (strcasecmp (item, "Scan Config Default") == 0)
-        return 0;
+        {
+          alive_test_bitfield = 0;
+          break;
+        }
       else if (strcasecmp (item, "Consider Alive") == 0)
-        return ALIVE_TEST_CONSIDER_ALIVE;
+        {
+          alive_test_bitfield = ALIVE_TEST_CONSIDER_ALIVE;
+          break;
+        }
       else if (strcasecmp (item, "ARP") == 0
           || strcasecmp (item, "ARP Ping") == 0)
         alive_test_bitfield |= ALIVE_TEST_ARP;
