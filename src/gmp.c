@@ -18557,16 +18557,24 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
  * @param[in]  alive_tests  The alive tests bitfield.
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
+ * 
+ * @return 0 success, -1 error.
  */
-static void
+static int
 send_alive_tests_str (int alive_tests,
                       gmp_parser_t *gmp_parser,
                       GError **error)
 {
   if (alive_tests == 0)
-    SEND_TO_CLIENT_OR_FAIL ("Scan Config Default");
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1, "Scan Config Default");
+      return 0;
+    }
   else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
-    SEND_TO_CLIENT_OR_FAIL ("Consider Alive");
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1, "Consider Alive");
+      return 0;
+    }
   else
     {
       GPtrArray *tests = g_ptr_array_new ();
@@ -18592,8 +18600,9 @@ send_alive_tests_str (int alive_tests,
             buffer_xml_append_printf (tests_string, ", %s", part);
         }
       g_string_append (tests_string, " Ping");
-      SEND_TO_CLIENT_OR_FAIL (tests_string->str);
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1, tests_string->str);
       g_string_free (tests_string, TRUE);
+      return 0;
     }
 }
 
@@ -18603,33 +18612,52 @@ send_alive_tests_str (int alive_tests,
  * @param[in]  alive_tests  The alive tests bitfield.
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
+ *
+ * @return 0 success, -1 error.
  */
-static void
+static int
 send_alive_tests_subelems (int alive_tests,
                            gmp_parser_t *gmp_parser,
                            GError **error)
 {
   if (alive_tests == 0)
-    SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                            "Scan Config Default"
-                            "</alive_test>");
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "Scan Config Default"
+                                          "</alive_test>");
+      return 0;
+    }
   else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
-    SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                            "Consider Alive"
-                            "</alive_test>");
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "Consider Alive"
+                                          "</alive_test>");
+      return 0;
+    }
   else {
     if (alive_tests & ALIVE_TEST_ARP)
-      SEND_TO_CLIENT_OR_FAIL ("<alive_test>ARP Ping</alive_test>");
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "ARP Ping"
+                                          "</alive_test>");
     if (alive_tests & ALIVE_TEST_ICMP)
-      SEND_TO_CLIENT_OR_FAIL ("<alive_test>ICMP Ping</alive_test>");
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "ICMP Ping"
+                                          "</alive_test>");
     if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
-      SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                              "TCP-ACK Service Ping"
-                              "</alive_test>");
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "TCP-ACK Service Ping"
+                                          "</alive_test>");
     if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
-      SEND_TO_CLIENT_OR_FAIL ("<alive_test>"
-                              "TCP-SYN Service Ping"
-                              "</alive_test>");
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "TCP-SYN Service Ping"
+                                          "</alive_test>");
+    return 0;
   }
 }
 
@@ -19053,8 +19081,10 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
 
           alive_tests = target_iterator_alive_tests (&targets);
 
-          send_alive_tests_str (alive_tests, gmp_parser, error);
-          send_alive_tests_subelems (alive_tests, gmp_parser, error);
+          if (send_alive_tests_str (alive_tests, gmp_parser, error))
+            return;
+          if (send_alive_tests_subelems (alive_tests, gmp_parser, error))
+            return;
           SEND_TO_CLIENT_OR_FAIL ("</alive_tests>");
 
           if (get_targets_data->get.details)
