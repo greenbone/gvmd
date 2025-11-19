@@ -52,7 +52,7 @@ jobs:
       images: |
         ghcr.io/${{ github.repository }},enable=true
         ${{ vars.GREENBONE_REGISTRY }}/community/${{ github.event.repository.name }},enable=${{ github.event_name != 'pull_request' && matrix.build.name == 'default' }}
-        ${{ vars.GREENBONE_REGISTRY }}/openvas-enterprise-container-dev/${{ github.event.repository.name }},enable=${{ github.event_name != 'pull_request' && matrix.build.name == 'default' }}
+        ${{ vars.GREENBONE_REGISTRY }}/openvas-scan-dev/${{ github.event.repository.name }},enable=${{ github.event_name != 'pull_request' && matrix.build.name == 'default' }}
     secrets: inherit
 
   notify:
