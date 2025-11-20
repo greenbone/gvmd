@@ -201,8 +201,7 @@ set(
 
 if(ENABLE_AGENTS)
   list(
-    APPEND
-    ALL_MANAGE_SRC
+    APPEND ALL_MANAGE_SRC
     manage_agent_common.c
     manage_agent_groups.c
     manage_agents.c
@@ -213,8 +212,7 @@ endif()
 
 if(ENABLE_CREDENTIAL_STORES)
   list(
-    APPEND
-    ALL_MANAGE_SRC
+    APPEND ALL_MANAGE_SRC
     manage_credential_store_cyberark.c
     manage_credential_stores.c
   )
@@ -245,8 +243,7 @@ set(
 
 if(ENABLE_AGENTS)
   list(
-    APPEND
-    ALL_MANAGE_SQL_SRC
+    APPEND ALL_MANAGE_SQL_SRC
     manage_sql_agent_groups.c
     manage_sql_agents.c
     manage_sql_agent_installers.c
@@ -276,8 +273,7 @@ set(
 
 if(ENABLE_AGENTS)
   list(
-    APPEND
-    ALL_GMP_SRC
+    APPEND ALL_GMP_SRC
     gmp_agent_control_scan_agent_config.c
     gmp_agent_groups.c
     gmp_agents.c

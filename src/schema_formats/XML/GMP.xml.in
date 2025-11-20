@@ -14092,7 +14092,7 @@ END:VCALENDAR
           <attrib>
             <name>compiled_in</name>
             <type>boolean</type>
-            <summary>Whether the feature is exist in the binary</summary>
+            <summary>Whether the feature exists in the binary</summary>
             <required>1</required>
           </attrib>
           <attrib>

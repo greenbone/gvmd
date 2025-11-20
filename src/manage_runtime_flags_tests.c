@@ -19,6 +19,7 @@
 #include "manage_runtime_flags.c"
 
 Describe (manage_runtime_flags);
+
 BeforeEach (manage_runtime_flags)
 {
   unsetenv ("GVMD_ENABLE_AGENTS");
@@ -27,6 +28,7 @@ BeforeEach (manage_runtime_flags)
   unsetenv ("GVMD_ENABLE_CREDENTIAL_STORES");
   unsetenv ("GVMD_ENABLE_VT_METADATA");
 }
+
 AfterEach (manage_runtime_flags)
 {
 }
@@ -52,43 +54,51 @@ Ensure (manage_runtime_flags, default_flags_no_config_no_env)
   runtime_flags_init (nonexistent);
 
 #if ENABLE_AGENTS
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (1));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (0));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #endif
 
 #if ENABLE_CONTAINER_SCANNING
-  assert_that (feature_compiled_in (CONTAINER_SCANNING), is_equal_to (1));
-  assert_that (feature_enabled (CONTAINER_SCANNING), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_CONTAINER_SCANNING),
+               is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (CONTAINER_SCANNING), is_equal_to (0));
-  assert_that (feature_enabled (CONTAINER_SCANNING), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_CONTAINER_SCANNING),
+               is_equal_to (0));
 #endif
 
 #if OPENVASD
-  assert_that (feature_compiled_in (OPENVASD_SCANNER), is_equal_to (1));
-  assert_that (feature_enabled (OPENVASD_SCANNER), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_OPENVASD_SCANNER), is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (OPENVASD_SCANNER), is_equal_to (0));
-  assert_that (feature_enabled (OPENVASD_SCANNER), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_OPENVASD_SCANNER), is_equal_to (0));
 #endif
 
 #if ENABLE_CREDENTIAL_STORES
-  assert_that (feature_compiled_in (CREDENTIAL_STORES), is_equal_to (1));
-  assert_that (feature_enabled (CREDENTIAL_STORES), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_CREDENTIAL_STORES),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_CREDENTIAL_STORES), is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (CREDENTIAL_STORES), is_equal_to (0));
-  assert_that (feature_enabled (CREDENTIAL_STORES), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_CREDENTIAL_STORES),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_CREDENTIAL_STORES), is_equal_to (0));
 #endif
 
 #if FEED_VT_METADATA
-  assert_that (feature_compiled_in (VT_METADATA), is_equal_to (1));
-  assert_that (feature_enabled (VT_METADATA), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_VT_METADATA), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_VT_METADATA), is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (VT_METADATA), is_equal_to (0));
-  assert_that (feature_enabled (VT_METADATA), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_VT_METADATA), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_VT_METADATA), is_equal_to (0));
 #endif
 }
 
@@ -103,11 +113,11 @@ Ensure (manage_runtime_flags, config_enables_agents_when_compiled_in)
   runtime_flags_init (path);
 
 #if ENABLE_AGENTS
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (1));
-  assert_that (feature_enabled (AGENTS), is_equal_to (1));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (1));
 #else
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (0));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #endif
 
   remove (path);
@@ -125,11 +135,11 @@ Ensure (manage_runtime_flags, config_disables_agents_when_compiled_in)
   runtime_flags_init (path);
 
 #if ENABLE_AGENTS
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (1));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (0));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #endif
 
   remove (path);
@@ -149,11 +159,11 @@ Ensure (manage_runtime_flags, env_overrides_config_for_agents)
   runtime_flags_init (path);
 
 #if ENABLE_AGENTS
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (1));
-  assert_that (feature_enabled (AGENTS), is_equal_to (1));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (1));
 #else
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (0));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #endif
 
   remove (path);
@@ -173,11 +183,11 @@ Ensure (manage_runtime_flags, invalid_env_falls_back_to_config)
   runtime_flags_init (path);
 
 #if ENABLE_AGENTS
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (1));
-  assert_that (feature_enabled (AGENTS), is_equal_to (1));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (1));
 #else
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (0));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #endif
 
   remove (path);
@@ -197,10 +207,10 @@ Ensure (manage_runtime_flags, compiled_out_feature_ignores_env_and_config)
   runtime_flags_init (path);
 
 #if ENABLE_AGENTS
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (1));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
 #else
-  assert_that (feature_compiled_in (AGENTS), is_equal_to (0));
-  assert_that (feature_enabled (AGENTS), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
 #endif
 
   remove (path);
@@ -211,8 +221,8 @@ Ensure (manage_runtime_flags,
         runtime_append_disabled_commands_disables_agents_when_disabled)
 {
   const char *conf =
-   "[features]\n"
-   "enable_agents = false\n";
+    "[features]\n"
+    "enable_agents = false\n";
   char *path = write_test_config (conf);
 
   runtime_flags_init (path);
