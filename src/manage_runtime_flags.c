@@ -492,7 +492,6 @@ void
 runtime_append_disabled_commands (GString *buf)
 {
   /* AGENTS */
-#if ENABLE_AGENTS
   if (!feature_enabled (AGENTS))
     {
       append_commands (
@@ -508,10 +507,7 @@ runtime_append_disabled_commands (GString *buf)
         "get_agent_installers,"
         "get_agent_installer_file");
     }
-#endif
-
   /* CONTAINER_SCANNING */
-#if ENABLE_CONTAINER_SCANNING
   if (!feature_enabled (CONTAINER_SCANNING))
     {
       append_commands (
@@ -521,14 +517,11 @@ runtime_append_disabled_commands (GString *buf)
         "modify_oci_image_target,"
         "delete_oci_image_target");
     }
-#endif
 
   /* CREDENTIAL_STORES */
-#if ENABLE_CREDENTIAL_STORES
   if (!feature_enabled (CREDENTIAL_STORES))
     {
       append_commands (buf, "get_credential_stores,"
                        "modify_credential_store");
     }
-#endif
 }
