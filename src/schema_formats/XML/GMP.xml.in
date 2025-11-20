@@ -14118,11 +14118,21 @@ END:VCALENDAR
       </request>
       <response>
         <get_features_response status="200" status_text="OK">
-          <feature name="OPENVASD" compiled_in="1" enabled="0"/>
-          <feature name="ENABLE_CONTAINER_SCANNING" compiled_in="1" enabled="0"/>
-          <feature name="ENABLE_AGENTS" compiled_in="1" enabled="0"/>
-          <feature name="ENABLE_CREDENTIAL_STORE" compiled_in="0" enabled="0"/>
-          <feature name="FEED_VT_METADATA" compiled_in="1" enabled="0"/>
+          <feature compiled_in="1" enabled="0">
+            <name>OPENVASD</name>
+          </feature>
+          <feature compiled_in="1" enabled="0">
+            <name>ENABLE_CONTAINER_SCANNING</name>
+          </feature>
+          <feature compiled_in="1" enabled="0">
+            <name>ENABLE_AGENTS</name>
+          </feature>
+          <feature compiled_in="0" enabled="0">
+            <name>ENABLE_CREDENTIAL_STORES</name>
+          </feature>
+          <feature compiled_in="1" enabled="0">
+            <name>FEED_VT_METADATA</name>
+          </feature>
         </get_features_response>
       </response>
     </example>

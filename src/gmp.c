@@ -13509,8 +13509,8 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
-    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
-    "OPENVASD", compiled_in, enabled);
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "OPENVASD");
 
   /* CONTAINER_SCANNING */
   compiled_in = feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
@@ -13519,8 +13519,8 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
-    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
-    "ENABLE_CONTAINER_SCANNING", compiled_in, enabled);
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_CONTAINER_SCANNING");
 
   /* AGENTS */
   compiled_in = feature_compiled_in (FEATURE_ID_AGENTS) ? 1 : 0;
@@ -13529,8 +13529,8 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
-    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
-    "ENABLE_AGENTS", compiled_in, enabled);
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_AGENTS");
 
   /* CREDENTIAL_STORE */
   compiled_in = feature_compiled_in (FEATURE_ID_CREDENTIAL_STORES) ? 1 : 0;
@@ -13539,8 +13539,8 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
-    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
-    "ENABLE_CREDENTIAL_STORES", compiled_in, enabled);
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_CREDENTIAL_STORES");
 
   /* FEED_VT_METADATA */
   compiled_in = feature_compiled_in (FEATURE_ID_VT_METADATA) ? 1 : 0;
@@ -13549,8 +13549,8 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
-    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
-    "FEED_VT_METADATA", compiled_in, enabled);
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "FEED_VT_METADATA");
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
