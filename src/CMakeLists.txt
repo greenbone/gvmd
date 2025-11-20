@@ -561,11 +561,7 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
-add_unit_test(
-  manage-runtime-flags
-  "${ALL_OBJECTS}"
-  "${EXTRA_SRC}"
-)
+add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
