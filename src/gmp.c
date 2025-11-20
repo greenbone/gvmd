@@ -114,6 +114,7 @@
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_runtime_flags.h"
 #include "manage_tls_certificates.h"
 #include "sql.h"
 #include "utils.h"
@@ -13494,34 +13495,62 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 static void
 handle_get_features (gmp_parser_t *gmp_parser, GError **error)
 {
+  int compiled_in;
+  int enabled;
+
   SEND_TO_CLIENT_OR_FAIL ("<get_features_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>OPENVASD</name>"
-                           "</feature>",
-                           OPENVASD ? 1 : 0);
+  /* OPENVASD */
+  compiled_in = feature_compiled_in (OPENVASD_SCANNER) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (OPENVASD_SCANNER) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
+    "OPENVASD", compiled_in, enabled);
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>FEED_VT_METADATA</name>"
-                           "</feature>",
-                           FEED_VT_METADATA ? 1 : 0);
+  /* CONTAINER_SCANNING */
+  compiled_in = feature_compiled_in (CONTAINER_SCANNING) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (CONTAINER_SCANNING) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
+    "ENABLE_CONTAINER_SCANNING", compiled_in, enabled);
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>ENABLE_AGENTS</name>"
-                           "</feature>",
-                           ENABLE_AGENTS ? 1 : 0);
+  /* AGENTS */
+  compiled_in = feature_compiled_in (AGENTS) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (AGENTS) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
+    "ENABLE_AGENTS", compiled_in, enabled);
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>ENABLE_CONTAINER_SCANNING</name>"
-                           "</feature>",
-                           ENABLE_CONTAINER_SCANNING ? 1 : 0);
+  /* CREDENTIAL_STORE */
+  compiled_in = feature_compiled_in (CREDENTIAL_STORES) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (CREDENTIAL_STORES) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
+    "ENABLE_CREDENTIAL_STORES", compiled_in, enabled);
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>ENABLE_CREDENTIAL_STORES</name>"
-                           "</feature>",
-                           ENABLE_CREDENTIAL_STORES ? 1 : 0);
+  /* FEED_VT_METADATA */
+  compiled_in = feature_compiled_in (VT_METADATA) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (VT_METADATA) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature name=\"%s\" compiled_in=\"%d\" enabled=\"%d\" />",
+    "FEED_VT_METADATA", compiled_in, enabled);
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
