@@ -24152,59 +24152,6 @@ validate_credential_realm_format (const char *realm)
   return TRUE;
 }
 
-#if ENABLE_CREDENTIAL_STORES
-/**
- * @brief Validate the format of a credential store vault ID string.
- *
- * This function checks whether the given vault ID is non-empty and does not
- * contain any whitespace characters.
- *
- * @param[in] vault_id  A string representing the Vault ID.
- *
- * @return TRUE if the vault ID is valid; FALSE otherwise.
- */
-gboolean
-validate_vault_id_format (const char *vault_id)
-{
-  if (!vault_id || !*vault_id)
-    return FALSE;
-
-  for (const char *c = vault_id; *c; ++c)
-    {
-      if (g_ascii_isspace (*c))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
-/**
- * @brief Validate the format of a credential store host identifier string.
- *
- * This function checks whether the given host identifier is non-empty and 
- * does not contain any whitespace characters.
- *
- * @param[in] host_identifier  A string representing the host identifier.
- *
- * @return TRUE if the host identifier is valid; FALSE otherwise.
- */
-gboolean
-validate_host_identifier_format (const char *host_identifier)
-{
-  if (!host_identifier || !*host_identifier)
-    return FALSE;
-
-  for (const char *c = host_identifier; *c; ++c)
-    {
-      if (g_ascii_isspace (*c))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-#endif
-
-
 /**
  * @brief Length of password generated in create_credential.
  */
@@ -25253,7 +25200,7 @@ modify_credential (const char *credential_id,
             }
           if (vault_id)
             {
-              if (!validate_vault_id_format (vault_id))
+              if (!*vault_id)
                 {
                   sql_rollback ();
                   return 14;
@@ -25264,7 +25211,7 @@ modify_credential (const char *credential_id,
             }
           if (host_identifier)
             {
-              if (!validate_host_identifier_format (host_identifier))
+              if (!*host_identifier)
                 {
                   sql_rollback ();
                   return 15;
