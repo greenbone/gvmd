@@ -381,7 +381,7 @@ append_commands (GString *buf, const char *cmds)
  * @return Always 0 (errors are handled internally and fall back to defaults).
  */
 int
-runtime_flags_init (const char *config_path)
+runtime_flags_init (const gchar *config_path)
 {
   struct conf_feature_flags conf_flags;
   const char *path;
@@ -441,15 +441,15 @@ feature_enabled (feature_id_t t)
 
   switch (t)
     {
-    case AGENTS:
+    case FEATURE_ID_AGENTS:
       return feature_agents.enabled;
-    case OPENVASD_SCANNER:
+    case FEATURE_ID_OPENVASD_SCANNER:
       return feature_openvasd.enabled;
-    case CONTAINER_SCANNING:
+    case FEATURE_ID_CONTAINER_SCANNING:
       return feature_container_scanning.enabled;
-    case CREDENTIAL_STORES:
+    case FEATURE_ID_CREDENTIAL_STORES:
       return feature_credential_stores.enabled;
-    case VT_METADATA:
+    case FEATURE_ID_VT_METADATA:
       return feature_vt_metadata.enabled;
     default:
       return 0;
@@ -468,15 +468,15 @@ feature_compiled_in (feature_id_t t)
 {
   switch (t)
     {
-    case AGENTS:
+    case FEATURE_ID_AGENTS:
       return feature_agents.compiled_in;
-    case OPENVASD_SCANNER:
+    case FEATURE_ID_OPENVASD_SCANNER:
       return feature_openvasd.compiled_in;
-    case CONTAINER_SCANNING:
+    case FEATURE_ID_CONTAINER_SCANNING:
       return feature_container_scanning.compiled_in;
-    case CREDENTIAL_STORES:
+    case FEATURE_ID_CREDENTIAL_STORES:
       return feature_credential_stores.compiled_in;
-    case VT_METADATA:
+    case FEATURE_ID_VT_METADATA:
       return feature_vt_metadata.compiled_in;
     default:
       return 0;
@@ -492,7 +492,7 @@ void
 runtime_append_disabled_commands (GString *buf)
 {
   /* AGENTS */
-  if (!feature_enabled (AGENTS))
+  if (!feature_enabled (FEATURE_ID_AGENTS))
     {
       append_commands (
         buf,
@@ -508,7 +508,7 @@ runtime_append_disabled_commands (GString *buf)
         "get_agent_installer_file");
     }
   /* CONTAINER_SCANNING */
-  if (!feature_enabled (CONTAINER_SCANNING))
+  if (!feature_enabled (FEATURE_ID_CONTAINER_SCANNING))
     {
       append_commands (
         buf,
@@ -519,7 +519,7 @@ runtime_append_disabled_commands (GString *buf)
     }
 
   /* CREDENTIAL_STORES */
-  if (!feature_enabled (CREDENTIAL_STORES))
+  if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
     {
       append_commands (buf, "get_credential_stores,"
                        "modify_credential_store");

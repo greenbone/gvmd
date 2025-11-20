@@ -5487,7 +5487,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_CREDENTIALS);
           }
 #if ENABLE_CREDENTIAL_STORES
-        ELSE_GET_START (credential_stores, CREDENTIAL_STORES)
+        ELSE_GET_START (credential_stores, FEATURE_ID_CREDENTIAL_STORES)
 #endif /* ENABLE_CREDENTIAL_STORES */
         else if (strcasecmp ("GET_FEATURES", element_name) == 0)
           {
@@ -13503,9 +13503,9 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
   /* OPENVASD */
-  compiled_in = feature_compiled_in (OPENVASD_SCANNER) ? 1 : 0;
+  compiled_in = feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER) ? 1 : 0;
   if (compiled_in)
-    enabled = feature_enabled (OPENVASD_SCANNER) ? 1 : 0;
+    enabled = feature_enabled (FEATURE_ID_OPENVASD_SCANNER) ? 1 : 0;
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
@@ -13513,9 +13513,9 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     "OPENVASD", compiled_in, enabled);
 
   /* CONTAINER_SCANNING */
-  compiled_in = feature_compiled_in (CONTAINER_SCANNING) ? 1 : 0;
+  compiled_in = feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
   if (compiled_in)
-    enabled = feature_enabled (CONTAINER_SCANNING) ? 1 : 0;
+    enabled = feature_enabled (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
@@ -13523,9 +13523,9 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     "ENABLE_CONTAINER_SCANNING", compiled_in, enabled);
 
   /* AGENTS */
-  compiled_in = feature_compiled_in (AGENTS) ? 1 : 0;
+  compiled_in = feature_compiled_in (FEATURE_ID_AGENTS) ? 1 : 0;
   if (compiled_in)
-    enabled = feature_enabled (AGENTS) ? 1 : 0;
+    enabled = feature_enabled (FEATURE_ID_AGENTS) ? 1 : 0;
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
@@ -13533,9 +13533,9 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     "ENABLE_AGENTS", compiled_in, enabled);
 
   /* CREDENTIAL_STORE */
-  compiled_in = feature_compiled_in (CREDENTIAL_STORES) ? 1 : 0;
+  compiled_in = feature_compiled_in (FEATURE_ID_CREDENTIAL_STORES) ? 1 : 0;
   if (compiled_in)
-    enabled = feature_enabled (CREDENTIAL_STORES) ? 1 : 0;
+    enabled = feature_enabled (FEATURE_ID_CREDENTIAL_STORES) ? 1 : 0;
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
@@ -13543,9 +13543,9 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     "ENABLE_CREDENTIAL_STORES", compiled_in, enabled);
 
   /* FEED_VT_METADATA */
-  compiled_in = feature_compiled_in (VT_METADATA) ? 1 : 0;
+  compiled_in = feature_compiled_in (FEATURE_ID_VT_METADATA) ? 1 : 0;
   if (compiled_in)
-    enabled = feature_enabled (VT_METADATA) ? 1 : 0;
+    enabled = feature_enabled (FEATURE_ID_VT_METADATA) ? 1 : 0;
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
@@ -21618,7 +21618,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_CREDENTIAL_STORES
-      CASE_GET_END (CREDENTIAL_STORES, credential_stores);
+      CASE_GET_END (FEATURE_ID_CREDENTIAL_STORES, credential_stores);
 #endif
 
       case CLIENT_GET_FEATURES:

@@ -21,15 +21,15 @@ typedef struct
 
 typedef enum
 {
-  AGENTS = 0,
-  CONTAINER_SCANNING,
-  OPENVASD_SCANNER,
-  CREDENTIAL_STORES,
-  VT_METADATA,
+  FEATURE_ID_AGENTS = 0,
+  FEATURE_ID_CONTAINER_SCANNING,
+  FEATURE_ID_OPENVASD_SCANNER,
+  FEATURE_ID_CREDENTIAL_STORES,
+  FEATURE_ID_VT_METADATA,
 } feature_id_t;
 
 int
-runtime_flags_init (const char *config_path);
+runtime_flags_init (const gchar *config_path);
 
 int
 feature_enabled (feature_id_t);
