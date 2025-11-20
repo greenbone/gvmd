@@ -5487,7 +5487,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_CREDENTIALS);
           }
 #if ENABLE_CREDENTIAL_STORES
-        ELSE_GET_START (credential_stores, FEATURE_ID_CREDENTIAL_STORES)
+        ELSE_GET_START (credential_stores, CREDENTIAL_STORES)
 #endif /* ENABLE_CREDENTIAL_STORES */
         else if (strcasecmp ("GET_FEATURES", element_name) == 0)
           {
@@ -21618,7 +21618,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_CREDENTIAL_STORES
-      CASE_GET_END (FEATURE_ID_CREDENTIAL_STORES, credential_stores);
+      CASE_GET_END (CREDENTIAL_STORES, credential_stores);
 #endif
 
       case CLIENT_GET_FEATURES:
