@@ -560,10 +560,7 @@ set(
   $<TARGET_OBJECTS:all-misc-obj>
   $<TARGET_OBJECTS:all-sql-obj>
 )
-
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
-list(REMOVE_ITEM EXTRA_SRC manage_runtime_flags.c)
-
 add_unit_test(
   manage-runtime-flags
   "${ALL_OBJECTS}"
