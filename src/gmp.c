@@ -4987,7 +4987,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
             create_target_data->alive_tests
-              = g_ptr_array_new_null_terminated (0, free, TRUE);
+              = g_ptr_array_new_full (0, free);
             gvm_append_string (&create_target_data->comment, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
@@ -6189,7 +6189,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "target_id",
                               &modify_target_data->target_id);
             modify_target_data->alive_tests
-              = g_ptr_array_new_null_terminated (0, free, TRUE);
+              = g_ptr_array_new_full (0, free);
             set_client_state (CLIENT_MODIFY_TARGET);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
