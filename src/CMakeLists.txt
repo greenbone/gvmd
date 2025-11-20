@@ -186,6 +186,7 @@ set(
   manage_resources.c
   manage_report_configs.c
   manage_report_formats.c
+  manage_runtime_flags.c
   manage_authentication.c
   manage_settings.c
   manage_tls_certificates.c
@@ -200,7 +201,8 @@ set(
 
 if(ENABLE_AGENTS)
   list(
-    APPEND ALL_MANAGE_SRC
+    APPEND
+    ALL_MANAGE_SRC
     manage_agent_common.c
     manage_agent_groups.c
     manage_agents.c
@@ -211,7 +213,8 @@ endif()
 
 if(ENABLE_CREDENTIAL_STORES)
   list(
-    APPEND ALL_MANAGE_SRC
+    APPEND
+    ALL_MANAGE_SRC
     manage_credential_store_cyberark.c
     manage_credential_stores.c
   )
@@ -242,7 +245,8 @@ set(
 
 if(ENABLE_AGENTS)
   list(
-    APPEND ALL_MANAGE_SQL_SRC
+    APPEND
+    ALL_MANAGE_SQL_SRC
     manage_sql_agent_groups.c
     manage_sql_agents.c
     manage_sql_agent_installers.c
@@ -272,7 +276,8 @@ set(
 
 if(ENABLE_AGENTS)
   list(
-    APPEND ALL_GMP_SRC
+    APPEND
+    ALL_GMP_SRC
     gmp_agent_control_scan_agent_config.c
     gmp_agent_groups.c
     gmp_agents.c
@@ -548,6 +553,23 @@ set(
 )
 add_unit_test(utils "${ALL_OBJECTS}" "${ALL_MISC_SRC}")
 
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+
+set(EXTRA_SRC ${ALL_MANAGE_SRC})
+list(REMOVE_ITEM EXTRA_SRC manage_runtime_flags.c)
+
+add_unit_test(
+  manage-runtime-flags
+  "${ALL_OBJECTS}"
+  "${EXTRA_SRC}"
+)
+
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(DEBUG_FUNCTION_NAMES)
@@ -728,6 +750,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_runtime_flags.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"

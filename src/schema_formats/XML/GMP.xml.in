@@ -14090,6 +14090,12 @@ END:VCALENDAR
         <name>feature</name>
         <pattern>
           <attrib>
+            <name>compiled_in</name>
+            <type>boolean</type>
+            <summary>Whether the feature is exist in the binary</summary>
+            <required>1</required>
+          </attrib>
+          <attrib>
             <name>enabled</name>
             <type>boolean</type>
             <summary>Whether the feature is enabled</summary>
@@ -14111,10 +14117,12 @@ END:VCALENDAR
         </get_feeds>
       </request>
       <response>
-        <get_features_response status_text="OK" status="200">
-          <feature enabled="0">
-            <name>OPENVASD</name>
-          </feature>
+        <get_features_response status="200" status_text="OK">
+          <feature name="OPENVASD" compiled_in="1" enabled="0"/>
+          <feature name="ENABLE_CONTAINER_SCANNING" compiled_in="1" enabled="0"/>
+          <feature name="ENABLE_AGENTS" compiled_in="1" enabled="0"/>
+          <feature name="ENABLE_CREDENTIAL_STORE" compiled_in="0" enabled="0"/>
+          <feature name="FEED_VT_METADATA" compiled_in="1" enabled="0"/>
         </get_features_response>
       </response>
     </example>

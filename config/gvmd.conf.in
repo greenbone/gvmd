@@ -1,0 +1,6 @@
+[features]
+enable_agents = false
+enable_container_scanning = false
+enable_credential_store = false
+enable_openvasd = false
+enable_vt_metadata = false

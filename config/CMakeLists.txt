@@ -36,3 +36,12 @@ install(
   DESTINATION ${LOGROTATE_DIR}/
   RENAME gvmd
 )
+
+# Default gvmd.conf runtime flag configuration
+configure_file(gvmd.conf.in gvmd.conf @ONLY)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/gvmd.conf
+  DESTINATION ${GVM_SYSCONF_DIR}
+  PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+)

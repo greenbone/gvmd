@@ -107,6 +107,7 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
+#include "manage_runtime_flags.h"
 #include "manage_scan_queue.h"
 #include "gmpd.h"
 #include "utils.h"
@@ -3782,6 +3783,11 @@ gvmd (int argc, char** argv, char *env[])
     g_string_append_c (full_disable_commands, ',');
   g_string_append (full_disable_commands, "get_license,modify_license");
 #endif
+
+  /* Initialize runtime flags */
+  runtime_flags_init (NULL);
+  /* Append disable commands with runtime flags*/
+  runtime_append_disabled_commands (full_disable_commands);
 
   if (full_disable_commands->len)
     disabled_commands = g_strsplit (full_disable_commands->str, ",", 0);
