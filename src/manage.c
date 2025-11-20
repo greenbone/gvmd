@@ -7245,7 +7245,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
-  openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
   openvasd_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
@@ -7337,6 +7336,10 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_free (clean_finished_hosts_str);
   openvasd_targets = g_slist_append (NULL, openvasd_target);
 
+#if ENABLE_CREDENTIAL_STORES == 0
+
+  openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+
   ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
   if (ssh_credential)
     openvasd_target_add_credential (openvasd_target, ssh_credential);
@@ -7349,6 +7352,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
     (openvasd_credential_t *) target_osp_esxi_credential_db (target);
   if (esxi_credential)
     openvasd_target_add_credential (openvasd_target, esxi_credential);
+#endif
 
   snmp_credential =
     (openvasd_credential_t *) target_osp_snmp_credential (target);
