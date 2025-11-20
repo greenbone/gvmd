@@ -82,30 +82,6 @@ static feature_state_t feature_vt_metadata =
   {FEED_VT_METADATA, 0};
 
 /**
- * @brief Trim leading and trailing whitespace from a string in place.
- *
- * @param[in,out] s  NUL-terminated string to be trimmed.
- */
-static void
-trim_spaces (char *s)
-{
-  char *p = s;
-
-  if (!s)
-    return;
-
-  while (*p && isspace ((unsigned char) *p))
-    p++;
-
-  char *end = p + strlen (p);
-  while (end > p && isspace ((unsigned char) end[-1]))
-    *--end = '\0';
-
-  if (p != s)
-    memmove (s, p, (size_t) (end - p + 1));
-}
-
-/**
  * @brief Parse a textual boolean value into an integer.
  *
  * Recognized true values: "1", "true", "yes", "on"
@@ -129,7 +105,7 @@ parse_bool_string (const char *str, int *out)
   strncpy (buf, str, sizeof (buf) - 1);
   buf[sizeof (buf) - 1] = '\0';
 
-  trim_spaces (buf);
+  g_strstrip (buf);
 
   for (p = buf; *p; ++p)
     *p = (char) tolower ((unsigned char) *p);
