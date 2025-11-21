@@ -1105,7 +1105,6 @@ handle_sigabrt_simple (int signal)
   exit (EXIT_FAILURE);
 }
 
-#if FEED_VT_METADATA == 0
 /**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
@@ -1218,7 +1217,6 @@ update_nvt_cache_retry ()
         }
     }
 }
-#endif
 
 /**
  * @brief Update the NVT cache in a child process.
@@ -1285,22 +1283,26 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             manager_socket_2 = -1;
           }
 
-#if FEED_VT_METADATA == 1
-       /* Re-open DB after fork. */
-        reinit_manage_process ();
-        manage_session_init (current_credentials.uuid);
-
-        if (manage_update_nvts_from_feed (FALSE))
+        if (feature_enabled (FEATURE_ID_VT_METADATA))
           {
-            g_warning ("%s: NVTs update from feed failed", __func__);
-            cleanup_manage_process (FALSE);
-            gvm_close_sentry ();
-            exit (EXIT_FAILURE);
+            /* Re-open DB after fork. */
+            reinit_manage_process ();
+            manage_session_init (current_credentials.uuid);
+
+            if (manage_update_nvts_from_feed (FALSE))
+              {
+                g_warning ("%s: NVTs update from feed failed", __func__);
+                cleanup_manage_process (FALSE);
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
+              }
           }
-#else
-        /* Update the cache. */
-        update_nvt_cache_retry ();
-#endif
+        else
+          {
+            /* Update the cache. */
+            update_nvt_cache_retry ();
+          }
+
         /* Exit. */
 
         cleanup_manage_process (FALSE);
@@ -2782,9 +2784,6 @@ gvmd (int argc, char** argv, char *env[])
         }
 #if OPENVASD == 1
       printf ("OpenVASD is enabled\n");
-#endif
-#if FEED_VT_METADATA == 1
-      printf ("Feed VT metadata enabled\n");
 #endif
 #if ENABLE_AGENTS == 1
       printf ("Agent scanning and management enabled\n");

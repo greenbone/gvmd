@@ -46,13 +46,12 @@
 
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/compressutils.h>
-#if FEED_VT_METADATA == 1
 #include <gvm/util/vtparser.h>
-#endif
 #include <gvm/base/cvss.h>
 
 #include "manage_sql_nvts.h"
 #include "manage_preferences.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_secinfo.h"
@@ -1313,26 +1312,29 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     }
 
   sql_begin_immediate ();
-#if FEED_VT_METADATA == 1
-    ret = manage_update_nvts_from_feed (TRUE);
-    if (ret == 0)
-      sql_commit ();
-    else
-      {
-        printf ("Failed to rebuild nvts from feed.\n");
-        sql_rollback ();
-      }
-#else
-    ret = update_or_rebuild_nvts (0);
-    switch (ret)
-      {
+  if (feature_enabled (FEATURE_ID_VT_METADATA))
+    {
+      ret = manage_update_nvts_from_feed (TRUE);
+      if (ret == 0)
+        sql_commit ();
+      else
+        {
+          printf ("Failed to rebuild nvts from feed.\n");
+          sql_rollback ();
+        }
+    }
+  else
+    {
+      ret = update_or_rebuild_nvts (0);
+      switch (ret)
+        {
         case 0:
           sql_commit ();
           break;
         case -1:
           printf ("No OSP VT update socket found."
-                  " Use --osp-vt-update or change the 'OpenVAS Default'"
-                  " scanner to use the main ospd-openvas socket.\n");
+            " Use --osp-vt-update or change the 'OpenVAS Default'"
+            " scanner to use the main ospd-openvas socket.\n");
           sql_rollback ();
           break;
         case -2:
@@ -1347,9 +1349,8 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
           printf ("Failed to update or rebuild nvts.\n");
           sql_rollback ();
           break;
-      }
-    
-#endif
+        }
+    }
 
   if (ret == 0)
     update_scap_extra ();
@@ -1439,7 +1440,6 @@ cleanup_nvt_sequences () {
   return 0;
 }
 
-#if FEED_VT_METADATA == 1
 /**
  * @brief GET NVTs feed info timestamp, as a string.
  *
@@ -1923,4 +1923,3 @@ manage_update_nvts_from_feed (gboolean reset_nvts_db)
   g_info ("%s: Updating NVTs from feed done", __func__);
   return ret;
 }
-#endif

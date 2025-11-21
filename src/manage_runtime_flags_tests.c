@@ -93,13 +93,8 @@ Ensure (manage_runtime_flags, default_flags_no_config_no_env)
   assert_that (feature_enabled (FEATURE_ID_CREDENTIAL_STORES), is_equal_to (0));
 #endif
 
-#if FEED_VT_METADATA
   assert_that (feature_compiled_in (FEATURE_ID_VT_METADATA), is_equal_to (1));
   assert_that (feature_enabled (FEATURE_ID_VT_METADATA), is_equal_to (0));
-#else
-  assert_that (feature_compiled_in (FEATURE_ID_VT_METADATA), is_equal_to (0));
-  assert_that (feature_enabled (FEATURE_ID_VT_METADATA), is_equal_to (0));
-#endif
 }
 
 Ensure (manage_runtime_flags, config_enables_agents_when_compiled_in)

@@ -158,13 +158,11 @@ nvt_family (const char *);
 int
 family_count ();
 
-
-#if FEED_VT_METADATA == 1
 int
 manage_update_nvts_from_feed (gboolean);
 
 int
 nvts_feed_version_status_from_timestamp ();
-#endif
+
 
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */
