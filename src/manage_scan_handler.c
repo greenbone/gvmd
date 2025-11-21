@@ -249,14 +249,20 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 ret = write (pipe_fds[1],
                              &grandchild_pid,
                              sizeof(grandchild_pid));
-                if (ret)
+                if (ret < sizeof(grandchild_pid))
                   {
-                    g_warning ("%s: Failed to write PID to pipe: %s",
-                               __func__, strerror(errno));
+                    if (ret <= -1)
+                      g_warning ("%s: Failed to write PID to pipe: %s",
+                                 __func__, strerror(errno));
+                    else
+                      g_warning ("%s: Failed to write PID to pipe: %s"
+                                 " (%d of %zd bytes sent)",
+                                 __func__, strerror(errno),
+                                 ret, sizeof(grandchild_pid));
                   }
                 close (pipe_fds[1]); // Close output side of pipe
                 sql_close_fork ();
-                if (ret)
+                if (ret < sizeof(grandchild_pid))
                   exit(EXIT_FAILURE);
                 else
                   exit(EXIT_SUCCESS);
