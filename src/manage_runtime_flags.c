@@ -37,10 +37,6 @@
 #  define ENABLE_CREDENTIAL_STORES 0
 #endif
 
-#ifndef FEED_VT_METADATA
-#  define FEED_VT_METADATA 0
-#endif
-
 /**
  * @brief Get the default system configuration file path for gvmd.
  *
@@ -79,7 +75,7 @@ static feature_state_t feature_credential_stores =
   {ENABLE_CREDENTIAL_STORES, 0};
 
 static feature_state_t feature_vt_metadata =
-  {FEED_VT_METADATA, 0};
+  {1, 0};
 
 /**
  * @brief Parse a textual boolean value into an integer.

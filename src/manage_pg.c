@@ -4096,7 +4096,7 @@ manage_scap_loaded ()
                     " ::integer;",
                     sql_database ());
 }
-#if FEED_VT_METADATA == 1
+
 /**
  * @brief Check whether NVTS table is available in database.
  *
@@ -4112,4 +4112,3 @@ manage_nvts_loaded ()
                     " ::integer;",
                     sql_database ());
 }
-#endif

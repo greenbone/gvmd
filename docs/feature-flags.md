@@ -38,7 +38,7 @@ If a line is missing, gvmd does not apply a value from the config file.
 | Container Scanning   | `ENABLE_CONTAINER_SCANNING`                               | `GVMD_ENABLE_CONTAINER_SCANNING` | `enable_container_scanning`               |
 | OpenVASd Integration | `OPENVASD`                                                | `GVMD_ENABLE_OPENVASD`           | `enable_openvasd`                         |
 | Credential Stores    | `ENABLE_CREDENTIAL_STORES`                                | `GVMD_ENABLE_CREDENTIAL_STORES`  | `enable_credential_store`                 |
-| VT Metadata Feed     | `FEED_VT_METADATA`                                        | `GVMD_ENABLE_VT_METADATA`        | `enable_vt_metadata`                      |
+| VT Metadata Feed     | Always exists in binary                                   | `GVMD_ENABLE_VT_METADATA`        | `enable_vt_metadata`                      |
 
 ---
 

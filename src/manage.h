@@ -3052,10 +3052,8 @@ info_name_count (const gchar *, const gchar *);
 int
 manage_scap_loaded ();
 
-#if FEED_VT_METADATA == 1
 int
 manage_nvts_loaded ();
-#endif
 
 const char *
 manage_scap_update_time ();
