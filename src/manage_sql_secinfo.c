@@ -2320,29 +2320,33 @@ handle_json_cpe_item (inserts_t *inserts,
   cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
   if (! cJSON_IsObject (cpe_item))
     {
-      g_warning ("%s: 'cpe' field in product missing or not an object",
-                 __func__);
+      g_warning ("%s: 'cpe' field in product missing or not an object"
+                 " at rowid %llu",
+                 __func__, *cpe_rowid);
       return -1;
     }
 
   name = json_object_item_string (cpe_item, "cpeName");
   if (name == NULL)
     {
-      g_warning ("%s: 'cpeName' field missing or not a string", __func__);
+      g_warning ("%s: 'cpeName' field missing or not a string"
+                 " at rowid %llu", __func__, *cpe_rowid);
       return -1;
     }
 
   cpe_name_id = json_object_item_string (cpe_item, "cpeNameId");
   if (cpe_name_id == NULL)
     {
-      g_warning ("%s: 'cpeNameId' field missing or not a string", __func__);
+      g_warning ("%s: 'cpeNameId' field missing or not a string"
+                 " for CPE %s", __func__, name);
       return -1;
     }
 
   last_modified = json_object_item_string (cpe_item, "lastModified");
   if (last_modified == NULL)
     {
-      g_warning ("%s: 'lastModified' field missing or not a string", __func__);
+      g_warning ("%s: 'lastModified' field missing or not a string"
+                 " for CPE %s", __func__, name);
       return -1;
     }
   modification_time = parse_iso_time (last_modified);
@@ -2350,7 +2354,8 @@ handle_json_cpe_item (inserts_t *inserts,
   titles = cJSON_GetObjectItemCaseSensitive (cpe_item, "titles");
   if (! cJSON_IsArray (titles))
     {
-      g_warning ("%s: 'titles' field missing or not an array", __func__);
+      g_warning ("%s: 'titles' field missing or not an array"
+                 " for CPE %s", __func__, name);
       return -1;
     }
 
@@ -2368,7 +2373,8 @@ handle_json_cpe_item (inserts_t *inserts,
   deprecated = json_object_item_boolean (cpe_item, "deprecated", -1);
   if (deprecated == -1)
     {
-      g_warning ("%s: 'deprecated' field missing or not a boolean", __func__);
+      g_warning ("%s: 'deprecated' field missing or not a boolean"
+                 " for CPE %s", __func__, name);
       return -1;
     }
 
@@ -2379,49 +2385,44 @@ handle_json_cpe_item (inserts_t *inserts,
       gchar *quoted_deprecated_by_id;
       deprecated_by_array = cJSON_GetObjectItemCaseSensitive (cpe_item,
                                                               "deprecatedBy");
-      if (! cJSON_IsArray (deprecated_by_array))
+      if (cJSON_IsArray (deprecated_by_array))
         {
-          g_warning ("%s: 'deprecatedBy' field missing or not an array",
-                     __func__);
-          g_free (quoted_name);
-          return -1;
-        }
-      else if (cJSON_GetArraySize (deprecated_by_array) == 0)
-        {
-          g_warning ("%s: 'deprecatedBy' array is empty",
-                     __func__);
-          g_free (quoted_name);
-          return -1;
-        }
-
-      cJSON_ArrayForEach (deprecated_by_item, deprecated_by_array)
-        {
-          char *deprecated_by_id;
-          deprecated_by_id = json_object_item_string (deprecated_by_item,
-                                                      "cpeName");
-          if (deprecated_by_id == NULL)
+          cJSON_ArrayForEach (deprecated_by_item, deprecated_by_array)
             {
-              g_warning ("%s: 'cpeName' field in 'deprecatedBy' missing or not"
-                         " a string",
-                         __func__);
-              g_free (quoted_name);
-              return -1;
+              char *deprecated_by_id;
+              deprecated_by_id = json_object_item_string (deprecated_by_item,
+                                                          "cpeName");
+              if (deprecated_by_id == NULL)
+                {
+                  g_warning ("%s: 'cpeName' field in 'deprecatedBy'"
+                             " missing or not a string for CPE %s",
+                             __func__, name);
+                  g_free (quoted_name);
+                  return -1;
+                }
+
+              quoted_deprecated_by_id
+                = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id,
+                                                        sql_quote);
+
+              first = inserts_check_size (deprecated_by_inserts);
+
+              g_string_append_printf (deprecated_by_inserts->statement,
+                                      "%s ('%s', '%s')",
+                                      first ? "" : ",",
+                                      quoted_name,
+                                      quoted_deprecated_by_id);
+
+              deprecated_by_inserts->current_chunk_size++;
+              g_free (quoted_deprecated_by_id);
             }
-
-          quoted_deprecated_by_id
-            = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id,
-                                                    sql_quote);
-
-          first = inserts_check_size (deprecated_by_inserts);
-
-          g_string_append_printf (deprecated_by_inserts->statement,
-                                  "%s ('%s', '%s')",
-                                  first ? "" : ",",
-                                  quoted_name,
-                                  quoted_deprecated_by_id);
-
-          deprecated_by_inserts->current_chunk_size++;
-          g_free (quoted_deprecated_by_id);
+        }
+      else if (deprecated_by_array)
+        {
+          g_warning ("%s: 'deprecatedBy' field exists but is not an array"
+                     " for CPE %s", __func__, name);
+          g_free (quoted_name);
+          return -1;
         }
     }
 
