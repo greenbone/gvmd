@@ -25,7 +25,7 @@ jobs:
     container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Generate GMP documentation (HTML)
         run: |
           mkdir build
