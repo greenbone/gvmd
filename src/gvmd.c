@@ -1619,8 +1619,8 @@ fork_agents_sync ()
                       if (response != AGENT_RESPONSE_SUCCESS &&
                           s_agent_log_token)
                         {
-                          g_warning ("%s: Synchronizing agent data failed.",
-                                     __func__);
+                          g_warning ("%s: Synchronizing agent data failed: %s",
+                                     __func__, agent_response_to_string (response));
                           /* Set token false so we do not double-log inside this child */
                           s_agent_log_token = FALSE;
                         }
