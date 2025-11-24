@@ -1427,12 +1427,9 @@ manage_create_sql_functions ()
                /* Calculate the severity of a task. */
                "  SELECT CASE"
                "         WHEN (SELECT target = 0 "
-#if ENABLE_AGENTS
                "               AND agent_group = 0 "
-#endif // ENABLE_AGENTS
-#if ENABLE_CONTAINER_SCANNING
+
                "               AND oci_image_target = 0 "
-#endif // ENABLE_CONTAINER_SCANNING
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
@@ -2275,7 +2272,6 @@ create_tables ()
        "  type TEXT,"
        "  value TEXT);");
 
-#if ENABLE_CREDENTIAL_STORES
   sql ("CREATE TABLE IF NOT EXISTS credential_stores"
        " (id SERIAL PRIMARY KEY,"
        "  uuid TEXT UNIQUE NOT NULL,"
@@ -2316,7 +2312,6 @@ create_tables ()
        " (selector INTEGER"
        "    REFERENCES credential_store_selectors (id) ON DELETE RESTRICT,"
        "  credential_type TEXT);");
-#endif
 
   sql ("CREATE TABLE IF NOT EXISTS deprecated_feed_data"
        " (id SERIAL PRIMARY KEY,"
@@ -2566,7 +2561,6 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
-#if ENABLE_CONTAINER_SCANNING
   sql ("CREATE TABLE IF NOT EXISTS oci_image_targets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2589,7 +2583,6 @@ create_tables ()
        "  modification_time integer,"
        "  credential INTEGER,"
        "  credential_location integer);");
-#endif /* ENABLE_CONTAINER_SCANNING */
 
   sql ("CREATE TABLE IF NOT EXISTS tickets"
        " (id SERIAL PRIMARY KEY,"
@@ -2779,7 +2772,7 @@ create_tables ()
        "  pref_id integer,"
        "  pref_type text,"
        "  pref_name text);");
-#if ENABLE_AGENTS
+
   sql ("CREATE TABLE IF NOT EXISTS agents"
     " (id SERIAL PRIMARY KEY,"
     "  uuid UUID NOT NULL UNIQUE,"
@@ -2851,7 +2844,6 @@ create_tables ()
     " (id SERIAL PRIMARY KEY,"
     "  agent_group integer REFERENCES agent_groups_trash (id) ON DELETE RESTRICT,"
     "  agent integer REFERENCES agents (id) ON DELETE RESTRICT);");
-#endif /* ENABLE_AGENTS */
 
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id SERIAL PRIMARY KEY,"
