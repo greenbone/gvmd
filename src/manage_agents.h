@@ -205,5 +205,8 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
                                         agent_uuid_list_t agent_uuids,
                                         agent_controller_agent_list_t out_list);
 
+const gchar *
+agent_response_to_string (agent_response_t code);
+
 #endif // _GVMD_MANAGE_AGENTS_H
 #endif // ENABLE_AGENTS
