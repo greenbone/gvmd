@@ -1766,6 +1766,12 @@ static void
 run_agents_sync (periodic_times_t *t)
 {
 #if ENABLE_AGENTS
+  if (!feature_enabled (FEATURE_ID_AGENTS))
+    {
+      g_debug ("%s: AGENTS runtime flag is disabled; skipping agents sync",
+              __func__);
+      return;
+    }
   time_t now = time (NULL);
   if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
     return;
