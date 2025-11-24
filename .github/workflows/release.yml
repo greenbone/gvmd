@@ -44,7 +44,7 @@ jobs:
         with:
           release-type-input: ${{ inputs.release-type }}
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # for conventional commits and getting all git tags
           persist-credentials: false
