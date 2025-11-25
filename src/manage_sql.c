@@ -41,9 +41,8 @@
 #include "manage_filters.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
-#if ENABLE_CREDENTIAL_STORES
+#include "manage_runtime_flags.h"
 #include "manage_sql_credential_stores.h"
-#endif
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -24214,10 +24213,8 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
                    const char* kdc, array_t* kdcs, const char *realm,
-#if ENABLE_CREDENTIAL_STORES
                    const char* credential_store_id, const char* vault_id,
                    const char* host_identifier,
-#endif
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -24267,7 +24264,6 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk")
           && strcmp (given_type, "krb5")
-#if ENABLE_CREDENTIAL_STORES
           && strcmp (given_type, "cs_pgp")
           && strcmp (given_type, "cs_pw")
           && strcmp (given_type, "cs_snmp")
@@ -24275,7 +24271,6 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "cs_up")
           && strcmp (given_type, "cs_usk")
           && strcmp (given_type, "cs_krb5")
-#endif
       )
         {
           sql_rollback ();
@@ -24295,10 +24290,8 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("krb5");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
-#if ENABLE_CREDENTIAL_STORES
   else if (credential_store_id || (vault_id && host_identifier))
     quoted_type = g_strdup ("cs");
-#endif
   else if (login && key_private == NULL && given_password == NULL)
     quoted_type = g_strdup ("usk"); /* auto-generate */
   else
@@ -24319,9 +24312,7 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0
-#if ENABLE_CREDENTIAL_STORES
           || g_str_has_prefix (quoted_type, "cs_") == 0
-#endif
           || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
@@ -24333,9 +24324,7 @@ create_credential (const char* name, const char* comment, const char* login,
       && strcmp (quoted_type, "pw")
       && strcmp (quoted_type, "smime")
       && strcmp (quoted_type, "snmp")
-#if ENABLE_CREDENTIAL_STORES
       && g_str_has_prefix (quoted_type, "cs_") == 0
-#endif
     )
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
@@ -24416,13 +24405,13 @@ create_credential (const char* name, const char* comment, const char* login,
                && strcmp (privacy_algorithm, "des"))
         ret = 16;
     }
-#if ENABLE_CREDENTIAL_STORES
   else if (g_str_has_prefix (quoted_type, "cs_"))
     {
       credential_store_t store;
-
-      if (credential_store_id == NULL
-          && get_default_credential_store_id () == NULL)
+      if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+        ret = 4;
+      else if (credential_store_id == NULL
+               && get_default_credential_store_id () == NULL)
         ret = 23;
       else if (credential_store_id
                && (find_credential_store_no_acl (credential_store_id, &store)
@@ -24433,7 +24422,6 @@ create_credential (const char* name, const char* comment, const char* login,
       else if (host_identifier == NULL)
         ret = 26;
     }
-#endif
 
   if (ret)
     {
@@ -24511,7 +24499,6 @@ create_credential (const char* name, const char* comment, const char* login,
   if (realm)
     set_credential_data (new_credential, "realm", realm);
 
-#if ENABLE_CREDENTIAL_STORES
   if (g_str_has_prefix (quoted_type, "cs_"))
     {
       if (credential_store_id)
@@ -24533,7 +24520,6 @@ create_credential (const char* name, const char* comment, const char* login,
       sql_commit ();
       return 0;
     }
-#endif
 
   g_free (quoted_type);
 
@@ -24853,10 +24839,8 @@ modify_credential (const char *credential_id,
                    const char* privacy_password, const char* privacy_algorithm,
                    const char* kdc, array_t* kdcs,
                    const char* realm,
-#if ENABLE_CREDENTIAL_STORES
                    const char* credential_store_id, const char* vault_id,
                    const char* host_identifier,
-#endif
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -24920,7 +24904,6 @@ modify_credential (const char *credential_id,
 
   ret = 0;
 
-#if ENABLE_CREDENTIAL_STORES
   if ((credential_store_id || vault_id || host_identifier)
       && (login || password || privacy_password || key_private
           || key_public ||certificate || community))
@@ -24928,7 +24911,6 @@ modify_credential (const char *credential_id,
       sql_rollback ();
       return 16;
     }
-#endif
 
   if (login && ret == 0)
     {
@@ -25181,16 +25163,23 @@ modify_credential (const char *credential_id,
               set_credential_data (credential, "realm", realm);
             }
         }
-#if ENABLE_CREDENTIAL_STORES
+
       else if (g_str_has_prefix (type, "cs_"))
         {
+          if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+            {
+              sql_rollback ();
+              cleanup_iterator (&iterator);
+              return -1;
+            }
           if (credential_store_id)
             {
               credential_store_t store;
               if (find_credential_store_no_acl (credential_store_id, &store)
-                   || store == 0)
+                  || store == 0)
                 {
                   sql_rollback ();
+                  cleanup_iterator (&iterator);
                   return 13;
                 }
 
@@ -25203,6 +25192,7 @@ modify_credential (const char *credential_id,
               if (!*vault_id)
                 {
                   sql_rollback ();
+                  cleanup_iterator (&iterator);
                   return 14;
                 }
               set_credential_data (credential,
@@ -25214,6 +25204,7 @@ modify_credential (const char *credential_id,
               if (!*host_identifier)
                 {
                   sql_rollback ();
+                  cleanup_iterator (&iterator);
                   return 15;
                 }
               set_credential_data (credential,
@@ -25221,7 +25212,6 @@ modify_credential (const char *credential_id,
                                    host_identifier);
             }
         }
-#endif
       else
         {
           g_warning ("%s: Unknown credential type: %s", __func__, type);

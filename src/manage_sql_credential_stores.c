@@ -1557,8 +1557,7 @@ verify_credential_store (const char *credential_store_id,
   free (host);
   g_hash_table_destroy (preferences);
 
-  return ret ? VERIFY_CREDENTIAL_STORE_CONNECTION_FAILED
-             : VERIFY_CREDENTIAL_STORE_OK;
+  return ret;
 }
 
 /**
