@@ -1578,7 +1578,7 @@ nvts_feed_version_status_from_timestamp ()
 
   if (feed_version_epoch == feed_info_timestamp)
     return 0;
-  
+
   if (feed_version_epoch > feed_info_timestamp)
     {
       g_warning ("%s: last nvts database update later than last feed update",
@@ -1592,9 +1592,9 @@ nvts_feed_version_status_from_timestamp ()
 
 /**
  * @brief Aborts NVTS update.
- * 
+ *
  * @param[in]  nvts_feed_file_version  NVTs feed file version.
- * 
+ *
  */
 static void
 abort_nvts_update (const gchar* nvts_feed_file_version)
@@ -1653,7 +1653,7 @@ update_nvts_from_json_file (const gchar *full_path,
                 strerror (errno));
       return -1;
     }
-  
+
   gvm_json_pull_parser_init_full (&parser, nvts_file,
                                   GVM_JSON_PULL_PARSE_BUFFER_LIMIT,
                                   GVM_JSON_PULL_READ_BUFFER_SIZE * 8);
@@ -1684,14 +1684,14 @@ update_nvts_from_json_file (const gchar *full_path,
               sql_rollback ();
               return -1;
             }
-            
+
           if (nvti_creation_time (nvti) > db_feed_version_epoch)
             count_new_vts += 1;
           else
             count_modified_vts += 1;
-          
+
           insert_nvt (nvti, 1, vt_refs_batch, vt_sevs_batch);
-          
+
           preferences = NULL;
           if (update_preferences_from_nvti (nvti, &preferences))
             {
@@ -1710,7 +1710,7 @@ update_nvts_from_json_file (const gchar *full_path,
       batch_end (vt_sevs_batch);
 
       g_info ("%s: Finalizing nvts insert", __func__);
-    
+
       finalize_nvts_insert (count_new_vts, count_modified_vts,
                             nvts_feed_file_version, 1);
       sql_commit ();
@@ -1810,7 +1810,7 @@ update_scanner_preferences ()
 
 /**
  * @brief update NVTs from feed.
- * 
+ *
  * @param[in]  db_feed_version         Database feed version.
  * @param[in]  nvts_feed_file_version  JSON file feed version.
  *
@@ -1868,7 +1868,7 @@ update_nvts_from_feed (gchar *db_feed_version,
     }
 
   ret = update_scanner_preferences ();
-  
+
   if (ret)
     {
       g_warning ("%s: Failed to update scanner preferences", __func__);

@@ -311,7 +311,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 
 /**
  * @brief Update scanner preferences via openvasd.
- * 
+ *
  * @param[in]  scan  openvasd scanner.
  *
  * @return 0 success, -1 error.

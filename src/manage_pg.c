@@ -1021,7 +1021,7 @@ manage_create_sql_functions ()
           "                 FROM tag_resources_trash"
           "                 JOIN configs"
           "                   ON configs.id = resource"
-          "                 WHERE tag_resources_trash.tag = tag_id" 
+          "                 WHERE tag_resources_trash.tag = tag_id"
           "                 AND configs.usage_type = ANY(usage_types));"
           "    WHEN tag_type = 'audit_report' OR tag_type = 'report'"
           "    THEN RETURN (SELECT count(*)"
@@ -2699,7 +2699,7 @@ create_tables ()
        "  queued_time_nano integer,"
        "  handler_pid integer,"
        "  start_from integer);");
-  
+
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"

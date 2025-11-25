@@ -98,7 +98,7 @@ container_image_target_credential (oci_image_target_t target)
         "username",
         credential_iterator_login (&iter)
       );
-      
+
       container_image_credential_set_auth_data (
         container_image_credential,
         "password",
@@ -120,7 +120,7 @@ container_image_target_credential (oci_image_target_t target)
  *                               report_aux.
  */
 static void
-add_container_image_scan_result (http_scanner_result_t res, 
+add_container_image_scan_result (http_scanner_result_t res,
                                  gpointer *results_aux)
 {
 
@@ -203,7 +203,7 @@ parse_container_image_scan_report (task_t task,
       sql_commit ();
       return;
     }
- 
+
   hashed_results = g_hash_table_new_full (g_str_hash,
                                           g_str_equal,
                                           g_free,
@@ -219,7 +219,7 @@ parse_container_image_scan_report (task_t task,
   rep_aux->hash_results = hashed_results;
   rep_aux->hash_hostdetails = NULL;
 
-  g_slist_foreach(results, 
+  g_slist_foreach(results,
                   (GFunc) add_container_image_scan_result,
                   &rep_aux);
 
@@ -443,7 +443,7 @@ launch_container_image_task (task_t task,
   oci_image_references_str
     = oci_image_target_image_references (oci_image_target);
 
-  container_image_target 
+  container_image_target
       = container_image_target_new (scan_id, oci_image_references_str);
 
   credential = container_image_target_credential (oci_image_target);
@@ -550,7 +550,7 @@ handle_container_image_scan (task_t task,
   scanner_t scanner;
   http_scanner_connector_t connector;
   int ret;
-  
+
   scanner = task_scanner (task);
   connector = container_image_scanner_connect (scanner, scan_id);
 
@@ -737,7 +737,7 @@ run_container_image_task (task_t task, int from, char **report_id)
     }
 
   if (fork_container_image_scan_handler (task,
-                                         oci_image_target, 
+                                         oci_image_target,
                                          from,
                                          report_id))
     {
