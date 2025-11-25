@@ -200,11 +200,11 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
   if (pipe (pipe_fds))
     {
       g_warning ("%s: Failed to create pipe: %s",
-                 __func__, strerror(errno));
+                 __func__, strerror (errno));
       return -1;
     }
 
-  child_pid = fork();
+  child_pid = fork ();
   (void) handle_scan_queue_entry;
 
   switch (child_pid)
@@ -241,31 +241,31 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 exit (EXIT_SUCCESS);
               case -1:
                 // Child on error
-                close(pipe_fds[1]);
+                close (pipe_fds[1]);
                 g_warning ("%s: fork failed: %s", __func__, strerror (errno));
                 exit (EXIT_FAILURE);
               default:
                 // Child on success
                 ret = write (pipe_fds[1],
                              &grandchild_pid,
-                             sizeof(grandchild_pid));
-                if (ret < sizeof(grandchild_pid))
+                             sizeof (grandchild_pid));
+                if (ret < sizeof (grandchild_pid))
                   {
                     if (ret <= -1)
                       g_warning ("%s: Failed to write PID to pipe: %s",
-                                 __func__, strerror(errno));
+                                 __func__, strerror (errno));
                     else
                       g_warning ("%s: Failed to write PID to pipe: %s"
                                  " (%d of %zd bytes sent)",
-                                 __func__, strerror(errno),
-                                 ret, sizeof(grandchild_pid));
+                                 __func__, strerror (errno),
+                                 ret, sizeof (grandchild_pid));
                   }
                 close (pipe_fds[1]); // Close output side of pipe
                 sql_close_fork ();
-                if (ret < sizeof(grandchild_pid))
-                  exit(EXIT_FAILURE);
+                if (ret < sizeof (grandchild_pid))
+                  exit (EXIT_FAILURE);
                 else
-                  exit(EXIT_SUCCESS);
+                  exit (EXIT_SUCCESS);
             }
         }
       case -1:
@@ -281,11 +281,11 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
           // Parent on success
           int status;
 
-          close(pipe_fds[1]); // Close output side of pipe
+          close (pipe_fds[1]); // Close output side of pipe
 
           // Get PID of grandchild from pipe
           grandchild_pid = 0;
-          nbytes = read(pipe_fds[0], &grandchild_pid, sizeof(grandchild_pid));
+          nbytes = read (pipe_fds[0], &grandchild_pid, sizeof (grandchild_pid));
           g_debug ("%s: Received pid: %d (%d bytes)",
                    __func__, grandchild_pid, nbytes);
 
@@ -297,13 +297,13 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
               else
                 g_warning ("%s: Could not read handler PID from pipe:"
                            " received %d bytes, expected %zd",
-                           __func__, nbytes, sizeof(grandchild_pid));
+                           __func__, nbytes, sizeof (grandchild_pid));
 
-              close(pipe_fds[0]); // Close input side of pipe
+              close (pipe_fds[0]); // Close input side of pipe
               return -1;
             }
 
-          close(pipe_fds[0]); // Close input side of pipe
+          close (pipe_fds[0]); // Close input side of pipe
 
           /*  Wait to prevent zombie, then return. */
           while (waitpid (child_pid, &status, 0) < 0)
