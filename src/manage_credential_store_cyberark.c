@@ -14,9 +14,12 @@
 #include "manage_sql.h"
 #include "manage_sql_credential_stores.h"
 #include "manage_credential_stores.h"
+#include "manage_runtime_flags.h"
 
 #include <gnutls/gnutls.h>
+#if ENABLE_CREDENTIAL_STORES
 #include <gvm/cyberark/cyberark.h>
+#endif
 #include <gvm/util/fileutils.h>
 #include <gvm/util/tlsutils.h>
 
@@ -26,6 +29,7 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+#if ENABLE_CREDENTIAL_STORES
 static verify_credential_store_return_t
 verify_and_prepare_cyberark_connection_data (const char *host,
                                              const char *path,
@@ -55,7 +59,7 @@ verify_and_prepare_cyberark_connection_data (const char *host,
   if (port != -1 && (port <= 0 || port > 65535))
     {
       *message = g_strdup ("port must be between 1 and 65535");
-      return VERIFY_CREDENTIAL_STORE_PORT_ERORR;
+      return VERIFY_CREDENTIAL_STORE_PORT_ERROR;
     }
   app_id_preference = g_hash_table_lookup (preferences, "app_id");
   if (credential_store_preference_is_set (app_id_preference) == FALSE)
@@ -101,8 +105,8 @@ verify_and_prepare_cyberark_connection_data (const char *host,
           || credential_store_preference_is_set (cert_preference) == FALSE)
         {
           *message = g_strdup ("either 'client_pkcs12_file'"
-                               " or both 'client_key' and 'client_cert'"
-                               " are required");
+            " or both 'client_key' and 'client_cert'"
+            " are required");
 
           return VERIFY_CREDENTIAL_STORE_PREFERENCE_ERROR;
         }
@@ -143,6 +147,7 @@ verify_and_prepare_cyberark_connection_data (const char *host,
 
   return VERIFY_CREDENTIAL_STORE_OK;
 }
+#endif
 
 /**
  * @brief Verifies the connection of a CyberArk credential store.
@@ -162,6 +167,14 @@ verify_cyberark_credential_store (const char *host,
                                   GHashTable *preferences,
                                   gchar **message)
 {
+#if ENABLE_CREDENTIAL_STORES
+
+  if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+    {
+      g_debug ("%s: Credentials store runtime flag is disabled", __func__);
+      return VERIFY_CREDENTIAL_STORE_FEATURE_DISABLED;
+    }
+
   const char *app_id;
   gchar *client_key_pem, *client_cert_pem, *server_ca_cert_pem;
   verify_credential_store_return_t rc;
@@ -222,6 +235,9 @@ verify_cyberark_credential_store (const char *host,
   g_free (server_ca_cert_pem);
 
   return VERIFY_CREDENTIAL_STORE_OK;
+#else
+  return VERIFY_CREDENTIAL_STORE_FEATURE_DISABLED;
+#endif
 }
 
 /**
@@ -236,12 +252,19 @@ verify_cyberark_credential_store (const char *host,
  * @return 0 on success, -1 on error.
  */
 int
-cyberark_login_password_credential_data (const gchar* cred_store_uuid,
-                                         const gchar* vault_id,
-                                         const gchar* host_identifier,
+cyberark_login_password_credential_data (const gchar *cred_store_uuid,
+                                         const gchar *vault_id,
+                                         const gchar *host_identifier,
                                          gchar **login,
                                          gchar **password)
 {
+#if ENABLE_CREDENTIAL_STORES
+
+  if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+    {
+      g_debug ("%s: Credentials store runtime flag is disabled", __func__);
+      return -1;
+    }
   credential_store_t credential_store;
   GHashTable *preferences;
   gchar *host, *path;
@@ -298,7 +321,7 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
       return -1;
     }
 
-  connector = cyberark_connector_new();
+  connector = cyberark_connector_new ();
 
   cyberark_connector_builder (connector, CYBERARK_HOST, host);
   cyberark_connector_builder (connector, CYBERARK_PATH, path);
@@ -325,8 +348,8 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
       g_free (host);
       g_free (path);
       g_debug ("%s: Error getting credential object from"
-                 " CyberArk credential store '%s'",
-                 __func__, cred_store_uuid);
+               " CyberArk credential store '%s'",
+               __func__, cred_store_uuid);
       return -1;
     }
 
@@ -347,4 +370,8 @@ cyberark_login_password_credential_data (const gchar* cred_store_uuid,
   g_free (path);
 
   return 0;
+#else
+  g_debug ("%s: Credentials store feature is disabled", __func__);
+  return -1;
+#endif
 }

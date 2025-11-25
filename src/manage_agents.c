@@ -831,4 +831,42 @@ delete_and_resync_agents (agent_uuid_list_t agent_uuids)
   return AGENT_RESPONSE_SUCCESS;
 }
 
+const gchar *
+agent_response_to_string (agent_response_t code)
+{
+  switch (code)
+    {
+    case AGENT_RESPONSE_SUCCESS:
+      return "Success";
+    case AGENT_RESPONSE_NO_AGENTS_PROVIDED:
+      return "No agent UUIDs provided";
+    case AGENT_RESPONSE_SCANNER_LOOKUP_FAILED:
+      return "Scanner lookup failed";
+    case AGENT_RESPONSE_AGENT_SCANNER_MISMATCH:
+      return "Agent list count mismatch (not same scanner)";
+    case AGENT_RESPONSE_CONNECTOR_CREATION_FAILED:
+      return "Failed to create connector";
+    case AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED:
+      return "Failed to update agents";
+    case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
+      return "Failed to delete agents";
+    case AGENT_RESPONSE_SYNC_FAILED:
+      return "Failed during sync";
+    case AGENT_RESPONSE_INVALID_ARGUMENT:
+      return "Invalid argument";
+    case AGENT_RESPONSE_INVALID_AGENT_OWNER:
+      return "Invalid agent owner UUID";
+    case AGENT_RESPONSE_AGENT_NOT_FOUND:
+      return "Agent not found";
+    case AGENT_RESPONSE_INTERNAL_ERROR:
+      return "Internal error";
+    case AGENT_RESPONSE_IN_USE_ERROR:
+      return "Agent is used by an Agent Group";
+    case AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED:
+      return "Agent update validation error";
+    default:
+      return "Unknown agent error";
+    }
+}
+
 #endif // ENABLE_AGENTS

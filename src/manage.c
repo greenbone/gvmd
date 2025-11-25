@@ -4236,7 +4236,16 @@ manage_sync (sigset_t *sigmask_current,
           && feed_lockfile_lock (&lockfile) == 0)
         {
 #if ENABLE_AGENTS
-          manage_sync_agent_installers ();
+          if (feature_enabled (FEATURE_ID_AGENTS))
+            {
+              manage_sync_agent_installers ();
+            }
+          else
+            {
+              g_debug (
+                "%s: AGENTS runtime flag is disabled; skipping agent installers sync",
+                __func__);
+            }
 #endif /* ENABLE_AGENTS */
           manage_sync_configs ();
           manage_sync_port_lists ();

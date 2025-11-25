@@ -22596,11 +22596,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_credential_data->kdc,
                          create_credential_data->kdcs,
                          create_credential_data->realm,
-#if ENABLE_CREDENTIAL_STORES
                          create_credential_data->credential_store_id,
                          create_credential_data->vault_id,
                          create_credential_data->host_identifier,
-#endif
                          create_credential_data->type,
                          create_credential_data->allow_insecure,
                          &new_credential))
@@ -26027,11 +26025,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_credential_data->kdc,
                     modify_credential_data->kdcs,
                     modify_credential_data->realm,
-#if ENABLE_CREDENTIAL_STORES
                     modify_credential_data->credential_store_id,
                     modify_credential_data->vault_id,
                     modify_credential_data->host_identifier,
-#endif
                     modify_credential_data->allow_insecure))
             {
               case 0:

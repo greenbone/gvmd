@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Source Format
         run: |
           clang-format -i -style=file src/gmp_{base,delete,get,tickets}.h \
@@ -29,7 +29,7 @@ jobs:
     container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install clang tools
         run: |
           apt update
@@ -74,7 +74,7 @@ jobs:
               flags: "-DOPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
     container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.build.container }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install build dependencies
         run: sh .github/install-dependencies.sh .github/build-dependencies.list
       - name: Configure and compile gvmd
@@ -89,7 +89,7 @@ jobs:
     container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
     steps:
       - name: Check out gvmd
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install git for Codecov uploader
         run: |
           apt update
@@ -118,7 +118,7 @@ jobs:
     name: Check CMake Formatting
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: greenbone/actions/uv@v3
         with:
           install: gersemi

@@ -2097,40 +2097,23 @@ check_private_key (const char *, const char *);
 gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 
-#if ENABLE_CREDENTIAL_STORES
 int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    array_t*,    const char*, const char*, const char*,
                    const char*, const char*, const char*, credential_t*);
-#else
-int
-create_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   array_t*,    const char*, const char*, const char*,
-                   credential_t*);
-#endif /* ENABLE_CREDENTIAL_STORES */
 
 int
 copy_credential (const char*, const char*, const char*,
                  credential_t*);
 
-#if ENABLE_CREDENTIAL_STORES
 int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, array_t*, const char*, const char*,
                    const char*, const char*, const char*);
-#else
-int
-modify_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, array_t*, const char*, const char*);
-#endif
 
 int
 delete_credential (const char *, int);

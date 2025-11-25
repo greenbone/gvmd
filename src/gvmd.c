@@ -1619,8 +1619,8 @@ fork_agents_sync ()
                       if (response != AGENT_RESPONSE_SUCCESS &&
                           s_agent_log_token)
                         {
-                          g_warning ("%s: Synchronizing agent data failed.",
-                                     __func__);
+                          g_warning ("%s: Synchronizing agent data failed: %s",
+                                     __func__, agent_response_to_string (response));
                           /* Set token false so we do not double-log inside this child */
                           s_agent_log_token = FALSE;
                         }
@@ -1766,6 +1766,12 @@ static void
 run_agents_sync (periodic_times_t *t)
 {
 #if ENABLE_AGENTS
+  if (!feature_enabled (FEATURE_ID_AGENTS))
+    {
+      g_debug ("%s: AGENTS runtime flag is disabled; skipping agents sync",
+              __func__);
+      return;
+    }
   time_t now = time (NULL);
   if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
     return;
