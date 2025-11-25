@@ -493,7 +493,10 @@ runtime_append_disabled_commands (GString *buf)
   /* CREDENTIAL_STORES */
   if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
     {
-      append_commands (buf, "get_credential_stores,"
-                       "modify_credential_store");
+      append_commands (
+        buf,
+        "get_credential_stores,"
+        "modify_credential_store,"
+        "verify_credential_store");
     }
 }
