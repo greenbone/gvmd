@@ -5050,6 +5050,7 @@ check_db_credential_stores ()
     {
       g_message ("%s: No feed owner set, skipping credential store creation",
                __func__);
+      g_free (feed_owner_uuid);
       return;
     }
 
@@ -5063,7 +5064,6 @@ check_db_credential_stores ()
   current_credentials.uuid = old_user_uuid;
   current_credentials.username = old_username;
   g_free (feed_owner_uuid);
-  
 #endif /* ENABLE_CREDENTIAL_STORES */
 }
 
