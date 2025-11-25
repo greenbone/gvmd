@@ -256,7 +256,7 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                                  __func__, strerror (errno));
                     else
                       g_warning ("%s: Failed to write PID to pipe: %s"
-                                 " (%d of %zd bytes sent)",
+                                 " (%d of %zu bytes sent)",
                                  __func__, strerror (errno),
                                  ret, sizeof (grandchild_pid));
                   }
@@ -296,7 +296,7 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                            __func__, strerror (errno));
               else
                 g_warning ("%s: Could not read handler PID from pipe:"
-                           " received %d bytes, expected %zd",
+                           " received %d bytes, expected %zu",
                            __func__, nbytes, sizeof (grandchild_pid));
 
               close (pipe_fds[0]); // Close input side of pipe
