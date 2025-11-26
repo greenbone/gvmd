@@ -715,7 +715,7 @@ fork_container_image_scan_handler (task_t task,
 int
 run_container_image_task (task_t task, int from, char **report_id)
 {
-  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+  if (!feature_enabled (FEATURE_ID_CONTAINER_SCANNING))
     {
       g_warning ("%s: container scanning runtime flag is disabled", __func__);
       return -1;
@@ -763,7 +763,7 @@ run_container_image_task (task_t task, int from, char **report_id)
 int
 stop_container_image_task (task_t task)
 {
-  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+  if (!feature_enabled (FEATURE_ID_CONTAINER_SCANNING))
     {
       g_warning ("%s: container scanning runtime flag is disabled", __func__);
       return -1;

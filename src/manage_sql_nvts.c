@@ -1225,16 +1225,12 @@ nvts_feed_version_status_from_scanner ()
                                                     NULL);
     case SCANNER_TYPE_OPENVASD:
       if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
-        {
-          return nvts_feed_version_status_internal_openvasd (NULL, NULL);
-        }
-      else
-        {
-          g_critical ("%s: Default scanner is an openvasd one,"
-                      " but gvmd is not built to support this.",
-                      __func__);
-          return -1;
-        }
+        return nvts_feed_version_status_internal_openvasd (NULL, NULL);
+      g_critical ("%s: Default scanner is an openvasd one,"
+                  " but gvmd is not built to support this.",
+                  __func__);
+      return -1;
+
     default:
       g_critical ("%s: scanner type %d is not supported as default",
                   __func__, sc_type);
