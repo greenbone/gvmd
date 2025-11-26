@@ -29440,6 +29440,21 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
       case CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED:
         fprintf (stderr, "Scanner type does not support UNIX sockets.\n");
         break;
+      case CREATE_SCANNER_OPENVASD_DISABLED:
+        fprintf (stderr,
+                 "openvasd scanner type is not supported"
+                 " because the openvasd feature flag is disabled.\n");
+        break;
+      case CREATE_SCANNER_AGENT_DISABLED:
+        fprintf (stderr,
+                 "Agent controller scanner type is not supported"
+                 " because the Agents feature flag is disabled.\n");
+        break;
+      case CREATE_SCANNER_CONTAINER_SCANNING_DISABLED:
+        fprintf (stderr,
+                 "Container image scanner type is not supported"
+                 " because the Container scanning feature flag is disabled.\n");
+        break;
       case CREATE_SCANNER_PERMISSION_DENIED:
         fprintf (stderr, "Permission denied.\n");
         break;
@@ -29761,6 +29776,21 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr,
                  "Scanner type does not support UNIX sockets.\n");
         break;
+      case MODIFY_SCANNER_OPENVASD_DISABLED:
+        fprintf (stderr,
+                 "openvasd scanner type is not supported"
+                 " because the openvasd feature flag is disabled.\n");
+        break;
+      case MODIFY_SCANNER_AGENT_DISABLED:
+        fprintf (stderr,
+                 "Agent controller scanner type is not supported"
+                 " because the Agents feature flag is disabled.\n");
+        break;
+      case MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED:
+        fprintf (stderr,
+                 "Container image scanner type is not supported"
+                 " because the Container scanning feature flag is disabled.\n");
+        break;
       case MODIFY_SCANNER_PERMISSION_DENIED:
         fprintf (stderr, "Permission denied.\n");
         break;
@@ -29972,6 +30002,25 @@ create_scanner (const char* name, const char *comment, const char *host,
       return CREATE_SCANNER_INVALID_TYPE;
     }
 
+  int feature_res = scanner_feature_enabled ((scanner_type_t) itype);
+  if (feature_res == 1)
+    {
+      /* openvasd feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_OPENVASD_DISABLED;
+    }
+  else if (feature_res == 2)
+    {
+      /* Agent feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_AGENT_DISABLED;
+    }
+  else if (feature_res == 3)
+    {
+      /* Container scanning feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_CONTAINER_SCANNING_DISABLED;
+    }
   if (unix_socket)
     {
       ca_pub = NULL;
@@ -30161,6 +30210,26 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     }
   else
     itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+
+  int feature_res = scanner_feature_enabled ((scanner_type_t) itype);
+  if (feature_res == 1)
+    {
+      /* openvasd feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_OPENVASD_DISABLED;
+    }
+  else if (feature_res == 2)
+    {
+      /* Agent feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_AGENT_DISABLED;
+    }
+  else if (feature_res == 3)
+    {
+      /* Container scanning feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED;
+    }
 
   if (port)
     iport = atoi (port);

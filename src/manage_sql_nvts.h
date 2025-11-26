@@ -24,9 +24,7 @@
 #ifndef _GVMD_MANAGE_SQL_NVTS_H
 #define _GVMD_MANAGE_SQL_NVTS_H
 
-#if OPENVASD
 #include "manage_sql_nvts_openvasd.h"
-#endif
 #include "manage_sql_nvts_osp.h"
 
 /**

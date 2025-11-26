@@ -364,6 +364,9 @@ scanner_type_supports_unix_sockets (scanner_type_t);
 scanner_type_t
 get_scanner_type (scanner_t);
 
+int
+scanner_feature_enabled(scanner_type_t);
+
 scanner_type_t
 get_scanner_type_by_uuid (const char *);
 
@@ -2498,20 +2501,23 @@ manage_get_scanners (GSList *, const db_conn_info_t *);
 
 
 typedef enum {
-  CREATE_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
-  CREATE_SCANNER_SUCCESS = 0,             ///< Success
-  CREATE_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
-  CREATE_SCANNER_MISSING_TYPE,            ///< Missing type
-  CREATE_SCANNER_MISSING_HOST,            ///< Missing host
-  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
-  CREATE_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
-  CREATE_SCANNER_INVALID_TYPE,            ///< Invalid type
-  CREATE_SCANNER_INVALID_PORT,            ///< Invalid port
-  CREATE_SCANNER_INVALID_HOST,            ///< Invalid host
-  CREATE_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
-  CREATE_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
-  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
-  CREATE_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+  CREATE_SCANNER_INTERNAL_ERROR = -1,         ///< Internal error
+  CREATE_SCANNER_SUCCESS = 0,                 ///< Success
+  CREATE_SCANNER_ALREADY_EXISTS,              ///< Scanner already exists
+  CREATE_SCANNER_MISSING_TYPE,                ///< Missing type
+  CREATE_SCANNER_MISSING_HOST,                ///< Missing host
+  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,        ///< Credential not found
+  CREATE_SCANNER_CREDENTIAL_NOT_CC,           ///< Credential must have type "cc"
+  CREATE_SCANNER_INVALID_TYPE,                ///< Invalid type
+  CREATE_SCANNER_INVALID_PORT,                ///< Invalid port
+  CREATE_SCANNER_INVALID_HOST,                ///< Invalid host
+  CREATE_SCANNER_INVALID_RELAY_PORT,          ///< Invalid relay port
+  CREATE_SCANNER_INVALID_RELAY_HOST,          ///< Invalid relay host
+  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED,     ///< Type doesn't support UNIX sockets
+  CREATE_SCANNER_OPENVASD_DISABLED,           ///< openvasd feature is disabled
+  CREATE_SCANNER_AGENT_DISABLED,              ///< Agent feature is disabled
+  CREATE_SCANNER_CONTAINER_SCANNING_DISABLED, ///< Container scanning feature is disabled
+  CREATE_SCANNER_PERMISSION_DENIED = 99       ///< Permission denied
 } create_scanner_return_t;
 
 create_scanner_return_t
@@ -2523,20 +2529,23 @@ int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
 typedef enum {
-  MODIFY_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
-  MODIFY_SCANNER_SUCCESS = 0,             ///< Success
-  MODIFY_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
-  MODIFY_SCANNER_MISSING_ID,              ///< Missing scanner id
-  MODIFY_SCANNER_NOT_FOUND,               ///< Scanner not found
-  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
-  MODIFY_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
-  MODIFY_SCANNER_INVALID_TYPE,            ///< Invalid type
-  MODIFY_SCANNER_INVALID_PORT,            ///< Invalid port
-  MODIFY_SCANNER_INVALID_HOST,            ///< Invalid host
-  MODIFY_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
-  MODIFY_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
-  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
-  MODIFY_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+  MODIFY_SCANNER_INTERNAL_ERROR = -1,         ///< Internal error
+  MODIFY_SCANNER_SUCCESS = 0,                 ///< Success
+  MODIFY_SCANNER_ALREADY_EXISTS,              ///< Scanner already exists
+  MODIFY_SCANNER_MISSING_ID,                  ///< Missing scanner id
+  MODIFY_SCANNER_NOT_FOUND,                   ///< Scanner not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,        ///< Credential not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_CC,           ///< Credential must have type "cc"
+  MODIFY_SCANNER_INVALID_TYPE,                ///< Invalid type
+  MODIFY_SCANNER_INVALID_PORT,                ///< Invalid port
+  MODIFY_SCANNER_INVALID_HOST,                ///< Invalid host
+  MODIFY_SCANNER_INVALID_RELAY_PORT,          ///< Invalid relay port
+  MODIFY_SCANNER_INVALID_RELAY_HOST,          ///< Invalid relay host
+  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED,     ///< Type doesn't support UNIX sockets
+  MODIFY_SCANNER_OPENVASD_DISABLED,           ///< openvasd feature is disabled
+  MODIFY_SCANNER_AGENT_DISABLED,              ///< Agent feature is disabled
+  MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED, ///< Container scanning feature is disabled
+  MODIFY_SCANNER_PERMISSION_DENIED = 99       ///< Permission denied
 } modify_scanner_return_t;
 
 modify_scanner_return_t

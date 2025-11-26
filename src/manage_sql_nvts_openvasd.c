@@ -23,7 +23,6 @@
  * NVT logic specific to openvasd in the GVM management layer.
  */
 
-#if OPENVASD
 /**
  * @brief Enable extra GNU functions.
  */
@@ -31,7 +30,10 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 
+#if ENABLE_HTTP_SCANNER
 #include "manage_http_scanner.h"
+#endif
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_nvts_openvasd.h"
@@ -50,6 +52,7 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+#if OPENVASD
 /**
  * @brief Max number of rows inserted per statement.
  */
@@ -63,7 +66,8 @@ static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
 /**
  * @brief Struct containing the stream buffer.
  */
-struct FILESTREAM {
+struct FILESTREAM
+{
   char *stream_buffer;
   size_t size_of_buffer;
   size_t last_read;
@@ -96,7 +100,7 @@ static int
 closecookie (void *filestream)
 {
   struct FILESTREAM *stream = filestream;
-  g_free(stream->stream_buffer);
+  g_free (stream->stream_buffer);
   stream->size_of_buffer = 0;
   stream->stream_buffer = NULL;
   return 0;
@@ -123,7 +127,7 @@ writecookie (void *stream_cookie, const char *buf, size_t size)
     }
 
   memcpy (&(stream->stream_buffer[stream->last_write]), buf, size);
-  stream->last_write+=size;
+  stream->last_write += size;
 
   return size;
 }
@@ -132,11 +136,12 @@ writecookie (void *stream_cookie, const char *buf, size_t size)
  * @brief Move non read data to beggining of the buffer
  */
 static int
-move_buffer_data (struct FILESTREAM *filestream){
+move_buffer_data (struct FILESTREAM *filestream)
+{
   char *auxbuf;
   size_t non_read_chars_count = filestream->last_write - filestream->last_read;
 
-  auxbuf = g_malloc0 (sizeof(char) * filestream->size_of_buffer);
+  auxbuf = g_malloc0 (sizeof (char) * filestream->size_of_buffer);
   if (auxbuf == NULL)
     return -1;
 
@@ -148,7 +153,7 @@ move_buffer_data (struct FILESTREAM *filestream){
   filestream->last_read = 0;
   filestream->last_write = non_read_chars_count;
 
-  g_free(auxbuf);
+  g_free (auxbuf);
 
   return 0;
 }
@@ -156,7 +161,7 @@ move_buffer_data (struct FILESTREAM *filestream){
 /**
  * @brief Update NVTs from Json response chunk by chunk
  *
- * @param[in]  conn                  openvasd connector
+ * @param[in]  connector             openvasd connector
  * @param[in]  scanner_feed_version  Version of feed from scanner.
  * @param[in]  rebuild               Whether we're rebuilding the tables.
  *
@@ -175,7 +180,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
   count_modified_vts = 0;
   count_new_vts = 0;
 
-  feed_version_epoch = nvts_feed_version_epoch();
+  feed_version_epoch = nvts_feed_version_epoch ();
 
   //osp_vt_hash = element_attribute (vts, "sha256_hash");
 
@@ -208,10 +213,10 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
     .close = closecookie,
   };
 
-  filestream = g_malloc0 (sizeof(struct FILESTREAM));
+  filestream = g_malloc0 (sizeof (struct FILESTREAM));
   filestream->size_of_buffer = GVM_JSON_PULL_PARSE_BUFFER_LIMIT;
   filestream->stream_buffer =
-    g_malloc0 (sizeof(char) * filestream->size_of_buffer);
+    g_malloc0 (sizeof (char) * filestream->size_of_buffer);
 
   stream = fopencookie (filestream, "a+", cookiehooks);
 
@@ -232,20 +237,23 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
       size_t non_read_count = 0;
       // Ensure a big chunk of data.
       // Realloc is expensive therefore we realloc with bigger chuncks
-      while (running > 0 && http_scanner_stream_len (connector) < GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
-          running = openvasd_get_vt_stream (connector);
+      while (running > 0 && http_scanner_stream_len (connector) <
+             GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
+        running = openvasd_get_vt_stream (connector);
 
       if (http_scanner_stream_len (connector) > 0)
         {
           move_buffer_data (filestream);
-          fwrite (http_scanner_stream_str (connector), 1, http_scanner_stream_len (connector), stream);
+          fwrite (http_scanner_stream_str (connector), 1,
+                  http_scanner_stream_len (connector), stream);
           http_scanner_reset_stream (connector);
         }
 
       non_read_count = filestream->last_write - filestream->last_read;
       // While streaming, parse some VTs and continue for a new chunk.
       // If the stream is not running anymore, parse the remaining VTs.
-      while ((running && non_read_count > GVM_JSON_PULL_READ_BUFFER_SIZE * 8) || !running)
+      while ((running && non_read_count > GVM_JSON_PULL_READ_BUFFER_SIZE * 8) ||
+             !running)
         {
           int ret = parse_vt_json (&parser, &event, &nvti);
           if (ret == -1)
@@ -283,11 +291,11 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
           insert_nvt_preferences_list (preferences, rebuild);
           g_list_free_full (preferences, (GDestroyNotify) preference_free);
 
-          g_free(nvti);
+          g_free (nvti);
           non_read_count = filestream->last_write - filestream->last_read;
         }
       if (break_flag)
-          break;
+        break;
     }
 
   gvm_json_pull_event_cleanup (&event);
@@ -299,7 +307,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
   batch_end (vt_refs_batch);
   batch_end (vt_sevs_batch);
 
-  finalize_nvts_insert (count_new_vts, count_modified_vts,scanner_feed_version,
+  finalize_nvts_insert (count_new_vts, count_modified_vts, scanner_feed_version,
                         rebuild);
   sql_commit ();
 
@@ -308,6 +316,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 
   return 0;
 }
+#endif /* OPENVASD */
 
 /**
  * @brief Update scanner preferences via openvasd.
@@ -319,8 +328,8 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 int
 update_scanner_preferences_openvasd (scanner_t scan)
 {
+#if ENABLE_HTTP_SCANNER
   int first;
-  http_scanner_resp_t resp;
   http_scanner_connector_t connector = NULL;
   GString *prefs_sql;
   GSList *point;
@@ -333,34 +342,52 @@ update_scanner_preferences_openvasd (scanner_t scan)
                  SCANNER_UUID_DEFAULT);
       return -1;
     }
-
-  resp = openvasd_get_vts (connector);
-  if (resp->code != 200)
+#if OPENVASD
+  if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
-      http_scanner_response_cleanup (resp);
-      g_warning ("%s: failed to get scanner preferences", __func__);
-      return -1;
-    }
+      http_scanner_resp_t resp;
 
-  http_scanner_parsed_scans_preferences (connector, &scan_prefs);
-  g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
-  http_scanner_response_cleanup (resp);
-  http_scanner_connector_free (connector);
+      resp = openvasd_get_vts (connector);
+      if (resp->code != 200)
+        {
+          http_scanner_response_cleanup (resp);
+          g_warning ("%s: failed to get scanner preferences", __func__);
+          return -1;
+        }
+
+      http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+      g_debug ("There %d scan preferences", g_slist_length (scan_prefs));
+      http_scanner_response_cleanup (resp);
+      http_scanner_connector_free (connector);
+    }
+  else
+    {
+      g_warning ("%s: openvasd runtime flag is disabled", __func__);
+    }
+#endif
 
 #if ENABLE_CONTAINER_SCANNING
 
-  connector = container_image_scanner_connect (scan, NULL);
-  if (!connector)
+  if (feature_enabled (FEATURE_ID_CONTAINER_SCANNING))
     {
-      g_warning ("%s: failed to get preferences from container image scanner",
-                 __func__);
-      return -1;
-    }
+      connector = container_image_scanner_connect (scan, NULL);
+      if (!connector)
+        {
+          g_warning (
+            "%s: failed to get preferences from container image scanner",
+            __func__);
+          return -1;
+        }
 
-  http_scanner_parsed_scans_preferences (connector, &scan_prefs);
-  g_debug ("There are %d scan preferences for container image scanner",
-           g_slist_length (scan_prefs));
-  http_scanner_connector_free (connector);
+      http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+      g_debug ("There are %d scan preferences for container image scanner",
+               g_slist_length (scan_prefs));
+      http_scanner_connector_free (connector);
+    }
+  else
+    {
+      g_warning ("%s: container scanning runtime flag is disabled", __func__);
+    }
 
 #endif
 
@@ -402,6 +429,10 @@ update_scanner_preferences_openvasd (scanner_t scan)
   g_string_free (prefs_sql, TRUE);
 
   return 0;
+#else
+  g_debug ("%s: openvasd or container scanning feature is disabled.", __func__);
+  return -1;
+#endif
 }
 
 /**
@@ -417,6 +448,13 @@ int
 update_nvt_cache_openvasd (gchar *db_feed_version,
                            gchar *scanner_feed_version, int rebuild)
 {
+#if OPENVASD
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    {
+      g_warning ("%s: openvasd runtime flag is disabled", __func__);
+      return -1;
+    }
+
   http_scanner_connector_t connector = NULL;
   scanner_t scan;
   time_t old_nvts_last_modified;
@@ -445,7 +483,8 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
       return -1;
     }
 
-  ret = update_nvts_from_openvasd_vts (connector, scanner_feed_version, rebuild);
+  ret = update_nvts_from_openvasd_vts (connector, scanner_feed_version,
+                                       rebuild);
 
   http_scanner_connector_free (connector);
 
@@ -461,6 +500,10 @@ update_nvt_cache_openvasd (gchar *db_feed_version,
   update_nvt_end (old_nvts_last_modified);
 
   return 0;
+#else
+  g_debug ("%s: Openvasd feature is disabled", __func__);
+  return -1;
+#endif
 }
 
 /**
@@ -476,6 +519,7 @@ int
 nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
                                        gchar **vts_version)
 {
+#if OPENVASD
   scanner_t scan;
   http_scanner_connector_t connector = NULL;
   http_scanner_resp_t resp = NULL;
@@ -500,7 +544,7 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
                  scanner_port (scan, has_relay));
       ret = 1;
     }
-  else if (resp->code  == 503)
+  else if (resp->code == 503)
     ret = 2;
   else
     {
@@ -511,6 +555,10 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
   http_scanner_response_cleanup (resp);
   http_scanner_connector_free (connector);
   return ret;
+#else
+  g_debug ("%s: Openvasd feature is disabled", __func__);
+  return -1;
+#endif
 }
 
 /**
@@ -525,6 +573,13 @@ int
 nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
                                             gchar **scanner_feed_version_out)
 {
+#if OPENVASD
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    {
+      g_warning ("%s: openvasd runtime flag is disabled", __func__);
+      return -1;
+    }
+
   gchar *db_feed_version = NULL;
   gchar *scanner_feed_version = NULL;
 
@@ -542,10 +597,11 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
                                          &scanner_feed_version);
 
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
-  if (scanner_feed_version == NULL) {
+  if (scanner_feed_version == NULL)
+    {
       g_free (db_feed_version);
       return -1;
-  }
+    }
 
   if (scanner_feed_version_out && scanner_feed_version)
     *scanner_feed_version_out = g_strdup (scanner_feed_version);
@@ -561,6 +617,10 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
   g_free (db_feed_version);
   g_free (scanner_feed_version);
   return 0;
+#else
+  g_debug ("%s: Openvasd feature is disabled", __func__);
+  return -1;
+#endif
 }
 
 /**
@@ -573,6 +633,8 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
 int
 manage_update_nvt_cache_openvasd ()
 {
+#if OPENVASD
+
   gchar *db_feed_version, *scanner_feed_version;
   int ret;
 
@@ -596,6 +658,10 @@ manage_update_nvt_cache_openvasd ()
     }
 
   return ret;
+#else
+  g_debug ("%s: Openvasd feature is disabled", __func__);
+  return -1;
+#endif
 }
 
 /**
@@ -611,6 +677,8 @@ manage_update_nvt_cache_openvasd ()
 int
 update_or_rebuild_nvts_openvasd (int update)
 {
+#if OPENVASD
+
   gchar *db_feed_version = NULL;
   gchar *scanner_feed_version = NULL;
   int ret = 0;
@@ -633,6 +701,8 @@ update_or_rebuild_nvts_openvasd (int update)
     ret = -1;
 
   return ret;
-}
-
+#else
+  g_debug ("%s: Openvasd feature is disabled", __func__);
+  return -1;
 #endif
+}
