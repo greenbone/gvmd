@@ -303,15 +303,20 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 
 ## Precommit-like checks
 
-if (NOT CMAKE_BUILD_TYPE MATCHES "Release")
-  add_custom_target(check-whitespace ALL
-                    # once for output
-                    COMMAND grep -Hn "[ ]$$" *.c *.h | sed "'s/^\\(.\\+:.\\+:\\)/\\1 error: trailing space: /'"
-                    # again for exit code
-                    COMMAND ! grep --quiet "[ ]$$" *.c *.h
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    COMMENT "Checking whitespace...")
-endif (NOT CMAKE_BUILD_TYPE MATCHES "Release")
+if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+  add_custom_target(
+    check-whitespace
+    ALL
+    # once for output
+    COMMAND
+      grep -Hn "[ ]$$" *.c *.h | sed
+      "'s/^\\(.\\+:.\\+:\\)/\\1 error: trailing space: /'"
+    # again for exit code
+    COMMAND ! grep --quiet "[ ]$$" *.c *.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Checking whitespace..."
+  )
+endif(NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 ## Program
 
