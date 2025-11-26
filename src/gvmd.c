@@ -1184,30 +1184,33 @@ update_nvt_cache_retry ()
               }
             case SCANNER_TYPE_OPENVASD:
               {
-#if OPENVASD
-                int ret;
-
-                setproctitle ("openvasd: Updating NVT cache");
-                ret = manage_update_nvt_cache_openvasd ();
-                if (ret == 1)
+                if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
                   {
-                    g_message (
-                      "Rebuilding all NVTs because of a hash value mismatch");
-                    ret = update_or_rebuild_nvts (0);
-                    if (ret)
-                      g_warning ("%s: rebuild failed", __func__);
-                    else
-                      g_message ("%s: rebuild successful", __func__);
-                  }
+                    int ret;
 
-                gvm_close_sentry ();
-                exit (ret);
-#else
-                g_critical ("%s: Default scanner is an openvasd one,"
-                            " but gvmd is not built to support this.",
-                            __func__);
-                exit (EXIT_FAILURE);
-#endif
+                    setproctitle ("openvasd: Updating NVT cache");
+                    ret = manage_update_nvt_cache_openvasd ();
+                    if (ret == 1)
+                      {
+                        g_message (
+                          "Rebuilding all NVTs because of a hash value mismatch");
+                        ret = update_or_rebuild_nvts (0);
+                        if (ret)
+                          g_warning ("%s: rebuild failed", __func__);
+                        else
+                          g_message ("%s: rebuild successful", __func__);
+                      }
+
+                    gvm_close_sentry ();
+                    exit (ret);
+                  }
+                else
+                  {
+                    g_critical ("%s: Default scanner is an openvasd one,"
+                                " but gvmd is not built to support this.",
+                                __func__);
+                    exit (EXIT_FAILURE);
+                  }
               }
             default:
               g_critical ("%s: scanner type %d is not supported as default",
@@ -2755,6 +2758,9 @@ gvmd (int argc, char** argv, char *env[])
   init_manage_settings_funcs (setting_value_sql,
                               setting_value_int_sql);
 
+  /* Initialize runtime flags */
+  runtime_flags_init (NULL);
+
   /* Process options. */
 
   option_context = g_option_context_new ("- Manager of the Open Vulnerability Assessment System");
@@ -3171,13 +3177,16 @@ gvmd (int argc, char** argv, char *env[])
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
-#if OPENVASD
-    g_critical ("%s: openvasd scanner is enabled."
-                 " The --osp-vt-update command was not executed.",
-                 __func__);
-#else
-    set_osp_vt_update_socket (osp_vt_update);
-#endif
+    {
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          g_critical ("%s: openvasd scanner is enabled."
+                      " The --osp-vt-update command was not executed.",
+                      __func__);
+        }
+      else
+        set_osp_vt_update_socket (osp_vt_update);
+    }
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -3899,17 +3908,18 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
-#if OPENVASD == 0
-  if (check_osp_vt_update_socket ())
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
-      g_critical ("%s: No OSP VT update socket found."
-                  " Use --osp-vt-update or change the 'OpenVAS Default'"
-                  " scanner to use the main ospd-openvas socket.",
-                  __func__);
-      gvm_close_sentry ();
-      exit (EXIT_FAILURE);
+      if (check_osp_vt_update_socket ())
+        {
+          g_critical ("%s: No OSP VT update socket found."
+                      " Use --osp-vt-update or change the 'OpenVAS Default'"
+                      " scanner to use the main ospd-openvas socket.",
+                      __func__);
+          gvm_close_sentry ();
+          exit (EXIT_FAILURE);
+        }
     }
-#endif
 
   /* Enter the main forever-loop. */
 

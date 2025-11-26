@@ -13,6 +13,7 @@
 
 #include "debug_utils.h"
 #include "manage_container_image_scanner.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage.h"
@@ -714,6 +715,11 @@ fork_container_image_scan_handler (task_t task,
 int
 run_container_image_task (task_t task, int from, char **report_id)
 {
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    {
+      g_warning ("%s: container scanning runtime flag is disabled", __func__);
+      return -1;
+    }
   oci_image_target_t oci_image_target;
 
   oci_image_target = task_oci_image_target (task);
@@ -757,6 +763,11 @@ run_container_image_task (task_t task, int from, char **report_id)
 int
 stop_container_image_task (task_t task)
 {
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    {
+      g_warning ("%s: container scanning runtime flag is disabled", __func__);
+      return -1;
+    }
   int ret = 0;
   report_t scan_report;
   char *scan_id;

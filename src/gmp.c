@@ -20609,6 +20609,30 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
                             "Scanner type does not support UNIX sockets."));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
+      case CREATE_SCANNER_OPENVASD_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "openvasd scanner type is not supported "
+          "because the openvasd feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_AGENT_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "Agent controller scanner type is not supported "
+          "because the Agents feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_CONTAINER_SCANNING_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "Container image scanner type is not supported "
+          "because the Container scanning feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
       case CREATE_SCANNER_PERMISSION_DENIED:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
@@ -20755,6 +20779,33 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Scanner type does not support UNIX sockets."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_OPENVASD_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "openvasd scanner type is not supported "
+          "because the openvasd feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_AGENT_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "Agent controller scanner type is not supported "
+          "because the Agents feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "Container image scanner type is not supported "
+          "because the Container scanning feature flag is disabled."
+        ));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
