@@ -18586,7 +18586,7 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
  * @param[in]  alive_tests  The alive tests bitfield.
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
- * 
+ *
  * @return 0 success, -1 error.
  */
 static int

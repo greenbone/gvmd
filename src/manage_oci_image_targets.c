@@ -27,7 +27,7 @@
  * @brief Find an OCI image target for a specific permission, given a UUID.
  *
  * @param[in]   uuid               UUID of target.
- * @param[out]  oci_image_target   OCI Image Target return, 
+ * @param[out]  oci_image_target   OCI Image Target return,
  *                                 0 if successfully failed to find target.
  * @param[in]   permission         Permission.
  *
@@ -173,7 +173,7 @@ valid_oci_url (const gchar *oci_url)
     }
 
   g_free (port);
-  
+
   const gchar *url_component_regex = "^[a-zA-Z0-9_\\-.]+$";
   const gchar *url_component_with_tag_regex = "^[a-zA-Z0-9_\\-.:]+$";
 
@@ -243,7 +243,7 @@ validate_oci_image_references (const char *image_refs_input,
             {
               g_strfreev (parts);
               if (error_message)
-                *error_message = 
+                *error_message =
                   g_strdup_printf ("Whitespace found in OCI image URL");
               return FALSE;
             }
@@ -254,7 +254,7 @@ validate_oci_image_references (const char *image_refs_input,
         {
           g_strfreev (parts);
           if (error_message)
-            *error_message = 
+            *error_message =
               g_strdup_printf ("Invalid OCI image URL");
           return FALSE;
         }

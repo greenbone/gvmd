@@ -4304,7 +4304,7 @@ manage_queued_task_actions ()
 {
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
-  
+
   setproctitle ("Manage process report imports");
   manage_process_report_imports ();
   setproctitle ("Manage scan queue");
@@ -4338,7 +4338,7 @@ manage_process_report_imports ()
       ret = lockfile_lock_path_nb (&lockfile, lockfile_path);
       if (ret > 0)
         {
-          g_debug ("%s: Report %llu is already being processed", 
+          g_debug ("%s: Report %llu is already being processed",
                    __func__,
                    report);
           continue;
@@ -4432,7 +4432,7 @@ manage_process_report_imports ()
             g_free (lockfile_path);
             cleanup_iterator (&reports);
             return;
-    
+
           default:
             /* Parent. */
             g_debug ("%s: %i forked %i", __func__, getpid (), pid);
@@ -5818,7 +5818,7 @@ set_max_concurrent_scan_updates (int new_max)
 /**
  * @brief Set the maximum number of database connections.
  *
- * @param new_max The current maximum number of database connections. 
+ * @param new_max The current maximum number of database connections.
  */
 void
 set_max_database_connections (int new_max)
